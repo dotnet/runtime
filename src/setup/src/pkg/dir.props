@@ -57,6 +57,30 @@
       off to avoid producing redundant packages.
     -->
     <BuildDistroIndependentInstallers Condition="'$(BuildDistroIndependentInstallers)' == ''">true</BuildDistroIndependentInstallers>
+
+    <WixVersion>3.10.4</WixVersion>
+    <WixToolsDir>$(IntermediateOutputRootPath)WixTools.$(WixVersion)/</WixToolsDir>
+    <!-- Used in WiX targets to locate files. -->
+    <WixInstallPath>$(WixToolsDir)</WixInstallPath>
+    <WixTargetsPath>$(WixToolsDir)wix.targets</WixTargetsPath>
+    <WixObjRoot>$(IntermediateOutputRootPath)wix/</WixObjRoot>
+    <WixObjDir>$(WixObjRoot)$(MSBuildProjectName)/</WixObjDir>
+    <MsiArch>$(TargetArchitecture)</MsiArch>
+    <MicrosoftEulaFile>$(MSBuildThisFileDirectory)packaging/windows/eula.rtf</MicrosoftEulaFile>
+
+    <GenerateMSI>true</GenerateMSI>
+    <GenerateMSI Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">false</GenerateMSI>
+    <GenerateMSI Condition="'$(OSGroup)' != 'Windows_NT'">false</GenerateMSI>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ProductBrandPrefix Condition="'$(ProductBrandPrefix)' == ''">Microsoft .NET Core</ProductBrandPrefix>
+    <ProductBrandSuffix>$(ProductionVersion)</ProductBrandSuffix>
+    <ProductBrandSuffix Condition="'$(ReleaseBrandSuffix)'!=''">$(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandSuffix>
+    <SharedHostBrandName>$(ProductBrandPrefix) Host - $(ProductBrandSuffix)</SharedHostBrandName>
+    <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
+    <TargetingPackBrandName>$(ProductBrandPrefix) Targeting Pack - $(ProductBrandSuffix)</TargetingPackBrandName>
+    <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
   </PropertyGroup>
 
   <ItemGroup>

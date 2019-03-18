@@ -5,6 +5,12 @@
     <RuntimeIdGraphDefinitionFile>$(PackagesDir)$(PlatformPackageId.ToLowerInvariant())\$(MicrosoftNETCorePlatformsPackageVersion)\runtime.json</RuntimeIdGraphDefinitionFile>
   </PropertyGroup>
 
+  <UsingTask TaskName="DownloadFilesFromUrl" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
+  <UsingTask TaskName="ZipFileExtractToDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
+  <UsingTask TaskName="GenerateGuidFromName" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
+  <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
+
   <!-- Create deb tool package and set up the project that consumes it as a CLI tool. -->
   <Target Name="InitializeDotnetDebTool">
     <!--
@@ -55,4 +61,57 @@
              Text="FPM tool Not found, RPM packages will not be built."
              Importance="High" />
   </Target>
+
+  <!--
+    Acquire WiX tools, if not present.
+
+    Adapted from https://github.com/dotnet/core-sdk/blob/6aed0cd3614f9b740cfb3f21fdb795bab53ef7e9/src/redist/targets/GenerateMSIs.targets#L80-L102
+  -->
+  <Target Name="AcquireWix"
+          DependsOnTargets="GetAcquireWixProperties"
+          Condition="'$(GenerateMSI)' == 'true'"
+          Inputs="$(WixDownloadSentinel)"
+          Outputs="$(WixDestinationPath)">
+    <!-- Setup sentinel to take advantage of incrementality -->
+    <MakeDir Directories="$(WixToolsDir)" />
+    <WriteLinesToFile
+      File="$(WixDownloadSentinel)"
+      Lines="$(WixVersion)"
+      Overwrite="true"
+      Encoding="Unicode" />
+
+    <ItemGroup>
+      <_wixToolDownload
+        Include="WixTool"
+        Url="$(WixDownloadUrl)"
+        DestinationDir="$(WixToolsDir)" />
+    </ItemGroup>
+
+    <DownloadFilesFromUrl Items="@(_wixToolDownload)" />
+
+    <ZipFileExtractToDirectory
+      SourceArchive="$(WixDestinationPath)"
+      DestinationDirectory="$(WixToolsDir)" />
+  </Target>
+
+  <Target Name="GetAcquireWixProperties">
+    <PropertyGroup>
+      <WixDownloadFilename>wix.$(WixVersion).zip</WixDownloadFilename>
+      <WixDownloadUrl>https://dotnetcli.azureedge.net/build/wix/$(WixDownloadFilename)</WixDownloadUrl>
+      <WixDestinationPath>$(WixToolsDir)$(WixDownloadFilename)</WixDestinationPath>
+      <WixDownloadSentinel>$(WixToolsDir)WixDownload.$(WixVersion).sentinel</WixDownloadSentinel>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="GenerateMsiVersionString">
+    <GenerateMsiVersion
+      Major="$(MajorVersion)"
+      Minor="$(MinorVersion)"
+      Patch="$(PatchVersion)"
+      BuildNumberMajor="$(BuildNumberMajor)"
+      BuildNumberMinor="$(BuildNumberMajor)">
+      <Output TaskParameter="MsiVersion" PropertyName="MsiVersionString" />
+    </GenerateMsiVersion>
+  </Target>
+
 </Project>

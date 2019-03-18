@@ -3,6 +3,7 @@
   <PropertyGroup>
     <IsFrameworkPackage>true</IsFrameworkPackage>
     <ShortFrameworkName>windowsdesktop</ShortFrameworkName>
+    <ProductBrandPrefix>Microsoft Windows Desktop</ProductBrandPrefix>
   </PropertyGroup>
 
   <Import Project="..\..\dir.props" />

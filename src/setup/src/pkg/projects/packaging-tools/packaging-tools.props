@@ -1,0 +1,90 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <!--
+      Allow packaging one build's outputs for a different RID. For example, package portable bits
+      for multiple Debian-based distros.
+    -->
+    <InstallerSourceOSPlatformConfig Condition="'$(InstallerSourceOSPlatformConfig)' == ''">$(OSPlatformConfig)</InstallerSourceOSPlatformConfig>
+    <InstallerSourceIntermediateOutputDir>$(BaseIntermediateOutputPath)$(InstallerSourceOSPlatformConfig)\$(MSBuildProjectName)\</InstallerSourceIntermediateOutputDir>
+  </PropertyGroup>
+
+  <!-- Detect framework pack suffix and apply defaults. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Ref'))">
+    <FrameworkPackType>targeting</FrameworkPackType>
+
+    <!--
+      Prevent 'runtime.<rid>.Microsoft.<framework>.App.Ref' packages from being built.
+
+      Not the same as HasRuntimePackages, which is used to set up ProjectReferences on the runtime
+      packages and generate assets such as the platform manifest.
+    -->
+    <BuildRuntimePackages>false</BuildRuntimePackages>
+
+    <PackageType>DotnetPlatform</PackageType>
+    <Version>$(SharedFrameworkNugetVersion)</Version>
+
+    <!-- Include the platform manifest in the data dir. -->
+    <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
+
+    <!-- Exclude runtime.json from the package. -->
+    <IncludeRuntimeJson>false</IncludeRuntimeJson>
+    <IsLineupPackage>false</IsLineupPackage>
+
+    <!-- Remove package dependencies. -->
+    <ExcludeLineupReference>true</ExcludeLineupReference>
+    <PackProjectDependencies>false</PackProjectDependencies>
+
+    <!-- Location to lay out pack contents, and where to grab bits to create installers. -->
+    <PackLayoutDir>$(InstallerSourceIntermediateOutputDir)layout/$(FrameworkPackType)/</PackLayoutDir>
+
+    <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
+  </PropertyGroup>
+
+  <!-- Only targeting pack MSIs are currently supported by this infrastructure. -->
+  <PropertyGroup Condition="'$(FrameworkPackType)' != 'targeting'">
+    <GenerateMSI>false</GenerateMSI>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <VersionedInstallerName>$(InstallerName)-$(PackageNameSuffix)</VersionedInstallerName>
+    <VersionedInstallerName>$(VersionedInstallerName.ToLowerInvariant())</VersionedInstallerName>
+    <InstallerPackageRelease>1</InstallerPackageRelease>
+
+    <InstallerPackageVersion>$(ProductionVersion)</InstallerPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
+    <InstallerPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</InstallerPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
+    <InstallerPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</InstallerPackageRelease>
+    <InstallerPackageRelease>$([System.String]::Copy('$(InstallerPackageRelease)').Replace('-', '_'))</InstallerPackageRelease>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <InstallerIntermediatesDir>$(PackagesIntermediateDir)$(InstallerName)/$(InstallerPackageVersion)/</InstallerIntermediatesDir>
+
+    <InstallerBuildPart>$(ProductMoniker)</InstallerBuildPart>
+    <InstallerBuildPart Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'"
+      >$(SharedFrameworkNugetVersion)-$(TargetArchitecture)</InstallerBuildPart>
+
+    <!-- Location to place the installer, in bin. -->
+    <InstallerFileNameWithoutExtension>$(InstallerName)-$(InstallerBuildPart)</InstallerFileNameWithoutExtension>
+    <InstallerFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(InstallerExtension)</InstallerFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsFrameworkPackage)' == 'true'">
+    <Version>$(SharedFrameworkNugetVersion)</Version>
+    <OmitDependencies>true</OmitDependencies>
+    <SkipValidatePackage>true</SkipValidatePackage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(InstallerFileNameWithoutExtension)' != '' AND '$(GenerateMSI)' == 'true'">
+    <OutputType>Package</OutputType>
+    <OutputName>$(InstallerFileNameWithoutExtension)</OutputName>
+  </PropertyGroup>
+
+</Project>

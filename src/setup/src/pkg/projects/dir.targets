@@ -1,12 +1,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.targets" />
 
-  <!--
-    Include common targets for specific project types. These files include BuildTools target
-    overrides that shouldn't be applied to other projects.
-  -->
-  <Import Project="framework.dependency.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'"/>
-  <Import Project="framework.packaging.targets" Condition="'$(IsFrameworkPackage)' == 'true'"/>
+  <Import Project="packaging-tools\packaging-tools.targets" />
 
   <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>

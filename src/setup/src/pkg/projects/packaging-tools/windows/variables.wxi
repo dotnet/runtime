@@ -21,6 +21,6 @@
   <?error Invalid Platform ($(var.Platform))?>
   <?endif?>
 
-  <?define DependencyKey   = "Dotnet_Core_TargetingPack_$(var.BuildVersion)_$(var.Platform)"?>
+  <?define DependencyKey   = "$(var.DependencyKeyName)_$(var.BuildVersion)_$(var.Platform)"?>
   <?define DependencyKeyId = "$(var.DependencyKey)" ?>
 </Include>
