@@ -16,7 +16,6 @@
     <SharedHostPublishRoot>$(IntermediateOutputRootPath)sharedHost/</SharedHostPublishRoot>
     <HostFxrPublishRoot>$(IntermediateOutputRootPath)hostFxr/</HostFxrPublishRoot>
     <SharedFrameworkPublishRoot>$(IntermediateOutputRootPath)sharedFx/</SharedFrameworkPublishRoot>
-    <TargetingPackPublishRoot>$(IntermediateOutputRootPath)Microsoft.NETCore.App.Ref/layout/</TargetingPackPublishRoot>
     <CombinedPublishRoot>$(IntermediateOutputRootPath)combined-framework-host/</CombinedPublishRoot>
   </PropertyGroup>
 
@@ -25,15 +24,5 @@
     <HostFxrCompressedFile>dotnet-hostfxr-internal-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
     <SharedFrameworkCompressedFile>dotnet-runtime-internal-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
     <SharedFrameworkSymbolsCompressedFile>dotnet-runtime-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <ProductBrandPrefix>Microsoft .NET Core</ProductBrandPrefix>
-    <ProductBrandSuffix>$(ProductionVersion)</ProductBrandSuffix>
-    <ProductBrandSuffix Condition="'$(ReleaseBrandSuffix)'!=''">$(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandSuffix>
-    <SharedHostBrandName>$(ProductBrandPrefix) Host - $(ProductBrandSuffix)</SharedHostBrandName>
-    <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
-    <TargetingPackBrandName>$(ProductBrandPrefix) Targeting Pack - $(ProductBrandSuffix)</TargetingPackBrandName>
-    <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
   </PropertyGroup>
 </Project>
