@@ -113,7 +113,7 @@ struct ArrIndex
     void Print(unsigned dim = -1)
     {
         printf("V%02d", arrLcl);
-        for (unsigned i = 0; i < ((dim == -1) ? rank : dim); ++i)
+        for (unsigned i = 0; i < ((dim == (unsigned)-1) ? rank : dim); ++i)
         {
             printf("[V%02d]", indLcls.GetRef(i));
         }

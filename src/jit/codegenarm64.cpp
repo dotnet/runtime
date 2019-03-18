@@ -2198,7 +2198,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         {
             regCnt = tree->ExtractTempReg();
         }
-        genSetRegToIcon(regCnt, amount, ((int)amount == amount) ? TYP_INT : TYP_LONG);
+        genSetRegToIcon(regCnt, amount, ((unsigned int)amount == amount) ? TYP_INT : TYP_LONG);
     }
 
     if (compiler->info.compInitMem)
@@ -2484,7 +2484,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
     }
 
     assert(dstAddr->isUsedFromReg());
-    assert(initVal->isUsedFromReg() && !initVal->IsIntegralConst(0) || initVal->IsIntegralConst(0));
+    assert((initVal->isUsedFromReg() && !initVal->IsIntegralConst(0)) || initVal->IsIntegralConst(0));
     assert(size != 0);
     assert(size <= INITBLK_UNROLL_LIMIT);
 
