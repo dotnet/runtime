@@ -86,3 +86,9 @@
 -nomethod *ConditionalWeakTableTests*
 -nomethod *IsCollectibleTests*
 -nomethod *ExitCodeTests*
+
+-nomethod System.Tests.GCTests.Collect_CallsFinalizer
+-nomethod System.Tests.GCTests.KeepAlive
+-nomethod System.Tests.GCTests.KeepAlive_Null
+-nomethod System.Tests.LazyTests.Value_Invalid
+-nomethod System.Tests.LazyTests.Value_ThrownException_DoesntCreateValue
