@@ -1537,10 +1537,10 @@ size_t GCInfo::gcInfoBlockHdrSave(
     header->prologSize = static_cast<unsigned char>(prologSize);
     assert(FitsIn<unsigned char>(epilogSize));
     header->epilogSize  = static_cast<unsigned char>(epilogSize);
-    header->epilogCount = compiler->getEmitter()->emitGetEpilogCnt();
-    if (header->epilogCount != compiler->getEmitter()->emitGetEpilogCnt())
+    header->epilogCount = compiler->GetEmitter()->emitGetEpilogCnt();
+    if (header->epilogCount != compiler->GetEmitter()->emitGetEpilogCnt())
         IMPL_LIMITATION("emitGetEpilogCnt() does not fit in InfoHdr::epilogCount");
-    header->epilogAtEnd = compiler->getEmitter()->emitHasEpilogEnd();
+    header->epilogAtEnd = compiler->GetEmitter()->emitHasEpilogEnd();
 
     if (compiler->codeGen->regSet.rsRegsModified(RBM_EDI))
         header->ediSaved = 1;
@@ -1612,11 +1612,11 @@ size_t GCInfo::gcInfoBlockHdrSave(
     if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
     {
         assert(compiler->syncStartEmitCookie != NULL);
-        header->syncStartOffset = compiler->getEmitter()->emitCodeOffset(compiler->syncStartEmitCookie, 0);
+        header->syncStartOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncStartEmitCookie, 0);
         assert(header->syncStartOffset != INVALID_SYNC_OFFSET);
 
         assert(compiler->syncEndEmitCookie != NULL);
-        header->syncEndOffset = compiler->getEmitter()->emitCodeOffset(compiler->syncEndEmitCookie, 0);
+        header->syncEndOffset = compiler->GetEmitter()->emitCodeOffset(compiler->syncEndEmitCookie, 0);
         assert(header->syncEndOffset != INVALID_SYNC_OFFSET);
 
         assert(header->syncStartOffset < header->syncEndOffset);
@@ -1745,7 +1745,7 @@ size_t GCInfo::gcInfoBlockHdrSave(
             gcEpilogTable      = mask ? dest : NULL;
             gcEpilogPrevOffset = 0;
 
-            size_t sz = compiler->getEmitter()->emitGenEpilogLst(gcRecordEpilog, this);
+            size_t sz = compiler->GetEmitter()->emitGenEpilogLst(gcRecordEpilog, this);
 
             /* Add the size of the epilog table to the total size */
 
@@ -3079,7 +3079,7 @@ size_t GCInfo::gcMakeRegPtrTable(BYTE* dest, int mask, const InfoHdr& header, un
 
         regPtrDsc*       genRegPtrTemp;
         regNumber        thisRegNum = regNumber(0);
-        PendingArgsStack pasStk(compiler->getEmitter()->emitMaxStackDepth, compiler);
+        PendingArgsStack pasStk(compiler->GetEmitter()->emitMaxStackDepth, compiler);
 
         /* Walk the list of pointer register/argument entries */
 
@@ -4369,7 +4369,7 @@ void GCInfo::gcMakeRegPtrTable(
             // Currently just prologs and epilogs.
 
             InterruptibleRangeReporter reporter(prologSize, gcInfoEncoderWithLog);
-            compiler->getEmitter()->emitGenNoGCLst(reporter);
+            compiler->GetEmitter()->emitGenNoGCLst(reporter);
             prologSize = reporter.prevStart;
 
             // Report any remainder
