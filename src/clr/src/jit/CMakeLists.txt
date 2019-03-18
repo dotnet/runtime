@@ -4,6 +4,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories("./jitstd")
 include_directories("../inc")
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  add_compile_options(-fpermissive)
+  add_compile_options(-Wno-error)
+endif()
+
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_PLATFORM_UNIX))
   add_definitions(-DFEATURE_SIMD)
   add_definitions(-DFEATURE_HW_INTRINSICS)
