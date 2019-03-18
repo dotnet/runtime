@@ -3885,6 +3885,14 @@ return_null:
 }
 
 int
+ves_icall_System_Enum_InternalGetCorElementType (MonoObjectHandle this_handle, MonoError *error)
+{
+	MonoClass *klass = MONO_HANDLE_GETVAL (this_handle, vtable)->klass;
+
+	return (int)m_class_get_byval_arg (m_class_get_element_class (klass))->type;
+}
+
+int
 ves_icall_System_Enum_compare_value_to (MonoObjectHandle enumHandle, MonoObjectHandle otherHandle, MonoError *error)
 {
 	if (MONO_HANDLE_IS_NULL (otherHandle))
