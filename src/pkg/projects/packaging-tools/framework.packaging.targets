@@ -9,10 +9,12 @@
   <Target Name="GenerateInstallers"
           DependsOnTargets="
             GenerateDeb;
-            GenerateRpm" />
+            GenerateRpm;
+            GenerateMsi" />
 
-  <Target Name="GenerateDeb" DependsOnTargets="TestDebuild;CreateDeb" />
-  <Target Name="GenerateRpm" DependsOnTargets="TestFPMTool;CreateRpm" />
+  <Target Name="GenerateDeb" DependsOnTargets="TestDebuild;CreateDeb" Condition="'$(BuildDebPackage)' == 'true'"/>
+  <Target Name="GenerateRpm" DependsOnTargets="TestFPMTool;CreateRpm" Condition="'$(BuildRpmPackage)' == 'true'"/>
+  <Target Name="GenerateMsi" DependsOnTargets="CreateMsi" Condition="'$(GenerateMSI)' == 'true'"/>
 
   <!--
     Create Debian package.
@@ -22,7 +24,7 @@
             InitializeDotnetDebTool;
             CreateInstallerLayout;
             GetDebInstallerJsonProperties"
-          Condition="'$(BuildDebPackage)' == 'true' AND '$(DebuildPresent)' == 'true'">
+          Condition="'$(DebuildPresent)' == 'true'">
     <PropertyGroup>
       <ConfigJsonFile>$(LayoutDirectory)debian_config.json</ConfigJsonFile>
       <DebIntermediatesDir>$(InstallerIntermediatesDir)out-deb</DebIntermediatesDir>
@@ -71,7 +73,7 @@
           DependsOnTargets="
             CreateInstallerLayout;
             GetRpmInstallerJsonProperties"
-          Condition="'$(BuildRpmPackage)' == 'true' AND '$(FPMPresent)' == 'true'">
+          Condition="'$(FPMPresent)' == 'true'">
     <PropertyGroup>
       <ConfigJsonFile>$(LayoutDirectory)rpm_config.json</ConfigJsonFile>
       <RpmIntermediatesDir>$(InstallerIntermediatesDir)out-rpm</RpmIntermediatesDir>
@@ -129,6 +131,100 @@
   </Target>
 
   <!--
+    Create MSI installer, using WiX tools.
+  -->
+  <Target Name="CreateMsi"
+          DependsOnTargets="RunLightLinker">
+    <Message Text="Created '$(InstallerFile)'" Importance="High" />
+  </Target>
+
+  <!--
+    If UpgradeCode isn't manually set, generate based on installer full path. Not suitable for
+    bundles.
+  -->
+  <Target Name="GetUpgradeCode"
+          Condition="'$(UpgradeCode)' == ''">
+    <GenerateGuidFromName Name="$(InstallerFile)">
+      <Output TaskParameter="GeneratedGuid" PropertyName="UpgradeCode" />
+    </GenerateGuidFromName>
+  </Target>
+
+  <Target Name="RunHeatHarvester">
+    <PropertyGroup>
+      <InstallFilesWixSourceFile>$(WixObjDir)install-files.wxs</InstallFilesWixSourceFile>
+      <InstallFilesWixObjFile>$(WixObjDir)install-files.wixobj</InstallFilesWixObjFile>
+
+      <_wixArgs></_wixArgs>
+      <_wixArgs>$(_wixArgs) dir "$(PackLayoutDir)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -nologo</_wixArgs>
+      <_wixArgs>$(_wixArgs) -template fragment</_wixArgs>
+      <_wixArgs>$(_wixArgs) -sreg</_wixArgs>
+      <_wixArgs>$(_wixArgs) -gg</_wixArgs>
+      <_wixArgs>$(_wixArgs) -var var.TargetingPackSrc</_wixArgs>
+      <_wixArgs>$(_wixArgs) -cg InstallFiles</_wixArgs>
+      <_wixArgs>$(_wixArgs) -srd</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dr DOTNETHOME</_wixArgs>
+      <_wixArgs>$(_wixArgs) -out $(InstallFilesWixSourceFile)</_wixArgs>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="Heat '$(MSBuildProjectName)'" />
+    <Exec Command="heat.exe $(_wixArgs)" WorkingDirectory="$(WixToolsDir)" />
+  </Target>
+
+  <Target Name="RunCandleCompiler"
+          DependsOnTargets="
+            GetUpgradeCode;
+            GenerateMsiVersionString">
+    <PropertyGroup>
+      <_wixArgs></_wixArgs>
+      <_wixArgs>$(_wixArgs) -nologo</_wixArgs>
+      <_wixArgs>$(_wixArgs) -ext WixDependencyExtension.dll</_wixArgs>
+      <_wixArgs>$(_wixArgs) -arch $(MsiArch)</_wixArgs>
+
+      <_wixArgs>$(_wixArgs) -dTargetingPackSrc="$(PackLayoutDir)" </_wixArgs>
+      <_wixArgs>$(_wixArgs) -dMicrosoftEula="$(MicrosoftEulaFile)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dProductMoniker="$(TargetingPackBrandName)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dBuildVersion="$(MsiVersionString)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dNugetVersion="$(SharedFrameworkNugetVersion)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dTargetArchitecture="$(TargetArchitecture)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dUpgradeCode="$(UpgradeCode)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dDependencyKeyName="$(InstallerName.Replace('-', '_'))"</_wixArgs>
+
+      <_wixArgs>$(_wixArgs) "$(MSBuildThisFileDirectory)windows/targetingpack.wxs"</_wixArgs>
+      <_wixArgs>$(_wixArgs) "$(MSBuildThisFileDirectory)windows/provider.wxs"</_wixArgs>
+      <_wixArgs>$(_wixArgs) "$(InstallFilesWixSourceFile)"</_wixArgs>
+
+      <_wixArgs>$(_wixArgs) -out "$(WixObjDir)"</_wixArgs>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="Candle '$(MSBuildProjectName)'" />
+    <Exec Command="candle.exe $(_wixArgs)" WorkingDirectory="$(WixToolsDir)" />
+  </Target>
+
+  <Target Name="RunLightLinker"
+          DependsOnTargets="
+            RunHeatHarvester;
+            RunCandleCompiler">
+    <PropertyGroup>
+      <_wixArgs></_wixArgs>
+      <_wixArgs>$(_wixArgs) -nologo</_wixArgs>
+      <_wixArgs>$(_wixArgs) -ext WixUIExtension.dll</_wixArgs>
+      <_wixArgs>$(_wixArgs) -ext WixDependencyExtension.dll</_wixArgs>
+      <_wixArgs>$(_wixArgs) -ext WixUtilExtension.dll</_wixArgs>
+      <_wixArgs>$(_wixArgs) -cultures:en-us</_wixArgs>
+
+      <_wixArgs>$(_wixArgs) "$(WixObjDir)targetingpack.wixobj"</_wixArgs>
+      <_wixArgs>$(_wixArgs) "$(WixObjDir)provider.wixobj"</_wixArgs>
+      <_wixArgs>$(_wixArgs) "$(InstallFilesWixObjFile)"</_wixArgs>
+
+      <_wixArgs>$(_wixArgs) -out $(InstallerFile)</_wixArgs>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="Light '$(MSBuildProjectName)'" />
+    <Exec Command="light.exe $(_wixArgs)" WorkingDirectory="$(WixToolsDir)" />
+  </Target>
+
+  <!--
     Create installer layout. Used for RPM or Debian package creation.
   -->
   <Target Name="CreateInstallerLayout"
@@ -136,7 +232,7 @@
 
   <Target Name="CopyFilesToLayout">
     <PropertyGroup>
-      <LayoutDirectory>$(InstallerIntermediatesDir)/debianLayoutDirectory/</LayoutDirectory>
+      <LayoutDirectory>$(InstallerIntermediatesDir)/layoutDirectory/</LayoutDirectory>
       <LayoutAbsolute>$(LayoutDirectory)$</LayoutAbsolute>
       <LayoutPackageRoot>$(LayoutDirectory)package_root</LayoutPackageRoot>
       <LayoutSamples>$(LayoutDirectory)samples</LayoutSamples>
@@ -239,6 +335,12 @@
   <Target Name="CreateFrameworkPackLayout"
           AfterTargets="CreatePackage"
           Condition="'$(FrameworkPackType)' != ''">
+    <!--
+      Clean up existing layout. Otherwise, unclean dev builds can lay out multiple versions side by
+      side in the layout that all get packed into installers, causing confusion.
+    -->
+    <RemoveDir Directories="$(PackLayoutDir)" />
+
     <PropertyGroup>
       <TargetingPackNupkgFile>$(PackageOutputPath)$(Id).$(PackageVersion).nupkg</TargetingPackNupkgFile>
     </PropertyGroup>

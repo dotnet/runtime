@@ -1,54 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 <Import Project='package.props' />
-    
-    <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
-    <UsingTask TaskName="GenerateGuidFromName" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
-    <UsingTask TaskName="ZipFileExtractToDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
-
-    <Target Name="GenerateMsiVersionString">
-      <GenerateMsiVersion
-        Major="$(MajorVersion)"
-        Minor="$(MinorVersion)"
-        Patch="$(PatchVersion)"
-        BuildNumberMajor="$(BuildNumberMajor)"
-        BuildNumberMinor="$(BuildNumberMajor)">
-        <Output TaskParameter="MsiVersion" PropertyName="MsiVersionString" />
-      </GenerateMsiVersion>
-    </Target>
 
     <Target Name="GenerateMsis"
-            DependsOnTargets="GenerateMsiVersionString"
+            DependsOnTargets="AcquireWix;GenerateMsiVersionString"
             Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
-      
-      <PropertyGroup>
-        <WixFilename>wix.$(WixVersion).zip</WixFilename>
-      </PropertyGroup>
-
-      <Exec Command="powershell -NoProfile -NoLogo $(GetWixScript) -WixFilename $(WixFilename) -OutputDir $(WixToolsDir)" />
-      
-      <ItemGroup>
-        <_filelist Include="$(WixToolsDir)\**" />
-      </ItemGroup>
-
-      <Message Importance="High" Text="Contents of $(WixToolsDir): @(_filelist)" />
-   
-      <Message Importance="High" Text="Extracting Wix tools from $(WixToolsDir)\$(WixFilename)..." />
-      <ZipFileExtractToDirectory Condition="!Exists('$(WixToolsDir)\candle.exe')"
-                                 SourceArchive="$(WixToolsDir)\$(WixFilename)"
-                                 DestinationDirectory="$(WixToolsDir)"
-                                 OverwriteDestination="false" />
-
       <GenerateGuidFromName Name="$(SharedHostInstallerFile)">
         <Output TaskParameter="GeneratedGuid" PropertyName="SharedHostUpgradeCode" />
       </GenerateGuidFromName>
 
       <GenerateGuidFromName Name="$(HostFxrInstallerFile)">
         <Output TaskParameter="GeneratedGuid" PropertyName="HostFxrUpgradeCode" />
-      </GenerateGuidFromName>
-
-      <GenerateGuidFromName Name="$(TargetingPackInstallerFile)">
-        <Output TaskParameter="GeneratedGuid" PropertyName="TargetingPackUpgradeCode" />
       </GenerateGuidFromName>
 
       <ItemGroup>
@@ -63,12 +25,6 @@
             <BrandName>$(HostFxrBrandName)</BrandName>
             <InstallerName>$(HostFxrInstallerFile)</InstallerName>
             <UpgradeCode>$(HostFxrUpgradeCode)</UpgradeCode>
-        </WixOutputs>
-        <WixOutputs Include="$(WixObjRoot)targetingpack">
-            <InputDir>$(TargetingPackPublishRoot)</InputDir>
-            <BrandName>$(TargetingPackBrandName)</BrandName>
-            <InstallerName>$(TargetingPackInstallerFile)</InstallerName>
-            <UpgradeCode>$(TargetingPackUpgradeCode)</UpgradeCode>
         </WixOutputs>
         <!-- shared framework has extra arguments so it needs to be in a separate group -->
         <WixOutputs2 Include="$(WixObjRoot)sharedframework">
@@ -97,7 +53,7 @@
   </Target>
 
   <Target Name="GenerateBundles"
-          DependsOnTargets="GetBundleDisplayVersion;GenerateMsiVersionString"
+          DependsOnTargets="AcquireWix;GetBundleDisplayVersion;GenerateMsiVersionString"
           Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
      <PropertyGroup>
         <SharedFxBundleScript>$(WindowsScriptRoot)sharedframework\generatebundle.ps1</SharedFxBundleScript>

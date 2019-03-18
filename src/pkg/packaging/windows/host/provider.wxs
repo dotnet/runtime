@@ -2,7 +2,7 @@
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:dep="http://schemas.microsoft.com/wix/DependencyExtension">
   <?include "Variables.wxi" ?>
   <Fragment>
-    <Component Id="$(var.DependencyKeyId)" Directory="TARGETDIR" Win64="no" Guid="82516259-FF21-446E-A432-1FFCA5A02296">
+    <Component Id="$(var.DependencyKeyId)" Directory="TARGETDIR" Win64="no">
       <dep:Provides Key="$(var.DependencyKey)" />
     </Component>
   </Fragment>
