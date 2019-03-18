@@ -130,19 +130,6 @@ void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, E
     InvokeCallback(pFilterData);
 }
 
-EventPipeEvent* EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, BYTE *pMetadata, unsigned int metadataLength)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    return AddEvent(eventID, keywords, eventVersion, level, true /* needStack */, pMetadata, metadataLength);
-}
-
 EventPipeEvent* EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata, unsigned int metadataLength)
 {
     CONTRACTL

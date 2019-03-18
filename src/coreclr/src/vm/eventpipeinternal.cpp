@@ -110,7 +110,7 @@ INT_PTR QCALLTYPE EventPipeInternal::DefineEvent(
 
     _ASSERTE(provHandle != NULL);
     EventPipeProvider *pProvider = reinterpret_cast<EventPipeProvider *>(provHandle);
-    pEvent = pProvider->AddEvent(eventID, keywords, eventVersion, (EventPipeEventLevel)level, (BYTE *)pMetadata, metadataLength);
+    pEvent = pProvider->AddEvent(eventID, keywords, eventVersion, (EventPipeEventLevel)level, /* needStack = */ true, (BYTE *)pMetadata, metadataLength);
     _ASSERTE(pEvent != NULL);
 
     END_QCALL;
