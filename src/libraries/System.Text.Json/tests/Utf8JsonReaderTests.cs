@@ -1965,6 +1965,86 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(JsonTokenWithExtraValue))]
+        public static void ReadJsonTokenWithExtraValue(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: false);
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: true);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonTokenWithExtraValueAndComments))]
+        public static void ReadJsonTokenWithExtraValueAndComments(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                if (commentHandling == JsonCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: false);
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: true);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonTokenWithExtraValueAndComments))]
+        public static void ReadJsonTokenWithExtraValueAndCommentsAppended(string jsonString)
+        {
+            jsonString = "  /* comment */  /* comment */  " + jsonString;
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                if (commentHandling == JsonCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: false, commentsAppended: true);
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: true, commentsAppended: true);
+            }
+        }
+
+        private static void TestReadTokenWithExtra(byte[] utf8, JsonCommentHandling commentHandling, bool isFinalBlock, bool commentsAppended = false)
+        {
+            JsonReaderState state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+            Utf8JsonReader reader = new Utf8JsonReader(utf8, isFinalBlock, state);
+
+            if (commentsAppended && commentHandling == JsonCommentHandling.Allow)
+            {
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.Comment, reader.TokenType);
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.Comment, reader.TokenType);
+            }
+
+            Assert.True(reader.Read());
+            if (reader.TokenType == JsonTokenType.StartArray || reader.TokenType == JsonTokenType.StartObject)
+            {
+                Assert.True(reader.Read());
+                Assert.Contains(reader.TokenType, new[] { JsonTokenType.EndArray, JsonTokenType.EndObject });
+            }
+
+            JsonTestHelper.AssertThrows<JsonReaderException>(reader, (jsonReader) =>
+            {
+                jsonReader.Read();
+                if (commentHandling == JsonCommentHandling.Allow && jsonReader.TokenType == JsonTokenType.Comment)
+                {
+                    jsonReader.Read();
+                }
+            });
+        }
+
         public static IEnumerable<object[]> TestCases
         {
             get
@@ -2097,6 +2177,95 @@ namespace System.Text.Json.Tests
                     new object[] {"  null  ", "null"},
                     new object[] {"  true  ", "true"},
                     new object[] {"  false  ", "false"},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> JsonTokenWithExtraValue
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"  true  5 "},
+                    new object[] {"  false  5 "},
+                    new object[] {"  null  5 "},
+                    new object[] {"  5  5 "},
+                    new object[] {"  5.1234e-4  5 "},
+                    new object[] {"  \"hello\"  5 "},
+                    new object[] {"  \"hello\"  \"hello\" "},
+                    new object[] {"  [  ]  5 "},
+                    new object[] {"  [  ]  [] "},
+                    new object[] {"  [  ]  {} "},
+                    new object[] {"  { }  5 "},
+                    new object[] {"  { }  [] "},
+                    new object[] {"  { }  {} "},
+                    new object[] {"  [  ]5 "},
+                    new object[] {"  [  ][] "},
+                    new object[] {"  [  ]{} "},
+                    new object[] {"  { }5 "},
+                    new object[] {"  { }[] "},
+                    new object[] {"  { }{} "},
+                    new object[] {"  { }  5.1234e-4"},
+                    new object[] {"  { }  null "},
+                    new object[] {"  { }  false "},
+                    new object[] {"  { }  true "},
+                    new object[] {"  { }  \"hello\" " },
+                    new object[] {"  { },  5 "},
+                    new object[] {"  { },  [] "},
+                    new object[] {"  { },  {} "},
+                    new object[] {"  { },  5.1234e-4"},
+                    new object[] {"  { },  null "},
+                    new object[] {"  { },  false "},
+                    new object[] {"  { },  true "},
+                    new object[] {"  { },  \"hello\" " },
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> JsonTokenWithExtraValueAndComments
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"  true  /* comment */ 5 "},
+                    new object[] {"  false  /* comment */ 5 "},
+                    new object[] {"  null  /* comment */ 5 "},
+                    new object[] {"  5  /* comment */ 5 "},
+                    new object[] {"  5.1234e-4  /* comment */ 5 "},
+                    new object[] {"  \"hello\"  /* comment */ 5 "},
+                    new object[] {"  \"hello\"  /* comment */ \"hello\" "},
+                    new object[] {"  \"hello\"  // comment \n \"hello\" "},
+                    new object[] {"  [  ]  /* comment */ 5 "},
+                    new object[] {"  [  ]  /* comment */ [ ]"},
+                    new object[] {"  [  ]  /* comment */ { }"},
+                    new object[] {"  [  ]  // comment \n 5 "},
+                    new object[] {"  { }  /* comment */ 5 "},
+                    new object[] {"  { }  /* comment */ [] "},
+                    new object[] {"  { }  /* comment */ {} "},
+                    new object[] {"  [  ]/* comment */5 "},
+                    new object[] {"  [  ]/* comment */[ ]"},
+                    new object[] {"  [  ]/* comment */{ }"},
+                    new object[] {"  [  ]// comment \n5 "},
+                    new object[] {"  { }/* comment */5 "},
+                    new object[] {"  { }/* comment */[] "},
+                    new object[] {"  { }/* comment */{} "},
+                    new object[] {"  { }  /* comment */ 5.1234e-4"},
+                    new object[] {"  { }  /* comment */ null "},
+                    new object[] {"  { }  /* comment */ false "},
+                    new object[] {"  { }  /* comment */ true "},
+                    new object[] {"  { }  /* comment */ \"hello\" "},
+                    new object[] {"  { }  // comment \n \"hello\" "},
+                    new object[] {"  { },  /* comment */ 5 "},
+                    new object[] {"  { },  /* comment */ [] "},
+                    new object[] {"  { },  /* comment */ {} "},
+                    new object[] {"  { },  /* comment */ 5.1234e-4"},
+                    new object[] {"  { },  /* comment */ null "},
+                    new object[] {"  { },  /* comment */ false "},
+                    new object[] {"  { },  /* comment */ true "},
+                    new object[] {"  { },  /* comment */ \"hello\" "},
+                    new object[] {"  { },  // comment \n \"hello\" "},
                 };
             }
         }
