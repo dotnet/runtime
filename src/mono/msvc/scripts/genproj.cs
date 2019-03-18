@@ -1282,14 +1282,6 @@ public class MsbuildGenerator {
 		if (fx_version == "4.5")
 			fx_version = "4.6.2";
 
-		// The VS2017 signing system fails to sign using this key for some reason, so for now,
-		//  just disable code signing for the nunit assemblies. It's not important.
-		// I'd rather fix this by updating the makefiles but it seems to be impossible to disable
-		//  code signing in our make system...
-
-		if (StrongNameKeyFile?.Contains("nunit.snk") ?? false)
-			StrongNameKeyFile = null;
-
 		//
 		// Replace the template values
 		//
@@ -1500,11 +1492,6 @@ public static class Driver {
 
 			// The next ones are to make debugging easier for now
 			if (profile == "basic")
-				continue;
-
-			// For now -- problem is, our resolver currently only considers the assembly name, and we ahve
-			// conflicing 2.0 and 2.4 versions so for now, we just skip the nunit20 versions
-			if (dir.Contains ("nunit20"))
 				continue;
 			
 			if (library.Contains ("tests") && !withTests)
