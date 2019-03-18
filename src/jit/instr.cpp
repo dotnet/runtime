@@ -84,7 +84,7 @@ void __cdecl CodeGen::instDisp(instruction ins, bool noNL, const char* fmt, ...)
     {
         /* Display the instruction offset within the emit block */
 
-        //      printf("[%08X:%04X]", getEmitter().emitCodeCurBlock(), getEmitter().emitCodeOffsInBlock());
+        //      printf("[%08X:%04X]", GetEmitter().emitCodeCurBlock(), GetEmitter().emitCodeOffsInBlock());
 
         /* Display the FP stack depth (before the instruction is executed) */
 
@@ -191,16 +191,16 @@ const char* CodeGen::genSizeStr(emitAttr attr)
 void CodeGen::instGen(instruction ins)
 {
 
-    getEmitter()->emitIns(ins);
+    GetEmitter()->emitIns(ins);
 
 #ifdef _TARGET_XARCH_
     // A workaround necessitated by limitations of emitter
     // if we are scheduled to insert a nop here, we have to delay it
     // hopefully we have not missed any other prefix instructions or places
     // they could be inserted
-    if (ins == INS_lock && getEmitter()->emitNextNop == 0)
+    if (ins == INS_lock && GetEmitter()->emitNextNop == 0)
     {
-        getEmitter()->emitNextNop = 1;
+        GetEmitter()->emitNextNop = 1;
     }
 #endif
 }
@@ -231,7 +231,7 @@ bool CodeGenInterface::instIsFP(instruction ins)
 void CodeGen::instNop(unsigned size)
 {
     assert(size <= 15);
-    getEmitter()->emitIns_Nop(size);
+    GetEmitter()->emitIns_Nop(size);
 }
 #endif
 
@@ -258,7 +258,7 @@ void CodeGen::inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock)
 #endif
 #endif // !FEATURE_FIXED_OUT_ARGS
 
-    getEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
+    GetEmitter()->emitIns_J(emitter::emitJumpKindToIns(jmp), tgtBlock);
 }
 
 /*****************************************************************************
@@ -329,7 +329,7 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
     assert(genRegMask(reg) & RBM_BYTE_REGS);
 
     // These instructions only write the low byte of 'reg'
-    getEmitter()->emitIns_R(ins, EA_1BYTE, reg);
+    GetEmitter()->emitIns_R(ins, EA_1BYTE, reg);
 #elif defined(_TARGET_ARM64_)
     insCond cond;
     /* Convert the condition to an insCond value */
@@ -385,7 +385,7 @@ void CodeGen::inst_SET(emitJumpKind condition, regNumber reg)
             NO_WAY("unexpected condition type");
             return;
     }
-    getEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, reg, cond);
+    GetEmitter()->emitIns_R_COND(INS_cset, EA_8BYTE, reg, cond);
 #else
     NYI("inst_SET");
 #endif
@@ -403,7 +403,7 @@ void CodeGen::inst_RV(instruction ins, regNumber reg, var_types type, emitAttr s
         size = emitActualTypeSize(type);
     }
 
-    getEmitter()->emitIns_R(ins, size, reg);
+    GetEmitter()->emitIns_R(ins, size, reg);
 }
 
 /*****************************************************************************
@@ -424,9 +424,9 @@ void CodeGen::inst_RV_RV(instruction ins,
     }
 
 #ifdef _TARGET_ARM_
-    getEmitter()->emitIns_R_R(ins, size, reg1, reg2, flags);
+    GetEmitter()->emitIns_R_R(ins, size, reg1, reg2, flags);
 #else
-    getEmitter()->emitIns_R_R(ins, size, reg1, reg2);
+    GetEmitter()->emitIns_R_R(ins, size, reg1, reg2);
 #endif
 }
 
@@ -443,9 +443,9 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
                             insFlags    flags /* = INS_FLAGS_DONT_CARE */)
 {
 #ifdef _TARGET_ARM_
-    getEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
+    GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3, flags);
 #elif defined(_TARGET_XARCH_)
-    getEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
+    GetEmitter()->emitIns_R_R_R(ins, size, reg1, reg2, reg3);
 #else
     NYI("inst_RV_RV_RV");
 #endif
@@ -457,7 +457,7 @@ void CodeGen::inst_RV_RV_RV(instruction ins,
 
 void CodeGen::inst_IV(instruction ins, int val)
 {
-    getEmitter()->emitIns_I(ins, EA_PTRSIZE, val);
+    GetEmitter()->emitIns_I(ins, EA_PTRSIZE, val);
 }
 
 /*****************************************************************************
@@ -468,7 +468,7 @@ void CodeGen::inst_IV(instruction ins, int val)
 
 void CodeGen::inst_IV_handle(instruction ins, int val)
 {
-    getEmitter()->emitIns_I(ins, EA_HANDLE_CNS_RELOC, val);
+    GetEmitter()->emitIns_I(ins, EA_HANDLE_CNS_RELOC, val);
 }
 
 /*****************************************************************************
@@ -482,7 +482,7 @@ void CodeGen::inst_set_SV_var(GenTree* tree)
     assert(tree && (tree->gtOper == GT_LCL_VAR || tree->gtOper == GT_LCL_VAR_ADDR || tree->gtOper == GT_STORE_LCL_VAR));
     assert(tree->gtLclVarCommon.gtLclNum < compiler->lvaCount);
 
-    getEmitter()->emitVarRefOffs = tree->gtLclVar.gtLclILoffs;
+    GetEmitter()->emitVarRefOffs = tree->gtLclVar.gtLclILoffs;
 
 #endif // DEBUG
 }
@@ -502,7 +502,7 @@ void CodeGen::inst_RV_IV(
 #ifdef _TARGET_ARM_
     if (arm_Valid_Imm_For_Instr(ins, val, flags))
     {
-        getEmitter()->emitIns_R_I(ins, size, reg, val, flags);
+        GetEmitter()->emitIns_R_I(ins, size, reg, val, flags);
     }
     else if (ins == INS_mov)
     {
@@ -519,7 +519,7 @@ void CodeGen::inst_RV_IV(
     assert(ins != INS_cmp);
     assert(ins != INS_tst);
     assert(ins != INS_mov);
-    getEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
+    GetEmitter()->emitIns_R_R_I(ins, size, reg, reg, val);
 #else // !_TARGET_ARM_
 #ifdef _TARGET_AMD64_
     // Instead of an 8-byte immediate load, a 4-byte immediate will do fine
@@ -527,7 +527,7 @@ void CodeGen::inst_RV_IV(
     if (size == EA_8BYTE && ins == INS_mov && ((val & 0xFFFFFFFF00000000LL) == 0))
     {
         size = EA_4BYTE;
-        getEmitter()->emitIns_R_I(ins, size, reg, val);
+        GetEmitter()->emitIns_R_I(ins, size, reg, val);
     }
     else if (EA_SIZE(size) == EA_8BYTE && ins != INS_mov && (((int)val != val) || EA_IS_CNS_RELOC(size)))
     {
@@ -536,7 +536,7 @@ void CodeGen::inst_RV_IV(
     else
 #endif // _TARGET_AMD64_
     {
-        getEmitter()->emitIns_R_I(ins, size, reg, val);
+        GetEmitter()->emitIns_R_I(ins, size, reg, val);
     }
 #endif // !_TARGET_ARM_
 }
@@ -593,11 +593,11 @@ AGAIN:
 
             if (shfv)
             {
-                getEmitter()->emitIns_S_I(ins, size, varNum, offs, shfv);
+                GetEmitter()->emitIns_S_I(ins, size, varNum, offs, shfv);
             }
             else
             {
-                getEmitter()->emitIns_S(ins, size, varNum, offs);
+                GetEmitter()->emitIns_S(ins, size, varNum, offs);
             }
 
             return;
@@ -611,11 +611,11 @@ AGAIN:
 
             if (shfv)
             {
-                getEmitter()->emitIns_C_I(ins, size, tree->gtClsVar.gtClsVarHnd, offs, shfv);
+                GetEmitter()->emitIns_C_I(ins, size, tree->gtClsVar.gtClsVarHnd, offs, shfv);
             }
             else
             {
-                getEmitter()->emitIns_C(ins, size, tree->gtClsVar.gtClsVarHnd, offs);
+                GetEmitter()->emitIns_C(ins, size, tree->gtClsVar.gtClsVarHnd, offs);
             }
             return;
 
@@ -700,15 +700,15 @@ AGAIN:
             assert(varNum < compiler->lvaCount);
 
 #if CPU_LOAD_STORE_ARCH
-            if (!getEmitter()->emitInsIsStore(ins))
+            if (!GetEmitter()->emitInsIsStore(ins))
             {
                 // TODO-LdStArch-Bug: Should regTmp be a dst on the node or an internal reg?
                 // Either way, it is not currently being handled by Lowering.
                 regNumber regTmp = tree->gtRegNum;
                 assert(regTmp != REG_NA);
-                getEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), size, regTmp, varNum, offs);
-                getEmitter()->emitIns_R_R(ins, size, regTmp, reg, flags);
-                getEmitter()->emitIns_S_R(ins_Store(tree->TypeGet()), size, regTmp, varNum, offs);
+                GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), size, regTmp, varNum, offs);
+                GetEmitter()->emitIns_R_R(ins, size, regTmp, reg, flags);
+                GetEmitter()->emitIns_S_R(ins_Store(tree->TypeGet()), size, regTmp, varNum, offs);
 
                 regSet.verifyRegUsed(regTmp);
             }
@@ -717,11 +717,11 @@ AGAIN:
             {
                 // ins is a Store instruction
                 //
-                getEmitter()->emitIns_S_R(ins, size, reg, varNum, offs);
+                GetEmitter()->emitIns_S_R(ins, size, reg, varNum, offs);
 #ifdef _TARGET_ARM_
                 // If we need to set the flags then add an extra movs reg,reg instruction
                 if (flags == INS_FLAGS_SET)
-                    getEmitter()->emitIns_R_R(INS_mov, size, reg, reg, INS_FLAGS_SET);
+                    GetEmitter()->emitIns_R_R(INS_mov, size, reg, reg, INS_FLAGS_SET);
 #endif
             }
             return;
@@ -734,14 +734,14 @@ AGAIN:
             assert(!isFloatRegType(tree->gtType) || genTypeSize(tree->gtType) == EA_SIZE_IN_BYTES(size));
 
 #if CPU_LOAD_STORE_ARCH
-            if (!getEmitter()->emitInsIsStore(ins))
+            if (!GetEmitter()->emitInsIsStore(ins))
             {
                 NYI("Store of GT_CLS_VAR not supported for ARM");
             }
             else
 #endif // CPU_LOAD_STORE_ARCH
             {
-                getEmitter()->emitIns_C_R(ins, size, tree->gtClsVar.gtClsVarHnd, reg, offs);
+                GetEmitter()->emitIns_C_R(ins, size, tree->gtClsVar.gtClsVarHnd, reg, offs);
             }
             return;
 
@@ -862,21 +862,21 @@ AGAIN:
                 case INS_ldrsb:
                 case INS_vldr:
                     assert(flags != INS_FLAGS_SET);
-                    getEmitter()->emitIns_R_S(ins, size, reg, varNum, offs);
+                    GetEmitter()->emitIns_R_S(ins, size, reg, varNum, offs);
                     return;
 
                 default:
                     regNumber regTmp;
                     regTmp = tree->gtRegNum;
 
-                    getEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), size, regTmp, varNum, offs);
-                    getEmitter()->emitIns_R_R(ins, size, reg, regTmp, flags);
+                    GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet()), size, regTmp, varNum, offs);
+                    GetEmitter()->emitIns_R_R(ins, size, reg, regTmp, flags);
 
                     regSet.verifyRegUsed(regTmp);
                     return;
             }
 #else  // !_TARGET_ARM_
-            getEmitter()->emitIns_R_S(ins, size, reg, varNum, offs);
+            GetEmitter()->emitIns_R_S(ins, size, reg, varNum, offs);
             return;
 #endif // !_TARGET_ARM_
 
@@ -890,7 +890,7 @@ AGAIN:
 #if CPU_LOAD_STORE_ARCH
             assert(!"GT_CLS_VAR not supported in ARM backend");
 #else  // CPU_LOAD_STORE_ARCH
-            getEmitter()->emitIns_R_C(ins, size, reg, tree->gtClsVar.gtClsVarHnd, offs);
+            GetEmitter()->emitIns_R_C(ins, size, reg, tree->gtClsVar.gtClsVarHnd, offs);
 #endif // CPU_LOAD_STORE_ARCH
             return;
 
@@ -957,7 +957,7 @@ void CodeGen::inst_RV_SH(
     if (val >= 32)
         val &= 0x1f;
 
-    getEmitter()->emitIns_R_I(ins, size, reg, val, flags);
+    GetEmitter()->emitIns_R_I(ins, size, reg, val, flags);
 
 #elif defined(_TARGET_XARCH_)
 
@@ -973,11 +973,11 @@ void CodeGen::inst_RV_SH(
 
     if (val == 1)
     {
-        getEmitter()->emitIns_R(ins, size, reg);
+        GetEmitter()->emitIns_R(ins, size, reg);
     }
     else
     {
-        getEmitter()->emitIns_R_I(ins, size, reg, val);
+        GetEmitter()->emitIns_R_I(ins, size, reg, val);
     }
 
 #else
@@ -1037,7 +1037,7 @@ void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regN
            ins == INS_cmpps || ins == INS_cmppd || ins == INS_dppd || ins == INS_dpps || ins == INS_insertps ||
            ins == INS_roundps || ins == INS_roundss || ins == INS_roundpd || ins == INS_roundsd);
 
-    getEmitter()->emitIns_R_R_I(ins, size, reg1, reg2, ival);
+    GetEmitter()->emitIns_R_R_I(ins, size, reg1, reg2, ival);
 }
 
 #ifdef FEATURE_HW_INTRINSICS
@@ -1059,7 +1059,7 @@ void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regN
 //
 void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival)
 {
-    noway_assert(getEmitter()->emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
+    noway_assert(GetEmitter()->emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
 
     if (rmOp->isContained() || rmOp->isUsedFromSpillTemp())
     {
@@ -1105,7 +1105,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    getEmitter()->emitIns_R_C_I(ins, attr, reg1, addr->gtClsVar.gtClsVarHnd, 0, ival);
+                    GetEmitter()->emitIns_R_C_I(ins, attr, reg1, addr->gtClsVar.gtClsVarHnd, 0, ival);
                     return;
                 }
 
@@ -1119,7 +1119,7 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
                         GenTreeIndir load = indirForm(rmOp->TypeGet(), addr);
                         memIndir          = &load;
                     }
-                    getEmitter()->emitIns_R_A_I(ins, attr, reg1, memIndir, ival);
+                    GetEmitter()->emitIns_R_A_I(ins, attr, reg1, memIndir, ival);
                     return;
                 }
             }
@@ -1157,12 +1157,12 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
         assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
         assert(offset != (unsigned)-1);
 
-        getEmitter()->emitIns_R_S_I(ins, attr, reg1, varNum, offset, ival);
+        GetEmitter()->emitIns_R_S_I(ins, attr, reg1, varNum, offset, ival);
     }
     else
     {
         regNumber rmOpReg = rmOp->gtRegNum;
-        getEmitter()->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpReg, ival);
+        GetEmitter()->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpReg, ival);
     }
 }
 #endif // FEATURE_HW_INTRINSICS
@@ -1183,7 +1183,7 @@ void CodeGen::inst_RV_RR(instruction ins, emitAttr size, regNumber reg1, regNumb
     assert(size != EA_1BYTE || (genRegMask(reg2) & RBM_BYTE_REGS));
 #endif
 
-    getEmitter()->emitIns_R_R(ins, size, reg1, reg2);
+    GetEmitter()->emitIns_R_R(ins, size, reg1, reg2);
 }
 
 /*****************************************************************************
@@ -1193,12 +1193,12 @@ void CodeGen::inst_RV_RR(instruction ins, emitAttr size, regNumber reg1, regNumb
 
 void CodeGen::inst_ST_RV(instruction ins, TempDsc* tmp, unsigned ofs, regNumber reg, var_types type)
 {
-    getEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, tmp->tdTempNum(), ofs);
+    GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, tmp->tdTempNum(), ofs);
 }
 
 void CodeGen::inst_ST_IV(instruction ins, TempDsc* tmp, unsigned ofs, int val, var_types type)
 {
-    getEmitter()->emitIns_S_I(ins, emitActualTypeSize(type), tmp->tdTempNum(), ofs, val);
+    GetEmitter()->emitIns_S_I(ins, emitActualTypeSize(type), tmp->tdTempNum(), ofs, val);
 }
 
 #if FEATURE_FIXED_OUT_ARGS
@@ -1212,14 +1212,14 @@ void CodeGen::inst_SA_RV(instruction ins, unsigned ofs, regNumber reg, var_types
 {
     assert(ofs < compiler->lvaOutgoingArgSpaceSize);
 
-    getEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, compiler->lvaOutgoingArgSpaceVar, ofs);
+    GetEmitter()->emitIns_S_R(ins, emitActualTypeSize(type), reg, compiler->lvaOutgoingArgSpaceVar, ofs);
 }
 
 void CodeGen::inst_SA_IV(instruction ins, unsigned ofs, int val, var_types type)
 {
     assert(ofs < compiler->lvaOutgoingArgSpaceSize);
 
-    getEmitter()->emitIns_S_I(ins, emitActualTypeSize(type), compiler->lvaOutgoingArgSpaceVar, ofs, val);
+    GetEmitter()->emitIns_S_I(ins, emitActualTypeSize(type), compiler->lvaOutgoingArgSpaceVar, ofs, val);
 }
 #endif // FEATURE_FIXED_OUT_ARGS
 
@@ -1258,7 +1258,7 @@ void CodeGen::inst_RV_ST(instruction ins, regNumber reg, TempDsc* tmp, unsigned 
         case INS_ldrsb:
         case INS_lea:
         case INS_vldr:
-            getEmitter()->emitIns_R_S(ins, size, reg, tmp->tdTempNum(), ofs);
+            GetEmitter()->emitIns_R_S(ins, size, reg, tmp->tdTempNum(), ofs);
             break;
 
         default:
@@ -1266,7 +1266,7 @@ void CodeGen::inst_RV_ST(instruction ins, regNumber reg, TempDsc* tmp, unsigned 
             break;
     }
 #else  // !_TARGET_ARM_
-    getEmitter()->emitIns_R_S(ins, size, reg, tmp->tdTempNum(), ofs);
+    GetEmitter()->emitIns_R_S(ins, size, reg, tmp->tdTempNum(), ofs);
 #endif // !_TARGET_ARM_
 }
 
@@ -1293,14 +1293,14 @@ void CodeGen::inst_mov_RV_ST(regNumber reg, GenTree* tree)
 #ifdef _TARGET_XARCH_
 void CodeGen::inst_FS_ST(instruction ins, emitAttr size, TempDsc* tmp, unsigned ofs)
 {
-    getEmitter()->emitIns_S(ins, size, tmp->tdTempNum(), ofs);
+    GetEmitter()->emitIns_S(ins, size, tmp->tdTempNum(), ofs);
 }
 #endif
 
 #ifdef _TARGET_ARM_
 bool CodeGenInterface::validImmForInstr(instruction ins, target_ssize_t imm, insFlags flags)
 {
-    if (getEmitter()->emitInsIsLoadOrStore(ins) && !instIsFP(ins))
+    if (GetEmitter()->emitInsIsLoadOrStore(ins) && !instIsFP(ins))
     {
         return validDispForLdSt(imm, TYP_INT);
     }
@@ -2239,11 +2239,11 @@ void CodeGen::instGen_MemoryBarrier()
 
 #if defined(_TARGET_XARCH_)
     instGen(INS_lock);
-    getEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
+    GetEmitter()->emitIns_I_AR(INS_or, EA_4BYTE, 0, REG_SPBASE, 0);
 #elif defined(_TARGET_ARM_)
-    getEmitter()->emitIns_I(INS_dmb, EA_4BYTE, 0xf);
+    GetEmitter()->emitIns_I(INS_dmb, EA_4BYTE, 0xf);
 #elif defined(_TARGET_ARM64_)
-    getEmitter()->emitIns_BARR(INS_dmb, barrierType);
+    GetEmitter()->emitIns_BARR(INS_dmb, barrierType);
 #else
 #error "Unknown _TARGET_"
 #endif
@@ -2256,9 +2256,9 @@ void CodeGen::instGen_MemoryBarrier()
 void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags)
 {
 #if defined(_TARGET_XARCH_)
-    getEmitter()->emitIns_R_R(INS_xor, size, reg, reg);
+    GetEmitter()->emitIns_R_R(INS_xor, size, reg, reg);
 #elif defined(_TARGET_ARMARCH_)
-    getEmitter()->emitIns_R_I(INS_mov, size, reg, 0 ARM_ARG(flags));
+    GetEmitter()->emitIns_R_I(INS_mov, size, reg, 0 ARM_ARG(flags));
 #else
 #error "Unknown _TARGET_"
 #endif
@@ -2273,9 +2273,9 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
 void CodeGen::instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg)
 {
 #if defined(_TARGET_XARCH_)
-    getEmitter()->emitIns_R_R(INS_test, size, reg, reg);
+    GetEmitter()->emitIns_R_R(INS_test, size, reg, reg);
 #elif defined(_TARGET_ARMARCH_)
-    getEmitter()->emitIns_R_I(INS_cmp, size, reg, 0);
+    GetEmitter()->emitIns_R_I(INS_cmp, size, reg, 0);
 #else
 #error "Unknown _TARGET_"
 #endif
@@ -2289,7 +2289,7 @@ void CodeGen::instGen_Compare_Reg_To_Zero(emitAttr size, regNumber reg)
 void CodeGen::instGen_Compare_Reg_To_Reg(emitAttr size, regNumber reg1, regNumber reg2)
 {
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARMARCH_)
-    getEmitter()->emitIns_R_R(INS_cmp, size, reg1, reg2);
+    GetEmitter()->emitIns_R_R(INS_cmp, size, reg1, reg2);
 #else
 #error "Unknown _TARGET_"
 #endif
@@ -2317,12 +2317,12 @@ void CodeGen::instGen_Compare_Reg_To_Imm(emitAttr size, regNumber reg, target_ss
         else
 #endif // _TARGET_AMD64_
         {
-            getEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
+            GetEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
         }
 #elif defined(_TARGET_ARM_)
         if (arm_Valid_Imm_For_Alu(imm) || arm_Valid_Imm_For_Alu(-imm))
         {
-            getEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
+            GetEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
         }
         else // We need a scratch register
         {
@@ -2331,7 +2331,7 @@ void CodeGen::instGen_Compare_Reg_To_Imm(emitAttr size, regNumber reg, target_ss
 #elif defined(_TARGET_ARM64_)
         if (true) // TODO-ARM64-NYI: arm_Valid_Imm_For_Alu(imm) || arm_Valid_Imm_For_Alu(-imm))
         {
-            getEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
+            GetEmitter()->emitIns_R_I(INS_cmp, size, reg, imm);
         }
         else // We need a scratch register
         {
@@ -2351,7 +2351,7 @@ void CodeGen::instGen_Load_Reg_From_Lcl(var_types srcType, regNumber dstReg, int
 {
     emitAttr size = emitTypeSize(srcType);
 
-    getEmitter()->emitIns_R_S(ins_Load(srcType), size, dstReg, varNum, offs);
+    GetEmitter()->emitIns_R_S(ins_Load(srcType), size, dstReg, varNum, offs);
 }
 
 /*****************************************************************************
@@ -2362,7 +2362,7 @@ void CodeGen::instGen_Store_Reg_Into_Lcl(var_types dstType, regNumber srcReg, in
 {
     emitAttr size = emitTypeSize(dstType);
 
-    getEmitter()->emitIns_S_R(ins_Store(dstType), size, srcReg, varNum, offs);
+    GetEmitter()->emitIns_S_R(ins_Store(dstType), size, srcReg, varNum, offs);
 }
 
 /*****************************************************************************/
