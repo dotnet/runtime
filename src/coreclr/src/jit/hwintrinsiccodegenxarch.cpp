@@ -97,7 +97,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
         regNumber op1Reg = REG_NA;
         regNumber op2Reg = REG_NA;
-        emitter*  emit   = getEmitter();
+        emitter*  emit   = GetEmitter();
 
         assert(numArgs >= 0);
         instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -400,7 +400,7 @@ void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emi
     regNumber targetReg  = node->gtRegNum;
     GenTree*  op1        = node->gtGetOp1();
     GenTree*  op2        = node->gtGetOp2();
-    emitter*  emit       = getEmitter();
+    emitter*  emit       = GetEmitter();
 
     if (op2 != nullptr)
     {
@@ -548,7 +548,7 @@ void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, i
     regNumber targetReg  = node->gtRegNum;
     GenTree*  op1        = node->gtGetOp1();
     emitAttr  simdSize   = EA_ATTR(node->gtSIMDSize);
-    emitter*  emit       = getEmitter();
+    emitter*  emit       = GetEmitter();
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
@@ -601,7 +601,7 @@ void CodeGen::genHWIntrinsic_R_R_RM(GenTreeHWIntrinsic* node, instruction ins, e
 void CodeGen::genHWIntrinsic_R_R_RM(
     GenTreeHWIntrinsic* node, instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, GenTree* op2)
 {
-    emitter* emit = getEmitter();
+    emitter* emit = GetEmitter();
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
@@ -748,7 +748,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
     GenTree*  op1        = node->gtGetOp1();
     GenTree*  op2        = node->gtGetOp2();
     emitAttr  simdSize   = EA_ATTR(node->gtSIMDSize);
-    emitter*  emit       = getEmitter();
+    emitter*  emit       = GetEmitter();
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
@@ -913,7 +913,7 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
     GenTree*  op2        = node->gtGetOp2();
     GenTree*  op3        = nullptr;
     emitAttr  simdSize   = EA_ATTR(node->gtSIMDSize);
-    emitter*  emit       = getEmitter();
+    emitter*  emit       = GetEmitter();
 
     assert(op1->OperIsList());
     assert(op2 == nullptr);
@@ -1064,7 +1064,7 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
     assert(op1Reg != REG_NA);
     assert(op2Reg != REG_NA);
 
-    emitter* emit = getEmitter();
+    emitter* emit = GetEmitter();
 
     if (op3->isContained() || op3->isUsedFromSpillTemp())
     {
@@ -1199,7 +1199,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
     // AVX2 Gather intrinsics use managed non-const fallback since they have discrete imm8 value range
     // that does work with the current compiler generated jump-table fallback
     assert(!HWIntrinsicInfo::isAVX2GatherIntrinsic(intrinsic));
-    emitter* emit = getEmitter();
+    emitter* emit = GetEmitter();
 
     const unsigned maxByte = (unsigned)HWIntrinsicInfo::lookupImmUpperBound(intrinsic) + 1;
     assert(maxByte <= 256);
@@ -1268,7 +1268,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 
     assert(node->gtGetOp2() == nullptr);
 
-    emitter*    emit = getEmitter();
+    emitter*    emit = GetEmitter();
     emitAttr    attr = EA_ATTR(node->gtSIMDSize);
     instruction ins  = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
 
@@ -1393,7 +1393,7 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
     regNumber op2Reg = REG_NA;
     regNumber op3Reg = REG_NA;
     regNumber op4Reg = REG_NA;
-    emitter*  emit   = getEmitter();
+    emitter*  emit   = GetEmitter();
 
     genConsumeHWIntrinsicOperands(node);
 
@@ -1553,7 +1553,7 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
     var_types      baseType    = node->gtSIMDBaseType;
     regNumber      op1Reg      = REG_NA;
     regNumber      op2Reg      = REG_NA;
-    emitter*       emit        = getEmitter();
+    emitter*       emit        = GetEmitter();
 
     genConsumeHWIntrinsicOperands(node);
 
@@ -1767,7 +1767,7 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
     regNumber op2Reg = REG_NA;
     regNumber op3Reg = REG_NA;
     regNumber op4Reg = REG_NA;
-    emitter*  emit   = getEmitter();
+    emitter*  emit   = GetEmitter();
 
     genConsumeHWIntrinsicOperands(node);
 
@@ -1883,7 +1883,7 @@ void CodeGen::genSSE42Intrinsic(GenTreeHWIntrinsic* node)
     GenTree*       op2         = node->gtGetOp2();
     var_types      baseType    = node->gtSIMDBaseType;
     var_types      targetType  = node->TypeGet();
-    emitter*       emit        = getEmitter();
+    emitter*       emit        = GetEmitter();
 
     genConsumeHWIntrinsicOperands(node);
     regNumber op1Reg = op1->gtRegNum;
@@ -1953,7 +1953,7 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
     regNumber      op1Reg      = REG_NA;
     regNumber      op2Reg      = REG_NA;
     regNumber      targetReg   = node->gtRegNum;
-    emitter*       emit        = getEmitter();
+    emitter*       emit        = GetEmitter();
 
     genConsumeHWIntrinsicOperands(node);
 
@@ -2154,7 +2154,7 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
     GenTree*       op2         = node->gtGetOp2();
     var_types      targetType  = node->TypeGet();
     instruction    ins         = HWIntrinsicInfo::lookupIns(intrinsicId, targetType);
-    emitter*       emit        = getEmitter();
+    emitter*       emit        = GetEmitter();
 
     assert(targetReg != REG_NA);
     assert(op1 != nullptr);
@@ -2446,7 +2446,7 @@ void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins)
     regNumber targetReg = node->gtRegNum;
     if ((targetReg != sourceReg1) && (targetReg != sourceReg2))
     {
-        getEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
+        GetEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
     }
     genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()));
 }

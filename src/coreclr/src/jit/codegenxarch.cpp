@@ -45,7 +45,7 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
     else
     {
         // TODO-XArch-CQ: needs all the optimized cases
-        getEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), reg, val);
+        GetEmitter()->emitIns_R_I(INS_mov, emitActualTypeSize(type), reg, val);
     }
 }
 
@@ -77,14 +77,14 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
         {
             // initReg = #GlobalSecurityCookieVal64; [frame.GSSecurityCookie] = initReg
             genSetRegToIcon(initReg, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
-            getEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
+            GetEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
             *pInitRegZeroed = false;
         }
         else
 #endif
         {
             // mov   dword ptr [frame.GSSecurityCookie], #GlobalSecurityCookieVal
-            getEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaGSSecurityCookie, 0,
+            GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaGSSecurityCookie, 0,
                                       (int)compiler->gsGlobalSecurityCookieVal);
         }
     }
@@ -94,9 +94,9 @@ void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
         // On x64, if we're not moving into RAX, and the address isn't RIP relative, we can't encode it.
         //  mov   eax, dword ptr [compiler->gsGlobalSecurityCookieAddr]
         //  mov   dword ptr [frame.GSSecurityCookie], eax
-        getEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_EAX, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_EAX, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
         regSet.verifyRegUsed(REG_EAX);
-        getEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, REG_EAX, compiler->lvaGSSecurityCookie, 0);
+        GetEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, REG_EAX, compiler->lvaGSSecurityCookie, 0);
         if (initReg == REG_EAX)
         {
             *pInitRegZeroed = false;
@@ -250,13 +250,13 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         if ((int)compiler->gsGlobalSecurityCookieVal != (ssize_t)compiler->gsGlobalSecurityCookieVal)
         {
             genSetRegToIcon(regGSCheck, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
-            getEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, compiler->lvaGSSecurityCookie, 0);
+            GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, compiler->lvaGSSecurityCookie, 0);
         }
         else
 #endif // defined(_TARGET_AMD64_)
         {
             assert((int)compiler->gsGlobalSecurityCookieVal == (ssize_t)compiler->gsGlobalSecurityCookieVal);
-            getEmitter()->emitIns_S_I(INS_cmp, EA_PTRSIZE, compiler->lvaGSSecurityCookie, 0,
+            GetEmitter()->emitIns_S_I(INS_cmp, EA_PTRSIZE, compiler->lvaGSSecurityCookie, 0,
                                       (int)compiler->gsGlobalSecurityCookieVal);
         }
     }
@@ -267,8 +267,8 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
         pushedRegs = genPushRegs(regMaskGSCheck, &byrefPushedRegs, &norefPushedRegs);
 
         instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regGSCheck, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        getEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, regGSCheck, regGSCheck, 0);
-        getEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, compiler->lvaGSSecurityCookie, 0);
+        GetEmitter()->emitIns_R_AR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, regGSCheck, regGSCheck, 0);
+        GetEmitter()->emitIns_S_R(INS_cmp, EA_PTRSIZE, regGSCheck, compiler->lvaGSSecurityCookie, 0);
     }
 
     BasicBlock* gsCheckBlk = genCreateTempLabel();
@@ -300,9 +300,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     }
     else
     {
-        getEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
+        GetEmitter()->emitIns_R_S(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_ARG_0, compiler->lvaPSPSym, 0);
     }
-    getEmitter()->emitIns_J(INS_call, block->bbJumpDest);
+    GetEmitter()->emitIns_J(INS_call, block->bbJumpDest);
 
     if (block->bbFlags & BBF_RETLESS_CALL)
     {
@@ -324,7 +324,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         // Because of the way the flowgraph is connected, the liveness info for this one instruction
         // after the call is not (can not be) correct in cases where a variable has a last use in the
         // handler.  So turn off GC reporting for this single instruction.
-        getEmitter()->emitDisableGC();
+        GetEmitter()->emitDisableGC();
 #endif // JIT32_GCENCODER
 
         // Now go to where the finally funclet needs to return to.
@@ -342,7 +342,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
         }
 
 #ifndef JIT32_GCENCODER
-        getEmitter()->emitEnableGC();
+        GetEmitter()->emitEnableGC();
 #endif // JIT32_GCENCODER
     }
 
@@ -380,15 +380,15 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     curNestingSlotOffs = (unsigned)(filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE));
 
     // Zero out the slot for the next nesting level
-    getEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar,
+    GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar,
                               curNestingSlotOffs - TARGET_POINTER_SIZE, 0);
-    getEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, LCL_FINALLY_MARK);
+    GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, LCL_FINALLY_MARK);
 
     // Now push the address where the finally funclet should return to directly.
     if (!(block->bbFlags & BBF_RETLESS_CALL))
     {
         assert(block->isBBCallAlwaysPair());
-        getEmitter()->emitIns_J(INS_push_hide, block->bbNext->bbJumpDest);
+        GetEmitter()->emitIns_J(INS_push_hide, block->bbNext->bbJumpDest);
     }
     else
     {
@@ -420,7 +420,7 @@ void CodeGen::genEHCatchRet(BasicBlock* block)
     // Generate a RIP-relative
     //         lea reg, [rip + disp32] ; the RIP is implicit
     // which will be position-independent.
-    getEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, block->bbJumpDest, REG_INTRET);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, block->bbJumpDest, REG_INTRET);
 }
 
 #else // !FEATURE_EH_FUNCLETS
@@ -480,11 +480,11 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr size, regNumber reg, ssize_t imm, 
                 newSize = EA_SET_FLG(newSize, EA_BYREF_FLG);
             }
 
-            getEmitter()->emitIns_R_AI(INS_lea, newSize, reg, imm);
+            GetEmitter()->emitIns_R_AI(INS_lea, newSize, reg, imm);
         }
         else
         {
-            getEmitter()->emitIns_R_I(INS_mov, size, reg, imm);
+            GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm);
         }
     }
     regSet.verifyRegUsed(reg);
@@ -528,7 +528,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
 
         case GT_CNS_DBL:
         {
-            emitter* emit       = getEmitter();
+            emitter* emit       = GetEmitter();
             emitAttr size       = emitTypeSize(targetType);
             double   constValue = tree->gtDblCon.gtDconVal;
 
@@ -634,7 +634,7 @@ void CodeGen::genCodeForMulHi(GenTreeOp* treeNode)
 
     regNumber targetReg  = treeNode->gtRegNum;
     var_types targetType = treeNode->TypeGet();
-    emitter*  emit       = getEmitter();
+    emitter*  emit       = GetEmitter();
     emitAttr  size       = emitTypeSize(treeNode);
     GenTree*  op1        = treeNode->gtOp.gtOp1;
     GenTree*  op2        = treeNode->gtOp.gtOp2;
@@ -792,7 +792,7 @@ void CodeGen::genCodeForDivMod(GenTreeOp* treeNode)
     emitAttr   size       = emitTypeSize(treeNode);
     regNumber  targetReg  = treeNode->gtRegNum;
     var_types  targetType = treeNode->TypeGet();
-    emitter*   emit       = getEmitter();
+    emitter*   emit       = GetEmitter();
 
     // Node's type must be int/native int, small integer types are not
     // supported and floating point types are handled by genCodeForBinary.
@@ -885,7 +885,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
     const genTreeOps oper       = treeNode->OperGet();
     regNumber        targetReg  = treeNode->gtRegNum;
     var_types        targetType = treeNode->TypeGet();
-    emitter*         emit       = getEmitter();
+    emitter*         emit       = GetEmitter();
 
     GenTree* op1 = treeNode->gtGetOp1();
     GenTree* op2 = treeNode->gtGetOp2();
@@ -1004,7 +1004,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
 
     regNumber targetReg  = treeNode->gtRegNum;
     var_types targetType = treeNode->TypeGet();
-    emitter*  emit       = getEmitter();
+    emitter*  emit       = GetEmitter();
 
     // Node's type must be int or long (only on x64), small integer types are not
     // supported and floating point types are handled by genCodeForBinary.
@@ -1056,7 +1056,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             // We will use the LEA instruction to perform this multiply
             // Note that an LEA with base=x, index=x and scale=(imm-1) computes x*imm when imm=3,5 or 9.
             unsigned int scale = (unsigned int)(imm - 1);
-            getEmitter()->emitIns_R_ARX(INS_lea, size, targetReg, rmOp->gtRegNum, rmOp->gtRegNum, scale, 0);
+            GetEmitter()->emitIns_R_ARX(INS_lea, size, targetReg, rmOp->gtRegNum, rmOp->gtRegNum, scale, 0);
         }
         else if (!requiresOverflowCheck && rmOp->isUsedFromReg() && (imm == genFindLowestBit(imm)) && (imm != 0))
         {
@@ -1074,7 +1074,7 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
         else
         {
             // use the 3-op form with immediate
-            ins = getEmitter()->inst3opImulForReg(targetReg);
+            ins = GetEmitter()->inst3opImulForReg(targetReg);
             emit->emitInsBinary(ins, size, rmOp, immOp);
         }
     }
@@ -1238,7 +1238,7 @@ void CodeGen::genStructReturn(GenTree* treeNode)
             {
                 var_types type = retTypeDesc.GetReturnRegType(i);
                 regNumber reg  = retTypeDesc.GetABIReturnReg(i);
-                getEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), reg, lclVar->gtLclNum, offset);
+                GetEmitter()->emitIns_R_S(ins_Load(type), emitTypeSize(type), reg, lclVar->gtLclNum, offset);
                 offset += genTypeSize(type);
             }
         }
@@ -1369,7 +1369,7 @@ void CodeGen::genFloatReturn(GenTree* treeNode)
                        op1->gtRegNum);
         }
         // Now, load it to the fp stack.
-        getEmitter()->emitIns_S(INS_fld, emitTypeSize(op1), op1->AsLclVarCommon()->gtLclNum, 0);
+        GetEmitter()->emitIns_S(INS_fld, emitTypeSize(op1), op1->AsLclVarCommon()->gtLclNum, 0);
     }
     else
     {
@@ -1436,7 +1436,7 @@ void CodeGen::genCodeForBT(GenTreeOp* bt)
     // Note that the emitter doesn't fully support INS_bt, it only supports the reg,reg
     // form and encodes the registers in reverse order. To get the correct order we need
     // to reverse the operands when calling emitIns_R_R.
-    getEmitter()->emitIns_R_R(INS_bt, emitTypeSize(type), op2->gtRegNum, op1->gtRegNum);
+    GetEmitter()->emitIns_R_R(INS_bt, emitTypeSize(type), op2->gtRegNum, op1->gtRegNum);
 }
 
 // clang-format off
@@ -1519,7 +1519,7 @@ void CodeGen::inst_SETCC(GenCondition condition, var_types type, regNumber dstRe
 
     if (!varTypeIsByte(type))
     {
-        getEmitter()->emitIns_R_R(INS_movzx, EA_1BYTE, dstReg, dstReg);
+        GetEmitter()->emitIns_R_R(INS_movzx, EA_1BYTE, dstReg, dstReg);
     }
 }
 
@@ -1540,7 +1540,7 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
     genConsumeRegs(data);
     GenTreeIntCon cns = intForm(TYP_INT, 0);
     cns.SetContained();
-    getEmitter()->emitInsBinary(INS_cmp, emitTypeSize(TYP_INT), data, &cns);
+    GetEmitter()->emitInsBinary(INS_cmp, emitTypeSize(TYP_INT), data, &cns);
 
     BasicBlock* skipLabel = genCreateTempLabel();
 
@@ -1576,7 +1576,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         targetReg = treeNode->gtRegNum;
     }
     var_types targetType = treeNode->TypeGet();
-    emitter*  emit       = getEmitter();
+    emitter*  emit       = GetEmitter();
 
 #ifdef DEBUG
     // Validate that all the operands for the current node are consumed in order.
@@ -1611,7 +1611,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
     {
 #ifndef JIT32_GCENCODER
         case GT_START_NONGC:
-            getEmitter()->emitDisableGC();
+            GetEmitter()->emitDisableGC();
             break;
 #endif // !defined(JIT32_GCENCODER)
 
@@ -1916,7 +1916,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
         case GT_NO_OP:
-            getEmitter()->emitIns_Nop(1);
+            GetEmitter()->emitIns_Nop(1);
             break;
 
         case GT_ARR_BOUNDS_CHECK:
@@ -1968,7 +1968,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             unsigned curNestingSlotOffs;
             curNestingSlotOffs = filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE);
-            getEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, 0);
+            GetEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, 0);
             break;
 #endif // !FEATURE_EH_FUNCLETS
 
@@ -2158,7 +2158,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
             }
 
             assert(reg != REG_NA);
-            getEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
+            GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
             offset += genTypeSize(type);
         }
 
@@ -2204,7 +2204,7 @@ void CodeGen::genMultiRegCallStoreToLocal(GenTree* treeNode)
         }
 
         assert(reg != REG_NA);
-        getEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
+        GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, lclNum, offset);
         offset += genTypeSize(type);
     }
 
@@ -2246,12 +2246,12 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         // Frame size is (0x1000..0x3000)
 
-        getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -(int)pageSize);
+        GetEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -(int)pageSize);
         lastTouchDelta -= pageSize;
 
         if (frameSize >= 0x2000)
         {
-            getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -2 * (int)pageSize);
+            GetEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -2 * (int)pageSize);
             lastTouchDelta -= pageSize;
         }
 
@@ -2312,7 +2312,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         //      cmp rbp, -frameSize         7
         //      jge loop                    2
 
-        getEmitter()->emitIns_R_ARR(INS_test, EA_PTRSIZE, initReg, REG_SPBASE, initReg, 0);
+        GetEmitter()->emitIns_R_ARR(INS_test, EA_PTRSIZE, initReg, REG_SPBASE, initReg, 0);
         inst_RV_IV(INS_sub, initReg, pageSize, EA_PTRSIZE);
         inst_RV_IV(INS_cmp, initReg, -((ssize_t)frameSize), EA_PTRSIZE);
 
@@ -2366,10 +2366,10 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         int sPageSize = (int)pageSize;
 
-        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, initReg, REG_SPBASE, -((ssize_t)frameSize)); // get frame border
+        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, initReg, REG_SPBASE, -((ssize_t)frameSize)); // get frame border
 
-        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -sPageSize);
-        getEmitter()->emitIns_R_AR(INS_test, EA_PTRSIZE, initReg, REG_SPBASE, 0);
+        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, -sPageSize);
+        GetEmitter()->emitIns_R_AR(INS_test, EA_PTRSIZE, initReg, REG_SPBASE, 0);
         inst_RV_RV(INS_cmp, REG_SPBASE, initReg);
 
         int bytesForBackwardJump;
@@ -2383,7 +2383,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         inst_IV(INS_jge, bytesForBackwardJump); // Branch backwards to start of loop
 
-        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, initReg, frameSize); // restore stack pointer
+        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, initReg, frameSize); // restore stack pointer
 
         lastTouchDelta          = 0; // The loop code above actually over-probes: it always probes beyond the final SP we need.
 
@@ -2409,7 +2409,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         // happen on x86, for example, when we copy an argument to the stack using a "SUB ESP; REP MOV"
         // strategy.
 
-        getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, 0);
+        GetEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, 0);
     }
 
     compiler->unwindAllocStack(frameSize);
@@ -2477,7 +2477,7 @@ void CodeGen::genStackPointerConstantAdjustment(ssize_t spDelta, regNumber regTm
 //
 void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, regNumber regTmp)
 {
-    getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
+    GetEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
     genStackPointerConstantAdjustment(spDelta, regTmp);
 }
 
@@ -2524,7 +2524,7 @@ target_ssize_t CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t s
         // happen on x86, for example, when we copy an argument to the stack using a "SUB ESP; REP MOV"
         // strategy.
 
-        getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, 0);
+        GetEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, 0);
         lastTouchDelta = 0;
     }
 
@@ -2586,7 +2586,7 @@ void CodeGen::genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta, re
 
     // Tickle the decremented value. Note that it must be done BEFORE the update of ESP since ESP might already
     // be on the guard page. It is OK to leave the final value of ESP on the guard page.
-    getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
+    GetEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
 
     // Subtract a page from ESP. This is a trick to avoid the emitter trying to track the
     // decrement of the ESP - we do the subtraction in another reg instead of adjusting ESP directly.
@@ -2668,7 +2668,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         // Put the size value in targetReg. If it is zero, bail out by returning null in targetReg.
         genConsumeRegAndCopy(size, targetReg);
         endLabel = genCreateTempLabel();
-        getEmitter()->emitIns_R_R(INS_test, easz, targetReg, targetReg);
+        GetEmitter()->emitIns_R_R(INS_test, easz, targetReg, targetReg);
         inst_JMP(EJ_je, endLabel);
 
         // Compute the size of the block to allocate and perform alignment.
@@ -2876,7 +2876,7 @@ ALLOC_DONE:
 
     // Return the stackalloc'ed address in result register.
     // TargetReg = RSP + stackAdjustment.
-    getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, targetReg, REG_SPBASE, stackAdjustment);
+    GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, targetReg, REG_SPBASE, stackAdjustment);
 
     if (endLabel != nullptr)
     {
@@ -2888,7 +2888,7 @@ BAILOUT:
 #ifdef JIT32_GCENCODER
     if (compiler->lvaLocAllocSPvar != BAD_VAR_NUM)
     {
-        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaLocAllocSPvar, 0);
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaLocAllocSPvar, 0);
     }
 #endif // JIT32_GCENCODER
 
@@ -2899,7 +2899,7 @@ BAILOUT:
         noway_assert(compiler->lvaReturnSpCheck != 0xCCCCCCCC &&
                      compiler->lvaTable[compiler->lvaReturnSpCheck].lvDoNotEnregister &&
                      compiler->lvaTable[compiler->lvaReturnSpCheck].lvOnFrame);
-        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaReturnSpCheck, 0);
     }
 #endif
 
@@ -2922,7 +2922,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 #else
     if (storeBlkNode->gtBlkOpGcUnsafe)
     {
-        getEmitter()->emitDisableGC();
+        GetEmitter()->emitDisableGC();
     }
 #endif // JIT32_GCENCODER
 
@@ -2969,7 +2969,7 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* storeBlkNode)
 #ifndef JIT32_GCENCODER
     if (storeBlkNode->gtBlkOpGcUnsafe)
     {
-        getEmitter()->emitEnableGC();
+        GetEmitter()->emitEnableGC();
     }
 #endif // !defined(JIT32_GCENCODER)
 }
@@ -3030,7 +3030,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
     assert(size <= INITBLK_UNROLL_LIMIT);
     assert(initVal->gtSkipReloadOrCopy()->IsCnsIntOrI());
 
-    emitter* emit = getEmitter();
+    emitter* emit = GetEmitter();
 
     genConsumeOperands(initBlkNode);
 
@@ -3130,7 +3130,7 @@ void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 //   offset: distance from the baseNode from which to load
 void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst, GenTree* baseNode, unsigned offset)
 {
-    emitter* emit = getEmitter();
+    emitter* emit = GetEmitter();
 
     if (baseNode->OperIsLocalAddr())
     {
@@ -3158,7 +3158,7 @@ void CodeGen::genCodeForLoadOffset(instruction ins, emitAttr size, regNumber dst
 //
 void CodeGen::genCodeForStoreOffset(instruction ins, emitAttr size, regNumber src, GenTree* baseNode, unsigned offset)
 {
-    emitter* emit = getEmitter();
+    emitter* emit = GetEmitter();
 
     if (baseNode->OperIsLocalAddr())
     {
@@ -3194,7 +3194,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     GenTree* srcAddr = nullptr;
     assert(size <= CPBLK_UNROLL_LIMIT);
 
-    emitter* emit = getEmitter();
+    emitter* emit = GetEmitter();
 
     if (dstAddr->isUsedFromReg())
     {
@@ -3456,7 +3456,7 @@ void CodeGen::genStructPutArgUnroll(GenTreePutArgStk* putArgNode)
     unsigned size = putArgNode->getArgSize();
     assert(size <= CPBLK_UNROLL_LIMIT);
 
-    emitter* emit         = getEmitter();
+    emitter* emit         = GetEmitter();
     unsigned putArgOffset = putArgNode->getArgOffset();
 
     assert(src->isContained());
@@ -3615,7 +3615,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
         if (!varDsc->lvIsRegArg)
         {
             // Clear the upper 32 bits by mov dword ptr [V_ARG_BASE+0xC], 0
-            getEmitter()->emitIns_S_I(ins_Store(TYP_INT), EA_4BYTE, varNum, genTypeSize(TYP_FLOAT) * 3, 0);
+            GetEmitter()->emitIns_S_I(ins_Store(TYP_INT), EA_4BYTE, varNum, genTypeSize(TYP_FLOAT) * 3, 0);
         }
         else
         {
@@ -3625,9 +3625,9 @@ void CodeGen::genClearStackVec3ArgUpperBits()
 
             // Clear the upper 32 bits by two shift instructions.
             // argReg = argReg << 96
-            getEmitter()->emitIns_R_I(INS_pslldq, emitActualTypeSize(TYP_SIMD12), argReg, 12);
+            GetEmitter()->emitIns_R_I(INS_pslldq, emitActualTypeSize(TYP_SIMD12), argReg, 12);
             // argReg = argReg >> 96
-            getEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(TYP_SIMD12), argReg, 12);
+            GetEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(TYP_SIMD12), argReg, 12);
         }
     }
 }
@@ -3713,7 +3713,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
             // RCX to emit the movsp (alias for movsd or movsq for 32 and 64 bits respectively).
             assert((cpObjNode->gtRsvdRegs & RBM_RCX) != 0);
 
-            getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, slots);
+            GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, slots);
             instGen(INS_r_movsp);
         }
         else
@@ -3763,7 +3763,7 @@ void CodeGen::genCodeForCpObj(GenTreeObj* cpObjNode)
                     // rep movsp (alias for movsd/movsq for x86/x64)
                     assert((cpObjNode->gtRsvdRegs & RBM_RCX) != 0);
 
-                    getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
+                    GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonGcSlotCount);
                     instGen(INS_r_movsp);
                 }
             }
@@ -3816,14 +3816,14 @@ void CodeGen::genTableBasedSwitch(GenTree* treeNode)
     regNumber tmpReg = treeNode->GetSingleTempReg();
 
     // load the ip-relative offset (which is relative to start of fgFirstBB)
-    getEmitter()->emitIns_R_ARX(INS_mov, EA_4BYTE, baseReg, baseReg, idxReg, 4, 0);
+    GetEmitter()->emitIns_R_ARX(INS_mov, EA_4BYTE, baseReg, baseReg, idxReg, 4, 0);
 
     // add it to the absolute address of fgFirstBB
     compiler->fgFirstBB->bbFlags |= BBF_JMP_TARGET;
-    getEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, compiler->fgFirstBB, tmpReg);
-    getEmitter()->emitIns_R_R(INS_add, EA_PTRSIZE, baseReg, tmpReg);
+    GetEmitter()->emitIns_R_L(INS_lea, EA_PTR_DSP_RELOC, compiler->fgFirstBB, tmpReg);
+    GetEmitter()->emitIns_R_R(INS_add, EA_PTRSIZE, baseReg, tmpReg);
     // jmp baseReg
-    getEmitter()->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), baseReg);
+    GetEmitter()->emitIns_R(INS_i_jmp, emitTypeSize(TYP_I_IMPL), baseReg);
 }
 
 // emits the table and an instruction to get the address of the first element
@@ -3837,7 +3837,7 @@ void CodeGen::genJumpTable(GenTree* treeNode)
     unsigned     jmpTabOffs;
     unsigned     jmpTabBase;
 
-    jmpTabBase = getEmitter()->emitBBTableDataGenBeg(jumpCount, true);
+    jmpTabBase = GetEmitter()->emitBBTableDataGenBeg(jumpCount, true);
 
     jmpTabOffs = 0;
 
@@ -3850,15 +3850,15 @@ void CodeGen::genJumpTable(GenTree* treeNode)
 
         JITDUMP("            DD      L_M%03u_" FMT_BB "\n", Compiler::s_compMethodsCount, target->bbNum);
 
-        getEmitter()->emitDataGenData(i, target);
+        GetEmitter()->emitDataGenData(i, target);
     };
 
-    getEmitter()->emitDataGenEnd();
+    GetEmitter()->emitDataGenEnd();
 
     // Access to inline data is 'abstracted' by a special type of static member
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
-    getEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), treeNode->gtRegNum,
+    GetEmitter()->emitIns_R_C(INS_lea, emitTypeSize(TYP_I_IMPL), treeNode->gtRegNum,
                               compiler->eeFindJitDataOffs(jmpTabBase), 0);
     genProduceReg(treeNode);
 }
@@ -3888,11 +3888,11 @@ void CodeGen::genCodeForLockAdd(GenTreeOp* node)
     {
         int imm = static_cast<int>(data->AsIntCon()->IconValue());
         assert(imm == data->AsIntCon()->IconValue());
-        getEmitter()->emitIns_I_AR(INS_add, size, imm, addr->gtRegNum, 0);
+        GetEmitter()->emitIns_I_AR(INS_add, size, imm, addr->gtRegNum, 0);
     }
     else
     {
-        getEmitter()->emitIns_AR_R(INS_add, size, data->gtRegNum, addr->gtRegNum, 0);
+        GetEmitter()->emitIns_AR_R(INS_add, size, data->gtRegNum, addr->gtRegNum, 0);
     }
 }
 
@@ -3922,7 +3922,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
         // to first move the data to the target register. Make sure we don't overwrite
         // the address, the register allocator should have taken care of this.
         assert(node->gtRegNum != addr->gtRegNum);
-        getEmitter()->emitIns_R_R(INS_mov, size, node->gtRegNum, data->gtRegNum);
+        GetEmitter()->emitIns_R_R(INS_mov, size, node->gtRegNum, data->gtRegNum);
     }
 
     instruction ins = node->OperIs(GT_XADD) ? INS_xadd : INS_xchg;
@@ -3933,7 +3933,7 @@ void CodeGen::genLockedInstructions(GenTreeOp* node)
         instGen(INS_lock);
     }
 
-    getEmitter()->emitIns_AR_R(ins, size, node->gtRegNum, addr->gtRegNum, 0);
+    GetEmitter()->emitIns_AR_R(ins, size, node->gtRegNum, addr->gtRegNum, 0);
     genProduceReg(node);
 }
 
@@ -3972,7 +3972,7 @@ void CodeGen::genCodeForCmpXchg(GenTreeCmpXchg* tree)
     // location is Rm
     instGen(INS_lock);
 
-    getEmitter()->emitIns_AR_R(INS_cmpxchg, emitTypeSize(targetType), value->gtRegNum, location->gtRegNum, 0);
+    GetEmitter()->emitIns_AR_R(INS_cmpxchg, emitTypeSize(targetType), value->gtRegNum, location->gtRegNum, 0);
 
     // Result is in RAX
     if (targetReg != REG_RAX)
@@ -4041,7 +4041,7 @@ void CodeGen::genRangeCheck(GenTree* oper)
     assert(emitTypeSize(bndsChkType) >= emitTypeSize(src1->TypeGet()));
 #endif // DEBUG
 
-    getEmitter()->emitInsBinary(INS_cmp, emitTypeSize(bndsChkType), src1, src2);
+    GetEmitter()->emitInsBinary(INS_cmp, emitTypeSize(bndsChkType), src1, src2);
     genJumpToThrowHlpBlk(jmpKind, bndsChk->gtThrowKind, bndsChk->gtIndRngFailBB);
 }
 
@@ -4085,7 +4085,7 @@ void CodeGen::genCodeForNullCheck(GenTreeOp* tree)
 
     assert(tree->gtOp1->isUsedFromReg());
     regNumber reg = genConsumeReg(tree->gtOp1);
-    getEmitter()->emitIns_AR_R(INS_cmp, EA_4BYTE, reg, reg, 0);
+    GetEmitter()->emitIns_AR_R(INS_cmp, EA_4BYTE, reg, reg, 0);
 }
 
 //------------------------------------------------------------------------
@@ -4156,9 +4156,9 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     {
         inst_RV_RV(INS_mov, tgtReg, indexReg, indexNode->TypeGet());
     }
-    getEmitter()->emitIns_R_AR(INS_sub, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
+    GetEmitter()->emitIns_R_AR(INS_sub, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
                                genOffsetOfMDArrayLowerBound(elemType, rank, dim));
-    getEmitter()->emitIns_R_AR(INS_cmp, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
+    GetEmitter()->emitIns_R_AR(INS_cmp, emitActualTypeSize(TYP_INT), tgtReg, arrReg,
                                genOffsetOfMDArrayDimensionSize(elemType, rank, dim));
     genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL);
 
@@ -4230,7 +4230,7 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
         // tmpReg is used to load dim_size and the result of the multiplication.
         // Note that dim_size will never be negative.
 
-        getEmitter()->emitIns_R_AR(INS_mov, emitActualTypeSize(TYP_INT), tmpReg, arrReg,
+        GetEmitter()->emitIns_R_AR(INS_mov, emitActualTypeSize(TYP_INT), tmpReg, arrReg,
                                    genOffsetOfMDArrayDimensionSize(elemType, rank, dim));
         inst_RV_RV(INS_imul, tmpReg, offsetReg);
 
@@ -4499,11 +4499,11 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
         if (shiftByValue == 1)
         {
             // There is no source in this case, as the shift by count is embedded in the instruction opcode itself.
-            getEmitter()->emitInsRMW(ins, attr, storeInd);
+            GetEmitter()->emitInsRMW(ins, attr, storeInd);
         }
         else
         {
-            getEmitter()->emitInsRMW(ins, attr, storeInd, shiftBy);
+            GetEmitter()->emitInsRMW(ins, attr, storeInd, shiftBy);
         }
     }
     else
@@ -4515,7 +4515,7 @@ void CodeGen::genCodeForShiftRMW(GenTreeStoreInd* storeInd)
         genCopyRegIfNeeded(shiftBy, REG_RCX);
 
         // The shiftBy operand is implicit, so call the unary version of emitInsRMW.
-        getEmitter()->emitInsRMW(ins, attr, storeInd);
+        GetEmitter()->emitInsRMW(ins, attr, storeInd);
     }
 }
 
@@ -4572,7 +4572,7 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     unsigned varNum = tree->gtLclNum;
     assert(varNum < compiler->lvaCount);
 
-    getEmitter()->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
+    GetEmitter()->emitIns_R_S(ins_Load(targetType), size, targetReg, varNum, offs);
 
     genProduceReg(tree);
 }
@@ -4606,7 +4606,7 @@ void CodeGen::genCodeForLclVar(GenTreeLclVar* tree)
         }
 #endif // defined(FEATURE_SIMD) && defined(_TARGET_X86_)
 
-        getEmitter()->emitIns_R_S(ins_Load(tree->TypeGet(), compiler->isSIMDTypeLocalAligned(tree->gtLclNum)),
+        GetEmitter()->emitIns_R_S(ins_Load(tree->TypeGet(), compiler->isSIMDTypeLocalAligned(tree->gtLclNum)),
                                   emitTypeSize(tree), tree->gtRegNum, tree->gtLclNum, 0);
         genProduceReg(tree);
     }
@@ -4637,7 +4637,7 @@ void CodeGen::genCodeForStoreLclFld(GenTreeLclFld* tree)
 
     GenTree* op1 = tree->gtGetOp1();
     genConsumeRegs(op1);
-    getEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
+    GetEmitter()->emitInsBinary(ins_Store(targetType), emitTypeSize(tree), tree, op1);
 
     // Updating variable liveness after instruction was emitted
     genUpdateLife(tree);
@@ -4655,7 +4655,7 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
 
     var_types targetType = tree->TypeGet();
     regNumber targetReg  = tree->gtRegNum;
-    emitter*  emit       = getEmitter();
+    emitter*  emit       = GetEmitter();
 
     GenTree* op1 = tree->gtGetOp1();
 
@@ -4789,13 +4789,13 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
         // is a native int on a 64-bit platform, we will need to widen the array length and then compare.
         if (index->TypeGet() == TYP_I_IMPL)
         {
-            getEmitter()->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, baseReg, static_cast<int>(node->gtLenOffset));
-            getEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, indexReg, tmpReg);
+            GetEmitter()->emitIns_R_AR(INS_mov, EA_4BYTE, tmpReg, baseReg, static_cast<int>(node->gtLenOffset));
+            GetEmitter()->emitIns_R_R(INS_cmp, EA_8BYTE, indexReg, tmpReg);
         }
         else
 #endif // _TARGET_64BIT_
         {
-            getEmitter()->emitIns_R_AR(INS_cmp, EA_4BYTE, indexReg, baseReg, static_cast<int>(node->gtLenOffset));
+            GetEmitter()->emitIns_R_AR(INS_cmp, EA_4BYTE, indexReg, baseReg, static_cast<int>(node->gtLenOffset));
         }
 
         genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
@@ -4805,7 +4805,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     if (index->TypeGet() != TYP_I_IMPL)
     {
         // LEA needs 64-bit operands so we need to widen the index if it's TYP_INT.
-        getEmitter()->emitIns_R_R(INS_mov, EA_4BYTE, tmpReg, indexReg);
+        GetEmitter()->emitIns_R_R(INS_mov, EA_4BYTE, tmpReg, indexReg);
         indexReg = tmpReg;
     }
 #endif // _TARGET_64BIT_
@@ -4831,13 +4831,13 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
             tmpReg = node->GetSingleTempReg();
 #endif // !_TARGET_64BIT_
 
-            getEmitter()->emitIns_R_I(emitter::inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,
+            GetEmitter()->emitIns_R_I(emitter::inst3opImulForReg(tmpReg), EA_PTRSIZE, indexReg,
                                       static_cast<ssize_t>(scale));
             scale = 1;
             break;
     }
 
-    getEmitter()->emitIns_R_ARX(INS_lea, emitTypeSize(node->TypeGet()), dstReg, baseReg, tmpReg, scale,
+    GetEmitter()->emitIns_R_ARX(INS_lea, emitTypeSize(node->TypeGet()), dstReg, baseReg, tmpReg, scale,
                                 static_cast<int>(node->gtElemOffset));
 
     gcInfo.gcMarkRegSetNpt(base->gtGetRegMask());
@@ -4865,7 +4865,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 #endif // FEATURE_SIMD
 
     var_types targetType = tree->TypeGet();
-    emitter*  emit       = getEmitter();
+    emitter*  emit       = GetEmitter();
 
     GenTree* addr = tree->Addr();
     if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_TLS_HDL))
@@ -5117,7 +5117,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             if (dataIsUnary)
             {
                 // generate code for unary RMW memory ops like neg/not
-                getEmitter()->emitInsRMW(genGetInsForOper(data->OperGet(), data->TypeGet()), emitTypeSize(tree), tree);
+                GetEmitter()->emitInsRMW(genGetInsForOper(data->OperGet(), data->TypeGet()), emitTypeSize(tree), tree);
             }
             else
             {
@@ -5144,19 +5144,19 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                     //     the above if condition once Decode() routine is fixed.
                     assert(rmwSrc->isContainedIntOrIImmed());
                     instruction ins = rmwSrc->IsIntegralConst(1) ? INS_inc : INS_dec;
-                    getEmitter()->emitInsRMW(ins, emitTypeSize(tree), tree);
+                    GetEmitter()->emitInsRMW(ins, emitTypeSize(tree), tree);
                 }
                 else
                 {
                     // generate code for remaining binary RMW memory ops like add/sub/and/or/xor
-                    getEmitter()->emitInsRMW(genGetInsForOper(data->OperGet(), data->TypeGet()), emitTypeSize(tree),
+                    GetEmitter()->emitInsRMW(genGetInsForOper(data->OperGet(), data->TypeGet()), emitTypeSize(tree),
                                              tree, rmwSrc);
                 }
             }
         }
         else
         {
-            getEmitter()->emitInsStoreInd(ins_Store(data->TypeGet()), emitTypeSize(tree), tree);
+            GetEmitter()->emitInsStoreInd(ins_Store(data->TypeGet()), emitTypeSize(tree), tree);
         }
     }
 }
@@ -5453,7 +5453,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     if (call->NeedsNullCheck())
     {
         const regNumber regThis = genGetThisArgReg(call);
-        getEmitter()->emitIns_AR_R(INS_cmp, EA_4BYTE, regThis, regThis, 0);
+        GetEmitter()->emitIns_AR_R(INS_cmp, EA_4BYTE, regThis, regThis, 0);
     }
 
     // Either gtControlExpr != null or gtCallAddr != null or it is a direct non-virtual call to a user or helper method.
@@ -5540,7 +5540,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         noway_assert(compiler->lvaCallSpCheck != 0xCCCCCCCC &&
                      compiler->lvaTable[compiler->lvaCallSpCheck].lvDoNotEnregister &&
                      compiler->lvaTable[compiler->lvaCallSpCheck].lvOnFrame);
-        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
+        GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
     }
 #endif // defined(DEBUG) && defined(_TARGET_X86_)
 
@@ -5590,7 +5590,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     // To limit code size increase impact: we only issue VZEROUPPER before PInvoke call, not issue
     // VZEROUPPER after PInvoke call because transition penalty from legacy SSE to AVX only happens
     // when there's preceding 256-bit AVX to legacy SSE transition penalty.
-    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && getEmitter()->Contains256bitAVX())
+    if (call->IsPInvoke() && (call->gtCallType == CT_USER_FUNC) && GetEmitter()->Contains256bitAVX())
     {
         assert(compiler->canUseVexEncoding());
         instGen(INS_vzeroupper);
@@ -5627,10 +5627,10 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             genConsumeReg(addr);
             genCopyRegIfNeeded(addr, REG_VIRTUAL_STUB_TARGET);
 
-            getEmitter()->emitIns_Nop(3);
+            GetEmitter()->emitIns_Nop(3);
 
             // clang-format off
-            getEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD),
+            GetEmitter()->emitIns_Call(emitter::EmitCallType(emitter::EC_INDIR_ARD),
                                        methHnd,
                                        INDEBUG_LDISASM_COMMA(sigInfo)
                                        nullptr,
@@ -5816,8 +5816,8 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                     // Clear the upper 32 bits by two shift instructions.
                     // retReg = retReg << 96
                     // retReg = retReg >> 96
-                    getEmitter()->emitIns_R_I(INS_pslldq, emitActualTypeSize(TYP_SIMD12), returnReg, 12);
-                    getEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(TYP_SIMD12), returnReg, 12);
+                    GetEmitter()->emitIns_R_I(INS_pslldq, emitActualTypeSize(TYP_SIMD12), returnReg, 12);
+                    GetEmitter()->emitIns_R_I(INS_psrldq, emitActualTypeSize(TYP_SIMD12), returnReg, 12);
                 }
 #endif // FEATURE_SIMD
             }
@@ -5870,17 +5870,17 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             // ECX is trashed, so can be used to compute the expected SP. We saved the value of SP
             // after pushing all the stack arguments, but the caller popped the arguments, so we need
             // to do some math to figure a good comparison.
-            getEmitter()->emitIns_R_R(INS_mov, EA_4BYTE, REG_ARG_0, REG_SPBASE);
-            getEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, REG_ARG_0, stackArgBytes);
-            getEmitter()->emitIns_S_R(INS_cmp, EA_4BYTE, REG_ARG_0, compiler->lvaCallSpCheck, 0);
+            GetEmitter()->emitIns_R_R(INS_mov, EA_4BYTE, REG_ARG_0, REG_SPBASE);
+            GetEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, REG_ARG_0, stackArgBytes);
+            GetEmitter()->emitIns_S_R(INS_cmp, EA_4BYTE, REG_ARG_0, compiler->lvaCallSpCheck, 0);
         }
         else
         {
-            getEmitter()->emitIns_S_R(INS_cmp, EA_4BYTE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
+            GetEmitter()->emitIns_S_R(INS_cmp, EA_4BYTE, REG_SPBASE, compiler->lvaCallSpCheck, 0);
         }
 
         BasicBlock* sp_check = genCreateTempLabel();
-        getEmitter()->emitIns_J(INS_je, sp_check);
+        GetEmitter()->emitIns_J(INS_je, sp_check);
         instGen(INS_BREAKPOINT);
         genDefineTempLabel(sp_check);
     }
@@ -5900,14 +5900,14 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             case CORINFO_HELP_MON_ENTER_STATIC:
                 noway_assert(compiler->syncStartEmitCookie == NULL);
                 compiler->syncStartEmitCookie =
-                    getEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+                    GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
                 noway_assert(compiler->syncStartEmitCookie != NULL);
                 break;
             case CORINFO_HELP_MON_EXIT:
             case CORINFO_HELP_MON_EXIT_STATIC:
                 noway_assert(compiler->syncEndEmitCookie == NULL);
                 compiler->syncEndEmitCookie =
-                    getEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
+                    GetEmitter()->emitAddLabel(gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur, gcInfo.gcRegByrefSetCur);
                 noway_assert(compiler->syncEndEmitCookie != NULL);
                 break;
             default:
@@ -5996,7 +5996,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
         assert(!varDsc->lvIsStructField || (compiler->lvaTable[varDsc->lvParentLcl].lvFieldCnt == 1));
         var_types storeType = genActualType(varDsc->lvaArgType()); // We own the memory and can use the full move.
-        getEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->lvRegNum, varNum, 0);
+        GetEmitter()->emitIns_S_R(ins_Store(storeType), emitTypeSize(storeType), varDsc->lvRegNum, varNum, 0);
 
         // Update lvRegNum life and GC info to indicate lvRegNum is dead and varDsc stack slot is going live.
         // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
@@ -6076,14 +6076,14 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             // genCodeForBBList().
             if (type0 != TYP_UNKNOWN)
             {
-                getEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), varDsc->lvArgReg, varNum, offset0);
+                GetEmitter()->emitIns_R_S(ins_Load(type0), emitTypeSize(type0), varDsc->lvArgReg, varNum, offset0);
                 regSet.rsMaskVars |= genRegMask(varDsc->lvArgReg);
                 gcInfo.gcMarkRegPtrVal(varDsc->lvArgReg, type0);
             }
 
             if (type1 != TYP_UNKNOWN)
             {
-                getEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), varDsc->lvOtherArgReg, varNum, offset1);
+                GetEmitter()->emitIns_R_S(ins_Load(type1), emitTypeSize(type1), varDsc->lvOtherArgReg, varNum, offset1);
                 regSet.rsMaskVars |= genRegMask(varDsc->lvOtherArgReg);
                 gcInfo.gcMarkRegPtrVal(varDsc->lvOtherArgReg, type1);
             }
@@ -6107,7 +6107,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             if (varDsc->lvRegNum != argReg)
             {
                 assert(genIsValidReg(argReg));
-                getEmitter()->emitIns_R_S(ins_Load(loadType), emitTypeSize(loadType), argReg, varNum, 0);
+                GetEmitter()->emitIns_R_S(ins_Load(loadType), emitTypeSize(loadType), argReg, varNum, 0);
 
                 // Update argReg life and GC Info to indicate varDsc stack slot is dead and argReg is going live.
                 // Note that we cannot modify varDsc->lvRegNum here because another basic block may not be expecting it.
@@ -6188,7 +6188,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         if (remainingIntArgMask != RBM_NONE)
         {
             instruction insCopyIntToFloat = ins_CopyIntToFloat(TYP_LONG, TYP_DOUBLE);
-            getEmitter()->emitDisableGC();
+            GetEmitter()->emitDisableGC();
             for (int argNum = 0, argOffset = 0; argNum < MAX_REG_ARG; ++argNum)
             {
                 regNumber argReg     = intArgRegs[argNum];
@@ -6197,7 +6197,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 if ((remainingIntArgMask & argRegMask) != 0)
                 {
                     remainingIntArgMask &= ~argRegMask;
-                    getEmitter()->emitIns_R_S(INS_mov, EA_8BYTE, argReg, firstArgVarNum, argOffset);
+                    GetEmitter()->emitIns_R_S(INS_mov, EA_8BYTE, argReg, firstArgVarNum, argOffset);
 
                     // also load it in corresponding float arg reg
                     regNumber floatReg = compiler->getCallArgFloatRegister(argReg);
@@ -6206,7 +6206,7 @@ void CodeGen::genJmpMethod(GenTree* jmp)
 
                 argOffset += REGSIZE_BYTES;
             }
-            getEmitter()->emitEnableGC();
+            GetEmitter()->emitEnableGC();
         }
     }
 #endif // FEATURE_VARARG
@@ -6222,15 +6222,15 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     {
         regNumber baseReg  = lea->Base()->gtRegNum;
         regNumber indexReg = lea->Index()->gtRegNum;
-        getEmitter()->emitIns_R_ARX(INS_lea, size, lea->gtRegNum, baseReg, indexReg, lea->gtScale, lea->Offset());
+        GetEmitter()->emitIns_R_ARX(INS_lea, size, lea->gtRegNum, baseReg, indexReg, lea->gtScale, lea->Offset());
     }
     else if (lea->Base())
     {
-        getEmitter()->emitIns_R_AR(INS_lea, size, lea->gtRegNum, lea->Base()->gtRegNum, lea->Offset());
+        GetEmitter()->emitIns_R_AR(INS_lea, size, lea->gtRegNum, lea->Base()->gtRegNum, lea->Offset());
     }
     else if (lea->Index())
     {
-        getEmitter()->emitIns_R_ARX(INS_lea, size, lea->gtRegNum, REG_NA, lea->Index()->gtRegNum, lea->gtScale,
+        GetEmitter()->emitIns_R_ARX(INS_lea, size, lea->gtRegNum, REG_NA, lea->Index()->gtRegNum, lea->gtScale,
                                     lea->Offset());
     }
 
@@ -6273,7 +6273,7 @@ void CodeGen::genCompareFloat(GenTree* treeNode)
     ins     = ins_FloatCompare(op1Type);
     cmpAttr = emitTypeSize(op1Type);
 
-    getEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
+    GetEmitter()->emitInsBinary(ins, cmpAttr, op1, op2);
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
@@ -6382,7 +6382,7 @@ void CodeGen::genCompareInt(GenTree* treeNode)
     // TYP_UINT and TYP_ULONG should not appear here, only small types can be unsigned
     assert(!varTypeIsUnsigned(type) || varTypeIsSmall(type));
 
-    getEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
+    GetEmitter()->emitInsBinary(ins, emitTypeSize(type), op1, op2);
 
     // Are we evaluating this into a register?
     if (targetReg != REG_NA)
@@ -6492,7 +6492,7 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
     switch (desc.CheckKind())
     {
         case GenIntCastDesc::CHECK_POSITIVE:
-            getEmitter()->emitIns_R_R(INS_test, EA_SIZE(desc.CheckSrcSize()), reg, reg);
+            GetEmitter()->emitIns_R_R(INS_test, EA_SIZE(desc.CheckSrcSize()), reg, reg);
             genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
             break;
 
@@ -6504,21 +6504,21 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             // upper 32 bits are zero. This requires a temporary register.
             const regNumber tempReg = cast->GetSingleTempReg();
             assert(tempReg != reg);
-            getEmitter()->emitIns_R_R(INS_mov, EA_8BYTE, tempReg, reg);
-            getEmitter()->emitIns_R_I(INS_shr_N, EA_8BYTE, tempReg, 32);
+            GetEmitter()->emitIns_R_R(INS_mov, EA_8BYTE, tempReg, reg);
+            GetEmitter()->emitIns_R_I(INS_shr_N, EA_8BYTE, tempReg, 32);
             genJumpToThrowHlpBlk(EJ_jne, SCK_OVERFLOW);
         }
         break;
 
         case GenIntCastDesc::CHECK_POSITIVE_INT_RANGE:
-            getEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MAX);
+            GetEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MAX);
             genJumpToThrowHlpBlk(EJ_ja, SCK_OVERFLOW);
             break;
 
         case GenIntCastDesc::CHECK_INT_RANGE:
-            getEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MAX);
+            GetEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MAX);
             genJumpToThrowHlpBlk(EJ_jg, SCK_OVERFLOW);
-            getEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MIN);
+            GetEmitter()->emitIns_R_I(INS_cmp, EA_8BYTE, reg, INT32_MIN);
             genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
             break;
 #endif
@@ -6529,12 +6529,12 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
             const int castMaxValue = desc.CheckSmallIntMax();
             const int castMinValue = desc.CheckSmallIntMin();
 
-            getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMaxValue);
+            GetEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMaxValue);
             genJumpToThrowHlpBlk((castMinValue == 0) ? EJ_ja : EJ_jg, SCK_OVERFLOW);
 
             if (castMinValue != 0)
             {
-                getEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMinValue);
+                GetEmitter()->emitIns_R_I(INS_cmp, EA_SIZE(desc.CheckSrcSize()), reg, castMinValue);
                 genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
             }
         }
@@ -6561,7 +6561,7 @@ void CodeGen::genIntToIntCast(GenTreeCast* cast)
 
     const regNumber srcReg = cast->gtGetOp1()->gtRegNum;
     const regNumber dstReg = cast->gtRegNum;
-    emitter*        emit   = getEmitter();
+    emitter*        emit   = GetEmitter();
 
     assert(genIsValidIntReg(srcReg));
     assert(genIsValidIntReg(dstReg));
@@ -6672,7 +6672,7 @@ void CodeGen::genFloatToFloatCast(GenTree* treeNode)
     else
     {
         instruction ins = ins_FloatConv(dstType, srcType);
-        getEmitter()->emitInsBinary(ins, emitTypeSize(dstType), treeNode, op1);
+        GetEmitter()->emitInsBinary(ins, emitTypeSize(dstType), treeNode, op1);
     }
 
     genProduceReg(treeNode);
@@ -6761,12 +6761,12 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
     // cvtsi2ss/sd instruction.
 
     genConsumeOperands(treeNode->AsOp());
-    getEmitter()->emitIns_R_R(INS_xorps, EA_4BYTE, treeNode->gtRegNum, treeNode->gtRegNum);
+    GetEmitter()->emitIns_R_R(INS_xorps, EA_4BYTE, treeNode->gtRegNum, treeNode->gtRegNum);
 
     // Note that here we need to specify srcType that will determine
     // the size of source reg/mem operand and rex.w prefix.
     instruction ins = ins_FloatConv(dstType, TYP_INT);
-    getEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
+    GetEmitter()->emitInsBinary(ins, emitTypeSize(srcType), treeNode, op1);
 
     // Handle the case of srcType = TYP_ULONG. SSE2 conversion instruction
     // will interpret ULONG value as LONG.  Hence we need to adjust the
@@ -6799,9 +6799,9 @@ void CodeGen::genIntToFloatCast(GenTree* treeNode)
             static_assert_no_msg(sizeof(double) == sizeof(__int64));
             *((__int64*)&d) = 0x43f0000000000000LL;
 
-            *cns = getEmitter()->emitFltOrDblConst(d, EA_8BYTE);
+            *cns = GetEmitter()->emitFltOrDblConst(d, EA_8BYTE);
         }
-        getEmitter()->emitIns_R_C(INS_addsd, EA_8BYTE, treeNode->gtRegNum, *cns, 0);
+        GetEmitter()->emitIns_R_C(INS_addsd, EA_8BYTE, treeNode->gtRegNum, *cns, 0);
 
         genDefineTempLabel(label);
     }
@@ -6871,7 +6871,7 @@ void CodeGen::genFloatToIntCast(GenTree* treeNode)
     // the size of destination integer register and also the rex.w prefix.
     genConsumeOperands(treeNode->AsOp());
     instruction ins = ins_FloatConv(TYP_INT, srcType);
-    getEmitter()->emitInsBinary(ins, emitTypeSize(dstType), treeNode, op1);
+    GetEmitter()->emitInsBinary(ins, emitTypeSize(dstType), treeNode, op1);
     genProduceReg(treeNode);
 }
 
@@ -7202,7 +7202,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
     if (*bitMask == nullptr)
     {
         assert(cnsAddr != nullptr);
-        *bitMask = getEmitter()->emitAnyConst(cnsAddr, genTypeSize(targetType), emitDataAlignment::Preferred);
+        *bitMask = GetEmitter()->emitAnyConst(cnsAddr, genTypeSize(targetType), emitDataAlignment::Preferred);
     }
 
     // We need an additional register for bitmask.
@@ -7223,7 +7223,7 @@ void CodeGen::genSSE2BitwiseOp(GenTree* treeNode)
         operandReg = tmpReg;
     }
 
-    getEmitter()->emitIns_R_C(ins_Load(targetType, false), emitTypeSize(targetType), tmpReg, *bitMask, 0);
+    GetEmitter()->emitIns_R_C(ins_Load(targetType, false), emitTypeSize(targetType), tmpReg, *bitMask, 0);
     assert(ins != INS_invalid);
     inst_RV_RV(ins, targetReg, operandReg, targetType);
 }
@@ -7293,7 +7293,7 @@ void CodeGen::genSSE41RoundOp(GenTreeOp* treeNode)
 
     if (srcNode->isContained() || srcNode->isUsedFromSpillTemp())
     {
-        emitter* emit = getEmitter();
+        emitter* emit = GetEmitter();
 
         TempDsc* tmpDsc = nullptr;
         unsigned varNum = BAD_VAR_NUM;
@@ -7417,7 +7417,7 @@ void CodeGen::genIntrinsic(GenTree* treeNode)
             assert(srcNode->TypeGet() == treeNode->TypeGet());
 
             genConsumeOperands(treeNode->AsOp());
-            getEmitter()->emitInsBinary(ins_FloatSqrt(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode, srcNode);
+            GetEmitter()->emitInsBinary(ins_FloatSqrt(treeNode->TypeGet()), emitTypeSize(treeNode), treeNode, srcNode);
             break;
         }
 
@@ -7814,7 +7814,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk)
                     assert(!varTypeIsSIMD(fieldType)); // Q: can we get here with SIMD?
                     assert(fieldNode->IsRegOptional());
                     TempDsc* tmp = getSpillTempDsc(fieldNode);
-                    getEmitter()->emitIns_S(INS_push, emitActualTypeSize(fieldNode->TypeGet()), tmp->tdTempNum(), 0);
+                    GetEmitter()->emitIns_S(INS_push, emitActualTypeSize(fieldNode->TypeGet()), tmp->tdTempNum(), 0);
                     regSet.tmpRlsTemp(tmp);
                 }
                 else
@@ -7982,14 +7982,14 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
 
         if (data->isContainedIntOrIImmed())
         {
-            getEmitter()->emitIns_S_I(ins_Store(targetType), emitTypeSize(targetType), baseVarNum, argOffset,
+            GetEmitter()->emitIns_S_I(ins_Store(targetType), emitTypeSize(targetType), baseVarNum, argOffset,
                                       (int)data->AsIntConCommon()->IconValue());
         }
         else
         {
             assert(data->isUsedFromReg());
             genConsumeReg(data);
-            getEmitter()->emitIns_S_R(ins_Store(targetType), emitTypeSize(targetType), data->gtRegNum, baseVarNum,
+            GetEmitter()->emitIns_S_R(ins_Store(targetType), emitTypeSize(targetType), data->gtRegNum, baseVarNum,
                                       argOffset);
         }
     }
@@ -8064,7 +8064,7 @@ void CodeGen::genPushReg(var_types type, regNumber srcReg)
         }
         assert(genIsValidFloatReg(srcReg));
         inst_RV_IV(INS_sub, REG_SPBASE, size, EA_PTRSIZE);
-        getEmitter()->emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, 0);
+        GetEmitter()->emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, 0);
     }
     AddStackLevel(size);
 }
@@ -8140,11 +8140,11 @@ void CodeGen::genStoreRegToStackArg(var_types type, regNumber srcReg, int offset
     }
     else
     {
-        getEmitter()->emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, offset);
+        GetEmitter()->emitIns_AR_R(ins, attr, srcReg, REG_SPBASE, offset);
     }
 #else  // !_TARGET_X86_
     assert(m_stkArgVarNum != BAD_VAR_NUM);
-    getEmitter()->emitIns_S_R(ins, attr, srcReg, m_stkArgVarNum, m_stkArgOffset + offset);
+    GetEmitter()->emitIns_S_R(ins, attr, srcReg, m_stkArgVarNum, m_stkArgOffset + offset);
 #endif // !_TARGET_X86_
 }
 
@@ -8246,11 +8246,11 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
             const unsigned offset   = i * TARGET_POINTER_SIZE;
             if (srcAddrInReg)
             {
-                getEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, offset);
+                GetEmitter()->emitIns_AR_R(INS_push, slotAttr, REG_NA, srcRegNum, offset);
             }
             else
             {
-                getEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + offset);
+                GetEmitter()->emitIns_S(INS_push, slotAttr, srcLclNum, srcLclOffset + offset);
             }
             AddStackLevel(TARGET_POINTER_SIZE);
         }
@@ -8292,7 +8292,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
                 }
                 else
                 {
-                    getEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, adjacentNonGCSlotCount);
+                    GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, adjacentNonGCSlotCount);
                     instGen(INS_r_movsp);
                 }
             }
@@ -8305,7 +8305,7 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
                 // instGen(INS_movsp); and emission of gc info.
 
                 var_types memType = layout->GetGCPtrType(i);
-                getEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), REG_RCX, REG_RSI, 0);
+                GetEmitter()->emitIns_R_AR(ins_Load(memType), emitTypeSize(memType), REG_RCX, REG_RSI, 0);
                 genStoreRegToStackArg(memType, REG_RCX, i * TARGET_POINTER_SIZE);
 #ifdef DEBUG
                 numGCSlotsCopied++;
@@ -8317,11 +8317,11 @@ void CodeGen::genPutStructArgStk(GenTreePutArgStk* putArgStk)
                     // Source for the copy operation.
                     // If a LocalAddr, use EA_PTRSIZE - copy from stack.
                     // If not a LocalAddr, use EA_BYREF - the source location is not on the stack.
-                    getEmitter()->emitIns_R_I(INS_add, srcAddrAttr, REG_RSI, TARGET_POINTER_SIZE);
+                    GetEmitter()->emitIns_R_I(INS_add, srcAddrAttr, REG_RSI, TARGET_POINTER_SIZE);
 
                     // Always copying to the stack - outgoing arg area
                     // (or the outgoing arg area of the caller for a tail call) - use EA_PTRSIZE.
-                    getEmitter()->emitIns_R_I(INS_add, EA_PTRSIZE, REG_RDI, TARGET_POINTER_SIZE);
+                    GetEmitter()->emitIns_R_I(INS_add, EA_PTRSIZE, REG_RDI, TARGET_POINTER_SIZE);
                 }
             }
         }
@@ -8623,7 +8623,7 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     }
 
     // clang-format off
-    getEmitter()->emitIns_Call(callType,
+    GetEmitter()->emitIns_Call(callType,
                                compiler->eeFindHelper(helper),
                                INDEBUG_LDISASM_COMMA(nullptr) addr,
                                argSize,
@@ -8682,72 +8682,72 @@ void CodeGen::genAmd64EmitterUnitTests()
     genDefineTempLabel(genCreateTempLabel());
 
     // vhaddpd     ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_haddpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_haddpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vaddss      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_addss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_addss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vaddsd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_addsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_addsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vaddps      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_addps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vaddps      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_addps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_addps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vaddpd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_addpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_addpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vaddpd      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_addpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_addpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vsubss      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_subss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_subss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vsubsd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_subsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_subsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vsubps      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_subps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_subps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vsubps      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_subps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_subps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vsubpd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_subpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_subpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vsubpd      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_subpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_subpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vmulss      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_mulss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_mulss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vmulsd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_mulsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_mulsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vmulps      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_mulps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_mulps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vmulpd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_mulpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_mulpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vmulps      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_mulps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_mulps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vmulpd      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_mulpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_mulpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vandps      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_andps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_andps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vandpd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_andpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_andpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vandps      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_andps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_andps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vandpd      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_andpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_andpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vorps      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_orps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_orps, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vorpd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_orpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_orpd, EA_16BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vorps      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_orps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_orps, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vorpd      ymm0,ymm1,ymm2
-    getEmitter()->emitIns_R_R_R(INS_orpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_orpd, EA_32BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vdivss      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_divss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_divss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vdivsd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_divsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_divsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vdivss      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_divss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_divss, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vdivsd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_divsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_divsd, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
 
     // vdivss      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_cvtss2sd, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_cvtss2sd, EA_4BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
     // vdivsd      xmm0,xmm1,xmm2
-    getEmitter()->emitIns_R_R_R(INS_cvtsd2ss, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
+    GetEmitter()->emitIns_R_R_R(INS_cvtsd2ss, EA_8BYTE, REG_XMM0, REG_XMM1, REG_XMM2);
 #endif // ALL_XARCH_EMITTER_UNIT_TESTS
     printf("*************** End of genAmd64EmitterUnitTests()\n");
 }
@@ -8800,13 +8800,13 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
 #if defined(UNIX_X86_ABI)
     // Manually align the stack to be 16-byte aligned. This is similar to CodeGen::genAlignStackBeforeCall()
-    getEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, REG_SPBASE, 0xC);
+    GetEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, REG_SPBASE, 0xC);
 #endif // UNIX_X86_ABI
 
     // Push the profilerHandle
     if (compiler->compProfilerMethHndIndirected)
     {
-        getEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (ssize_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (ssize_t)compiler->compProfilerMethHnd);
     }
     else
     {
@@ -8830,7 +8830,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall
-    getEmitter()->emitIns_R_I(INS_add, EA_4BYTE, REG_SPBASE, 0x10);
+    GetEmitter()->emitIns_R_I(INS_add, EA_4BYTE, REG_SPBASE, 0x10);
 #endif // UNIX_X86_ABI
 
     /* Restore the stack level */
@@ -8880,7 +8880,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 #if defined(UNIX_X86_ABI)
     // Manually align the stack to be 16-byte aligned. This is similar to CodeGen::genAlignStackBeforeCall()
-    getEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, REG_SPBASE, 0xC);
+    GetEmitter()->emitIns_R_I(INS_sub, EA_4BYTE, REG_SPBASE, 0xC);
     AddStackLevel(0xC);
     AddNestedAlignment(0xC);
 #endif // UNIX_X86_ABI
@@ -8891,7 +8891,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
     if (compiler->compProfilerMethHndIndirected)
     {
-        getEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (ssize_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_AR_R(INS_push, EA_PTR_DSP_RELOC, REG_NA, REG_NA, (ssize_t)compiler->compProfilerMethHnd);
     }
     else
     {
@@ -8911,7 +8911,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 
 #if defined(UNIX_X86_ABI)
     // Restoring alignment manually. This is similar to CodeGen::genRemoveAlignmentAfterCall
-    getEmitter()->emitIns_R_I(INS_add, EA_4BYTE, REG_SPBASE, 0x10);
+    GetEmitter()->emitIns_R_I(INS_add, EA_4BYTE, REG_SPBASE, 0x10);
     SubtractStackLevel(0x10);
     SubtractNestedAlignment(0xC);
 #endif // UNIX_X86_ABI
@@ -8984,7 +8984,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
             }
 #endif // FEATURE_SIMD
 
-            getEmitter()->emitIns_S_R(store_ins, emitTypeSize(storeType), argReg, varNum, 0);
+            GetEmitter()->emitIns_S_R(store_ins, emitTypeSize(storeType), argReg, varNum, 0);
         }
     }
 
@@ -8994,7 +8994,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     {
         // Profiler hooks enabled during Ngen time.
         // Profiler handle needs to be accessed through an indirection of a pointer.
-        getEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
     else
     {
@@ -9017,7 +9017,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     //      of that offset to FramePointer to obtain caller's SP value.
     assert(compiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
     int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
-    getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
+    GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
 
     // Can't have a call until we have enough padding for rejit
     genPrologPadForReJit();
@@ -9057,7 +9057,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         }
 #endif // FEATURE_SIMD
 
-        getEmitter()->emitIns_R_S(load_ins, emitTypeSize(loadType), argReg, varNum, 0);
+        GetEmitter()->emitIns_R_S(load_ins, emitTypeSize(loadType), argReg, varNum, 0);
 
 #if FEATURE_VARARG
         if (compiler->info.compIsVarArgs && varTypeIsFloating(loadType))
@@ -9083,7 +9083,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     {
         // Profiler hooks enabled during Ngen time.
         // Profiler handle needs to be accessed through an indirection of a pointer.
-        getEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_PROFILER_ENTER_ARG_0,
+        GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_PROFILER_ENTER_ARG_0,
                                    (ssize_t)compiler->compProfilerMethHnd);
     }
     else
@@ -9107,7 +9107,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
     //      of that offset to FramePointer to obtain caller's SP value.
     assert(compiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
     int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
-    getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_1, genFramePointerReg(), -callerSPOffset);
+    GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_1, genFramePointerReg(), -callerSPOffset);
 
     // Can't have a call until we have enough padding for rejit
     genPrologPadForReJit();
@@ -9175,7 +9175,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     {
         // Profiler hooks enabled during Ngen time.
         // Profiler handle needs to be accessed through an indirection of an address.
-        getEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
     else
     {
@@ -9199,7 +9199,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         // Caller's SP relative offset to FramePointer will be negative.  We need to add absolute
         // value of that offset to FramePointer to obtain caller's SP value.
         int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
-        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
+        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
     }
     else
     {
@@ -9211,7 +9211,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         NYI_IF((varDsc == nullptr) || !varDsc->lvIsParam, "Profiler ELT callback for a method without any params");
 
         // lea rdx, [FramePointer + Arg0's offset]
-        getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_1, 0, 0);
+        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_1, 0, 0);
     }
 
     // We can use any callee trash register (other than RAX, RCX, RDX) for call target.
@@ -9225,7 +9225,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     // RDI = ProfilerMethHnd
     if (compiler->compProfilerMethHndIndirected)
     {
-        getEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
+        GetEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
     }
     else
     {
@@ -9243,7 +9243,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
     if (compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
     {
         int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
-        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
+        GetEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
     }
     else
     {
@@ -9251,7 +9251,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
         NYI_IF((varDsc == nullptr) || !varDsc->lvIsParam, "Profiler ELT callback for a method without any params");
 
         // lea rdx, [FramePointer + Arg0's offset]
-        getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_1, 0, 0);
+        GetEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_1, 0, 0);
     }
 
     // We can use any callee trash register (other than RAX, RDI, RSI) for call target.
