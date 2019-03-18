@@ -14,7 +14,7 @@ import argparse
 import subprocess
 import xml.dom.minidom as DOM
 from genEventing import parseTemplateNodes
-from utilities import open_for_update, update_directory
+from utilities import open_for_update, update_directory, parseExclusionList
 
 macroheader_filename = "etwmacros.h"
 mcheader_filename = "ClrEtwAll.h"
@@ -102,59 +102,12 @@ def genXplatHeader(intermediate):
 #endif //_CLR_XPLAT_EVENTS_H_
 """.format(etw_dirname, macroheader_filename, mcheader_filename))
 
-
-class EventExclusions:
-    def __init__(self):
-        self.nostack         = set()
-        self.explicitstack   = set()
-        self.noclrinstance   = set()
-
-def parseExclusionList(exclusion_filename):
-    with open(exclusion_filename,'r') as ExclusionFile:
-        exclusionInfo   = EventExclusions()
-
-        for line in ExclusionFile:
-            line = line.strip()
-
-            #remove comments
-            if not line or line.startswith('#'):
-                continue
-
-            tokens = line.split(':')
-            #entries starting with nomac are ignored
-            if "nomac" in tokens:
-                continue
-
-            if len(tokens) > 5:
-                raise Exception("Invalid Entry " + line + "in "+ exclusion_filename)
-
-            eventProvider = tokens[2]
-            eventTask     = tokens[1]
-            eventSymbol   = tokens[4]
-
-            if eventProvider == '':
-                eventProvider = "*"
-            if eventTask     == '':
-                eventTask     = "*"
-            if eventSymbol   == '':
-                eventSymbol   = "*"
-            entry = eventProvider + ":" + eventTask + ":" + eventSymbol
-
-            if tokens[0].lower() == "nostack":
-                exclusionInfo.nostack.add(entry)
-            if tokens[0].lower() == "stack":
-                exclusionInfo.explicitstack.add(entry)
-            if tokens[0].lower() == "noclrinstanceid":
-                exclusionInfo.noclrinstance.add(entry)
-
-    return exclusionInfo
-
 def getStackWalkBit(eventProvider, taskName, eventSymbol, stackSet):
     for entry in stackSet:
         tokens = entry.split(':')
 
         if len(tokens) != 3:
-            raise Exception("Error, possible error in the script which introduced the enrty "+ entry)
+            raise Exception("Error, possible error in the script which introduced the entry "+ entry)
 
         eventCond  = tokens[0] == eventProvider or tokens[0] == "*"
         taskCond   = tokens[1] == taskName      or tokens[1] == "*"
@@ -164,7 +117,7 @@ def getStackWalkBit(eventProvider, taskName, eventSymbol, stackSet):
             return False
     return True
 
-#Add the miscelaneous checks here
+#Add the miscellaneous checks here
 def checkConsistency(manifest, exclusion_filename):
     tree                      = DOM.parse(manifest)
     exclusionInfo = parseExclusionList(exclusion_filename)

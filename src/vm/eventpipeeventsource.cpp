@@ -51,6 +51,7 @@ EventPipeEventSource::EventPipeEventSource()
         0,      /* keywords */
         0,      /* eventVersion */
         EventPipeEventLevel::LogAlways,
+        false,  /* needStack */
         pMetadata,
         (unsigned int)metadataLength);
 
