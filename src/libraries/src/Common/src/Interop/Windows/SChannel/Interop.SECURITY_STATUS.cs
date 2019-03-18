@@ -43,6 +43,7 @@ internal static partial class Interop
         IllegalMessage = unchecked((int)0x80090326),
         CertUnknown = unchecked((int)0x80090327),
         CertExpired = unchecked((int)0x80090328),
+        DecryptFailure = unchecked((int)0x80090330),
         AlgorithmMismatch = unchecked((int)0x80090331),
         SecurityQosFailed = unchecked((int)0x80090332),
         SmartcardLogonRequired = unchecked((int)0x8009033E),
