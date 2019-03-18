@@ -7493,6 +7493,53 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
         return true;
     }
 
+    if (tk == MscorlibBinder::GetMethod(METHOD__RUNTIME_HELPERS__IS_BITWISE_EQUATABLE)->GetMemberDef())
+    {
+        _ASSERTE(ftn->HasMethodInstantiation());
+        Instantiation inst = ftn->GetMethodInstantiation();
+
+        _ASSERTE(ftn->GetNumGenericMethodArgs() == 1);
+        TypeHandle typeHandle = inst[0];
+        MethodTable * methodTable = typeHandle.GetMethodTable();
+
+        static const BYTE returnTrue[] = { CEE_LDC_I4_1, CEE_RET };
+        static const BYTE returnFalse[] = { CEE_LDC_I4_0, CEE_RET };
+
+        // Ideally we could detect automatically whether a type is trivially equatable
+        // (i.e., its operator == could be implemented via memcmp). But for now we'll
+        // do the simple thing and hardcode the list of types we know fulfill this contract.
+        // n.b. This doesn't imply that the type's CompareTo method can be memcmp-implemented,
+        // as a method like CompareTo may need to take a type's signedness into account.
+
+        if (methodTable == MscorlibBinder::GetClass(CLASS__BOOLEAN)
+            || methodTable == MscorlibBinder::GetClass(CLASS__BYTE)
+            || methodTable == MscorlibBinder::GetClass(CLASS__SBYTE)
+            || methodTable == MscorlibBinder::GetClass(CLASS__CHAR)
+            || methodTable == MscorlibBinder::GetClass(CLASS__INT16)
+            || methodTable == MscorlibBinder::GetClass(CLASS__UINT16)
+            || methodTable == MscorlibBinder::GetClass(CLASS__INT32)
+            || methodTable == MscorlibBinder::GetClass(CLASS__UINT32)
+            || methodTable == MscorlibBinder::GetClass(CLASS__INT64)
+            || methodTable == MscorlibBinder::GetClass(CLASS__UINT64)
+            || methodTable == MscorlibBinder::GetClass(CLASS__INTPTR)
+            || methodTable == MscorlibBinder::GetClass(CLASS__UINTPTR)
+            || methodTable == MscorlibBinder::GetClass(CLASS__RUNE)
+            || methodTable->IsEnum())
+        {
+            methInfo->ILCode = const_cast<BYTE*>(returnTrue);
+        }
+        else
+        {
+            methInfo->ILCode = const_cast<BYTE*>(returnFalse);
+        }
+
+        methInfo->ILCodeSize = sizeof(returnTrue);
+        methInfo->maxStack = 1;
+        methInfo->EHcount = 0;
+        methInfo->options = (CorInfoOptions)0;
+        return true;
+    }
+
     return false;
 }
 
