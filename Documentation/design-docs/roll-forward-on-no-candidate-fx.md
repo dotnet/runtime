@@ -125,7 +125,7 @@ Since there are three ways to specify the values, conflicts will be resolved by 
 	The feature is DISABLED.
 ```	
 	
-A final detail applies to when there is more than one framwork: the selected value determines the behavior only when loading the framework (fx1) specified in the application's config. If that framework (fx1) has its own config and specifies another lower-level framework (fx2), then (fx2) will inherit the same setting used to load (fx1). However, if the config for (fx1) specifies 'rollForwardOnNoCandidateFx' then that value will be used instead when loading (fx2).
+There is no inheritance when there are chained framework references. If the app references FX1, and FX1 references FX2, then the resolution of FX2 only takes into account settings from `.runtimeconfig.json` in FX1, CLI and env. variable. The settings in the app's `.runtimeconfig.json` have no effect on resolution of FX2.
 
 ## Multilevel SharedFx Lookup
 
