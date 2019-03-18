@@ -426,7 +426,7 @@ if %__BuildNative% EQU 1 (
     "!PYTHON!" -B -Wall  %__SourceDir%\scripts\genEventing.py --inc %__IntermediatesIncDir% --dummy %__IntermediatesIncDir%\etmdummy.h --man %__SourceDir%\vm\ClrEtwAll.man --nonextern --noxplatheader|| exit /b 1
 
     echo %__MsgPrefix%Laying out dynamically generated EventPipe Implementation
-    "!PYTHON!" -B -Wall %__SourceDir%\scripts\genEventPipe.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate %__IntermediatesEventingDir%\eventpipe --nonextern || exit /b 1
+    "!PYTHON!" -B -Wall %__SourceDir%\scripts\genEventPipe.py --man %__SourceDir%\vm\ClrEtwAll.man --exc %__SourceDir%\vm\ClrEtwAllMeta.lst --intermediate %__IntermediatesEventingDir%\eventpipe --nonextern || exit /b 1
 
     echo %__MsgPrefix%Laying out ETW event logging interface
     "!PYTHON!" -B -Wall %__SourceDir%\scripts\genEtwProvider.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate %__IntermediatesIncDir% --exc %__SourceDir%\vm\ClrEtwAllMeta.lst || exit /b 1
@@ -448,7 +448,7 @@ if %__BuildCrossArchNative% EQU 1 (
     "!PYTHON!" -B -Wall  %__SourceDir%\scripts\genEventing.py --inc !__CrossCompIntermediatesIncDir! --dummy !__CrossCompIntermediatesIncDir!\etmdummy.h --man %__SourceDir%\vm\ClrEtwAll.man --nonextern || exit /b 1
 
     echo %__MsgPrefix%Laying out dynamically generated EventPipe Implementation
-    "!PYTHON!" -B -Wall %__SourceDir%\scripts\genEventPipe.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate !__CrossCompIntermediatesEventingDir!\eventpipe --nonextern || exit /b 1
+    "!PYTHON!" -B -Wall %__SourceDir%\scripts\genEventPipe.py --man %__SourceDir%\vm\ClrEtwAll.man --exc %__SourceDir%\vm\ClrEtwAllMeta.lst --intermediate !__CrossCompIntermediatesEventingDir!\eventpipe --nonextern || exit /b 1
 
     echo %__MsgPrefix%Laying out dynamically generated EventSource classes
     "!PYTHON!" -B -Wall %__SourceDir%\scripts\genRuntimeEventSources.py --man %__SourceDir%\vm\ClrEtwAll.man --intermediate !__CrossCompIntermediatesEventingDir! || exit /b 1
