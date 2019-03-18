@@ -2072,6 +2072,8 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 			return NULL;
 		}
 	} else {
+		if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0)
+			return method;
 		mono_class_setup_vtable (constrained_class);
 		if (mono_class_has_failure (constrained_class)) {
 			mono_error_set_for_class_failure (error, constrained_class);
