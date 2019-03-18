@@ -331,50 +331,13 @@ namespace System.Text.Json
                     }
                     _tokenType = JsonTokenType.Number;
                     _consumed += numberOfBytes;
+                    return true;
                 }
                 else if (!ConsumeValueMultiSegment(first))
                 {
                     return false;
                 }
 
-                // Cannot use HasMoreData since the JSON payload contains a single, non-primitive value
-                // and hence must be handled differently.
-                if (_consumed >= (uint)_buffer.Length)
-                {
-                    goto SetIsNotPrimitiveAndReturnTrue;
-                }
-
-                if (_buffer[_consumed] <= JsonConstants.Space)
-                {
-                    SkipWhiteSpaceMultiSegment();
-                    if (_consumed >= (uint)_buffer.Length)
-                    {
-                        goto SetIsNotPrimitiveAndReturnTrue;
-                    }
-                }
-
-                if (_readerOptions.CommentHandling != JsonCommentHandling.Disallow)
-                {
-                    if (_readerOptions.CommentHandling == JsonCommentHandling.Allow)
-                    {
-                        // This is necessary to avoid throwing when the user has 1 or more comments as the first token
-                        // OR if there is a comment after a single, non-primitive value.
-                        // In this mode, ConsumeValue consumes the comment and we need to return it as a token.
-                        // along with future comments in subsequeunt reads.
-                        if (_tokenType == JsonTokenType.Comment || _buffer[_consumed] == JsonConstants.Slash)
-                        {
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        Debug.Assert(_readerOptions.CommentHandling == JsonCommentHandling.Skip);
-                        goto SetIsNotPrimitiveAndReturnTrue;
-                    }
-                }
-                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, _buffer[_consumed]);
-
-            SetIsNotPrimitiveAndReturnTrue:
                 if (_tokenType == JsonTokenType.StartObject || _tokenType == JsonTokenType.StartArray)
                 {
                     _isNotPrimitive = true;
@@ -1611,7 +1574,7 @@ namespace System.Text.Json
                 }
             }
 
-            if (!_isNotPrimitive)
+            if (CurrentDepth == 0)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
@@ -1718,7 +1681,7 @@ namespace System.Text.Json
                 first = _buffer[_consumed];
             }
 
-            if (!_isNotPrimitive && _tokenType != JsonTokenType.None)
+            if (CurrentDepth == 0 && _tokenType != JsonTokenType.None)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, first);
             }
@@ -2008,7 +1971,7 @@ namespace System.Text.Json
                 }
                 goto Done;
             }
-            else if (!_isNotPrimitive)
+            else if (CurrentDepth == 0)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
