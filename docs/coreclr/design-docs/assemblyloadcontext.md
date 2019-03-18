@@ -64,7 +64,7 @@ This property will return a reference to the *Default LoadContext*.
 
 ### Load
 
-This method should be overriden in a *Custom LoadContext* if the intent is to override the assembly resolution that would be done during fallback to *Defaut LoadContext*
+This method should be overriden in a *Custom LoadContext* if the intent is to override the assembly resolution that would be done during fallback to *Default LoadContext*
 
 ### LoadFromAssemblyName
 
