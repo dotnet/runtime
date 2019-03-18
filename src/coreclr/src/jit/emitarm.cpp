@@ -3344,9 +3344,7 @@ void emitter::emitIns_R_R_R_I(instruction ins,
     assert(sf != INS_FLAGS_DONT_CARE);
 
     // 3-reg ops can't use the small instrdesc
-    instrDescCns* id = emitAllocInstrCns(attr);
-    id->idSetIsLargeCns();
-    id->idcCnsVal = imm;
+    instrDesc* id = emitNewInstrCns(attr, imm);
 
     id->idIns(ins);
     id->idInsFmt(fmt);

@@ -2407,33 +2407,15 @@ emitter::instrDesc* emitter::emitNewInstrAmdCns(emitAttr size, ssize_t dsp, int 
 {
     if (dsp >= AM_DISP_MIN && dsp <= AM_DISP_MAX)
     {
-        if (cns >= ID_MIN_SMALL_CNS && cns <= ID_MAX_SMALL_CNS)
-        {
-            instrDesc* id = emitAllocInstr(size);
+        instrDesc* id                    = emitNewInstrCns(size, cns);
+        id->idAddr()->iiaAddrMode.amDisp = dsp;
+        assert(id->idAddr()->iiaAddrMode.amDisp == dsp); // make sure the value fit
 
-            id->idSmallCns(cns);
-
-            id->idAddr()->iiaAddrMode.amDisp = dsp;
-            assert(id->idAddr()->iiaAddrMode.amDisp == dsp); // make sure the value fit
-
-            return id;
-        }
-        else
-        {
-            instrDescCns* id = emitAllocInstrCns(size);
-
-            id->idSetIsLargeCns();
-            id->idcCnsVal = cns;
-
-            id->idAddr()->iiaAddrMode.amDisp = dsp;
-            assert(id->idAddr()->iiaAddrMode.amDisp == dsp); // make sure the value fit
-
-            return id;
-        }
+        return id;
     }
     else
     {
-        if (cns >= ID_MIN_SMALL_CNS && cns <= ID_MAX_SMALL_CNS)
+        if (instrDesc::fitsInSmallCns(cns))
         {
             instrDescAmd* id = emitAllocInstrAmd(size);
 
