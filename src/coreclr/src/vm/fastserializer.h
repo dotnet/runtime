@@ -11,23 +11,20 @@
 
 #include "fastserializableobject.h"
 #include "fstream.h"
-
-class FastSerializer;
-
-typedef unsigned int StreamLabel;
+#include "diagnosticsipc.h"
 
 // the enumeration has a specific set of values to keep it compatible with consumer library
 // it's sibling is defined in https://github.com/Microsoft/perfview/blob/10d1f92b242c98073b3817ac5ee6d98cd595d39b/src/FastSerialization/FastSerialization.cs#L2295
-enum class FastSerializerTags : BYTE 
+enum class FastSerializerTags : BYTE
 {
-    Error              = 0, // To improve debugabilty, 0 is an illegal tag.  
-    NullReference      = 1, // Tag for a null object forwardReference. 
-    ObjectReference    = 2, // Followed by StreamLabel 
-                            // 3 used to belong to ForwardReference, which got removed in V3 
+    Error              = 0, // To improve debugabilty, 0 is an illegal tag.
+    NullReference      = 1, // Tag for a null object forwardReference.
+    ObjectReference    = 2, // Followed by StreamLabel
+                            // 3 used to belong to ForwardReference, which got removed in V3
     BeginObject        = 4, // Followed by Type object, object data, tagged EndObject
-    BeginPrivateObject = 5, // Like beginObject, but not placed in interning table on deserialiation 
-    EndObject          = 6, // Placed after an object to mark its end. 
-                            // 7 used to belong to ForwardDefinition, which got removed in V3 
+    BeginPrivateObject = 5, // Like beginObject, but not placed in interning table on deserialiation
+    EndObject          = 6, // Placed after an object to mark its end.
+                            // 7 used to belong to ForwardDefinition, which got removed in V3
     Byte               = 8,
     Int16,
     Int32,
@@ -35,17 +32,53 @@ enum class FastSerializerTags : BYTE
     SkipRegion,
     String,
     Blob,
-    Limit                   // Just past the last valid tag, used for asserts.  
+    Limit                   // Just past the last valid tag, used for asserts.
+};
+
+//!
+//! Provides a generic interface for writing a sequence of bytes to a stream.
+//!
+class StreamWriter
+{
+public:
+    StreamWriter() = default;
+    virtual ~StreamWriter() = default;
+    virtual bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const = 0;
+};
+
+//!
+//! Implements a StreamWriter for writing bytes to an IPC.
+//!
+class IpcStreamWriter final : public StreamWriter
+{
+public:
+    IpcStreamWriter(IpcStream *pStream);
+    ~IpcStreamWriter();
+    bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const;
+
+private:
+    IpcStream *const _pStream;
+};
+
+//!
+//! Implements a StreamWriter for writing bytes to an File.
+//!
+class FileStreamWriter final : public StreamWriter
+{
+public:
+    FileStreamWriter(const SString &outputFilePath);
+    ~FileStreamWriter();
+    bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const;
+
+private:
+    CFileStream *m_pFileStream;
 };
 
 class FastSerializer
 {
 public:
-
-    FastSerializer(SString &outputFilePath);
+    FastSerializer(StreamWriter *pStreamWriter);
     ~FastSerializer();
-
-    StreamLabel GetStreamLabel() const;
 
     void WriteObject(FastSerializableObject *pObject);
     void WriteBuffer(BYTE *pBuffer, unsigned int length);
@@ -55,16 +88,14 @@ public:
     size_t GetCurrentPosition() const
     {
         LIMITED_METHOD_CONTRACT;
-
         return m_currentPos;
     }
 
 private:
-
     void WriteSerializationType(FastSerializableObject *pObject);
     void WriteFileHeader();
 
-    CFileStream *m_pFileStream;
+    StreamWriter *const m_pStreamWriter;
     bool m_writeErrorEncountered;
     size_t m_currentPos;
 };

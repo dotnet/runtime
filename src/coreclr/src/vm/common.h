@@ -75,7 +75,6 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <objbase.h>
-#include <stddef.h>
 #include <float.h>
 #include <math.h>
 #include <time.h>

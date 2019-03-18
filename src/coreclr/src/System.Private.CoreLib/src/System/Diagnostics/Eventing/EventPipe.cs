@@ -196,9 +196,9 @@ namespace System.Diagnostics.Tracing
             s_sessionID = EventPipeInternal.Enable(
                 configuration.OutputFile,
                 configuration.CircularBufferSizeInMB,
-                configuration.ProfilerSamplingRateInNanoseconds,
+                (ulong)configuration.ProfilerSamplingRateInNanoseconds,
                 providers,
-                providers.Length,
+                (uint)providers.Length,
                 configuration.MultiFileTraceLengthInSeconds);
         }
 
@@ -214,7 +214,13 @@ namespace System.Diagnostics.Tracing
         // These PInvokes are used by the configuration APIs to interact with EventPipe.
         //
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern UInt64 Enable(string outputFile, uint circularBufferSizeInMB, long profilerSamplingRateInNanoseconds, EventPipeProviderConfiguration[] providers, int numProviders, ulong multiFileTraceLengthInSeconds);
+        internal static extern UInt64 Enable(
+            string outputFile,
+            uint circularBufferSizeInMB,
+            ulong profilerSamplingRateInNanoseconds,
+            EventPipeProviderConfiguration[] providers,
+            uint numProviders,
+            ulong multiFileTraceLengthInSeconds);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void Disable(UInt64 sessionID);

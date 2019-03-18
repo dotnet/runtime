@@ -480,6 +480,17 @@ static const int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
 PALIMPORT
 VOID
 PALAPI
+PAL_GetTransportName(
+    const int MAX_TRANSPORT_NAME_LENGTH,
+    OUT char *name,
+    IN const char *prefix,
+    IN DWORD id,
+    IN const char *applicationGroupId,
+    IN const char *suffix);
+
+PALIMPORT
+VOID
+PALAPI
 PAL_GetTransportPipeName(
     OUT char *name,
     IN DWORD id,
