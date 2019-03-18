@@ -512,7 +512,7 @@ namespace Microsoft.Extensions.Configuration
                 }
                 catch (Exception ex)
                 {
-                    error = new InvalidOperationException(Resources.FormatError_FailedBinding(value, type), ex);
+                    error = new InvalidOperationException(Resources.FormatError_FailedBinding(type), ex);
                 }
                 return true;
             }
