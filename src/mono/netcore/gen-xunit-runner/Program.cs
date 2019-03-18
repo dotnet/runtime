@@ -80,7 +80,7 @@ class Program
 		else if (val is Type)
 			result = new CodeTypeOfExpression ((Type)val);
 		else if (val is Enum) {
-            TypeCode typeCode = Convert.GetTypeCode (val);
+			TypeCode typeCode = Convert.GetTypeCode (val);
 			object o;
 			if (typeCode == TypeCode.UInt64)
 				o = UInt64.Parse (((Enum)val).ToString ("D"));
@@ -93,14 +93,14 @@ class Program
 			var arr = (IEnumerable)val;
 			var arr_expr = new CodeArrayCreateExpression (new CodeTypeReference (val.GetType ()), new CodeExpression [] {});
 			foreach (var v in arr)
-				arr_expr.Initializers.Add (EncodeValue (v, v?.GetType()));
+				arr_expr.Initializers.Add (EncodeValue (v, v?.GetType ()));
 			result = arr_expr;
 		} else {
 			throw new Exception ("Unable to emit inline data: " + val.GetType () + " " + val);
 		}
 
-		if (val != null && val.GetType() != expectedType)
-			result = new CodeCastExpression(new CodeTypeReference(expectedType), result);
+		if (val != null && val.GetType () != expectedType)
+			result = new CodeCastExpression (new CodeTypeReference (expectedType), result);
 
 		return result;
 	}
@@ -266,11 +266,11 @@ class Program
 
 					if (test.Values != null)
 					{
-						var parameters = m.GetParameters();
+						var parameters = m.GetParameters ();
 						for (var index = 0; index < test.Values.Length; index++)
 						{
-							var val = test.Values[index];
-							call.Parameters.Add(EncodeValue(val, parameters[index].ParameterType));
+							var val = test.Values [index];
+							call.Parameters.Add (EncodeValue (val, parameters [index].ParameterType));
 						}
 					}
 					try1.TryStatements.Add (call);
