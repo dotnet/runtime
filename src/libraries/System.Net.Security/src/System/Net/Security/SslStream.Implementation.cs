@@ -1497,7 +1497,7 @@ namespace System.Net.Security
             }
         }
 
-        private ValueTask WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
+        private async Task WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
             where TWriteAdapter : struct, ISslWriteAdapter
         {
             CheckThrow(authSuccessCheck: true, shutdownCheck: true);
@@ -1505,7 +1505,7 @@ namespace System.Net.Security
             if (buffer.Length == 0 && !SslStreamPal.CanEncryptEmptyMessage)
             {
                 // If it's an empty message and the PAL doesn't support that, we're done.
-                return default;
+                return;
             }
 
             if (Interlocked.Exchange(ref _nestedWrite, 1) == 1)
@@ -1513,38 +1513,27 @@ namespace System.Net.Security
                 throw new NotSupportedException(SR.Format(SR.net_io_invalidnestedcall, nameof(WriteAsync), "write"));
             }
 
-            ValueTask t = buffer.Length < MaxDataSize ?
+            try
+            {
+                ValueTask t = buffer.Length < MaxDataSize ?
                     WriteSingleChunk(writeAdapter, buffer) :
                     new ValueTask(WriteAsyncChunked(writeAdapter, buffer));
+                await t.ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                FinishWrite();
 
-            if (t.IsCompletedSuccessfully)
+                if (e is IOException)
+                {
+                    throw;
+                }
+
+                throw new IOException(SR.net_io_write, e);
+            }
+            finally
             {
                 _nestedWrite = 0;
-                return t;
-            }
-            return new ValueTask(ExitWriteAsync(t));
-
-            async Task ExitWriteAsync(ValueTask task)
-            {
-                try
-                {
-                    await task.ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    FinishWrite();
-
-                    if (e is IOException)
-                    {
-                        throw;
-                    }
-
-                    throw new IOException(SR.net_io_write, e);
-                }
-                finally
-                {
-                    _nestedWrite = 0;
-                }
             }
         }
 

@@ -113,8 +113,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [ActiveIssue(36076)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not recover well from underlying stream failures")]
         [Fact]
         public async Task Write_CorrectlyUnlocksAfterFailure()
         {
@@ -131,14 +129,11 @@ namespace System.Net.Security.Tests
                 Assert.Same(clientStream.ExceptionToThrow, thrown.InnerException);
                 clientStream.ExceptionToThrow = null;
 
-                // Validate that the SslStream continues to be usable
-                for (byte b = 42; b < 52; b++)
-                {
-                    await WriteAsync(clientSslStream, new byte[1] { b }, 0, 1);
-                    byte[] buffer = new byte[1];
-                    Assert.Equal(1, await ReadAsync(serverSslStream, buffer, 0, 1));
-                    Assert.Equal(b, buffer[0]);
-                }
+                // Validate that the SslStream continues to be writable. However, the stream is still largely
+                // unusable: because the previously encrypted data won't have been written to the underlying
+                // stream and thus not received by the reader, if we tried to validate this data being received
+                // by the reader, it would likely fail with a decryption error.
+                await WriteAsync(clientSslStream, new byte[1] { 42 }, 0, 1);
             }
         }
 
