@@ -74,12 +74,11 @@ class Program
 
 	static CodeExpression EncodeValue (object val, Type expectedType)
 	{
+		CodeExpression result = null;
 		if (val is int || val is long || val is uint || val is ulong || val is byte || val is sbyte || val is short || val is ushort || val is bool || val is string || val is char || val is float || val is double)
-		{
-			return new CodeCastExpression(new CodeTypeReference(expectedType), new CodePrimitiveExpression(val));
-		}
+			result = new CodeCastExpression(new CodeTypeReference(val.GetType()), new CodePrimitiveExpression(val));
 		else if (val is Type)
-			return new CodeTypeOfExpression ((Type)val);
+			result = new CodeTypeOfExpression ((Type)val);
 		else if (val is Enum) {
             TypeCode typeCode = Convert.GetTypeCode (val);
 			object o;
@@ -87,18 +86,23 @@ class Program
 				o = UInt64.Parse (((Enum)val).ToString ("D"));
 			else
 				o = Int64.Parse (((Enum)val).ToString ("D"));
-			return new CodeCastExpression (new CodeTypeReference (val.GetType ()), new CodePrimitiveExpression (o));
+			result = new CodeCastExpression (new CodeTypeReference (val.GetType ()), new CodePrimitiveExpression (o));
 		} else if (val is null) {
-			return new CodePrimitiveExpression (null);
+			result = new CodePrimitiveExpression (null);
 		} else if (val is Array) {
 			var arr = (IEnumerable)val;
 			var arr_expr = new CodeArrayCreateExpression (new CodeTypeReference (val.GetType ()), new CodeExpression [] {});
 			foreach (var v in arr)
 				arr_expr.Initializers.Add (EncodeValue (v, v?.GetType()));
-			return arr_expr;
+			result = arr_expr;
 		} else {
 			throw new Exception ("Unable to emit inline data: " + val.GetType () + " " + val);
 		}
+
+		if (val != null && val.GetType() != expectedType)
+			result = new CodeCastExpression(new CodeTypeReference(expectedType), result);
+
+		return result;
 	}
 
 	static int Main (string[] args)
