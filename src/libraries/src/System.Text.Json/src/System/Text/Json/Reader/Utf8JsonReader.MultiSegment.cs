@@ -59,7 +59,7 @@ namespace System.Text.Json
                 _nextPosition = default;
                 _currentPosition = jsonData.Start;
                 _isLastSegment = isFinalBlock;
-                _isSingleSegment = true;
+                _isMultiSegment = false;
             }
             else
             {
@@ -84,7 +84,7 @@ namespace System.Text.Json
                 }
 
                 _isLastSegment = !jsonData.TryGet(ref _nextPosition, out _, advance: true) && isFinalBlock; // Don't re-order to avoid short-circuiting
-                _isSingleSegment = false;
+                _isMultiSegment = true;
             }
         }
 
@@ -268,7 +268,7 @@ namespace System.Text.Json
             ReadOnlyMemory<byte> memory = default;
             while (true)
             {
-                Debug.Assert(_isSingleSegment || _currentPosition.GetObject() != null);
+                Debug.Assert(!_isMultiSegment || _currentPosition.GetObject() != null);
                 SequencePosition copy = _currentPosition;
                 _currentPosition = _nextPosition;
                 bool noMoreData = !_sequence.TryGet(ref _nextPosition, out memory, advance: true);
@@ -285,7 +285,7 @@ namespace System.Text.Json
                 // _currentPosition needs to point to last non-empty segment
                 // Since memory.Length == 0, we need to revert back to previous.
                 _currentPosition = copy;
-                Debug.Assert(_isSingleSegment || _currentPosition.GetObject() != null);
+                Debug.Assert(!_isMultiSegment || _currentPosition.GetObject() != null);
             }
 
             if (_isFinalBlock)

@@ -40,13 +40,13 @@ namespace System.Text.Json
         private long _totalConsumed;
         private bool _isLastSegment;
         internal bool _stringHasEscaping;
-        private readonly bool _isSingleSegment;
+        private readonly bool _isMultiSegment;
 
         private SequencePosition _nextPosition;
         private SequencePosition _currentPosition;
         private ReadOnlySequence<byte> _sequence;
 
-        private bool IsLastSpan => _isFinalBlock && (_isSingleSegment || _isLastSegment);
+        private bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
 
         /// <summary>
         /// Gets the value of the last processed token as a ReadOnlySpan&lt;byte&gt; slice
@@ -183,7 +183,7 @@ namespace System.Text.Json
             _consumed = 0;
             _totalConsumed = 0;
             _isLastSegment = _isFinalBlock;
-            _isSingleSegment = true;
+            _isMultiSegment = false;
 
             ValueSpan = ReadOnlySpan<byte>.Empty;
 
@@ -204,7 +204,7 @@ namespace System.Text.Json
         /// </exception>
         public bool Read()
         {
-            bool retVal = _isSingleSegment ? ReadSingleSegment() : ReadMultiSegment();
+            bool retVal = _isMultiSegment ? ReadMultiSegment() : ReadSingleSegment();
 
             if (!retVal)
             {
