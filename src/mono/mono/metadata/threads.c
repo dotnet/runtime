@@ -3722,6 +3722,11 @@ mono_thread_manage (void)
 		mono_thread_execute_interruption_void ();
 	}
 
+#ifndef ENABLE_NETCORE
+	/*
+	 * Under netcore, we don't abort any threads, just exit.
+	 * This is not a problem since we don't do runtime cleanup either.
+	 */
 	/* 
 	 * Remove everything but the finalizer thread and self.
 	 * Also abort all the background threads
@@ -3742,6 +3747,7 @@ mono_thread_manage (void)
 			wait_for_tids (wait, MONO_INFINITE_WAIT, FALSE);
 		}
 	} while (wait->num > 0);
+#endif
 	
 	/* 
 	 * give the subthreads a chance to really quit (this is mainly needed
