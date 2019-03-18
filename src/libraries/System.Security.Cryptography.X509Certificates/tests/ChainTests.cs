@@ -814,6 +814,7 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
             }
         }
 
+        [ActiveIssue(36124, TestPlatforms.Windows)]
         [Fact]
         public static void BuildInvalidSignatureTwice()
         {
