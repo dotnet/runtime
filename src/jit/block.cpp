@@ -705,7 +705,7 @@ Statement* BasicBlock::lastStmt() const
 //
 GenTree* BasicBlock::firstNode()
 {
-    return IsLIR() ? bbTreeList : Compiler::fgGetFirstNode(firstStmt()->gtStmtExpr);
+    return IsLIR() ? GetBBTreeList() : Compiler::fgGetFirstNode(firstStmt()->gtStmtExpr);
 }
 
 //------------------------------------------------------------------------
@@ -819,7 +819,7 @@ bool BasicBlock::isValid()
     else
     {
         // Should not have tree list before LIR.
-        return (bbTreeList == nullptr);
+        return (GetBBTreeList() == nullptr);
     }
 }
 
