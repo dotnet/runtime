@@ -43,7 +43,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private string _connStr;
 
         [ActiveIssue(27858, TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestMain()
         {
             Assert.True(RunTestCoreAndCompareWithBaseline());
@@ -63,13 +63,13 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             var enumerator = new WraparoundRowEnumerator(1000000);
 
             int returned = Task.WaitAny(
-                Task.Factory.StartNew( 
-                    () => RunPacketNumberWraparound(enumerator), 
-                    TaskCreationOptions.DenyChildAttach|TaskCreationOptions.LongRunning
+                Task.Factory.StartNew(
+                    () => RunPacketNumberWraparound(enumerator),
+                    TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning
                 ),
                 Task.Delay(TimeSpan.FromSeconds(5))
             );
-            Assert.True(enumerator.MaxCount==enumerator.Count);
+            Assert.True(enumerator.MaxCount == enumerator.Count);
         }
 
 
@@ -241,7 +241,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-#region Main test methods
+        #region Main test methods
         private void ColumnBoundariesTest()
         {
             IEnumerator<StePermutation> boundsMD = SteStructuredTypeBoundaries.AllColumnTypesExceptUdts.GetEnumerator(
@@ -600,9 +600,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
             }
         }
-#endregion
+        #endregion
 
-#region Utility Methods
+        #region Utility Methods
 
         private bool AllowableDifference(string source, object result, StePermutation metadata)
         {
@@ -1421,7 +1421,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
 
-#endregion
+        #endregion
     }
 
     internal class TvpRestartableReader : DbDataReader
