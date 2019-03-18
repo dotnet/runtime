@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Data.Common.TypeForwards.cs" />
+    <Compile Include="System\Data\DataReaderExtensions.cs" />
     <Compile Include="System\HResults.cs" />
     <Compile Include="System\Xml\TreeIterator.cs" />
     <Compile Include="System\Xml\XmlBoundElement.cs" />
@@ -195,7 +196,6 @@
       <SubType>Component</SubType>
     </Compile>
     <Compile Include="System\Data\Common\DbDataReader.cs" />
-    <Compile Include="System\Data\Common\DbDataReader.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\Data\Common\DbDataReaderExtensions.cs" />
     <Compile Include="System\Data\Common\DbDataRecord.cs" />
     <Compile Include="System\Data\Common\DbDataSourceEnumerator.cs" />
