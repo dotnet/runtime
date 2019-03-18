@@ -789,7 +789,7 @@ namespace System.Net.Security
         {
             CheckThrow(true);
             SslWriteAsync writeAdapter = new SslWriteAsync(this, cancellationToken);
-            return WriteAsyncInternal(writeAdapter, buffer);
+            return new ValueTask(WriteAsyncInternal(writeAdapter, buffer));
         }
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
