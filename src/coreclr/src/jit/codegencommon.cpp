@@ -10816,7 +10816,7 @@ void CodeGen::genIPmappingAdd(IL_OFFSETX offsx, bool isLabel)
 
         default:
 
-            if (offsx != ICorDebugInfo::NO_MAPPING)
+            if (offsx != (IL_OFFSETX)ICorDebugInfo::NO_MAPPING)
             {
                 noway_assert(jitGetILoffs(offsx) <= compiler->info.compILCodeSize);
             }

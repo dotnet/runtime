@@ -777,6 +777,7 @@ typename hashtable<Key, Value, Hash, Pred, Alloc, KeyOf>::size_type
 hashtable<Key, Value, Hash, Pred, Alloc, KeyOf>::bucket_size(size_type size) const
 {
     rehash(size);
+    return bucket_count();
 }
 
 template <typename Key, typename Value, typename Hash, typename Pred, typename Alloc, typename KeyOf>
