@@ -7100,7 +7100,10 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		amd64_mov_membase_reg (code, AMD64_RSP, -8, AMD64_RDI, 8);
 		amd64_mov_membase_reg (code, AMD64_RSP, -16, AMD64_RCX, 8);
 
+MONO_DISABLE_WARNING (4310) // cast truncates constant value
 		amd64_mov_reg_imm (code, AMD64_RAX, 0x2a2a2a2a2a2a2a2a);
+MONO_RESTORE_WARNING
+
 		amd64_mov_reg_imm (code, AMD64_RCX, alloc_size / 8);
 		amd64_mov_reg_reg (code, AMD64_RDI, AMD64_RSP, 8);
 

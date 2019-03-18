@@ -4832,7 +4832,9 @@ add_wrappers (MonoAotCompile *acfg)
 					g_assert (!strcmp (name, "ExportSymbol"));
 
 					/* load_cattr_value (), string case */
-					g_assert (*named != (char)0xff);
+MONO_DISABLE_WARNING (4310) // cast truncates constant value
+					g_assert (*named != (char)0xFF);
+MONO_RESTORE_WARNING
 					slen = mono_metadata_decode_value (named, &named);
 					export_name = (char *)g_malloc (slen + 1);
 					memcpy (export_name, named, slen);
