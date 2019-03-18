@@ -10,7 +10,7 @@
     <MicrosoftNetFrameworkReferenceAssembliesVersion>1.0.0-alpha-004</MicrosoftNetFrameworkReferenceAssembliesVersion>
     <MicrosoftPrivateCoreFxNETCoreAppVersion>4.6.0-preview4.19164.7</MicrosoftPrivateCoreFxNETCoreAppVersion>
     <MicrosoftNETCorePlatformsVersion>3.0.0-preview4.19164.7</MicrosoftNETCorePlatformsVersion>
-    <MicrosoftNETCoreAppVersion>3.0.0-preview4-27516-06</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreAppVersion>3.0.0-preview4-27517-03</MicrosoftNETCoreAppVersion>
     <optimizationIBCCoreCLRVersion>99.99.99-master-20190313.3</optimizationIBCCoreCLRVersion>
     <optimizationPGOCoreCLRVersion>99.99.99-master-20190313.3</optimizationPGOCoreCLRVersion>
   </PropertyGroup>
