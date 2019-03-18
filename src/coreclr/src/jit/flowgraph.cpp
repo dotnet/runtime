@@ -15283,11 +15283,11 @@ void Compiler::fgReorderBlocks()
                         //  is more than twice the max weight of the bPrev to block edge.
                         //
                         //                  bPrev -->   [BB04, weight 31]
-                        //                                     |         \
-                        //          edgeToBlock -------------> O          \
-                        //          [min=8,max=10]             V           \
-                        //                  block -->   [BB05, weight 10]   \
-                        //                                                   \
+                        //                                     |         \.
+                        //          edgeToBlock -------------> O          \.
+                        //          [min=8,max=10]             V           \.
+                        //                  block -->   [BB05, weight 10]   \.
+                        //                                                   \.
                         //          edgeToDest ----------------------------> O
                         //          [min=21,max=23]                          |
                         //                                                   V
@@ -15331,10 +15331,10 @@ void Compiler::fgReorderBlocks()
                         //   2. Check that the weight of bPrev is at least three times more than block
                         //
                         //                  bPrev -->   [BB04, weight 31]
-                        //                                     |         \
-                        //                                     V          \
-                        //                  block -->   [BB05, weight 10]  \
-                        //                                                  \
+                        //                                     |         \.
+                        //                                     V          \.
+                        //                  block -->   [BB05, weight 10]  \.
+                        //                                                  \.
                         //                                                  |
                         //                                                  V
                         //                  bDest --------------->   [BB08, weight 21]
@@ -21069,8 +21069,8 @@ void Compiler::fgDebugCheckBBlist(bool checkBBNum /* = false */, bool checkBBRef
         // written to or address-exposed.
         assert(compThisArgAddrExposedOK && !lvaTable[info.compThisArg].lvHasILStoreOp &&
                (lvaArg0Var == info.compThisArg ||
-                lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].lvAddrExposed ||
-                                                   lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt)));
+                (lvaArg0Var != info.compThisArg && (lvaTable[lvaArg0Var].lvAddrExposed ||
+                                                    lvaTable[lvaArg0Var].lvHasILStoreOp || copiedForGenericsCtxt))));
     }
 }
 

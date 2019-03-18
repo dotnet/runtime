@@ -100,7 +100,11 @@ uint32_t CLREventStatic::Wait(uint32_t dwMilliseconds, bool bAlertable)
     return result;
 }
 
+#ifndef __GNUC__
 __declspec(thread) Thread * pCurrentThread;
+#else // !__GNUC__
+thread_local Thread * pCurrentThread;
+#endif // !__GNUC__
 
 Thread * GetThread()
 {

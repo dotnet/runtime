@@ -1780,7 +1780,7 @@ void UnwindInfo::InitUnwindInfo(Compiler* comp, emitLocation* startLoc, emitLoca
     // However, its constructor needs to be explicitly called, since the constructor for
     // UnwindInfo is not called.
 
-    uwiFragmentFirst.UnwindFragmentInfo::UnwindFragmentInfo(comp, startLoc, false);
+    new (&uwiFragmentFirst, jitstd::placement_t()) UnwindFragmentInfo(comp, startLoc, false);
 
     uwiFragmentLast = &uwiFragmentFirst;
 
