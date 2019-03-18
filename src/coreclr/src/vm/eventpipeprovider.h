@@ -72,7 +72,7 @@ public:
     // Create a new event.
     EventPipeEvent* AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
 
-  private:
+private:
 
     // Create a new event, but allow needStack to be specified.
     // In general, we want stack walking to be controlled by the consumer and not the producer of events.

@@ -9,6 +9,7 @@
 #include "eventpipemetadatagenerator.h"
 #include "eventpipeprovider.h"
 #include "eventpipesession.h"
+#include "eventpipesessionprovider.h"
 
 #ifdef FEATURE_PERFTRACING
 
