@@ -3859,7 +3859,7 @@ inline bool Compiler::compIsForImportOnly()
  *  Returns true if the compiler instance is created for inlining.
  */
 
-inline bool Compiler::compIsForInlining()
+inline bool Compiler::compIsForInlining() const
 {
     return (impInlineInfo != nullptr);
 }
