@@ -436,7 +436,12 @@ build_native_projects()
         pushd "$intermediatesForBuild"
         # Regenerate the CMake solution
         # Force cross dir to point to project root cross dir, in case there is a cross build.
-        nextCommand="CONFIG_DIR=\"$__ProjectRoot/cross\" \"$__ProjectRoot/src/pal/tools/gen-buildsys-clang.sh\" \"$__TestDir\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
+        scriptDir="$__ProjectRoot/src/pal/tools"
+        if [[ $__GccBuild == 0 ]]; then
+            nextCommand="CONFIG_DIR=\"$__ProjectRoot/cross\" \"$scriptDir/gen-buildsys-clang.sh\" \"$__TestDir\" $__ClangMajorVersion $__ClangMinorVersion $platformArch $scriptDir $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
+        else
+            nextCommand="CONFIG_DIR=\"$__ProjectRoot/cross\" \"$scriptDir/gen-buildsys-gcc.sh\" \"$__TestDir\" \"$__GccMajorVersion\" \"$__GccMinorVersion\" $platformArch $scriptDir $__BuildType $__CodeCoverage $generator $extraCmakeArguments $__cmakeargs"
+        fi
         echo "Invoking $nextCommand"
         eval $nextCommand
         popd
@@ -475,6 +480,7 @@ usage()
     echo "coverage - optional argument to enable code coverage build (currently supported only for Linux and OSX)."
     echo "ninja - target ninja instead of GNU make"
     echo "clangx.y - optional argument to build using clang version x.y - supported version 3.5 - 6.0"
+    echo "gccx.y - optional argument to build using gcc version x.y."
     echo "cross - optional argument to signify cross compilation,"
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "portableLinux - build for Portable Linux Distribution"
@@ -601,6 +607,9 @@ __ConfigureOnly=0
 __CrossBuild=0
 __ClangMajorVersion=0
 __ClangMinorVersion=0
+__GccBuild=0
+__GccMajorVersion=0
+__GccMinorVersion=0
 __NuGetPath="$__PackagesDir/NuGet.exe"
 __SkipRestorePackages=0
 __DistroRid=""
@@ -724,6 +733,36 @@ while :; do
         clang6.0|-clang6.0)
             __ClangMajorVersion=6
             __ClangMinorVersion=0
+            ;;
+
+        gcc5|-gcc5)
+            __GccMajorVersion=5
+            __GccMinorVersion=
+            __GccBuild=1
+            ;;
+
+        gcc6|-gcc6)
+            __GccMajorVersion=6
+            __GccMinorVersion=
+            __GccBuild=1
+            ;;
+
+        gcc7|-gcc7)
+            __GccMajorVersion=7
+            __GccMinorVersion=
+            __GccBuild=1
+            ;;
+
+        gcc8|-gcc8)
+            __GccMajorVersion=8
+            __GccMinorVersion=
+            __GccBuild=1
+            ;;
+
+        gcc|-gcc)
+            __GccMajorVersion=
+            __GccMinorVersion=
+            __GccBuild=1
             ;;
 
         ninja)

@@ -2589,7 +2589,7 @@ void CodeVersionManager::OnAppDomainExit(AppDomain * pAppDomain)
     LIMITED_METHOD_CONTRACT;
     // This would clean up all the allocations we have done and synchronize with any threads that might
     // still be using the data
-    _ASSERTE(!".Net Core shouldn't be doing app domain shutdown - if we start doing so this needs to be implemented");
+    _ASSERTE(!".NET Core shouldn't be doing app domain shutdown - if we start doing so this needs to be implemented");
 }
 #endif
 

@@ -187,7 +187,7 @@ typedef DPTR(struct LookupMapBase) PTR_LookupMapBase;
 // importantly we cannot mutate compressed entries (for obvious reasons). Many of the lookup maps are only
 // partially populated at ngen time or otherwise might be updated at runtime and thus are not candidates.
 //
-// In the threshhold timeframe (predicted to be .Net 4.5.3 at the time of writing), we added profiler support
+// In the threshhold timeframe (predicted to be .NET Framework 4.5.3 at the time of writing), we added profiler support
 // for adding new types to NGEN images. Historically we could always do this for jitted images, but one of the
 // blockers for NGEN were the compressed RID maps. We worked around that by supporting multi-node maps in which
 // the first node is compressed, but all future nodes are uncompressed. The NGENed portion will all land in the
@@ -1627,6 +1627,11 @@ private:
     BOOL                            m_nativeImageProfiling;
     CORCOMPILE_METHOD_PROFILE_LIST *m_methodProfileList;
 
+#if PROFILING_SUPPORTED_DATA 
+    DWORD                   m_dwTypeCount;
+    DWORD                   m_dwExportedTypeCount;
+#endif // PROFILING_SUPPORTED_DATA
+
 #if defined(FEATURE_COMINTEROP)
         public:
 
@@ -2525,6 +2530,8 @@ public:
                                                DEBUGGER_INFO_MASK_PRIV) >>
                                               DEBUGGER_INFO_SHIFT_PRIV);
     }
+
+    void UpdateNewlyAddedTypes();
 
 #ifdef PROFILING_SUPPORTED
     BOOL IsProfilerNotified() {LIMITED_METHOD_CONTRACT;  return (m_dwTransientFlags & IS_PROFILER_NOTIFIED) != 0; }

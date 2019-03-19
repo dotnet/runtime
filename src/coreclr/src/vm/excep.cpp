@@ -2983,6 +2983,7 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable, BOOL r
     // User hits 'g'
     // Then debugger can bring us here.
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    UNREACHABLE();
 }
 
 
@@ -11945,6 +11946,7 @@ void ExceptionNotifications::GetEventArgsForNotification(ExceptionNotificationHa
 static LONG ExceptionNotificationFilter(PEXCEPTION_POINTERS pExceptionInfo, LPVOID pParam)
 {
     EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
+    return -1;
 }
 
 #ifdef FEATURE_CORRUPTING_EXCEPTIONS

@@ -365,7 +365,7 @@ namespace System.Globalization
         //
         // Get the native day names
         //
-        // NOTE: There's a disparity between .Net & windows day orders, the input day should
+        // NOTE: There's a disparity between .NET & windows day orders, the input day should
         //           start with Sunday
         //
         // Parameters:

@@ -3050,7 +3050,7 @@ HRESULT NGenModulePdbWriter::WritePDBData()
 	// Currently DiaSymReader does not work properly generating NGEN PDBS unless 
 	// the DLL whose PDB is being generated ends in .ni.*.   Unfortunately, readyToRun
 	// images do not follow this convention and end up producing bad PDBS.  To fix
-	// this (without changing diasymreader.dll which ships indepdendently of .Net Core)
+	// this (without changing diasymreader.dll which ships indepdendently of .NET Core)
 	// we copy the file to somethign with this convention before generating the PDB
 	// and delete it when we are done.  
 	SString dllPath = pLoadedLayout->GetPath();

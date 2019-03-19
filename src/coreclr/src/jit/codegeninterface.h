@@ -171,14 +171,14 @@ public:
     }
 
 public:
-    int genCallerSPtoFPdelta();
-    int genCallerSPtoInitialSPdelta();
-    int genSPtoFPdelta();
-    int genTotalFrameSize();
+    int genCallerSPtoFPdelta() const;
+    int genCallerSPtoInitialSPdelta() const;
+    int genSPtoFPdelta() const;
+    int genTotalFrameSize() const;
 
 #ifdef _TARGET_ARM64_
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value) = 0;
-    virtual bool IsSaveFpLrWithAllCalleeSavedRegisters()            = 0;
+    virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const      = 0;
 #endif // _TARGET_ARM64_
 
     regNumber genGetThisArgReg(GenTreeCall* call) const;
@@ -304,7 +304,7 @@ public:
     TempDsc* getSpillTempDsc(GenTree* tree);
 
 public:
-    emitter* getEmitter()
+    emitter* getEmitter() const
     {
         return m_cgEmitter;
     }
@@ -512,11 +512,14 @@ public:
 
         // Helper functions
 
-        bool vlIsInReg(regNumber reg);
-        bool vlIsOnStk(regNumber reg, signed offset);
+        bool vlIsInReg(regNumber reg) const;
+        bool vlIsOnStk(regNumber reg, signed offset) const;
 
         siVarLoc(const LclVarDsc* varDsc, regNumber baseReg, int offset, bool isFramePointerUsed);
         siVarLoc(){};
+
+        // An overload for the equality comparator
+        static bool Equals(const siVarLoc* lhs, const siVarLoc* rhs);
 
     private:
         // Fill "siVarLoc" properties indicating the register position of the variable

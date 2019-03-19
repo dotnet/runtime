@@ -320,6 +320,12 @@ DEFINE_FIELD(ENC_HELPER,            OBJECT_REFERENCE,       _objectReference)
 
 DEFINE_CLASS(ENCODING,              Text,                   Encoding)
 
+DEFINE_CLASS(RUNE,                  Text,                   Rune)
+
+#ifdef FEATURE_UTF8STRING
+DEFINE_CLASS(CHAR8,                 System,                 Char8)
+#endif // FEATURE_UTF8STRING
+
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
@@ -698,6 +704,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      PREPARE_CONSTRAINED_REGIONS, PrepareConstrai
 DEFINE_METHOD(RUNTIME_HELPERS,      PREPARE_CONSTRAINED_REGIONS_NOOP, PrepareConstrainedRegionsNoOP, SM_RetVoid)
 DEFINE_METHOD(RUNTIME_HELPERS,      EXECUTE_BACKOUT_CODE_HELPER, ExecuteBackoutCodeHelper, SM_Obj_Obj_Bool_RetVoid)
 DEFINE_METHOD(RUNTIME_HELPERS,      IS_REFERENCE_OR_CONTAINS_REFERENCES, IsReferenceOrContainsReferences, NoSig)
+DEFINE_METHOD(RUNTIME_HELPERS,      IS_BITWISE_EQUATABLE,    IsBitwiseEquatable, NoSig)
 
 DEFINE_CLASS(JIT_HELPERS,           CompilerServices,       JitHelpers)
 DEFINE_METHOD(JIT_HELPERS,          ENUM_EQUALS,            EnumEquals, NoSig)
@@ -814,6 +821,17 @@ DEFINE_METHOD(STRING,               INTERNAL_COPY,          InternalCopy,       
 DEFINE_METHOD(STRING,               WCSLEN,                 wcslen,                     SM_PtrChar_RetInt)
 DEFINE_METHOD(STRING,               STRLEN,                 strlen,                     SM_PtrByte_RetInt)
 DEFINE_PROPERTY(STRING,             LENGTH,                 Length,                     Int)
+
+#ifdef FEATURE_UTF8STRING
+DEFINE_CLASS(UTF8_STRING,           System,                 Utf8String)
+DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFBYTE,Ctor,                      IM_ReadOnlySpanOfByte_RetUtf8Str)
+DEFINE_METHOD(UTF8_STRING,          CTORF_READONLYSPANOFCHAR,Ctor,                      IM_ReadOnlySpanOfChar_RetUtf8Str)
+DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEARRAY_START_LEN,Ctor,                     IM_ArrByte_Int_Int_RetUtf8Str)
+DEFINE_METHOD(UTF8_STRING,          CTORF_BYTEPTR,           Ctor,                      IM_PtrByte_RetUtf8Str)
+DEFINE_METHOD(UTF8_STRING,          CTORF_CHARARRAY_START_LEN,Ctor,                     IM_ArrChar_Int_Int_RetUtf8Str)
+DEFINE_METHOD(UTF8_STRING,          CTORF_CHARPTR,           Ctor,                      IM_PtrChar_RetUtf8Str)
+DEFINE_METHOD(UTF8_STRING,          CTORF_STRING,            Ctor,                      IM_String_RetUtf8Str)
+#endif // FEATURE_UTF8STRING
 
 DEFINE_CLASS(STRING_BUILDER,        Text,                   StringBuilder)
 DEFINE_PROPERTY(STRING_BUILDER,     LENGTH,                 Length,                     Int)

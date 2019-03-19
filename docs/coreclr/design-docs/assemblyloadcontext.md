@@ -18,7 +18,7 @@ Every .NET Core app has a **LoadContext** instance created during .NET Core Runt
 ### Custom LoadContext
 For scenarios that wish to have isolation between loaded assemblies, applications can create their own **LoadContext** instance by deriving from **System.Runtime.Loader.AssemblyLoadContext** type and loading the assemblies within that instance.
 
-Multiple assemblies with the same simple name cannot be loaded into a single load context (*Default* or *Custom*). Also, .Net Core ignores strong name token for assembly binding process.
+Multiple assemblies with the same simple name cannot be loaded into a single load context (*Default* or *Custom*). Also, .NET Core ignores strong name token for assembly binding process.
 
 ## How Load is attempted
 
@@ -64,7 +64,7 @@ This property will return a reference to the *Default LoadContext*.
 
 ### Load
 
-This method should be overriden in a *Custom LoadContext* if the intent is to override the assembly resolution that would be done during fallback to *Defaut LoadContext*
+This method should be overriden in a *Custom LoadContext* if the intent is to override the assembly resolution that would be done during fallback to *Default LoadContext*
 
 ### LoadFromAssemblyName
 

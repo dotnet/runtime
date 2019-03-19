@@ -494,16 +494,21 @@ static size_t GetRestrictedPhysicalMemoryLimit()
             if ((limit_info.BasicLimitInformation.LimitFlags & JOB_OBJECT_LIMIT_WORKINGSET) != 0)
                 job_workingset_limit = limit_info.BasicLimitInformation.MaximumWorkingSetSize;
 
-            job_physical_memory_limit = min (job_memory_limit, job_process_memory_limit);
-            job_physical_memory_limit = min (job_physical_memory_limit, job_workingset_limit);
+            if ((job_memory_limit != (size_t)MAX_PTR) ||
+                (job_process_memory_limit != (size_t)MAX_PTR) ||
+                (job_workingset_limit != (size_t)MAX_PTR))
+            {
+                job_physical_memory_limit = min (job_memory_limit, job_process_memory_limit);
+                job_physical_memory_limit = min (job_physical_memory_limit, job_workingset_limit);
 
-            MEMORYSTATUSEX ms;
-            ::GetProcessMemoryLoad(&ms);
-            total_virtual = ms.ullTotalVirtual;
-            total_physical = ms.ullAvailPhys;
+                MEMORYSTATUSEX ms;
+                ::GetProcessMemoryLoad(&ms);
+                total_virtual = ms.ullTotalVirtual;
+                total_physical = ms.ullAvailPhys;
 
-            // A sanity check in case someone set a larger limit than there is actual physical memory.
-            job_physical_memory_limit = (size_t) min (job_physical_memory_limit, ms.ullTotalPhys);
+                // A sanity check in case someone set a larger limit than there is actual physical memory.
+                job_physical_memory_limit = (size_t) min (job_physical_memory_limit, ms.ullTotalPhys);
+            }
         }
     }
 

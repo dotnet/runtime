@@ -11,6 +11,7 @@ if(WIN32)
     include_directories(../../inc) #needed for warning control
 
     set(TWO_WAY_PIPE_SOURCES 
+        win/diagnosticsipc.cpp
         win/twowaypipe.cpp
         win/processdescriptor.cpp
     )
@@ -24,6 +25,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_definitions(-D_POSIX_C_SOURCE=200809L)
 
     set(TWO_WAY_PIPE_SOURCES
+      unix/diagnosticsipc.cpp
       unix/twowaypipe.cpp
       unix/processdescriptor.cpp
     )

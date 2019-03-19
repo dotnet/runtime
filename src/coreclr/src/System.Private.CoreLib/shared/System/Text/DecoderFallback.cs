@@ -278,7 +278,7 @@ namespace System.Text
             Rune thisRune;
             while ((thisRune = GetNextRune()).Value != 0)
             {
-                if (thisRune.TryEncode(chars, out int charsWrittenJustNow))
+                if (thisRune.TryEncodeToUtf16(chars, out int charsWrittenJustNow))
                 {
                     chars = chars.Slice(charsWrittenJustNow);
                     continue;
