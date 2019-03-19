@@ -1,12 +1,7 @@
-Invariant.Tests
+Microsoft.Win32.SystemEvents.Tests                      # https://github.com/dotnet/coreclr/issues/22442 -- timeout
 System.ComponentModel.Composition.Tests                 # https://github.com/dotnet/coreclr/issues/18913
-System.Diagnostics.Process.Tests                        # https://github.com/dotnet/coreclr/issues/16001
-System.Drawing.Common.Tests                             # https://github.com/dotnet/coreclr/issues/18886
-System.Management.Tests                                 # https://github.com/dotnet/coreclr/issues/18886
+System.Drawing.Common.Tests                             # https://github.com/dotnet/corefx/issues/35424
+System.Management.Tests                                 # https://github.com/dotnet/corefx/issues/34030
 System.Net.HttpListener.Tests                           # https://github.com/dotnet/coreclr/issues/17584
-System.Numerics.Vectors.Tests                           # https://github.com/dotnet/coreclr/issues/18886
-System.Runtime.InteropServices.RuntimeInformation.Tests # VM assert -- https://github.com/dotnet/coreclr/issues/18886
-System.Runtime.Serialization.Formatters.Tests           # long running? https://github.com/dotnet/coreclr/issues/18886
 System.Runtime.Tests                                    # https://github.com/dotnet/coreclr/issues/18914
 System.Text.RegularExpressions.Tests                    # https://github.com/dotnet/coreclr/issues/18912 -- timeout -- JitMinOpts only
-System.ValueTuple.Tests
