@@ -100,7 +100,7 @@ namespace System.Linq.Expressions.Tests
 
         private static void AssertInvocation(int n, object obj)
         {
-            if (!PlatformDetection.IsNetNative)  // .Net Native blocks internal framework reflection.
+            if (!PlatformDetection.IsNetNative)  // .NET Native blocks internal framework reflection.
             {
                 AssertTypeName("InvocationExpression" + n, obj);
             }

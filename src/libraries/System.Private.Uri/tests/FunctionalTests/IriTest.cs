@@ -409,7 +409,7 @@ namespace System.PrivateUri.Tests
 
         /// <summary>
         /// First column contains input characters found to be potential issues with the current implementation.
-        /// The second column contains the current (.Net Core 2.1/Framework 4.7.2) Uri behavior for Uri normalization.
+        /// The second column contains the current (.NET Core 2.1/Framework 4.7.2) Uri behavior for Uri normalization.
         /// </summary>
         private static string[,] s_checkIsReservedEscapingStrings =
         {

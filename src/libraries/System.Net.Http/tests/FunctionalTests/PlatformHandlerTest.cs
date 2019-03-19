@@ -2,11 +2,61 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Net.Test.Common;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+
+    public class PlatformHandler_HttpClientHandler : HttpClientHandlerTestBase
+    {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.Windows)] // Curl has issues with trailing headers https://github.com/curl/curl/issues/1354
+        public async Task GetAsync_TrailingHeaders_Ignored(bool includeTrailerHeader)
+        {
+           await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                using (var client = new HttpClient(handler))
+                {
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        getResponseTask,
+                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                            "HTTP/1.1 200 OK\r\n" +
+                            "Connection: close\r\n" +
+                            "Transfer-Encoding: chunked\r\n" +
+                            (includeTrailerHeader ? "Trailer: MyCoolTrailerHeader\r\n" : "") +
+                            "\r\n" +
+                            "4\r\n" +
+                            "data\r\n" +
+                            "0\r\n" +
+                            "MyCoolTrailerHeader: amazingtrailer\r\n" +
+                            "\r\n"));
+
+                    using (HttpResponseMessage response = await getResponseTask)
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        if (includeTrailerHeader)
+                        {
+                            Assert.Contains("MyCoolTrailerHeader", response.Headers.GetValues("Trailer"));
+                        }
+                        Assert.False(response.Headers.Contains("MyCoolTrailerHeader"), "Trailer should have been ignored");
+
+                        string data = await response.Content.ReadAsStringAsync();
+                        Assert.Contains("data", data);
+                        Assert.DoesNotContain("MyCoolTrailerHeader", data);
+                        Assert.DoesNotContain("amazingtrailer", data);
+                    }
+                }
+            });
+        }
+    }
+
     public sealed class PlatformHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
         protected override bool UseSocketsHttpHandler => false;

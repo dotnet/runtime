@@ -223,6 +223,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SpecialFolder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.SpecialFolderOption.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EnvironmentVariableTarget.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Enum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventHandler.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ExecutionEngineException.cs" />
@@ -429,6 +430,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\BindingFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CallingConventions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ConstructorInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CorElementType.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\CustomAttributeFormatException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\DefaultMemberAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Emit\AssemblyBuilderAccess.cs" />
@@ -798,6 +800,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF7Encoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF8Encoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeSpan.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AbandonedMutexException.cs" />
@@ -885,6 +889,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeCode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeInitializationException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TypeLoadException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TypeUnloadedException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UInt16.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UInt32.cs" />
@@ -900,6 +905,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\ActivityTracker.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\BaseCounter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\CounterGroup.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\CounterPayload.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventActivityOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventDescriptor.cs" />
@@ -908,6 +916,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\EventSourceException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IEventProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IncrementingEventCounter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IncrementingPollingCounter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\PollingCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\StubEnvironment.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\Winmeta.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\TraceLogging\ArrayTypeInfo.cs" />

@@ -658,7 +658,7 @@ namespace MonoTests.System.Drawing
 
         //  Tests the LockBitmap functions. Makes a hash of the block of pixels that it returns
         // firsts, changes them, and then using GetPixel does another check of the changes.
-        // The results match the .Net framework
+        // The results match the .NET Framework
         private static byte[] DefaultBitmapHash = new byte[] { 0xD8, 0xD3, 0x68, 0x9C, 0x86, 0x7F, 0xB6, 0xA0, 0x76, 0xD6, 0x00, 0xEF, 0xFF, 0xE5, 0x8E, 0x1B };
         private static byte[] FinalWholeBitmapHash = new byte[] { 0x5F, 0x52, 0x98, 0x37, 0xE3, 0x94, 0xE1, 0xA6, 0x06, 0x6C, 0x5B, 0xF1, 0xA9, 0xC2, 0xA9, 0x43 };
 

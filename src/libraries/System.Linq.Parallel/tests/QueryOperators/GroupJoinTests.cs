@@ -198,7 +198,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 - 1, KeyFactor * 2 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -229,7 +229,7 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             GroupJoin_Multiple(left, leftCount, right, rightCount);
@@ -237,7 +237,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 - 1, KeyFactor * 2 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_Multiple_LeftWithOrderingColisions(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item.AsUnordered().OrderBy(x => 0);
@@ -274,7 +274,7 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_Multiple_LeftWithOrderingColisions_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             GroupJoin_Multiple_LeftWithOrderingColisions(left, leftCount, right, rightCount);
@@ -314,7 +314,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -345,7 +345,7 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             GroupJoin_CustomComparator(left, leftCount, right, rightCount);
@@ -354,7 +354,7 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(GroupJoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 - 1, KeyFactor * 2 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_CustomComparator_LeftWithOrderingColisions(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item.AsUnordered().OrderBy(x => x / KeyFactor);
@@ -427,7 +427,7 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(GroupJoinMultipleData), new int[] { /* Sources.OuterLoopCount */ })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.Net core bug fix https://github.com/dotnet/corefx/pull/27930)")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void GroupJoin_CustomComparator_LeftWithOrderingColisions_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             GroupJoin_CustomComparator_LeftWithOrderingColisions(left, leftCount, right, rightCount);

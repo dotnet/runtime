@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Globalization;
 using Microsoft.Internal;
 
@@ -97,13 +97,13 @@ namespace System.ComponentModel.Composition.Hosting
         public IEnumerable<Export> GetExports(ImportDefinition definition, AtomicComposition atomicComposition)
         {
             Requires.NotNull(definition, nameof(definition));
-            Contract.Ensures(Contract.Result<IEnumerable<Export>>() != null);
 
             IEnumerable<Export> exports;
             ExportCardinalityCheckResult result = TryGetExportsCore(definition, atomicComposition, out exports);
             switch(result)
             {
                 case ExportCardinalityCheckResult.Match:
+                    Debug.Assert(exports != null);
                     return exports;
                 case ExportCardinalityCheckResult.NoExports:
                     throw new ImportCardinalityMismatchException(SR.Format(SR.CardinalityMismatch_NoExports, definition));

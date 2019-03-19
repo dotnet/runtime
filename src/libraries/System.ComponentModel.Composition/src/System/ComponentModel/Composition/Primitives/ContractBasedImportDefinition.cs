@@ -4,8 +4,8 @@
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
@@ -212,11 +212,10 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                Contract.Ensures(Contract.Result<IEnumerable<KeyValuePair<string, Type>>>() != null);
-                
                 // NOTE : unlike other arguments, we validate this one as late as possible, because its validation may lead to type loading
                 ValidateRequiredMetadata();
 
+                Debug.Assert(_requiredMetadata != null);
                 return _requiredMetadata;
             }
         }

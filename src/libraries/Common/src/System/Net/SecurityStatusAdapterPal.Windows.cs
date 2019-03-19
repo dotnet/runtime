@@ -10,7 +10,7 @@ namespace System.Net
 {
     internal static class SecurityStatusAdapterPal
     {
-        private const int StatusDictionarySize = 41;
+        private const int StatusDictionarySize = 42;
 
 #if DEBUG
         static SecurityStatusAdapterPal()
@@ -34,6 +34,7 @@ namespace System.Net
             { Interop.SECURITY_STATUS.ContextExpired, SecurityStatusPalErrorCode.ContextExpired },
             { Interop.SECURITY_STATUS.ContinueNeeded, SecurityStatusPalErrorCode.ContinueNeeded },
             { Interop.SECURITY_STATUS.CredentialsNeeded, SecurityStatusPalErrorCode.CredentialsNeeded },
+            { Interop.SECURITY_STATUS.DecryptFailure, SecurityStatusPalErrorCode.DecryptFailure },
             { Interop.SECURITY_STATUS.DowngradeDetected, SecurityStatusPalErrorCode.DowngradeDetected },
             { Interop.SECURITY_STATUS.IllegalMessage, SecurityStatusPalErrorCode.IllegalMessage },
             { Interop.SECURITY_STATUS.IncompleteCredentials, SecurityStatusPalErrorCode.IncompleteCredentials },

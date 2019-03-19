@@ -22,6 +22,12 @@ namespace System.Text.Json
         public const byte BackSpace = (byte)'\b';
         public const byte FormFeed = (byte)'\f';
         public const byte Asterisk = (byte)'*';
+        public const byte Colon = (byte)':';
+        public const byte Period = (byte)'.';
+        public const byte Plus = (byte)'+';
+        public const byte Hyphen = (byte)'-';
+        public const byte UtcOffsetToken = (byte)'Z';
+        public const byte TimePrefix = (byte)'T';
 
         public static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
         public static ReadOnlySpan<byte> TrueValue => new byte[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
@@ -46,6 +52,11 @@ namespace System.Text.Json
         // The same factor applies to utf-16 characters.
         public const int MaxExpansionFactorWhileEscaping = 6;
 
+        // In the worst case, a single UTF-16 character could be expanded to 3 UTF-8 bytes.
+        // Only surrogate pairs expand to 4 UTF-8 bytes but that is a transformation of 2 UTF-16 characters goign to 4 UTF-8 bytes (factor of 2).
+        // All other UTF-16 characters can be represented by either 1 or 2 UTF-8 bytes.
+        public const int MaxExpansionFactorWhileTranscoding = 3;
+
         public const int MaxTokenSize = 2_000_000_000 / MaxExpansionFactorWhileEscaping;  // 357_913_941 bytes
         public const int MaxCharacterTokenSize = 2_000_000_000 / MaxExpansionFactorWhileEscaping; // 357_913_941 characters
 
@@ -57,6 +68,9 @@ namespace System.Text.Json
         public const int MaximumFormatGuidLength = 36;    // default (i.e. 'D'), 8 + 4 + 4 + 4 + 12 + 4 for the hyphens (e.g. 094ffa0a-0442-494d-b452-04003fa755cc)
         public const int MaximumFormatDateTimeLength = 27;    // StandardFormat 'O', e.g. 2017-06-12T05:30:45.7680000
         public const int MaximumFormatDateTimeOffsetLength = 33;  // StandardFormat 'O', e.g. 2017-06-12T05:30:45.7680000-07:00
+        public const int MaxDateTimeUtcOffsetHours = 14; // The UTC offset portion of a TimeSpan or DateTime can be no more than 14 hours and no less than -14 hours.
+        public const int DateTimeNumFractionDigits = 7;  // TimeSpan and DateTime formats allow exactly up to many digits for specifying the fraction after the seconds.
+        public const int MaxDateTimeFraction = 9_999_999;  // The largest fraction expressible by TimeSpan and DateTime formats
 
         internal const char ScientificNotationFormat = 'e';
 

@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
 using System.Net.Mail;
@@ -248,7 +247,7 @@ namespace System.Net.Http.Headers
 
             // Since we never re-use a "found" value in 'y', we expect 'alreadyFound' to have all fields set to 'true'.
             // Otherwise the two collections can't be equal and we should not get here.
-            Debug.Assert(Contract.ForAll(alreadyFound, value => { return value; }),
+            Debug.Assert(Array.TrueForAll(alreadyFound, value => value),
                 "Expected all values in 'alreadyFound' to be true since collections are considered equal.");
 
             return true;

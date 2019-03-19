@@ -6,11 +6,11 @@
 
     <CoreFxOptimizationDataPackageId>optimization.windows_nt-x64.IBC.CoreFx</CoreFxOptimizationDataPackageId>
     <CoreFxOptimizationDataPackageId Condition="'$(IBCTarget)'=='Linux'">optimization.linux-x64.IBC.CoreFx</CoreFxOptimizationDataPackageId>
-    <CoreFxOptimizationDataVersion>$(optimizationwindowsntx64IBCCoreFxPackageVersion)</CoreFxOptimizationDataVersion>
+    <CoreFxOptimizationDataVersion>$(optimizationwindows_ntx64IBCCoreFxPackageVersion)</CoreFxOptimizationDataVersion>
   </PropertyGroup>
   <ItemGroup>
     <!-- IBC data -->
-    <IBCPackage Include="$(CoreFxOptimizationDataPackageId)" Version="$(CoreFxOptimizationDataVersion)" AddDirectory="true" />
+    <IBCPackage Include="$(CoreFxOptimizationDataPackageId)" Version="$(CoreFxOptimizationDataVersion)" />
     <PackageReference Include="@(IBCPackage)" GeneratePathProperty="true" />
   </ItemGroup>
   
@@ -30,7 +30,6 @@
       <!-- evaluate the package property -->
       <_ibcPkgSrc>$(%(IBCPackage.PropertyName))</_ibcPkgSrc>
       <_ibcPkgDest>%(IBCPackage.Identity)</_ibcPkgDest>
-      <_includeFileDir>%(IBCPackage.AddDirectory)</_includeFileDir>
     </PropertyGroup>
 
     <Error Condition="!Exists('$(_ibcPkgSrc)')" Text="Package '%(IBCPackage.Identity)' was not restored!" />
@@ -40,7 +39,6 @@
                                    NuGetPackageId="%(IBCPackage.Identity)"
                                    NuGetPackageVersion="%(IBCPackage.Version)" />
       <_optimizationDataSourceFile SubFolder="$(_ibcPkgDest)\%(RecursiveDir)" />
-      <_optimizationDataSourceFile Condition="'$(_includeFileDir)' == 'true'" SubFolder="%(SubFolder)%(FileName).dll\" />
       <ReferenceCopyLocalPaths Include="@(_optimizationDataSourceFile)" />
     </ItemGroup>
   </Target>

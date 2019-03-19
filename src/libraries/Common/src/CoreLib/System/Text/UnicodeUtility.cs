@@ -11,7 +11,7 @@ namespace System.Text
         /// <summary>
         /// The Unicode replacement character U+FFFD.
         /// </summary>
-        public const uint ReplacementChar = 0xFFFDU;
+        public const uint ReplacementChar = 0xFFFD;
 
         /// <summary>
         /// Returns the Unicode plane (0 through 16, inclusive) which contains this code point.
