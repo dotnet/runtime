@@ -1254,6 +1254,10 @@
                     "reason": "Needs updates for XUnit 2.4"
                 },
                 {
+                    "name": "System.Tests.ArraySegment_Tests.CopyTo_Invalid",
+                    "reason": "Needs parameter name updated to 'destination'."
+                },
+                {
                     "name": "System.Tests.TimeSpanTests.Parse_Invalid",
                     "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
                 },
