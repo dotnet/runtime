@@ -173,24 +173,6 @@ jobs:
       continueOnError: true
       condition: succeededOrFailed()
 
-    - task: CopyFiles@2
-      displayName: Copy packages to stage
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)/bin/'
-        Contents: |
-          */packages/*
-        TargetFolder: '$(Build.StagingDirectory)\Packages'
-      continueOnError: true
-      condition: succeededOrFailed()
-
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Artifact Packages
-      inputs:
-        PathtoPublish: '$(Build.StagingDirectory)\Packages'
-        ArtifactName: ${{ parameters.displayName }}-$(_BuildConfig)-Packages
-      continueOnError: true
-      condition: succeededOrFailed()
-
     - script: df -h
       displayName: Check space (df -h)
       condition: always()
