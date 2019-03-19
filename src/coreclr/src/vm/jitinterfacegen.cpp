@@ -80,6 +80,9 @@ void InitJITHelpers1()
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_FastPortable);
 
         ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateString_MP_FastPortable), ECall::FastAllocateString);
+#ifdef FEATURE_UTF8STRING
+        ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateUtf8String_MP_FastPortable), ECall::FastAllocateUtf8String);
+#endif // FEATURE_UTF8STRING
 #else // FEATURE_PAL
         // if (multi-proc || server GC)
         if (GCHeapUtilities::UseThreadAllocationContexts())
@@ -91,6 +94,9 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_MP_InlineGetThread);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateStringFastMP_InlineGetThread), ECall::FastAllocateString);
+#ifdef FEATURE_UTF8STRING
+            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateUtf8String_MP_FastPortable), ECall::FastAllocateUtf8String);
+#endif // FEATURE_UTF8STRING
         }
         else
         {
@@ -105,6 +111,9 @@ void InitJITHelpers1()
             SetJitHelperFunction(CORINFO_HELP_NEWARR_1_OBJ, JIT_NewArr1OBJ_UP);
 
             ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateStringFastUP), ECall::FastAllocateString);
+#ifdef FEATURE_UTF8STRING
+            ECall::DynamicallyAssignFCallImpl(GetEEFuncEntryPoint(AllocateUtf8String_MP_FastPortable), ECall::FastAllocateUtf8String);
+#endif // FEATURE_UTF8STRING
         }
 #endif // FEATURE_PAL
     }

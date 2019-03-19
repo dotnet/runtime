@@ -253,6 +253,9 @@ FCIMPL1(Object*, ObjectNative::Clone, Object* pThisUNSAFE)
 
     // assert that String has overloaded the Clone() method
     _ASSERTE(pMT != g_pStringClass);
+#ifdef FEATURE_UTF8STRING
+    _ASSERTE(pMT != g_pUtf8StringClass);
+#endif // FEATURE_UTF8STRING
 
     if (pMT->IsArray()) {
         refClone = DupArrayForCloning((BASEARRAYREF)refThis);
