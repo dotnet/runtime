@@ -26,9 +26,9 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
-            bool didRead = reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents);
+            bool didRead = reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents);
 
-            Assert.False(didRead, "reader.TryGetOctetStringBytes");
+            Assert.False(didRead, "reader.TryReadOctetStringBytes");
             Assert.Equal(0, contents.Length);
         }
 
@@ -47,9 +47,9 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
-            bool didRead = reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents);
+            bool didRead = reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents);
 
-            Assert.True(didRead, "reader.TryGetOctetStringBytes");
+            Assert.True(didRead, "reader.TryReadOctetStringBytes");
             Assert.Equal(expectedLength, contents.Length);
         }
 
@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
             Assert.Throws<CryptographicException>(
-                () => reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents));
+                () => reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents));
         }
 
         [Fact]
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
 
             Assert.Throws<CryptographicException>(
-                () => reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents));
+                () => reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents));
         }
 
         [Fact]
@@ -117,9 +117,9 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader reader = new AsnReader(input, AsnEncodingRules.CER);
 
-            bool success = reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents);
+            bool success = reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents);
 
-            Assert.True(success, "reader.TryGetOctetStringBytes");
+            Assert.True(success, "reader.TryReadOctetStringBytes");
             Assert.Equal(1000, contents.Length);
 
             // Check that it is, in fact, the same memory. No copies with this API.
@@ -441,16 +441,16 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.TryGetPrimitiveOctetStringBytes(Asn1Tag.Null, out _));
+                () => reader.TryReadPrimitiveOctetStringBytes(Asn1Tag.Null, out _));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<CryptographicException>(
-                () => reader.TryGetPrimitiveOctetStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out _));
+                () => reader.TryReadPrimitiveOctetStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out _));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
-            Assert.True(reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> value));
+            Assert.True(reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> value));
             Assert.Equal("7E", value.ByteArrayToHex());
             Assert.False(reader.HasData, "HasData after read");
         }
@@ -466,26 +466,26 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.TryGetPrimitiveOctetStringBytes(Asn1Tag.Null, out _));
+                () => reader.TryReadPrimitiveOctetStringBytes(Asn1Tag.Null, out _));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.TryGetPrimitiveOctetStringBytes(out _));
+            Assert.Throws<CryptographicException>(() => reader.TryReadPrimitiveOctetStringBytes(out _));
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<CryptographicException>(
-                () => reader.TryGetPrimitiveOctetStringBytes(new Asn1Tag(TagClass.Application, 0), out _));
+                () => reader.TryReadPrimitiveOctetStringBytes(new Asn1Tag(TagClass.Application, 0), out _));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<CryptographicException>(
-                () => reader.TryGetPrimitiveOctetStringBytes(new Asn1Tag(TagClass.ContextSpecific, 1), out _));
+                () => reader.TryReadPrimitiveOctetStringBytes(new Asn1Tag(TagClass.ContextSpecific, 1), out _));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             Assert.True(
-                reader.TryGetPrimitiveOctetStringBytes(
+                reader.TryReadPrimitiveOctetStringBytes(
                     new Asn1Tag(TagClass.ContextSpecific, 7),
                     out ReadOnlyMemory<byte> value));
 
@@ -510,7 +510,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
             Assert.True(
-                reader.TryGetPrimitiveOctetStringBytes(
+                reader.TryReadPrimitiveOctetStringBytes(
                     new Asn1Tag((TagClass)tagClass, tagValue, true),
                     out ReadOnlyMemory<byte> val1));
 
@@ -519,7 +519,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
             Assert.True(
-                reader.TryGetPrimitiveOctetStringBytes(
+                reader.TryReadPrimitiveOctetStringBytes(
                     new Asn1Tag((TagClass)tagClass, tagValue, false),
                     out ReadOnlyMemory<byte> val2));
 

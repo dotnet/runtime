@@ -330,7 +330,7 @@ namespace Microsoft.SqlServer.Server
                     // For SqlParameter, both userDefinedType and udtAssemblyQualifiedName can be NULL,
                     // so we are checking only maxLength if it will be used (i.e. userDefinedType is NULL)
                     Debug.Assert((null != userDefinedType) || (0 <= maxLength || UnlimitedMaxLengthIndicator == maxLength),
-                            string.Format(null, "SmiMetaData.ctor: Udt name={0}, maxLength={1}", udtAssemblyQualifiedName, maxLength));
+                            $"SmiMetaData.ctor: Udt name={udtAssemblyQualifiedName}, maxLength={maxLength}");
                     // Type not validated until matched to a server.  Could be null if extended metadata supplies three-part name!
                     _clrType = userDefinedType;
                     if (null != userDefinedType)
@@ -367,7 +367,7 @@ namespace Microsoft.SqlServer.Server
                     _maxLength = 10 - s_maxVarTimeLenOffsetFromScale[scale];
                     break;
                 default:
-                    Debug.Assert(false, "How in the world did we get here? :" + dbType);
+                    Debug.Fail("How in the world did we get here? :" + dbType);
                     break;
             }
 

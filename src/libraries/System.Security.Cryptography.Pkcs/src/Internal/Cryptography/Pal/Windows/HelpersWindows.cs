@@ -227,7 +227,7 @@ namespace Internal.Cryptography.Pal.Windows
                     return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.SubjectKeyIdentifier, subjectIdentifier.Value);
 
                 default:
-                    Debug.Assert(false);  // Only the framework can construct SubjectIdentifier's so if we got a bad value here, that's our fault.
+                    Debug.Fail("Only the framework can construct SubjectIdentifier's so if we got a bad value here, that's our fault.");
                     throw new CryptographicException(SR.Format(SR.Cryptography_Cms_Invalid_Subject_Identifier_Type, subjectIdentifierType));
             }
         }

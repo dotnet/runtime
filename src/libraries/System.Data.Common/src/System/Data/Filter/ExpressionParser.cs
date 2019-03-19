@@ -307,7 +307,7 @@ namespace System.Data
                                 node = new ConstNode(_table, ValueType.Date, str);
                                 break;
                             default:
-                                Debug.Assert(false, "unhandled token");
+                                Debug.Fail("unhandled token");
                                 break;
                         }
 
@@ -762,7 +762,7 @@ namespace System.Data
                         break;
 
                     default:
-                        Debug.Assert(false, "Unhandled operator type");
+                        Debug.Fail("Unhandled operator type");
                         goto end_loop;
                 }
                 Debug.Assert(expr != null, "Failed to create expression");

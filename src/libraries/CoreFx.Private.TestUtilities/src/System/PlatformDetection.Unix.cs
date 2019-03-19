@@ -139,6 +139,9 @@ namespace System
         public static bool IsMacOsHighSierraOrHigher { get; } =
             IsOSX && (s_osxProductVersion.Major > 10 || (s_osxProductVersion.Major == 10 && s_osxProductVersion.Minor >= 13));
 
+        public static bool IsMacOsMojaveOrHigher { get; } =
+            IsOSX && (s_osxProductVersion.Major > 10 || (s_osxProductVersion.Major == 10 && s_osxProductVersion.Minor >= 14));
+
         private static readonly Version s_icuVersion = GetICUVersion();
         public static Version ICUVersion => s_icuVersion;
 

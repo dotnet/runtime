@@ -23,9 +23,10 @@ namespace System.Net.Http.Functional.Tests
         {
             _output = output;
         }
-        
+
+        [ActiveIssue(32809)]
         [OuterLoop("Uses external server")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Issue #32809
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(AuthenticationSchemes.Ntlm, true, false)]
         [InlineData(AuthenticationSchemes.Negotiate, true, false)]
         [InlineData(AuthenticationSchemes.Basic, false, false)]
@@ -105,6 +106,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(32809)]
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
@@ -196,7 +198,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public async Task Proxy_SslProxyUnsupported_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())

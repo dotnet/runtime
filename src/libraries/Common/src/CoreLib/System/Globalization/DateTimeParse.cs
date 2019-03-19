@@ -3343,7 +3343,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 // Search leap year form.
                 if ((dtfi.FormatFlags & DateTimeFormatFlags.UseLeapYearMonth) != 0)
                 {
-                    int tempResult = str.MatchLongestWords(dtfi.internalGetLeapYearMonthNames(), ref maxMatchStrLen);
+                    int tempResult = str.MatchLongestWords(dtfi.InternalGetLeapYearMonthNames(), ref maxMatchStrLen);
                     // We found a longer match in the leap year month name.  Use this as the result.
                     // The result from MatchLongestWords is 0 ~ length of word array.
                     // So we increment the result by one to become the month value.
@@ -3414,7 +3414,7 @@ new DS[] { DS.ERROR, DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR,  
                 // Search leap year form.
                 if ((dtfi.FormatFlags & DateTimeFormatFlags.UseLeapYearMonth) != 0)
                 {
-                    int tempResult = str.MatchLongestWords(dtfi.internalGetLeapYearMonthNames(), ref maxMatchStrLen);
+                    int tempResult = str.MatchLongestWords(dtfi.InternalGetLeapYearMonthNames(), ref maxMatchStrLen);
                     // We found a longer match in the leap year month name.  Use this as the result.
                     // The result from MatchLongestWords is 0 ~ length of word array.
                     // So we increment the result by one to become the month value.

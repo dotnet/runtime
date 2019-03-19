@@ -17,7 +17,7 @@ namespace System.Configuration
 
             if (!(provider is SettingsProvider))
             {
-                throw new ArgumentException(string.Format(SR.Config_provider_must_implement_type, typeof(SettingsProvider).ToString()), nameof(provider));
+                throw new ArgumentException(SR.Format(SR.Config_provider_must_implement_type, typeof(SettingsProvider)), nameof(provider));
             }
 
             base.Add(provider);

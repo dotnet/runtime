@@ -6,16 +6,16 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public static class DefaultMemberAttributeTests
+    public class DefaultMemberAttributeTests
     {
-        [Fact]
-        public static void DefaultMemberAttribute_Test()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("configuration")]
+        public void Ctor_String(string memberName)
         {
-            var attr1 = new DefaultMemberAttribute(null);
-            Assert.Null(attr1.MemberName);
-
-            var attr2 = new DefaultMemberAttribute("MyDefaultMember");
-            Assert.Equal("MyDefaultMember", attr2.MemberName);
+            var attribute = new DefaultMemberAttribute(memberName);
+            Assert.Equal(memberName, attribute.MemberName);
         }
     }
 }

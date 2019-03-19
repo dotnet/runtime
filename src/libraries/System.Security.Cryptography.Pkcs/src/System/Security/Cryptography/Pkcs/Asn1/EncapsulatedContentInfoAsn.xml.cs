@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             if (Content.HasValue)
             {
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                writer.WriteEncodedValue(Content.Value);
+                writer.WriteEncodedValue(Content.Value.Span);
                 writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
             }
 
@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 0)))
             {
                 explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                decoded.Content = explicitReader.GetEncodedValue();
+                decoded.Content = explicitReader.ReadEncodedValue();
                 explicitReader.ThrowIfNotEmpty();
             }
 

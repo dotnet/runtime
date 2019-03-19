@@ -6,7 +6,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -702,8 +701,6 @@ namespace System.Net.Http.Headers
 
         private HeaderStoreItemInfo GetOrCreateHeaderInfo(HeaderDescriptor descriptor, bool parseRawValues)
         {
-            Contract.Ensures(Contract.Result<HeaderStoreItemInfo>() != null);
-
             HeaderStoreItemInfo result = null;
             bool found = false;
             if (parseRawValues)
@@ -720,6 +717,7 @@ namespace System.Net.Http.Headers
                 result = CreateAndAddHeaderToStore(descriptor);
             }
 
+            Debug.Assert(result != null);
             return result;
         }
 
@@ -989,7 +987,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 default:
-                    Debug.Assert(false, "Unknown StoreLocation value: " + location.ToString());
+                    Debug.Fail("Unknown StoreLocation value: " + location.ToString());
                     break;
             }
         }
@@ -1062,7 +1060,7 @@ namespace System.Net.Http.Headers
             // value already set.
             if (!info.CanAddValue(descriptor.Parser))
             {
-                throw new FormatException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_single_value_header, descriptor.Name));
+                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_single_value_header, descriptor.Name));
             }
 
             int index = 0;
@@ -1182,8 +1180,6 @@ namespace System.Net.Http.Headers
 
         private static string[] GetValuesAsStrings(HeaderDescriptor descriptor, HeaderStoreItemInfo info, object exclude = null)
         {
-            Contract.Ensures(Contract.Result<string[]>() != null);
-
             int length = GetValueCount(info);
             string[] values;
 
@@ -1212,6 +1208,7 @@ namespace System.Net.Http.Headers
                 values = Array.Empty<string>();
             }
 
+            Debug.Assert(values != null);
             return values;
         }
 

@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             System.Security.Cryptography.X509Certificates.Asn1.TbsCertificateAsn.Decode(sequenceReader, out decoded.TbsCertificate);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.SignatureAlgorithm);
 
-            if (sequenceReader.TryGetPrimitiveBitStringValue(out _, out ReadOnlyMemory<byte> tmpSignatureValue))
+            if (sequenceReader.TryReadPrimitiveBitStringValue(out _, out ReadOnlyMemory<byte> tmpSignatureValue))
             {
                 decoded.SignatureValue = tmpSignatureValue;
             }

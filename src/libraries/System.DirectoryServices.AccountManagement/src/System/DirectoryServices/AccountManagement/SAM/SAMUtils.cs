@@ -74,32 +74,18 @@ namespace System.DirectoryServices.AccountManagement
                 // Sanity check: there are no negetive OS versions, nor is there a version "0".
                 if (versionMajor <= 0 || versionMinor < 0)
                 {
-                    Debug.Fail(string.Format(
-                                    CultureInfo.CurrentCulture,
-                                    "SAMUtils.GetOSVersion: {0} claims to have negetive OS version, {1}",
-                                    computerDE.Path,
-                                    version));
-
+                    Debug.Fail("SAMUtils.GetOSVersion: {computerDE.Path} claims to have negetive OS version, {version}");
                     return false;
                 }
             }
             catch (FormatException)
             {
-                Debug.Fail(string.Format(
-                                CultureInfo.CurrentCulture,
-                                "SAMUtils.GetOSVersion: FormatException on {0} for {1}",
-                                version,
-                                computerDE.Path));
-
+                Debug.Fail($"SAMUtils.GetOSVersion: FormatException on {version} for {computerDE.Path}");
                 return false;
             }
             catch (OverflowException)
             {
-                Debug.Fail(string.Format(
-                                CultureInfo.CurrentCulture,
-                                "SAMUtils.GetOSVersion: OverflowException on {0} for {1}",
-                                version,
-                                computerDE.Path));
+                Debug.Fail($"SAMUtils.GetOSVersion: OverflowException on {version} for {computerDE.Path}");
                 return false;
             }
 
@@ -123,11 +109,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                Debug.Fail(string.Format(
-                                CultureInfo.CurrentCulture,
-                                "SAMUtils.DirectoryEntryAsPrincipal: fell off end, Path={0}, SchemaClassName={1}",
-                                de.Path,
-                                de.SchemaClassName));
+                Debug.Fail($"SAMUtils.DirectoryEntryAsPrincipal: fell off end, Path={de.Path}, SchemaClassName={de.SchemaClassName}");
                 return null;
             }
         }

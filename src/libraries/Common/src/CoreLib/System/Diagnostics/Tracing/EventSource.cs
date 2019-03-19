@@ -1363,7 +1363,10 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_PERFTRACING
                 // Register the provider with EventPipe
                 var eventPipeProvider = new OverideEventProvider(this, EventProviderType.EventPipe);
-                eventPipeProvider.Register(this);
+                lock (EventListener.EventListenersLock)
+                {
+                    eventPipeProvider.Register(this);
+                }
 #endif
                 // Add the eventSource to the global (weak) list.  
                 // This also sets m_id, which is the index in the list. 
@@ -2695,7 +2698,7 @@ namespace System.Diagnostics.Tracing
                 // for non-BCL EventSource we must assert SecurityPermission
                 new SecurityPermission(PermissionState.Unrestricted).Assert();
 #endif
-                s_currentPid = Interop.Kernel32.GetCurrentProcessId();
+                s_currentPid = Interop.GetCurrentProcessId();
             }
         }
 

@@ -2684,7 +2684,7 @@ namespace System
                 {
                     int val = portStr[idx] - '0';
                     if (val < 0 || val > 9 || (port = (port * 10 + val)) > 0xFFFF)
-                        throw new UriFormatException(SR.Format(SR.net_uri_PortOutOfRange, _syntax.GetType().ToString(), portStr));
+                        throw new UriFormatException(SR.Format(SR.net_uri_PortOutOfRange, _syntax.GetType(), portStr));
                 }
                 if (port != _info.Offset.PortValue)
                 {

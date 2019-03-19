@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Sockets.Tests
@@ -87,11 +87,6 @@ namespace System.Net.Sockets.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
-            if (PlatformDetection.IsRedHatFamily6)
-            {
-                return; // [ActiveIssue(34809)]
-            }
-
             // On all platforms, index 0 means "any interface"
             await MulticastInterface_Set_Helper(0);
         }
@@ -157,11 +152,13 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: dotnet/corefx #29929
+        [PlatformSpecific(~TestPlatforms.OSX)]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()
         {
-            if (PlatformDetection.IsRedHatFamily6)
+            if (PlatformDetection.IsRedHatFamily7)
             {
-                return; // [ActiveIssue(34809)]
+                // RH7 seems to have issues with multicast in Azure. Same code and setup can pass when executed outside of Azure.
+                throw new SkipTestException("IPv6 multicast environment not available");
             }
 
             // On all platforms, index 0 means "any interface"
@@ -409,7 +406,7 @@ namespace System.Net.Sockets.Tests
             ReuseAddress(exclusiveAddressUse, firstSocketReuseAddress, secondSocketReuseAddress, expectFailure);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Windows defaults are different
         public void ExclusiveAddress_Default_Unix()
         {
@@ -421,7 +418,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [InlineData(1)]
         [InlineData(0)]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Unix does not have separate options for ExclusiveAddressUse and ReuseAddress.
@@ -471,7 +468,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public void ExclusiveAddressUseTcp()
         {
             using (Socket a = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))

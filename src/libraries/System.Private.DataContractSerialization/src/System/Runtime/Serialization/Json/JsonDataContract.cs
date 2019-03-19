@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization.Json
             JsonReadWriteDelegates result = GetGeneratedReadWriteDelegates(c);
             if (result == null)
             {
-                throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, c.UnderlyingType.ToString()));
+                throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, c.UnderlyingType));
             }
             else
             {

@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Asn1
             writer.PushSetOf();
             for (int i = 0; i < AttrValues.Length; i++)
             {
-                writer.WriteEncodedValue(AttrValues[i]); 
+                writer.WriteEncodedValue(AttrValues[i].Span); 
             }
             writer.PopSetOf();
 
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Asn1
 
                 while (collectionReader.HasData)
                 {
-                    tmpItem = collectionReader.GetEncodedValue(); 
+                    tmpItem = collectionReader.ReadEncodedValue(); 
                     tmpList.Add(tmpItem);
                 }
 

@@ -510,7 +510,7 @@ namespace System.Xml
                         // do nothing on root level namespace
                         break;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected node type {nodeType}");
                         break;
                 }
 

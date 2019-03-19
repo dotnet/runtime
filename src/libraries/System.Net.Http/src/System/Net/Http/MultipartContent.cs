@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -49,7 +48,6 @@ namespace System.Net.Http
             {
                 throw new ArgumentException(SR.net_http_argument_empty_string, nameof(subtype));
             }
-            Contract.EndContractBlock();
             ValidateBoundary(boundary);
 
             _boundary = boundary;
@@ -83,14 +81,13 @@ namespace System.Net.Http
             if (boundary.Length > 70)
             {
                 throw new ArgumentOutOfRangeException(nameof(boundary), boundary,
-                    string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_field_too_long, 70));
+                    SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_field_too_long, 70));
             }
             // Cannot end with space.
             if (boundary.EndsWith(" ", StringComparison.Ordinal))
             {
-                throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
+                throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
             }
-            Contract.EndContractBlock();
 
             const string AllowedMarks = @"'()+_,-./:=? ";
 
@@ -105,7 +102,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    throw new ArgumentException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
+                    throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
                 }
             }
         }
@@ -121,7 +118,6 @@ namespace System.Net.Http
             {
                 throw new ArgumentNullException(nameof(content));
             }
-            Contract.EndContractBlock();
 
             _nestedContent.Add(content);
         }

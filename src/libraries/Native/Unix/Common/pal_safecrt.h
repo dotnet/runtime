@@ -5,6 +5,7 @@
 #pragma once
 
 #include "pal_compiler.h"
+#include "pal_config.h"
 
 #include <string.h>
 #include <assert.h>
@@ -15,7 +16,7 @@
 // Returns true if safe, false if overflows.
 inline static bool multiply_s(size_t a, size_t b, size_t* result)
 {
-#if __has_builtin(__builtin_mul_overflow)
+#if HAVE_BUILTIN_MUL_OVERFLOW
     return !__builtin_mul_overflow(a, b, result);
 #else
     if (a == 0 || b == 0)
@@ -40,7 +41,7 @@ inline static bool multiply_s(size_t a, size_t b, size_t* result)
 // Returns true if safe, false if overflows.
 inline static bool add_s(size_t a, size_t b, size_t* result)
 {
-#if __has_builtin(__builtin_add_overflow)
+#if HAVE_BUILTIN_MUL_OVERFLOW
     return !__builtin_add_overflow(a, b, result);
 #else
     if(((size_t)~((size_t)0)) - a < b)

@@ -60,6 +60,9 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
+  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
+    <value>The destination is too small to hold the encoded value.</value>
+  </data>
   <data name="Argument_Invalid_SafeHandleInvalidOrClosed" xml:space="preserve">
     <value>The method cannot be called with an invalid or closed SafeHandle.</value>
   </data>

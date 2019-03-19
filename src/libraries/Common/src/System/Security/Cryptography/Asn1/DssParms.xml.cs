@@ -61,9 +61,9 @@ namespace System.Security.Cryptography.Asn1
             decoded = default;
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             
-            decoded.P = sequenceReader.GetInteger();
-            decoded.Q = sequenceReader.GetInteger();
-            decoded.G = sequenceReader.GetInteger();
+            decoded.P = sequenceReader.ReadInteger();
+            decoded.Q = sequenceReader.ReadInteger();
+            decoded.G = sequenceReader.ReadInteger();
 
             sequenceReader.ThrowIfNotEmpty();
         }
