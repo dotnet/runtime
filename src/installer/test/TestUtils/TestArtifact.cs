@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public void Dispose()
         {
-            if (!PreserveTestRuns())
+            if (!PreserveTestRuns() && Directory.Exists(Location))
             {
                 Directory.Delete(Location, true);
             }
