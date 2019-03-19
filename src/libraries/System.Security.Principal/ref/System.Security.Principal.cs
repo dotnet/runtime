@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Security.Principal
 {
     public partial interface IIdentity
@@ -19,6 +18,12 @@ namespace System.Security.Principal
         System.Security.Principal.IIdentity Identity { get; }
         bool IsInRole(string role);
     }
+    public enum PrincipalPolicy
+    {
+        NoPrincipal = 1,
+        UnauthenticatedPrincipal = 0,
+        WindowsPrincipal = 2,
+    }
     public enum TokenImpersonationLevel
     {
         Anonymous = 1,
@@ -26,11 +31,5 @@ namespace System.Security.Principal
         Identification = 2,
         Impersonation = 3,
         None = 0,
-    }
-    public enum PrincipalPolicy 
-    {
-        NoPrincipal = 1,
-        UnauthenticatedPrincipal = 0,
-        WindowsPrincipal = 2,
     }
 }

@@ -81,8 +81,6 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableHashSet<T> Clear()
         {
-            Contract.Ensures(Contract.Result<ImmutableHashSet<T>>() != null);
-            Contract.Ensures(Contract.Result<ImmutableHashSet<T>>().IsEmpty);
             return this.IsEmpty ? this : ImmutableHashSet<T>.Empty.WithComparer(_equalityComparer);
         }
 
@@ -195,8 +193,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableHashSet<T> Add(T item)
         {
-            Contract.Ensures(Contract.Result<ImmutableHashSet<T>>() != null);
-
             var result = Add(item, this.Origin);
             return result.Finalize(this);
         }
@@ -206,8 +202,6 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableHashSet<T> Remove(T item)
         {
-            Contract.Ensures(Contract.Result<ImmutableHashSet<T>>() != null);
-
             var result = Remove(item, this.Origin);
             return result.Finalize(this);
         }
@@ -245,7 +239,6 @@ namespace System.Collections.Immutable
         public ImmutableHashSet<T> Union(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
-            Contract.Ensures(Contract.Result<ImmutableHashSet<T>>() != null);
 
             return this.Union(other, avoidWithComparer: false);
         }
@@ -257,7 +250,6 @@ namespace System.Collections.Immutable
         public ImmutableHashSet<T> Intersect(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
-            Contract.Ensures(Contract.Result<ImmutableHashSet<T>>() != null);
 
             var result = Intersect(other, this.Origin);
             return result.Finalize(this);
@@ -283,7 +275,6 @@ namespace System.Collections.Immutable
         public ImmutableHashSet<T> SymmetricExcept(IEnumerable<T> other)
         {
             Requires.NotNull(other, nameof(other));
-            Contract.Ensures(Contract.Result<IImmutableSet<T>>() != null);
 
             var result = SymmetricExcept(other, this.Origin);
             return result.Finalize(this);
@@ -446,7 +437,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableHashSet<T> WithComparer(IEqualityComparer<T> equalityComparer)
         {
-            Contract.Ensures(Contract.Result<ImmutableHashSet<T>>() != null);
             if (equalityComparer == null)
             {
                 equalityComparer = EqualityComparer<T>.Default;
@@ -460,6 +450,7 @@ namespace System.Collections.Immutable
             {
                 var result = new ImmutableHashSet<T>(equalityComparer);
                 result = result.Union(this, avoidWithComparer: true);
+                Debug.Assert(result != null);
                 return result;
             }
         }
@@ -1041,7 +1032,6 @@ namespace System.Collections.Immutable
         private ImmutableHashSet<T> Union(IEnumerable<T> items, bool avoidWithComparer)
         {
             Requires.NotNull(items, nameof(items));
-            Contract.Ensures(Contract.Result<ImmutableHashSet<T>>() != null);
 
             // Some optimizations may apply if we're an empty set.
             if (this.IsEmpty && !avoidWithComparer)

@@ -8,8 +8,6 @@ namespace System.Net.Test.Common
     {
         public static partial class Security
         {
-            private static readonly string DefaultAzureServer = "corefx-net.cloudapp.net";
-
             // Domain server environment.
             public static string ActiveDirectoryName => GetValue("COREFX_NET_AD_DOMAINNAME");
             public static string ActiveDirectoryUserName => GetValue("COREFX_NET_AD_USERNAME");

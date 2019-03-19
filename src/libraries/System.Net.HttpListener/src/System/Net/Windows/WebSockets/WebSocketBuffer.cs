@@ -179,7 +179,7 @@ namespace System.Net.WebSockets
 
             if (previousState != SendBufferState.None)
             {
-                Debug.Assert(false, "'m_SendBufferState' MUST BE 'None' at this point.");
+                Debug.Fail("'m_SendBufferState' MUST BE 'None' at this point.");
                 // Indicates a violation in the API contract that could indicate 
                 // memory corruption because the pinned sendbuffer is shared between managed and native code
                 throw new AccessViolationException();
@@ -379,7 +379,7 @@ namespace System.Net.WebSockets
                     (int)bufferLength);
             }
 
-            Debug.Assert(false, "'buffer' MUST reference a memory segment within the pinned InternalBuffer.");
+            Debug.Fail("'buffer' MUST reference a memory segment within the pinned InternalBuffer.");
             // Indicates a violation in the contract with native Websocket.dll and could indicate 
             // memory corruption because the internal buffer is shared between managed and native code
             throw new AccessViolationException();
@@ -412,7 +412,7 @@ namespace System.Net.WebSockets
                 }
                 else
                 {
-                    Debug.Assert(false, "'buffer' MUST reference a memory segment within the pinned InternalBuffer.");
+                    Debug.Fail("'buffer' MUST reference a memory segment within the pinned InternalBuffer.");
                     // Indicates a violation in the contract with native Websocket.dll and could indicate 
                     // memory corruption because the internal buffer is shared between managed and native code
                     throw new AccessViolationException();
@@ -437,7 +437,7 @@ namespace System.Net.WebSockets
             ThrowIfDisposed();
             if (dataBufferCount > dataBuffers.Length)
             {
-                Debug.Assert(false, "'dataBufferCount' MUST NOT be bigger than 'dataBuffers.Length'.");
+                Debug.Fail("'dataBufferCount' MUST NOT be bigger than 'dataBuffers.Length'.");
                 // Indicates a violation in the contract with native Websocket.dll and could indicate 
                 // memory corruption because the internal buffer is shared between managed and native code
                 throw new AccessViolationException();
@@ -474,8 +474,7 @@ namespace System.Net.WebSockets
                 {
                     if (!isSendActivity || !isPinnedSendPayloadBuffer)
                     {
-                        Debug.Assert(false,
-                        "'dataBuffer.BufferLength' MUST NOT be bigger than 'm_ReceiveBufferSize' and 'm_SendBufferSize'.");
+                        Debug.Fail("'dataBuffer.BufferLength' MUST NOT be bigger than 'm_ReceiveBufferSize' and 'm_SendBufferSize'.");
                         // Indicates a violation in the contract with native Websocket.dll and could indicate 
                         // memory corruption because the internal buffer is shared between managed and native code
                         throw new AccessViolationException();
@@ -484,8 +483,7 @@ namespace System.Net.WebSockets
 
                 if (!isPinnedSendPayloadBuffer && !IsNativeBuffer(bufferData, bufferLength))
                 {
-                    Debug.Assert(false,
-                        "WebSocketGetAction MUST return a pointer within the pinned internal buffer.");
+                    Debug.Fail("WebSocketGetAction MUST return a pointer within the pinned internal buffer.");
                     // Indicates a violation in the contract with native Websocket.dll and could indicate 
                     // memory corruption because the internal buffer is shared between managed and native code
                     throw new AccessViolationException();
@@ -497,7 +495,7 @@ namespace System.Net.WebSockets
                 action != WebSocketProtocolComponent.Action.IndicateReceiveComplete &&
                 action != WebSocketProtocolComponent.Action.IndicateSendComplete)
             {
-                Debug.Assert(false, "At least one 'dataBuffer.Buffer' MUST NOT be NULL.");
+                Debug.Fail("At least one 'dataBuffer.Buffer' MUST NOT be NULL.");
             }
         }
 
@@ -531,10 +529,7 @@ namespace System.Net.WebSockets
                     bufferLength = buffer.Data.BufferLength;
                     break;
                 default:
-                    Debug.Assert(false,
-                        string.Format(CultureInfo.InvariantCulture,
-                            "BufferType '{0}' is invalid/unknown.",
-                            bufferType));
+                    Debug.Fail($"BufferType '{bufferType}' is invalid/unknown.");
                     break;
             }
         }

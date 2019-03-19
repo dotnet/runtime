@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using Microsoft.Internal;
 
@@ -50,8 +50,6 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 get
                 {
-                    Contract.Ensures(Contract.Result<IDictionary<string, object>>() != null);
-
                     var reply = _metadata;
                     if(reply == null)
                     {
@@ -60,6 +58,7 @@ namespace System.ComponentModel.Composition.Hosting
                         _metadata = reply;
                     }
 
+                    Debug.Assert(reply != null);
                     return reply;
                 }
             }

@@ -55,7 +55,7 @@ namespace System.Diagnostics.TraceSourceTests
             var listener = new TestTraceListener();
             listener.TraceOutputOptions = TraceOptions.None;
 
-            // NOTE: TraceOptions includes values for 0x01 and 0x20 in .Net 4.5, but not in CoreFX
+            // NOTE: TraceOptions includes values for 0x01 and 0x20 in .NET Framework 4.5, but not in CoreFX
             // These assertions test for those missing values, and the exceptional condition that
             // maintains compatibility with 4.5
             var missingValue = (TraceOptions)0x01;

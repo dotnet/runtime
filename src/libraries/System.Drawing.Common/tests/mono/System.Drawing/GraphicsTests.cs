@@ -34,6 +34,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace MonoTests.System.Drawing
@@ -2319,6 +2320,12 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void VisibleClipBound()
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             // see #78958
             using (Bitmap bmp = new Bitmap(100, 100))
             using (Graphics g = Graphics.FromImage(bmp))
@@ -2349,6 +2356,12 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void VisibleClipBound_BigClip()
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             using (Bitmap bmp = new Bitmap(100, 100))
             using (Graphics g = Graphics.FromImage(bmp))
             {
@@ -2390,6 +2403,12 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Rotate()
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             using (Bitmap bmp = new Bitmap(100, 50))
             using (Graphics g = Graphics.FromImage(bmp))
             {

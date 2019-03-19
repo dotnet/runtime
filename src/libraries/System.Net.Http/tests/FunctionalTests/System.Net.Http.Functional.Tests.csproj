@@ -136,6 +136,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="HttpClientHandlerTest.AcceptAllCerts.cs" />
     <Compile Include="HttpClientHandlerTest.Decompression.cs" />
+    <Compile Include="HttpClientHandlerTest.TrailingHeaders.cs" />
     <Compile Include="HttpClientTest.netcoreapp.cs" />
     <Compile Include="HttpMethodTest.netcoreapp.cs" />
     <Compile Include="HuffmanDecodingTests.cs" />

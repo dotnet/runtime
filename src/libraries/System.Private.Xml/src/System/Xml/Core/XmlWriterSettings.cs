@@ -563,7 +563,7 @@ namespace System.Xml
                         writer = new XmlAutoDetectWriter(output, this);
                         break;
                     default:
-                        Debug.Assert(false, "Invalid XmlOutputMethod setting.");
+                        Debug.Fail("Invalid XmlOutputMethod setting.");
                         return null;
                 }
             }
@@ -599,7 +599,7 @@ namespace System.Xml
                         writer = new XmlAutoDetectWriter(output, this);
                         break;
                     default:
-                        Debug.Assert(false, "Invalid XmlOutputMethod setting.");
+                        Debug.Fail("Invalid XmlOutputMethod setting.");
                         return null;
                 }
             }
@@ -665,7 +665,7 @@ namespace System.Xml
                     writer = new XmlAutoDetectWriter(output, this);
                     break;
                 default:
-                    Debug.Assert(false, "Invalid XmlOutputMethod setting.");
+                    Debug.Fail("Invalid XmlOutputMethod setting.");
                     return null;
             }
 

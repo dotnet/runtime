@@ -5,52 +5,30 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-// These types were moved down to System.Runtime
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.AggregateException))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.ConfiguredTaskAwaitable))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.ConfiguredTaskAwaitable<>))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.IAsyncStateMachine))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.ICriticalNotifyCompletion))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.INotifyCompletion))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.TaskAwaiter))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.TaskAwaiter<>))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.YieldAwaitable))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.CancellationToken))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.CancellationTokenRegistration))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.Task))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.Task<>))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.TaskContinuationOptions))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.TaskCreationOptions))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.TaskFactory))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.TaskFactory<>))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.TaskScheduler))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.TaskStatus))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.UnobservedTaskExceptionEventArgs))]
-
 namespace System
 {
     public partial class OperationCanceledException : System.SystemException
     {
         public OperationCanceledException() { }
+        protected OperationCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public OperationCanceledException(string message) { }
         public OperationCanceledException(string message, System.Exception innerException) { }
         public OperationCanceledException(string message, System.Exception innerException, System.Threading.CancellationToken token) { }
         public OperationCanceledException(string message, System.Threading.CancellationToken token) { }
         public OperationCanceledException(System.Threading.CancellationToken token) { }
-        protected OperationCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Threading.CancellationToken CancellationToken { get { throw null; } }
     }
 }
 namespace System.Runtime.CompilerServices
 {
-    public struct AsyncIteratorMethodBuilder
+    public partial struct AsyncIteratorMethodBuilder
     {
         private object _dummy;
-        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : INotifyCompletion where TStateMachine : IAsyncStateMachine { throw null; }
-        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : ICriticalNotifyCompletion where TStateMachine : IAsyncStateMachine { throw null; }
-        public void Complete() { throw null; }
-        public static AsyncIteratorMethodBuilder Create() { throw null; }
-        public void MoveNext<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine { throw null; }
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public void Complete() { }
+        public static System.Runtime.CompilerServices.AsyncIteratorMethodBuilder Create() { throw null; }
+        public void MoveNext<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
     public partial struct AsyncTaskMethodBuilder
     {
@@ -66,7 +44,7 @@ namespace System.Runtime.CompilerServices
     }
     public partial struct AsyncTaskMethodBuilder<TResult>
     {
-        private System.Threading.Tasks.Task<TResult> _dummy;
+        private object _dummy;
         public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
         public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
@@ -87,23 +65,23 @@ namespace System.Runtime.CompilerServices
         public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
         public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
-    public readonly struct ConfiguredAsyncDisposable
+    public readonly partial struct ConfiguredAsyncDisposable
     {
         private readonly object _dummy;
         public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable DisposeAsync() { throw null; }
     }
-    public readonly struct ConfiguredCancelableAsyncEnumerable<T>
+    public readonly partial struct ConfiguredCancelableAsyncEnumerable<T>
     {
         private readonly object _dummy;
-        public Enumerator GetAsyncEnumerator() { throw null; }
-        public ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait(bool continueOnCapturedContext) { throw null; }
-        public ConfiguredCancelableAsyncEnumerable<T> WithCancellation(System.Threading.CancellationToken cancellationToken) { throw null; }
-        public readonly struct Enumerator
+        public System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait(bool continueOnCapturedContext) { throw null; }
+        public System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T>.Enumerator GetAsyncEnumerator() { throw null; }
+        public System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation(System.Threading.CancellationToken cancellationToken) { throw null; }
+        public readonly partial struct Enumerator
         {
             private readonly object _dummy;
-            public ConfiguredValueTaskAwaitable<bool> MoveNextAsync() { throw null; }
             public T Current { get { throw null; } }
-            public ConfiguredValueTaskAwaitable DisposeAsync() { throw null; }
+            public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable DisposeAsync() { throw null; }
+            public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<bool> MoveNextAsync() { throw null; }
         }
     }
 }
@@ -142,11 +120,11 @@ namespace System.Threading.Tasks
     public partial class TaskCanceledException : System.OperationCanceledException
     {
         public TaskCanceledException() { }
+        protected TaskCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TaskCanceledException(string message) { }
         public TaskCanceledException(string message, System.Exception innerException) { }
-        public TaskCanceledException(string message, System.Exception innerException, System.Threading.CancellationToken token) : base(message, innerException, token) { }
+        public TaskCanceledException(string message, System.Exception innerException, System.Threading.CancellationToken token) { }
         public TaskCanceledException(System.Threading.Tasks.Task task) { }
-        protected TaskCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public System.Threading.Tasks.Task Task { get { throw null; } }
     }
     public partial class TaskCompletionSource<TResult>
@@ -170,16 +148,16 @@ namespace System.Threading.Tasks
     {
         public static System.Runtime.CompilerServices.ConfiguredAsyncDisposable ConfigureAwait(this System.IAsyncDisposable source, bool continueOnCapturedContext) { throw null; }
         public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, bool continueOnCapturedContext) { throw null; }
-        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, CancellationToken cancellationToken) { throw null; }
         public static System.Threading.Tasks.Task Unwrap(this System.Threading.Tasks.Task<System.Threading.Tasks.Task> task) { throw null; }
         public static System.Threading.Tasks.Task<TResult> Unwrap<TResult>(this System.Threading.Tasks.Task<System.Threading.Tasks.Task<TResult>> task) { throw null; }
+        public static System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(this System.Collections.Generic.IAsyncEnumerable<T> source, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public partial class TaskSchedulerException : System.Exception
     {
         public TaskSchedulerException() { }
         public TaskSchedulerException(System.Exception innerException) { }
+        protected TaskSchedulerException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public TaskSchedulerException(string message) { }
         public TaskSchedulerException(string message, System.Exception innerException) { }
-        protected TaskSchedulerException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

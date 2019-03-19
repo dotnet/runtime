@@ -14,7 +14,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Security;
 
@@ -130,7 +129,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Validate arguments
             if (target == null) throw new ArgumentNullException(nameof(target));
             if (linkOptions == null) throw new ArgumentNullException(nameof(linkOptions));
-            Contract.EndContractBlock();
 
             // If the block is already completed, there is not much to do -
             // we have to propagate completion if that was requested, and
@@ -165,7 +163,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
             if (target == null) throw new ArgumentNullException(nameof(target));
-            Contract.EndContractBlock();
 
             TOutput consumedMessageValue = default(TOutput);
 
@@ -222,7 +219,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
             if (target == null) throw new ArgumentNullException(nameof(target));
-            Contract.EndContractBlock();
 
             lock (OutgoingLock)
             {
@@ -250,7 +246,6 @@ namespace System.Threading.Tasks.Dataflow.Internal
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
             if (target == null) throw new ArgumentNullException(nameof(target));
-            Contract.EndContractBlock();
 
             lock (OutgoingLock)
             {

@@ -22,7 +22,10 @@ add_compile_options(-fPIC)
 add_compile_options(-I${CMAKE_CURRENT_SOURCE_DIR}/Common)
 add_compile_options(-I${CMAKE_CURRENT_BINARY_DIR}/Common)
 add_compile_options(-g)
-add_compile_options(-Wthread-safety)
+if(CMAKE_C_COMPILER_ID STREQUAL Clang)
+    add_compile_options(-Wthread-safety)
+    add_compile_options(-Wno-thread-safety-analysis)
+endif()
 add_compile_options(-Werror)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Emscripten)
@@ -249,7 +252,9 @@ if (NOT CLR_CMAKE_PLATFORM_WASM)
 	add_subdirectory(System.IO.Ports.Native)
 endif()
 
-add_compile_options(-Weverything)
+if(CMAKE_C_COMPILER_ID STREQUAL Clang)
+    add_compile_options(-Weverything)
+endif()
 
 add_subdirectory(System.Native)
 

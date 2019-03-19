@@ -7,6 +7,7 @@ using System.IO.PortsTests;
 using System.Linq;
 using System.Text;
 using Legacy.Support;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Ports.Tests
@@ -37,12 +38,18 @@ namespace System.IO.Ports.Tests
         }
 
         /// <summary>
-        /// Test that SerialPort.GetPortNames finds every port that the test helpers have found. 
+        /// Test that SerialPort.GetPortNames finds every port that the test helpers have found.
         /// (On Windows, the latter uses a different technique to SerialPort to find ports).
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         private void AllHelperPortsAreInGetPortNames()
         {
+            if (PlatformDetection.IsWindows && PlatformDetection.IsArmOrArm64Process)
+            {
+                // ActiveIssue: 35722
+                throw new SkipTestException("Port detection broken on Windows IoT");
+            }
+
             string[] serialPortNames = SerialPort.GetPortNames();
             foreach (string helperPortName in PortHelper.GetPorts())
             {

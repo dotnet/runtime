@@ -8,7 +8,6 @@ using System.ComponentModel.Composition.Primitives;
 using System.ComponentModel.Composition.ReflectionModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -119,7 +118,7 @@ namespace System.ComponentModel.Composition.Hosting
             get
             {
                 ThrowIfDisposed();
-                Contract.Ensures(Contract.Result<ComposablePartCatalog>() != null);
+                Debug.Assert(_catalog != null);
 
                 return _catalog;
             }
@@ -909,7 +908,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if ((_sourceProvider == null) || (_importEngine == null))
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, SR.ObjectMustBeInitialized, "SourceProvider")); // NOLOC
+                throw new InvalidOperationException(SR.Format(SR.ObjectMustBeInitialized, "SourceProvider")); // NOLOC
             }
         }
 
@@ -940,7 +939,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if ((_isRunning) || (currentValue != null))
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, SR.ObjectAlreadyInitialized));
+                throw new InvalidOperationException(SR.ObjectAlreadyInitialized);
             }
         }
 

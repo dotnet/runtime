@@ -197,7 +197,7 @@ namespace System.Configuration
             FactoryRecord factoryRecord = FindFactoryRecord(configKey, false);
             if (factoryRecord == null)
             {
-                throw new ConfigurationErrorsException(string.Format(SR.Config_unrecognized_configuration_section,
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_unrecognized_configuration_section,
                     configKey));
             }
 
@@ -270,7 +270,7 @@ namespace System.Configuration
                 catch (Exception e)
                 {
                     throw new ConfigurationErrorsException(
-                        string.Format(SR.Config_exception_creating_section_handler, factoryRecord.ConfigKey),
+                        SR.Format(SR.Config_exception_creating_section_handler, factoryRecord.ConfigKey),
                         e, factoryRecord);
                 }
             }
@@ -416,7 +416,7 @@ namespace System.Configuration
             catch (Exception e)
             {
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Config_exception_in_config_section_handler,
+                    SR.Format(SR.Config_exception_in_config_section_handler,
                         configSection.SectionInformation.SectionName),
                     e, ConfigStreamInfo.StreamName, 0);
             }
@@ -487,7 +487,7 @@ namespace System.Configuration
             catch (Exception e)
             {
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Config_exception_in_config_section_handler,
+                    SR.Format(SR.Config_exception_in_config_section_handler,
                         configSection.SectionInformation.SectionName),
                     e, null, 0);
             }
@@ -569,7 +569,7 @@ namespace System.Configuration
                     if (streamInfo.SectionName != sectionInformation.ConfigKey)
                     {
                         throw new ConfigurationErrorsException(
-                            string.Format(SR.Config_source_cannot_be_shared, newConfigSource));
+                            SR.Format(SR.Config_source_cannot_be_shared, newConfigSource));
                     }
                 }
                 else
@@ -606,13 +606,13 @@ namespace System.Configuration
                 // Verify that the it is an element
                 reader.Read();
                 if (reader.NodeType != XmlNodeType.Element)
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_unexpected_node_type, reader.NodeType));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_unexpected_node_type, reader.NodeType));
 
                 // Verify the name of the element is a section
                 string group, name;
                 SplitConfigKey(configKey, out group, out name);
                 if (reader.Name != name)
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_unexpected_element_name, reader.Name));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_unexpected_element_name, reader.Name));
 
                 for (;;)
                 {
@@ -621,7 +621,7 @@ namespace System.Configuration
                         // ensure there is a matching end element
                         if (reader.Depth != 0)
                         {
-                            throw new ConfigurationErrorsException(string.Format(SR.Config_unexpected_element_end),
+                            throw new ConfigurationErrorsException(SR.Config_unexpected_element_end,
                                 reader);
                         }
 
@@ -972,7 +972,7 @@ namespace System.Configuration
                 // are actually fullpaths on the remote machine.  In this case there is no way to
                 // detect if we have a conflict or not.
                 if (!Host.IsRemote && _streamInfoUpdates.Contains(filename))
-                    throw new ArgumentException(string.Format(SR.Filename_in_SaveAs_is_used_already, filename));
+                    throw new ArgumentException(SR.Format(SR.Filename_in_SaveAs_is_used_already, filename));
 
                 // If there was no config file for this config record,
                 // record the new stream name and version.
@@ -1587,7 +1587,7 @@ namespace System.Configuration
                             (!overrideMode.IsDefaultForLocationTag || !inheritInChildApplications))
                         {
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_inconsistent_location_attributes, configKey));
+                                SR.Format(SR.Config_inconsistent_location_attributes, configKey));
                         }
 
                         addToConfigSourceUpdates = requireUpdates &&
@@ -1687,7 +1687,7 @@ namespace System.Configuration
                                         catch (Exception e)
                                         {
                                             throw new ConfigurationErrorsException(
-                                                string.Format(SR.Encryption_failed,
+                                                SR.Format(SR.Encryption_failed,
                                                     configSection.SectionInformation.SectionName,
                                                     configSection.SectionInformation.ProtectionProvider.Name, e.Message),
                                                 e);
@@ -1707,7 +1707,7 @@ namespace System.Configuration
                         catch (Exception e)
                         {
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_exception_in_config_section_handler,
+                                SR.Format(SR.Config_exception_in_config_section_handler,
                                     configSection.SectionInformation.SectionName), e);
                         }
                     }
@@ -1907,7 +1907,7 @@ namespace System.Configuration
                         catch (Exception e)
                         {
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_exception_in_config_section_handler, sectionRecord.ConfigKey), e,
+                                SR.Format(SR.Config_exception_in_config_section_handler, sectionRecord.ConfigKey), e,
                                 ConfigStreamInfo.StreamName, 0);
                         }
                     }

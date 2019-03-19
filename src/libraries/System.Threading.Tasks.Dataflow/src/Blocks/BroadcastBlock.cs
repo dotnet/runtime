@@ -15,7 +15,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Security;
 using System.Threading.Tasks.Dataflow.Internal;
@@ -68,7 +67,6 @@ namespace System.Threading.Tasks.Dataflow
         {
             // Validate arguments
             if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
-            Contract.EndContractBlock();
 
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
@@ -118,7 +116,6 @@ namespace System.Threading.Tasks.Dataflow
         void IDataflowBlock.Fault(Exception exception)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
-            Contract.EndContractBlock();
 
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
         }
@@ -127,7 +124,6 @@ namespace System.Threading.Tasks.Dataflow
         {
             Debug.Assert(storeExceptionEvenIfAlreadyCompleting || !revertProcessingState,
                             "Indicating dirty processing state may only come with storeExceptionEvenIfAlreadyCompleting==true.");
-            Contract.EndContractBlock();
 
             lock (IncomingLock)
             {
@@ -170,7 +166,6 @@ namespace System.Threading.Tasks.Dataflow
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
             if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, nameof(consumeToAccept));
-            Contract.EndContractBlock();
 
             lock (IncomingLock)
             {
@@ -1033,7 +1028,6 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments
                 if (target == null) throw new ArgumentNullException(nameof(target));
                 if (linkOptions == null) throw new ArgumentNullException(nameof(linkOptions));
-                Contract.EndContractBlock();
 
                 lock (OutgoingLock)
                 {
@@ -1064,7 +1058,6 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (target == null) throw new ArgumentNullException(nameof(target));
-                Contract.EndContractBlock();
 
                 TOutput valueToClone;
                 lock (OutgoingLock) // We may currently be calling out under this lock to the target; requires it to be reentrant
@@ -1105,7 +1098,6 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (target == null) throw new ArgumentNullException(nameof(target));
-                Contract.EndContractBlock();
 
                 lock (OutgoingLock)
                 {
@@ -1133,7 +1125,6 @@ namespace System.Threading.Tasks.Dataflow
                 // Validate arguments
                 if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
                 if (target == null) throw new ArgumentNullException(nameof(target));
-                Contract.EndContractBlock();
 
                 lock (OutgoingLock)
                 {

@@ -592,7 +592,7 @@ namespace System.Xml.Serialization
                 MethodInfo addMethod = targetCollectionType.GetMethod("Add");
                 if (addMethod == null)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
                 }
 
                 object[] arguments = new object[1];
@@ -626,7 +626,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
                 }
 
                 var typeMemberTypeTuple = Tuple.Create(o.GetType(), memberType);
@@ -651,7 +651,7 @@ namespace System.Xml.Serialization
                 return fieldInfo.GetValue(o);
             }
 
-            throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+            throw new InvalidOperationException(SR.XmlInternalError);
         }
 
         private bool WriteMemberText(Member anyText)
@@ -672,7 +672,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                        throw new InvalidOperationException(SR.XmlInternalError);
                     }
                 }
                 else
@@ -899,7 +899,7 @@ namespace System.Xml.Serialization
                     {
                         if (member == null)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                            throw new InvalidOperationException(SR.XmlInternalError);
                         }
 
                         member.Source(value);
@@ -970,12 +970,12 @@ namespace System.Xml.Serialization
                         }
                         break;
                     default:
-                        throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                        throw new InvalidOperationException(SR.XmlInternalError);
                 }
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                throw new InvalidOperationException(SR.XmlInternalError);
             }
 
             member?.ChoiceSource?.Invoke(element.Name);
@@ -1035,7 +1035,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                throw new InvalidOperationException(SR.XmlInternalError);
             }
 
             return memberType;
@@ -1080,7 +1080,7 @@ namespace System.Xml.Serialization
                     {
                         if (member == null)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                            throw new InvalidOperationException(SR.XmlInternalError);
                         }
 
                         member.Source(rre);
@@ -1515,7 +1515,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
                 }
 
                 AddObjectsIntoTargetCollection(collection, listOfItems, collectionType);
@@ -1959,7 +1959,7 @@ namespace System.Xml.Serialization
                     throw new NotImplementedException("special.TypeDesc.CanBeAttributeValue");
                 }
                 else
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
             }
             else
             {
@@ -2111,7 +2111,7 @@ namespace System.Xml.Serialization
                     };
                 }
 
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                throw new InvalidOperationException(SR.XmlInternalError);
             }
             else
             {

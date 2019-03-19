@@ -121,7 +121,7 @@ namespace System.Xml
             {
                 if (CurrentNode != _rowElement)
                 {
-                    Debug.Assert(false);
+                    Debug.Fail("Reading the initial text value for sub-regions.");
                 }
             }
 #endif

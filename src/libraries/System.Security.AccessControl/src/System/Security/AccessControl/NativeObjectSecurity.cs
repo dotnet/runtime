@@ -157,7 +157,7 @@ nameof(name));
                     }
                     else
                     {
-                        Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Win32GetSecurityInfo() failed with unexpected error code {0}", error));
+                        Debug.Fail($"Win32GetSecurityInfo() failed with unexpected error code {error}");
                         exception = new InvalidOperationException(SR.Format(SR.AccessControl_UnexpectedError, error));
                     }
                 }
@@ -299,7 +299,7 @@ nameof(name));
                         }
                         else
                         {
-                            Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Unexpected error code {0}", error));
+                            Debug.Fail($"Unexpected error code {error}");
                             exception = new InvalidOperationException(SR.Format(SR.AccessControl_UnexpectedError, error));
                         }
                     }

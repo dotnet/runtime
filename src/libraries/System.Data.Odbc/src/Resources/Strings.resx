@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -268,7 +267,7 @@
     <value>Keyword not supported: '{0}'.</value>
   </data>
   <data name="ADP_InternalProviderError" xml:space="preserve">
-    <value>Internal .Net Framework Data Provider error {0}.</value>
+    <value>Internal .NET Framework Data Provider error {0}.</value>
   </data>
   <data name="ADP_InvalidMultipartName" xml:space="preserve">
     <value>{0} '{1}'.</value>
@@ -307,7 +306,7 @@
     <value>OdbcCommandBuilder.DeriveParameters failed because the OdbcCommand.CommandText property value is an invalid multipart name</value>
   </data>
   <data name="ODBC_NotSupportedEnumerationValue" xml:space="preserve">
-    <value>The {0} enumeration value, {1}, is not supported by the .Net Framework Odbc Data Provider.</value>
+    <value>The {0} enumeration value, {1}, is not supported by the .NET Framework Odbc Data Provider.</value>
   </data>
   <data name="ADP_CommandTextRequired" xml:space="preserve">
     <value>{0}: CommandText property has not been initialized</value>

@@ -25,18 +25,18 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetEraName_TestData))]
-        public void GetEraName(DateTimeFormatInfo format, int era, string expected)
+        public void GetEraName_Invoke_ReturnsExpected(DateTimeFormatInfo format, int era, string expected)
         {
             Assert.Equal(expected, format.GetEraName(era));
         }
 
-        [Fact]
-        public void GetEraName_Invalid()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(2)]
+        public void GetEraName_InvalidEra_ThrowsArgumentOutOfRangeException(int era)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("era", () => new DateTimeFormatInfo().GetEraName(-1)); // Era < 0
-
-            const int EnUSMaxEra = 1;
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("era", () => new CultureInfo("en-US").DateTimeFormat.GetAbbreviatedEraName(EnUSMaxEra + 1)); // Era > max era for the culture
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("era", () => format.GetEraName(era));
         }
     }
 }

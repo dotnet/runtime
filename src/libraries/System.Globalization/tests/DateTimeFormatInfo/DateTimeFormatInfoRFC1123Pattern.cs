@@ -18,7 +18,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(RFC1123Pattern_TestData))]
-        public void RFC1123Pattern(DateTimeFormatInfo format, string expected)
+        public void RFC1123Pattern_Get_ReturnsExpected(DateTimeFormatInfo format, string expected)
         {
             Assert.Equal(expected, format.RFC1123Pattern);
         }

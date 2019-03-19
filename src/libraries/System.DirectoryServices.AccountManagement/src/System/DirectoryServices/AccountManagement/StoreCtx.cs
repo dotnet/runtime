@@ -337,8 +337,7 @@ namespace System.DirectoryServices.AccountManagement
                         p.GetChangeStatusForProperty(PropertyNames.AcctInfoExpiredAccount))
                 {
                     throw new InvalidOperationException(
-                                       string.Format(
-                                           CultureInfo.CurrentCulture,
+                                       SR.Format(
                                            SR.StoreCtxMultipleFiltersForPropertyUnsupported,
                                            PropertyNamesExternal.GetExternalForm(ExpirationDateFilter.PropertyNameStatic)));
                 }
@@ -439,12 +438,7 @@ namespace System.DirectoryServices.AccountManagement
                         else
                         {
                             // Internal error.  Didn't match either the known multivalued or scalar cases.
-                            Debug.Fail(string.Format(
-                                                CultureInfo.CurrentCulture,
-                                                "StoreCtx.BuildFilterSet: fell off end looking for {0} of type {1}",
-                                                propertyName,
-                                                value.GetType().ToString()
-                                                ));
+                            Debug.Fail($"StoreCtx.BuildFilterSet: fell off end looking for {propertyName} of type {value.GetType()}");
                         }
 
                         qbeFilterDescription.FiltersToApply.Add(filter);

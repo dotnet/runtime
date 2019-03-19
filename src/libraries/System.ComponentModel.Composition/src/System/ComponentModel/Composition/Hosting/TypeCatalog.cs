@@ -183,7 +183,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
                 if (type.Assembly.ReflectionOnly)
                 {
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_ElementReflectionOnlyType, nameof(types)), nameof(types));
+                    throw new ArgumentException(SR.Format(SR.Argument_ElementReflectionOnlyType, nameof(types)), nameof(types));
                 }
                 var typeInfo = type.GetTypeInfo();
                 var lclType = (reflectionContext != null) ? reflectionContext.MapType(typeInfo) : typeInfo;
@@ -194,7 +194,7 @@ namespace System.ComponentModel.Composition.Hosting
                     // The final mapped type may be activated so we check to see if it is in a reflect only assembly
                     if (lclType.Assembly.ReflectionOnly)
                     {
-                        throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_ReflectionContextReturnsReflectionOnlyType, nameof(reflectionContext)), nameof(reflectionContext));
+                        throw new ArgumentException(SR.Format(SR.Argument_ReflectionContextReturnsReflectionOnlyType, nameof(reflectionContext)), nameof(reflectionContext));
                     }
                     typesList.Add(lclType);
                 }
@@ -212,7 +212,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
                 else if (type.Assembly.ReflectionOnly)
                 {
-                    throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_ElementReflectionOnlyType, nameof(types)), nameof(types));
+                    throw new ArgumentException(SR.Format(SR.Argument_ElementReflectionOnlyType, nameof(types)), nameof(types));
                 }
             }
             _types = types.ToArray();
@@ -360,7 +360,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private string GetDisplayName()
         {
-            return string.Format(CultureInfo.CurrentCulture,
+            return SR.Format(
                                 SR.TypeCatalog_DisplayNameFormat,
                                 GetType().Name,
                                 GetTypesDisplay());

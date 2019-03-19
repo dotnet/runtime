@@ -45,7 +45,7 @@ namespace System.Reflection
                 }
             }
 
-            e = new FileNotFoundException(SR.Format(SR.UnableToDetermineCoreAssembly));
+            e = new FileNotFoundException(SR.UnableToDetermineCoreAssembly);
             return null;
         }
 

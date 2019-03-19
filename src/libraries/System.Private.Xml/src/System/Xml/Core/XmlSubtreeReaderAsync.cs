@@ -95,7 +95,7 @@ namespace System.Xml
                     return await ReadAsync().ConfigureAwait(false);
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return false;
             }
         }
@@ -177,7 +177,7 @@ namespace System.Xml
                     return;
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return;
             }
         }
@@ -281,7 +281,7 @@ namespace System.Xml
                             Debug.Assert(AttributeCount > 0);
                             return await reader.ReadContentAsBase64Async(buffer, index, count).ConfigureAwait(false);
                         default:
-                            Debug.Assert(false);
+                            Debug.Fail($"Unexpected state {_state}");
                             return 0;
                     }
 
@@ -304,7 +304,7 @@ namespace System.Xml
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return 0;
             }
         }
@@ -361,7 +361,7 @@ namespace System.Xml
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return 0;
             }
         }
@@ -417,7 +417,7 @@ namespace System.Xml
                             Debug.Assert(AttributeCount > 0);
                             return await reader.ReadContentAsBinHexAsync(buffer, index, count).ConfigureAwait(false);
                         default:
-                            Debug.Assert(false);
+                            Debug.Fail($"Unexpected state {_state}");
                             return 0;
                     }
 
@@ -440,7 +440,7 @@ namespace System.Xml
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return 0;
             }
         }
@@ -496,7 +496,7 @@ namespace System.Xml
                     throw new InvalidOperationException(SR.Xml_MixingBinaryContentMethods);
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return 0;
             }
         }
@@ -547,7 +547,7 @@ namespace System.Xml
                     throw new InvalidOperationException(SR.Xml_MixingReadValueChunkWithBinary);
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return AsyncHelper.DoneTaskZero;
             }
         }

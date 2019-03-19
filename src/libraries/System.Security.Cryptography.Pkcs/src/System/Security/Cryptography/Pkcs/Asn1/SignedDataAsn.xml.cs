@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -55,7 +59,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));
                 for (int i = 0; i < Crls.Length; i++)
                 {
-                    writer.WriteEncodedValue(Crls[i]); 
+                    writer.WriteEncodedValue(Crls[i].Span); 
                 }
                 writer.PopSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));
 
@@ -159,7 +163,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
                     while (collectionReader.HasData)
                     {
-                        tmpItem = collectionReader.GetEncodedValue(); 
+                        tmpItem = collectionReader.ReadEncodedValue(); 
                         tmpList.Add(tmpItem);
                     }
 

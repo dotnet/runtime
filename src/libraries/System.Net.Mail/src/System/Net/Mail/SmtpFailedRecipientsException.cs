@@ -48,7 +48,7 @@ namespace System.Net.Mail
         }
 
         internal SmtpFailedRecipientsException(List<SmtpFailedRecipientException> innerExceptions, bool allFailed) :
-            base(allFailed ? SR.Format(SR.SmtpAllRecipientsFailed) : SR.Format(SR.SmtpRecipientFailed),
+            base(allFailed ? SR.SmtpAllRecipientsFailed : SR.SmtpRecipientFailed,
             innerExceptions != null && innerExceptions.Count > 0 ? innerExceptions[0].FailedRecipient : null,
             innerExceptions != null && innerExceptions.Count > 0 ? innerExceptions[0] : null)
         {

@@ -1,0 +1,141 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
+
+  <Target Name="ProducesPackageId"
+          Returns="@(PackageIds)"
+          DependsOnTargets="FilterProjects">
+    <MSBuild Targets="ProducesPackageId"
+             Projects="@(Project)"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndContinue">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="PackageIds" />
+    </MSBuild>
+    <ItemGroup>
+      <PackageIds Include="@(PackageIds)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="ProducesTarget" DependsOnTargets="FilterProjects">
+    <MSBuild Targets="ProducesPackageId"
+             Projects="@(Project)"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndContinue">
+      <Output TaskParameter="TargetOutputs"
+              ItemName="PackageIds" />
+    </MSBuild>
+    <Message Text="%(PackageIds.Identity)" Importance="High" />
+  </Target>
+
+  <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
+    <PropertyGroup>
+      <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'==''">$(MSBuildProjectDefaultTargets)</DefaultBuildAllTarget>
+    </PropertyGroup>
+
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
+         however since the project names are unique it will essentially force each to run in its own batch -->
+    <MSBuild Targets="$(DefaultBuildAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration)"
+             ContinueOnError="ErrorAndStop" />
+
+    <MSBuild Targets="$(DefaultBuildAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'!='true'"
+             Properties="DefaultBuildAllTarget=$(DefaultBuildAllTarget);BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndStop" />
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
+
+  <Target Name="TestAllProjects" DependsOnTargets="FilterProjects">
+    <PropertyGroup>
+      <TestAllTarget Condition="'$(IntegrationTest)' == 'true'">IntegrationTest</TestAllTarget>
+      <TestAllTarget Condition="'$(PerformanceTest)' == 'true'">PerformanceTest</TestAllTarget>
+      <TestAllTarget Condition="'$(Test)' == 'true'">Test</TestAllTarget>
+    </PropertyGroup>
+
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
+         however since the project names are unique it will essentially force each to run in its own batch -->
+
+    <MSBuild Targets="$(TestAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)' == 'true' AND '%(Identity)' != ''"
+             Properties="BuildConfiguration=$(BuildConfiguration)"
+             ContinueOnError="ErrorAndContinue" />
+
+    <MSBuild Targets="$(TestAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)' != 'true'"
+             Properties="BuildConfiguration=$(BuildConfiguration)"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
+
+  <Target Name="GetFilesToPackage"
+          DependsOnTargets="FilterProjects"
+          Returns="@(FilesToPackage)">
+    <MSBuild Targets="GetFilesToPackage"
+             Projects="@(Project)"
+             BuildInParallel="true"
+             Properties="$(ProjectProperties)"
+             ContinueOnError="ErrorAndContinue" >
+      <Output TaskParameter="TargetOutputs"
+              ItemName="FilesToPackage" />
+    </MSBuild>
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
+
+  <Target Name="CleanAllProjects" DependsOnTargets="FilterProjects">
+    <PropertyGroup>
+      <DefaultCleanAllTarget Condition="'$(DefaultCleanAllTarget)'==''">Clean</DefaultCleanAllTarget>
+    </PropertyGroup>
+
+    <!-- To Serialize we use msbuild's batching functionality '%' to force it to batch all similar projects with the same identity
+         however since the project names are unique it will essentially force each to run in its own batch -->
+    <MSBuild Targets="$(DefaultCleanAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'=='true' AND '%(Identity)' != ''"
+             Properties="CleanAllProjects=true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <MSBuild Targets="$(DefaultCleanAllTarget)"
+             Projects="@(Project)"
+             Condition="'$(SerializeProjects)'!='true'"
+             Properties="CleanAllProjects=true"
+             BuildInParallel="true"
+             ContinueOnError="ErrorAndContinue" />
+
+    <!-- Given we ErrorAndContinue we need to propagate the error if the overall task failed -->
+    <Error Condition="'$(MSBuildLastTaskResult)'=='false'" />
+  </Target>
+
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      BuildAllProjects;
+      $(TraversalBuildDependsOn);
+    </TraversalBuildDependsOn>
+
+    <TraversalCleanDependsOn>
+      CleanAllProjects;
+      $(TraversalCleanDependsOn);
+    </TraversalCleanDependsOn>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="$(TraversalBuildDependsOn)" />
+  <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
+  <Target Name="Clean" DependsOnTargets="$(TraversalCleanDependsOn)" />
+  <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
+  <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
+  <Target Name="Restore" />
+  <Target Name="Test" />
+
+</Project>

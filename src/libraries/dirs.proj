@@ -20,5 +20,5 @@
     <Project Include="$(DirectoryToBuild)/**/*.csproj" />
   </ItemGroup>
 
-  <Import Project="..\dir.traversal.targets" />
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
 </Project>

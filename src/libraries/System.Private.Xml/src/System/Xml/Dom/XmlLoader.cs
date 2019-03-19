@@ -1002,7 +1002,7 @@ namespace System.Xml
 
         internal static Exception UnexpectedNodeType(XmlNodeType nodetype)
         {
-            return new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, SR.Xml_UnexpectedNodeType, nodetype.ToString()));
+            return new InvalidOperationException(SR.Format(CultureInfo.InvariantCulture, SR.Xml_UnexpectedNodeType, nodetype.ToString()));
         }
     }
 }
