@@ -40,11 +40,15 @@
     <PackLayoutDir>$(InstallerSourceIntermediateOutputDir)layout/$(FrameworkPackType)/</PackLayoutDir>
 
     <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
+
+    <MacOSComponentName>com.microsoft.$(ShortFrameworkName).pack.$(FrameworkPackType).$(SharedFrameworkNuGetVersion).component.osx.x64</MacOSComponentName>
+    <MacOSSharedInstallDir>/usr/local/share/dotnet</MacOSSharedInstallDir>
   </PropertyGroup>
 
   <!-- Only targeting pack MSIs are currently supported by this infrastructure. -->
   <PropertyGroup Condition="'$(FrameworkPackType)' != 'targeting'">
     <GenerateMSI>false</GenerateMSI>
+    <GeneratePkg>false</GeneratePkg>
   </PropertyGroup>
 
   <PropertyGroup>
