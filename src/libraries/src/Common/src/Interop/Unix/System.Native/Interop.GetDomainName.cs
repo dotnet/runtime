@@ -28,8 +28,8 @@ internal static partial class Interop
                 // which should only happen if the buffer we supply isn't big
                 // enough, and we're using a buffer size that the man page
                 // says is the max for POSIX (and larger than the max for Linux).
-                Debug.Fail("getdomainname failed");
-                throw new InvalidOperationException(string.Format("getdomainname returned {0}", err));
+                Debug.Fail($"{nameof(GetDomainName)} failed with error {err}");
+                throw new InvalidOperationException($"{nameof(GetDomainName)}: {err}");
             }
 
             // Marshal.PtrToStringAnsi uses UTF8 on Unix.

@@ -129,7 +129,7 @@ namespace System.Security.AccessControl
                         }
                         else
                         {
-                            System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "LookupPrivilegeValue() failed with unrecognized error code {0}", error));
+                            System.Diagnostics.Debug.Fail($"LookupPrivilegeValue() failed with unrecognized error code {error}");
                             throw new InvalidOperationException();
                         }
                     }
@@ -292,7 +292,7 @@ namespace System.Security.AccessControl
                 }
                 else if (error != 0)
                 {
-                    System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "WindowsIdentity.GetCurrentThreadToken() failed with unrecognized error code {0}", error));
+                    System.Diagnostics.Debug.Fail($"WindowsIdentity.GetCurrentThreadToken() failed with unrecognized error code {error}");
                     throw new InvalidOperationException();
                 }
             }
@@ -542,7 +542,7 @@ namespace System.Security.AccessControl
             }
             else if (error != 0)
             {
-                System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "AdjustTokenPrivileges() failed with unrecognized error code {0}", error));
+                System.Diagnostics.Debug.Fail($"AdjustTokenPrivileges() failed with unrecognized error code {error}");
                 throw new InvalidOperationException();
             }
         }
@@ -625,7 +625,7 @@ namespace System.Security.AccessControl
             }
             else if (error != 0)
             {
-                System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "AdjustTokenPrivileges() failed with unrecognized error code {0}", error));
+                System.Diagnostics.Debug.Fail($"AdjustTokenPrivileges() failed with unrecognized error code {error}");
                 throw new InvalidOperationException();
             }
         }

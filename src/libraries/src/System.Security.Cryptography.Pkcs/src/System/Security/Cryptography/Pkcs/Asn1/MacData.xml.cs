@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             
             System.Security.Cryptography.Pkcs.Asn1.DigestInfoAsn.Decode(sequenceReader, out decoded.Mac);
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpMacSalt))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpMacSalt))
             {
                 decoded.MacSalt = tmpMacSalt;
             }

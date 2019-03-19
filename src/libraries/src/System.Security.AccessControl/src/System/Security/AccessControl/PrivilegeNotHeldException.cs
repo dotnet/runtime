@@ -20,13 +20,13 @@ namespace System.Security.AccessControl
         }
 
         public PrivilegeNotHeldException(string privilege)
-            : base(string.Format(CultureInfo.CurrentCulture, SR.PrivilegeNotHeld_Named, privilege))
+            : base(SR.Format(SR.PrivilegeNotHeld_Named, privilege))
         {
             _privilegeName = privilege;
         }
 
         public PrivilegeNotHeldException(string privilege, Exception inner)
-            : base(string.Format(CultureInfo.CurrentCulture, SR.PrivilegeNotHeld_Named, privilege), inner)
+            : base(SR.Format(SR.PrivilegeNotHeld_Named, privilege), inner)
         {
             _privilegeName = privilege;
         }

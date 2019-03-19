@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text;
-using System;
+using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Text
@@ -197,9 +197,13 @@ namespace System.Text
             bytesUsed = _encoding.GetBytes(chars, charCount, bytes, byteCount, this);
             charsUsed = _charsUsed;
 
-            // Its completed if they've used what they wanted AND if they didn't want flush or if we are flushed
-            completed = (charsUsed == charCount) && (!flush || !this.HasState) &&
-                (_fallbackBuffer == null || _fallbackBuffer.Remaining == 0);
+            // Per MSDN, "The completed output parameter indicates whether all the data in the input
+            // buffer was converted and stored in the output buffer." That means we've successfully
+            // consumed all the input _and_ there's no pending state or fallback data remaining to be output.
+
+            completed = (charsUsed == charCount)
+                && !this.HasState
+                && (_fallbackBuffer is null || _fallbackBuffer.Remaining == 0);
 
             // Our data thingys are now full, we can return
         }
@@ -220,6 +224,10 @@ namespace System.Text
             }
         }
 
+        /// <summary>
+        /// States whether a call to <see cref="Encoding.GetBytes(char*, int, byte*, int, EncoderNLS)"/> must first drain data on this <see cref="EncoderNLS"/> instance.
+        /// </summary>
+        internal bool HasLeftoverData => _charLeftOver != default || (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0);
 
         // Anything left in our encoder?
         internal virtual bool HasState
@@ -234,6 +242,155 @@ namespace System.Text
         internal void ClearMustFlush()
         {
             _mustFlush = false;
+        }
+
+        internal int DrainLeftoverDataForGetByteCount(ReadOnlySpan<char> chars, out int charsConsumed)
+        {
+            // Quick check: we _should not_ have leftover fallback data from a previous invocation,
+            // as we'd end up consuming any such data and would corrupt whatever Convert call happens
+            // to be in progress.
+
+            if (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, Encoding.EncodingName, _fallbackBuffer.GetType()));
+            }
+
+            // If we have a leftover high surrogate from a previous operation, consume it now.
+            // We won't clear the _charLeftOver field since GetByteCount is supposed to be
+            // a non-mutating operation, and we need the field to retain its value for the
+            // next call to Convert.
+
+            charsConsumed = 0; // could be incorrect, will fix up later in the method
+
+            if (_charLeftOver == default)
+            {
+                return 0; // no leftover high surrogate char - short-circuit and finish
+            }
+            else
+            {
+                char secondChar = default;
+
+                if (chars.IsEmpty)
+                {
+                    // If the input buffer is empty and we're not being asked to flush, no-op and return
+                    // success to our caller. If we're being asked to flush, the leftover high surrogate from
+                    // the previous operation will go through the fallback mechanism by itself.
+
+                    if (!MustFlush)
+                    {
+                        return 0; // no-op = success
+                    }
+                }
+                else
+                {
+                    secondChar = chars[0];
+                }
+
+                // If we have to fallback the chars we're reading immediately below, populate the
+                // fallback buffer with the invalid data. We'll just fall through to the "consume
+                // fallback buffer" logic at the end of the method.
+
+                bool didFallback;
+
+                if (Rune.TryCreate(_charLeftOver, secondChar, out Rune rune))
+                {
+                    charsConsumed = 1; // consumed the leftover high surrogate + the first char in the input buffer
+
+                    if (_encoding.TryGetByteCount(rune, out int byteCount))
+                    {
+                        Debug.Assert(byteCount >= 0, "Encoding shouldn't have returned a negative byte count.");
+                        return byteCount;
+                    }
+                    else
+                    {
+                        didFallback = FallbackBuffer.Fallback(_charLeftOver, secondChar, index: 0);
+                    }
+                }
+                else
+                {
+                    didFallback = FallbackBuffer.Fallback(_charLeftOver, index: 0);
+                }
+
+                // Now tally the number of bytes that would've been emitted as part of fallback.
+
+                return _fallbackBuffer.DrainRemainingDataForGetByteCount();
+            }
+        }
+
+        internal bool TryDrainLeftoverDataForGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int charsConsumed, out int bytesWritten)
+        {
+            // We may have a leftover high surrogate data from a previous invocation, or we may have leftover
+            // data in the fallback buffer, or we may have neither, but we will never have both. Check for these
+            // conditions and handle them now.
+
+            charsConsumed = 0; // could be incorrect, will fix up later in the method
+            bytesWritten = 0; // could be incorrect, will fix up later in the method
+
+            if (_charLeftOver != default)
+            {
+                char secondChar = default;
+
+                if (chars.IsEmpty)
+                {
+                    // If the input buffer is empty and we're not being asked to flush, no-op and return
+                    // success to our caller. If we're being asked to flush, the leftover high surrogate from
+                    // the previous operation will go through the fallback mechanism by itself.
+
+                    if (!MustFlush)
+                    {
+                        charsConsumed = 0;
+                        bytesWritten = 0;
+                        return true; // no-op = success
+                    }
+                }
+                else
+                {
+                    secondChar = chars[0];
+                }
+
+                // If we have to fallback the chars we're reading immediately below, populate the
+                // fallback buffer with the invalid data. We'll just fall through to the "consume
+                // fallback buffer" logic at the end of the method.
+
+                if (Rune.TryCreate(_charLeftOver, secondChar, out Rune rune))
+                {
+                    charsConsumed = 1; // at the very least, we consumed 1 char from the input
+                    switch (_encoding.EncodeRune(rune, bytes, out bytesWritten))
+                    {
+                        case OperationStatus.Done:
+                            _charLeftOver = default; // we just consumed this char
+                            return true; // that's all - we've handled the leftover data
+
+                        case OperationStatus.DestinationTooSmall:
+                            _charLeftOver = default; // we just consumed this char
+                            _encoding.ThrowBytesOverflow(this, nothingEncoded: true); // will throw
+                            break;
+
+                        case OperationStatus.InvalidData:
+                            FallbackBuffer.Fallback(_charLeftOver, secondChar, index: 0);
+                            break;
+
+                        default:
+                            Debug.Fail("Unknown return value.");
+                            break;
+                    }
+                }
+                else
+                {
+                    FallbackBuffer.Fallback(_charLeftOver, index: 0);
+                }
+            }
+
+            // Now check the fallback buffer for any remaining data.
+
+            if (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0)
+            {
+                return _fallbackBuffer.TryDrainRemainingDataForGetBytes(bytes, out bytesWritten);
+            }
+
+            // And we're done!
+
+            return true; // success
         }
     }
 }

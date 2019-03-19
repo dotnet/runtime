@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Reflection;
 
@@ -20,7 +19,6 @@ namespace Microsoft.Internal
         {
             NotNull(values, parameterName);
             NotNullElements(values, parameterName);
-            Contract.EndContractBlock();
         }
 
         [DebuggerStepThrough]
@@ -29,7 +27,6 @@ namespace Microsoft.Internal
             where TValue : class
         {
             NotNullElements(values, parameterName);
-            Contract.EndContractBlock();
         }
 
         [DebuggerStepThrough]
@@ -37,18 +34,22 @@ namespace Microsoft.Internal
             where T : class
         {
             NotNullElements(values, parameterName);
-            Contract.EndContractBlock();
         }
 
         [DebuggerStepThrough]
         private static void NotNullElements<T>(IEnumerable<T> values, string parameterName)
             where T : class
         {
-            if (values != null && !Contract.ForAll(values, (value) => value != null))
+            if (values != null)
             {
-                throw ExceptionBuilder.CreateContainsNullElement(parameterName);
+                foreach (T value in values)
+                {
+                    if (value is null)
+                    {
+                        throw ExceptionBuilder.CreateContainsNullElement(parameterName);
+                    }
+                }
             }
-            Contract.EndContractBlock();
         }
 
         [DebuggerStepThrough]
@@ -79,11 +80,16 @@ namespace Microsoft.Internal
             where TKey : class
             where TValue : class
         {
-            if (values != null && !Contract.ForAll(values, (keyValue) => keyValue.Key != null && keyValue.Value != null))
+            if (values != null)
             {
-                throw ExceptionBuilder.CreateContainsNullElement(parameterName);
+                foreach (KeyValuePair<TKey, TValue> keyValue in values)
+                {
+                    if (keyValue.Key is null || keyValue.Value is null)
+                    {
+                        throw ExceptionBuilder.CreateContainsNullElement(parameterName);
+                    }
+                }
             }
-            Contract.EndContractBlock();
         }
 
         [DebuggerStepThrough]
@@ -92,9 +98,8 @@ namespace Microsoft.Internal
             if ((value & enumFlagSet) != value || // Ensure the member is in the set
                 (value & (value - 1)) != 0) // Ensure that there is only one flag in the value (i.e. value is a power of 2).
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_InvalidEnumInSet, parameterName, value, enumFlagSet.ToString()), parameterName);
+                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_InvalidEnumInSet, parameterName, value, enumFlagSet.ToString()), parameterName);
             }
-            Contract.EndContractBlock();
         }
 
         public static void NotNull<T>(T value, string parameterName)
@@ -112,7 +117,7 @@ namespace Microsoft.Internal
 
             if (value.Length == 0)
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ArgumentException_EmptyString, parameterName), parameterName);
+                throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, parameterName), parameterName);
             }
         }
 

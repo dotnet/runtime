@@ -143,7 +143,7 @@ namespace System
 
             if (!(other is Tuple<T1> objTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
 
             return comparer.Compare(m_Item1, objTuple.m_Item1);
@@ -242,7 +242,7 @@ namespace System
 
             if (!(other is Tuple<T1, T2> objTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
 
             int c = 0;
@@ -356,7 +356,7 @@ namespace System
 
             if (!(other is Tuple<T1, T2, T3> objTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
 
             int c = 0;
@@ -481,7 +481,7 @@ namespace System
 
             if (!(other is Tuple<T1, T2, T3, T4> objTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
 
             int c = 0;
@@ -617,7 +617,7 @@ namespace System
 
             if (!(other is Tuple<T1, T2, T3, T4, T5> objTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
 
             int c = 0;
@@ -764,7 +764,7 @@ namespace System
 
             if (!(other is Tuple<T1, T2, T3, T4, T5, T6> objTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
 
             int c = 0;
@@ -922,7 +922,7 @@ namespace System
 
             if (!(other is Tuple<T1, T2, T3, T4, T5, T6, T7> objTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
 
             int c = 0;
@@ -1096,7 +1096,7 @@ namespace System
 
             if (!(other is Tuple<T1, T2, T3, T4, T5, T6, T7, TRest> objTuple))
             {
-                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, this.GetType().ToString()), nameof(other));
+                throw new ArgumentException(SR.Format(SR.ArgumentException_TupleIncorrectType, GetType()), nameof(other));
             }
 
             int c = 0;

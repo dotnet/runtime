@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Asn1
             
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.EncryptionAlgorithm);
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpEncryptedData))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpEncryptedData))
             {
                 decoded.EncryptedData = tmpEncryptedData;
             }

@@ -5473,7 +5473,7 @@ namespace System.Xml.Xsl.IlGen
                 case QilNodeType.Le: return cmp <= 0 ? f.True() : f.False();
             }
 
-            Debug.Assert(false, "Cannot fold this comparison operation: " + opType);
+            Debug.Fail($"Cannot fold this comparison operation: {opType}");
             return null;
         }
 
@@ -5585,7 +5585,7 @@ namespace System.Xml.Xsl.IlGen
                 case QilNodeType.Modulo: return f.Modulo(left, right);
             }
 
-            Debug.Assert(false, "Cannot fold this arithmetic operation: " + opType);
+            Debug.Fail($"Cannot fold this arithmetic operation: {opType}");
             return null;
         }
 

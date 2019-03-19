@@ -456,16 +456,16 @@ namespace Microsoft.XmlSerializer.Generator
 
         private void WriteHelp()
         {
-            Console.Out.WriteLine(SR.Format(SR.HelpDescription));
+            Console.Out.WriteLine(SR.HelpDescription);
             Console.Out.WriteLine(SR.Format(SR.HelpUsage, this.GetType().Assembly.GetName().Name.Substring("dotnet-".Length)));
-            Console.Out.WriteLine(SR.Format(SR.HelpDevOptions));
+            Console.Out.WriteLine(SR.HelpDevOptions);
             Console.Out.WriteLine(SR.Format(SR.HelpAssembly, "-a", "--assembly"));
             Console.Out.WriteLine(SR.Format(SR.HelpType, "--type"));
             Console.Out.WriteLine(SR.Format(SR.HelpProxy, "--proxytypes"));
             Console.Out.WriteLine(SR.Format(SR.HelpForce, "--force"));
             Console.Out.WriteLine(SR.Format(SR.HelpOut, "-o", "--out"));
 
-            Console.Out.WriteLine(SR.Format(SR.HelpMiscOptions));
+            Console.Out.WriteLine(SR.HelpMiscOptions);
             Console.Out.WriteLine(SR.Format(SR.HelpHelp, "-h", "--help"));
         }
 

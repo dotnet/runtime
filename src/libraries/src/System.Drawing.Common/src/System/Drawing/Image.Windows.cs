@@ -155,7 +155,7 @@ namespace System.Drawing
                     image = Metafile.FromGDIplus(nativeImage);
                     break;
                 default:
-                    throw new ArgumentException(SR.Format(SR.InvalidImage));
+                    throw new ArgumentException(SR.InvalidImage);
             }
 
             return image;

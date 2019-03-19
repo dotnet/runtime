@@ -169,7 +169,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         /// <remarks>
         /// For fast performance, avoid using MemoryStream/BinaryReader or reflection/serialization. I measured the difference between several implementations and found that:
         /// * Difference in time performance between using plain byte array versus MemoryStream with BinaryReader is ~ 1/10!
-        /// * Difference between this implementation and serialization via .Net Serialization is ~1/100!
+        /// * Difference between this implementation and serialization via .NET Serialization is ~1/100!
         /// </remarks>
         protected virtual void Serialize(byte[] binState, out int nextOffset)
         {

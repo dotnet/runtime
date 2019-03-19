@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             
             writer.WriteObjectIdentifier(SecretTypeId);
             writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            writer.WriteEncodedValue(SecretValue);
+            writer.WriteEncodedValue(SecretValue.Span);
             writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
             writer.PopSequence(tag);
         }
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             decoded.SecretTypeId = sequenceReader.ReadObjectIdentifierAsString();
 
             explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-            decoded.SecretValue = explicitReader.GetEncodedValue();
+            decoded.SecretValue = explicitReader.ReadEncodedValue();
             explicitReader.ThrowIfNotEmpty();
 
 

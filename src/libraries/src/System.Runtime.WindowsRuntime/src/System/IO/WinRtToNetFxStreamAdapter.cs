@@ -81,7 +81,6 @@ namespace System.IO
                                     (winRtStream is IRandomAccessStream && !((IRandomAccessStream)winRtStream).CanWrite)
                                ))
                              );
-            Contract.EndContractBlock();
 
             _winRtStream = winRtStream;
             _canRead = canRead;
@@ -128,9 +127,8 @@ namespace System.IO
                 return null;
 
             Debug.Assert(wrtStr is TWinRtStream,
-                            string.Format("Attempted to get the underlying WinRT stream typed as \"{0}\"," +
-                                          " but the underlying WinRT stream cannot be cast to that type. Its actual type is \"{1}\".",
-                                          typeof(TWinRtStream).ToString(), wrtStr.GetType().ToString()));
+                $"Attempted to get the underlying WinRT stream typed as \"{typeof(TWinRtStream)}\", " +
+                $"but the underlying WinRT stream cannot be cast to that type. Its actual type is \"{wrtStr.GetType()}\".");
 
             return wrtStr as TWinRtStream;
         }
@@ -286,7 +284,6 @@ namespace System.IO
             {
                 if (value < 0)
                     throw new ArgumentOutOfRangeException("Position", SR.ArgumentOutOfRange_IO_CannotSeekToNegativePosition);
-                Contract.EndContractBlock();
 
                 IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
@@ -389,7 +386,6 @@ namespace System.IO
         {
             if (value < 0)
                 throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_CannotResizeStreamToNegative);
-            Contract.EndContractBlock();
 
             IRandomAccessStream wrtStr = EnsureNotDisposed<IRandomAccessStream>();
 
@@ -452,8 +448,6 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientSpaceInTargetBuffer);
 
-            Contract.EndContractBlock();
-
             IInputStream wrtStr = EnsureNotDisposed<IInputStream>();
             EnsureCanRead();
 
@@ -482,8 +476,6 @@ namespace System.IO
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
-
-            Contract.EndContractBlock();
 
             EnsureNotDisposed();
             EnsureCanRead();
@@ -538,8 +530,6 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientSpaceInTargetBuffer);
 
-            Contract.EndContractBlock();
-
             EnsureNotDisposed();
             EnsureCanRead();
 
@@ -563,10 +553,6 @@ namespace System.IO
 
         public override int ReadByte()
         {
-            Contract.Ensures(Contract.Result<int>() >= -1);
-            Contract.Ensures(Contract.Result<int>() < 256);
-            Contract.EndContractBlock();
-
             // EnsureNotDisposed will be called in Read->BeginRead.
 
             byte[] oneByteArray = OneByteBuffer;
@@ -606,8 +592,6 @@ namespace System.IO
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
 
-            Contract.EndContractBlock();
-
             IOutputStream wrtStr = EnsureNotDisposed<IOutputStream>();
             EnsureCanWrite();
 
@@ -635,8 +619,6 @@ namespace System.IO
         {
             if (asyncResult == null)
                 throw new ArgumentNullException(nameof(asyncResult));
-
-            Contract.EndContractBlock();
 
             EnsureNotDisposed();
             EnsureCanWrite();
@@ -683,8 +665,6 @@ namespace System.IO
 
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
-
-            Contract.EndContractBlock();
 
             IOutputStream wrtStr = EnsureNotDisposed<IOutputStream>();
             EnsureCanWrite();

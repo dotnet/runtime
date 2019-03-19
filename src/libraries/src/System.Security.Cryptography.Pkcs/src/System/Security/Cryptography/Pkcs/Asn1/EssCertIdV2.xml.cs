@@ -107,7 +107,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
 
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpHash))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpHash))
             {
                 decoded.Hash = tmpHash;
             }

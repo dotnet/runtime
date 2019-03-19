@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
 
                 if (key == null || key.IsInvalid)
                 {
-                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, oid));
+                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
                 }
 
                 if (!Interop.Crypto.EcKeyGenerateKey(key))
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
             else
             {
                 throw new PlatformNotSupportedException(
-                    string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
+                    SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
             }
 
             return KeySize;

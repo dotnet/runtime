@@ -187,7 +187,7 @@ namespace System.Net.Security
                 if (NetEventSource.IsEnabled)
                 {
                     string protocol = isNtlmOnly ? "NTLM" : "SPNEGO";
-                    NetEventSource.Info($"EstablishSecurityContext: protocol = {protocol}, target = {targetName}");
+                    NetEventSource.Info(null, $"requested protocol = {protocol}, target = {targetName}");
                 }
 
                 initialContext = true;
@@ -216,10 +216,22 @@ namespace System.Net.Security
                    out outputFlags,
                    out isNtlmUsed);
 
-                // Remember if SPNEGO did a fallback from Kerberos to NTLM while generating the initial context.                 
-                if (initialContext && !isNtlmOnly && isNtlmUsed)
+                if (initialContext)
                 {
-                    negoContext.IsNtlmFallback = true;
+                    if (NetEventSource.IsEnabled)
+                    {
+                        string protocol = isNtlmOnly ? "NTLM" : isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos";
+                        NetEventSource.Info(null, $"actual protocol = {protocol}");
+                    }
+
+                    // Remember if SPNEGO did a fallback from Kerberos to NTLM while generating the initial context.                 
+                    if (!isNtlmOnly && isNtlmUsed)
+                    {
+                        negoContext.IsNtlmFallback = true;
+                    }
+
+                    // Populate protocol used for authentication
+                    negoContext.SetAuthenticationPackage(isNtlmUsed);
                 }
 
                 Debug.Assert(resultBuffer != null, "Unexpected null buffer returned by GssApi");
@@ -232,17 +244,6 @@ namespace System.Net.Security
                 if (null == negoContext.GssContext)
                 {
                     negoContext.SetGssContext(contextHandle);
-                }
-
-                // Populate protocol used for authentication
-                if (done)
-                {
-                    negoContext.SetAuthenticationPackage(isNtlmUsed);
-                    if (NetEventSource.IsEnabled)
-                    {
-                        string protocol = isNtlmOnly ? "NTLM" : isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos";
-                        NetEventSource.Info($"EstablishSecurityContext: completed handshake, protocol = {protocol}");
-                    }
                 }
 
                 SecurityStatusPalErrorCode errorCode = done ?

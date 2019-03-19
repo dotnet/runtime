@@ -7,6 +7,10 @@
 
 namespace System.Threading.Channels
 {
+    public partial class ChannelClosedException : System.InvalidOperationException
+    {
+        protected ChannelClosedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
     public abstract partial class ChannelReader<T>
     {
         public virtual System.Collections.Generic.IAsyncEnumerable<T> ReadAllAsync() { throw null; }

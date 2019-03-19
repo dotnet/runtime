@@ -25,7 +25,6 @@
     <Compile Include="Common.cs" />
     <Compile Include="ParameterInfoTests.cs" />
     <Compile Include="PropertyInfoTests.cs" />
-    <Compile Include="ReflectionContextTests.cs" />
     <Compile Include="TypeDerivedTests.cs" />
     <Compile Include="TypeInfoTests.cs" />
     <Compile Include="ExceptionTests.cs" />

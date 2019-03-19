@@ -150,7 +150,7 @@ namespace System.Data.SqlClient
                             byte[] byteArrayValue = (byte[])values[publicKeyIndex];
                             foreach (byte b in byteArrayValue)
                             {
-                                resultString.Append(string.Format((IFormatProvider)null, "{0,-2:x2}", b));
+                                resultString.Append(string.Format("{0,-2:x2}", b));
                             }
                             nameString.Append(resultString.ToString());
                         }

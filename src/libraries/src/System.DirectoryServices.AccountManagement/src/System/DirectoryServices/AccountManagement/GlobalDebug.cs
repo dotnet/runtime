@@ -35,7 +35,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 //
                 Debug.WriteLine(
-                            String.Format(
+                            string.Format(
                                 System.Globalization.CultureInfo.InvariantCulture,
                                 "Principal API Debug Log - AppDomain {0} with ID {1} - {2} (UTC)",
                                 System.Threading.Thread.GetDomain().FriendlyName,

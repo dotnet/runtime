@@ -321,7 +321,7 @@ namespace System.ComponentModel.Tests
             ex = AssertExtensions.Throws<ArgumentException>(null, () => container.Add(c2, "dup"));
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
-            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
             {
                 Assert.NotNull(ex.Message);
                 Assert.True(ex.Message.IndexOf("'dup'") != -1);
@@ -336,7 +336,7 @@ namespace System.ComponentModel.Tests
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
-            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
             {
                 Assert.NotNull(ex.Message);
                 Assert.True(ex.Message.IndexOf("'duP'") != -1);
@@ -361,7 +361,7 @@ namespace System.ComponentModel.Tests
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
-            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
             {
                 Assert.NotNull(ex.Message);
                 Assert.True(ex.Message.IndexOf("'dup'") != -1);
@@ -705,7 +705,7 @@ namespace System.ComponentModel.Tests
             ArgumentNullException ex = Assert.Throws<ArgumentNullException>(() => _container.InvokeValidateName((IComponent)null, "A"));
             Assert.Equal(typeof(ArgumentNullException), ex.GetType());
             Assert.Null(ex.InnerException);
-            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
             {
                 Assert.NotNull(ex.Message);
                 Assert.Equal("component", ex.ParamName);
@@ -740,7 +740,7 @@ namespace System.ComponentModel.Tests
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
-            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
             {
                 Assert.NotNull(ex.Message);
                 Assert.True(ex.Message.IndexOf("'dup'") != -1);
@@ -756,7 +756,7 @@ namespace System.ComponentModel.Tests
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
-            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
             {
                 Assert.NotNull(ex.Message);
                 Assert.True(ex.Message.IndexOf("'dup'") != -1);
@@ -774,7 +774,7 @@ namespace System.ComponentModel.Tests
             // unique and case-insensitive
             Assert.Equal(typeof(ArgumentException), ex.GetType());
             Assert.Null(ex.InnerException);
-            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
             {
                 Assert.NotNull(ex.Message);
                 Assert.True(ex.Message.IndexOf("'dup'") != -1);
