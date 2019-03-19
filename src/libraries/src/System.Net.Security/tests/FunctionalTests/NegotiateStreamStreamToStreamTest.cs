@@ -189,7 +189,7 @@ namespace System.Net.Security.Tests
 
                 // TODO #5241: Behavior difference:
                 Assert.Equal(false, clientIdentity.IsAuthenticated);
-                // On .Net Desktop: Assert.Equal(true, clientIdentity.IsAuthenticated);
+                // On .NET Desktop: Assert.Equal(true, clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertHasName(clientIdentity, new SecurityIdentifier(WellKnownSidType.AnonymousSid, null).Translate(typeof(NTAccount)).Value);
             }

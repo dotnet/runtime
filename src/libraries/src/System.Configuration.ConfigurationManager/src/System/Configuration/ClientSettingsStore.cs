@@ -206,7 +206,7 @@ namespace System.Configuration
                 catch (ConfigurationErrorsException ex)
                 {
                     // We wrap this in an exception with our error message and throw again.
-                    throw new ConfigurationErrorsException(string.Format(SR.SettingsSaveFailed, ex.Message), ex);
+                    throw new ConfigurationErrorsException(SR.Format(SR.SettingsSaveFailed, ex.Message), ex);
                 }
             }
             else

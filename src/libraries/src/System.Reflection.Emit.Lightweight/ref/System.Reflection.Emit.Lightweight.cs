@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Reflection.Emit
 {
     public sealed partial class DynamicMethod : System.Reflection.MethodInfo
@@ -21,7 +20,6 @@ namespace System.Reflection.Emit
         public override System.Reflection.MethodAttributes Attributes { get { throw null; } }
         public override System.Reflection.CallingConventions CallingConvention { get { throw null; } }
         public override System.Type DeclaringType { get { throw null; } }
-        public ParameterBuilder DefineParameter(int position, System.Reflection.ParameterAttributes attributes, System.String parameterName) { throw null; }
         public bool InitLocals { get { throw null; } set { } }
         public override System.RuntimeMethodHandle MethodHandle { get { throw null; } }
         public override string Name { get { throw null; } }
@@ -31,6 +29,7 @@ namespace System.Reflection.Emit
         public override System.Reflection.ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw null; } }
         public sealed override System.Delegate CreateDelegate(System.Type delegateType) { throw null; }
         public sealed override System.Delegate CreateDelegate(System.Type delegateType, object target) { throw null; }
+        public System.Reflection.Emit.ParameterBuilder DefineParameter(int position, System.Reflection.ParameterAttributes attributes, string parameterName) { throw null; }
         public override System.Reflection.MethodInfo GetBaseDefinition() { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }

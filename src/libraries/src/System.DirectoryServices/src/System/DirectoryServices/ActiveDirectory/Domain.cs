@@ -1097,7 +1097,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                     default:
                         // should not happen since we are calling this only internally
-                        Debug.Assert(false, "Domain.GetRoleOwner: Invalid role type.");
+                        Debug.Fail("Domain.GetRoleOwner: Invalid role type.");
                         break;
                 }
 

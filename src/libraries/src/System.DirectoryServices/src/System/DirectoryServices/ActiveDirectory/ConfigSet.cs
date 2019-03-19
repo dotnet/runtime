@@ -632,7 +632,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     default:
                         // should not happen since we are calling this only internally
-                        Debug.Assert(false, "ConfigurationSet.GetRoleOwner: Invalid role type.");
+                        Debug.Fail("ConfigurationSet.GetRoleOwner: Invalid role type.");
                         break;
                 }
                 entry.RefreshCache();

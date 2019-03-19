@@ -441,7 +441,6 @@ namespace System.Xml.Schema
 
         internal override bool IsEqual(object o1, object o2)
         {
-            //Debug.WriteLineIf(DiagnosticsSwitches.XmlSchema.TraceVerbose, string.Format("\t\tSchemaDatatype.IsEqual({0}, {1})", o1, o2));
             return Compare(o1, o2) == 0;
         }
 

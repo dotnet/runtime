@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq.Expressions;
 using Microsoft.Internal;
@@ -105,7 +105,7 @@ namespace System.ComponentModel.Composition.Primitives
                 (cardinality != ImportCardinality.ZeroOrOne)
                 )
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ArgumentOutOfRange_InvalidEnum, nameof(cardinality), cardinality, typeof(ImportCardinality).Name), nameof(cardinality));
+                throw new ArgumentException(SR.Format(SR.ArgumentOutOfRange_InvalidEnum, nameof(cardinality), cardinality, typeof(ImportCardinality).Name), nameof(cardinality));
             }
 
             _contractName = contractName ?? EmptyContractName;
@@ -133,7 +133,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get 
             {
-                Contract.Ensures(Contract.Result<string>() != null);
+                Debug.Assert(_contractName != null);
 
                 return _contractName; 
             }
@@ -163,7 +163,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                Contract.Ensures(Contract.Result<IDictionary<string, object>>() != null);
+                Debug.Assert(_metadata != null);
 
                 return _metadata;
             }
@@ -205,8 +205,6 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                Contract.Ensures(Contract.Result<Expression<Func<ExportDefinition, bool>>>() != null);
-                
                 if (_constraint != null)
                 {
                     return _constraint;

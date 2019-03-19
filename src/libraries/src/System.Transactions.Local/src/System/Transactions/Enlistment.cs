@@ -190,7 +190,7 @@ namespace System.Transactions
         {
             get
             {
-                Debug.Assert(false, "PromotableSinglePhaseNotification called for a non promotable enlistment.");
+                Debug.Fail("PromotableSinglePhaseNotification called for a non promotable enlistment.");
                 throw new NotImplementedException();
             }
         }
@@ -263,7 +263,7 @@ namespace System.Transactions
         {
             get
             {
-                Debug.Assert(false, "ResourceManagerIdentifier called for non durable enlistment");
+                Debug.Fail("ResourceManagerIdentifier called for non durable enlistment");
                 throw new NotImplementedException();
             }
         }

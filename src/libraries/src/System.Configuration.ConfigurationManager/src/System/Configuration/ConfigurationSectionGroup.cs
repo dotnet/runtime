@@ -53,7 +53,7 @@ namespace System.Configuration
                         FactoryRecord factoryRecord = FindParentFactoryRecord(false);
                         if ((factoryRecord != null) && !factoryRecord.IsEquivalentType(_configRecord.Host, typeName))
                         {
-                            throw new ConfigurationErrorsException(string.Format(SR.Config_tag_name_already_defined,
+                            throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined,
                                 SectionGroupName));
                         }
                     }

@@ -263,7 +263,7 @@ namespace System.Net.Http.Headers
             int mediaTypeLength = GetMediaTypeExpressionLength(mediaType, 0, out tempMediaType);
             if ((mediaTypeLength == 0) || (tempMediaType.Length != mediaType.Length))
             {
-                throw new FormatException(string.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, mediaType));
+                throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, mediaType));
             }
         }
 

@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.GetIntegerBytes(Asn1Tag.Null));
+                () => reader.ReadIntegerBytes(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.GetIntegerBytes(Asn1Tag.Null));
+                () => reader.ReadIntegerBytes(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 

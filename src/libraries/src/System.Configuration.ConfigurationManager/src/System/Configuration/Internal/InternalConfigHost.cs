@@ -205,7 +205,7 @@ namespace System.Configuration.Internal
             // ensure the result is in or under the directory of the original source
             string dirResult = UrlPath.GetDirectoryOrRootName(result);
             if (!UrlPath.IsEqualOrSubdirectory(dirStream, dirResult))
-                throw new ArgumentException(string.Format(SR.Config_source_not_under_config_dir, configSource));
+                throw new ArgumentException(SR.Format(SR.Config_source_not_under_config_dir, configSource));
 
             return result;
         }
@@ -257,7 +257,7 @@ namespace System.Configuration.Internal
                     FileAttributes attrs = fi.Attributes;
                     if ((attrs & InvalidAttributesForWrite) != 0)
                     {
-                        throw new IOException(string.Format(SR.Config_invalid_attributes_for_write, streamName));
+                        throw new IOException(SR.Format(SR.Config_invalid_attributes_for_write, streamName));
                     }
                 }
 
@@ -270,7 +270,7 @@ namespace System.Configuration.Internal
                     // Wrap all exceptions so that we provide a meaningful filename - otherwise the end user
                     // will just see the temporary file name, which is meaningless.
 
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_write_failed, streamName), e);
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_write_failed, streamName), e);
                 }
             }
             catch

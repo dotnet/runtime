@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
     public class NumberFormatInfoNumberGroupSeparator
     {
         [Fact]
-        public void NumberGroupSeparator_Get_InvariantInfo()
+        public void NumberGroupSeparator_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal(",", NumberFormatInfo.InvariantInfo.NumberGroupSeparator);
         }
@@ -18,7 +18,7 @@ namespace System.Globalization.Tests
         [InlineData("string")]
         [InlineData("    ")]
         [InlineData("")]
-        public void NumberGroupSeparator_Set(string newNumberGroupSeparator)
+        public void NumberGroupSeparator_Set_GetReturnsExpected(string newNumberGroupSeparator)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.NumberGroupSeparator = newNumberGroupSeparator;
@@ -26,9 +26,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void NumberGroupSeparator_Set_Invalid()
+        public void NumberGroupSeparator_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("NumberGroupSeparator", () => new NumberFormatInfo().NumberGroupSeparator = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "NumberGroupSeparator", () => format.NumberGroupSeparator = null);
+        }
+
+        [Fact]
+        public void NumberGroupSeparator_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NumberGroupSeparator = "string");
         }
     }

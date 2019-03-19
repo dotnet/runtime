@@ -9,37 +9,42 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoFullDateTimePattern
     {
-        private static readonly RandomDataGenerator s_generator = new RandomDataGenerator();
-
         [Fact]
-        public void FullDateTimePattern_InvariantInfo()
+        public void FullDateTimePattern_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("dddd, dd MMMM yyyy HH:mm:ss", DateTimeFormatInfo.InvariantInfo.FullDateTimePattern);
         }
 
-        public static IEnumerable<object[]> FullDFullDateTimePattern_Set_TestData()
+        public static IEnumerable<object[]> FullDateTimePattern_Set_TestData()
         {
+            yield return new object[] { string.Empty };
+            yield return new object[] { "garbage" };
             yield return new object[] { "dddd, dd MMMM yyyy HH:mm:ss" };
             yield return new object[] { "dddd" };
             yield return new object[] { "F" };
             yield return new object[] { "HH:mm:ss dddd, dd MMMM yyyy" };
-            yield return new object[] { s_generator.GetString(-55, false, 1, 256) };
         }
 
         [Theory]
-        [MemberData(nameof(FullDFullDateTimePattern_Set_TestData))]
-        public void FullDateTimePattern_Set(string newFullDateTimePattern)
+        [MemberData(nameof(FullDateTimePattern_Set_TestData))]
+        public void FullDateTimePattern_Set_GetReturnsExpected(string value)
         {
             var format = new DateTimeFormatInfo();
-            format.FullDateTimePattern = newFullDateTimePattern;
-            Assert.Equal(newFullDateTimePattern, format.FullDateTimePattern);
+            format.FullDateTimePattern = value;
+            Assert.Equal(value, format.FullDateTimePattern);
         }
 
         [Fact]
-        public void FullDateTimePattern_Set_Invalid()
+        public void FullDateTimePattern_SetNullValue_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().FullDateTimePattern = null); // Value is null
-            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.FullDateTimePattern = "dddd, dd MMMM yyyy HH:mm:ss"); // DateTimeFormatInfo.InvariantInfo is read only
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.FullDateTimePattern = null);
+        }
+
+        [Fact]
+        public void FullDateTimePattern_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.FullDateTimePattern = "dddd, dd MMMM yyyy HH:mm:ss");
         }
     }
 }

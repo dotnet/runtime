@@ -283,7 +283,14 @@ namespace System.IO.Packaging
         /// <exception cref="ArgumentException">If partUri parameter does not conform to the valid partUri syntax</exception>
         public virtual bool PartExists(Uri partUri)
         {
-            return (GetPartHelper(partUri) != null);
+            ThrowIfObjectDisposed();
+
+            if (partUri == null)
+                throw new ArgumentNullException(nameof(partUri));
+
+            PackUriHelper.ValidatedPartUri validatePartUri = PackUriHelper.ValidatePartUri(partUri);
+
+            return _partList.ContainsKey(validatePartUri);
         }
 
 
@@ -1048,7 +1055,7 @@ namespace System.IO.Packaging
                 //
                 //     _partList.Keys.CopyTo(keys, 0);
 
-                for (int i = 0; i < _partList.Keys.Count; i++)
+                for (int i = 0; i < partKeys.Length; i++)
                 {
                     // Some of these may disappear during above close because the list contains "relationship parts"
                     // and these are removed if their parts' relationship collection is empty

@@ -108,7 +108,7 @@ namespace System.Net.Test.Common
             for (int i = 0; i < values.Length; i++)
             {
                 string trimmedValue = values[i].Trim();
-                if (trimmedValue.Contains(nameof(username)))
+                if (trimmedValue.StartsWith(nameof(username)))
                 {
                     // Username is a quoted string.
                     int startIndex = trimmedValue.IndexOf('"');
@@ -123,11 +123,11 @@ namespace System.Net.Test.Common
                     if (string.IsNullOrEmpty(username))
                         return false;
                 }
-                else if (trimmedValue.Contains(nameof(userhash)) && trimmedValue.Contains("true"))
+                else if (trimmedValue.StartsWith(nameof(userhash)) && trimmedValue.Contains("true"))
                 {
                     userhash = true;
                 }
-                else if (trimmedValue.Contains(nameof(uri)))
+                else if (trimmedValue.StartsWith(nameof(uri)))
                 {
                     int startIndex = trimmedValue.IndexOf('"');
                     if (startIndex != -1)
@@ -140,7 +140,7 @@ namespace System.Net.Test.Common
                     if (string.IsNullOrEmpty(uri))
                         return false;
                 }
-                else if (trimmedValue.Contains(nameof(realm)))
+                else if (trimmedValue.StartsWith(nameof(realm)))
                 {
                     // Realm is a quoted string.
                     int startIndex = trimmedValue.IndexOf('"');
@@ -154,7 +154,7 @@ namespace System.Net.Test.Common
                     if (string.IsNullOrEmpty(realm))
                         return false;
                 }
-                else if (trimmedValue.Contains(nameof(cnonce)))
+                else if (trimmedValue.StartsWith(nameof(cnonce)))
                 {
                     // CNonce is a quoted string.
                     int startIndex = trimmedValue.IndexOf('"');
@@ -164,7 +164,7 @@ namespace System.Net.Test.Common
                         cnonce = trimmedValue.Substring(startIndex, trimmedValue.Length - startIndex - 1);
                     }
                 }
-                else if (trimmedValue.Contains(nameof(nonce)))
+                else if (trimmedValue.StartsWith(nameof(nonce)))
                 {
                     // Nonce is a quoted string.
                     int startIndex = trimmedValue.IndexOf('"');
@@ -178,7 +178,7 @@ namespace System.Net.Test.Common
                     if (string.IsNullOrEmpty(nonce))
                         return false;
                 }
-                else if (trimmedValue.Contains(nameof(response)))
+                else if (trimmedValue.StartsWith(nameof(response)))
                 {
                     // response is a quoted string.
                     int startIndex = trimmedValue.IndexOf('"');
@@ -192,7 +192,7 @@ namespace System.Net.Test.Common
                     if (string.IsNullOrEmpty(response))
                         return false;
                 }
-                else if (trimmedValue.Contains(nameof(algorithm)))
+                else if (trimmedValue.StartsWith(nameof(algorithm)))
                 {
                     int startIndex = trimmedValue.IndexOf('=');
                     if (startIndex != -1)
@@ -201,7 +201,7 @@ namespace System.Net.Test.Common
                         algorithm = trimmedValue.Substring(startIndex, trimmedValue.Length - startIndex).Trim();
                     }
                 }
-                else if (trimmedValue.Contains(nameof(opaque)))
+                else if (trimmedValue.StartsWith(nameof(opaque)))
                 {
                     // Opaque is a quoted string.
                     int startIndex = trimmedValue.IndexOf('"');
@@ -211,7 +211,7 @@ namespace System.Net.Test.Common
                         opaque = trimmedValue.Substring(startIndex, trimmedValue.Length - startIndex - 1);
                     }
                 }
-                else if (trimmedValue.Contains(nameof(qop)))
+                else if (trimmedValue.StartsWith(nameof(qop)))
                 {
                     int startIndex = trimmedValue.IndexOf('"');
                     if (startIndex != -1)
@@ -225,7 +225,7 @@ namespace System.Net.Test.Common
                         qop = trimmedValue.Substring(startIndex, trimmedValue.Length - startIndex).Trim();
                     }
                 }
-                else if (trimmedValue.Contains(nameof(nc)))
+                else if (trimmedValue.StartsWith(nameof(nc)))
                 {
                     int startIndex = trimmedValue.IndexOf('=');
                     if (startIndex != -1)

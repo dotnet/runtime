@@ -17,12 +17,6 @@ namespace System.Globalization
 {
     internal partial class CultureData
     {
-        private const uint LOCALE_NOUSEROVERRIDE = 0x80000000;
-        private const uint LOCALE_RETURN_NUMBER = 0x20000000;
-        private const uint LOCALE_SISO3166CTRYNAME = 0x0000005A;
-
-        private const uint TIME_NOSECONDS = 0x00000002;
-
         /// <summary>
         /// Check with the OS to see if this is a valid culture.
         /// If so we populate a limited number of fields.  If its not valid we return false.
@@ -60,15 +54,11 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            const uint LOCALE_ILANGUAGE = 0x00000001;
-            const uint LOCALE_INEUTRAL = 0x00000071;
-            const uint LOCALE_SNAME = 0x0000005c;
-
             int result;
             string realNameBuffer = _sRealName;
-            char* pBuffer = stackalloc char[LOCALE_NAME_MAX_LENGTH];
+            char* pBuffer = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
 
-            result = GetLocaleInfoEx(realNameBuffer, LOCALE_SNAME, pBuffer, LOCALE_NAME_MAX_LENGTH);
+            result = GetLocaleInfoEx(realNameBuffer, Interop.Kernel32.LOCALE_SNAME, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
 
             // Did it fail?
             if (result == 0)
@@ -85,7 +75,7 @@ namespace System.Globalization
             // Check for neutrality, don't expect to fail
             // (buffer has our name in it, so we don't have to do the gc. stuff)
 
-            result = GetLocaleInfoEx(realNameBuffer, LOCALE_INEUTRAL | LOCALE_RETURN_NUMBER, pBuffer, sizeof(int) / sizeof(char));
+            result = GetLocaleInfoEx(realNameBuffer, Interop.Kernel32.LOCALE_INEUTRAL | Interop.Kernel32.LOCALE_RETURN_NUMBER, pBuffer, sizeof(int) / sizeof(char));
             if (result == 0)
             {
                 return false;
@@ -110,7 +100,7 @@ namespace System.Globalization
 
                 // Specific locale name is whatever ResolveLocaleName (win7+) returns.
                 // (Buffer has our name in it, and we can recycle that because windows resolves it before writing to the buffer)
-                result = Interop.Kernel32.ResolveLocaleName(realNameBuffer, pBuffer, LOCALE_NAME_MAX_LENGTH);
+                result = Interop.Kernel32.ResolveLocaleName(realNameBuffer, pBuffer, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
 
                 // 0 is failure, 1 is invariant (""), which we expect
                 if (result < 1)
@@ -138,7 +128,7 @@ namespace System.Globalization
                 // If we are an alt sort locale then this is the same as the part before the _ in the windows name
                 // This is for like de-DE_phoneb and es-ES_tradnl that hsouldn't have the _ part
 
-                result = GetLocaleInfoEx(realNameBuffer, LOCALE_ILANGUAGE | LOCALE_RETURN_NUMBER, pBuffer, sizeof(int) / sizeof(char));
+                result = GetLocaleInfoEx(realNameBuffer, Interop.Kernel32.LOCALE_ILANGUAGE | Interop.Kernel32.LOCALE_RETURN_NUMBER, pBuffer, sizeof(int) / sizeof(char));
                 if (result == 0)
                 {
                     return false;
@@ -180,8 +170,7 @@ namespace System.Globalization
 
         internal static unsafe int GetLocaleInfoExInt(string localeName, uint field)
         {
-            const uint LOCALE_RETURN_NUMBER = 0x20000000;
-            field |= LOCALE_RETURN_NUMBER;
+            field |= Interop.Kernel32.LOCALE_RETURN_NUMBER;
             int value = 0;
             GetLocaleInfoEx(localeName, field, (char*) &value, sizeof(int));
             return value;
@@ -216,7 +205,7 @@ namespace System.Globalization
             // Fix lctype if we don't want overrides
             if (!UseUserOverride)
             {
-                lctype |= LOCALE_NOUSEROVERRIDE;
+                lctype |= Interop.Kernel32.LOCALE_NOUSEROVERRIDE;
             }
 
             // Ask OS for data, note that we presume it returns success, so we have to know that
@@ -232,18 +221,14 @@ namespace System.Globalization
 
         private string GetTimeFormatString()
         {
-            const uint LOCALE_STIMEFORMAT = 0x00001003;
-
-            return ReescapeWin32String(GetLocaleInfoFromLCType(_sWindowsName, LOCALE_STIMEFORMAT, UseUserOverride));
+            return ReescapeWin32String(GetLocaleInfoFromLCType(_sWindowsName, Interop.Kernel32.LOCALE_STIMEFORMAT, UseUserOverride));
         }
 
         private int GetFirstDayOfWeek()
         {
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
 
-            const uint LOCALE_IFIRSTDAYOFWEEK = 0x0000100C;
-
-            int result = GetLocaleInfoExInt(_sWindowsName, LOCALE_IFIRSTDAYOFWEEK | (!UseUserOverride ? LOCALE_NOUSEROVERRIDE : 0));
+            int result = GetLocaleInfoExInt(_sWindowsName, Interop.Kernel32.LOCALE_IFIRSTDAYOFWEEK | (!UseUserOverride ? Interop.Kernel32.LOCALE_NOUSEROVERRIDE : 0));
 
             // Win32 and .NET disagree on the numbering for days of the week, so we have to convert.
             return ConvertFirstDayOfWeekMonToSun(result);
@@ -262,7 +247,7 @@ namespace System.Globalization
         {
             // Note that this gets overrides for us all the time
             Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected _sWindowsName to be populated by already");
-            string[] result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, TIME_NOSECONDS, UseUserOverride));
+            string[] result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, Interop.Kernel32.TIME_NOSECONDS, UseUserOverride));
 
             return result;
         }
@@ -274,16 +259,13 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(regionName != null);
 
-            const uint LOCALE_SUPPLEMENTAL = 0x00000002;
-            const uint LOCALE_SPECIFICDATA = 0x00000020;
-
             EnumLocaleData context = new EnumLocaleData();
             context.cultureName = null;
             context.regionName = regionName;
 
             unsafe
             {
-                Interop.Kernel32.EnumSystemLocalesEx(EnumSystemLocalesProc, LOCALE_SPECIFICDATA | LOCALE_SUPPLEMENTAL, Unsafe.AsPointer(ref context), IntPtr.Zero);
+                Interop.Kernel32.EnumSystemLocalesEx(EnumSystemLocalesProc, Interop.Kernel32.LOCALE_SPECIFICDATA | Interop.Kernel32.LOCALE_SUPPLEMENTAL, Unsafe.AsPointer(ref context), IntPtr.Zero);
             }
 
             if (context.cultureName != null)
@@ -308,7 +290,7 @@ namespace System.Globalization
                 ((ci = GetUserDefaultCulture()) != null) &&
                 !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
             {
-                return SNATIVEDISPLAYNAME;
+                return NativeName;
             }
             else
             {
@@ -329,7 +311,7 @@ namespace System.Globalization
                 return GetLocaleInfo(LocaleStringData.LocalizedCountryName);
             }
 
-            return SNATIVECOUNTRY;
+            return NativeCountryName;
 #endif // ENABLE_WINRT
         }
 
@@ -351,7 +333,7 @@ namespace System.Globalization
             // Fix lctype if we don't want overrides
             if (!useUserOveride)
             {
-                lctype |= LOCALE_NOUSEROVERRIDE;
+                lctype |= Interop.Kernel32.LOCALE_NOUSEROVERRIDE;
             }
 
             // Ask OS for data
@@ -365,25 +347,26 @@ namespace System.Globalization
             return result;
         }
 
-        ////////////////////////////////////////////////////////////////////////////
-        //
-        // Reescape a Win32 style quote string as a NLS+ style quoted string
-        //
-        // This is also the escaping style used by custom culture data files
-        //
-        // NLS+ uses \ to escape the next character, whether in a quoted string or
-        // not, so we always have to change \ to \\.
-        //
-        // NLS+ uses \' to escape a quote inside a quoted string so we have to change
-        // '' to \' (if inside a quoted string)
-        //
-        // We don't build the stringbuilder unless we find something to change
-        ////////////////////////////////////////////////////////////////////////////
+        /// <summary>
+        /// Reescape a Win32 style quote string as a NLS+ style quoted string
+        ///
+        /// This is also the escaping style used by custom culture data files
+        ///
+        /// NLS+ uses \ to escape the next character, whether in a quoted string or
+        /// not, so we always have to change \ to \\.
+        ///
+        /// NLS+ uses \' to escape a quote inside a quoted string so we have to change
+        /// '' to \' (if inside a quoted string)
+        ///
+        /// We don't build the stringbuilder unless we find something to change
+        /// </summary>
         internal static string ReescapeWin32String(string str)
         {
             // If we don't have data, then don't try anything
             if (str == null)
+            {
                 return null;
+            }
 
             StringBuilder result = null;
 
@@ -531,7 +514,7 @@ namespace System.Globalization
             try
             {
                 string cultureName = new string(lpLocaleString);
-                string regionName = GetLocaleInfoEx(cultureName, LOCALE_SISO3166CTRYNAME);
+                string regionName = GetLocaleInfoEx(cultureName, Interop.Kernel32.LOCALE_SISO3166CTRYNAME);
                 if (regionName != null && regionName.Equals(context.regionName, StringComparison.OrdinalIgnoreCase))
                 {
                     context.cultureName = cultureName;
@@ -586,9 +569,6 @@ namespace System.Globalization
 
         private static unsafe string[] nativeEnumTimeFormats(string localeName, uint dwFlags, bool useUserOverride)
         {
-            const uint LOCALE_SSHORTTIME = 0x00000079;
-            const uint LOCALE_STIMEFORMAT = 0x00001003;
-
             EnumData data = new EnumData();
             data.strings = new List<string>();
 
@@ -608,7 +588,7 @@ namespace System.Globalization
                     // If we do have an override, we don't know if it is a user defined override or if the
                     // user has just selected one of the predefined formats so we can't just remove it
                     // but we can move it down.
-                    uint lcType = (dwFlags == TIME_NOSECONDS) ? LOCALE_SSHORTTIME : LOCALE_STIMEFORMAT;
+                    uint lcType = (dwFlags == Interop.Kernel32.TIME_NOSECONDS) ? Interop.Kernel32.LOCALE_SSHORTTIME : Interop.Kernel32.LOCALE_STIMEFORMAT;
                     string timeFormatNoUserOverride = GetLocaleInfoFromLCType(localeName, lcType, useUserOverride);
                     if (timeFormatNoUserOverride != "")
                     {

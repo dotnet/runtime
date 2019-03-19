@@ -47,5 +47,15 @@ namespace System
                 return GetCachedSwitchValue("Switch.System.Diagnostics.EventSource.PreserveEventListnerObjectIdentity", ref s_preserveEventListnerObjectIdentity);
             }
         }
+
+        private static int s_serializationGuard;
+        public static bool SerializationGuard
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return GetCachedSwitchValue("Switch.System.Runtime.Serialization.SerializationGuard", ref s_serializationGuard);
+            }
+        }
     }
 }

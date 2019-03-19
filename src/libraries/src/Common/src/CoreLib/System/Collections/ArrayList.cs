@@ -28,6 +28,9 @@ namespace System.Collections
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
+#endif
     public class ArrayList : IList, ICloneable
     {
         private object[] _items; // Do not rename (binary serialization)
@@ -449,7 +452,7 @@ namespace System.Collections
         public virtual void Insert(int index, object value)
         {
             // Note that insertions at the end are legal.
-            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_ArrayListInsert);
+            if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
 
             if (_size == _items.Length) EnsureCapacity(_size + 1);
             if (index < _size)

@@ -24,9 +24,13 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string>, IEquatable<string>, ICloneable
     {
-        // String constructors
-        // These are special. The implementation methods for these have a different signature from the
-        // declared constructors.
+        /*
+         * CONSTRUCTORS
+         *
+         * Defining a new constructor for string-like types (like String) requires changes both
+         * to the managed code below and to the native VM code. See the comment at the top of
+         * src/vm/ecall.cpp for instructions on how to add new overloads.
+         */
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char[] value);
@@ -335,8 +339,7 @@ namespace System
                 return Empty;
 
             string result = FastAllocateString(value.Length);
-            fixed (char* dest = &result._firstChar, src = &MemoryMarshal.GetReference(value))
-                wstrcpy(dest, src, value.Length);
+            Buffer.Memmove(ref result._firstChar, ref MemoryMarshal.GetReference(value), (uint)value.Length);
             return result;
         }
 
@@ -480,7 +483,7 @@ namespace System
             Debug.Assert(byteLength >= 0);
 
             // Get our string length
-            int stringLength = encoding.GetCharCount(bytes, byteLength, null);
+            int stringLength = encoding.GetCharCount(bytes, byteLength);
             Debug.Assert(stringLength >= 0, "stringLength >= 0");
 
             // They gave us an empty string if they needed one
@@ -491,7 +494,7 @@ namespace System
             string s = FastAllocateString(stringLength);
             fixed (char* pTempChars = &s._firstChar)
             {
-                int doubleCheck = encoding.GetChars(bytes, byteLength, pTempChars, stringLength, null);
+                int doubleCheck = encoding.GetChars(bytes, byteLength, pTempChars, stringLength);
                 Debug.Assert(stringLength == doubleCheck,
                     "Expected encoding.GetChars to return same length as encoding.GetCharCount");
             }

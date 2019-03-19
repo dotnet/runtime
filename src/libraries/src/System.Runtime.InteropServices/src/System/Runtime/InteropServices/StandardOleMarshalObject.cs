@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices
                     Marshal.Release(pUnknown);
                 }
             }
-            throw new InvalidOperationException(string.Format(SR.StandardOleMarshalObjectGetMarshalerFailed, riid.ToString()));
+            throw new InvalidOperationException(SR.Format(SR.StandardOleMarshalObjectGetMarshalerFailed, riid.ToString()));
         }
 
         int IMarshal.GetUnmarshalClass(ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out Guid pCid)

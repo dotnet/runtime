@@ -11,8 +11,18 @@ namespace System.ComponentModel.Tests
 {
     public class LicenseExceptionTests
     {
+        public static IEnumerable<object[]> Ctor_Type_TestData()
+        {
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { null };
+            }
+
+            yield return new object[] { typeof(int) };
+        }
+
         [Theory]
-        [InlineData(typeof(int))]
+        [MemberData(nameof(Ctor_Type_TestData))]
         public void Ctor_Type(Type type)
         {
             var exception = new LicenseException(type);
@@ -22,8 +32,18 @@ namespace System.ComponentModel.Tests
             Assert.NotEmpty(exception.Message);
         }
 
+        public static IEnumerable<object[]> Ctor_Type_Object_TestData()
+        {
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { null, null };
+            }
+
+            yield return new object[] { typeof(int), "instance" };
+        }
+
         [Theory]
-        [InlineData(typeof(int), "instance")]
+        [MemberData(nameof(Ctor_Type_Object_TestData))]
         public void Ctor_Type_Object(Type type, object instance)
         {
             var exception = new LicenseException(type, instance);
@@ -60,19 +80,6 @@ namespace System.ComponentModel.Tests
             Assert.Equal(-2146232063, exception.HResult);
             Assert.Equal(type, exception.LicensedType);
             Assert.Equal(message, exception.Message);
-        }
-
-        [Fact]
-        public void Ctor_NullType_ThrowsNullReferenceException()
-        {
-            Assert.Throws<NullReferenceException>(() => new LicenseException(null));
-            Assert.Throws<NullReferenceException>(() => new LicenseException(null, new object()));
-        }
-
-        [Fact]
-        public void Ctor_NullInstance_ThrowsNullReferenceException()
-        {
-            Assert.Throws<NullReferenceException>(() => new LicenseException(typeof(int), null));
         }
 
         [Fact]

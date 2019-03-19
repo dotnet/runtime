@@ -57,7 +57,7 @@ namespace System.Configuration
                     if (section.Name != doc.DocumentElement.Name)
                     {
                         throw new ConfigurationErrorsException(
-                            string.Format(SR.Config_name_value_file_section_file_invalid_root, section.Name),
+                            SR.Format(SR.Config_name_value_file_section_file_invalid_root, section.Name),
                             doc.DocumentElement);
                     }
 

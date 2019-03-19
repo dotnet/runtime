@@ -38,9 +38,7 @@ namespace System.IO.Ports
             Interop.Sys.Shutdown(handle, SocketShutdown.Both);
             int result = Interop.Serial.SerialPortClose(handle);
 
-            Debug.Assert(result == 0, string.Format(
-                             "Close failed with result {0} and error {1}",
-                             result, Interop.Sys.GetLastErrorInfo()));
+            Debug.Assert(result == 0, $"Close failed with result {result} and error {Interop.Sys.GetLastErrorInfo()}");
 
             return result == 0;
         }

@@ -300,7 +300,7 @@ nameof(handle));
                 else
                 {
                     // both are null, shouldn't happen
-                    Debug.Assert(false, "Internal error: both name and handle are null");
+                    Debug.Fail("Internal error: both name and handle are null");
                     throw new ArgumentException();
                 }
 
