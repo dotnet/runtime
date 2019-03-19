@@ -840,7 +840,8 @@ void ClassLoader::GetClassValue(NameHandleTable nhTable,
             continue;
 
 #ifdef FEATURE_READYTORUN
-        if (nhTable == nhCaseSensitive && pCurrentClsModule->IsReadyToRun() && pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes())
+        if (nhTable == nhCaseSensitive && pCurrentClsModule->IsReadyToRun() && pCurrentClsModule->GetReadyToRunInfo()->HasHashtableOfTypes() &&
+            pCurrentClsModule->GetAvailableClassHash() == NULL)
         {
             // For R2R modules, we only search the hashtable of token types stored in the module's image, and don't fallback
             // to searching m_pAvailableClasses or m_pAvailableClassesCaseIns (in fact, we don't even allocate them for R2R modules).
@@ -1618,7 +1619,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
 
     EEClassHashEntry_t * pBucket = foundEntry.GetClassHashBasedEntryValue();
 
-    if (pBucket == NULL && needsToBuildHashtable)
+    if (pBucket == NULL)
     {
         AvailableClasses_LockHolder lh(this);
 
@@ -1628,7 +1629,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
         pBucket = foundEntry.GetClassHashBasedEntryValue();
 
 #ifndef DACCESS_COMPILE
-        if ((pBucket == NULL) && (m_cUnhashedModules > 0))
+        if (needsToBuildHashtable && (pBucket == NULL) && (m_cUnhashedModules > 0))
         {
             _ASSERT(needsToBuildHashtable);
 
@@ -1650,6 +1651,7 @@ BOOL ClassLoader::FindClassModuleThrowing(
 #endif
     }
 
+    // Same check as above, but this time we've checked with the lock so the table will be populated
     if (pBucket == NULL)
     {
 #if defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
@@ -4184,6 +4186,15 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
 #endif
 
     CrstHolder ch(&m_AvailableClassLock);
+
+    // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
+    // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
+    // in memory hashtable as usual.
+    if (!pModule->IsResource() && pModule->GetAvailableClassHash() == NULL)
+    {
+        LazyPopulateCaseSensitiveHashTables();
+    }
+
     AddAvailableClassHaveLock(
         pModule, 
         classdef, 
@@ -4380,6 +4391,15 @@ VOID ClassLoader::AddExportedTypeDontHaveLock(Module *pManifestModule,
     CONTRACTL_END
 
     CrstHolder ch(&m_AvailableClassLock);
+        
+    // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
+    // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
+    // in memory hashtable as usual.
+    if (!pManifestModule->IsResource() && pManifestModule->GetAvailableClassHash() == NULL)
+    {
+        LazyPopulateCaseSensitiveHashTables();
+    }
+
     AddExportedTypeHaveLock(
         pManifestModule,
         cl,
