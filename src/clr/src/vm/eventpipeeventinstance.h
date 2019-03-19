@@ -14,6 +14,8 @@
 #include "fastserializableobject.h"
 #include "fastserializer.h"
 
+class EventPipeJsonFile;
+
 class EventPipeEventInstance
 {
     // Declare friends.

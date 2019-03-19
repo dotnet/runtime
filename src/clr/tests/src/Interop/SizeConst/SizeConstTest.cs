@@ -26,7 +26,7 @@ class Test
     {
         // always marshal managedArray.Length
         S_CHARArray_ByValTStr s = new S_CHARArray_ByValTStr();
-        s.arr = "有个可爱";
+        s.arr = "abcd";
         TakeByValTStr(s, s.arr.Length);
 
         // off by one byte since  sizeconst == 4 and 

@@ -69,7 +69,7 @@ def main(argv):
 
     my_env = os.environ
 
-    # Download .Net CLI
+    # Download .NET CLI
 
     dotnetcliUrl = ""
     dotnetcliFilename = ""
@@ -88,7 +88,7 @@ def main(argv):
         if not os.path.isdir(dotnetcliPath):
             raise
 
-    print("Downloading .Net CLI")
+    print("Downloading .NET CLI")
     if platform == 'Linux':
         dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-linux-x64.tar.gz"
         dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
@@ -106,10 +106,10 @@ def main(argv):
     urlretrieve(dotnetcliUrl, dotnetcliFilename)
 
     if not os.path.isfile(dotnetcliFilename):
-        print("Did not download .Net CLI!")
+        print("Did not download .NET CLI!")
         return -1
 
-    # Install .Net CLI
+    # Install .NET CLI
 
     if platform == 'Linux' or platform == 'OSX':
         tar = tarfile.open(dotnetcliFilename)
@@ -127,7 +127,7 @@ def main(argv):
 
 
     if not os.path.isfile(os.path.join(dotnetcliPath, dotnet)):
-        print("Did not extract .Net CLI from download")
+        print("Did not extract .NET CLI from download")
         return -1
 
     # Download bootstrap

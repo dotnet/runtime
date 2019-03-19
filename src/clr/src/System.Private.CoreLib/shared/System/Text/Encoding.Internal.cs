@@ -327,7 +327,7 @@ namespace System.Text
                     // There are two scenarios: (a) the source buffer contained invalid / incomplete UTF-16 data;
                     // or (b) the encoding can't translate this scalar value.
 
-                    if (Rune.DecodeUtf16(chars, out Rune firstScalarValue, out int charsConsumedThisIteration) == OperationStatus.NeedMoreData
+                    if (Rune.DecodeFromUtf16(chars, out Rune firstScalarValue, out int charsConsumedThisIteration) == OperationStatus.NeedMoreData
                            && encoder != null
                            && !encoder.MustFlush)
                     {
@@ -603,7 +603,7 @@ namespace System.Text
                     // There are two scenarios: (a) the source buffer contained invalid / incomplete UTF-16 data;
                     // or (b) the encoding can't translate this scalar value.
 
-                    switch (Rune.DecodeUtf16(chars, out Rune firstScalarValue, out int charsConsumedThisIteration))
+                    switch (Rune.DecodeFromUtf16(chars, out Rune firstScalarValue, out int charsConsumedThisIteration))
                     {
                         case OperationStatus.NeedMoreData:
                             Debug.Assert(charsConsumedThisIteration == chars.Length, "If returning NeedMoreData, should out the entire buffer length as chars consumed.");

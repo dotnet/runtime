@@ -497,11 +497,11 @@ void Compiler::optFoldNullCheck(GenTree* tree)
     // Check for a pattern like this:
     //
     //                         =
-    //                       /   \
+    //                       /   \.
     //                      x    comma
-    //                           /   \
+    //                           /   \.
     //                     nullcheck  +
-    //                         |     / \
+    //                         |     / \.
     //                         y    y  const
     //
     //
@@ -517,9 +517,9 @@ void Compiler::optFoldNullCheck(GenTree* tree)
     // and transform it into
     //
     //                         =
-    //                       /   \
+    //                       /   \.
     //                      x     +
-    //                           / \
+    //                           / \.
     //                          y  const
     //
     //

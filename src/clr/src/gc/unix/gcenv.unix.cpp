@@ -449,7 +449,7 @@ the processors enabled.
 --*/
 static uintptr_t GetFullAffinityMask(int cpuCount)
 {
-    if (cpuCount < sizeof(uintptr_t) * 8)
+    if ((size_t)cpuCount < sizeof(uintptr_t) * 8)
     {
         return ((uintptr_t)1 << cpuCount) - 1;
     }

@@ -23,178 +23,6 @@ namespace System
     public static partial class MemoryExtensions
     {
         /// <summary>
-        /// Removes all leading and trailing white-space characters from the span.
-        /// </summary>
-        public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> span)
-        {
-            int start = 0;
-            for (; start < span.Length; start++)
-            {
-                if (!char.IsWhiteSpace(span[start]))
-                    break;
-            }
-            int end = span.Length - 1;
-            for (; end >= start; end--)
-            {
-                if (!char.IsWhiteSpace(span[end]))
-                    break;
-            }
-            return span.Slice(start, end - start + 1);
-        }
-
-        /// <summary>
-        /// Removes all leading white-space characters from the span.
-        /// </summary>
-        public static ReadOnlySpan<char> TrimStart(this ReadOnlySpan<char> span)
-        {
-            int start = 0;
-            for (; start < span.Length; start++)
-            {
-                if (!char.IsWhiteSpace(span[start]))
-                    break;
-            }
-            return span.Slice(start);
-        }
-
-        /// <summary>
-        /// Removes all trailing white-space characters from the span.
-        /// </summary>
-        public static ReadOnlySpan<char> TrimEnd(this ReadOnlySpan<char> span)
-        {
-            int end = span.Length - 1;
-            for (; end >= 0; end--)
-            {
-                if (!char.IsWhiteSpace(span[end]))
-                    break;
-            }
-            return span.Slice(0, end + 1);
-        }
-
-        /// <summary>
-        /// Removes all leading and trailing occurrences of a specified character.
-        /// </summary>
-        /// <param name="span">The source span from which the character is removed.</param>
-        /// <param name="trimChar">The specified character to look for and remove.</param>
-        public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> span, char trimChar)
-        {
-            int start = 0;
-            for (; start < span.Length; start++)
-            {
-                if (span[start] != trimChar)
-                    break;
-            }
-            int end = span.Length - 1;
-            for (; end >= start; end--)
-            {
-                if (span[end] != trimChar)
-                    break;
-            }
-            return span.Slice(start, end - start + 1);
-        }
-
-        /// <summary>
-        /// Removes all leading occurrences of a specified character.
-        /// </summary>
-        /// <param name="span">The source span from which the character is removed.</param>
-        /// <param name="trimChar">The specified character to look for and remove.</param>
-        public static ReadOnlySpan<char> TrimStart(this ReadOnlySpan<char> span, char trimChar)
-        {
-            int start = 0;
-            for (; start < span.Length; start++)
-            {
-                if (span[start] != trimChar)
-                    break;
-            }
-            return span.Slice(start);
-        }
-
-        /// <summary>
-        /// Removes all trailing occurrences of a specified character.
-        /// </summary>
-        /// <param name="span">The source span from which the character is removed.</param>
-        /// <param name="trimChar">The specified character to look for and remove.</param>
-        public static ReadOnlySpan<char> TrimEnd(this ReadOnlySpan<char> span, char trimChar)
-        {
-            int end = span.Length - 1;
-            for (; end >= 0; end--)
-            {
-                if (span[end] != trimChar)
-                    break;
-            }
-            return span.Slice(0, end + 1);
-        }
-
-        /// <summary>
-        /// Removes all leading and trailing occurrences of a set of characters specified
-        /// in a readonly span from the span.
-        /// </summary>
-        /// <param name="span">The source span from which the characters are removed.</param>
-        /// <param name="trimChars">The span which contains the set of characters to remove.</param>
-        /// <remarks>If <paramref name="trimChars"/> is empty, white-space characters are removed instead.</remarks>
-        public static ReadOnlySpan<char> Trim(this ReadOnlySpan<char> span, ReadOnlySpan<char> trimChars)
-        {
-            return span.TrimStart(trimChars).TrimEnd(trimChars);
-        }
-
-        /// <summary>
-        /// Removes all leading occurrences of a set of characters specified
-        /// in a readonly span from the span.
-        /// </summary>
-        /// <param name="span">The source span from which the characters are removed.</param>
-        /// <param name="trimChars">The span which contains the set of characters to remove.</param>
-        /// <remarks>If <paramref name="trimChars"/> is empty, white-space characters are removed instead.</remarks>
-        public static ReadOnlySpan<char> TrimStart(this ReadOnlySpan<char> span, ReadOnlySpan<char> trimChars)
-        {
-            if (trimChars.IsEmpty)
-            {
-                return span.TrimStart();
-            }
-
-            int start = 0;
-            for (; start < span.Length; start++)
-            {
-                for (int i = 0; i < trimChars.Length; i++)
-                {
-                    if (span[start] == trimChars[i])
-                        goto Next;
-                }
-                break;
-            Next:
-                ;
-            }
-            return span.Slice(start);
-        }
-
-        /// <summary>
-        /// Removes all trailing occurrences of a set of characters specified
-        /// in a readonly span from the span.
-        /// </summary>
-        /// <param name="span">The source span from which the characters are removed.</param>
-        /// <param name="trimChars">The span which contains the set of characters to remove.</param>
-        /// <remarks>If <paramref name="trimChars"/> is empty, white-space characters are removed instead.</remarks>
-        public static ReadOnlySpan<char> TrimEnd(this ReadOnlySpan<char> span, ReadOnlySpan<char> trimChars)
-        {
-            if (trimChars.IsEmpty)
-            {
-                return span.TrimEnd();
-            }
-
-            int end = span.Length - 1;
-            for (; end >= 0; end--)
-            {
-                for (int i = 0; i < trimChars.Length; i++)
-                {
-                    if (span[end] == trimChars[i])
-                        goto Next;
-                }
-                break;
-            Next:
-                ;
-            }
-            return span.Slice(0, end + 1);
-        }
-
-        /// <summary>
         /// Indicates whether the specified span contains only white-space characters.
         /// </summary>
         public static bool IsWhiteSpace(this ReadOnlySpan<char> span)
@@ -217,13 +45,13 @@ namespace System
         public static bool Contains<T>(this Span<T> span, T value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.Contains(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value),
                     span.Length);
 
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.Contains(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value),
@@ -242,13 +70,13 @@ namespace System
         public static bool Contains<T>(this ReadOnlySpan<T> span, T value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.Contains(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value),
                     span.Length);
 
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.Contains(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value),
@@ -266,13 +94,13 @@ namespace System
         public static int IndexOf<T>(this Span<T> span, T value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOf(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value),
                     span.Length);
 
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOf(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value),
@@ -290,13 +118,13 @@ namespace System
         public static int IndexOf<T>(this Span<T> span, ReadOnlySpan<T> value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOf(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
                     value.Length);
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOf(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
@@ -315,13 +143,13 @@ namespace System
         public static int LastIndexOf<T>(this Span<T> span, T value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOf(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value),
                     span.Length);
 
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOf(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value),
@@ -339,7 +167,7 @@ namespace System
         public static int LastIndexOf<T>(this Span<T> span, ReadOnlySpan<T> value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOf(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
@@ -358,12 +186,15 @@ namespace System
         {
             int length = span.Length;
 
-            if (default(T) != null && IsTypeComparableAsBytes<T>(out nuint size))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                nuint size = (nuint)Unsafe.SizeOf<T>();
                 return length == other.Length &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
                     ((nuint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+            }
 
             return length == other.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
         }
@@ -374,6 +205,9 @@ namespace System
         public static int SequenceCompareTo<T>(this Span<T> span, ReadOnlySpan<T> other)
             where T : IComparable<T>
         {
+            // Can't use IsBitwiseEquatable<T>() below because that only tells us about
+            // equality checks, not about CompareTo checks.
+
             if (typeof(T) == typeof(byte))
                 return SpanHelpers.SequenceCompareTo(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
@@ -400,13 +234,13 @@ namespace System
         public static int IndexOf<T>(this ReadOnlySpan<T> span, T value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOf(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value),
                     span.Length);
 
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOf(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value),
@@ -424,13 +258,13 @@ namespace System
         public static int IndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOf(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
                     value.Length);
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOf(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
@@ -449,13 +283,13 @@ namespace System
         public static int LastIndexOf<T>(this ReadOnlySpan<T> span, T value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOf(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value),
                     span.Length);
 
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOf(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value),
@@ -473,7 +307,7 @@ namespace System
         public static int LastIndexOf<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> value)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOf(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
@@ -493,13 +327,13 @@ namespace System
         public static int IndexOfAny<T>(this Span<T> span, T value0, T value1)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value0),
                     Unsafe.As<T, byte>(ref value1),
                     span.Length);
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOfAny(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value0),
@@ -520,14 +354,14 @@ namespace System
         public static int IndexOfAny<T>(this Span<T> span, T value0, T value1, T value2)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value0),
                     Unsafe.As<T, byte>(ref value1),
                     Unsafe.As<T, byte>(ref value2),
                     span.Length);
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOfAny(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value0),
@@ -547,7 +381,7 @@ namespace System
         public static int IndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
                 if (values.Length == 2)
@@ -576,7 +410,7 @@ namespace System
                         values.Length);
                 }
             }
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 ref var valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
                 if (values.Length == 5)
@@ -644,13 +478,13 @@ namespace System
         public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value0),
                     Unsafe.As<T, byte>(ref value1),
                     span.Length);
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOfAny(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value0),
@@ -671,14 +505,14 @@ namespace System
         public static int IndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value0),
                     Unsafe.As<T, byte>(ref value1),
                     Unsafe.As<T, byte>(ref value2),
                     span.Length);
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.IndexOfAny(
                     ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, char>(ref value0),
@@ -698,7 +532,7 @@ namespace System
         public static int IndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 ref byte valueRef = ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values));
                 if (values.Length == 2)
@@ -728,7 +562,7 @@ namespace System
                 }
             }
 
-            if (typeof(T) == typeof(char))
+            if (Unsafe.SizeOf<T>() == sizeof(char) && RuntimeHelpers.IsBitwiseEquatable<T>())
             {
                 ref var valueRef = ref Unsafe.As<T, char>(ref MemoryMarshal.GetReference(values));
                 if (values.Length == 5)
@@ -796,7 +630,7 @@ namespace System
         public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value0),
@@ -817,7 +651,7 @@ namespace System
         public static int LastIndexOfAny<T>(this Span<T> span, T value0, T value1, T value2)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value0),
@@ -837,7 +671,7 @@ namespace System
         public static int LastIndexOfAny<T>(this Span<T> span, ReadOnlySpan<T> values)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
@@ -857,7 +691,7 @@ namespace System
         public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value0),
@@ -878,7 +712,7 @@ namespace System
         public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     Unsafe.As<T, byte>(ref value0),
@@ -898,7 +732,7 @@ namespace System
         public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> values)
             where T : IEquatable<T>
         {
-            if (typeof(T) == typeof(byte))
+            if (Unsafe.SizeOf<T>() == sizeof(byte) && RuntimeHelpers.IsBitwiseEquatable<T>())
                 return SpanHelpers.LastIndexOfAny(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     span.Length,
@@ -916,12 +750,15 @@ namespace System
             where T : IEquatable<T>
         {
             int length = span.Length;
-            if (default(T) != null && IsTypeComparableAsBytes<T>(out nuint size))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                nuint size = (nuint)Unsafe.SizeOf<T>();
                 return length == other.Length &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(other)),
                     ((nuint)length) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+            }
 
             return length == other.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(other), length);
         }
@@ -933,6 +770,9 @@ namespace System
         public static int SequenceCompareTo<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
             where T : IComparable<T>
         {
+            // Can't use IsBitwiseEquatable<T>() below because that only tells us about
+            // equality checks, not about CompareTo checks.
+
             if (typeof(T) == typeof(byte))
                 return SpanHelpers.SequenceCompareTo(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
@@ -958,12 +798,15 @@ namespace System
             where T : IEquatable<T>
         {
             int valueLength = value.Length;
-            if (default(T) != null && IsTypeComparableAsBytes<T>(out nuint size))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                nuint size = (nuint)Unsafe.SizeOf<T>();
                 return valueLength <= span.Length &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
                     ((nuint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+            }
 
             return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), valueLength);
         }
@@ -976,12 +819,15 @@ namespace System
             where T : IEquatable<T>
         {
             int valueLength = value.Length;
-            if (default(T) != null && IsTypeComparableAsBytes<T>(out nuint size))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                nuint size = (nuint)Unsafe.SizeOf<T>();
                 return valueLength <= span.Length &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(span)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
                     ((nuint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+            }
 
             return valueLength <= span.Length && SpanHelpers.SequenceEqual(ref MemoryMarshal.GetReference(span), ref MemoryMarshal.GetReference(value), valueLength);
         }
@@ -995,12 +841,15 @@ namespace System
         {
             int spanLength = span.Length;
             int valueLength = value.Length;
-            if (default(T) != null && IsTypeComparableAsBytes<T>(out nuint size))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                nuint size = (nuint)Unsafe.SizeOf<T>();
                 return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), spanLength - valueLength)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
                     ((nuint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+            }
 
             return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
@@ -1018,12 +867,15 @@ namespace System
         {
             int spanLength = span.Length;
             int valueLength = value.Length;
-            if (default(T) != null && IsTypeComparableAsBytes<T>(out nuint size))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
+            {
+                nuint size = (nuint)Unsafe.SizeOf<T>();
                 return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
                     ref Unsafe.As<T, byte>(ref Unsafe.Add(ref MemoryMarshal.GetReference(span), spanLength - valueLength)),
                     ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(value)),
                     ((nuint)valueLength) * size);  // If this multiplication overflows, the Span we got overflows the entire address range. There's no happy outcome for this api in such a case so we choose not to take the overhead of checking.
+            }
 
             return valueLength <= spanLength &&
                 SpanHelpers.SequenceEqual(
@@ -1704,37 +1556,6 @@ namespace System
             var comparable = new SpanHelpers.ComparerComparable<T, TComparer>(
                 value, comparer);
             return BinarySearch(span, comparable);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsTypeComparableAsBytes<T>(out nuint size)
-        {
-            if (typeof(T) == typeof(byte) || typeof(T) == typeof(sbyte))
-            {
-                size = sizeof(byte);
-                return true;
-            }
-
-            if (typeof(T) == typeof(char) || typeof(T) == typeof(short) || typeof(T) == typeof(ushort))
-            {
-                size = sizeof(char);
-                return true;
-            }
-
-            if (typeof(T) == typeof(int) || typeof(T) == typeof(uint))
-            {
-                size = sizeof(int);
-                return true;
-            }
-
-            if (typeof(T) == typeof(long) || typeof(T) == typeof(ulong))
-            {
-                size = sizeof(long);
-                return true;
-            }
-
-            size = default;
-            return false;
         }
     }
 }

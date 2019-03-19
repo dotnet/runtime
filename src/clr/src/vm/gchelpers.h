@@ -71,6 +71,10 @@ STRINGREF AllocateString( DWORD cchStringLength );
     // The slow version, implemented in gcscan.cpp
 STRINGREF SlowAllocateString( DWORD cchStringLength );
 
+#ifdef FEATURE_UTF8STRING
+UTF8STRINGREF SlowAllocateUtf8String( DWORD cchStringLength );
+#endif // FEATURE_UTF8STRING
+
 #else
 
 // On other platforms, go to the (somewhat less efficient) implementations in gcscan.cpp
@@ -83,6 +87,10 @@ OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType, BOOL bAll
 
 STRINGREF SlowAllocateString( DWORD cchStringLength );
 
+#ifdef FEATURE_UTF8STRING
+UTF8STRINGREF SlowAllocateUtf8String( DWORD cchStringLength );
+#endif // FEATURE_UTF8STRING
+
 inline STRINGREF AllocateString( DWORD cchStringLength )
 {
     WRAPPER_NO_CONTRACT;
@@ -91,6 +99,15 @@ inline STRINGREF AllocateString( DWORD cchStringLength )
 }
 
 #endif
+
+#ifdef FEATURE_UTF8STRING
+inline UTF8STRINGREF AllocateUtf8String(DWORD cchStringLength)
+{
+    WRAPPER_NO_CONTRACT;
+
+    return SlowAllocateUtf8String(cchStringLength);
+}
+#endif // FEATURE_UTF8STRING
 
 OBJECTREF DupArrayForCloning(BASEARRAYREF pRef, BOOL bAllocateInLargeHeap = FALSE);
 

@@ -313,7 +313,10 @@ public:
     {
         if (IsShort(env))
         {
-            (size_t&)bs1 &= (size_t)bs2;
+            size_t val = (size_t)bs1;
+
+            val &= (size_t)bs2;
+            bs1 = (BitSetShortLongRep)val;
         }
         else
         {

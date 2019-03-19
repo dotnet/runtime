@@ -683,6 +683,7 @@ HRESULT EditAndContinueModule::ResumeInUpdatedFunction(
     // If we fail for any reason we have already potentially trashed with new locals and we have also unwound any
     // Win32 handlers on the stack so cannot ever return from this function. 
     EEPOLICY_HANDLE_FATAL_ERROR(CORDBG_E_ENC_INTERNAL_ERROR);
+    return hr;
 }
 
 //---------------------------------------------------------------------------------------

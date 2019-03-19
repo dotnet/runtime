@@ -11,8 +11,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-EventPipeFile::EventPipeFile(
-    SString &outputFilePath)
+EventPipeFile::EventPipeFile(SString &outputFilePath)
 {
     CONTRACTL
     {
@@ -43,7 +42,7 @@ EventPipeFile::EventPipeFile(
     m_samplingRateInNs = SampleProfiler::GetSamplingRate();
 
     // Create the file stream and write the header.
-    m_pSerializer = new FastSerializer(outputFilePath);
+    m_pSerializer = new FastSerializer(new FileStreamWriter(outputFilePath));
 
     m_serializationLock.Init(LOCK_TYPE_DEFAULT);
     m_pMetadataIds = new MapSHashWithRemove<EventPipeEvent*, unsigned int>();
@@ -101,7 +100,7 @@ void EventPipeFile::WriteEvent(EventPipeEventInstance &instance)
         metadataId = GenerateMetadataId();
 
         EventPipeEventInstance* pMetadataInstance = EventPipe::GetConfiguration()->BuildEventMetadataEvent(instance, metadataId);
-        
+
         WriteToBlock(*pMetadataInstance, 0); // 0 breaks recursion and represents the metadata event.
 
         SaveMetadataId(*instance.GetEvent(), metadataId);
@@ -129,7 +128,7 @@ void EventPipeFile::WriteEnd()
 
     // "After the last EventBlock is emitted, the stream is ended by emitting a NullReference Tag which indicates that there are no more objects in the stream to read."
     // see https://github.com/Microsoft/perfview/blob/master/src/TraceEvent/EventPipe/EventPipeFormat.md for more
-    m_pSerializer->WriteTag(FastSerializerTags::NullReference); 
+    m_pSerializer->WriteTag(FastSerializerTags::NullReference);
 }
 
 void EventPipeFile::WriteToBlock(EventPipeEventInstance &instance, unsigned int metadataId)

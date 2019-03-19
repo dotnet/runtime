@@ -33,7 +33,7 @@ namespace Precise
             }
             Console.WriteLine("in .cctor(), measure.a is {0}", measure.a);
             Console.WriteLine("Current thread is {0}", Thread.CurrentThread.Name);
-            // Following two lines commented because not available in .Net Core
+            // Following two lines commented because not available in .NET Core
             // Console.WriteLine("Calling assembly is {0}", Assembly.GetCallingAssembly().FullName);
             // Console.WriteLine("This assembly is {0}", Assembly.GetExecutingAssembly().FullName);
             measure.a += 8;

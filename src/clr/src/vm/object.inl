@@ -71,6 +71,22 @@ __forceinline /*static*/ SIZE_T StringObject::GetSize(DWORD strLen)
     return GetBaseSize() + strLen * sizeof(WCHAR);
 }
 
+#ifdef FEATURE_UTF8STRING
+__forceinline /*static*/ DWORD Utf8StringObject::GetBaseSize()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return OBJECT_BASESIZE + sizeof(DWORD) /* length */ + sizeof(BYTE) /* null terminator */;
+}
+
+__forceinline /*static*/ SIZE_T Utf8StringObject::GetSize(DWORD strLen)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return GetBaseSize() + strLen;
+}
+#endif // FEATURE_UTF8STRING
+
 #ifdef DACCESS_COMPILE
 
 inline void Object::EnumMemoryRegions(void)

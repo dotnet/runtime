@@ -1831,7 +1831,7 @@ ZapImport * ZapImportTable::GetDictionaryLookupCell(CORCOMPILE_FIXUP_BLOB_KIND k
         ThrowHR(E_NOTIMPL);
     }
 
-    _ASSERTE(((DWORD)pResolvedToken->tokenContext & 1) == 0);
+    _ASSERTE(((DWORD)(SIZE_T)pResolvedToken->tokenContext & 1) == 0);
 
     return GetImportForSignature<ZapDynamicHelperCell, ZapNodeType_DynamicHelperCell>((void*)pResolvedToken->tokenContext, &sigBuilder);
 }
@@ -1894,12 +1894,12 @@ public:
 
     ReadyToRunHelper GetReadyToRunHelper()
     {
-        return (ReadyToRunHelper)((DWORD)GetHandle() & ~READYTORUN_HELPER_FLAG_VSD);
+        return (ReadyToRunHelper)((DWORD)(SIZE_T)GetHandle() & ~READYTORUN_HELPER_FLAG_VSD);
     }
 
     DWORD GetSectionIndex()
     {
-        return (DWORD)GetHandle2();
+        return (DWORD)(SIZE_T)GetHandle2();
     }
 
     BOOL IsDelayLoadHelper()
@@ -1919,7 +1919,7 @@ public:
 
     BOOL IsVSD()
     {
-        return ((DWORD)GetHandle() & READYTORUN_HELPER_FLAG_VSD) != 0;
+        return ((DWORD)(SIZE_T)GetHandle() & READYTORUN_HELPER_FLAG_VSD) != 0;
     }
 
     BOOL IsLazyHelper()

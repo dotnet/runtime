@@ -1194,10 +1194,26 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalStackOverflow(EXCEPTION_POINTERS *pE
     UNREACHABLE();
 }
 
+#if defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+// This noinline method is required to ensure that RtlCaptureContext captures
+// the context of HandleFatalError. On x86 RtlCaptureContext will not capture
+// the current method's context
+// NOTE: explicitly turning off optimizations to force the compiler to spill to the
+//       stack and establish a stack frame. This is required to ensure that 
+//       RtlCaptureContext captures the context of HandleFatalError
+#pragma optimize("", off)
+int NOINLINE WrapperClrCaptureContext(CONTEXT* context)
+{
+    ClrCaptureContext(context);
+    return 0;
+}
+#pragma optimize("", on)
+#endif // defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
 
-
-
-void DECLSPEC_NORETURN EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage /* = NULL */, PEXCEPTION_POINTERS pExceptionInfo /* = NULL */, LPCWSTR errorSource /* = NULL */, LPCWSTR argExceptionString /* = NULL */)
+// This method must return a value to avoid getting non-actionable dumps on x86.
+// If this method were a DECLSPEC_NORETURN then dumps would not provide the necessary
+// context at the point of the failure
+int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage /* = NULL */, PEXCEPTION_POINTERS pExceptionInfo /* = NULL */, LPCWSTR errorSource /* = NULL */, LPCWSTR argExceptionString /* = NULL */)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1215,7 +1231,12 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR addres
         ZeroMemory(&context, sizeof(context));
         
         context.ContextFlags = CONTEXT_CONTROL;
+#if defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
+        // Add a frame to ensure that the context captured is this method and not the caller
+        WrapperClrCaptureContext(&context);
+#else // defined(_TARGET_X86_) && defined(PLATFORM_WINDOWS)
         ClrCaptureContext(&context);
+#endif
 
         exceptionRecord.ExceptionCode = exitCode;
         exceptionRecord.ExceptionAddress = reinterpret_cast< PVOID >(address);
@@ -1269,6 +1290,7 @@ void DECLSPEC_NORETURN EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR addres
     }
 
     UNREACHABLE();
+    return -1;
 }
 
 void EEPolicy::HandleExitProcessFromEscalation(EPolicyAction action, UINT exitCode)
