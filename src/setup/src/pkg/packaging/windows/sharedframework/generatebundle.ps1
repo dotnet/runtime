@@ -10,6 +10,7 @@ param(
     [Parameter(Mandatory=$true)][string]$ProductMoniker,
     [Parameter(Mandatory=$true)][string]$DotnetMSIVersion,
     [Parameter(Mandatory=$true)][string]$DotnetCLIVersion,
+    [Parameter(Mandatory=$true)][string]$ProductBandVersion,
     [Parameter(Mandatory=$true)][string]$SharedFrameworkNugetName,
     [Parameter(Mandatory=$true)][string]$SharedFrameworkNugetVersion,
     [Parameter(Mandatory=$true)][string]$SharedFrameworkUpgradeCode,
@@ -41,6 +42,7 @@ function RunCandleForBundle
         -dProductMoniker="$ProductMoniker" `
         -dBuildVersion="$DotnetMSIVersion" `
         -dDisplayVersion="$DotnetCLIVersion" `
+        -dProductBandVersion="$ProductBandVersion" `
         -dSharedFXMsiSourcePath="$SharedFxMSIFile" `
         -dSharedHostMsiSourcePath="$SharedHostMSIFile" `
         -dHostFxrMsiSourcePath="$HostFxrMSIFile" `

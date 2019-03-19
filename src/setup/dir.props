@@ -78,8 +78,9 @@
     <VersionSuffix Condition="'$(IncludeBuildNumberInPackageVersion)' == 'true'">$(VersionSuffix)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
 
     <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
-    <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)$(ProductVersionSuffix)</ProductVersion>
-    <ProductionVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductionVersion>
+    <ProductBandVersion>$(MajorVersion).$(MinorVersion)</ProductBandVersion>
+    <ProductionVersion>$(ProductBandVersion).$(PatchVersion)</ProductionVersion>
+    <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
 
     <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
 
