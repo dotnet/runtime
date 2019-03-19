@@ -1,13 +1,15 @@
 variables:
+- name: officialBuild
+  value: ${{ and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}
 - name: _BuildConfig
   value: Release
 - name: _BuildArgs
-  value: /p:OfficialBuildId=$(Build.BuildNumber)
-         /p:ArcadeBuild=true
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+  value: /p:ArcadeBuild=true
+- ${{ if eq(variables.officialBuild, 'true') }}:
+  - name: _BuildArgs
+    value: ${{ format('{0} /p:OfficialBuildId={1}', variables['_BuildArgs'], variables['Build.BuildNumber']) }}
   # Provide HelixApiAccessToken for telemetry
   - group: DotNet-HelixApi-Access
-
 
 jobs:
 - template: /eng/common/templates/jobs/jobs.yml
@@ -24,26 +26,31 @@ jobs:
 
     - job: Windows_NT
       pool:
-        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        ${{ if eq(variables.officialBuild, 'false') }}:
           name: Hosted VS2017
-        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+        ${{ if eq(variables.officialBuild, 'true') }}:
           name: dotnet-internal-temp
-      ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-        variables:
-        - group: DotNet-Blob-Feed
-        - _DotNetPublishToBlobFeed: true
-        - _TeamName: .NET # required by microbuild install step
-        # _SignType is used in the arcade templates that install microbuild.
-        - DotNetSignType: $(_SignType) # DotNetSignType defaults to real if not specified
-        - _PublishArgs: /p:DotNetPublishToBlobFeed=$(_DotNetPublishToBlobFeed)
-                        /p:DotNetPublishBlobFeedUrl=https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
-                        /p:DotNetPublishBlobFeedKey=$(dotnetfeed-storage-access-key-1)
+      variables:
+        - ${{ if eq(variables.officialBuild, 'false') }}:
+          - _SignType: test
+          - _PublishArgs: ''
+        - ${{ if eq(variables.officialBuild, 'true') }}:
+          - group: DotNet-Blob-Feed
+          - _TeamName: .NET # required by microbuild install step
+          - _SignType: real # used in the arcade templates that install microbuild.
+          - _PublishArgs: /p:DotNetPublishToBlobFeed=true
+                          /p:DotNetPublishBlobFeedUrl=https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
+                          /p:DotNetPublishBlobFeedKey=$(dotnetfeed-storage-access-key-1)
+        - DotNetSignType: ${{ format('{0}', variables._SignType) }} # DotNetSignType defaults to real if not specified
       steps:
       - checkout: self
         submodules: true
       - script: eng\common\cibuild.cmd -projects $(Build.SourcesDirectory)\illink.sln
                 -configuration $(_BuildConfig) $(_BuildArgs) $(_PublishArgs)
-        displayName: Build and publish illink.sln $(_BuildConfig)
+        ${{ if eq(variables.officialBuild, 'false') }}:
+          displayName: Build illink.sln $(_BuildConfig)
+        ${{ if eq(variables.officialBuild, 'true') }}:
+          displayName: Build and publish illink.sln $(_BuildConfig)
 
     - job: Linux
       pool:
@@ -57,9 +64,9 @@ jobs:
 
     - job: macOS
       pool:
-        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        ${{ if eq(variables.officialBuild, 'false') }}:
           name: Hosted MacOS
-        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+        ${{ if eq(variables.officialBuild, 'true') }}:
           name: Hosted Mac Internal
       steps:
       - checkout: self
