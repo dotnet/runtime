@@ -35,7 +35,10 @@ void ErectWriteBarrierForMT(MethodTable **dst, MethodTable *ref);
  *  |                        sync block index, which is at a negative offset
  *  |
  *  +-- code:StringObject       - String objects are specialized objects for string
- *  |                        storage/retrieval for higher performance
+ *  |                        storage/retrieval for higher performance (UCS-2 / UTF-16 data)
+ *  |
+ *  +-- code:Utf8StringObject       - String objects are specialized objects for string
+ *  |                        storage/retrieval for higher performance (UTF-8 data)
  *  |
  *  +-- BaseObjectWithCachedData - Object Plus one object field for caching.
  *  |       |
@@ -870,6 +873,9 @@ typedef DPTR(UPTRArray) PTR_UPTRArray;
 typedef DPTR(PTRArray)  PTR_PTRArray;
 
 class StringObject;
+#ifdef FEATURE_UTF8STRING
+class Utf8StringObject;
+#endif // FEATURE_UTF8STRING
 
 #ifdef USE_CHECKED_OBJECTREFS
 typedef REF<ArrayBase>  BASEARRAYREF;
@@ -888,6 +894,9 @@ typedef REF<UPTRArray>  UPTRARRAYREF;
 typedef REF<CHARArray>  CHARARRAYREF;
 typedef REF<PTRArray>   PTRARRAYREF;  // Warning: Use PtrArray only for single dimensional arrays, not multidim arrays.
 typedef REF<StringObject> STRINGREF;
+#ifdef FEATURE_UTF8STRING
+typedef REF<Utf8StringObject> UTF8STRINGREF;
+#endif // FEATURE_UTF8STRING
 
 #else   // USE_CHECKED_OBJECTREFS
 
@@ -907,6 +916,9 @@ typedef PTR_UPTRArray   UPTRARRAYREF;
 typedef PTR_CHARArray   CHARARRAYREF;
 typedef PTR_PTRArray    PTRARRAYREF;  // Warning: Use PtrArray only for single dimensional arrays, not multidim arrays.
 typedef PTR_StringObject STRINGREF;
+#ifdef FEATURE_UTF8STRING
+typedef PTR_Utf8StringObject UTF8STRINGREF;
+#endif // FEATURE_UTF8STRING
 
 #endif // USE_CHECKED_OBJECTREFS
 
@@ -1198,6 +1210,56 @@ public:
     }
 
 };
+
+#ifdef FEATURE_UTF8STRING
+class Utf8StringObject : public Object
+{
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
+
+private:
+    DWORD   m_StringLength;
+    BYTE    m_FirstChar;
+
+public:
+    VOID    SetLength(DWORD len) { LIMITED_METHOD_CONTRACT; _ASSERTE(len >= 0); m_StringLength = len; }
+
+protected:
+    Utf8StringObject() { LIMITED_METHOD_CONTRACT; }
+    ~Utf8StringObject() { LIMITED_METHOD_CONTRACT; }
+
+public:
+
+    /*=================RefInterpretGetStringValuesDangerousForGC======================
+    **N.B.: This perfoms no range checking and relies on the caller to have done this.
+    **Args: (IN)ref -- the Utf8String to be interpretted.
+    **      (OUT)chars -- a pointer to the characters in the buffer.
+    **      (OUT)length -- a pointer to the length of the buffer.
+    **Returns: void.
+    **Exceptions: None.
+    ==============================================================================*/
+    // !!!! If you use this function, you have to be careful because chars is a pointer
+    // !!!! to the data buffer of ref.  If GC happens after this call, you need to make
+    // !!!! sure that you have a pin handle on ref, or use GCPROTECT_BEGINPINNING on ref.
+    void RefInterpretGetStringValuesDangerousForGC(__deref_out_ecount(*length + 1) CHAR **chars, int *length) {
+        WRAPPER_NO_CONTRACT;
+    
+        _ASSERTE(GetGCSafeMethodTable() == g_pUtf8StringClass);
+        *length = GetStringLength();
+        *chars  = GetBuffer();
+#ifdef _DEBUG
+        EnableStressHeapHelper();
+#endif
+    }
+
+    DWORD   GetStringLength()                           { LIMITED_METHOD_DAC_CONTRACT; return( m_StringLength );}
+    CHAR*   GetBuffer()                                 { LIMITED_METHOD_CONTRACT; _ASSERTE(this != nullptr); return (CHAR*)( dac_cast<TADDR>(this) + offsetof(Utf8StringObject, m_FirstChar) );  }
+
+    static DWORD GetBaseSize();
+    static SIZE_T GetSize(DWORD stringLength);
+};
+#endif // FEATURE_UTF8STRING
 
 // This is the Method version of the Reflection object.
 //  A Method has adddition information.

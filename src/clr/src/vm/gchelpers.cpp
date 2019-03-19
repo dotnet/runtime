@@ -981,6 +981,8 @@ STRINGREF SlowAllocateString( DWORD cchStringLength )
 
     // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
     // overflows in buffer size calculations.
+    //
+    // If the value below is changed, also change SlowAllocateUtf8String.
     if (cchStringLength > 0x3FFFFFDF)
         ThrowOutOfMemory();
 
@@ -1027,6 +1029,81 @@ STRINGREF SlowAllocateString( DWORD cchStringLength )
 
     return( ObjectToSTRINGREF(orObject) );
 }
+
+#ifdef FEATURE_UTF8STRING
+UTF8STRINGREF SlowAllocateUtf8String(DWORD cchStringLength)
+{
+    CONTRACTL{
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE; // returns an objref without pinning it => cooperative
+    } CONTRACTL_END;
+
+    Utf8StringObject    *orObject = NULL;
+
+#ifdef _DEBUG
+    if (g_pConfig->ShouldInjectFault(INJECTFAULT_GCHEAP))
+    {
+        char *a = new char;
+        delete a;
+    }
+#endif
+
+    // Limit the maximum string size to <2GB to mitigate risk of security issues caused by 32-bit integer
+    // overflows in buffer size calculations.
+    //
+    // 0x7FFFFFBF is derived from the const 0x3FFFFFDF in SlowAllocateString.
+    // Adding +1 (for null terminator) and multiplying by sizeof(WCHAR) means that
+    // SlowAllocateString allows a maximum of 0x7FFFFFC0 bytes to be used for the
+    // string data itself, with some additional buffer for object headers and other
+    // data. Since we don't have the sizeof(WCHAR) multiplication here, we only need
+    // -1 to account for the null terminator, leading to a max size of 0x7FFFFFBF.
+    if (cchStringLength > 0x7FFFFFBF)
+        ThrowOutOfMemory();
+
+    SIZE_T ObjectSize = PtrAlign(Utf8StringObject::GetSize(cchStringLength));
+    _ASSERTE(ObjectSize > cchStringLength);
+
+    SetTypeHandleOnThreadForAlloc(TypeHandle(g_pUtf8StringClass));
+
+    orObject = (Utf8StringObject *)Alloc(ObjectSize, FALSE, FALSE);
+
+    // Object is zero-init already
+    _ASSERTE(orObject->HasEmptySyncBlockInfo());
+
+    // Initialize Object
+    orObject->SetMethodTable(g_pUtf8StringClass);
+    orObject->SetLength(cchStringLength);
+
+    if (ObjectSize >= LARGE_OBJECT_SIZE)
+    {
+        GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
+    }
+
+    // Notify the profiler of the allocation
+    if (TrackAllocations())
+    {
+        OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
+        GCPROTECT_BEGIN(objref);
+        ProfilerObjectAllocatedCallback(objref, (ClassID)orObject->GetTypeHandle().AsPtr());
+        GCPROTECT_END();
+
+        orObject = (Utf8StringObject *)OBJECTREFToObject(objref);
+    }
+
+#ifdef FEATURE_EVENT_TRACE
+    // Send ETW event for allocation
+    if (ETW::TypeSystemLog::IsHeapAllocEventEnabled())
+    {
+        ETW::TypeSystemLog::SendObjectAllocatedEvent(orObject);
+    }
+#endif // FEATURE_EVENT_TRACE
+
+    LogAlloc(ObjectSize, g_pUtf8StringClass, orObject);
+
+    return( ObjectToUTF8STRINGREF(orObject) );
+}
+#endif // FEATURE_UTF8STRING
 
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 // OBJECTREF AllocateComClassObject(ComClassFactory* pComClsFac)
