@@ -48,7 +48,7 @@ namespace System.Composition.Hosting.Core
             // cardinality violations in advance of this in all but a few very rare scenarios.
             if (allForExport.Length != 1)
             {
-                var ex = new CompositionFailedException(SR.Format(SR.CardinalityMismatch_TooManyExports, exportKey.ToString()));
+                var ex = new CompositionFailedException(SR.Format(SR.CardinalityMismatch_TooManyExports, exportKey));
                 Debug.WriteLine(SR.Diagnostic_ThrowingException, ex.ToString());
                 throw ex;
             }

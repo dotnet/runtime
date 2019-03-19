@@ -890,7 +890,7 @@ namespace System.Text.Json.Tests
             {
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WriteStartArray(keyChars);
-                Assert.True(false, "Expected ArgumentException to be thrown for depth >= 1000.");
+                Assert.True(false, $"Expected ArgumentException for property too large wasn't thrown. PropertyLength: {keyChars.Length}");
             }
             catch (ArgumentException) { }
 
@@ -900,7 +900,7 @@ namespace System.Text.Json.Tests
             {
                 jsonUtf8.WriteStartObject();
                 jsonUtf8.WriteStartArray(key);
-                Assert.True(false, "Expected ArgumentException to be thrown for depth >= 1000.");
+                Assert.True(false, $"Expected ArgumentException for property too large wasn't thrown. PropertyLength: {key.Length}");
             }
             catch (ArgumentException) { }
 
@@ -2993,7 +2993,8 @@ namespace System.Text.Json.Tests
 
         private static void WriteTooLargeHelper(JsonWriterState state, ReadOnlySpan<byte> key, ReadOnlySpan<byte> value, bool noThrow = false)
         {
-            var output = new ArrayBufferWriter(1024);
+            // Resizing is too slow, even for outerloop tests, so initialize to a large output size up front.
+            var output = new ArrayBufferWriter(noThrow ? 40_000_000 : 1024);
             var jsonUtf8 = new Utf8JsonWriter(output, state);
 
             jsonUtf8.WriteStartObject();

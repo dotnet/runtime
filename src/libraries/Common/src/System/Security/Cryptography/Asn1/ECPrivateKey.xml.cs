@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Asn1
             }
 
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpPrivateKey))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpPrivateKey))
             {
                 decoded.PrivateKey = tmpPrivateKey;
             }
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 explicitReader = sequenceReader.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 1));
 
-                if (explicitReader.TryGetPrimitiveBitStringValue(out _, out ReadOnlyMemory<byte> tmpPublicKey))
+                if (explicitReader.TryReadPrimitiveBitStringValue(out _, out ReadOnlyMemory<byte> tmpPublicKey))
                 {
                     decoded.PublicKey = tmpPublicKey;
                 }

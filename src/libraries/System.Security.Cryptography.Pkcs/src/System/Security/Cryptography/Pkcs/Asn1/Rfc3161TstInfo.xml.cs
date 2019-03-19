@@ -144,8 +144,8 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             decoded.Policy = sequenceReader.ReadObjectIdentifier();
             System.Security.Cryptography.Pkcs.Asn1.MessageImprint.Decode(sequenceReader, out decoded.MessageImprint);
-            decoded.SerialNumber = sequenceReader.GetIntegerBytes();
-            decoded.GenTime = sequenceReader.GetGeneralizedTime();
+            decoded.SerialNumber = sequenceReader.ReadIntegerBytes();
+            decoded.GenTime = sequenceReader.ReadGeneralizedTime();
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
             {
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Integer))
             {
-                decoded.Nonce = sequenceReader.GetIntegerBytes();
+                decoded.Nonce = sequenceReader.ReadIntegerBytes();
             }
 
 

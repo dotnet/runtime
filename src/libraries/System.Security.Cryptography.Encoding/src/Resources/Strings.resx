@@ -105,6 +105,9 @@
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
+  <data name="Argument_EncodeDestinationTooSmall" xml:space="preserve">
+    <value>The destination is too small to hold the encoded value.</value>
+  </data>
   <data name="Argument_InvalidOidValue" xml:space="preserve">
     <value>The OID value was invalid.</value>
   </data>

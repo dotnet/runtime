@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (KeyAttr.HasValue)
             {
-                writer.WriteEncodedValue(KeyAttr.Value);
+                writer.WriteEncodedValue(KeyAttr.Value.Span);
             }
 
             writer.PopSequence(tag);
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (sequenceReader.HasData)
             {
-                decoded.KeyAttr = sequenceReader.GetEncodedValue();
+                decoded.KeyAttr = sequenceReader.ReadEncodedValue();
             }
 
 

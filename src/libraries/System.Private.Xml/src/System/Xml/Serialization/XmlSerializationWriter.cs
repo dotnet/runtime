@@ -1752,7 +1752,7 @@ namespace System.Xml.Serialization
                     return fieldVariable;
                 }
             }
-            throw new InvalidOperationException(SR.Format(SR.XmlSerializerUnsupportedType, memberInfos[0].ToString()));
+            throw new InvalidOperationException(SR.Format(SR.XmlSerializerUnsupportedType, memberInfos[0]));
         }
 
         private string WriteMethodInfo(string escapedName, string typeVariable, string memberName, bool isNonPublic, params string[] paramTypes)

@@ -72,7 +72,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             System.Security.Cryptography.Pkcs.Asn1.RecipientIdentifierAsn.Decode(sequenceReader, out decoded.Rid);
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.KeyEncryptionAlgorithm);
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpEncryptedKey))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpEncryptedKey))
             {
                 decoded.EncryptedKey = tmpEncryptedKey;
             }

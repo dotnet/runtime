@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpA))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpA))
             {
                 decoded.A = tmpA;
             }
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Asn1
             }
 
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpB))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpB))
             {
                 decoded.B = tmpB;
             }
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.PrimitiveBitString))
             {
 
-                if (sequenceReader.TryGetPrimitiveBitStringValue(out _, out ReadOnlyMemory<byte> tmpSeed))
+                if (sequenceReader.TryReadPrimitiveBitStringValue(out _, out ReadOnlyMemory<byte> tmpSeed))
                 {
                     decoded.Seed = tmpSeed;
                 }

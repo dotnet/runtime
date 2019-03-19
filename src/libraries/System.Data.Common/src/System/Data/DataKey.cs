@@ -145,13 +145,13 @@ namespace System.Data
 
         public override int GetHashCode()
         {
-            Debug.Assert(false, "don't put DataKey into a Hashtable");
+            Debug.Fail("don't put DataKey into a Hashtable");
             return base.GetHashCode();
         }
         
         public override bool Equals(object value)
         {
-            Debug.Assert(false, "need to directly call Equals(DataKey)");
+            Debug.Fail("need to directly call Equals(DataKey)");
             return Equals((DataKey)value);
         }
 

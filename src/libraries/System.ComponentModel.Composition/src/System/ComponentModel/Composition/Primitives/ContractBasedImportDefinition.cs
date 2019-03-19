@@ -4,8 +4,8 @@
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
@@ -212,11 +212,10 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                Contract.Ensures(Contract.Result<IEnumerable<KeyValuePair<string, Type>>>() != null);
-                
                 // NOTE : unlike other arguments, we validate this one as late as possible, because its validation may lead to type loading
                 ValidateRequiredMetadata();
 
+                Debug.Assert(_requiredMetadata != null);
                 return _requiredMetadata;
             }
         }
@@ -230,7 +229,7 @@ namespace System.ComponentModel.Composition.Primitives
                     if ((metadataItem.Key == null) || (metadataItem.Value == null))
                     {
                         throw new InvalidOperationException(
-                            string.Format(CultureInfo.CurrentCulture, SR.Argument_NullElement, "requiredMetadata"));
+                            SR.Format(SR.Argument_NullElement, "requiredMetadata"));
                     }
                 }
                 _isRequiredMetadataValidated = true;
@@ -385,7 +384,7 @@ namespace System.ComponentModel.Composition.Primitives
 
             if(_requiredMetadata.Count() > 0)
             {
-                sb.Append(string.Format("\n\tRequiredMetadata"));
+                sb.Append("\n\tRequiredMetadata");
                 foreach (KeyValuePair<string, Type> metadataItem in _requiredMetadata)
                 {
                     sb.Append(string.Format("\n\t\t{0}\t({1})", metadataItem.Key, metadataItem.Value));

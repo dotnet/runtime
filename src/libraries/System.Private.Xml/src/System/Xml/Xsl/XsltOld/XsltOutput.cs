@@ -220,7 +220,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(false);
+            Debug.Fail("Override invoked");
         }
 
         private static OutputMethod ParseOutputMethod(string value, Compiler compiler)

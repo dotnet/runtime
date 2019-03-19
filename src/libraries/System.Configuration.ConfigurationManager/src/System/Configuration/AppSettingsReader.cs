@@ -37,7 +37,7 @@ namespace System.Configuration
 
             string val = _map[key];
 
-            if (val == null) throw new InvalidOperationException(string.Format(SR.AppSettingsReaderNoKey, key));
+            if (val == null) throw new InvalidOperationException(SR.Format(SR.AppSettingsReaderNoKey, key));
 
             if (type == s_stringType)
             {
@@ -71,7 +71,7 @@ namespace System.Configuration
                 catch (Exception)
                 {
                     string displayString = (val.Length == 0) ? SR.AppSettingsReaderEmptyString : val;
-                    throw new InvalidOperationException(string.Format(SR.AppSettingsReaderCantParse, displayString, key, type.ToString()));
+                    throw new InvalidOperationException(SR.Format(SR.AppSettingsReaderCantParse, displayString, key, type));
                 }
             }
         }

@@ -35,7 +35,7 @@ namespace System.Numerics.Tests
             }
             else
             {
-               // The .Net Native code generation optimizer does aggressive optimizations to range checks 
+               // The .NET Native code generation optimizer does aggressive optimizations to range checks 
                // which result in an ArgumentOutOfRangeException exception being thrown at runtime.
                Assert.ThrowsAny<ArgumentException>(() => v1.CopyTo(a, 2));
             }

@@ -238,7 +238,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 AsnReader reader = new AsnReader(wrappedContent, AsnEncodingRules.BER);
 
-                if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> inner))
+                if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> inner))
                 {
                     return inner;
                 }

@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Asn1
 
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.PrivateKeyAlgorithm);
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpPrivateKey))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpPrivateKey))
             {
                 decoded.PrivateKey = tmpPrivateKey;
             }

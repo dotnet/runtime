@@ -20,4 +20,13 @@
       </ItemGroup>
     </When>
   </Choose>
+  <!-- when this package is referenced as a nuget reference the binding redirect is still present, add a target to remove it -->
+  <Target Name="_RemoveWindowsRuntimeSuggestedRedirect" 
+      BeforeTargets="GenerateBindingRedirects" 
+      DependsOnTargets="ResolveAssemblyReferences"
+      Condition="'$(DoNotReferenceWinRT)' != 'true'">
+    <ItemGroup> 
+      <SuggestedBindingRedirects Remove="System.Runtime.WindowsRuntime, Culture=neutral, PublicKeyToken=b77a5c561934e089" /> 
+    </ItemGroup> 
+  </Target>
 </Project>

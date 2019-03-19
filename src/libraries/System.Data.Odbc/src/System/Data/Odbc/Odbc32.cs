@@ -44,12 +44,12 @@ namespace System.Data.Odbc
             {
                 case CommandType.Text:
                 case CommandType.StoredProcedure:
-                    Debug.Assert(false, "valid CommandType " + value.ToString());
+                    Debug.Fail("valid CommandType " + value.ToString());
                     break;
                 case CommandType.TableDirect:
                     break;
                 default:
-                    Debug.Assert(false, "invalid CommandType " + value.ToString());
+                    Debug.Fail("invalid CommandType " + value.ToString());
                     break;
             }
 #endif
@@ -66,12 +66,12 @@ namespace System.Data.Odbc
                 case IsolationLevel.RepeatableRead:
                 case IsolationLevel.Serializable:
                 case IsolationLevel.Snapshot:
-                    Debug.Assert(false, "valid IsolationLevel " + value.ToString());
+                    Debug.Fail("valid IsolationLevel " + value.ToString());
                     break;
                 case IsolationLevel.Chaos:
                     break;
                 default:
-                    Debug.Assert(false, "invalid IsolationLevel " + value.ToString());
+                    Debug.Fail("invalid IsolationLevel " + value.ToString());
                     break;
             }
 #endif
@@ -167,7 +167,7 @@ namespace System.Data.Odbc
                 case RetCode.INVALID_HANDLE: return "INVALID_HANDLE";
                 case RetCode.NO_DATA: return "NO_DATA";
                 default:
-                    Debug.Assert(false, "Unknown enumerator passed to RetcodeToString method");
+                    Debug.Fail("Unknown enumerator passed to RetcodeToString method");
                     goto case RetCode.ERROR;
             }
         }

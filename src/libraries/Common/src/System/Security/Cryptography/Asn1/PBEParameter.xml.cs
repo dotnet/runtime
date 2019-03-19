@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             
 
-            if (sequenceReader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSalt))
+            if (sequenceReader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> tmpSalt))
             {
                 decoded.Salt = tmpSalt;
             }
