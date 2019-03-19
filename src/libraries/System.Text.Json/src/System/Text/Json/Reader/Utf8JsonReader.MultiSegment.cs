@@ -1574,7 +1574,7 @@ namespace System.Text.Json
                 }
             }
 
-            if (CurrentDepth == 0)
+            if (_bitStack.CurrentDepth == 0)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
@@ -1681,7 +1681,7 @@ namespace System.Text.Json
                 first = _buffer[_consumed];
             }
 
-            if (CurrentDepth == 0 && _tokenType != JsonTokenType.None)
+            if (_bitStack.CurrentDepth == 0 && _tokenType != JsonTokenType.None)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, first);
             }
@@ -1971,7 +1971,7 @@ namespace System.Text.Json
                 }
                 goto Done;
             }
-            else if (CurrentDepth == 0)
+            else if (_bitStack.CurrentDepth == 0)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }

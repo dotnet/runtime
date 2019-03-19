@@ -320,6 +320,81 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Fact]
+        public static void CurrentDepthArrayTest()
+        {
+            string jsonString =
+@"[
+    [
+        1,
+        2,
+        3
+    ]
+]";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.False(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+        }
+
+        [Fact]
+        public static void CurrentDepthObjectTest()
+        {
+            string jsonString =
+@"{
+    ""array"": [
+        1,
+        2,
+        3,
+        {}
+    ]
+}";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.False(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+        }
+
         [Theory]
         // Pad depth by nested objects, but minimize the text
         [InlineData(1, true, true)]
