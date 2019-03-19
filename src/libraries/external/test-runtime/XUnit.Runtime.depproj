@@ -194,18 +194,22 @@
           BeforeTargets="ResolveReferences">
 
     <PropertyGroup>
-      <TestSdkTFM Condition="'$(TargetsNetFx)' == 'true'">net45</TestSdkTFM>
+      <TestSdkTFM Condition="'$(TargetsNetFx)' == 'true'">net40</TestSdkTFM>
       <TestSdkTFM Condition="'$(TargetsUap)' == 'true'">uap10.0</TestSdkTFM>
       <TestSdkTFM Condition="'$(TestSdkTFM)' == ''">netcoreapp1.0</TestSdkTFM>
     </PropertyGroup>
 
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(MicrosoftNetTestSdkPackageName)\$(MicrosoftNETTestSdkPackageVersion)\build\$(TestSdkTFM)\*.*">
+      <_microsoftNetTestSdkAssets Include="$(PackagesDir)$(MicrosoftNetTestSdkPackageName)\$(MicrosoftNETTestSdkPackageVersion)\build\$(TestSdkTFM)\*.*" />
+      <ReferenceCopyLocalPaths Include="@(_microsoftNetTestSdkAssets)">
         <Private>false</Private>
         <NuGetPackageId>$(MicrosoftNetTestSdkPackageName)</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftNETTestSdkPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
+
+    <Error Condition="'@(_microsoftNetTestSdkAssets)' != ''"
+           Text="Error: no assets for test sdk package where found under: $(PackagesDir)$(MicrosoftNetTestSdkPackageName)\$(MicrosoftNETTestSdkPackageVersion)\build\$(TestSdkTFM)\*.*" />
 
   </Target>
 
