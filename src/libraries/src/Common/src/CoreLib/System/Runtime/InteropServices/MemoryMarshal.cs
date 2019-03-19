@@ -28,7 +28,12 @@ namespace System.Runtime.InteropServices
             // As an optimization, we skip the "is string?" check below if typeof(T) is not char,
             // as Memory<T> / ROM<T> can't possibly contain a string instance in this case.
 
-            if (obj != null && (typeof(T) != typeof(char) || obj.GetType() != typeof(string)))
+            if (obj != null && !(
+                (typeof(T) == typeof(char) && obj.GetType() == typeof(string))
+#if FEATURE_UTF8STRING
+                || ((typeof(T) == typeof(byte) || typeof(T) == typeof(Char8)) && obj.GetType() == typeof(Utf8String))
+#endif // FEATURE_UTF8STRING
+                ))
             {
                 if (RuntimeHelpers.ObjectHasComponentSize(obj))
                 {

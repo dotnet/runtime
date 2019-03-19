@@ -23,7 +23,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(NumberGroupSizes_TestData))]
-        public void NumberGroupSizes_Get(NumberFormatInfo format, int[] expected)
+        public void NumberGroupSizes_Get_ReturnsExpected(NumberFormatInfo format, int[] expected)
         {
             Assert.Equal(expected, format.NumberGroupSizes);
         }
@@ -33,7 +33,7 @@ namespace System.Globalization.Tests
         [InlineData(new int[] { 2, 3, 4 })]
         [InlineData(new int[] { 2, 3, 4, 0 })]
         [InlineData(new int[] { 0 })]
-        public void NumberGroupSizes_Set(int[] newNumberGroupSizes)
+        public void NumberGroupSizes_Set_GetReturnsExpected(int[] newNumberGroupSizes)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.NumberGroupSizes = newNumberGroupSizes;
@@ -41,14 +41,25 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void NumberGroupSizes_Set_Invalid()
+        public void NumberGroupSizes_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "NumberGroupSizes", () => format.NumberGroupSizes = null);
+        }
 
-            AssertExtensions.Throws<ArgumentException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = new int[] { -1, 1, 2 });
-            AssertExtensions.Throws<ArgumentException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = new int[] { 98, 99, 100 });
-            AssertExtensions.Throws<ArgumentException>("NumberGroupSizes", () => new NumberFormatInfo().NumberGroupSizes = new int[] { 0, 1, 2 });
+        [Theory]
+        [InlineData(new int[] { -1, 1, 2 })]
+        [InlineData(new int[] { 98, 99, 100 })]
+        [InlineData(new int[] { 0, 1, 2 })]
+        public void NumberGroupSizes_SetInvalid_ThrowsArgumentException(int[] value)
+        {
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentException>("value", "NumberGroupSizes", () => format.NumberGroupSizes = value);
+        }
 
+        [Fact]
+        public void NumberGroupSizes_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.NumberGroupSizes = new int[] { 1, 2, 3 });
         }
     }

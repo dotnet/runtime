@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  id with an empty path for schemes like http produces a warning
 Expect:       NonCanonicalURI{element:id,parent:feed}

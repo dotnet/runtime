@@ -34,7 +34,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetInstance_NotNull_TestData))]
-        public void GetInstance_NotNull(IFormatProvider provider)
+        public void GetInstance_ValidNonNullProvider_ReturnsExpected(IFormatProvider provider)
         {
             Assert.NotNull(DateTimeFormatInfo.GetInstance(provider));
         }
@@ -72,7 +72,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void GetInstance_ExpectedCurrent()
+        public void GetInstance_ExpectedCurrent_ReturnsExpected()
         {
             AssertSameValues(DateTimeFormatInfo.CurrentInfo, DateTimeFormatInfo.GetInstance(null));
             AssertSameValues(DateTimeFormatInfo.CurrentInfo, DateTimeFormatInfo.GetInstance(new TestIFormatProviderClass()));

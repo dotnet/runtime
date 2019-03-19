@@ -2110,7 +2110,7 @@ skipargument:
 
         End Sub
 
-        ' Type.IsEquivalentTo is not supported in .Net 4.0
+        ' Type.IsEquivalentTo is not supported in .NET Framework 4.0
         Private Shared Function GetArgumentType(ByVal argument As Object) As Type
             'A Nothing object has no type.
             If argument Is Nothing Then Return Nothing

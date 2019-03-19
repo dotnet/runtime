@@ -111,7 +111,7 @@ namespace System.Configuration
                 }
                 else
                 {
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_base_attribute_locked, LockItemKey));
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_base_attribute_locked, LockItemKey));
                 }
             }
         }
@@ -409,7 +409,7 @@ namespace System.Configuration
                         {
                             // Don't allow the override
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_base_attribute_locked, propInfo.Name));
+                                SR.Format(SR.Config_base_attribute_locked, propInfo.Name));
                         }
 
                         // They did not override so we need to make sure the value comes from the locked one
@@ -535,7 +535,7 @@ namespace System.Configuration
                     ((_itemLockedFlag & ConfigurationValueFlags.Inherited) != 0)
                     )
                 {
-                    throw new ConfigurationErrorsException(string.Format(SR.Config_base_element_locked, elementName),
+                    throw new ConfigurationErrorsException(SR.Format(SR.Config_base_element_locked, elementName),
                         reader);
                 }
             }
@@ -816,7 +816,7 @@ namespace System.Configuration
             if (!validator.CanValidate(type))
             {
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Validator_does_not_support_elem_type, type.Name));
+                    SR.Format(SR.Validator_does_not_support_elem_type, type.Name));
             }
 
             s_perTypeValidators.Add(type, validator);
@@ -852,7 +852,7 @@ namespace System.Configuration
                 (_lockedAttributesList.DefinedInParent(prop.Name) || _lockedAttributesList.DefinedInParent(LockAll))) ||
                 (((_itemLockedFlag & ConfigurationValueFlags.Locked) != 0) &&
                 ((_itemLockedFlag & ConfigurationValueFlags.Inherited) != 0))))
-                throw new ConfigurationErrorsException(string.Format(SR.Config_base_attribute_locked, prop.Name));
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_base_attribute_locked, prop.Name));
 
             _modified = true;
 
@@ -1095,7 +1095,7 @@ namespace System.Configuration
                     {
                         if (prop.IsRequired)
                         {
-                            throw new ConfigurationErrorsException(string.Format(
+                            throw new ConfigurationErrorsException(SR.Format(
                                 SR.Config_base_required_attribute_locked, prop.Name));
                         }
                         value = s_nullPropertyValue;
@@ -1185,7 +1185,7 @@ namespace System.Configuration
                         else
                         {
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_base_element_cannot_have_multiple_child_elements, prop.Name));
+                                SR.Format(SR.Config_base_element_cannot_have_multiple_child_elements, prop.Name));
                         }
                     }
                 }
@@ -1280,12 +1280,12 @@ namespace System.Configuration
             if (value != null)
             {
                 throw new ConfigurationErrorsException(
-                    string.Format(CultureInfo.CurrentCulture, format, attribToLockTrim, sb.ToString()),
+                    SR.Format(format, attribToLockTrim, sb),
                     value.SourceInfo.FileName, value.SourceInfo.LineNumber);
             }
 
-            throw new ConfigurationErrorsException(string.Format(CultureInfo.CurrentCulture, format,
-                attribToLockTrim, sb.ToString()));
+            throw new ConfigurationErrorsException(SR.Format(format,
+                attribToLockTrim, sb));
         }
 
         private ConfigurationLockCollection ParseLockedAttributes(ConfigurationValue value,
@@ -1300,18 +1300,18 @@ namespace System.Configuration
                 switch (lockType)
                 {
                     case ConfigurationLockCollectionType.LockedAttributes:
-                        throw new ConfigurationErrorsException(string.Format(SR.Empty_attribute, LockAttributesKey),
+                        throw new ConfigurationErrorsException(SR.Format(SR.Empty_attribute, LockAttributesKey),
                             value.SourceInfo.FileName, value.SourceInfo.LineNumber);
                     case ConfigurationLockCollectionType.LockedElements:
-                        throw new ConfigurationErrorsException(string.Format(SR.Empty_attribute, LockElementsKey),
+                        throw new ConfigurationErrorsException(SR.Format(SR.Empty_attribute, LockElementsKey),
                             value.SourceInfo.FileName, value.SourceInfo.LineNumber);
                     case ConfigurationLockCollectionType.LockedExceptionList:
                         throw new ConfigurationErrorsException(
-                            string.Format(SR.Config_empty_lock_attributes_except, LockAllAttributesExceptKey,
+                            SR.Format(SR.Config_empty_lock_attributes_except, LockAllAttributesExceptKey,
                                 LockAttributesKey), value.SourceInfo.FileName, value.SourceInfo.LineNumber);
                     case ConfigurationLockCollectionType.LockedElementsExceptionList:
                         throw new ConfigurationErrorsException(
-                            string.Format(SR.Config_empty_lock_element_except, LockAllElementsExceptKey, LockElementsKey),
+                            SR.Format(SR.Config_empty_lock_element_except, LockAllElementsExceptKey, LockElementsKey),
                             value.SourceInfo.FileName, value.SourceInfo.LineNumber);
                 }
             }
@@ -1367,7 +1367,7 @@ namespace System.Configuration
                         if ((propToLock != null) && propToLock.IsRequired)
                         {
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_base_required_attribute_lock_attempt, propToLock.Name));
+                                SR.Format(SR.Config_base_required_attribute_lock_attempt, propToLock.Name));
                         }
                     }
 
@@ -1427,7 +1427,7 @@ namespace System.Configuration
                 (((_itemLockedFlag & ConfigurationValueFlags.Locked) != 0) &&
                 ((_itemLockedFlag & ConfigurationValueFlags.Inherited) != 0))
                 )
-                throw new ConfigurationErrorsException(string.Format(SR.Config_base_element_locked, reader.Name), reader);
+                throw new ConfigurationErrorsException(SR.Format(SR.Config_base_element_locked, reader.Name), reader);
 
 
             if (reader.AttributeCount > 0)
@@ -1444,7 +1444,7 @@ namespace System.Configuration
                         if ((propertyName != LockAttributesKey) && (propertyName != LockAllAttributesExceptKey))
                         {
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_base_attribute_locked, propertyName), reader);
+                                SR.Format(SR.Config_base_attribute_locked, propertyName), reader);
                         }
                     }
 
@@ -1454,7 +1454,7 @@ namespace System.Configuration
                         if (serializeCollectionKey && !prop.IsKey)
                         {
                             throw new ConfigurationErrorsException(
-                                string.Format(SR.Config_base_unrecognized_attribute, propertyName), reader);
+                                SR.Format(SR.Config_base_unrecognized_attribute, propertyName), reader);
                         }
 
                         Values.SetValue(propertyName,
@@ -1475,7 +1475,7 @@ namespace System.Configuration
                                 catch
                                 {
                                     throw new ConfigurationErrorsException(
-                                        string.Format(SR.Config_invalid_boolean_attribute, propertyName), reader);
+                                        SR.Format(SR.Config_invalid_boolean_attribute, propertyName), reader);
                                 }
                                 break;
                             case LockAttributesKey:
@@ -1499,7 +1499,7 @@ namespace System.Configuration
                                     !OnDeserializeUnrecognizedAttribute(propertyName, reader.Value))
                                 {
                                     throw new ConfigurationErrorsException(
-                                        string.Format(SR.Config_base_unrecognized_attribute, propertyName),
+                                        SR.Format(SR.Config_base_unrecognized_attribute, propertyName),
                                         reader);
                                 }
                                 break;
@@ -1532,7 +1532,7 @@ namespace System.Configuration
                                     if (nodeFound.Contains(propertyName))
                                     {
                                         throw new ConfigurationErrorsException(
-                                            string.Format(SR.Config_base_element_cannot_have_multiple_child_elements,
+                                            SR.Format(SR.Config_base_element_cannot_have_multiple_child_elements,
                                                 propertyName), reader);
                                     }
 
@@ -1547,7 +1547,7 @@ namespace System.Configuration
                                 else
                                 {
                                     throw new ConfigurationErrorsException(
-                                        string.Format(SR.Config_base_property_is_not_a_configuration_element,
+                                        SR.Format(SR.Config_base_property_is_not_a_configuration_element,
                                             propertyName), reader);
                                 }
                             }
@@ -1560,7 +1560,7 @@ namespace System.Configuration
                                         !defaultCollection.OnDeserializeUnrecognizedElement(propertyName, reader))
                                     {
                                         throw new ConfigurationErrorsException(
-                                            string.Format(SR.Config_base_unrecognized_element_name, propertyName), reader);
+                                            SR.Format(SR.Config_base_unrecognized_element_name, propertyName), reader);
                                     }
                                 }
                             }
@@ -1785,7 +1785,7 @@ namespace System.Configuration
                 // the validator supports the type of elem every time
                 if ((validator != null) && !validator.CanValidate(elem.GetType()))
                 {
-                    throw new ConfigurationErrorsException(string.Format(SR.Validator_does_not_support_elem_type,
+                    throw new ConfigurationErrorsException(SR.Format(SR.Validator_does_not_support_elem_type,
                         elem.GetType().Name));
                 }
             }
@@ -1801,7 +1801,7 @@ namespace System.Configuration
             }
             catch (Exception ex)
             {
-                throw new ConfigurationErrorsException(string.Format(SR.Validator_element_not_valid, elem.ElementTagName,
+                throw new ConfigurationErrorsException(SR.Format(SR.Validator_element_not_valid, elem.ElementTagName,
                     ex.Message));
             }
 
@@ -1854,7 +1854,7 @@ namespace System.Configuration
             // Derivied classes can override this to return a value for a required property that is missing
             // Here we treat this as an error though
 
-            throw new ConfigurationErrorsException(string.Format(SR.Config_base_required_attribute_missing, name),
+            throw new ConfigurationErrorsException(SR.Format(SR.Config_base_required_attribute_missing, name),
                 PropertyFileName(name),
                 PropertyLineNumber(name));
         }

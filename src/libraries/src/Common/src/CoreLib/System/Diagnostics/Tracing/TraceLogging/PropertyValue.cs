@@ -185,7 +185,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Gets a delegate that gets the value of a property of a value type.  We unfortunately cannot avoid boxing the value type,
         /// without making this generic over the value type.  That would result in a large number of generic instantiations, and furthermore
-        /// does not work correctly on .Net Native (we cannot express the needed instantiations in an rd.xml file).  We expect that user-defined
+        /// does not work correctly on .NET Native (we cannot express the needed instantiations in an rd.xml file).  We expect that user-defined
         /// value types will be rare, and in any case the boxing only happens for events that are actually enabled.
         /// </summary>
         private static Func<PropertyValue, PropertyValue> GetBoxedValueTypePropertyGetter(PropertyInfo property)
@@ -202,7 +202,7 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// For properties of reference types, we use a generic helper class to get the value.  This enables us to use MethodInfo.CreateDelegate
-        /// to build a fast getter.  We can get away with this on .Net Native, because we really only need one runtime instantiation of the
+        /// to build a fast getter.  We can get away with this on .NET Native, because we really only need one runtime instantiation of the
         /// generic type, since it's only instantiated over reference types (and thus all instances are shared).
         /// </summary>
         /// <param name="property"></param>

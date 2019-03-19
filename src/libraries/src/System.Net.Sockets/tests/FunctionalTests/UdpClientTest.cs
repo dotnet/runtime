@@ -283,7 +283,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public void EnableBroadcast_Roundtrips()
         {
             using (var udpClient = new UdpClient())

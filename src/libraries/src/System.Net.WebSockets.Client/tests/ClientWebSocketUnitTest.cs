@@ -56,7 +56,7 @@ namespace System.Net.WebSockets.Client.Tests
                 InvalidOperationException exception;
                 using (var tcc = new ThreadCultureChange())
                 {
-                    // The .Net Native toolchain optimizes away exception messages.
+                    // The .NET Native toolchain optimizes away exception messages.
                     if (!PlatformDetection.IsNetNative)
                         tcc.ChangeCultureInfo(CultureInfo.InvariantCulture);
 
@@ -64,7 +64,7 @@ namespace System.Net.WebSockets.Client.Tests
                         () => cws.CloseOutputAsync(WebSocketCloseStatus.Empty, "", new CancellationToken()));
                 }
 
-                // The .Net Native toolchain optimizes away exception messages.
+                // The .NET Native toolchain optimizes away exception messages.
                 if (!PlatformDetection.IsNetNative)
                 {
                     string expectedMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected");
@@ -104,7 +104,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 using (var tcc = new ThreadCultureChange())
                 {
-                    // The .Net Native toolchain optimizes away exception messages.
+                    // The .NET Native toolchain optimizes away exception messages.
                     if (!PlatformDetection.IsNetNative)
                         tcc.ChangeCultureInfo(CultureInfo.InvariantCulture);
 
@@ -112,7 +112,7 @@ namespace System.Net.WebSockets.Client.Tests
                         () => cws.ReceiveAsync(segment, ct));
                 }
 
-                // The .Net Native toolchain optimizes away exception messages.
+                // The .NET Native toolchain optimizes away exception messages.
                 if (!PlatformDetection.IsNetNative)
                 {
                     string expectedMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected");
@@ -151,7 +151,7 @@ namespace System.Net.WebSockets.Client.Tests
                 InvalidOperationException exception;
                 using (var tcc = new ThreadCultureChange())
                 {
-                    // The .Net Native toolchain optimizes away exception messages.
+                    // The .NET Native toolchain optimizes away exception messages.
                     if (!PlatformDetection.IsNetNative)
                         tcc.ChangeCultureInfo(CultureInfo.InvariantCulture);
 
@@ -159,7 +159,7 @@ namespace System.Net.WebSockets.Client.Tests
                         () => cws.SendAsync(segment, WebSocketMessageType.Text, false, ct));
                 }
 
-                // The .Net Native toolchain optimizes away exception messages.
+                // The .NET Native toolchain optimizes away exception messages.
                 if (!PlatformDetection.IsNetNative)
                 {
                     string expectedMessage = ResourceHelper.GetExceptionMessage("net_WebSockets_NotConnected");

@@ -5,7 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Extensions.cs" />
-    <Compile Include="System.Runtime.Extensions.Manual.cs" />
+    <Compile Include="System.Runtime.Extensions.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

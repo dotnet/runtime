@@ -129,7 +129,7 @@ namespace System.ComponentModel
                 throw new ArgumentNullException(nameof(partDefinitionType));
             }
 
-            return new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.ReflectionModel_InvalidPartDefinition, partDefinitionType), parameterName);
+            return new ArgumentException(SR.Format(SR.ReflectionModel_InvalidPartDefinition, partDefinitionType), parameterName);
         }
 
         public static ArgumentException ExportFactory_TooManyGenericParameters(string typeName)

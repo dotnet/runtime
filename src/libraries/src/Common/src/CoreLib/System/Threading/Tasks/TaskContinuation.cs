@@ -7,10 +7,6 @@ using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Runtime.CompilerServices;
 
-#if CORERT
-using Thread = Internal.Runtime.Augments.RuntimeThread;
-#endif
-
 namespace System.Threading.Tasks
 {
     // Task type used to implement: Task ContinueWith(Action<Task,...>)

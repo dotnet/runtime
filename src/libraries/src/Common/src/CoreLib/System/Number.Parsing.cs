@@ -32,6 +32,15 @@ namespace System
         private const int Int64Precision = 19;
         private const int UInt64Precision = 20;
 
+        private const int DoubleMaxExponent = 309;
+        private const int DoubleMinExponent = -324;
+
+        private const int FloatingPointMaxExponent = DoubleMaxExponent;
+        private const int FloatingPointMinExponent = DoubleMinExponent;
+
+        private const int SingleMaxExponent = 39;
+        private const int SingleMinExponent = -45;
+
         /// <summary>Map from an ASCII char to its hex value, e.g. arr['b'] == 11. 0xFF means it's not a hex digit.</summary>
         internal static ReadOnlySpan<byte> CharToHexLookup => new byte[]
         {
@@ -389,11 +398,11 @@ namespace System
                 {
                     char* temp = p;
                     ch = ++p < strEnd ? *p : '\0';
-                    if ((next = MatchChars(p, strEnd, info.positiveSign)) != null)
+                    if ((next = MatchChars(p, strEnd, info._positiveSign)) != null)
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                     }
-                    else if ((next = MatchChars(p, strEnd, info.negativeSign)) != null)
+                    else if ((next = MatchChars(p, strEnd, info._negativeSign)) != null)
                     {
                         ch = (p = next) < strEnd ? *p : '\0';
                         negExp = true;
@@ -1964,18 +1973,44 @@ namespace System
         internal static double NumberToDouble(ref NumberBuffer number)
         {
             number.CheckConsistency();
+            double result;
 
-            ulong bits = NumberToFloatingPointBits(ref number, in FloatingPointInfo.Double);
-            double result = BitConverter.Int64BitsToDouble((long)(bits));
+            if ((number.DigitsCount == 0) || (number.Scale < DoubleMinExponent))
+            {
+                result = 0;
+            }
+            else if (number.Scale > DoubleMaxExponent)
+            {
+                result = double.PositiveInfinity;
+            }
+            else
+            {
+                ulong bits = NumberToFloatingPointBits(ref number, in FloatingPointInfo.Double);
+                result = BitConverter.Int64BitsToDouble((long)(bits));
+            }
+
             return number.IsNegative ? -result : result;
         }
 
         internal static float NumberToSingle(ref NumberBuffer number)
         {
             number.CheckConsistency();
+            float result;
 
-            uint bits = (uint)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Single));
-            float result = BitConverter.Int32BitsToSingle((int)(bits));
+            if ((number.DigitsCount == 0) || (number.Scale < SingleMinExponent))
+            {
+                result = 0;
+            }
+            else if (number.Scale > SingleMaxExponent)
+            {
+                result = float.PositiveInfinity;
+            }
+            else
+            {
+                uint bits = (uint)(NumberToFloatingPointBits(ref number, in FloatingPointInfo.Single));
+                result = BitConverter.Int32BitsToSingle((int)(bits));
+            }
+
             return number.IsNegative ? -result : result;
         }
     }

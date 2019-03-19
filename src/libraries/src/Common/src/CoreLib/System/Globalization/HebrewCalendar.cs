@@ -353,7 +353,7 @@ namespace System.Globalization
                     "time",
                     ticks,
                     // Print out the date in Gregorian using InvariantCulture since the DateTime is based on GreograinCalendar.
-                    string.Format(
+                    SR.Format(
                         CultureInfo.InvariantCulture,
                         SR.ArgumentOutOfRange_CalendarRange,
                         s_calendarMinValue,

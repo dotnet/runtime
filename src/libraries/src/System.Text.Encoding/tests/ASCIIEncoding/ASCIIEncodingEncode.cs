@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    public class ASCIIEncodingEncode
+    public partial class ASCIIEncodingEncode
     {
         public static IEnumerable<object[]> Encode_TestData()
         {

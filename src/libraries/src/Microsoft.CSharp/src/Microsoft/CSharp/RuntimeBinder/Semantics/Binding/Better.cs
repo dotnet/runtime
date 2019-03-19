@@ -139,7 +139,7 @@ LAgain:
                     switch (type1.TypeKind)
                     {
                         default:
-                            Debug.Assert(false, "Bad kind in CompareTypes");
+                            Debug.Fail("Bad kind in CompareTypes");
                             break;
                         case TypeKind.TK_TypeParameterType:
                             break;

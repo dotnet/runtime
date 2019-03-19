@@ -856,7 +856,7 @@ namespace System.Data.SqlClient
 
             // NOTE: TdsParserSessionPool may call DecrementPendingCallbacks on a TdsParserStateObject which is already disposed
             // This is not dangerous (since the stateObj is no longer in use), but we need to add a workaround in the assert for it
-            Debug.Assert((remaining == -1 && SessionHandle.IsNull) || (0 <= remaining && remaining < 3), string.Format("_pendingCallbacks values is invalid after decrementing: {0}", remaining));
+            Debug.Assert((remaining == -1 && SessionHandle.IsNull) || (0 <= remaining && remaining < 3), $"_pendingCallbacks values is invalid after decrementing: {remaining}");
             return remaining;
         }
 
@@ -905,7 +905,7 @@ namespace System.Data.SqlClient
         internal int IncrementPendingCallbacks()
         {
             int remaining = Interlocked.Increment(ref _pendingCallbacks);
-            Debug.Assert(0 < remaining && remaining <= 3, string.Format("_pendingCallbacks values is invalid after incrementing: {0}", remaining));
+            Debug.Assert(0 < remaining && remaining <= 3, $"_pendingCallbacks values is invalid after incrementing: {remaining}");
             return remaining;
         }
 
@@ -1105,7 +1105,7 @@ namespace System.Data.SqlClient
                 }
                 else
                 {
-                    Debug.Assert(false, "entered negative _inBytesPacket loop");
+                    Debug.Fail("entered negative _inBytesPacket loop");
                 }
                 AssertValidState();
             }
@@ -1275,15 +1275,6 @@ namespace System.Data.SqlClient
                 AssertValidState();
             }
 
-            if ((_messageStatus != TdsEnums.ST_EOM) && ((_inBytesPacket == 0) || (_inBytesUsed == _inBytesRead)))
-            {
-                if (!TryPrepareBuffer())
-                {
-                    return false;
-                }
-            }
-
-            AssertValidState();
             return true;
         }
 
@@ -3171,7 +3162,7 @@ namespace System.Data.SqlClient
             else
             {
                 status = TdsEnums.ST_EOM;
-                Debug.Assert(false, string.Format((IFormatProvider)null, "Unexpected argument {0,-2:x2} to WritePacket", flushMode));
+                Debug.Fail($"Unexpected argument {flushMode,-2:x2} to WritePacket");
             }
 
             _outBuff[0] = _outputMessageType;         // Message Type
@@ -3522,26 +3513,13 @@ namespace System.Data.SqlClient
 
         private void AssertValidState()
         {
-            string assertMessage = null;
-
             if (_inBytesUsed < 0 || _inBytesRead < 0)
             {
-                assertMessage = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "either _inBytesUsed or _inBytesRead is negative: {0}, {1}",
-                    _inBytesUsed, _inBytesRead);
+                Debug.Fail($"Invalid TDS Parser State: either _inBytesUsed or _inBytesRead is negative: {_inBytesUsed}, {_inBytesRead}");
             }
             else if (_inBytesUsed > _inBytesRead)
             {
-                assertMessage = string.Format(
-                    CultureInfo.InvariantCulture,
-                    "_inBytesUsed > _inBytesRead: {0} > {1}",
-                    _inBytesUsed, _inBytesRead);
-            }
-
-            if (assertMessage != null)
-            {
-                Debug.Assert(false, "Invalid TDS Parser State: " + assertMessage);
+                Debug.Fail($"Invalid TDS Parser State: _inBytesUsed > _inBytesRead: {_inBytesUsed} > {_inBytesRead}");
             }
 
             Debug.Assert(_inBytesPacket >= 0, "Packet must not be negative");
@@ -3756,7 +3734,7 @@ namespace System.Data.SqlClient
                 Debug.Assert(_asyncWriteCount == 0, "StateObj still has outstanding async writes");
                 Debug.Assert(_delayedWriteAsyncCallbackException == null, "StateObj has an unobserved exceptions from an async write");
                 // Attention\Cancellation\Timeouts
-                Debug.Assert(!_attentionReceived && !_attentionSent && !_attentionSending, string.Format("StateObj is still dealing with attention: Sent: {0}, Received: {1}, Sending: {2}", _attentionSent, _attentionReceived, _attentionSending));
+                Debug.Assert(!_attentionReceived && !_attentionSent && !_attentionSending, $"StateObj is still dealing with attention: Sent: {_attentionSent}, Received: {_attentionReceived}, Sending: {_attentionSending}");
                 Debug.Assert(!_cancelled, "StateObj still has cancellation set");
                 Debug.Assert(!_internalTimeout, "StateObj still has internal timeout set");
                 // Errors and Warnings

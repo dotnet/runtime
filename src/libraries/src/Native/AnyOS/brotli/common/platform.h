@@ -71,7 +71,7 @@ OR:
 */
 #if BROTLI_GNUC_HAS_BUILTIN(__builtin_expect, 3, 0, 0) || \
     BROTLI_INTEL_VERSION_CHECK(16, 0, 0) ||               \
-    BROTLI_SUNPRO_VERSION_CHECK(5, 12, 0) ||              \
+    BROTLI_SUNPRO_VERSION_CHECK(5, 15, 0) ||              \
     BROTLI_ARM_VERSION_CHECK(4, 1, 0) ||                  \
     BROTLI_IBM_VERSION_CHECK(10, 1, 0) ||                 \
     BROTLI_TI_VERSION_CHECK(7, 3, 0) ||                   \
@@ -180,6 +180,12 @@ OR:
 #define BROTLI_UNUSED_FUNCTION static BROTLI_INLINE
 #endif
 
+#if BROTLI_GNUC_HAS_ATTRIBUTE(aligned, 2, 7, 0)
+#define BROTLI_ALIGNED(N) __attribute__((aligned(N)))
+#else
+#define BROTLI_ALIGNED(N)
+#endif
+
 #if (defined(__ARM_ARCH) && (__ARM_ARCH == 7)) || \
     (defined(M_ARM) && (M_ARM == 7))
 #define BROTLI_TARGET_ARMV7
@@ -187,8 +193,19 @@ OR:
 
 #if (defined(__ARM_ARCH) && (__ARM_ARCH == 8)) || \
     defined(__aarch64__) || defined(__ARM64_ARCH_8__)
-#define BROTLI_TARGET_ARMV8
+#define BROTLI_TARGET_ARMV8_ANY
+
+#if defined(__ARM_32BIT_STATE)
+#define BROTLI_TARGET_ARMV8_32
+#elif defined(__ARM_64BIT_STATE)
+#define BROTLI_TARGET_ARMV8_64
+#endif
+
 #endif  /* ARMv8 */
+
+#if defined(__ARM_NEON__) || defined(__ARM_NEON)
+#define BROTLI_TARGET_NEON
+#endif
 
 #if defined(__i386) || defined(_M_IX86)
 #define BROTLI_TARGET_X86
@@ -210,7 +227,7 @@ OR:
 #define BROTLI_64_BITS 1
 #elif defined(BROTLI_BUILD_32_BIT)
 #define BROTLI_64_BITS 0
-#elif defined(BROTLI_TARGET_X64) || defined(BROTLI_TARGET_ARMV8) || \
+#elif defined(BROTLI_TARGET_X64) || defined(BROTLI_TARGET_ARMV8_64) || \
     defined(BROTLI_TARGET_POWERPC64) || defined(BROTLI_TARGET_RISCV64)
 #define BROTLI_64_BITS 1
 #else
@@ -261,7 +278,7 @@ OR:
 #if defined(BROTLI_BUILD_PORTABLE)
 #define BROTLI_ALIGNED_READ (!!1)
 #elif defined(BROTLI_TARGET_X86) || defined(BROTLI_TARGET_X64) || \
-    defined(BROTLI_TARGET_ARMV7) || defined(BROTLI_TARGET_ARMV8) || \
+    defined(BROTLI_TARGET_ARMV7) || defined(BROTLI_TARGET_ARMV8_ANY) || \
     defined(BROTLI_TARGET_RISCV64)
 /* Allow unaligned read only for white-listed CPUs. */
 #define BROTLI_ALIGNED_READ (!!0)
@@ -291,6 +308,33 @@ static BROTLI_INLINE void BrotliUnalignedWrite64(void* p, uint64_t v) {
 }
 #else  /* BROTLI_ALIGNED_READ */
 /* Unaligned memory access is allowed: just cast pointer to requested type. */
+#if defined(ADDRESS_SANITIZER) || defined(THREAD_SANITIZER) || \
+    defined(MEMORY_SANITIZER)
+/* Consider we have an unaligned load/store of 4 bytes from address 0x...05.
+   AddressSanitizer will treat it as a 3-byte access to the range 05:07 and
+   will miss a bug if 08 is the first unaddressable byte.
+   ThreadSanitizer will also treat this as a 3-byte access to 05:07 and will
+   miss a race between this access and some other accesses to 08.
+   MemorySanitizer will correctly propagate the shadow on unaligned stores
+   and correctly report bugs on unaligned loads, but it may not properly
+   update and report the origin of the uninitialized memory.
+   For all three tools, replacing an unaligned access with a tool-specific
+   callback solves the problem. */
+#if defined(__cplusplus)
+extern "C" {
+#endif  /* __cplusplus */
+  uint16_t __sanitizer_unaligned_load16(const void* p);
+  uint32_t __sanitizer_unaligned_load32(const void* p);
+  uint64_t __sanitizer_unaligned_load64(const void* p);
+  void __sanitizer_unaligned_store64(void* p, uint64_t v);
+#if defined(__cplusplus)
+}  /* extern "C" */
+#endif  /* __cplusplus */
+#define BrotliUnalignedRead16 __sanitizer_unaligned_load16
+#define BrotliUnalignedRead32 __sanitizer_unaligned_load32
+#define BrotliUnalignedRead64 __sanitizer_unaligned_load64
+#define BrotliUnalignedWrite64 __sanitizer_unaligned_store64
+#else
 static BROTLI_INLINE uint16_t BrotliUnalignedRead16(const void* p) {
   return *(const uint16_t*)p;
 }
@@ -306,16 +350,31 @@ static BROTLI_INLINE void BrotliUnalignedWrite64(void* p, uint64_t v) {
 }
 #else  /* BROTLI_64_BITS */
 /* Avoid emitting LDRD / STRD, which require properly aligned address. */
+/* If __attribute__(aligned) is available, use that. Otherwise, memcpy. */
+
+#if BROTLI_GNUC_HAS_ATTRIBUTE(aligned, 2, 7, 0)
+typedef BROTLI_ALIGNED(1) uint64_t brotli_unaligned_uint64_t;
+
 static BROTLI_INLINE uint64_t BrotliUnalignedRead64(const void* p) {
-  const uint32_t* dwords = (const uint32_t*)p;
-  return dwords[0] | ((uint64_t)dwords[1] << 32);
+  return (uint64_t) ((brotli_unaligned_uint64_t*) p)[0];
 }
 static BROTLI_INLINE void BrotliUnalignedWrite64(void* p, uint64_t v) {
-  uint32_t* dwords = (uint32_t *)p;
-  dwords[0] = (uint32_t)v;
-  dwords[1] = (uint32_t)(v >> 32);
+  brotli_unaligned_uint64_t* dwords = (brotli_unaligned_uint64_t*) p;
+  dwords[0] = (brotli_unaligned_uint64_t) v;
 }
+#else /* BROTLI_GNUC_HAS_ATTRIBUTE(aligned, 2, 7, 0) */
+static BROTLI_INLINE uint64_t BrotliUnalignedRead64(const void* p) {
+  uint64_t v;
+  memcpy(&v, p, sizeof(uint64_t));
+  return v;
+}
+
+static BROTLI_INLINE void BrotliUnalignedWrite64(void* p, uint64_t v) {
+  memcpy(p, &v, sizeof(uint64_t));
+}
+#endif  /* BROTLI_GNUC_HAS_ATTRIBUTE(aligned, 2, 7, 0) */
 #endif  /* BROTLI_64_BITS */
+#endif  /* ASAN / TSAN / MSAN */
 #endif  /* BROTLI_ALIGNED_READ */
 
 #if BROTLI_LITTLE_ENDIAN
@@ -400,7 +459,7 @@ static BROTLI_INLINE void BROTLI_UNALIGNED_STORE64LE(void* p, uint64_t v) {
 #define BROTLI_IS_CONSTANT(x) (!!0)
 #endif
 
-#if defined(BROTLI_TARGET_ARMV7) || defined(BROTLI_TARGET_ARMV8)
+#if defined(BROTLI_TARGET_ARMV7) || defined(BROTLI_TARGET_ARMV8_ANY)
 #define BROTLI_HAS_UBFX (!!1)
 #else
 #define BROTLI_HAS_UBFX (!!0)
@@ -427,7 +486,7 @@ static BROTLI_INLINE void BrotliDump(const char* f, int l, const char* fn) {
 /* TODO: add appropriate icc/sunpro/arm/ibm/ti checks. */
 #if (BROTLI_GNUC_VERSION_CHECK(3, 0, 0) || defined(__llvm__)) && \
     !defined(BROTLI_BUILD_NO_RBIT)
-#if defined(BROTLI_TARGET_ARMV7) || defined(BROTLI_TARGET_ARMV8)
+#if defined(BROTLI_TARGET_ARMV7) || defined(BROTLI_TARGET_ARMV8_ANY)
 /* TODO: detect ARMv6T2 and enable this code for it. */
 static BROTLI_INLINE brotli_reg_t BrotliRBit(brotli_reg_t input) {
   brotli_reg_t output;

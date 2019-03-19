@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
   </PropertyGroup>
+  <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
     <Compile Include="Asn1\Reader\Asn1ReaderTests.cs" />
     <Compile Include="Asn1\Reader\ComprehensiveReadTests.cs" />
@@ -27,9 +28,6 @@
     <Compile Include="Asn1\Reader\ReadUtcTime.cs" />
     <Compile Include="Asn1\Reader\ReadUTF8String.cs" />
     <Compile Include="Asn1\Reader\ReaderStateTests.cs" />
-    <Compile Include="Asn1\Serializer\SimpleDeserialize.cs" />
-    <Compile Include="Asn1\Serializer\SimpleSerialize.cs" />
-    <Compile Include="Asn1\Serializer\X509DeserializeTests.cs" />
     <Compile Include="Asn1\Writer\Asn1WriterTests.cs" />
     <Compile Include="Asn1\Writer\ComprehensiveWriteTest.cs" />
     <Compile Include="Asn1\Writer\PushPopSequence.cs" />
@@ -53,20 +51,11 @@
     <Compile Include="Base64TransformsTests.cs" />
     <Compile Include="Oid.cs" />
     <Compile Include="OidCollectionTests.cs" />
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
-      <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.Serializer.cs">
-      <Link>Common\System\Security\Cryptography\Asn1V2.Serializer.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnReader.cs">
-      <Link>Common\System\Security\Cryptography\AsnReader.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnWriter.cs">
-      <Link>Common\System\Security\Cryptography\AsnWriter.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Memory\PointerMemoryManager.cs">
+      <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

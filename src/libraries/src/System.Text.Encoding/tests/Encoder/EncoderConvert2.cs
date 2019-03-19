@@ -209,28 +209,29 @@ namespace System.Text.Tests
         }
         
         // Call Convert to convert partial of a Unicode character array with UTF8 encoder
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "coreclr #23020 is not fixed in netfx.")]
         public void EncoderUTF8ConvertUnicodeCharArrayPartial()
         {
             char[] chars = "\uD83D\uDE01Test".ToCharArray();
             byte[] bytes = new byte[chars.Length * 2];
             Encoder encoder = Encoding.UTF8.GetEncoder();
 
-            VerificationHelper(encoder, chars, 0, 1, bytes, 0, 0, true, 1, 0, expectedCompleted: true);
-            VerificationHelper(encoder, chars, 0, 1, bytes, 0, 3, false, 1, 3, expectedCompleted: true);
-            VerificationHelper(encoder, chars, 0, 2, bytes, 0, 7, false, 2, 7, expectedCompleted: true);
+            VerificationHelper(encoder, chars, 0, 1, bytes, 0, 3, true, 1, 3, expectedCompleted: true);
+            VerificationHelper(encoder, chars, 0, 2, bytes, 0, 7, false, 2, 4, expectedCompleted: true);
             VerificationHelper(encoder, chars, 0, 4, bytes, 0, 6, false, 4, 6, expectedCompleted: true);
             VerificationHelper(encoder, chars, 0, 4, bytes, 0, 6, true, 4, 6, expectedCompleted: true);
             VerificationHelper(encoder, chars, 2, 2, bytes, 0, 2, true, 2, 2, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, 3, bytes, 1, 3, false, 1, 3, expectedCompleted: false);
             VerificationHelper(encoder, chars, 1, 3, bytes, 1, 5, true, 3, 5, expectedCompleted: true);
 
-            VerificationHelper(encoder, chars, 0, 1, bytes, 0, bytes.Length, false, 1, 0, expectedCompleted: true);
+            VerificationHelper(encoder, chars, 0, 1, bytes, 0, bytes.Length, false, 1, 0, expectedCompleted: false);
             VerificationHelper(encoder, chars, 1, 1, bytes, 0, bytes.Length, true, 1, 4, expectedCompleted: true);
         }
  
         // Call Convert to convert partial of a ASCII+Unicode character array with ASCII encoder
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "coreclr #23020 is not fixed in netfx.")]
         public void EncoderASCIIConvertMixedASCIIUnicodeCharArrayPartial()
         {
             char[] chars = "T\uD83D\uDE01est".ToCharArray();
@@ -238,8 +239,9 @@ namespace System.Text.Tests
             Encoder encoder = Encoding.ASCII.GetEncoder();
 
             VerificationHelper(encoder, chars, 0, 1, bytes, 0, 1, true, 1, 1, expectedCompleted: true);
-            VerificationHelper(encoder, chars, 0, 2, bytes, 0, 1, false, 1, 1, expectedCompleted: false);
-            VerificationHelper(encoder, chars, 1, 2, bytes, 0, 2, false, 2, 2, expectedCompleted: true);
+            VerificationHelper(encoder, chars, 0, 4, bytes, 0, 1, false, 3, 1, expectedCompleted: false);
+            VerificationHelper(encoder, chars, 3, 1, bytes, 0, 2, false, 0, 2, expectedCompleted: false);
+            VerificationHelper(encoder, chars, 3, 1, bytes, 0, 2, false, 1, 1, expectedCompleted: true);
             VerificationHelper(encoder, chars, 0, 5, bytes, 0, 5, false, 5, 5, expectedCompleted: true);
             VerificationHelper(encoder, chars, 0, 4, bytes, 0, 4, true, 4, 4, expectedCompleted: true);
             VerificationHelper(encoder, chars, 2, 2, bytes, 0, 2, true, 2, 2, expectedCompleted: true);
@@ -251,7 +253,8 @@ namespace System.Text.Tests
         }
         
         // Call Convert to convert partial of a ASCII+Unicode character array with UTF8 encoder
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "coreclr #23020 is not fixed in netfx.")]
         public void EncoderUTF8ConvertMixedASCIIUnicodeCharArrayPartial()
         {
             char[] chars = "T\uD83D\uDE01est".ToCharArray();
@@ -259,15 +262,17 @@ namespace System.Text.Tests
             Encoder encoder = Encoding.UTF8.GetEncoder();
 
             VerificationHelper(encoder, chars, 0, 1, bytes, 0, 1, true, 1, 1, expectedCompleted: true);
-            VerificationHelper(encoder, chars, 0, 2, bytes, 0, 1, false, 2, 1, expectedCompleted: true);
-            VerificationHelper(encoder, chars, 1, 2, bytes, 0, 7, false, 2, 7, expectedCompleted: true);
+            VerificationHelper(encoder, chars, 0, 2, bytes, 0, 1, false, 2, 1, expectedCompleted: false);
+            VerificationHelper(encoder, chars, 2, 1, bytes, 0, 5, false, 1, 4, expectedCompleted: true);
+            VerificationHelper(encoder, chars, 1, 2, bytes, 0, 7, false, 2, 4, expectedCompleted: true);
             VerificationHelper(encoder, chars, 0, 5, bytes, 0, 7, false, 5, 7, expectedCompleted: true);
             VerificationHelper(encoder, chars, 0, 4, bytes, 0, 6, true, 4, 6, expectedCompleted: true);
             VerificationHelper(encoder, chars, 2, 2, bytes, 0, 3, true, 1, 3, expectedCompleted: false);
             VerificationHelper(encoder, chars, 1, 3, bytes, 1, 5, false, 3, 5, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, 3, bytes, 1, 5, true, 3, 5, expectedCompleted: true);
 
-            VerificationHelper(encoder, chars, 0, 2, bytes, 0, bytes.Length, false, 2, 1, expectedCompleted: true);
+            VerificationHelper(encoder, chars, 0, 2, bytes, 0, bytes.Length, false, 2, 1, expectedCompleted: false);
+            VerificationHelper(encoder, chars, 2, 2, bytes, 0, bytes.Length, false, 2, 5, expectedCompleted: true);
             VerificationHelper(encoder, chars, 1, 1, bytes, 0, bytes.Length, true, 1, 3, expectedCompleted: true);
         }
 
@@ -279,7 +284,7 @@ namespace System.Text.Tests
             int bytesUsed;
             bool completed;
 
-            encoder.Convert(chars, charIndex, charCount, bytes, byteIndex, byteCount, false, out charsUsed, out bytesUsed, out completed);
+            encoder.Convert(chars, charIndex, charCount, bytes, byteIndex, byteCount, flush, out charsUsed, out bytesUsed, out completed);
             Assert.Equal(expectedCharsUsed, charsUsed);
             Assert.Equal(expectedBytesUsed, bytesUsed);
             Assert.Equal(expectedCompleted, completed);

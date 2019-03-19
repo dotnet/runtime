@@ -52,7 +52,7 @@ namespace System.Runtime.CompilerServices
                 {
                     return base.Message;
                 }
-                string valueMessage = SR.Format(SR.SwitchExpressionException_UnmatchedValue, UnmatchedValue.ToString());
+                string valueMessage = SR.Format(SR.SwitchExpressionException_UnmatchedValue, UnmatchedValue);
                 return base.Message + Environment.NewLine + valueMessage;
             }
         }

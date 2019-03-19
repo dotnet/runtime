@@ -199,7 +199,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                         (accessors.Length != 1) ||
                         ((accessors.Length == 1) && (accessors[0].MemberType != memberType)))
                     {
-                        errorMessage = string.Format(CultureInfo.CurrentCulture, SR.LazyMemberInfo_InvalidAccessorOnSimpleMember, memberType);
+                        errorMessage = SR.Format(SR.LazyMemberInfo_InvalidAccessorOnSimpleMember, memberType);
                         return false;
                     }
                    

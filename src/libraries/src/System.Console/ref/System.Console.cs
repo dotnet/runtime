@@ -275,7 +275,7 @@ namespace System
     }
     public readonly partial struct ConsoleKeyInfo
     {
-        private readonly int _dummy;
+        private readonly int _dummyPrimitive;
         public ConsoleKeyInfo(char keyChar, System.ConsoleKey key, bool shift, bool alt, bool control) { throw null; }
         public System.ConsoleKey Key { get { throw null; } }
         public char KeyChar { get { throw null; } }

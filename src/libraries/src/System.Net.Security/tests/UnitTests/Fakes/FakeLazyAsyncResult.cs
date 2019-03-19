@@ -8,7 +8,7 @@ namespace System.Net.Security
 {
     internal class LazyAsyncResult : IAsyncResult
     {
-        public LazyAsyncResult(SslState sslState, object asyncState, AsyncCallback asyncCallback)
+        public LazyAsyncResult(SslStream sslState, object asyncState, AsyncCallback asyncCallback)
         {
             AsyncState = asyncState;
             asyncCallback?.Invoke(this);
