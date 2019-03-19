@@ -367,6 +367,9 @@
     <Compile Include="System\Diagnostics\Process.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.Linux.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.Linux.cs" />
+    <Compile Include="$(CommonPath)\Interop\Linux\cgroups\Interop.cgroups.cs">
+      <Link>Common\Interop\Linux\Interop.cgroups.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Linux\procfs\Interop.ProcFsStat.cs">
       <Link>Common\Interop\Linux\Interop.ProcFsStat.cs</Link>
     </Compile>

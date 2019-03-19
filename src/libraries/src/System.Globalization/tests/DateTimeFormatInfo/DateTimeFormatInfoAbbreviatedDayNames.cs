@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -9,28 +10,70 @@ namespace System.Globalization.Tests
     public class DateTimeFormatInfoAbbreviatedDayNames
     {
         [Fact]
-        public void AbbreviatedDayNames_InvariantInfo()
+        public void AbbreviatedDayNames_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal(new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }, DateTimeFormatInfo.InvariantInfo.AbbreviatedDayNames);
         }
 
         [Fact]
-        public void AbbreviatedDayNames_Set()
+        public void AbbreviatedDayNames_Get_ReturnsClone()
         {
-            string[] newAbbreviatedDayNames = new string[] { "1", "2", "3", "4", "5", "6", "7" };
             var format = new DateTimeFormatInfo();
-            format.AbbreviatedDayNames = newAbbreviatedDayNames;
-            Assert.Equal(newAbbreviatedDayNames, format.AbbreviatedDayNames);
+            Assert.Equal(format.AbbreviatedDayNames, format.AbbreviatedDayNames);
+            Assert.NotSame(format.AbbreviatedDayNames, format.AbbreviatedDayNames);
+        }
+
+        public static IEnumerable<object[]> AbbreviatedDayNames_Set_TestData()
+        {
+            yield return new object[] { new string[] { "1", "2", "3", "4", "5", "6", "7" } };
+            yield return new object[] { new string[] { "", "", "", "", "", "", "" } };
+        }
+
+        [Theory]
+        [MemberData(nameof(AbbreviatedDayNames_Set_TestData))]
+        public void AbbreviatedDayNames_Set_GetReturnsExpected(string[] value)
+        {
+            var format = new DateTimeFormatInfo();
+            format.AbbreviatedDayNames = value;
+            Assert.Equal(value, format.AbbreviatedDayNames);
+
+            // Does not clone in setter, only in getter.
+            value[0] = null;
+            Assert.NotSame(value, format.AbbreviatedDayNames);
+            Assert.Equal(value, format.AbbreviatedDayNames);
         }
 
         [Fact]
-        public void AbbreviatedDayNames_Set_Invalid()
+        public void AbbreviatedDayNames_SetNulValue_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AbbreviatedDayNames = null); // Value is null
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AbbreviatedDayNames = new string[] { "1", "2", "3", null, "5", "6", "7" }); // Value has null
-            AssertExtensions.Throws<ArgumentException>("value", (() => new DateTimeFormatInfo().AbbreviatedDayNames = new string[] { "sun" })); // Value.Length is not 7
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.AbbreviatedDayNames = null);
+        }
 
-            // DateTimeFormatInfo.InvariantInfo is read only
+        [Fact]
+        public void AbbreviatedDayNames_SetNulValueInValue_ThrowsArgumentNullException()
+        {
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.AbbreviatedDayNames = new string[] { "1", "2", "3", null, "5", "6", "7" });
+        }
+
+        public static IEnumerable<object[]> AbbreviatedDayNames_SetInvalidLength_TestData()
+        {
+            yield return new object[] { new string[] { "Sun" } };
+            yield return new object[] { new string[] { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Additional" } };
+        }
+
+        [Theory]
+        [MemberData(nameof(AbbreviatedDayNames_SetInvalidLength_TestData))]
+        public void AbbreviatedDayNames_SetInvalidLength_ThrowsArgumentException(string[] value)
+        {
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentException>("value", (() => format.AbbreviatedDayNames = value));
+        }
+
+        [Fact]
+        public void AbbreviatedDayNames_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.AbbreviatedDayNames = new string[] { "1", "2", "3", "4", "5", "6", "7" });
         }
     }

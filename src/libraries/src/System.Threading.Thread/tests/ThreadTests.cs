@@ -1170,7 +1170,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Default principal policy on .Net Framework is Unauthenticated Principal")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Default principal policy on .NET Framework is Unauthenticated Principal")]
         public static void DefaultPrincipalPolicyTest()
         {
             DummyClass.RemoteInvoke(() =>
@@ -1180,7 +1180,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Default principal policy on .Net Core is No Principal")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Default principal policy on .NET Core is No Principal")]
         public static void DefaultPrincipalPolicyTest_Desktop()
         {
             DummyClass.RemoteInvoke(() =>

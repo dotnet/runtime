@@ -68,7 +68,7 @@ namespace System
 
         internal static void ThrowArgumentException_DestinationTooShort()
         {
-            throw new ArgumentException(SR.Argument_DestinationTooShort);
+            throw new ArgumentException(SR.Argument_DestinationTooShort, "destination");
         }
 
         internal static void ThrowArgumentException_OverlapAlignmentMismatch()

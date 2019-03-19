@@ -9,25 +9,33 @@ namespace System.Globalization.Tests
     public class DateTimeFormatInfoAMDesignator
     {
         [Fact]
-        public void AMDesignator_InvariantInfo()
+        public void AMDesignator_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("AM", DateTimeFormatInfo.InvariantInfo.AMDesignator);
         }
 
-        [Fact]
-        public void AMDesignator_Set()
+        [Theory]
+        [InlineData("")]
+        [InlineData("AA")]
+        [InlineData("A.M")]
+        public void AMDesignator_Set_GetReturnsExpected(string value)
         {
-            string newAMDesignator = "AA";
             var format = new DateTimeFormatInfo();
-            format.AMDesignator = newAMDesignator;
-            Assert.Equal(newAMDesignator, format.AMDesignator);
+            format.AMDesignator = value;
+            Assert.Equal(value, format.AMDesignator);
         }
 
         [Fact]
-        public void AMDesignator_Set_Invalid()
+        public void AMDesignator_SetNullValue_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().AMDesignator = null); // Value is null
-            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.AMDesignator = "AA"); // DateTimeFormatInfo.InvariantInfo is read only
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.AMDesignator = null);
+        }
+        
+        [Fact]
+        public void AMDesignator_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.AMDesignator = "AA");
         }
     }
 }

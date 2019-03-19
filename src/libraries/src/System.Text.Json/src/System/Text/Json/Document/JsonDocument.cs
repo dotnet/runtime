@@ -454,6 +454,56 @@ namespace System.Text.Json
         /// <summary>
         ///   This is an implementation detail and MUST NOT be called by source-package consumers.
         /// </summary>
+        internal bool TryGetValue(int index, out DateTime value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.String, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            if (JsonHelpers.TryParseAsISO(segment, out DateTime tmp, out int bytesConsumed) &&
+                segment.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
+        internal bool TryGetValue(int index, out DateTimeOffset value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.String, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            if (JsonHelpers.TryParseAsISO(segment, out DateTimeOffset tmp, out int bytesConsumed) &&
+                segment.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
         internal string GetRawValueAsString(int index)
         {
             ReadOnlyMemory<byte> segment = GetRawValue(index, includeQuotes: true);

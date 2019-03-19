@@ -3,7 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 # Requires Visual Studio Command Prompt
-# Requires Azure SDK and .Net Framework SDK installed on the build machine.
+# Requires Azure SDK and .NET Framework SDK installed on the build machine.
 
 $cdir = pwd
 $folderName = "CoreFxNetCloudService"

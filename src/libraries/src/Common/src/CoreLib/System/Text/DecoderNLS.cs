@@ -332,7 +332,7 @@ namespace System.Text
             switch (_encoding.DecodeFirstRune(combinedBuffer, out Rune value, out int combinedBufferBytesConsumed))
             {
                 case OperationStatus.Done:
-                    if (value.TryEncode(chars, out charsWritten))
+                    if (value.TryEncodeToUtf16(chars, out charsWritten))
                     {
                         goto Finish; // successfully transcoded bytes -> chars
                     }

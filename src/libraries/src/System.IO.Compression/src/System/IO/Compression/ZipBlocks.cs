@@ -376,6 +376,7 @@ namespace System.IO.Compression
         public const uint DataDescriptorSignature = 0x08074B50;
         public const uint SignatureConstant = 0x04034B50;
         public const int OffsetToCrcFromHeaderStart = 14;
+        public const int OffsetToVersionFromHeaderStart = 4;
         public const int OffsetToBitFlagFromHeaderStart = 6;
         public const int SizeOfLocalHeader = 30;
 

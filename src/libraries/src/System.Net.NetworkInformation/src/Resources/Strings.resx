@@ -85,7 +85,7 @@
     <value>No loopback interface was found on the local machine.</value>
   </data>
   <data name="net_InformationUnavailableOnPlatform" xml:space="preserve">
-    <value>The information requested in unavailable on the current platform.</value>
+    <value>The information requested is unavailable on the current platform.</value>
   </data>
   <data name="net_PInvokeError" xml:space="preserve">
     <value>An error was encountered while querying information from the operating system.</value>

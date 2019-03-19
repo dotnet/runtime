@@ -13,6 +13,7 @@
     <Compile Include="BufferSegment.cs" />
     <Compile Include="FixedSizedBufferWriter.cs" />
     <Compile Include="InvalidBufferWriter.cs" />
+    <Compile Include="JsonDateTimeTestData.cs" />
     <Compile Include="JsonDocumentTests.cs" />
     <Compile Include="JsonNumberTestData.cs" />
     <Compile Include="JsonReaderStateAndOptionsTests.cs" />
@@ -40,6 +41,7 @@
     <Compile Include="TestCaseType.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />
+    <Compile Include="Utf8JsonReaderTests.TextEquals.cs" />
     <Compile Include="Utf8JsonReaderTests.TryGet.cs" />
     <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
