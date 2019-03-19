@@ -58,7 +58,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "emit.h"
 #include "codegen.h"
 
-bool CodeGenInterface::siVarLoc::vlIsInReg(regNumber reg)
+bool CodeGenInterface::siVarLoc::vlIsInReg(regNumber reg) const
 {
     switch (vlType)
     {
@@ -82,7 +82,7 @@ bool CodeGenInterface::siVarLoc::vlIsInReg(regNumber reg)
     }
 }
 
-bool CodeGenInterface::siVarLoc::vlIsOnStk(regNumber reg, signed offset)
+bool CodeGenInterface::siVarLoc::vlIsOnStk(regNumber reg, signed offset) const
 {
     regNumber actualReg;
 

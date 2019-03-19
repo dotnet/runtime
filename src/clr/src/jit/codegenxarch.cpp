@@ -6852,7 +6852,7 @@ void CodeGen::genCkfinite(GenTree* treeNode)
 }
 
 #ifdef _TARGET_AMD64_
-int CodeGenInterface::genSPtoFPdelta()
+int CodeGenInterface::genSPtoFPdelta() const
 {
     int delta;
 
@@ -6904,7 +6904,7 @@ int CodeGenInterface::genSPtoFPdelta()
 //    Total frame size
 //
 
-int CodeGenInterface::genTotalFrameSize()
+int CodeGenInterface::genTotalFrameSize() const
 {
     assert(!IsUninitialized(compiler->compCalleeRegsPushed));
 
@@ -6925,7 +6925,7 @@ int CodeGenInterface::genTotalFrameSize()
 // is based on a maximum delta from Initial-SP, so first we find SP, then
 // compute the FP offset.
 
-int CodeGenInterface::genCallerSPtoFPdelta()
+int CodeGenInterface::genCallerSPtoFPdelta() const
 {
     assert(isFramePointerUsed());
     int callerSPtoFPdelta;
@@ -6941,7 +6941,7 @@ int CodeGenInterface::genCallerSPtoFPdelta()
 //
 // This number will be negative.
 
-int CodeGenInterface::genCallerSPtoInitialSPdelta()
+int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
     int callerSPtoSPdelta = 0;
 
