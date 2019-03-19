@@ -202,7 +202,14 @@ namespace System.Diagnostics
         private void GetWorkingSetLimits(out IntPtr minWorkingSet, out IntPtr maxWorkingSet)
         {
             minWorkingSet = IntPtr.Zero; // no defined limit available
-            ulong rsslim = GetStat().rsslim;
+
+            // For max working set, try to respect container limits by reading
+            // from cgroup, but if it's unavailable, fall back to reading from procfs.
+            EnsureState(State.HaveNonExitedId);
+            if (!Interop.cgroups.TryGetMemoryLimit(out ulong rsslim))
+            {
+                rsslim = GetStat().rsslim;
+            }
 
             // rsslim is a ulong, but maxWorkingSet is an IntPtr, so we need to cap rsslim
             // at the max size of IntPtr.  This often happens when there is no configured

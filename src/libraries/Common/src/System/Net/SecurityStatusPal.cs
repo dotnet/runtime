@@ -62,6 +62,7 @@ namespace System.Net
         IllegalMessage,
         CertUnknown,
         CertExpired,
+        DecryptFailure,
         AlgorithmMismatch,
         SecurityQosFailed,
         SmartcardLogonRequired,

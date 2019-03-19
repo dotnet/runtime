@@ -12,7 +12,7 @@ namespace System.Globalization.Tests
         [InlineData("en-US", "$")]
         [InlineData("en-GB", "\x00a3")] // pound
         [InlineData("", "\x00a4")] // international
-        public void CurrencySymbol_Get(string name, string expected)
+        public void CurrencySymbol_Get_ReturnsExpected(string name, string expected)
         {
             Assert.Equal(expected, CultureInfo.GetCultureInfo(name).NumberFormat.CurrencySymbol);
         }
@@ -21,7 +21,7 @@ namespace System.Globalization.Tests
         [InlineData("string")]
         [InlineData("   ")]
         [InlineData("")]
-        public void CurrencySymbol_Set(string newCurrencySymbol)
+        public void CurrencySymbol_Set_GetReturnsExpected(string newCurrencySymbol)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.CurrencySymbol = newCurrencySymbol;
@@ -29,9 +29,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void CurrencySymbol_Set_Invalid()
+        public void CurrencySymbol_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("CurrencySymbol", () => new NumberFormatInfo().CurrencySymbol = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "CurrencySymbol", () => format.CurrencySymbol = null);
+        }
+
+        [Fact]
+        public void CurrencySymbol_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencySymbol = "");
         }
     }

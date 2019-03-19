@@ -9,37 +9,42 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoLongTimePattern
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
-        public void LongTimePattern_InvariantInfo()
+        public void LongTimePattern_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("HH:mm:ss", DateTimeFormatInfo.InvariantInfo.LongTimePattern);
         }
 
-        public static IEnumerable<object[]> LongTimePattern_TestData()
+        public static IEnumerable<object[]> LongTimePattern_Set_TestData()
         {
+            yield return new object[] { string.Empty };
+            yield return new object[] { "garbage" };
             yield return new object[] { "dddd, dd MMMM yyyy HH:mm:ss" };
             yield return new object[] { "HH" };
             yield return new object[] { "T" };
             yield return new object[] { "HH:mm:ss dddd, dd MMMM yyyy" };
-            yield return new object[] { s_randomDataGenerator.GetString(-55, false, 1, 256) };
             yield return new object[] { "HH:mm:ss" };
         }
 
         [Theory]
-        [MemberData(nameof(LongTimePattern_TestData))]
-        public void LongTimePattern_Set(string newLongTimePattern)
+        [MemberData(nameof(LongTimePattern_Set_TestData))]
+        public void LongTimePattern_Set_GetReturnsExpected(string value)
         {
             var format = new DateTimeFormatInfo();
-            format.LongTimePattern = newLongTimePattern;
-            Assert.Equal(newLongTimePattern, format.LongTimePattern);
+            format.LongTimePattern = value;
+            Assert.Equal(value, format.LongTimePattern);
         }
 
         [Fact]
-        public void LongTimePattern_Set_Invalid()
+        public void LongTimePattern_SetNullValue_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().LongTimePattern = null); // Value is null
-            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.LongTimePattern = "HH:mm:ss"); // DateTimeFormatInfo.InvariantInfo is read only
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.LongTimePattern = null);
+        }
+
+        [Fact]
+        public void LongTimePattern_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.LongTimePattern = "HH:mm:ss");
         }
     }
 }

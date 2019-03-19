@@ -46,16 +46,16 @@ namespace System.Threading.Tasks
     }
     public partial struct ParallelLoopResult
     {
-        private int _dummy;
+        private int _dummyPrimitive;
         public bool IsCompleted { get { throw null; } }
-        public System.Nullable<long> LowestBreakIteration { get { throw null; } }
+        public long? LowestBreakIteration { get { throw null; } }
     }
     public partial class ParallelLoopState
     {
         internal ParallelLoopState() { }
         public bool IsExceptional { get { throw null; } }
         public bool IsStopped { get { throw null; } }
-        public System.Nullable<long> LowestBreakIteration { get { throw null; } }
+        public long? LowestBreakIteration { get { throw null; } }
         public bool ShouldExitCurrentIteration { get { throw null; } }
         public void Break() { }
         public void Stop() { }

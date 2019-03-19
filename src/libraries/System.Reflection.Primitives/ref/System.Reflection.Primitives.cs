@@ -5,17 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-// These types were moved down to System.Runtime
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.CallingConventions))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.EventAttributes))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.FieldAttributes))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.GenericParameterAttributes))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.MethodAttributes))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.MethodImplAttributes))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.ParameterAttributes))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.PropertyAttributes))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.TypeAttributes))]
-
 namespace System.Reflection.Emit
 {
     public enum FlowControl
@@ -26,7 +15,7 @@ namespace System.Reflection.Emit
         Cond_Branch = 3,
         Meta = 4,
         Next = 5,
-        [Obsolete("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         Phi = 6,
         Return = 7,
         Throw = 8,
@@ -79,12 +68,12 @@ namespace System.Reflection.Emit
         public static readonly System.Reflection.Emit.OpCode Bne_Un_S;
         public static readonly System.Reflection.Emit.OpCode Box;
         public static readonly System.Reflection.Emit.OpCode Br;
-        public static readonly System.Reflection.Emit.OpCode Br_S;
         public static readonly System.Reflection.Emit.OpCode Break;
         public static readonly System.Reflection.Emit.OpCode Brfalse;
         public static readonly System.Reflection.Emit.OpCode Brfalse_S;
         public static readonly System.Reflection.Emit.OpCode Brtrue;
         public static readonly System.Reflection.Emit.OpCode Brtrue_S;
+        public static readonly System.Reflection.Emit.OpCode Br_S;
         public static readonly System.Reflection.Emit.OpCode Call;
         public static readonly System.Reflection.Emit.OpCode Calli;
         public static readonly System.Reflection.Emit.OpCode Callvirt;
@@ -102,7 +91,6 @@ namespace System.Reflection.Emit
         public static readonly System.Reflection.Emit.OpCode Conv_I4;
         public static readonly System.Reflection.Emit.OpCode Conv_I8;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_I;
-        public static readonly System.Reflection.Emit.OpCode Conv_Ovf_I_Un;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_I1;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_I1_Un;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_I2;
@@ -111,8 +99,8 @@ namespace System.Reflection.Emit
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_I4_Un;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_I8;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_I8_Un;
+        public static readonly System.Reflection.Emit.OpCode Conv_Ovf_I_Un;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_U;
-        public static readonly System.Reflection.Emit.OpCode Conv_Ovf_U_Un;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_U1;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_U1_Un;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_U2;
@@ -121,9 +109,10 @@ namespace System.Reflection.Emit
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_U4_Un;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_U8;
         public static readonly System.Reflection.Emit.OpCode Conv_Ovf_U8_Un;
-        public static readonly System.Reflection.Emit.OpCode Conv_R_Un;
+        public static readonly System.Reflection.Emit.OpCode Conv_Ovf_U_Un;
         public static readonly System.Reflection.Emit.OpCode Conv_R4;
         public static readonly System.Reflection.Emit.OpCode Conv_R8;
+        public static readonly System.Reflection.Emit.OpCode Conv_R_Un;
         public static readonly System.Reflection.Emit.OpCode Conv_U;
         public static readonly System.Reflection.Emit.OpCode Conv_U1;
         public static readonly System.Reflection.Emit.OpCode Conv_U2;
@@ -141,13 +130,13 @@ namespace System.Reflection.Emit
         public static readonly System.Reflection.Emit.OpCode Isinst;
         public static readonly System.Reflection.Emit.OpCode Jmp;
         public static readonly System.Reflection.Emit.OpCode Ldarg;
+        public static readonly System.Reflection.Emit.OpCode Ldarga;
+        public static readonly System.Reflection.Emit.OpCode Ldarga_S;
         public static readonly System.Reflection.Emit.OpCode Ldarg_0;
         public static readonly System.Reflection.Emit.OpCode Ldarg_1;
         public static readonly System.Reflection.Emit.OpCode Ldarg_2;
         public static readonly System.Reflection.Emit.OpCode Ldarg_3;
         public static readonly System.Reflection.Emit.OpCode Ldarg_S;
-        public static readonly System.Reflection.Emit.OpCode Ldarga;
-        public static readonly System.Reflection.Emit.OpCode Ldarga_S;
         public static readonly System.Reflection.Emit.OpCode Ldc_I4;
         public static readonly System.Reflection.Emit.OpCode Ldc_I4_0;
         public static readonly System.Reflection.Emit.OpCode Ldc_I4_1;
@@ -164,6 +153,7 @@ namespace System.Reflection.Emit
         public static readonly System.Reflection.Emit.OpCode Ldc_R4;
         public static readonly System.Reflection.Emit.OpCode Ldc_R8;
         public static readonly System.Reflection.Emit.OpCode Ldelem;
+        public static readonly System.Reflection.Emit.OpCode Ldelema;
         public static readonly System.Reflection.Emit.OpCode Ldelem_I;
         public static readonly System.Reflection.Emit.OpCode Ldelem_I1;
         public static readonly System.Reflection.Emit.OpCode Ldelem_I2;
@@ -175,7 +165,6 @@ namespace System.Reflection.Emit
         public static readonly System.Reflection.Emit.OpCode Ldelem_U1;
         public static readonly System.Reflection.Emit.OpCode Ldelem_U2;
         public static readonly System.Reflection.Emit.OpCode Ldelem_U4;
-        public static readonly System.Reflection.Emit.OpCode Ldelema;
         public static readonly System.Reflection.Emit.OpCode Ldfld;
         public static readonly System.Reflection.Emit.OpCode Ldflda;
         public static readonly System.Reflection.Emit.OpCode Ldftn;
@@ -192,13 +181,13 @@ namespace System.Reflection.Emit
         public static readonly System.Reflection.Emit.OpCode Ldind_U4;
         public static readonly System.Reflection.Emit.OpCode Ldlen;
         public static readonly System.Reflection.Emit.OpCode Ldloc;
+        public static readonly System.Reflection.Emit.OpCode Ldloca;
+        public static readonly System.Reflection.Emit.OpCode Ldloca_S;
         public static readonly System.Reflection.Emit.OpCode Ldloc_0;
         public static readonly System.Reflection.Emit.OpCode Ldloc_1;
         public static readonly System.Reflection.Emit.OpCode Ldloc_2;
         public static readonly System.Reflection.Emit.OpCode Ldloc_3;
         public static readonly System.Reflection.Emit.OpCode Ldloc_S;
-        public static readonly System.Reflection.Emit.OpCode Ldloca;
-        public static readonly System.Reflection.Emit.OpCode Ldloca_S;
         public static readonly System.Reflection.Emit.OpCode Ldnull;
         public static readonly System.Reflection.Emit.OpCode Ldobj;
         public static readonly System.Reflection.Emit.OpCode Ldsfld;
@@ -282,7 +271,7 @@ namespace System.Reflection.Emit
     }
     public enum OpCodeType
     {
-        [Obsolete("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         Annotation = 0,
         Macro = 1,
         Nternal = 2,
@@ -298,7 +287,7 @@ namespace System.Reflection.Emit
         InlineI8 = 3,
         InlineMethod = 4,
         InlineNone = 5,
-        [Obsolete("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
+        [System.ObsoleteAttribute("This API has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         InlinePhi = 6,
         InlineR = 7,
         InlineSig = 9,
@@ -332,8 +321,8 @@ namespace System.Reflection.Emit
         Popi = 3,
         Popi_pop1 = 4,
         Popi_popi = 5,
-        Popi_popi_popi = 7,
         Popi_popi8 = 6,
+        Popi_popi_popi = 7,
         Popi_popr4 = 8,
         Popi_popr8 = 9,
         Popref = 10,

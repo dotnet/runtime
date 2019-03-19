@@ -36,7 +36,9 @@ namespace System
         public static bool IsNotArmProcess => !IsArmProcess;
         public static bool IsArm64Process => RuntimeInformation.ProcessArchitecture == Architecture.Arm64;
         public static bool IsNotArm64Process => !IsArm64Process;
-        public static bool IsArgIteratorSupported => IsWindows && (IsNotArmProcess || IsArm64Process);
+        public static bool IsArmOrArm64Process => IsArmProcess || IsArm64Process;
+        public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
+        public static bool IsArgIteratorSupported => IsWindows && IsNotArmProcess;
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
 
         public static bool IsNotInAppContainer => !IsInAppContainer;
@@ -57,7 +59,7 @@ namespace System
         public static bool SupportsClientAlpn => SupportsAlpn ||
             (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && PlatformDetection.OSXVersion > new Version(10, 12));
 
-        // Officially, .Net Native only supports processes running in an AppContainer. However, the majority of tests still work fine
+        // Officially, .NET Native only supports processes running in an AppContainer. However, the majority of tests still work fine
         // in a normal Win32 process and we often do so as running in an AppContainer imposes a substantial tax in debuggability
         // and investigatability. This predicate is used in ConditionalFacts to disable the specific tests that really need to be
         // running in AppContainer when running on .NetNative.

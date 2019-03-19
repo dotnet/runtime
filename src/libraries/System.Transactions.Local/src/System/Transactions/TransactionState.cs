@@ -183,7 +183,7 @@ namespace System.Transactions
 
         internal virtual void EndCommit(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
 
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
@@ -297,7 +297,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -309,7 +309,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStateTransactionCommitted(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -321,7 +321,7 @@ namespace System.Transactions
 
         internal virtual void InDoubtFromEnlistment(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -333,7 +333,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStatePromotedAborted(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -345,7 +345,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStatePromotedCommitted(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -357,7 +357,7 @@ namespace System.Transactions
 
         internal virtual void InDoubtFromDtc(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -369,7 +369,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStatePromotedPhase0(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -381,7 +381,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStatePromotedPhase1(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -393,7 +393,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStateAbortedDuringPromotion(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -409,19 +409,19 @@ namespace System.Transactions
 
         internal virtual void Phase0VolatilePrepareDone(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void Phase1VolatilePrepareDone(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void RestartCommitIfNeeded(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -4300,8 +4300,8 @@ namespace System.Transactions
 
 
                 distributedTx = TransactionStatePSPEOperation.PSPEPromote(tx);
-                Debug.Assert((distributedTx == null), string.Format(null, "PSPEPromote for non-MSDTC promotion returned a distributed transaction."));
-                Debug.Assert((tx.promotedToken != null), string.Format(null, "PSPEPromote for non-MSDTC promotion did not set InternalTransaction.PromotedToken."));
+                Debug.Assert((distributedTx == null), "PSPEPromote for non-MSDTC promotion returned a distributed transaction.");
+                Debug.Assert((tx.promotedToken != null), "PSPEPromote for non-MSDTC promotion did not set InternalTransaction.PromotedToken.");
             }
             catch (TransactionPromotionException e)
             {

@@ -13,7 +13,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Security;
 using System.Threading.Tasks.Dataflow.Internal;
 using System.Diagnostics.CodeAnalysis;
@@ -48,7 +47,6 @@ namespace System.Threading.Tasks.Dataflow
         public BufferBlock(DataflowBlockOptions dataflowBlockOptions)
         {
             if (dataflowBlockOptions == null) throw new ArgumentNullException(nameof(dataflowBlockOptions));
-            Contract.EndContractBlock();
 
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
@@ -95,7 +93,6 @@ namespace System.Threading.Tasks.Dataflow
             // Validate arguments
             if (!messageHeader.IsValid) throw new ArgumentException(SR.Argument_InvalidMessageHeader, nameof(messageHeader));
             if (source == null && consumeToAccept) throw new ArgumentException(SR.Argument_CantConsumeFromANullSource, nameof(consumeToAccept));
-            Contract.EndContractBlock();
 
             lock (IncomingLock)
             {
@@ -153,7 +150,6 @@ namespace System.Threading.Tasks.Dataflow
         void IDataflowBlock.Fault(Exception exception)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
-            Contract.EndContractBlock();
 
             CompleteCore(exception, storeExceptionEvenIfAlreadyCompleting: false);
         }
@@ -162,7 +158,6 @@ namespace System.Threading.Tasks.Dataflow
         {
             Debug.Assert(storeExceptionEvenIfAlreadyCompleting || !revertProcessingState,
                             "Indicating dirty processing state may only come with storeExceptionEvenIfAlreadyCompleting==true.");
-            Contract.EndContractBlock();
 
             lock (IncomingLock)
             {

@@ -5,18 +5,17 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeMemoryMappedFileHandle : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        internal SafeMemoryMappedFileHandle() : base(default(bool)) { }
-        public override bool IsInvalid { [System.Security.SecurityCriticalAttribute]get { throw null; } }
+        internal SafeMemoryMappedFileHandle() : base (default(bool)) { }
+        public override bool IsInvalid { get { throw null; } }
         protected override bool ReleaseHandle() { throw null; }
     }
     public sealed partial class SafeMemoryMappedViewHandle : System.Runtime.InteropServices.SafeBuffer
     {
-        internal SafeMemoryMappedViewHandle() : base(default(bool)) { }
+        internal SafeMemoryMappedViewHandle() : base (default(bool)) { }
         protected override bool ReleaseHandle() { throw null; }
     }
 }

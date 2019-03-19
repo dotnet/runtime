@@ -5,7 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Algorithms.cs" />
-    <Compile Include="System.Security.Cryptography.Algorithms.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

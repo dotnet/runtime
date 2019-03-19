@@ -1756,7 +1756,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
             if ((totalMilliseconds < 0 || totalMilliseconds > int.MaxValue) && (totalMilliseconds != Timeout.Infinite))
             {
                 throw new ArgumentOutOfRangeException(nameof(timeout), timeout,
-                    string.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, int.MaxValue));
+                    SR.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, int.MaxValue));
             }
         }
 
@@ -1770,7 +1770,7 @@ nameof(collections), SR.BlockingCollection_ValidateCollectionsArray_DispElems);
             if ((millisecondsTimeout < 0) && (millisecondsTimeout != Timeout.Infinite))
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), millisecondsTimeout,
-                    string.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, int.MaxValue));
+                    SR.Format(CultureInfo.InvariantCulture, SR.BlockingCollection_TimeoutInvalid, int.MaxValue));
             }
         }
 

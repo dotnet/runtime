@@ -362,7 +362,6 @@ namespace System.Diagnostics.Tests
                     using (var sw = new StreamWriter(client))
                     {
                         sw.WriteLine(message);
-                        client.WaitForPipeDrain();
                     }
                 }
             }

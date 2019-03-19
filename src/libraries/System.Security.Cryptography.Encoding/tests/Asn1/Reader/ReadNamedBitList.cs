@@ -102,7 +102,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputBytes = inputHex.HexToByteArray();
 
             AsnReader reader = new AsnReader(inputBytes, (AsnEncodingRules)ruleSet);
-            Enum readValue = reader.GetNamedBitListValue(enumType);
+            Enum readValue = reader.ReadNamedBitListValue(enumType);
 
             Assert.Equal(Enum.ToObject(enumType, enumValue), readValue);
         }
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputBytes = inputHex.HexToByteArray();
 
             AsnReader reader = new AsnReader(inputBytes, (AsnEncodingRules)ruleSet);
-            Enum readValue = reader.GetNamedBitListValue(enumType);
+            Enum readValue = reader.ReadNamedBitListValue(enumType);
 
             Assert.Equal(Enum.ToObject(enumType, enumValue), readValue);
         }
@@ -146,8 +146,8 @@ namespace System.Security.Cryptography.Tests.Asn1
             string inputHex = "0306078000000080" + "0309010000000080000002";
             AsnReader reader = new AsnReader(inputHex.HexToByteArray(), (AsnEncodingRules)ruleSet);
 
-            ULongFlags uLongFlags = reader.GetNamedBitListValue<ULongFlags>();
-            LongFlags longFlags = reader.GetNamedBitListValue<LongFlags>();
+            ULongFlags uLongFlags = reader.ReadNamedBitListValue<ULongFlags>();
+            LongFlags longFlags = reader.ReadNamedBitListValue<LongFlags>();
 
             Assert.False(reader.HasData);
             Assert.Equal(ULongFlags.Mid | ULongFlags.Min, uLongFlags);
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "tFlagsEnum",
-                () => reader.GetNamedBitListValue<AsnEncodingRules>());
+                () => reader.ReadNamedBitListValue<AsnEncodingRules>());
 
             Assert.True(reader.HasData, "reader.HasData");
         }
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(inputHex.HexToByteArray(), (AsnEncodingRules)ruleSet);
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>());
+                () => reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>());
 
             Assert.True(reader.HasData, "reader.HasData");
         }
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(inputHex.HexToByteArray(), (AsnEncodingRules)ruleSet);
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>());
+                () => reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>());
 
             Assert.True(reader.HasData, "reader.HasData");
         }
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(inputHex.HexToByteArray(), (AsnEncodingRules)ruleSet);
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>());
+                () => reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>());
 
             Assert.True(reader.HasData, "reader.HasData");
         }
@@ -227,18 +227,18 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>(Asn1Tag.Null));
+                () => reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>(new Asn1Tag(TagClass.ContextSpecific, 0)));
+                () => reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>(new Asn1Tag(TagClass.ContextSpecific, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
             Assert.Equal(
                 X509KeyUsageCSharpStyle.CrlSign,
-                reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>());
+                reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>());
             Assert.False(reader.HasData, "HasData after read");
         }
 
@@ -253,28 +253,28 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>(Asn1Tag.Null));
+                () => reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>(Asn1Tag.Null));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>());
+                () => reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>());
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>(new Asn1Tag(TagClass.Application, 0)));
+                () => reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>(new Asn1Tag(TagClass.Application, 0)));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<CryptographicException>(
-                () => reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>(new Asn1Tag(TagClass.ContextSpecific, 1)));
+                () => reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>(new Asn1Tag(TagClass.ContextSpecific, 1)));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             Assert.Equal(
                 X509KeyUsageCSharpStyle.KeyCertSign,
-                reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>(new Asn1Tag(TagClass.ContextSpecific, 7)));
+                reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>(new Asn1Tag(TagClass.ContextSpecific, 7)));
 
             Assert.False(reader.HasData, "HasData after reading value");
         }
@@ -297,7 +297,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.Equal(
                 X509KeyUsageCSharpStyle.DecipherOnly,
-                reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>(
+                reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>(
                     new Asn1Tag((TagClass)tagClass, tagValue, true)));
 
             Assert.False(reader.HasData);
@@ -306,7 +306,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             Assert.Equal(
                 X509KeyUsageCSharpStyle.DecipherOnly,
-                reader.GetNamedBitListValue<X509KeyUsageCSharpStyle>(
+                reader.ReadNamedBitListValue<X509KeyUsageCSharpStyle>(
                     new Asn1Tag((TagClass)tagClass, tagValue, false)));
 
             Assert.False(reader.HasData);

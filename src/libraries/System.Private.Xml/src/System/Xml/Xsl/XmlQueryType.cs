@@ -464,7 +464,6 @@ namespace System.Xml.Xsl
             {
                 case 0:
                     // This assert depends on the way we are going to represent None
-                    // Debug.Assert(false);
                     sb.Append("none");
                     break;
                 case 1:

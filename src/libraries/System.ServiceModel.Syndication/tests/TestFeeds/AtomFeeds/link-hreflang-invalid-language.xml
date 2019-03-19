@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  link with a hreflang attribute that is not a language tag produces an error
 Expect:       InvalidLanguage{element:link,parent:entry}

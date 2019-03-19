@@ -1391,7 +1391,7 @@ namespace System.CodeDom.Compiler
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.InvalidPrimitiveType, e.Value.GetType().ToString()));
+                throw new ArgumentException(SR.Format(SR.InvalidPrimitiveType, e.Value.GetType()));
             }
         }
 

@@ -2448,7 +2448,7 @@ namespace System.Xml
                 switch (_coreReader.NodeType)
                 {
                     case XmlNodeType.Element:
-                        Debug.Assert(false); //Should not happen as the caching reader does not cache elements in simple content
+                        Debug.Fail("Should not happen as the caching reader does not cache elements in simple content");
                         break;
 
                     case XmlNodeType.Text:
@@ -2501,7 +2501,7 @@ namespace System.Xml
                         switch (_coreReader.NodeType)
                         {
                             case XmlNodeType.Element:
-                                Debug.Assert(false); //Should not happen as the caching reader does not cache elements in simple content
+                                Debug.Fail("Should not happen as the caching reader does not cache elements in simple content");
                                 break;
 
                             case XmlNodeType.Text:

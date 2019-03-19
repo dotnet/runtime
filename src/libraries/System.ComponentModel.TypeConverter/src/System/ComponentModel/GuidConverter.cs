@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Design.Serialization;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 
@@ -39,9 +40,9 @@ namespace System.ComponentModel
         {
             if (value is string text)
             {
-                text = text.Trim();
                 return new Guid(text);
             }
+
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -54,18 +55,13 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
             if (destinationType == typeof(InstanceDescriptor) && value is Guid)
             {
                 ConstructorInfo ctor = typeof(Guid).GetConstructor(new Type[] { typeof(string) });
-                if (ctor != null)
-                {
-                    return new InstanceDescriptor(ctor, new object[] { value.ToString() });
-                }
+                Debug.Assert(ctor != null, "Expected constructor to exist.");
+                return new InstanceDescriptor(ctor, new object[] { value.ToString() });
             }
+
             return base.ConvertTo(context, culture, value, destinationType);
         }
     }

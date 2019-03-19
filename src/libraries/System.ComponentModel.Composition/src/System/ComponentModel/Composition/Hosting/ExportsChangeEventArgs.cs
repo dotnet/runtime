@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
-using System.Diagnostics.Contracts;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.Internal;
 using Microsoft.Internal.Collections;
@@ -64,7 +64,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Contract.Ensures(Contract.Result<IEnumerable<ExportDefinition>>() != null);
+                Debug.Assert(_addedExports != null);
 
                 return _addedExports;
             }
@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Contract.Ensures(Contract.Result<IEnumerable<ExportDefinition>>() != null);
+                Debug.Assert(_removedExports != null);
 
                 return _removedExports;
             }

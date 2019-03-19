@@ -210,7 +210,7 @@ namespace System.IO.Ports
             set
             {
                 if (value < MinDataBits || value > MaxDataBits)
-                    throw new ArgumentOutOfRangeException(nameof(DataBits), string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, MinDataBits, MaxDataBits));
+                    throw new ArgumentOutOfRangeException(nameof(DataBits), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, MinDataBits, MaxDataBits));
 
                 if (IsOpen)
                     _internalSerialStream.DataBits = value;
@@ -278,7 +278,7 @@ namespace System.IO.Ports
                 if (!(value is ASCIIEncoding || value is UTF8Encoding || value is UnicodeEncoding || value is UTF32Encoding ||
                       value.CodePage < 50000 || value.CodePage == 54936))
                 {
-                    throw new ArgumentException(string.Format(SR.NotSupportedEncoding, value.WebName), nameof(Encoding));
+                    throw new ArgumentException(SR.Format(SR.NotSupportedEncoding, value.WebName), nameof(Encoding));
                 }
 
                 _encoding = value;
@@ -321,7 +321,7 @@ namespace System.IO.Ports
                 if (value == null)
                     throw new ArgumentNullException(nameof(NewLine));
                 if (value.Length == 0)
-                    throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(NewLine)), nameof(NewLine));
+                    throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(NewLine)), nameof(NewLine));
 
                 _newLine = value;
             }
@@ -371,7 +371,7 @@ namespace System.IO.Ports
                     throw new ArgumentException(SR.PortNameEmpty_String, nameof(PortName));
 
                 if (IsOpen)
-                    throw new InvalidOperationException(string.Format(SR.Cant_be_set_when_open, nameof(PortName)));
+                    throw new InvalidOperationException(SR.Format(SR.Cant_be_set_when_open, nameof(PortName)));
                 _portName = value;
             }
         }
@@ -388,7 +388,7 @@ namespace System.IO.Ports
                     throw new ArgumentOutOfRangeException(nameof(ReadBufferSize));
 
                 if (IsOpen)
-                    throw new InvalidOperationException(string.Format(SR.Cant_be_set_when_open, nameof(ReadBufferSize)));
+                    throw new InvalidOperationException(SR.Format(SR.Cant_be_set_when_open, nameof(ReadBufferSize)));
 
                 _readBufferSize = value;
             }
@@ -486,7 +486,7 @@ namespace System.IO.Ports
                     throw new ArgumentOutOfRangeException(nameof(WriteBufferSize));
 
                 if (IsOpen)
-                    throw new InvalidOperationException(string.Format(SR.Cant_be_set_when_open, nameof(WriteBufferSize)));
+                    throw new InvalidOperationException(SR.Format(SR.Cant_be_set_when_open, nameof(WriteBufferSize)));
 
                 _writeBufferSize = value;
             }
@@ -1012,7 +1012,7 @@ namespace System.IO.Ports
             if (value == null)
                 throw new ArgumentNullException(nameof(value));
             if (value.Length == 0)
-                throw new ArgumentException(string.Format(SR.InvalidNullEmptyArgument, nameof(value)), nameof(value));
+                throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(value)), nameof(value));
 
             int startTicks = Environment.TickCount;
             int numCharsRead;

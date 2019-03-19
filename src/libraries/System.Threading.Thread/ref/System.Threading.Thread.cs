@@ -9,7 +9,7 @@ namespace System
 {
     public sealed partial class LocalDataStoreSlot
     {
-        private LocalDataStoreSlot() { }
+        internal LocalDataStoreSlot() { }
         ~LocalDataStoreSlot() { }
     }
 }
@@ -23,7 +23,7 @@ namespace System.Threading
     }
     public sealed partial class CompressedStack : System.Runtime.Serialization.ISerializable
     {
-        private CompressedStack() { }
+        internal CompressedStack() { }
         public static System.Threading.CompressedStack Capture() { throw null; }
         public System.Threading.CompressedStack CreateCopy() { throw null; }
         public static System.Threading.CompressedStack GetCompressedStack() { throw null; }
@@ -131,7 +131,7 @@ namespace System.Threading
     }
     public sealed partial class ThreadAbortException : System.SystemException
     {
-        private ThreadAbortException() { }
+        internal ThreadAbortException() { }
         public object ExceptionState { get { throw null; } }
     }
     public partial class ThreadExceptionEventArgs : System.EventArgs
@@ -143,9 +143,9 @@ namespace System.Threading
     public partial class ThreadInterruptedException : System.SystemException
     {
         public ThreadInterruptedException() { }
+        protected ThreadInterruptedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ThreadInterruptedException(string message) { }
         public ThreadInterruptedException(string message, System.Exception innerException) { }
-        protected ThreadInterruptedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public enum ThreadPriority
     {
@@ -177,8 +177,8 @@ namespace System.Threading
     public partial class ThreadStateException : System.SystemException
     {
         public ThreadStateException() { }
+        protected ThreadStateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public ThreadStateException(string message) { }
         public ThreadStateException(string message, System.Exception innerException) { }
-        protected ThreadStateException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

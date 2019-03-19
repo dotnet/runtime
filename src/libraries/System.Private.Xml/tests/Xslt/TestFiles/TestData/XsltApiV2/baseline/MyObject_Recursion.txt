@@ -1,2 +1,1 @@
-<?xml version="1.0" encoding="utf-8"?>
 <result xmlns:myObj="urn:my-object">Recursive Function Returning the factorial of five:120</result>

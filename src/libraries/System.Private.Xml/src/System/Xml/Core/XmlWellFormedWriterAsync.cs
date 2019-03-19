@@ -1433,7 +1433,7 @@ namespace System.Xml
 
 
                     default:
-                        Debug.Assert(false, "We should not get to this point.");
+                        Debug.Fail("We should not get to this point.");
                         break;
                 }
             }

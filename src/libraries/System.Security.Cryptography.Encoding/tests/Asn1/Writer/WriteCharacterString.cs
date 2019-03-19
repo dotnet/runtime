@@ -494,5 +494,55 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Assert.Throws<EncoderFallbackException>(() => WriteSpan(writer, input.AsSpan()));
             }
         }
+
+        protected void WriteAfterDispose_Span(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteNull();
+                }
+
+                writer.Dispose();
+
+                string input = "1";
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => WriteSpan(writer, input.AsSpan()));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => WriteSpan(writer, Asn1Tag.Boolean, input.AsSpan()));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => WriteSpan(writer, new Asn1Tag(TagClass.Application, 0), input.AsSpan()));
+            }
+        }
+
+        protected void WriteAfterDispose_String(bool empty)
+        {
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                if (!empty)
+                {
+                    writer.WriteNull();
+                }
+
+                writer.Dispose();
+
+                string input = "1";
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => WriteString(writer, input));
+
+                AssertExtensions.Throws<ArgumentException>(
+                    "tag",
+                    () => WriteString(writer, Asn1Tag.Boolean, input));
+
+                Assert.Throws<ObjectDisposedException>(
+                    () => WriteString(writer, new Asn1Tag(TagClass.Application, 0), input));
+            }
+        }
     }
 }

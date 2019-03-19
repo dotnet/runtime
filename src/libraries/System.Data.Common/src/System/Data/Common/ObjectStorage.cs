@@ -546,7 +546,7 @@ namespace System.Data.Common
         /// </summary>
         /// <param name="type">type to test for IDynamicMetaObjectProvider</param>
         /// <exception cref="InvalidOperationException">DataSet will not serialize types that implement IDynamicMetaObjectProvider but do not also implement IXmlSerializable</exception>
-        /// <remarks>IDynamicMetaObjectProvider was introduced in .Net Framework V4.0 into System.Core</remarks>
+        /// <remarks>IDynamicMetaObjectProvider was introduced in .NET Framework V4.0 into System.Core</remarks>
         internal static void VerifyIDynamicMetaObjectProvider(Type type)
         {
             if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(type) &&
