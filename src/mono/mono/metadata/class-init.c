@@ -3142,6 +3142,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 		// Loop on all interface methods...
 		int mcount = mono_class_get_method_count (ic);
 		for (im_index = 0; im_index < mcount; im_index++) {
+			gboolean foundOverrideInClassOrParent = FALSE;
 			MonoMethod *im = ic->methods [im_index];
 			int im_slot = ic_offset + im->slot;
 			MonoMethod *override_im = (override_map != NULL) ? (MonoMethod *)g_hash_table_lookup (override_map, im) : NULL;
@@ -3151,61 +3152,64 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 
 			TRACE_INTERFACE_VTABLE (printf ("\tchecking iface method %s\n", mono_method_full_name (im,1)));
 
-			// If there is an explicit implementation, just use it right away,
-			// otherwise look for a matching method
-			if (override_im == NULL) {
-				int cm_index;
-				MonoMethod *cm;
+			int cm_index;
+			MonoMethod *cm;
 
-				// First look for a suitable method among the class methods
-				for (l = virt_methods; l; l = l->next) {
-					cm = (MonoMethod *)l->data;
-					TRACE_INTERFACE_VTABLE (printf ("    For slot %d ('%s'.'%s':'%s'), trying method '%s'.'%s':'%s'... [EXPLICIT IMPLEMENTATION = %d][SLOT IS NULL = %d]", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL)));
-					if (check_interface_method_override (klass, im, cm, TRUE, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL))) {
-						TRACE_INTERFACE_VTABLE (printf ("[check ok]: ASSIGNING"));
+			// First look for a suitable method among the class methods
+			for (l = virt_methods; l; l = l->next) {
+				cm = (MonoMethod *)l->data;
+				TRACE_INTERFACE_VTABLE (printf ("    For slot %d ('%s'.'%s':'%s'), trying method '%s'.'%s':'%s'... [EXPLICIT IMPLEMENTATION = %d][SLOT IS NULL = %d]", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL)));
+				if (check_interface_method_override (klass, im, cm, TRUE, interface_is_explicitly_implemented_by_class, (vtable [im_slot] == NULL))) {
+					TRACE_INTERFACE_VTABLE (printf ("[check ok]: ASSIGNING"));
+					vtable [im_slot] = cm;
+					foundOverrideInClassOrParent = TRUE;
+					/* Why do we need this? */
+					if (cm->slot < 0) {
+						cm->slot = im_slot;
+					}
+					if (conflict_map)
+						g_hash_table_remove(conflict_map, im);
+				}
+				TRACE_INTERFACE_VTABLE (printf ("\n"));
+				if (mono_class_has_failure (klass))  /*Might be set by check_interface_method_override*/
+					goto fail;
+			}
+			
+			// If the slot is still empty, look in all the inherited virtual methods...
+			if ((vtable [im_slot] == NULL) && klass->parent != NULL) {
+				MonoClass *parent = klass->parent;
+				// Reverse order, so that last added methods are preferred
+				for (cm_index = parent->vtable_size - 1; cm_index >= 0; cm_index--) {
+					cm = parent->vtable [cm_index];
+					
+					TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("    For slot %d ('%s'.'%s':'%s'), trying (ancestor) method '%s'.'%s':'%s'... ", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name));
+					if ((cm != NULL) && check_interface_method_override (klass, im, cm, FALSE, FALSE, TRUE)) {
+						TRACE_INTERFACE_VTABLE (printf ("[everything ok]: ASSIGNING"));
 						vtable [im_slot] = cm;
+						foundOverrideInClassOrParent = TRUE;
 						/* Why do we need this? */
 						if (cm->slot < 0) {
 							cm->slot = im_slot;
 						}
+						if (conflict_map)
+							g_hash_table_remove(conflict_map, im);
+						break;
 					}
 					TRACE_INTERFACE_VTABLE (printf ("\n"));
 					if (mono_class_has_failure (klass))  /*Might be set by check_interface_method_override*/
 						goto fail;
 				}
-				
-				// If the slot is still empty, look in all the inherited virtual methods...
-				if ((vtable [im_slot] == NULL) && klass->parent != NULL) {
-					MonoClass *parent = klass->parent;
-					// Reverse order, so that last added methods are preferred
-					for (cm_index = parent->vtable_size - 1; cm_index >= 0; cm_index--) {
-						MonoMethod *cm = parent->vtable [cm_index];
-						
-						TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("    For slot %d ('%s'.'%s':'%s'), trying (ancestor) method '%s'.'%s':'%s'... ", im_slot, ic->name_space, ic->name, im->name, cm->klass->name_space, cm->klass->name, cm->name));
-						if ((cm != NULL) && check_interface_method_override (klass, im, cm, FALSE, FALSE, TRUE)) {
-							TRACE_INTERFACE_VTABLE (printf ("[everything ok]: ASSIGNING"));
-							vtable [im_slot] = cm;
-							/* Why do we need this? */
-							if (cm->slot < 0) {
-								cm->slot = im_slot;
-							}
-							break;
-						}
-						if (mono_class_has_failure (klass)) /*Might be set by check_interface_method_override*/
-							goto fail;
-						TRACE_INTERFACE_VTABLE ((cm != NULL) && printf ("\n"));
-					}
-				}
-
-				if (vtable [im_slot] == NULL) {
-					if (!(im->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
-						TRACE_INTERFACE_VTABLE (printf ("    Using default iface method %s.\n", mono_method_full_name (im, 1)));
-						vtable [im_slot] = im;
-					}
-				}
-			} else {
-				g_assert (vtable [im_slot] == override_im);
 			}
+
+			if (vtable [im_slot] == NULL) {
+				if (!(im->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+					TRACE_INTERFACE_VTABLE (printf ("    Using default iface method %s.\n", mono_method_full_name (im, 1)));
+					vtable [im_slot] = im;
+				}
+			}
+			
+			if (override_im != NULL && !foundOverrideInClassOrParent)
+				g_assert (vtable [im_slot] == override_im);
 		}
 	}
 	
