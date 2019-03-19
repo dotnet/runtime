@@ -9,38 +9,43 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoMonthDayPattern
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
-        public void LongDayPattern_InvariantInfo()
+        public void LongDayPattern_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("MMMM dd", DateTimeFormatInfo.InvariantInfo.MonthDayPattern);
         }
 
-        public static IEnumerable<object[]> MonthDayPattern_TestData()
+        public static IEnumerable<object[]> MonthDayPattern_Set_TestData()
         {
+            yield return new object[] { string.Empty };
+            yield return new object[] { "garbage" };
             yield return new object[] { "MMMM" };
             yield return new object[] { "MMM dd" };
             yield return new object[] { "M" };
             yield return new object[] { "dd MMMM" };
-            yield return new object[] { s_randomDataGenerator.GetString(-55, false, 1, 256) };
             yield return new object[] { "MMMM dd" };
             yield return new object[] { "m" };
         }
 
         [Theory]
-        [MemberData(nameof(MonthDayPattern_TestData))]
-        public void MonthDayPattern_Set(string newMonthDayPattern)
+        [MemberData(nameof(MonthDayPattern_Set_TestData))]
+        public void MonthDayPattern_Set_GetReturnsExpected(string value)
         {
             var format = new DateTimeFormatInfo();
-            format.MonthDayPattern = newMonthDayPattern;
-            Assert.Equal(newMonthDayPattern, format.MonthDayPattern);
+            format.MonthDayPattern = value;
+            Assert.Equal(value, format.MonthDayPattern);
         }
 
         [Fact]
-        public void MonthDayPattern_Set_Invalid()
+        public void MonthDayPattern_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().MonthDayPattern = null); // Value is null
-            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.MonthDayPattern = "MMMM dd"); // DateTimeFormatInfo.InvariantInfo is read only
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.MonthDayPattern = null);
+        }
+
+        [Fact]
+        public void MonthDayPattern_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.MonthDayPattern = "MMMM dd");
         }
     }
 }
