@@ -944,7 +944,7 @@ mono_thread_abort (MonoObject *obj)
 
 	if ((mono_runtime_unhandled_exception_policy_get () == MONO_UNHANDLED_POLICY_LEGACY) ||
 			(obj->vtable->klass == mono_defaults.threadabortexception_class) ||
-			((obj->vtable->klass) == mono_class_get_appdomain_unloaded_exception_class () &&
+			((obj->vtable->klass) == mono_class_try_get_appdomain_unloaded_exception_class () &&
 			mono_thread_info_current ()->runtime_thread)) {
 		mono_thread_exit ();
 	} else {
@@ -4400,9 +4400,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 #define JIT_RUNTIME_WORKS
 #ifdef JIT_RUNTIME_WORKS
-#ifndef DISABLE_CLEANUP
 	mono_install_runtime_cleanup ((MonoDomainFunc)mini_cleanup);
-#endif
 	mono_runtime_init_checked (domain, (MonoThreadStartCB)mono_thread_start_cb, mono_thread_attach_cb, error);
 	mono_error_assert_ok (error);
 	mono_thread_attach (domain);
@@ -4767,6 +4765,12 @@ print_jit_stats (void)
 	}
 }
 
+#ifdef DISABLE_CLEANUP
+void
+mini_cleanup (MonoDomain *domain)
+{
+}
+#else
 void
 mini_cleanup (MonoDomain *domain)
 {
@@ -4856,6 +4860,7 @@ mini_cleanup (MonoDomain *domain)
 	mono_w32handle_cleanup ();
 #endif
 }
+#endif
 
 void
 mono_set_defaults (int verbose_level, guint32 opts)

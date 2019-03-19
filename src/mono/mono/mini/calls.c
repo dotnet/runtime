@@ -656,6 +656,7 @@ mini_emit_abs_call (MonoCompile *cfg, MonoJumpInfoType patch_type, gconstpointer
 MonoInst*
 mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used, MonoInst **sp)
 {
+	static MonoMethodSignature *helper_sig_llvmonly_imt_trampoline = NULL;
 	MonoInst *icall_args [16];
 	MonoInst *call_target, *ins, *vtable_ins;
 	int arg_reg, this_reg, vtable_reg;
@@ -685,6 +686,12 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 
 	if (is_iface && mono_class_has_variant_generic_params (cmethod->klass))
 		variant_iface = TRUE;
+
+	if (!helper_sig_llvmonly_imt_trampoline) {
+		MonoMethodSignature *tmp = mono_create_icall_signature ("ptr ptr ptr");
+		mono_memory_barrier ();
+		helper_sig_llvmonly_imt_trampoline = tmp;
+	}
 
 	if (!fsig->generic_param_count && !is_iface && !is_gsharedvt) {
 		/*

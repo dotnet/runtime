@@ -3388,17 +3388,19 @@ encode_type (MonoAotCompile *acfg, MonoType *t, guint8 *buf, guint8 **endbuf)
 	guint8 *p = buf;
 
 	if (t->has_cmods) {
-		MonoCustomModContainer *cm = mono_type_get_cmods (t);
+		int count = mono_type_custom_modifier_count (t);
 
 		*p = MONO_TYPE_CMOD_REQD;
 		++p;
 
-		encode_value (cm->count, p, &p);
-		int iindex = get_image_index (acfg, cm->image);
-		encode_value (iindex, p, &p);
-		for (int i = 0; i < cm->count; ++i) {
-			encode_value (cm->modifiers [i].required, p, &p);
-			encode_value (cm->modifiers [i].token, p, &p);
+		encode_value (count, p, &p);
+		for (int i = 0; i < count; ++i) {
+			ERROR_DECL (error);
+			gboolean required;
+			MonoType *cmod_type = mono_type_get_custom_modifier (t, i, &required, error);
+			mono_error_assert_ok (error);
+			encode_value (required, p, &p);
+			encode_type (acfg, cmod_type, p, &p);
 		}
 	}
 
@@ -4830,7 +4832,9 @@ add_wrappers (MonoAotCompile *acfg)
 					g_assert (!strcmp (name, "ExportSymbol"));
 
 					/* load_cattr_value (), string case */
-					g_assert (*named != (char)0xff);
+MONO_DISABLE_WARNING (4310) // cast truncates constant value
+					g_assert (*named != (char)0xFF);
+MONO_RESTORE_WARNING
 					slen = mono_metadata_decode_value (named, &named);
 					export_name = (char *)g_malloc (slen + 1);
 					memcpy (export_name, named, slen);

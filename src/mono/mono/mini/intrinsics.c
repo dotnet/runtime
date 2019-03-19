@@ -425,6 +425,16 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			ins->flags |= MONO_INST_UNALIGNED;
 			return ins;
 		}
+	} else if (!strcmp (cmethod->name, "ByteOffset")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		int dreg = alloc_preg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_PSUB, dreg, args [1]->dreg, args [0]->dreg);
+		ins->type = STACK_PTR;
+		return ins;
 	}
 
 	return NULL;
@@ -450,6 +460,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		int dreg = alloc_preg (cfg);
 		EMIT_NEW_LOAD_MEMBASE (cfg, ins, OP_LOAD_MEMBASE, dreg, args [0]->dreg, 0);
 		return ins;
+	} else if (in_corlib && cmethod->klass == mono_defaults.object_class) {
+		if (!strcmp (cmethod->name, "GetRawData")) {
+			int dreg = alloc_preg (cfg);
+			EMIT_NEW_BIALU_IMM (cfg, ins, OP_PADD_IMM, dreg, args [0]->dreg, MONO_ABI_SIZEOF (MonoObject));
+			return ins;
+		}
 	}
 
 	if (!(cfg->opt & MONO_OPT_INTRINS))
@@ -641,6 +657,23 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				EMIT_NEW_BIALU_IMM (cfg, ins, OP_ISUB_IMM, dreg, info->dreg, 1);
 			}
 
+			return ins;
+		} else if (strcmp (cmethod->name, "IsBitwiseEquatable") == 0 && fsig->param_count == 0) {
+			MonoGenericContext *ctx = mono_method_get_context (cmethod);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType *arg_type = ctx->method_inst->type_argv [0];
+			MonoType *t;
+			ins = NULL;
+
+			/* Resolve the argument class as possible so we can handle common cases fast */
+			t = mini_get_underlying_type (arg_type);
+
+			if (MONO_TYPE_IS_PRIMITIVE (t) && t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8)
+				EMIT_NEW_ICONST (cfg, ins, 1);
+			else
+				EMIT_NEW_ICONST (cfg, ins, 0);
 			return ins;
 		} else if (!strcmp (cmethod->name, "ObjectHasComponentSize")) {
 			g_assert (fsig->param_count == 1);
@@ -1490,8 +1523,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				!strcmp (cmethod_klass_name_space, "XamCore.ObjCRuntime") &&
 				!strcmp (cmethod_klass_name, "Selector")) ||
 			   ((!strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.iOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.WatchOS") ||
-				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.TVOS") ||
 				 !strcmp (cmethod_klass_image->assembly->aname.name, "Xamarin.Mac")) &&
 				!strcmp (cmethod_klass_name_space, "ObjCRuntime") &&
 				!strcmp (cmethod_klass_name, "Selector"))

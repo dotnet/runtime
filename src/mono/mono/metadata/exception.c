@@ -678,11 +678,19 @@ mono_get_exception_argument (const char *arg, const char *msg)
 	return mono_get_exception_argument_internal ("ArgumentException", arg, msg);
 }
 
+#ifndef ENABLE_NETCORE
 TYPED_HANDLE_DECL (MonoArgumentException);
+#endif
 
 static MonoExceptionHandle
 mono_exception_new_argument_internal (const char *type, const char *arg, const char *msg, MonoError *error)
 {
+#ifdef ENABLE_NETCORE
+	MonoStringHandle arg_str = arg ? mono_string_new_handle (mono_domain_get (), arg, error) : NULL_HANDLE_STRING;
+	MonoStringHandle msg_str = msg ? mono_string_new_handle (mono_domain_get (), msg, error) : NULL_HANDLE_STRING;
+
+	return mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System", type, arg_str, msg_str, error);
+#else
 	MonoExceptionHandle ex = mono_exception_new_by_name_msg (mono_get_corlib (), "System", type, msg, error);
 
 	if (arg && !MONO_HANDLE_IS_NULL (ex)) {
@@ -690,8 +698,8 @@ mono_exception_new_argument_internal (const char *type, const char *arg, const c
 		MonoStringHandle arg_str = mono_string_new_handle (MONO_HANDLE_DOMAIN (ex), arg, error);
 		MONO_HANDLE_SET (argex, param_name, arg_str);
 	}
-
 	return ex;
+#endif
 }
 
 MonoExceptionHandle

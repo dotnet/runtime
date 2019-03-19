@@ -356,7 +356,6 @@ extern gboolean mono_do_x86_stack_align;
 extern gboolean	mono_using_xdebug;
 extern int mini_verbose;
 extern int valgrind_register;
-extern MonoMethodSignature *helper_sig_llvmonly_imt_trampoline;
 
 #define INS_INFO(opcode) (&mini_ins_info [((opcode) - OP_START - 1) * 4])
 

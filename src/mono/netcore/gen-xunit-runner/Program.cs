@@ -17,22 +17,24 @@ using System.IO;
 using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
-using System.CodeDom;
-using System.CodeDom.Compiler;
-using Microsoft.CSharp;
 using Xunit;
 using Xunit.Sdk;
 using Xunit.Abstractions;
 using Xunit.ConsoleClient;
 
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis;
+
 class MsgSink : IMessageSink {
 
-	public bool OnMessage(IMessageSinkMessage message) {
+	public bool OnMessage (IMessageSinkMessage message) {
 		Console.WriteLine (((Xunit.Sdk.DiagnosticMessage)message).Message);
 		return true;
 	}
 
-	public bool OnMessageWithTypes(IMessageSinkMessage message, HashSet<string> messageTypes) {
+	public bool OnMessageWithTypes (IMessageSinkMessage message, HashSet<string> messageTypes) {
 		Console.WriteLine ("m2");
 		return true;
 	}
@@ -40,14 +42,63 @@ class MsgSink : IMessageSink {
 
 class Program
 {
-	static string GetTypeName (Type t) {
+	static int nskipped = 0;
+
+	// The template for the whole progeam
+	const string runner_template = @"
+using System;
+using System.Reflection;
+
+public class RunTests
+{
+    static int nrun = 0;
+    static int nfailed = 0;
+
+    public static void Run()
+    {
+    }
+
+    public static int Main()
+    {
+        Run ();
+        Console.WriteLine(""RUN: "" + nrun);
+        Console.WriteLine(""FAILURES: "" + nfailed);
+        Console.WriteLine(""SKIPPED: "" + #NSKIPPED#);
+        if (nfailed == 0)
+            return 0;
+        else
+            return 1;
+    }
+}
+";
+	// Template for calling 1 testcase instance
+	// Only the code block matters
+	const string case_template = @"
+class Foo { void Run () {
+Console.WriteLine(""#MSG#"");
+nrun = (nrun + 1);
+try {
+unchecked {
+            CALL();
+}
+        }
+        catch (System.Exception ex) {
+            nfailed = (nfailed + 1);
+            Console.WriteLine(""FAILED: "" + ex);
+        }
+}}
+";
+
+	static string GetTypeName (Type t)
+	{
 		if (t.IsNested)
 			return t.DeclaringType.FullName + "." + t.Name;
 		else
 			return t.FullName;
 	}
 
-	static void ComputeTraits (Assembly assembly, XunitTestCase tc) {
+	static void ComputeTraits (Assembly assembly, XunitTestCase tc)
+	{
 		// Traits are not set because of some assembly loading problems i.e. Assembly.Load (new AssemblyName ("Microsoft.DotNet.XUnitExtensions")) fails
 		// So load them manually
 		foreach (ReflectionAttributeInfo attr in ((ReflectionMethodInfo)tc.Method).GetCustomAttributes (typeof (ITraitAttribute))) {
@@ -66,50 +117,148 @@ class Program
 		}
 	}
 
-	class CaseData {
+	class TcCase {
 		public object[] Values;
+		//public MemberDataAttribute MemberData;
+		//public MemberInfo Member;
 	}
 
-	static CodeExpression EncodeValue (object val)
+	static ExpressionSyntax EncodeValue (object val, Type expectedType)
 	{
-		if (val is int || val is long || val is uint || val is ulong || val is byte || val is sbyte || val is short || val is ushort || val is bool || val is string || val is char || val is float || val is double)
-			return new CodePrimitiveExpression (val);
-		else if (val is Type)
-			return new CodeTypeOfExpression ((Type)val);
-		else if (val is Enum) {
-            TypeCode typeCode = Convert.GetTypeCode (val);
-			object o;
-			if (typeCode == TypeCode.UInt64)
-				o = UInt64.Parse (((Enum)val).ToString ("D"));
-			else
-				o = Int64.Parse (((Enum)val).ToString ("D"));
-			return new CodeCastExpression (new CodeTypeReference (val.GetType ()), new CodePrimitiveExpression (o));
-		} else if (val is null) {
-			return new CodePrimitiveExpression (null);
-		} else if (val is Array) {
-			var arr = (IEnumerable)val;
-			var arr_expr = new CodeArrayCreateExpression (new CodeTypeReference (val.GetType ()), new CodeExpression [] {});
-			foreach (var v in arr)
-				arr_expr.Initializers.Add (EncodeValue (v));
-			return arr_expr;
-		} else {
-			throw new Exception ("Unable to emit inline data: " + val.GetType () + " " + val);
+		ExpressionSyntax result = null;
+
+		if (val == null)
+			return LiteralExpression (SyntaxKind.NullLiteralExpression);
+
+		if (val is Enum) {
+			TypeCode typeCode = Convert.GetTypeCode (val);
+			ExpressionSyntax lit;
+
+			long l = 0;
+			ulong ul = 0;
+			if (typeCode == TypeCode.UInt64) {
+				ul = UInt64.Parse (((Enum)val).ToString ("D"));
+				lit = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal (ul));
+			} else {
+				l = Int64.Parse (((Enum)val).ToString ("D"));
+				if (l < 0)
+					//lit = ParenthesizedExpression (PrefixUnaryExpression (SyntaxKind.UnaryMinusExpression, LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal (l))));
+					lit = CastExpression (PredefinedType (Token (SyntaxKind.LongKeyword)), LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((ulong)l)));
+				else
+					lit = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal (l));
+			}
+			result = CastExpression (IdentifierName (GetTypeName (val.GetType ())), lit);
+			return result;
 		}
+
+		if (val is Type) {
+			Type t = (Type)val;
+			if (t.IsGenericType)
+				return null;
+			return TypeOfExpression (IdentifierName (GetTypeName ((Type)val)));
+		}
+
+		switch (Type.GetTypeCode (val.GetType ())) {
+		case TypeCode.Boolean:
+			if ((bool)val)
+				result = LiteralExpression (SyntaxKind.TrueLiteralExpression);
+			else
+				result = LiteralExpression (SyntaxKind.FalseLiteralExpression);
+			break;
+		case TypeCode.Char:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((char)val));
+			break;
+		case TypeCode.SByte:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((sbyte)val));
+			break;
+		case TypeCode.Byte:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((byte)val));
+			break;
+		case TypeCode.Int16:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((short)val));
+			break;
+		case TypeCode.UInt16:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((ushort)val));
+			break;
+		case TypeCode.Int32:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((int)val));
+			break;
+		case TypeCode.UInt32:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((uint)val));
+			break;
+		case TypeCode.Int64:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((long)val));
+			break;
+		case TypeCode.UInt64:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((ulong)val));
+			break;
+		case TypeCode.Single:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((float)val));
+			break;
+		case TypeCode.Double:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((double)val));
+			break;
+		case TypeCode.String:
+			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((string)val));
+			break;
+		}
+
+		if (val is Array) {
+			var arr = (IEnumerable)val;
+
+			var etype = val.GetType ().GetElementType ();
+			var type_node = ArrayType (IdentifierName (etype.FullName))
+                                                    .WithRankSpecifiers(
+                                                        SingletonList<ArrayRankSpecifierSyntax>(
+                                                            ArrayRankSpecifier(
+                                                                SingletonSeparatedList<ExpressionSyntax>(
+																										 OmittedArraySizeExpression()))));
+			var elems = new List<ExpressionSyntax> ();
+			foreach (var elem in arr)
+				elems.Add (EncodeValue (elem, null));
+			result = ArrayCreationExpression (type_node).WithInitializer (InitializerExpression (SyntaxKind.ArrayInitializerExpression, SeparatedList<ExpressionSyntax> (elems.ToArray ())));
+			return result;
+		}
+
+		if (result == null) {
+			Console.WriteLine ("Unhandled value: " + val);
+			return null;
+		}
+
+		if (val != null && expectedType != null && val.GetType () != expectedType && !expectedType.IsGenericParameter)
+			result = CastExpression (IdentifierName (GetTypeName (val.GetType ())), ParenthesizedExpression (result));
+		return result;
 	}
 
 	static int Main (string[] args)
 	{
 		if (args.Length < 3) {
-			Console.WriteLine ("Usage: <outfile> <corefx dir> <test assembly filename> <xunit console options>");
+			Console.WriteLine ("Usage: <out-dir> <corefx dir> <test assembly filename> <xunit console options>");
 			return 1;
 		}
 
-		var outfile_name = args [0];
+		var testAssemblyName = Path.GetFileNameWithoutExtension (args [2]);
+		var testAssemblyFull = Path.GetFullPath (args[2]);
+		var outdir_name = Path.Combine (args [0], testAssemblyName);
 		var sdkdir = args [1] + "/artifacts/bin/runtime/netcoreapp-OSX-Debug-x64";
 		args = args.Skip (2).ToArray ();
+		// Response file support
+		var extra_args = new List<string> ();
+		for (int i = 0; i < args.Length; ++i) {
+			var arg = args [i];
+			if (arg [0] == '@') {
+				foreach (var line in File.ReadAllLines (arg.Substring (1))) {
+					if (line.Length == 0 || line [0] == '#')
+						continue;
+					extra_args.AddRange (line.Split (' '));
+				}
+				args [i] = "";
+			}
+		}
+		args = args.Where (s => s != String.Empty).Concat (extra_args).ToArray ();
 
 		// Despite a lot of effort, couldn't get dotnet to load these assemblies from the sdk dir, so copy them to our binary dir
-		File.Copy ($"{sdkdir}/Microsoft.DotNet.PlatformAbstractions.dll", AppContext.BaseDirectory, true);
+//		File.Copy ($"{sdkdir}/Microsoft.DotNet.PlatformAbstractions.dll", AppContext.BaseDirectory, true);
 		File.Copy ($"{sdkdir}/CoreFx.Private.TestUtilities.dll", AppContext.BaseDirectory, true);
 		File.Copy ($"{sdkdir}/Microsoft.DotNet.XUnitExtensions.dll", AppContext.BaseDirectory, true);
 
@@ -131,12 +280,12 @@ class Program
 			ComputeTraits (assembly, tc);
 
 		// Compute testcase data
-		var tc_data = new Dictionary<XunitTestCase, List<CaseData>> ();
+		var tc_data = new Dictionary<XunitTestCase, List<TcCase>> ();
 		foreach (XunitTestCase tc in sink.TestCases) {
 			var m = ((ReflectionMethodInfo)tc.Method).MethodInfo;
 			var t = m.ReflectedType;
 
-			var cases = new List<CaseData> ();
+			var cases = new List<TcCase> ();
 
 			if (m.GetParameters ().Length > 0) {
 				foreach (var cattr in m.GetCustomAttributes (true))
@@ -162,47 +311,34 @@ class Program
 							}
 						}
 						if (!unhandled)
-							cases.Add (new CaseData () { Values = data });
+							cases.Add (new TcCase () { Values = data });
 					}
 			} else {
-				cases.Add (new CaseData ());
+				cases.Add (new TcCase ());
 			}
 			tc_data [tc] = cases;
 		}
 
-#if FALSE
-		//w.WriteLine ($"\t\ttypeof({typename}).GetMethod (\"{m.Name}\", BindingFlags.Static|BindingFlags.NonPublic).Invoke(null, null);");
-		//w.WriteLine ($"\t\tusing (var o = new {typename} ()) {{");
-		//if (cmdline.StopOnFail)
-		//w.WriteLine ("\t\tif (nfailed > 0) return 1;");
-		//w.WriteLine ("\t\tConsole.WriteLine (\"RUN: \" + nrun + \", FAILED: \" + nfailed);");
-#endif
-
-		var cu = new CodeCompileUnit ();
-		var ns = new CodeNamespace ("");
-		cu.Namespaces.Add (ns);
-		ns.Imports.Add (new CodeNamespaceImport ("System"));
-		ns.Imports.Add (new CodeNamespaceImport ("System.Reflection"));
-		var code_class = new CodeTypeDeclaration ("RunTests");
-		ns.Types.Add (code_class);
-
-		var code_main = new CodeEntryPointMethod ();
-		code_main.ReturnType = new CodeTypeReference ("System.Int32");
-		code_class.Members.Add (code_main);
-
-		var statements = code_main.Statements;
-		statements.Add (new CodeVariableDeclarationStatement (typeof (int), "nrun", new CodePrimitiveExpression (0)));
-		statements.Add (new CodeVariableDeclarationStatement (typeof (int), "nfailed", new CodePrimitiveExpression (0)));
-
 		var filters = cmdline.Project.Filters;
+
+		//
+		// Generate code using the roslyn syntax apis
+		// Creating syntax nodes one-by-one is very cumbersome, so use
+		// CSharpSyntaxTree.ParseText () to create them and ReplaceNode () to insert them into syntax trees.
+		//
+		var blocks = new List<BlockSyntax> ();
 		foreach (XunitTestCase tc in sink.TestCases) {
 			var m = ((ReflectionMethodInfo)tc.Method).MethodInfo;
 			//Console.WriteLine ("" + m.ReflectedType + " " + m + " " + (tc.TestMethodArguments == null));
 			var t = m.ReflectedType;
-			if (t.IsGenericType)
+			if (t.IsGenericType) {
+				nskipped ++;
 				continue;
-			if (!filters.Filter (tc))
+			}
+			if (!filters.Filter (tc)) {
+				nskipped ++;
 				continue;
+			}
 
 			var cases = tc_data [tc];
 
@@ -210,54 +346,88 @@ class Program
 			foreach (var test in cases) {
 				string typename = GetTypeName (t);
 				string msg;
+
 				if (cases.Count > 1)
-					msg = $"{typename}:{m.Name}[{caseindex}]...";
+					msg = $"{typename}.{m.Name}[{caseindex}] ...";
 				else
-					msg = $"{typename}:{m.Name}...";
+					msg = $"{typename}.{m.Name} ...";
 				caseindex ++;
-				statements.Add (new CodeMethodInvokeExpression (new CodeTypeReferenceExpression ("Console"), "WriteLine", new CodeExpression [] { new CodePrimitiveExpression (msg) }));
-				statements.Add (new CodeAssignStatement (new CodeVariableReferenceExpression ("nrun"), new CodeBinaryOperatorExpression (new CodeVariableReferenceExpression ("nrun"), CodeBinaryOperatorType.Add, new CodePrimitiveExpression (1))));
-				var try1 = new CodeTryCatchFinallyStatement();
-				statements.Add (try1);
-				if (!m.IsStatic) {
-					// FIXME: Disposable
-					try1.TryStatements.Add (new CodeVariableDeclarationStatement ("var", "o", new CodeObjectCreateExpression (t, new CodeExpression[] {})));
-				}
-				if (!m.IsPublic) {
-					// FIXME:
-				} else {
-					CodeMethodInvokeExpression call;
 
-					if (m.IsStatic)
-						call = new CodeMethodInvokeExpression (new CodeTypeReferenceExpression (t), m.Name, new CodeExpression [] {});
-					else
-						call = new CodeMethodInvokeExpression (new CodeVariableReferenceExpression ("o"), m.Name, new CodeExpression [] {});
-
-					if (test.Values != null) {
-						foreach (var val in test.Values)
-							call.Parameters.Add (EncodeValue (val));
-					}
-					try1.TryStatements.Add (call);
-				}
-				var catch1 = new CodeCatchClause ("ex", new CodeTypeReference ("System.Exception"));
-				catch1.Statements.Add (new CodeAssignStatement (new CodeVariableReferenceExpression ("nfailed"), new CodeBinaryOperatorExpression (new CodeVariableReferenceExpression ("nfailed"), CodeBinaryOperatorType.Add, new CodePrimitiveExpression (1))));
-				catch1.Statements.Add (new CodeMethodInvokeExpression (new CodeTypeReferenceExpression ("Console"), "WriteLine", new CodeExpression [] {
-							new CodeBinaryOperatorExpression (
-															  new CodePrimitiveExpression ("FAILED: "),
-															  CodeBinaryOperatorType.Add,
-															  new CodeVariableReferenceExpression ("ex"))
-						}));
-				try1.CatchClauses.Add (catch1);
+				var block = ParseText<BlockSyntax> (case_template.Replace ("#MSG#", msg));
+				// Obtain the node for the CALL () line
+				var try_body_node = block.DescendantNodes ().OfType<ExpressionStatementSyntax> ().Skip (2).First ().Parent;
+				// Replace with the generated call code
+				var stmts = GenerateTcCall (t, test, m);
+				blocks.Add (block.ReplaceNode (try_body_node, Block (stmts.ToArray ())));
 			}
 		}
 
-		//w.WriteLine ("\t\tConsole.WriteLine (\"RUN: \" + nrun + \", FAILED: \" + nfailed);");
-		statements.Add (new CodeMethodReturnStatement (new CodePrimitiveExpression (0)));
+		var cu = CSharpSyntaxTree.ParseText (runner_template.Replace ("#NSKIPPED#", nskipped.ToString ())).GetRoot ();
 
-		var provider = new CSharpCodeProvider ();
-		using (var w2 = File.CreateText (outfile_name)) {
-			provider.GenerateCodeFromCompileUnit (cu, w2, new CodeGeneratorOptions ());
-		}
+		// Replace the body of the Run () method with the generated body
+		var run_body = cu.DescendantNodes ().OfType<MethodDeclarationSyntax> ().First ().DescendantNodes ().OfType<BlockSyntax> ().First ();
+		cu = cu.ReplaceNode (run_body, Block (blocks.ToArray ()));
+
+		// Create runner.cs
+		Directory.CreateDirectory (outdir_name);
+		var outfile_name = Path.Combine (outdir_name, "runner.cs");
+		File.WriteAllText (outfile_name, cu.NormalizeWhitespace ().ToString ());
+
+		// Generate csproj file
+		var csproj_template = File.ReadAllText ("gen-test.csproj.template");
+		csproj_template = csproj_template.Replace ("#XUNIT_LOCATION#", sdkdir);
+		csproj_template = csproj_template.Replace ("#TEST_ASSEMBLY#", testAssemblyName);
+		csproj_template = csproj_template.Replace ("#TEST_ASSEMBLY_LOCATION#", testAssemblyFull);
+		
+		File.WriteAllText (Path.Combine (outdir_name, testAssemblyName + "-runner.csproj"), csproj_template);
+
 		return 0;
+	}
+
+	static TSyntax ParseText<TSyntax> (string code)
+	{
+		return CSharpSyntaxTree.ParseText (code).GetRoot().DescendantNodes().OfType<TSyntax> ().First ();
+    }
+
+	static List<StatementSyntax> GenerateTcCall (Type t, TcCase test, MethodInfo m) {
+		var stmts = new List<StatementSyntax> ();
+		if (!m.IsStatic) {
+			var newobj_template = @"class Foo { void Run () { var o = new #CLASS# (); }}";
+
+			// FIXME: Disposable
+			stmts.Add (ParseText<LocalDeclarationStatementSyntax> (newobj_template.Replace ("#CLASS#", t.FullName)));
+		}
+		if (!m.IsPublic) {
+			// FIXME:
+			nskipped ++;
+			return stmts;
+		}
+		string callstr;
+
+		if (m.IsStatic) {
+			var tname = GetTypeName (t);
+			callstr = $"class Foo {{ void Run () {{ {tname}.{m.Name} (); }}";
+		} else {
+			callstr = $"class Foo {{ void Run () {{ o.{m.Name} (); }}";
+		}
+		var node = ParseText<ExpressionStatementSyntax> (callstr);
+
+		if (test.Values != null) {
+			var parameters = m.GetParameters ();
+			var arg_nodes = new List<ArgumentSyntax> ();
+			for (var index = 0; index < test.Values.Length; index++) {
+				var val_node = EncodeValue (test.Values [index], parameters [index].ParameterType);
+				if (val_node == null) {
+					nskipped ++;
+					return stmts;
+				}
+				arg_nodes.Add (Argument (val_node));
+			}
+			var args_node = node.DescendantNodes ().OfType<ArgumentListSyntax> ().First ();
+			node = node.ReplaceNode (args_node, ArgumentList (SeparatedList (arg_nodes.ToArray ())));
+		}
+
+		stmts.Add (node);
+		return stmts;
 	}
 }

@@ -264,15 +264,16 @@ mono_state_alloc_mem (MonoStateMem *mem, long tag, size_t size)
 	mem->size = size;
 
 	mem->handle = g_open (name, O_RDWR | O_CREAT | O_EXCL, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
-	if (mem->handle < 1)
-		return FALSE;
+	if (mem->handle < 1) {
+		mem->mem = (gpointer *) mmap (0, mem->size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS, -1, 0);
+	} else {
+		lseek (mem->handle, mem->size, SEEK_SET);
+		g_write (mem->handle, "", 1);
 
-	lseek (mem->handle, mem->size, SEEK_SET);
-	g_write (mem->handle, "", 1);
-
-	mem->mem = (gpointer *) mmap (0, mem->size, PROT_READ | PROT_WRITE, MAP_SHARED, mem->handle, 0);
+		mem->mem = (gpointer *) mmap (0, mem->size, PROT_READ | PROT_WRITE, MAP_SHARED, mem->handle, 0);
+	}
 	if (mem->mem == GINT_TO_POINTER (-1))
-		g_assert_not_reached ();
+		return FALSE;
 
 	return TRUE;
 }
