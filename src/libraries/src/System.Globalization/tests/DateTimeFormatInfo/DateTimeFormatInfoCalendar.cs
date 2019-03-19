@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
     public class DateTimeFormatInfoCalendar
     {
         [Fact]
-        public void Calendar_InvariantInfo()
+        public void Calendar_GetInvariantInfo_ReturnsExpected()
         {
             Calendar calendar = DateTimeFormatInfo.InvariantInfo.Calendar;
             Assert.IsType<GregorianCalendar>(calendar);
@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void Calendar_Set()
+        public void Calendar_Set_GetReturnsExpected()
         {
             Calendar newCalendar = new GregorianCalendar(GregorianCalendarTypes.Localized);
             var format = new DateTimeFormatInfo();
@@ -29,11 +29,23 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void Calendar_Set_Invalid()
+        public void Calendar_SetNullValue_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().Calendar = null); // Value is null
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().Calendar = new ThaiBuddhistCalendar()); // Value is invalid
-            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.Calendar = new GregorianCalendar()); // DateTimeFormatInfo.InvariantInfo is read only
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.Calendar = null);
+        }
+
+        [Fact]
+        public void Calendar_SetInvalidValue_ThrowsArgumentOutOfRangeException()
+        {
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => format.Calendar = new ThaiBuddhistCalendar());
+        }
+
+        [Fact]
+        public void Calendar_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.Calendar = new GregorianCalendar());
         }
     }
 }
