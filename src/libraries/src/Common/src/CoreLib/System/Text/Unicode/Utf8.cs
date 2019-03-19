@@ -48,7 +48,7 @@ namespace System.Text.Unicode
 
             while (!source.IsEmpty)
             {
-                status = Rune.DecodeUtf16(source, out Rune firstScalarValue, out int charsConsumed);
+                status = Rune.DecodeFromUtf16(source, out Rune firstScalarValue, out int charsConsumed);
 
                 switch (status)
                 {
@@ -86,7 +86,7 @@ namespace System.Text.Unicode
                         // Do so now, and only terminate the loop if we ran out of space
                         // in the destination buffer.
 
-                        if (firstScalarValue.TryEncodeToUtf8Bytes(destination, out int bytesWritten))
+                        if (firstScalarValue.TryEncodeToUtf8(destination, out int bytesWritten))
                         {
                             source = source.Slice(charsConsumed); // don't use Rune.Utf8SequenceLength; we may have performed substitution
                             destination = destination.Slice(bytesWritten);
@@ -131,7 +131,7 @@ namespace System.Text.Unicode
 
             while (!source.IsEmpty)
             {
-                status = Rune.DecodeUtf8(source, out Rune firstScalarValue, out int bytesConsumed);
+                status = Rune.DecodeFromUtf8(source, out Rune firstScalarValue, out int bytesConsumed);
 
                 switch (status)
                 {
@@ -169,7 +169,7 @@ namespace System.Text.Unicode
                         // Do so now, and only terminate the loop if we ran out of space
                         // in the destination buffer.
 
-                        if (firstScalarValue.TryEncode(destination, out int charsWritten))
+                        if (firstScalarValue.TryEncodeToUtf16(destination, out int charsWritten))
                         {
                             source = source.Slice(bytesConsumed); // don't use Rune.Utf16SequenceLength; we may have performed substitution
                             destination = destination.Slice(charsWritten);
