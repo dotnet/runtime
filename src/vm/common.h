@@ -75,7 +75,6 @@
 #include <stdlib.h>
 #include <wchar.h>
 #include <objbase.h>
-#include <stddef.h>
 #include <float.h>
 #include <math.h>
 #include <time.h>
@@ -168,6 +167,9 @@ typedef DPTR(class ReJitManager)        PTR_ReJitManager;
 typedef DPTR(struct ReJitInfo)          PTR_ReJitInfo;
 typedef DPTR(struct SharedReJitInfo)    PTR_SharedReJitInfo;
 typedef DPTR(class StringObject)        PTR_StringObject;
+#ifdef FEATURE_UTF8STRING
+typedef DPTR(class Utf8StringObject)    PTR_Utf8StringObject;
+#endif // FEATURE_UTF8STRING
 typedef DPTR(class TypeHandle)          PTR_TypeHandle;
 typedef VPTR(class VirtualCallStubManager) PTR_VirtualCallStubManager;
 typedef VPTR(class VirtualCallStubManagerManager) PTR_VirtualCallStubManagerManager;

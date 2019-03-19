@@ -2994,7 +2994,7 @@ public:
     unsigned lvaFrameSize(FrameLayoutState curState);
 
     // Returns the caller-SP-relative offset for the SP/FP relative offset determined by FP based.
-    int lvaToCallerSPRelativeOffset(int offs, bool isFpBased);
+    int lvaToCallerSPRelativeOffset(int offs, bool isFpBased) const;
 
     // Returns the caller-SP-relative offset for the local variable "varNum."
     int lvaGetCallerSPRelativeOffset(unsigned varNum);
@@ -7088,7 +7088,7 @@ public:
     // the setter on CodeGenContext directly.
 
     __declspec(property(get = getEmitter)) emitter* genEmitter;
-    emitter* getEmitter()
+    emitter* getEmitter() const
     {
         return codeGen->getEmitter();
     }
@@ -8772,9 +8772,9 @@ public:
 
     unsigned compArgSize; // total size of arguments in bytes (including register args (lvIsRegArg))
 
-    unsigned compMapILargNum(unsigned ILargNum); // map accounting for hidden args
-    unsigned compMapILvarNum(unsigned ILvarNum); // map accounting for hidden args
-    unsigned compMap2ILvarNum(unsigned varNum);  // map accounting for hidden args
+    unsigned compMapILargNum(unsigned ILargNum);      // map accounting for hidden args
+    unsigned compMapILvarNum(unsigned ILvarNum);      // map accounting for hidden args
+    unsigned compMap2ILvarNum(unsigned varNum) const; // map accounting for hidden args
 
     //-------------------------------------------------------------------------
 
@@ -8844,7 +8844,7 @@ public:
 #endif // LOOP_HOIST_STATS
 
     bool compIsForImportOnly();
-    bool compIsForInlining();
+    bool compIsForInlining() const;
     bool compDonotInline();
 
 #ifdef DEBUG

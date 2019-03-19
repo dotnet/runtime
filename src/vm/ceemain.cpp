@@ -215,6 +215,7 @@
 #include "perfmap.h"
 #endif
 
+#include "diagnosticserver.h"
 #include "eventpipe.h"
 
 #ifndef FEATURE_PAL
@@ -667,6 +668,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
+        DiagnosticServer::Initialize();
         EventPipe::Initialize();
 #endif // FEATURE_PERFTRACING
 
@@ -1462,6 +1464,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 #ifdef FEATURE_PERFTRACING
     // Shutdown the event pipe.
     EventPipe::Shutdown();
+    DiagnosticServer::Shutdown();
 #endif // FEATURE_PERFTRACING
 
 #if defined(FEATURE_COMINTEROP)

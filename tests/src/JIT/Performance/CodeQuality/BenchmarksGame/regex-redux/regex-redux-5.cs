@@ -29,7 +29,7 @@ namespace BenchmarksGame
     {
         static Regex regex(string re)
         {
-            // Not compiled on .Net Core, hence poor benchmark results.
+            // Not compiled on .NET Core, hence poor benchmark results.
             return new Regex(re, RegexOptions.Compiled);
         }
 

@@ -153,7 +153,7 @@ public:
     // A constructor for code that needs to call it explicitly.
     void Init()
     {
-        this->emitLocation::emitLocation();
+        *this = emitLocation();
     }
 
     void CaptureLocation(emitter* emit);

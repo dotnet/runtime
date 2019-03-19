@@ -7,15 +7,14 @@
 
 #ifdef FEATURE_PERFTRACING
 
-enum class EventPipeEventLevel;
-struct EventPipeProviderConfiguration;
 class EventPipeSessionProviderList;
 class EventPipeSessionProvider;
 
 enum class EventPipeSessionType
 {
     File,
-    Streaming
+    Streaming,
+    IpcStream
 };
 
 class EventPipeSession
@@ -49,10 +48,9 @@ public:
     EventPipeSession(
         EventPipeSessionType sessionType,
         unsigned int circularBufferSizeInMB,
-        EventPipeProviderConfiguration *pProviders,
-        unsigned int numProviders,
-        UINT64 multiFileTraceLengthInSeconds);
-
+        const EventPipeProviderConfiguration *pProviders,
+        uint32_t numProviders,
+        uint64_t multiFileTraceLengthInSeconds);
     ~EventPipeSession();
 
     // Determine if the session is valid or not.  Invalid sessions can be detected before they are enabled.
@@ -111,68 +109,6 @@ public:
 
     // Get the session provider for the specified provider if present.
     EventPipeSessionProvider* GetSessionProvider(EventPipeProvider *pProvider);
-};
-
-class EventPipeSessionProviderList
-{
-
-private:
-
-    // The list of providers.
-    SList<SListElem<EventPipeSessionProvider*>> *m_pProviders;
-
-    // A catch-all provider used when tracing is enabled for all events.
-    EventPipeSessionProvider *m_pCatchAllProvider;
-
-public:
-
-    // Create a new list based on the input.
-    EventPipeSessionProviderList(EventPipeProviderConfiguration *pConfigs, unsigned int numConfigs);
-    ~EventPipeSessionProviderList();
-
-    // Add a new session provider to the list.
-    void AddSessionProvider(EventPipeSessionProvider *pProvider);
-
-    // Get the session provider for the specified provider.
-    // Return NULL if one doesn't exist.
-    EventPipeSessionProvider* GetSessionProvider(EventPipeProvider *pProvider);
-
-    // Returns true if the list is empty.
-    bool IsEmpty() const;
-};
-
-class EventPipeSessionProvider
-{
-private:
-
-    // The provider name.
-    WCHAR *m_pProviderName;
-
-    // The enabled keywords.
-    UINT64 m_keywords;
-
-    // The loging level.
-    EventPipeEventLevel m_loggingLevel;
-
-    // The filter data.
-    WCHAR *m_pFilterData;
-
-public:
-
-    EventPipeSessionProvider(
-        LPCWSTR providerName,
-        UINT64 keywords,
-        EventPipeEventLevel loggingLevel,
-        LPCWSTR filterData);
-    ~EventPipeSessionProvider();
-
-    LPCWSTR GetProviderName() const;
-
-    UINT64 GetKeywords() const;
-
-    EventPipeEventLevel GetLevel() const;
-
-    LPCWSTR GetFilterData() const;
 };
 
 #endif // FEATURE_PERFTRACING

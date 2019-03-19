@@ -19,7 +19,7 @@
      Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
      as well as running the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
      
-     It also breaks building any C# project with dotnet.exe on Windows. The windows version of BuildTools doesn't appear to download the .Net Core
+     It also breaks building any C# project with dotnet.exe on Windows. The windows version of BuildTools doesn't appear to download the .NET Core
      Roslyn NuGet package which has a Csc task supporting OverrideToolHost, but the default BuildTools CSharpCore targets file does specify 
      OverrideToolHost. The result is that building anything in C# when RunningOnCore=true on Windows fails in Csc task with a parameter not supported error.
      

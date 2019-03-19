@@ -977,7 +977,7 @@ Debugger::Debugger()
     //------------------------------------------------------------------------------
     // Metadata data structure version numbers
     //
-    // 1 - initial state of the layouts ( .Net 4.5.2 )
+    // 1 - initial state of the layouts ( .NET Framework 4.5.2 )
     //
     // as data structure layouts change, add a new version number
     // and comment the changes
@@ -11100,7 +11100,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             {
                 // Get the appdomain
                 IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-                ADIndex appDomainIndex = ADIndex(reinterpret_cast<DWORD>(mgr->GetHandleContext(objectHandle)));
+                ADIndex appDomainIndex = ADIndex((DWORD)(SIZE_T)(mgr->GetHandleContext(objectHandle)));
                 pAppDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
 
                 _ASSERTE(pAppDomain != NULL);

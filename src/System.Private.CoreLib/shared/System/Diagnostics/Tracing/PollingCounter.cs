@@ -58,6 +58,7 @@ namespace System.Diagnostics.Tracing
 
                 CounterPayload payload = new CounterPayload();
                 payload.Name = _name;
+                payload.DisplayName = DisplayName ?? "";
                 payload.Count = 1; // NOTE: These dumb-looking statistics is intentional
                 payload.IntervalSec = intervalSec;
                 payload.Mean = value;

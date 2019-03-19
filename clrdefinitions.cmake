@@ -6,6 +6,7 @@ set(PRERELEASE 1)
 
 # Features we're currently flighting, but don't intend to ship in officially supported releases
 if (PRERELEASE)
+  add_definitions(-DFEATURE_UTF8STRING=1)  
   # add_definitions(-DFEATURE_XXX=1)
 endif (PRERELEASE)
 

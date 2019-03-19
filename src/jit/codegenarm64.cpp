@@ -2198,7 +2198,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         {
             regCnt = tree->ExtractTempReg();
         }
-        genSetRegToIcon(regCnt, amount, ((int)amount == amount) ? TYP_INT : TYP_LONG);
+        genSetRegToIcon(regCnt, amount, ((unsigned int)amount == amount) ? TYP_INT : TYP_LONG);
     }
 
     if (compiler->info.compInitMem)
@@ -2484,7 +2484,7 @@ void CodeGen::genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode)
     }
 
     assert(dstAddr->isUsedFromReg());
-    assert(initVal->isUsedFromReg() && !initVal->IsIntegralConst(0) || initVal->IsIntegralConst(0));
+    assert((initVal->isUsedFromReg() && !initVal->IsIntegralConst(0)) || initVal->IsIntegralConst(0));
     assert(size != 0);
     assert(size <= INITBLK_UNROLL_LIMIT);
 
@@ -3695,7 +3695,7 @@ void CodeGen::genCodeForJumpCompare(GenTreeOp* tree)
 // genSPtoFPdelta - return offset from the stack pointer (Initial-SP) to the frame pointer. The frame pointer
 // will point to the saved frame pointer slot (i.e., there will be frame pointer chaining).
 //
-int CodeGenInterface::genSPtoFPdelta()
+int CodeGenInterface::genSPtoFPdelta() const
 {
     assert(isFramePointerUsed());
     int delta = -1; // initialization to illegal value
@@ -3725,7 +3725,7 @@ int CodeGenInterface::genSPtoFPdelta()
 //    Total frame size
 //
 
-int CodeGenInterface::genTotalFrameSize()
+int CodeGenInterface::genTotalFrameSize() const
 {
     // For varargs functions, we home all the incoming register arguments. They are not
     // included in the compCalleeRegsPushed count. This is like prespill on ARM32, but
@@ -3748,7 +3748,7 @@ int CodeGenInterface::genTotalFrameSize()
 //
 // There must be a frame pointer to call this function!
 
-int CodeGenInterface::genCallerSPtoFPdelta()
+int CodeGenInterface::genCallerSPtoFPdelta() const
 {
     assert(isFramePointerUsed());
     int callerSPtoFPdelta;
@@ -3764,7 +3764,7 @@ int CodeGenInterface::genCallerSPtoFPdelta()
 //
 // This number will be negative.
 
-int CodeGenInterface::genCallerSPtoInitialSPdelta()
+int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
     int callerSPtoSPdelta = 0;
 
@@ -3788,7 +3788,7 @@ void CodeGen::SetSaveFpLrWithAllCalleeSavedRegisters(bool value)
 // IsSaveFpLrWithAllCalleeSavedRegisters - Return the value that indicates where FP/LR registers
 // are stored in the prolog.
 //
-bool CodeGen::IsSaveFpLrWithAllCalleeSavedRegisters()
+bool CodeGen::IsSaveFpLrWithAllCalleeSavedRegisters() const
 {
     return genSaveFpLrWithAllCalleeSavedRegisters;
 }

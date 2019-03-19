@@ -3979,7 +3979,7 @@ void GCInfo::gcInfoBlockHdrSave(GcInfoEncoder* gcInfoEncoder, unsigned methodSiz
     {
         // The predicate above is true only if there is an extra generic context parameter, not for
         // the case where the generic context is provided by "this."
-        assert(compiler->info.compTypeCtxtArg != BAD_VAR_NUM);
+        assert((SIZE_T)compiler->info.compTypeCtxtArg != BAD_VAR_NUM);
         GENERIC_CONTEXTPARAM_TYPE ctxtParamType = GENERIC_CONTEXTPARAM_NONE;
         switch (compiler->info.compMethodInfo->options & CORINFO_GENERICS_CTXT_MASK)
         {

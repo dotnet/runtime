@@ -139,7 +139,7 @@ The output is at bin/Product/<BuildOS>.arm.Debug/System.Private.CoreLib.dll.
 ```
     lgs@ubuntu ~/git/coreclr/ $ file ./bin/Product/Linux.arm.Debug/System.Private.CoreLib.dll 
     ./bin/Product/Linux.arm.Debug/System.Private.CoreLib.dll: PE32 executable (DLL) 
-    (console) ARMv7 Thumb Mono/.Net assembly, for MS Windows
+    (console) ARMv7 Thumb Mono/.NET assembly, for MS Windows
 ```
 
 Building coreclr for Linux ARM Emulator
