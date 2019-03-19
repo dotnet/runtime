@@ -27,10 +27,10 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader sigAlgReader = certReader.ReadSequence();
 
             Assert.True(
-                certReader.TryGetPrimitiveBitStringValue(
+                certReader.TryReadPrimitiveBitStringValue(
                     out int unusedBitCount,
                     out ReadOnlyMemory<byte> signature),
-                "certReader.TryGetBitStringBytes");
+                "certReader.TryReadPrimitiveBitStringValue");
 
             Assert.Equal(0, unusedBitCount);
             AssertRefSame(signature, ref bytes[1176], "Signature is a ref to bytes[1176]");
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Equal(2, certVersion);
             Assert.False(versionExplicitWrapper.HasData, "versionExplicitWrapper.HasData");
 
-            ReadOnlyMemory<byte> serialBytes = tbsCertReader.GetIntegerBytes();
+            ReadOnlyMemory<byte> serialBytes = tbsCertReader.ReadIntegerBytes();
             AssertRefSame(serialBytes, ref bytes[15], "Serial number starts at bytes[15]");
 
             AsnReader tbsSigAlgReader = tbsCertReader.ReadSequence();
@@ -60,8 +60,8 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.False(issuerReader.HasData, "issuerReader.HasData");
 
             AsnReader validityReader = tbsCertReader.ReadSequence();
-            Assert.Equal(new DateTimeOffset(2014, 10, 15, 0, 0, 0, TimeSpan.Zero), validityReader.GetUtcTime());
-            Assert.Equal(new DateTimeOffset(2016, 10, 15, 23, 59, 59, TimeSpan.Zero), validityReader.GetUtcTime());
+            Assert.Equal(new DateTimeOffset(2014, 10, 15, 0, 0, 0, TimeSpan.Zero), validityReader.ReadUtcTime());
+            Assert.Equal(new DateTimeOffset(2016, 10, 15, 23, 59, 59, TimeSpan.Zero), validityReader.ReadUtcTime());
             Assert.False(validityReader.HasData, "validityReader.HasData");
 
             AsnReader subjectReader = tbsCertReader.ReadSequence();
@@ -87,10 +87,10 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.False(spkiAlgorithm.HasData, "spkiAlgorithm.HasData");
 
             Assert.True(
-                subjectPublicKeyInfo.TryGetPrimitiveBitStringValue(
+                subjectPublicKeyInfo.TryReadPrimitiveBitStringValue(
                     out unusedBitCount,
                     out ReadOnlyMemory<byte> encodedPublicKey),
-                "subjectPublicKeyInfo.TryGetBitStringBytes");
+                "subjectPublicKeyInfo.TryReadBitStringBytes");
 
             Assert.Equal(0, unusedBitCount);
             AssertRefSame(encodedPublicKey, ref bytes[498], "Encoded public key starts at byte 498");
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader publicKeyReader = new AsnReader(encodedPublicKey, AsnEncodingRules.DER);
             AsnReader rsaPublicKeyReader = publicKeyReader.ReadSequence();
-            AssertRefSame(rsaPublicKeyReader.GetIntegerBytes(), ref bytes[506], "RSA Modulus is at bytes[502]");
+            AssertRefSame(rsaPublicKeyReader.ReadIntegerBytes(), ref bytes[506], "RSA Modulus is at bytes[502]");
             Assert.True(rsaPublicKeyReader.TryReadInt32(out int rsaExponent));
             Assert.Equal(65537, rsaExponent);
             Assert.False(rsaPublicKeyReader.HasData, "rsaPublicKeyReader.HasData");
@@ -111,20 +111,20 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AsnReader sanExtension = extensions.ReadSequence();
             Assert.Equal("2.5.29.17", sanExtension.ReadObjectIdentifierAsString());
-            Assert.True(sanExtension.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> sanExtensionBytes));
+            Assert.True(sanExtension.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> sanExtensionBytes));
             Assert.False(sanExtension.HasData, "sanExtension.HasData");
 
             AsnReader sanExtensionPayload = new AsnReader(sanExtensionBytes, AsnEncodingRules.DER);
             AsnReader sanExtensionValue = sanExtensionPayload.ReadSequence();
             Assert.False(sanExtensionPayload.HasData, "sanExtensionPayload.HasData");
             Asn1Tag dnsName = new Asn1Tag(TagClass.ContextSpecific, 2);
-            Assert.Equal("www.microsoft.com", sanExtensionValue.GetCharacterString(dnsName, UniversalTagNumber.IA5String));
-            Assert.Equal("wwwqa.microsoft.com", sanExtensionValue.GetCharacterString(dnsName, UniversalTagNumber.IA5String));
+            Assert.Equal("www.microsoft.com", sanExtensionValue.ReadCharacterString(dnsName, UniversalTagNumber.IA5String));
+            Assert.Equal("wwwqa.microsoft.com", sanExtensionValue.ReadCharacterString(dnsName, UniversalTagNumber.IA5String));
             Assert.False(sanExtensionValue.HasData, "sanExtensionValue.HasData");
 
             AsnReader basicConstraints = extensions.ReadSequence();
             Assert.Equal("2.5.29.19", basicConstraints.ReadObjectIdentifierAsString());
-            Assert.True(basicConstraints.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> basicConstraintsBytes));
+            Assert.True(basicConstraints.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> basicConstraintsBytes));
 
             AsnReader basicConstraintsPayload = new AsnReader(basicConstraintsBytes, AsnEncodingRules.DER);
             AsnReader basicConstraintsValue = basicConstraintsPayload.ReadSequence();
@@ -134,13 +134,13 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader keyUsageExtension = extensions.ReadSequence();
             Assert.Equal("2.5.29.15", keyUsageExtension.ReadObjectIdentifierAsString());
             Assert.True(keyUsageExtension.ReadBoolean(), "keyUsageExtension.ReadBoolean() (IsCritical)");
-            Assert.True(keyUsageExtension.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> keyUsageBytes));
+            Assert.True(keyUsageExtension.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> keyUsageBytes));
 
             AsnReader keyUsagePayload = new AsnReader(keyUsageBytes, AsnEncodingRules.DER);
 
             Assert.Equal(
                 X509KeyUsageCSharpStyle.DigitalSignature | X509KeyUsageCSharpStyle.KeyEncipherment,
-                keyUsagePayload.GetNamedBitListValue<X509KeyUsageCSharpStyle>());
+                keyUsagePayload.ReadNamedBitListValue<X509KeyUsageCSharpStyle>());
 
             Assert.False(keyUsagePayload.HasData, "keyUsagePayload.HasData");
 
@@ -166,7 +166,7 @@ namespace System.Security.Cryptography.Tests.Asn1
                 Assert.True(extension.ReadBoolean(), $"{oid} is critical");
             }
 
-            Assert.True(extension.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> extensionBytes));
+            Assert.True(extension.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> extensionBytes));
             AssertRefSame(extensionBytes, ref bytes[index], $"{oid} extension value is at byte {index}");
         }
 
@@ -183,10 +183,10 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader attributeTypeAndValue = rdn.ReadSequence();
             Assert.Equal(atvOid, attributeTypeAndValue.ReadObjectIdentifierAsString());
 
-            ReadOnlyMemory<byte> value = attributeTypeAndValue.GetEncodedValue();
+            ReadOnlyMemory<byte> value = attributeTypeAndValue.ReadEncodedValue();
             ReadOnlySpan<byte> valueSpan = value.Span;
 
-            Assert.True(Asn1Tag.TryParse(valueSpan, out Asn1Tag actualTag, out int bytesRead));
+            Assert.True(Asn1Tag.TryDecode(valueSpan, out Asn1Tag actualTag, out int bytesRead));
             Assert.Equal(1, bytesRead);
             Assert.Equal(valueTag, actualTag);
 
@@ -198,7 +198,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             if (stringValue != null)
             {
                 AsnReader valueReader = new AsnReader(value, AsnEncodingRules.DER);
-                Assert.Equal(stringValue, valueReader.GetCharacterString((UniversalTagNumber)valueTag.TagValue));
+                Assert.Equal(stringValue, valueReader.ReadCharacterString((UniversalTagNumber)valueTag.TagValue));
                 Assert.False(valueReader.HasData, "valueReader.HasData");
             }
 

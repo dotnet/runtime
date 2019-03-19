@@ -52,15 +52,16 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetEra_TestData))]
-        public void GetEra(DateTimeFormatInfo format, string eraName, int expected)
+        public void GetEra_Invoke_RetrunsExpected(DateTimeFormatInfo format, string eraName, int expected)
         {
             Assert.Equal(expected, format.GetEra(eraName));
         }
 
         [Fact]
-        public void GetEra_Null_ThrowsArgumentNullException()
+        public void GetEra_NullEraName_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("eraName", () => new DateTimeFormatInfo().GetEra(null)); // Era name is null
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("eraName", () => format.GetEra(null));
         }
     }
 }

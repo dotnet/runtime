@@ -5,7 +5,7 @@
 namespace System.Threading.Channels
 {
     /// <summary>Exception thrown when a channel is used after it's been closed.</summary>
-    public class ChannelClosedException : InvalidOperationException
+    public partial class ChannelClosedException : InvalidOperationException
     {
         /// <summary>Initializes a new instance of the <see cref="ChannelClosedException"/> class.</summary>
         public ChannelClosedException() :

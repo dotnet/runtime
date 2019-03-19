@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{DBB18588-DD89-4F41-9852-484FD4726F0F}</ProjectGuid>
     <AssemblyName>System.Reflection.MetadataLoadContext</AssemblyName>

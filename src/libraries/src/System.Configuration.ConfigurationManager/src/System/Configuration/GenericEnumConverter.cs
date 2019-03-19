@@ -59,7 +59,7 @@ namespace System.Configuration
                 }
                 names.Append(name);
             }
-            return new ArgumentException(string.Format(SR.Invalid_enum_value, names.ToString()));
+            return new ArgumentException(SR.Format(SR.Invalid_enum_value, names));
         }
     }
 }

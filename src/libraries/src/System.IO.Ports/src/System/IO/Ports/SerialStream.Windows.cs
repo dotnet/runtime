@@ -79,7 +79,7 @@ namespace System.IO.Ports
                     else
                     {
                         // otherwise, we can present the bounds on the baud rate for this driver
-                        throw new ArgumentOutOfRangeException(nameof(BaudRate), string.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, _commProp.dwMaxBaud));
+                        throw new ArgumentOutOfRangeException(nameof(BaudRate), SR.Format(SR.ArgumentOutOfRange_Bounds_Lower_Upper, 0, _commProp.dwMaxBaud));
                     }
                 }
                 // Set only if it's different.  Rollback to previous values if setting fails.
@@ -608,7 +608,7 @@ namespace System.IO.Ports
                 }
 
                 if (_commProp.dwMaxBaud != 0 && baudRate > _commProp.dwMaxBaud)
-                    throw new ArgumentOutOfRangeException(nameof(baudRate), string.Format(SR.Max_Baud, _commProp.dwMaxBaud));
+                    throw new ArgumentOutOfRangeException(nameof(baudRate), SR.Format(SR.Max_Baud, _commProp.dwMaxBaud));
 
                 _comStat = new Interop.Kernel32.COMSTAT();
                 // create internal DCB structure, initialize according to Platform SDK
@@ -719,7 +719,7 @@ namespace System.IO.Ports
                         else
                         {
                             // should not happen
-                            Debug.Fail(string.Format("Unexpected error code from EscapeCommFunction in SerialPort.Dispose(bool)  Error code: 0x{0:x}", (uint)hr));
+                            Debug.Fail($"Unexpected error code from EscapeCommFunction in SerialPort.Dispose(bool)  Error code: 0x{(uint)hr:x}");
 
                             // Do not throw an exception from the finalizer here.
                             if (disposing)
@@ -1165,7 +1165,7 @@ namespace System.IO.Ports
                     _dcb.StopBits = NativeMethods.TWOSTOPBITS;
                     break;
                 default:
-                    Debug.Assert(false, "Invalid value for stopBits");
+                    Debug.Fail("Invalid value for stopBits");
                     break;
             }
 
@@ -1636,14 +1636,14 @@ namespace System.IO.Ports
                                     // Ignore ERROR_IO_INCOMPLETE and ERROR_INVALID_PARAMETER, because there's a chance we'll get
                                     // one of those while shutting down
                                     if (!((error == Interop.Errors.ERROR_IO_INCOMPLETE || error == Interop.Errors.ERROR_INVALID_PARAMETER) && ShutdownLoop))
-                                        Debug.Assert(false, "GetOverlappedResult returned error, we might leak intOverlapped memory" + error.ToString(CultureInfo.InvariantCulture));
+                                        Debug.Fail("GetOverlappedResult returned error, we might leak intOverlapped memory" + error.ToString(CultureInfo.InvariantCulture));
                                 }
                             }
                             else if (hr != Interop.Errors.ERROR_INVALID_PARAMETER)
                             {
                                 // ignore ERROR_INVALID_PARAMETER errors.  WaitCommError seems to return this
                                 // when SetCommMask is changed while it's blocking (like we do in Dispose())
-                                Debug.Assert(false, "WaitCommEvent returned error " + hr);
+                                Debug.Fail("WaitCommEvent returned error " + hr);
                             }
                         }
                     }

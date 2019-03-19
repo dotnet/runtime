@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -65,14 +69,14 @@ namespace System.Security.Cryptography.Asn1
                 
                 // Validator for tag constraint for UniversalString
                 {
-                    if (!Asn1Tag.TryParse(UniversalString.Value.Span, out Asn1Tag validateTag, out _) ||
+                    if (!Asn1Tag.TryDecode(UniversalString.Value.Span, out Asn1Tag validateTag, out _) ||
                         !validateTag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)28)))
                     {
                         throw new CryptographicException();
                     }
                 }
 
-                writer.WriteEncodedValue(UniversalString.Value);
+                writer.WriteEncodedValue(UniversalString.Value.Span);
                 wroteValue = true;
             }
 
@@ -119,23 +123,23 @@ namespace System.Security.Cryptography.Asn1
             
             if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.T61String)))
             {
-                decoded.TeletexString = reader.GetCharacterString(UniversalTagNumber.T61String);
+                decoded.TeletexString = reader.ReadCharacterString(UniversalTagNumber.T61String);
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.PrintableString)))
             {
-                decoded.PrintableString = reader.GetCharacterString(UniversalTagNumber.PrintableString);
+                decoded.PrintableString = reader.ReadCharacterString(UniversalTagNumber.PrintableString);
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)28)))
             {
-                decoded.UniversalString = reader.GetEncodedValue();
+                decoded.UniversalString = reader.ReadEncodedValue();
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.UTF8String)))
             {
-                decoded.Utf8String = reader.GetCharacterString(UniversalTagNumber.UTF8String);
+                decoded.Utf8String = reader.ReadCharacterString(UniversalTagNumber.UTF8String);
             }
             else if (tag.HasSameClassAndValue(new Asn1Tag(UniversalTagNumber.BMPString)))
             {
-                decoded.BmpString = reader.GetCharacterString(UniversalTagNumber.BMPString);
+                decoded.BmpString = reader.ReadCharacterString(UniversalTagNumber.BMPString);
             }
             else
             {

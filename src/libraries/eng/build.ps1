@@ -9,26 +9,47 @@ Param(
   [switch] $coverage,
   [switch] $outerloop,
   [string] $arch,
-  [switch][Alias('h')]$help,
+  [switch] $clean,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
-function Print-Usage() {
-    Write-Host "Default if no actions are passed in: -restore -build"
-    Write-Host ""
-    Write-Host "CoreFX specific settings:"
-    Write-Host "  -buildtests             Build test projects"
-    Write-Host "  -framework              The target group assemblies are built for (short: -f)"
-    Write-Host "  -os                     The operating system assemblies are built for"
-    Write-Host "  -allconfigurations      Build packages for all build configurations"
-    Write-Host "  -coverage               Collect code coverage when testing"
-    Write-Host "  -outerloop              Include tests which are marked as OuterLoop"
-    Write-Host "  -arch                   The architecture group"
-    Write-Host ""
+
+function Get-Help() {
+  Write-Host "Common settings:"
+  Write-Host "  -framework              Build framework: netcoreapp, netfx, uap or uapaot (short: -f)"
+  Write-Host "  -configuration <value>  Build configuration: Debug or Release (short: -c)"
+  Write-Host "  -verbosity <value>      MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
+  Write-Host "  -binaryLog              Output binary log (short: -bl)"
+  Write-Host "  -help                   Print help and exit (short: -h)"
+  Write-Host ""
+
+  Write-Host "Actions (defaults to -restore -build):"
+  Write-Host "  -restore                Restore dependencies (short: -r)"
+  Write-Host "  -build                  Build all source projects (short: -b)"
+  Write-Host "  -buildtests             Build all test projects"
+  Write-Host "  -rebuild                Rebuild all source projects"
+  Write-Host "  -test                   Run all unit tests (short: -t)"
+  Write-Host "  -performanceTest        Run all performance tests"
+  Write-Host "  -pack                   Package build outputs into NuGet packages"
+  Write-Host "  -sign                   Sign build outputs"
+  Write-Host "  -publish                Publish artifacts (e.g. symbols)"
+  Write-Host "  -clean                  Clean the solution"
+  Write-Host ""
+
+  Write-Host "Advanced settings:"
+  Write-Host "  -coverage               Collect code coverage when testing"
+  Write-Host "  -outerloop              Include tests which are marked as OuterLoop"
+  Write-Host "  -allconfigurations      Build packages for all build configurations"
+  Write-Host "  -os                     Build operating system: Windows_NT or Unix"
+  Write-Host "  -arch                   Build platform: x86, x64, arm or arm64"
+  Write-Host "  -msbuildEngine <value>  MSBuild engine to use: dotnet or vs"
+  Write-Host ""
+
+  Write-Host "Command-line arguments not listed above are passed thru to msbuild."
+  Write-Host "The above arguments can be shortened as much as to be unambiguous (e.g. -con for configuration, -t for test, etc.)."
 }
 
-if ($help -or (($null -ne $properties) -and ($properties.Contains("/help") -or $properties.Contains("/?")))) {
-  Print-Usage
-  Invoke-Expression "& `"$PSScriptRoot/common/build.ps1`" -help"
+# Exit if script has been dot-sourced
+if ($MyInvocation.InvocationName -eq ".") {
   exit 0
 }
 
@@ -37,6 +58,17 @@ $actions = "r","restore","b","build","rebuild","deploy","deployDeps","test","int
 $actionPassedIn = @(Compare-Object -ReferenceObject @($PSBoundParameters.Keys) -DifferenceObject $actions -ExcludeDifferent -IncludeEqual).Length -ne 0
 if ($null -ne $properties -and $actionPassedIn -ne $true) {
   $actionPassedIn = @(Compare-Object -ReferenceObject $properties -DifferenceObject $actions.ForEach({ "-" + $_ }) -ExcludeDifferent -IncludeEqual).Length -ne 0
+}
+
+if ($clean) {
+  $artifactsPath = "$PSScriptRoot\..\artifacts"
+  if(Test-Path $artifactsPath) {
+    Remove-Item -Recurse -Force $artifactsPath
+    Write-Host "Artifacts directory deleted."
+  }
+  if (!$actionPassedIn) {
+    exit 0
+  }
 }
 
 if (!$actionPassedIn) {
@@ -63,6 +95,7 @@ foreach ($argument in $PSBoundParameters.Keys)
   switch($argument)
   {
     "buildtests"        { $arguments += " /p:BuildTests=true" }
+    "clean"             { }
     "configuration"     { $arguments += " /p:ConfigurationGroup=$($PSBoundParameters[$argument]) -configuration $($PSBoundParameters[$argument])" }
     "framework"         { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())"}
     "os"                { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }

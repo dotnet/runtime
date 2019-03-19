@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
 using System.Diagnostics; // for TraceInformation
 using System.Runtime.CompilerServices;
 
@@ -1241,11 +1240,11 @@ namespace System.Threading
             //Exponential back-off
             if ((spinCount < 5) && (ProcessorCount > 1))
             {
-                RuntimeThread.SpinWait(LockSpinCycles * spinCount);
+                Thread.SpinWait(LockSpinCycles * spinCount);
             }
             else
             {
-                RuntimeThread.Sleep(0);
+                Thread.Sleep(0);
             }
 
             // Don't want to Sleep(1) in this spin wait:
@@ -1592,15 +1591,15 @@ namespace System.Threading
                 {
                     if (spinIndex < LockSpinCount && processorCount > 1)
                     {
-                        RuntimeThread.SpinWait(LockSpinCycles * (spinIndex + 1)); // Wait a few dozen instructions to let another processor release lock.
+                        Thread.SpinWait(LockSpinCycles * (spinIndex + 1)); // Wait a few dozen instructions to let another processor release lock.
                     }
                     else if (spinIndex < (LockSpinCount + LockSleep0Count))
                     {
-                        RuntimeThread.Sleep(0);   // Give up my quantum.
+                        Thread.Sleep(0);   // Give up my quantum.
                     }
                     else
                     {
-                        RuntimeThread.Sleep(1);   // Give up my quantum.
+                        Thread.Sleep(1);   // Give up my quantum.
                     }
 
                     if (!IsEnterDeprioritized(reason))

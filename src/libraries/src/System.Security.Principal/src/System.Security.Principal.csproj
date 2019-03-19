@@ -3,10 +3,14 @@
     <AssemblyName>System.Security.Principal</AssemblyName>
     <ProjectGuid>{FBE16BC8-AE2D-422C-861E-861814F53AF7}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <IsPartialFacadeAssembly Condition="'$(TargetsAOT)'!='true'">true</IsPartialFacadeAssembly>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
+    <Compile Include="System\Security\Principal\TokenImpersonationLevel.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsAOT)'=='true'"> <!-- TODO: Remove once AOT builds are updated with moved types -->
     <Compile Include="$(CommonPath)\CoreLib\System\Security\Principal\IIdentity.cs">
       <Link>Common\CoreLib\System\Security\Principal\IIdentity.cs</Link>
     </Compile>
@@ -16,9 +20,10 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Security\Principal\PrincipalPolicy.cs">
       <Link>Common\CoreLib\System\Security\Principal\PrincipalPolicy.cs</Link>
     </Compile>
-    <Compile Include="System\Security\Principal\TokenImpersonationLevel.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsAOT)'!='true'">
+    <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>
 </Project>

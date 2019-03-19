@@ -282,7 +282,7 @@ namespace System
             if (dtfi.Calendar.IsLeapYear(dtfi.Calendar.GetYear(time)))
             {
                 // This month is in a leap year
-                return (dtfi.internalGetMonthName(month, MonthNameStyles.LeapYear, (repeatCount == 3)));
+                return dtfi.InternalGetMonthName(month, MonthNameStyles.LeapYear, (repeatCount == 3));
             }
             // This is in a regular year.
             if (month >= 7)
@@ -346,10 +346,7 @@ namespace System
             if (!foundQuote)
             {
                 // Here we can't find the matching quote.
-                throw new FormatException(
-                        string.Format(
-                            CultureInfo.CurrentCulture,
-                            SR.Format_BadQuote, quoteChar));
+                throw new FormatException(SR.Format(SR.Format_BadQuote, quoteChar));
             }
 
             //
@@ -633,7 +630,7 @@ namespace System
                                 if ((dtfi.FormatFlags & DateTimeFormatFlags.UseGenitiveMonth) != 0)
                                 {
                                     result.Append(
-                                        dtfi.internalGetMonthName(
+                                        dtfi.InternalGetMonthName(
                                             month,
                                             IsUseGenitiveForm(format, i, tokenLen, 'd') ? MonthNameStyles.Genitive : MonthNameStyles.Regular,
                                             tokenLen == 3));

@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!--
     To enable the tests marked with [ConditionalFact(nameof(IsLdapConfigurationExist))], need to setup LDAP server and provide the needed server info here.
     The easiest way to get LDAP server is to download and install OpenDJ https://backstage.forgerock.com/downloads/OpenDJ/Directory%20Services/5.0.0#browse. 

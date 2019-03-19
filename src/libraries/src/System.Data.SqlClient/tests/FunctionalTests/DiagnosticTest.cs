@@ -462,7 +462,7 @@ namespace System.Data.SqlClient.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
         public void ConnectionOpenErrorTest()
         {
@@ -496,7 +496,7 @@ namespace System.Data.SqlClient.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
         public void ConnectionOpenAsyncErrorTest()
         {

@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
     public class NumberFormatInfoPerMilleSymbol
     {
         [Fact]
-        public void PerMilleSymbol_Get_InvariantInfo()
+        public void PerMilleSymbol_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("\u2030", NumberFormatInfo.InvariantInfo.PerMilleSymbol);
         }
@@ -18,7 +18,7 @@ namespace System.Globalization.Tests
         [InlineData("string")]
         [InlineData("   ")]
         [InlineData("")]
-        public void PerMilleSymbol_Set(string newPerMilleSymbol)
+        public void PerMilleSymbol_Set_GetReturnsExpected(string newPerMilleSymbol)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.PerMilleSymbol = newPerMilleSymbol;
@@ -26,9 +26,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void PerMilleSymbol_Set_Invalid()
+        public void PerMilleSymbol_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("PerMilleSymbol", () => new NumberFormatInfo().PerMilleSymbol = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "PerMilleSymbol", () => format.PerMilleSymbol = null);
+        }
+
+        [Fact]
+        public void PerMilleSymbol_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PerMilleSymbol = "");
         }
     }

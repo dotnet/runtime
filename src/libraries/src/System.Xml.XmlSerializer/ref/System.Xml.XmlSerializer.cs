@@ -5,19 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.IXmlSerializable))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlAnyAttributeAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlAnyElementAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlAttributeAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlElementAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlEnumAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlIgnoreAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlNamespaceDeclarationsAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlRootAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlSchemaProviderAttribute))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlSerializerNamespaces))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Xml.Serialization.XmlTextAttribute))]
-
 namespace System.Xml.Serialization
 {
     [System.FlagsAttribute]
@@ -66,7 +53,11 @@ namespace System.Xml.Serialization
         bool Normalized { get; set; }
         System.Xml.WhitespaceHandling WhitespaceHandling { get; set; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624))]
+    public abstract partial class SchemaImporter
+    {
+        internal SchemaImporter() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
     public partial class SoapAttributeAttribute : System.Attribute
     {
         public SoapAttributeAttribute() { }
@@ -94,7 +85,7 @@ namespace System.Xml.Serialization
         public bool SoapIgnore { get { throw null; } set { } }
         public System.Xml.Serialization.SoapTypeAttribute SoapType { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
     public partial class SoapElementAttribute : System.Attribute
     {
         public SoapElementAttribute() { }
@@ -103,19 +94,19 @@ namespace System.Xml.Serialization
         public string ElementName { get { throw null; } set { } }
         public bool IsNullable { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(256))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field)]
     public partial class SoapEnumAttribute : System.Attribute
     {
         public SoapEnumAttribute() { }
         public SoapEnumAttribute(string name) { }
         public string Name { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue)]
     public partial class SoapIgnoreAttribute : System.Attribute
     {
         public SoapIgnoreAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1100), AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true)]
     public partial class SoapIncludeAttribute : System.Attribute
     {
         public SoapIncludeAttribute(System.Type type) { }
@@ -142,7 +133,7 @@ namespace System.Xml.Serialization
         public string MemberName { get { throw null; } set { } }
         public System.Xml.XmlQualifiedName MemberType { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1052))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct)]
     public partial class SoapTypeAttribute : System.Attribute
     {
         public SoapTypeAttribute() { }
@@ -170,7 +161,7 @@ namespace System.Xml.Serialization
         public void Insert(int index, System.Xml.Serialization.XmlAnyElementAttribute attribute) { }
         public void Remove(System.Xml.Serialization.XmlAnyElementAttribute attribute) { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624), AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=false)]
     public partial class XmlArrayAttribute : System.Attribute
     {
         public XmlArrayAttribute() { }
@@ -181,7 +172,7 @@ namespace System.Xml.Serialization
         public string Namespace { get { throw null; } set { } }
         public int Order { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624), AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=true)]
     public partial class XmlArrayItemAttribute : System.Attribute
     {
         public XmlArrayItemAttribute() { }
@@ -244,7 +235,7 @@ namespace System.Xml.Serialization
         public System.Xml.Serialization.XmlTextAttribute XmlText { get { throw null; } set { } }
         public System.Xml.Serialization.XmlTypeAttribute XmlType { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(10624), AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple=false)]
     public partial class XmlChoiceIdentifierAttribute : System.Attribute
     {
         public XmlChoiceIdentifierAttribute() { }
@@ -280,7 +271,7 @@ namespace System.Xml.Serialization
         public object ObjectBeingDeserialized { get { throw null; } }
     }
     public delegate void XmlElementEventHandler(object sender, System.Xml.Serialization.XmlElementEventArgs e);
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1100), AllowMultiple=true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true)]
     public partial class XmlIncludeAttribute : System.Attribute
     {
         public XmlIncludeAttribute(System.Type type) { }
@@ -313,7 +304,6 @@ namespace System.Xml.Serialization
         public string TypeName { get { throw null; } }
         public string TypeNamespace { get { throw null; } }
         public string XsdElementName { get { throw null; } }
-//CODEDOM        public string GenerateTypeName(System.CodeDom.Compiler.CodeDomProvider codeProvider) { throw null; }
     }
     public partial class XmlMembersMapping : System.Xml.Serialization.XmlMapping
     {
@@ -382,14 +372,10 @@ namespace System.Xml.Serialization
         public System.Xml.XmlQualifiedName ExportTypeMapping(System.Xml.Serialization.XmlMembersMapping xmlMembersMapping) { throw null; }
         public void ExportTypeMapping(System.Xml.Serialization.XmlTypeMapping xmlTypeMapping) { }
     }
-    public partial class XmlSchemaImporter : SchemaImporter
-    //CodeDOM : System.Xml.Serialization.SchemaImporter
+    public partial class XmlSchemaImporter : System.Xml.Serialization.SchemaImporter
     {
         public XmlSchemaImporter(System.Xml.Serialization.XmlSchemas schemas) { }
-//CODEDOM        public XmlSchemaImporter(System.Xml.Serialization.XmlSchemas schemas, System.Xml.Serialization.CodeGenerationOptions options, System.CodeDom.Compiler.CodeDomProvider codeProvider, System.Xml.Serialization.ImportContext context) { }
-//CODEDOM        public XmlSchemaImporter(System.Xml.Serialization.XmlSchemas schemas, System.Xml.Serialization.CodeGenerationOptions options, System.Xml.Serialization.ImportContext context) { }
         public XmlSchemaImporter(System.Xml.Serialization.XmlSchemas schemas, System.Xml.Serialization.CodeIdentifiers typeIdentifiers) { }
-//CODEDOM        public XmlSchemaImporter(System.Xml.Serialization.XmlSchemas schemas, System.Xml.Serialization.CodeIdentifiers typeIdentifiers, System.Xml.Serialization.CodeGenerationOptions options) { }
         public System.Xml.Serialization.XmlMembersMapping ImportAnyType(System.Xml.XmlQualifiedName typeName, string elementName) { throw null; }
         public System.Xml.Serialization.XmlTypeMapping ImportDerivedTypeMapping(System.Xml.XmlQualifiedName name, System.Type baseType) { throw null; }
         public System.Xml.Serialization.XmlTypeMapping ImportDerivedTypeMapping(System.Xml.XmlQualifiedName name, System.Type baseType, bool baseTypeCanBeIndirect) { throw null; }
@@ -401,10 +387,6 @@ namespace System.Xml.Serialization
         public System.Xml.Serialization.XmlTypeMapping ImportSchemaType(System.Xml.XmlQualifiedName typeName, System.Type baseType) { throw null; }
         public System.Xml.Serialization.XmlTypeMapping ImportSchemaType(System.Xml.XmlQualifiedName typeName, System.Type baseType, bool baseTypeCanBeIndirect) { throw null; }
         public System.Xml.Serialization.XmlTypeMapping ImportTypeMapping(System.Xml.XmlQualifiedName name) { throw null; }
-    }
-    public abstract class SchemaImporter
-    {
-        internal SchemaImporter() { }
     }
     public partial class XmlSchemas : System.Collections.CollectionBase, System.Collections.Generic.IEnumerable<System.Xml.Schema.XmlSchema>, System.Collections.IEnumerable
     {
@@ -642,8 +624,6 @@ namespace System.Xml.Serialization
         public XmlSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides overrides) { }
         public XmlSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides overrides, System.Type[] extraTypes, System.Xml.Serialization.XmlRootAttribute root, string defaultNamespace) { }
         public XmlSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides overrides, System.Type[] extraTypes, System.Xml.Serialization.XmlRootAttribute root, string defaultNamespace, string location) { }
-//CAS        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future release of the .NET Framework. Please use a XmlSerializer constructor overload which does not take an Evidence parameter. See https://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-//CAS        public XmlSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides overrides, System.Type[] extraTypes, System.Xml.Serialization.XmlRootAttribute root, string defaultNamespace, string location, System.Security.Policy.Evidence evidence) { }
         public XmlSerializer(System.Type type, System.Xml.Serialization.XmlRootAttribute root) { }
         public XmlSerializer(System.Xml.Serialization.XmlTypeMapping xmlTypeMapping) { }
         public event System.Xml.Serialization.XmlAttributeEventHandler UnknownAttribute { add { } remove { } }
@@ -661,12 +641,8 @@ namespace System.Xml.Serialization
         public object Deserialize(System.Xml.XmlReader xmlReader, string encodingStyle, System.Xml.Serialization.XmlDeserializationEvents events) { throw null; }
         public object Deserialize(System.Xml.XmlReader xmlReader, System.Xml.Serialization.XmlDeserializationEvents events) { throw null; }
         public static System.Xml.Serialization.XmlSerializer[] FromMappings(System.Xml.Serialization.XmlMapping[] mappings) { throw null; }
-//CAS        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of FromMappings which does not take an Evidence parameter. See https://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-//CAS        public static System.Xml.Serialization.XmlSerializer[] FromMappings(System.Xml.Serialization.XmlMapping[] mappings, System.Security.Policy.Evidence evidence) { throw null; }
         public static System.Xml.Serialization.XmlSerializer[] FromMappings(System.Xml.Serialization.XmlMapping[] mappings, System.Type type) { throw null; }
         public static System.Xml.Serialization.XmlSerializer[] FromTypes(System.Type[] types) { throw null; }
-//REFEMIT        public static System.Reflection.Assembly GenerateSerializer(System.Type[] types, System.Xml.Serialization.XmlMapping[] mappings) { throw null; }
-//REFEMIT        public static System.Reflection.Assembly GenerateSerializer(System.Type[] types, System.Xml.Serialization.XmlMapping[] mappings, System.CodeDom.Compiler.CompilerParameters parameters) { throw null; }
         public static string GetXmlSerializerAssemblyName(System.Type type) { throw null; }
         public static string GetXmlSerializerAssemblyName(System.Type type, string defaultNamespace) { throw null; }
         public void Serialize(System.IO.Stream stream, object o) { }
@@ -679,7 +655,7 @@ namespace System.Xml.Serialization
         public void Serialize(System.Xml.XmlWriter xmlWriter, object o, System.Xml.Serialization.XmlSerializerNamespaces namespaces, string encodingStyle) { }
         public void Serialize(System.Xml.XmlWriter xmlWriter, object o, System.Xml.Serialization.XmlSerializerNamespaces namespaces, string encodingStyle, string id) { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1052), AllowMultiple=false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct, AllowMultiple=false)]
     public sealed partial class XmlSerializerAssemblyAttribute : System.Attribute
     {
         public XmlSerializerAssemblyAttribute() { }
@@ -697,8 +673,6 @@ namespace System.Xml.Serialization
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides overrides) { throw null; }
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides overrides, System.Type[] extraTypes, System.Xml.Serialization.XmlRootAttribute root, string defaultNamespace) { throw null; }
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides overrides, System.Type[] extraTypes, System.Xml.Serialization.XmlRootAttribute root, string defaultNamespace, string location) { throw null; }
-//CAS        [System.ObsoleteAttribute("This method is obsolete and will be removed in a future release of the .NET Framework. Please use an overload of CreateSerializer which does not take an Evidence parameter. See https://go2.microsoft.com/fwlink/?LinkId=131738 for more information.")]
-//CAS        public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Xml.Serialization.XmlAttributeOverrides overrides, System.Type[] extraTypes, System.Xml.Serialization.XmlRootAttribute root, string defaultNamespace, string location, System.Security.Policy.Evidence evidence) { throw null; }
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Type type, System.Xml.Serialization.XmlRootAttribute root) { throw null; }
         public System.Xml.Serialization.XmlSerializer CreateSerializer(System.Xml.Serialization.XmlTypeMapping xmlTypeMapping) { throw null; }
     }
@@ -713,7 +687,7 @@ namespace System.Xml.Serialization
         public virtual bool CanSerialize(System.Type type) { throw null; }
         public virtual System.Xml.Serialization.XmlSerializer GetSerializer(System.Type type) { throw null; }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly)]
     public sealed partial class XmlSerializerVersionAttribute : System.Attribute
     {
         public XmlSerializerVersionAttribute() { }
@@ -723,7 +697,7 @@ namespace System.Xml.Serialization
         public System.Type Type { get { throw null; } set { } }
         public string Version { get { throw null; } set { } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(1052))]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Struct)]
     public partial class XmlTypeAttribute : System.Attribute
     {
         public XmlTypeAttribute() { }

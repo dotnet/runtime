@@ -694,7 +694,7 @@ namespace System.Xml.Serialization
         {
             if (type.ContainsGenericParameters)
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlUnsupportedOpenGenericType, type.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.XmlUnsupportedOpenGenericType, type));
             }
             TypeDesc typeDesc = (TypeDesc)s_primitiveTypes[type];
             if (typeDesc == null)

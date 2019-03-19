@@ -5,5 +5,3 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.UnmanagedMemoryStream))]
-[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.IO.UnmanagedMemoryAccessor))]

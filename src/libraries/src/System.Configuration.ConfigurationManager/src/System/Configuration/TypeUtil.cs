@@ -158,7 +158,7 @@ namespace System.Configuration
             ConstructorInfo ctor = type.GetConstructor(BindingFlags, null, CallingConventions.HasThis, Type.EmptyTypes,
                 null);
             if ((ctor == null) && throwOnError)
-                throw new TypeLoadException(string.Format(SR.TypeNotPublic, type.AssemblyQualifiedName));
+                throw new TypeLoadException(SR.Format(SR.TypeNotPublic, type.AssemblyQualifiedName));
 
             return ctor;
         }
@@ -171,7 +171,7 @@ namespace System.Configuration
             if (throwOnError)
             {
                 throw new TypeLoadException(
-                    string.Format(SR.Config_type_doesnt_inherit_from_type, type.FullName, baseType.FullName));
+                    SR.Format(SR.Config_type_doesnt_inherit_from_type, type.FullName, baseType.FullName));
             }
 
             return null;

@@ -197,7 +197,7 @@ namespace System.Net.WebSockets
 
         // return value indicates sync vs async completion
         // false: sync completion
-        // true: async completion
+        // true: async completion or error
         private unsafe bool ReadAsyncFast(HttpListenerAsyncEventArgs eventArgs)
         {
             if (NetEventSource.IsEnabled)
@@ -209,7 +209,7 @@ namespace System.Net.WebSockets
             eventArgs.StartOperationReceive();
 
             uint statusCode = 0;
-            bool completedAsynchronously = false;
+            bool completedAsynchronouslyOrWithError = false;
             try
             {
                 Debug.Assert(eventArgs.Buffer != null, "'BufferList' is not supported for read operations.");
@@ -278,11 +278,11 @@ namespace System.Net.WebSockets
                     // IO operation completed synchronously. No IO completion port callback is used because 
                     // it was disabled in SwitchToOpaqueMode()
                     eventArgs.FinishOperationSuccess((int)bytesReturned, true);
-                    completedAsynchronously = false;
+                    completedAsynchronouslyOrWithError = false;
                 }
                 else
                 {
-                    completedAsynchronously = true;
+                    completedAsynchronouslyOrWithError = true;
                 }
             }
             catch (Exception e)
@@ -291,17 +291,17 @@ namespace System.Net.WebSockets
                 _outputStream.SetClosedFlag();
                 _outputStream.InternalHttpContext.Abort();
 
-                throw;
+                completedAsynchronouslyOrWithError = true;
             }
             finally
             {
                 if (NetEventSource.IsEnabled)
                 {
-                    NetEventSource.Exit(this, completedAsynchronously);
+                    NetEventSource.Exit(this, completedAsynchronouslyOrWithError);
                 }
             }
 
-            return completedAsynchronously;
+            return completedAsynchronouslyOrWithError;
         }
 
         public override int ReadByte()
@@ -472,7 +472,7 @@ namespace System.Net.WebSockets
 
         // return value indicates sync vs async completion
         // false: sync completion
-        // true: async completion
+        // true: async completion or with error
         private unsafe bool WriteAsyncFast(HttpListenerAsyncEventArgs eventArgs)
         {
             if (NetEventSource.IsEnabled)
@@ -486,7 +486,7 @@ namespace System.Net.WebSockets
             eventArgs.StartOperationSend();
 
             uint statusCode;
-            bool completedAsynchronously = false;
+            bool completedAsynchronouslyOrWithError = false;
             try
             {
                 if (_outputStream.Closed ||
@@ -533,11 +533,11 @@ namespace System.Net.WebSockets
                 {
                     // IO operation completed synchronously - callback won't be called to signal completion.
                     eventArgs.FinishOperationSuccess((int)bytesSent, true);
-                    completedAsynchronously = false;
+                    completedAsynchronouslyOrWithError = false;
                 }
                 else
                 {
-                    completedAsynchronously = true;
+                    completedAsynchronouslyOrWithError = true;
                 }
             }
             catch (Exception e)
@@ -546,17 +546,17 @@ namespace System.Net.WebSockets
                 _outputStream.SetClosedFlag();
                 _outputStream.InternalHttpContext.Abort();
 
-                throw;
+                completedAsynchronouslyOrWithError = true;
             }
             finally
             {
                 if (NetEventSource.IsEnabled)
                 {
-                    NetEventSource.Exit(this, completedAsynchronously);
+                    NetEventSource.Exit(this, completedAsynchronouslyOrWithError);
                 }
             }
 
-            return completedAsynchronously;
+            return completedAsynchronouslyOrWithError;
         }
 
         public override void WriteByte(byte value)
@@ -1052,7 +1052,7 @@ namespace System.Net.WebSockets
                         throw new ObjectDisposedException(GetType().FullName);
                     }
 
-                    Debug.Assert(false, "Only one outstanding async operation is allowed per HttpListenerAsyncEventArgs instance.");
+                    Debug.Fail("Only one outstanding async operation is allowed per HttpListenerAsyncEventArgs instance.");
                     // Only one at a time.
                     throw new InvalidOperationException();
                 }

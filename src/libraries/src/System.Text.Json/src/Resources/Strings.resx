@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ArrayDepthTooLarge" xml:space="preserve">
-    <value>CurrentDepth ({0}) is larger than the maximum configured depth of {1}. Cannot read next JSON array.</value>
+    <value>The maximum configured depth of {0} has been exceeded. Cannot read next JSON array.</value>
   </data>
   <data name="CallFlushToAvoidDataLoss" xml:space="preserve">
     <value>The JSON writer needs to be flushed before getting the current state. There are {0} bytes that have not been committed to the output.</value>
@@ -238,7 +238,7 @@
     <value>'{0}' is invalid without a matching open.</value>
   </data>
   <data name="ObjectDepthTooLarge" xml:space="preserve">
-    <value>CurrentDepth ({0}) is larger than the maximum configured depth of {1}. Cannot read next JSON object.</value>
+    <value>The maximum configured depth of {0} has been exceeded. Cannot read next JSON object.</value>
   </data>
   <data name="PropertyNameTooLarge" xml:space="preserve">
     <value>The JSON property name of length {0} is too large and not supported by the JSON writer.</value>
@@ -280,6 +280,36 @@
     <value>The JSON value of length {0} is too large and not supported by the JSON writer.</value>
   </data>
   <data name="ZeroDepthAtEnd" xml:space="preserve">
-    <value>Expected CurrentDepth ({0}) to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed.</value>
+    <value>Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed.</value>
+  </data>
+  <data name="DeserializeCannotBeNull" xml:space="preserve">
+    <value>The JSON value from {0} cannot be null.</value>
+  </data>
+  <data name="DeserializeDataRemaining" xml:space="preserve">
+    <value>The provided data of length {0} has remaining bytes {1}.</value>
+  </data>
+  <data name="DeserializeUnableToConvertValue" xml:space="preserve">
+    <value>The JSON value from {0} could not be converted to {1}.</value>
+  </data>
+  <data name="DeserializeWrongType" xml:space="preserve">
+    <value>The specified type {0} must derive from the specific value's type {1}.</value>
+  </data>
+  <data name="SerializationInvalidBufferSize" xml:space="preserve">
+    <value>The value must be greater than zero or equal to -1.</value>
+  </data>
+  <data name="BufferWriterAdvancedTooFar" xml:space="preserve">
+    <value>Cannot advance past the end of the buffer, which has a size of {0}.</value>
+  </data>
+  <data name="EnumConverterNotImplemented" xml:space="preserve">
+    <value>EnumConverter is not yet supported on .NET Standard 2.0.</value>
+  </data>
+  <data name="InvalidComparison" xml:space="preserve">
+    <value>Cannot compare the value of a token type '{0}' to text.</value>
+  </data>
+  <data name="FormatDateTime" xml:space="preserve">
+    <value>The JSON value is of unsupported format for a DateTime.</value>
+  </data>
+  <data name="FormatDateTimeOffset" xml:space="preserve">
+    <value>The JSON value is of unsupported format for a DateTimeOffset.</value>
   </data>
 </root>

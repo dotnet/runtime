@@ -24,14 +24,14 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the 
         /// specified type.
         /// </summary>
-        public LicenseException(Type type) : this(type, null, SR.Format(SR.LicExceptionTypeOnly, type.FullName))
+        public LicenseException(Type type) : this(type, null, SR.Format(SR.LicExceptionTypeOnly, type?.FullName))
         {
         }
         /// <summary>
         /// Initializes a new instance of the <see cref='System.ComponentModel.LicenseException'/> class for the 
         /// specified type and instance.
         /// </summary>
-        public LicenseException(Type type, object instance) : this(type, null, SR.Format(SR.LicExceptionTypeAndInstance, type.FullName, instance.GetType().FullName))
+        public LicenseException(Type type, object instance) : this(type, null, SR.Format(SR.LicExceptionTypeAndInstance, type?.FullName, instance?.GetType().FullName))
         {
         }
         /// <summary>

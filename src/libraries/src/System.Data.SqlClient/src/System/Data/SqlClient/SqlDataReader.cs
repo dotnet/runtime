@@ -754,7 +754,7 @@ namespace System.Data.SqlClient
                     return false;
                 }
 
-                Debug.Assert(TdsParser.IsValidTdsToken(token), string.Format("Invalid token after performing CleanPartialRead: {0,-2:X2}", token));
+                Debug.Assert(TdsParser.IsValidTdsToken(token), $"Invalid token after performing CleanPartialRead: {token,-2:X2}");
             }
 #endif            
             _sharedState._dataReady = false;
@@ -886,7 +886,7 @@ namespace System.Data.SqlClient
                         // if user called read but didn't fetch any values, skip the row
                         // same applies after NextResult on ALTROW because NextResult starts rowconsumption in that case ...
 
-                        Debug.Assert(SniContext.Snix_Read == stateObj.SniContext, string.Format((IFormatProvider)null, "The SniContext should be Snix_Read but it actually is {0}", stateObj.SniContext));
+                        Debug.Assert(SniContext.Snix_Read == stateObj.SniContext, $"The SniContext should be Snix_Read but it actually is {stateObj.SniContext}");
 
                         if (_altRowStatus == ALTROWSTATUS.AltRow)
                         {
@@ -914,7 +914,7 @@ namespace System.Data.SqlClient
                                 return false;
                             }
 
-                            Debug.Assert(TdsParser.IsValidTdsToken(token), string.Format("DataReady is false, but next token is invalid: {0,-2:X2}", token));
+                            Debug.Assert(TdsParser.IsValidTdsToken(token), $"DataReady is false, but next token is invalid: {token,-2:X2}");
                         }
 #endif
 
@@ -2148,7 +2148,7 @@ namespace System.Data.SqlClient
         override public Guid GetGuid(int i)
         {
             ReadColumn(i);
-            return _data[i].SqlGuid.Value;
+            return _data[i].Guid;
         }
 
         override public short GetInt16(int i)
@@ -2583,85 +2583,136 @@ namespace System.Data.SqlClient
 
         private T GetFieldValueFromSqlBufferInternal<T>(SqlBuffer data, _SqlMetaData metaData)
         {
-            Type typeofT = typeof(T);
-            if (_typeofINullable.IsAssignableFrom(typeofT))
+            // this block of type specific shortcuts uses RyuJIT jit behaviours to achieve fast implementations of the primitive types
+            // RyuJIT will be able to determine at compilation time that the typeof(T)==typeof(<primitive>) options are constant
+            // and be able to remove all implementations which cannot be reached. this will eliminate non-specialized code for value types
+            Type dataType = data.GetTypeFromStorageType(false);
+            if (typeof(T) == typeof(int) && dataType == typeof(int))
             {
-                // If its a SQL Type or Nullable UDT
-                object rawValue = GetSqlValueFromSqlBufferInternal(data, metaData);
-
-                if (typeofT == s_typeofSqlString)
-                {
-                    // Special case: User wants SqlString, but we have a SqlXml
-                    // SqlXml can not be typecast into a SqlString, but we need to support SqlString on XML Types - so do a manual conversion
-                    SqlXml xmlValue = rawValue as SqlXml;
-                    if (xmlValue != null)
-                    {
-                        if (xmlValue.IsNull)
-                        {
-                            rawValue = SqlString.Null;
-                        }
-                        else
-                        {
-                            rawValue = new SqlString(xmlValue.Value);
-                        }
-                    }
-                }
-
-                return (T)rawValue;
+                return data.Int32As<T>();
+            }
+            else if (typeof(T) == typeof(byte) && dataType == typeof(byte))
+            {
+                return data.ByteAs<T>();
+            }
+            else if (typeof(T) == typeof(short) && dataType == typeof(short))
+            {
+                return data.Int16As<T>();
+            }
+            else if (typeof(T) == typeof(long) && dataType == typeof(long))
+            {
+                return data.Int64As<T>();
+            }
+            else if (typeof(T) == typeof(bool) && dataType == typeof(bool))
+            {
+                return data.BooleanAs<T>();
+            }
+            else if (typeof(T) == typeof(double) && dataType == typeof(double))
+            {
+                return data.DoubleAs<T>();
+            }
+            else if (typeof(T) == typeof(float) && dataType == typeof(float))
+            {
+                return data.SingleAs<T>();
+            }
+            else if (typeof(T) == typeof(Guid) && dataType == typeof(Guid))
+            {
+                return (T)(object)data.Guid;
+            }
+            else if (typeof(T) == typeof(decimal) && dataType == typeof(decimal))
+            {
+                return (T)(object)data.Decimal;
+            }
+            else if (typeof(T) == typeof(DateTimeOffset) && dataType == typeof(DateTimeOffset) && _typeSystem > SqlConnectionString.TypeSystem.SQLServer2005 && metaData.IsNewKatmaiDateTimeType)
+            {
+                return (T)(object)data.DateTimeOffset;
+            }
+            else if (typeof(T) == typeof(DateTime) && dataType == typeof(DateTime) && _typeSystem > SqlConnectionString.TypeSystem.SQLServer2005 && metaData.IsNewKatmaiDateTimeType)
+            {
+                return (T)(object)data.DateTime;
             }
             else
             {
-                if (typeof(XmlReader) == typeofT)
+                Type typeofT = typeof(T);
+                if (_typeofINullable.IsAssignableFrom(typeofT))
                 {
-                    if (metaData.metaType.SqlDbType != SqlDbType.Xml)
+                    // If its a SQL Type or Nullable UDT
+                    object rawValue = GetSqlValueFromSqlBufferInternal(data, metaData);
+
+                    if (typeofT == s_typeofSqlString)
                     {
-                        throw SQL.XmlReaderNotSupportOnColumnType(metaData.column);
-                    }
-                    else
-                    {
-                        object clrValue = null;
-                        if (!data.IsNull)
+                        // Special case: User wants SqlString, but we have a SqlXml
+                        // SqlXml can not be typecast into a SqlString, but we need to support SqlString on XML Types - so do a manual conversion
+                        SqlXml xmlValue = rawValue as SqlXml;
+                        if (xmlValue != null)
                         {
-                            clrValue = GetValueFromSqlBufferInternal(data, metaData);
-                        }
-                        if (clrValue is null) // covers IsNull and when there is data which is present but is a clr null somehow
-                        {
-                            return (T)(object)SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(
-                                new MemoryStream(Array.Empty<byte>(), writable: false),
-                                closeInput: true
-                            );
-                        }
-                        else if (clrValue.GetType() == typeof(string))
-                        {
-                            return (T)(object)SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(
-                                new StringReader(clrValue as string), 
-                                closeInput: true
-                            );
-                        }
-                        else
-                        {
-                            // try the type cast to throw the invalid cast exception and inform the user what types they're trying to use and that why it is wrong
-                            return (T)clrValue;
+                            if (xmlValue.IsNull)
+                            {
+                                rawValue = SqlString.Null;
+                            }
+                            else
+                            {
+                                rawValue = new SqlString(xmlValue.Value);
+                            }
                         }
                     }
+
+                    return (T)rawValue;
                 }
                 else
                 {
-                    try
+                    if (typeof(XmlReader) == typeofT)
                     {
-                        return (T)GetValueFromSqlBufferInternal(data, metaData);
-                    }
-                    catch (InvalidCastException)
-                    {
-                        if (data.IsNull)
+                        if (metaData.metaType.SqlDbType != SqlDbType.Xml)
                         {
-                            // If the value was actually null, then we should throw a SqlNullValue instead
-                            throw SQL.SqlNullValue();
+                            throw SQL.XmlReaderNotSupportOnColumnType(metaData.column);
                         }
                         else
                         {
-                            // Legitimate InvalidCast, rethrow
-                            throw;
+                            object clrValue = null;
+                            if (!data.IsNull)
+                            {
+                                clrValue = GetValueFromSqlBufferInternal(data, metaData);
+                            }
+                            if (clrValue is null) // covers IsNull and when there is data which is present but is a clr null somehow
+                            {
+                                return (T)(object)SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(
+                                    new MemoryStream(Array.Empty<byte>(), writable: false),
+                                    closeInput: true
+                                );
+                            }
+                            else if (clrValue.GetType() == typeof(string))
+                            {
+                                return (T)(object)SqlTypeWorkarounds.SqlXmlCreateSqlXmlReader(
+                                    new StringReader(clrValue as string),
+                                    closeInput: true
+                                );
+                            }
+                            else
+                            {
+                                // try the type cast to throw the invalid cast exception and inform the user what types they're trying to use and that why it is wrong
+                                return (T)clrValue;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        try
+                        {
+                            return (T)GetValueFromSqlBufferInternal(data, metaData);
+                        }
+                        catch (InvalidCastException)
+                        {
+                            if (data.IsNull)
+                            {
+                                // If the value was actually null, then we should throw a SqlNullValue instead
+                                throw SQL.SqlNullValue();
+                            }
+                            else
+                            {
+                                // Legitimate InvalidCast, rethrow
+                                throw;
+                            }
                         }
                     }
                 }
@@ -3268,7 +3319,7 @@ namespace System.Data.SqlClient
                         return false;
                     }
 
-                    Debug.Assert(TdsParser.IsValidTdsToken(token), string.Format("DataReady is false, but next token is invalid: {0,-2:X2}", token));
+                    Debug.Assert(TdsParser.IsValidTdsToken(token), $"DataReady is false, but next token is invalid: {token,-2:X2}");
                 }
 #endif
 

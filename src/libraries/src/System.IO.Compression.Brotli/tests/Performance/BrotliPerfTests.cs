@@ -31,10 +31,11 @@ namespace System.IO.Compression
             ReadOnlySpan<byte> uncompressedData = new ReadOnlySpan<byte>(bytes);
             int maxCompressedSize = BrotliEncoder.GetMaxCompressedLength(bytes.Length);
             byte[] compressedDataArray = new byte[maxCompressedSize];
+            int compressLevelBrotli = compressLevel == CompressionLevel.Optimal ? 11 : compressLevel == CompressionLevel.Fastest ? 1 : 0;
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
-                using (BrotliEncoder encoder = new BrotliEncoder())
+                using (BrotliEncoder encoder = new BrotliEncoder(compressLevelBrotli, 22))
                 {
                     Span<byte> output = new Span<byte>(compressedDataArray);
                     ReadOnlySpan<byte> input = uncompressedData;

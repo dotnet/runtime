@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
@@ -15,6 +16,8 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public class WebClientTest
     {
         [Fact]
@@ -382,7 +385,7 @@ namespace System.Net.Tests
             Assert.Equal("ArbitraryValue", wc.ResponseHeaders["ArbitraryHeader"]);
         }
 
-        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [InlineData("Connection", "close")]
         [InlineData("Expect", "100-continue")]
@@ -390,24 +393,29 @@ namespace System.Net.Tests
         {
             var wc = new WebClient();
             wc.Headers[headerName] = headerValue;
-            await Assert.ThrowsAsync<WebException>(() => wc.DownloadStringTaskAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer));
+            await Assert.ThrowsAsync<WebException>(() => wc.DownloadStringTaskAsync(Configuration.Http.RemoteEchoServer));
         }
 
-        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        public static IEnumerable<object[]> RequestHeaders_AddHostHeaderAndSendRequest_ExpectedResult_MemberData()
+        {
+            yield return new object[] { $"http://{Configuration.Http.Host}", true };
+            yield return new object[] { Configuration.Http.Host, false };
+        }
+
+        [OuterLoop("Uses external servers")]
         [Theory]
-        [InlineData("http://localhost", true)]
-        [InlineData("localhost", false)]
+        [MemberData(nameof(RequestHeaders_AddHostHeaderAndSendRequest_ExpectedResult_MemberData))]
         public static async Task RequestHeaders_AddHostHeaderAndSendRequest_ExpectedResult(string hostHeaderValue, bool throwsWebException)
         {
             var wc = new WebClient();
             wc.Headers["Host"] = hostHeaderValue;
             if (throwsWebException)
             {
-                await Assert.ThrowsAsync<WebException>(() => wc.DownloadStringTaskAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer));
+                await Assert.ThrowsAsync<WebException>(() => wc.DownloadStringTaskAsync(Configuration.Http.RemoteEchoServer));
             }
             else
             {
-                await wc.DownloadStringTaskAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer);
+                await wc.DownloadStringTaskAsync(Configuration.Http.RemoteEchoServer);
             }
         }
 
@@ -469,7 +477,7 @@ namespace System.Net.Tests
     {
         public const int TimeoutMilliseconds = 30 * 1000;
 
-        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
+        public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
         const string ExpectedText =
             "To be, or not to be, that is the question:" +
             "Whether 'tis Nobler in the mind to suffer" +
@@ -605,7 +613,7 @@ namespace System.Net.Tests
             });
         }
 
-        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task OpenWrite_Success(Uri echoServer)
@@ -618,7 +626,7 @@ namespace System.Net.Tests
             }
         }
 
-        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadData_Success(Uri echoServer)
@@ -636,7 +644,7 @@ namespace System.Net.Tests
             }
         }
 
-        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadData_LargeData_Success(Uri echoServer)
@@ -653,7 +661,7 @@ namespace System.Net.Tests
             return new string(Enumerable.Range(0, 512 * 1024).Select(_ => (char)('a' + rand.Next(0, 26))).ToArray());
         }
 
-        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadFile_Success(Uri echoServer)
@@ -672,7 +680,7 @@ namespace System.Net.Tests
             }
         }
 
-        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadString_Success(Uri echoServer)
@@ -682,7 +690,7 @@ namespace System.Net.Tests
             Assert.Contains(ExpectedText, result);
         }
 
-        [OuterLoop("Networking test talking to remote server: issue #11345")]
+        [OuterLoop("Uses external servers")]
         [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadValues_Success(Uri echoServer)

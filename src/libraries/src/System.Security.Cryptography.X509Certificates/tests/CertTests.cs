@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 using Xunit.Abstractions;
@@ -97,7 +98,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact]
         [OuterLoop("May require using the network, to download CRLs and intermediates")]
         public void TestVerify()
         {
@@ -116,7 +117,13 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 if (!success)
                 {
                     LogVerifyErrors(microsoftDotComIssuer, "MicrosoftDotComIssuerBytes");
+                    if (PlatformDetection.IsMacOsMojaveOrHigher)
+                    {
+                        // ActiveIssue: 29779
+                        throw new SkipTestException("Certificate validation unstable on 10.14");
+                    }
                 }
+
                 Assert.True(success, "MicrosoftDotComIssuerBytes");
             }
 

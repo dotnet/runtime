@@ -741,6 +741,102 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        ///   Attempts to represent the current JSON string as a <see cref="DateTime"/>.
+        /// </summary>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///   This method does not create a DateTime representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the string can be represented as a <see cref="DateTime"/>,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public bool TryGetDateTime(out DateTime value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, out value);
+        }
+
+        /// <summary>
+        ///   Gets the value of the element as a <see cref="DateTime"/>.
+        /// </summary>
+        /// <remarks>
+        ///   This method does not create a DateTime representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>The value of the element as a <see cref="DateTime"/>.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        /// <seealso cref="ToString"/>
+        public DateTime GetDateTime()
+        {
+            if (TryGetDateTime(out DateTime value))
+            {
+                return value;
+            }
+
+            throw new FormatException();
+        }
+
+        /// <summary>
+        ///   Attempts to represent the current JSON string as a <see cref="DateTimeOffset"/>.
+        /// </summary>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///   This method does not create a DateTimeOffset representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the string can be represented as a <see cref="DateTimeOffset"/>,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public bool TryGetDateTimeOffset(out DateTimeOffset value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, out value);
+        }
+
+        /// <summary>
+        ///   Gets the value of the element as a <see cref="DateTimeOffset"/>.
+        /// </summary>
+        /// <remarks>
+        ///   This method does not create a DateTimeOffset representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>The value of the element as a <see cref="DateTimeOffset"/>.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        /// <seealso cref="ToString"/>
+        public DateTimeOffset GetDateTimeOffset()
+        {
+            if (TryGetDateTimeOffset(out DateTimeOffset value))
+            {
+                return value;
+            }
+
+            throw new FormatException();
+        }
+
+        /// <summary>
         ///   This is an implementation detail and MUST NOT be called by source-package consumers.
         /// </summary>
         internal string GetPropertyName()

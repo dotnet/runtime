@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  entry with neither an atom:link element with a rel attribute value of alternate nor an atom:content element
 Expect:       MissingContentOrAlternate{element:entry,parent:feed}

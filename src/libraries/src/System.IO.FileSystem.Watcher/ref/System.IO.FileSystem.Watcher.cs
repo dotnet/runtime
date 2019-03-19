@@ -28,7 +28,7 @@ namespace System.IO
         public FileSystemWatcher(string path, string filter) { }
         public bool EnableRaisingEvents { get { throw null; } set { } }
         public string Filter { get { throw null; } set { } }
-        public Collections.ObjectModel.Collection<string> Filters { get { throw null; } }
+        public System.Collections.ObjectModel.Collection<string> Filters { get { throw null; } }
         public bool IncludeSubdirectories { get { throw null; } set { } }
         public int InternalBufferSize { get { throw null; } set { } }
         public System.IO.NotifyFilters NotifyFilter { get { throw null; } set { } }

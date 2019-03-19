@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  entry with an atom:link element with a rel attribute value of alternate but no atom:content element
 Expect:       !Error
