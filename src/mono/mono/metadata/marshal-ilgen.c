@@ -6550,6 +6550,12 @@ emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gcons
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
+static void
+emit_return_ilgen (MonoMethodBuilder *mb)
+{
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
 void
 mono_marshal_ilgen_init (void)
 {
@@ -6590,6 +6596,7 @@ mono_marshal_ilgen_init (void)
 	cb.emit_create_string_hack = emit_create_string_hack_ilgen;
 	cb.emit_native_icall_wrapper = emit_native_icall_wrapper_ilgen;
 	cb.emit_icall_wrapper = emit_icall_wrapper_ilgen;
+	cb.emit_return = emit_return_ilgen;
 	cb.emit_vtfixup_ftnptr = emit_vtfixup_ftnptr_ilgen;
 	cb.mb_skip_visibility = mb_skip_visibility_ilgen;
 	cb.mb_set_dynamic = mb_set_dynamic_ilgen;

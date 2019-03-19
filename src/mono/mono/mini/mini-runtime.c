@@ -1538,7 +1538,7 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 			return addr;
 		}
 
-		if (!vtable->initialized && !mono_class_is_before_field_init (vtable->klass) && (method && mono_class_needs_cctor_run (vtable->klass, method)))
+		if (!vtable->initialized && !mono_class_is_before_field_init (vtable->klass) && (!method || mono_class_needs_cctor_run (vtable->klass, method)))
 			/* Done by the generated code */
 			;
 		else {
@@ -3701,6 +3701,8 @@ mini_parse_debug_option (const char *option)
 		mini_debug_options.gdb = TRUE;
 	else if (!strcmp (option, "lldb"))
 		mini_debug_options.lldb = TRUE;
+	else if (!strcmp (option, "llvm-disable-self-init"))
+		mini_debug_options.llvm_disable_self_init = TRUE;
 	else if (!strcmp (option, "explicit-null-checks"))
 		mini_debug_options.explicit_null_checks = TRUE;
 	else if (!strcmp (option, "gen-seq-points"))
@@ -4662,10 +4664,10 @@ register_icalls (void)
 
 	register_dyn_icall (mini_get_dbg_callbacks ()->user_break, "mono_debugger_agent_user_break", "void", FALSE);
 
-	register_icall (mini_llvmonly_init_method, "mini_llvmonly_init_method", "void ptr int", TRUE);
-	register_icall (mini_llvmonly_init_gshared_method_this, "mini_llvmonly_init_gshared_method_this", "void ptr int object", TRUE);
-	register_icall (mini_llvmonly_init_gshared_method_mrgctx, "mini_llvmonly_init_gshared_method_mrgctx", "void ptr int ptr", TRUE);
-	register_icall (mini_llvmonly_init_gshared_method_vtable, "mini_llvmonly_init_gshared_method_vtable", "void ptr int ptr", TRUE);
+	register_icall (mini_llvm_init_method, "mini_llvm_init_method", "void ptr int", TRUE);
+	register_icall (mini_llvm_init_gshared_method_this, "mini_llvm_init_gshared_method_this", "void ptr int object", TRUE);
+	register_icall (mini_llvm_init_gshared_method_mrgctx, "mini_llvm_init_gshared_method_mrgctx", "void ptr int ptr", TRUE);
+	register_icall (mini_llvm_init_gshared_method_vtable, "mini_llvm_init_gshared_method_vtable", "void ptr int ptr", TRUE);
 
 	register_icall_no_wrapper (mini_llvmonly_resolve_iface_call_gsharedvt, "mini_llvmonly_resolve_iface_call_gsharedvt", "ptr object int ptr ptr");
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt, "mini_llvmonly_resolve_vcall_gsharedvt", "ptr object int ptr ptr");

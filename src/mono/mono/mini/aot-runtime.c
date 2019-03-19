@@ -1102,6 +1102,9 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!sig)
 					return FALSE;
 				ref->method = mini_get_gsharedvt_out_sig_wrapper (sig);
+			} else if (subtype == WRAPPER_SUBTYPE_AOT_INIT) {
+				guint32 init_type = decode_value (p, &p);
+				ref->method = mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype) init_type);
 			} else {
 				mono_error_set_bad_image_by_name (error, module->aot_name, "Invalid UNKNOWN wrapper subtype %d", subtype);
 				return FALSE;
@@ -4405,7 +4408,8 @@ mono_aot_can_dedup (MonoMethod *method)
 
 		if (info->subtype == WRAPPER_SUBTYPE_PTR_TO_STRUCTURE ||
 			info->subtype == WRAPPER_SUBTYPE_STRUCTURE_TO_PTR ||
-			info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)
+			info->subtype == WRAPPER_SUBTYPE_INTERP_LMF ||
+			info->subtype == WRAPPER_SUBTYPE_AOT_INIT)
 			return FALSE;
 		return TRUE;
 	}
@@ -4724,7 +4728,7 @@ mono_aot_get_method (MonoDomain *domain, MonoMethod *method, MonoError *error)
 		method = mono_method_get_declaring_generic_method (method);
 		method_index = mono_metadata_token_index (method->token) - 1;
 
-		if (mono_llvm_only) {
+		if (amodule->llvm_code_start) {
 			/* Needed by mono_aot_init_gshared_method_this () */
 			/* orig_method is a random instance but it is enough to make init_method () work */
 			amodule_lock (amodule);

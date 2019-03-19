@@ -130,7 +130,8 @@ typedef enum {
 	WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG,
 	WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG,
 	WRAPPER_SUBTYPE_INTERP_IN,
-	WRAPPER_SUBTYPE_INTERP_LMF
+	WRAPPER_SUBTYPE_INTERP_LMF,
+	WRAPPER_SUBTYPE_AOT_INIT
 } WrapperSubtype;
 
 typedef struct {
@@ -209,6 +210,20 @@ typedef struct {
 	MonoMethodSignature *sig;
 } InterpInWrapperInfo;
 
+typedef enum {
+	AOT_INIT_METHOD = 0,
+	AOT_INIT_METHOD_GSHARED_MRGCTX = 1,
+	AOT_INIT_METHOD_GSHARED_THIS = 2,
+	AOT_INIT_METHOD_GSHARED_VTABLE = 3
+} MonoAotInitSubtype;
+
+typedef struct {
+	// We emit this code when we init the module,
+	// and later match up the native code with this method
+	// using the name.
+	MonoAotInitSubtype subtype;
+} AOTInitWrapperInfo;
+
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -253,6 +268,8 @@ typedef struct {
 		DelegateInvokeWrapperInfo delegate_invoke;
 		/* INTERP_IN */
 		InterpInWrapperInfo interp_in;
+		/* AOT_INIT */
+		AOTInitWrapperInfo aot_init;
 	} d;
 } WrapperInfo;
 
@@ -307,6 +324,7 @@ typedef struct {
 	void (*emit_create_string_hack) (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res);
 	void (*emit_native_icall_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig, gboolean check_exceptions, gboolean aot, MonoMethodPInvoke *pinfo);
 	void (*emit_icall_wrapper) (MonoMethodBuilder *mb, MonoMethodSignature *sig, gconstpointer func, MonoMethodSignature *csig2, gboolean check_exceptions);
+	void (*emit_return) (MonoMethodBuilder *mb);
 	void (*emit_vtfixup_ftnptr) (MonoMethodBuilder *mb, MonoMethod *method, int param_count, guint16 type);
 	void (*mb_skip_visibility) (MonoMethodBuilder *mb);
 	void (*mb_set_dynamic) (MonoMethodBuilder *mb);
@@ -413,6 +431,12 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type);
 
 MonoMethod *
 mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gconstpointer func, gboolean check_exceptions);
+
+MonoMethod *
+mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype);
+
+const char *
+mono_marshal_get_aot_init_wrapper_name (MonoAotInitSubtype subtype);
 
 MonoMethod *
 mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, gboolean aot);

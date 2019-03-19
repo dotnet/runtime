@@ -2914,6 +2914,11 @@ static void
 emit_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, gconstpointer func, MonoMethodSignature *csig2, gboolean check_exceptions)
 {
 }
+
+static void
+emit_return_noilgen (MonoMethodBuilder *mb)
+{
+}
 #endif
 
 /**
@@ -2955,6 +2960,74 @@ mono_marshal_get_icall_wrapper (MonoMethodSignature *sig, const char *name, gcon
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_ICALL_WRAPPER);
 	info->d.icall.func = (gpointer)func;
 	res = mono_mb_create_and_cache_full (cache, (gpointer) func, mb, csig, csig->param_count + 16, info, NULL);
+	mono_mb_free (mb);
+
+	return res;
+}
+
+const char *
+mono_marshal_get_aot_init_wrapper_name (MonoAotInitSubtype subtype)
+{
+	const char *name = NULL;
+	switch (subtype) {
+		case AOT_INIT_METHOD:
+			name = "init_method";
+			break;
+		case AOT_INIT_METHOD_GSHARED_MRGCTX:
+			name = "init_method_gshared_mrgctx";
+			break;
+		case AOT_INIT_METHOD_GSHARED_THIS:
+			name = "init_method_gshared_this";
+			break;
+		case AOT_INIT_METHOD_GSHARED_VTABLE:
+			name = "init_method_gshared_vtable";
+			break;
+		default:
+			g_assert_not_reached ();
+	}
+	return name;
+}
+
+MonoMethod *
+mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype)
+{
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	WrapperInfo *info;
+	MonoMethodSignature *csig = NULL;
+	MonoType *void_type = mono_get_void_type ();
+	MonoType *int_type = mono_get_int_type ();
+	const char *name = mono_marshal_get_aot_init_wrapper_name (subtype);
+
+	switch (subtype) {
+		case AOT_INIT_METHOD:
+			csig = mono_metadata_signature_alloc (mono_defaults.corlib, 2);
+			csig->ret = void_type;
+			csig->params [0] = int_type;
+			csig->params [1] = int_type;
+			break;
+		case AOT_INIT_METHOD_GSHARED_MRGCTX:
+		case AOT_INIT_METHOD_GSHARED_THIS:
+		case AOT_INIT_METHOD_GSHARED_VTABLE:
+			csig = mono_metadata_signature_alloc (mono_defaults.corlib, 3);
+			csig->ret = void_type;
+			csig->params [0] = int_type;
+			csig->params [1] = int_type;
+			csig->params [2] = int_type;
+			break;
+		default:
+			g_assert_not_reached ();
+	}
+
+	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_OTHER);
+
+	// Just stub out the method with a "CEE_RET"
+	// Our codegen backend generates other code here
+	get_marshal_cb ()->emit_return (mb);
+
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_AOT_INIT);
+	info->d.aot_init.subtype = subtype;
+	res = mono_mb_create (mb, csig, csig->param_count + 16, info);
 	mono_mb_free (mb);
 
 	return res;
@@ -6243,6 +6316,7 @@ install_noilgen (void)
 	cb.emit_create_string_hack = emit_create_string_hack_noilgen;
 	cb.emit_native_icall_wrapper = emit_native_icall_wrapper_noilgen;
 	cb.emit_icall_wrapper = emit_icall_wrapper_noilgen;
+	cb.emit_return = emit_return_noilgen;
 	cb.emit_vtfixup_ftnptr = emit_vtfixup_ftnptr_noilgen;
 	cb.mb_skip_visibility = mb_skip_visibility_noilgen;
 	cb.mb_set_dynamic = mb_set_dynamic_noilgen;

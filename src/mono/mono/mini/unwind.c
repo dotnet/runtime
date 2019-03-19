@@ -349,10 +349,6 @@ mono_print_unwind_info (guint8 *unwind_info, int unwind_info_len)
 				reg = decode_uleb128 (p, &p);
 				printf ("CFA: [%x] same_value: %s\n", pos, mono_arch_regname (mono_dwarf_reg_to_hw_reg (reg)));
 				break;
-			case DW_CFA_advance_loc4:
-				pos += read32 (p);
-				p += 4;
-				break;
 			case DW_CFA_remember_state:
 				printf ("CFA: [%x] remember_state\n", pos);
 				break;
@@ -361,6 +357,21 @@ mono_print_unwind_info (guint8 *unwind_info, int unwind_info_len)
 				break;
 			case DW_CFA_mono_advance_loc:
 				printf ("CFA: [%x] mono_advance_loc\n", pos);
+				break;
+			case DW_CFA_advance_loc1:
+				printf ("CFA: [%x] advance_loc1\n", pos);
+				pos += *p;
+				p += 1;
+				break;
+			case DW_CFA_advance_loc2:
+				printf ("CFA: [%x] advance_loc2\n", pos);
+				pos += read16 (p);
+				p += 2;
+				break;
+			case DW_CFA_advance_loc4:
+				printf ("CFA: [%x] advance_loc4\n", pos);
+				pos += read32 (p);
+				p += 4;
 				break;
 			default:
 				g_assert_not_reached ();
