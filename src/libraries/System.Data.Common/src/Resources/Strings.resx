@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -414,7 +413,7 @@
   <data name="SQL_WrongType" xml:space="preserve"><value>Expecting argument of type {1}, but received type {0}.</value></data>
   <data name="ADP_InvalidConnectionOptionValue" xml:space="preserve"><value>Invalid value for key '{0}'.</value></data>
   <data name="ADP_KeywordNotSupported" xml:space="preserve"><value>Keyword not supported: '{0}'.</value></data>
-  <data name="ADP_InternalProviderError" xml:space="preserve"><value>Internal .Net Framework Data Provider error {0}.</value></data>
+  <data name="ADP_InternalProviderError" xml:space="preserve"><value>Internal .NET Framework Data Provider error {0}.</value></data>
   <data name="ADP_NoQuoteChange" xml:space="preserve"><value>The QuotePrefix and QuoteSuffix properties cannot be changed once an Insert, Update, or Delete command has been generated.</value></data>
   <data name="ADP_MissingSourceCommand" xml:space="preserve"><value>The DataAdapter.SelectCommand property needs to be initialized.</value></data>
   <data name="ADP_MissingSourceCommandConnection" xml:space="preserve"><value>The DataAdapter.SelectCommand.Connection property needs to be initialized;</value></data>

@@ -20,6 +20,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public partial class HttpWebRequestTest : RemoteExecutorTestBase
     {
         private const string RequestBody = "This is data to POST.";
@@ -27,7 +29,7 @@ namespace System.Net.Tests
         private readonly NetworkCredential _explicitCredential = new NetworkCredential("user", "password", "domain");
         private readonly ITestOutputHelper _output;
 
-        public static readonly object[][] EchoServers = System.Net.Test.Common.Configuration.Http.EchoServers;
+        public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
 
         public static IEnumerable<object[]> Dates_ReadValue_Data()
         {
@@ -1247,17 +1249,16 @@ namespace System.Net.Tests
             Assert.Equal(WebExceptionStatus.NameResolutionFailure, ex.Status);
         }
 
-        public static object[][] StatusCodeServers = {
-            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(false, 404) },
-            new object[] { System.Net.Test.Common.Configuration.Http.StatusCodeUri(true, 404) },
-        };
-
-        [Theory, MemberData(nameof(StatusCodeServers))]
-        public async Task GetResponseAsync_ResourceNotFound_ThrowsWebException(Uri remoteServer)
+        [Fact]
+        public async Task GetResponseAsync_ResourceNotFound_ThrowsWebException()
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            WebException ex = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
-            Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                WebException ex = await Assert.ThrowsAsync<WebException>(() => request.GetResponseAsync());
+                Assert.Equal(WebExceptionStatus.ProtocolError, ex.Status);
+            }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync(
+                $"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"));
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1313,6 +1314,44 @@ namespace System.Net.Tests
         {
             HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
             Assert.NotNull(request.Proxy);
+        }
+
+        [OuterLoop("Uses external server")]
+        [PlatformSpecific(TestPlatforms.AnyUnix)] // The default proxy is resolved via WinINet on Windows.
+        [Fact]
+        public async Task ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed()
+        {
+            const string ExpectedUsername = "rightusername";
+            const string ExpectedPassword = "rightpassword";
+            LoopbackServer.Options options =
+                new LoopbackServer.Options { IsProxy = true, Username = ExpectedUsername, Password = ExpectedPassword };
+
+            await LoopbackServer.CreateServerAsync(async (proxyServer, proxyUri) =>
+            {
+                // HttpWebRequest/HttpClient will read a default proxy from the http_proxy environment variable. Ensure
+                // that when it does our default proxy credentials are used. To avoid messing up anything else in this
+                // process we run the test in another process.
+                var psi = new ProcessStartInfo();
+                Task<List<string>> proxyTask = null;
+
+                proxyTask = proxyServer.AcceptConnectionPerformAuthenticationAndCloseAsync("Proxy-Authenticate: Basic realm=\"NetCore\"\r\n");
+                psi.Environment.Add("http_proxy", $"http://{proxyUri.Host}:{proxyUri.Port}");
+
+                RemoteInvoke(async () =>
+                {
+                    WebRequest.DefaultWebProxy.Credentials = new NetworkCredential(ExpectedUsername, ExpectedPassword);
+                    HttpWebRequest request = HttpWebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
+
+                    using (var response = (HttpWebResponse) await request.GetResponseAsync())
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    }
+
+                    return SuccessExitCode;
+                }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+
+                await proxyTask;
+            }, options);
         }
 
         [Theory, MemberData(nameof(EchoServers))]

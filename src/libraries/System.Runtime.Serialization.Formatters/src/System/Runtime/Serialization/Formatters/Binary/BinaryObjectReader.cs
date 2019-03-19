@@ -137,7 +137,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             if (!t.IsSerializable && !HasSurrogate(t))
             {
-                throw new SerializationException(string.Format(CultureInfo.InvariantCulture, SR.Serialization_NonSerType, t.FullName, t.Assembly.FullName));
+                throw new SerializationException(SR.Format(CultureInfo.InvariantCulture, SR.Serialization_NonSerType, t.FullName, t.Assembly.FullName));
             }
         }
 

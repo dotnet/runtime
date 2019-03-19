@@ -18,7 +18,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(PositiveInfinitySymbol_TestData))]
-        public void PositiveInfinitySymbol_Get(NumberFormatInfo format)
+        public void PositiveInfinitySymbol_Get_ReturnsExpected(NumberFormatInfo format)
         {
             Assert.Equal(float.PositiveInfinity.ToString(format), format.PositiveInfinitySymbol);
         }
@@ -27,7 +27,7 @@ namespace System.Globalization.Tests
         [InlineData("string")]
         [InlineData("   ")]
         [InlineData("")]
-        public void PositiveInfinitySymbol_Set(string newPositiveInfinitySymbol)
+        public void PositiveInfinitySymbol_Set_GetReturnsExpected(string newPositiveInfinitySymbol)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.PositiveInfinitySymbol = newPositiveInfinitySymbol;
@@ -35,9 +35,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void PositiveInfinitySymbol_Set_Invalid()
+        public void PositiveInfinitySymbol_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("PositiveInfinitySymbol", () => new NumberFormatInfo().PositiveInfinitySymbol = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "PositiveInfinitySymbol", () => format.PositiveInfinitySymbol = null);
+        }
+
+        [Fact]
+        public void PositiveInfinitySymbol_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PositiveInfinitySymbol = "");
         }
     }

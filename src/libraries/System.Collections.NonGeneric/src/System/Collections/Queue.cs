@@ -381,7 +381,6 @@ namespace System.Collections
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Thread safety problems with precondition - can't express the precondition as of Dev10.
             public override object Dequeue()
             {
                 lock (_root)
@@ -398,7 +397,6 @@ namespace System.Collections
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Thread safety problems with precondition - can't express the precondition as of Dev10.
             public override object Peek()
             {
                 lock (_root)

@@ -3417,7 +3417,7 @@ namespace CoreXml.Test.XLinq
                     using (XmlReader reader = doc.CreateReader())
                     {
                         Exception exception = AssertExtensions.Throws<ArgumentException>(null, () => MoveToFirstElement(reader).ReadOuterXml());
-                        if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
+                        if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages
                         {
                             // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
                             // \p{Pf} any kind of closing quote https://www.compart.com/en/unicode/category/Pf
@@ -3615,7 +3615,7 @@ namespace CoreXml.Test.XLinq
                     using (XmlReader reader = doc.CreateReader())
                     {
                         Exception exception = AssertExtensions.Throws<ArgumentException>(null, () => MoveToFirstElement(reader).ReadOuterXml());
-                        if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
+                        if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages
                         {
                             // \b word boundary
                             // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi
@@ -4223,7 +4223,7 @@ namespace CoreXml.Test.XLinq
                     using (XmlReader reader = doc.CreateReader())
                     {
                         Exception exception = AssertExtensions.Throws<ArgumentException>(null, () => MoveToFirstElement(reader).ReadOuterXml());
-                        if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away Exception messages
+                        if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away Exception messages
                         {
                             // \b word boundary
                             // \p{Pi} any kind of opening quote https://www.compart.com/en/unicode/category/Pi

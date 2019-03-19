@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -37,8 +36,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (taskProvider == null)
                 throw new ArgumentNullException(nameof(taskProvider));
 
-            Contract.EndContractBlock();
-
             return new TaskToAsyncActionAdapter(taskProvider);
         }
 
@@ -62,8 +59,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (taskProvider == null)
                 throw new ArgumentNullException(nameof(taskProvider));
 
-            Contract.EndContractBlock();
-
             return new TaskToAsyncActionWithProgressAdapter<TProgress>(taskProvider);
         }
 
@@ -85,8 +80,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (taskProvider == null)
                 throw new ArgumentNullException(nameof(taskProvider));
-
-            Contract.EndContractBlock();
 
             return new TaskToAsyncOperationAdapter<TResult>(taskProvider);
         }
@@ -113,8 +106,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (taskProvider == null)
                 throw new ArgumentNullException(nameof(taskProvider));
-
-            Contract.EndContractBlock();
 
             return new TaskToAsyncOperationWithProgressAdapter<TResult, TProgress>(taskProvider);
         }
@@ -160,7 +151,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (error == null)
                 throw new ArgumentNullException(nameof(error));
-            Contract.EndContractBlock();
 
             var asyncInfo = new TaskToAsyncActionAdapter(isCanceled: false);
 
@@ -175,7 +165,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (error == null)
                 throw new ArgumentNullException(nameof(error));
-            Contract.EndContractBlock();
 
             var asyncInfo = new TaskToAsyncActionWithProgressAdapter<TProgress>(isCanceled: false);
 
@@ -190,7 +179,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (error == null)
                 throw new ArgumentNullException(nameof(error));
-            Contract.EndContractBlock();
 
             var asyncInfo = new TaskToAsyncOperationAdapter<TResult>(default(TResult));
 
@@ -205,7 +193,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (error == null)
                 throw new ArgumentNullException(nameof(error));
-            Contract.EndContractBlock();
 
             var asyncInfo = new TaskToAsyncOperationWithProgressAdapter<TResult, TProgress>(default(TResult));
 

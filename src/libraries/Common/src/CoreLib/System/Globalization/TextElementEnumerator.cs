@@ -2,36 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-////////////////////////////////////////////////////////////////////////////
-//
-//
-//  Purpose:  
-//
-//
-////////////////////////////////////////////////////////////////////////////
-
 using System.Collections;
 using System.Diagnostics;
 
 namespace System.Globalization
 {
-    //
-    // This is public because GetTextElement() is public.
-    //
-
     public class TextElementEnumerator : IEnumerator
     {
-        private string _str;
+        private readonly string _str;
         private int _index;
-        private int _startIndex;
+        private readonly int _startIndex;
 
-        private int _strLen;                // This is the length of the total string, counting from the beginning of string.
+                // This is the length of the total string, counting from the beginning of string.
+        private readonly int _strLen;
 
-        private int _currTextElementLen; // The current text element lenght after MoveNext() is called.
+        // The current text element lenght after MoveNext() is called.
+        private int _currTextElementLen;
 
         private UnicodeCategory _uc;
 
-        private int _charLen;            // The next abstract char to look at after MoveNext() is called.  It could be 1 or 2, depending on if it is a surrogate or not.
+        // The next abstract char to look at after MoveNext() is called.
+        // It could be 1 or 2, depending on if it is a surrogate or not.
+        private int _charLen;
 
         internal TextElementEnumerator(string str, int startIndex, int strLen)
         {
@@ -50,28 +42,15 @@ namespace System.Globalization
             {
                 // Make the _index to be greater than _strLen so that we can throw exception if GetTextElement() is called.
                 _index = _strLen + 1;
-                return (false);
+                return false;
             }
+
             _currTextElementLen = StringInfo.GetCurrentTextElementLen(_str, _index, _strLen, ref _uc, ref _charLen);
             _index += _currTextElementLen;
-            return (true);
+            return true;
         }
 
-        //
-        // Get the current text element.
-        //
-
-        public object Current
-        {
-            get
-            {
-                return (GetTextElement());
-            }
-        }
-
-        //
-        // Get the current text element.
-        //
+        public object Current => GetTextElement();
 
         public string GetTextElement()
         {
@@ -84,12 +63,8 @@ namespace System.Globalization
                 throw new InvalidOperationException(SR.InvalidOperation_EnumEnded);
             }
 
-            return (_str.Substring(_index - _currTextElementLen, _currTextElementLen));
+            return _str.Substring(_index - _currTextElementLen, _currTextElementLen);
         }
-
-        //
-        // Get the starting index of the current text element.
-        //
 
         public int ElementIndex
         {
@@ -99,10 +74,10 @@ namespace System.Globalization
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_EnumNotStarted);
                 }
-                return (_index - _currTextElementLen);
+
+                return _index - _currTextElementLen;
             }
         }
-
 
         public void Reset()
         {

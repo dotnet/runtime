@@ -188,7 +188,7 @@ namespace System.Xml.Xsl.Qil
                 message = s + "\n" + message;
             }
             n.Annotation = message;
-            Debug.Assert(false, message);
+            Debug.Fail(message);
         }
     }
 }

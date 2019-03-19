@@ -9,35 +9,40 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortTimePattern
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
-        public void ShortTimePattern_InvariantInfo()
+        public void ShortTimePattern_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("HH:mm", DateTimeFormatInfo.InvariantInfo.ShortTimePattern);
         }
 
-        public static IEnumerable<object[]> ShortTimePattern_TestData()
+        public static IEnumerable<object[]> ShortTimePattern_Set_TestData()
         {
+            yield return new object[] { string.Empty };
+            yield return new object[] { "garbage" };
             yield return new object[] { "dddd, dd MMMM yyyy HH:mm:ss" };
             yield return new object[] { "HH:mm" };
             yield return new object[] { "t" };
-            yield return new object[] { s_randomDataGenerator.GetString(-55, false, 1, 256) };
         }
 
         [Theory]
-        [MemberData(nameof(ShortTimePattern_TestData))]
-        public void ShortTimePattern_Set(string newShortTimePattern)
+        [MemberData(nameof(ShortTimePattern_Set_TestData))]
+        public void ShortTimePattern_Set_GetReturnsExpected(string value)
         {
             var format = new DateTimeFormatInfo();
-            format.ShortTimePattern = newShortTimePattern;
-            Assert.Equal(newShortTimePattern, format.ShortTimePattern);
+            format.ShortTimePattern = value;
+            Assert.Equal(value, format.ShortTimePattern);
         }
 
         [Fact]
-        public void ShortTimePattern_Set_Invalid()
+        public void ShortTimePattern_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().ShortTimePattern = null); // Value is null
-            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortTimePattern = "HH:mm"); // DateTimeFormatInfo.InvariantInfo is read only
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.ShortTimePattern = null);
+        }
+
+        [Fact]
+        public void ShortTimePattern_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortTimePattern = "HH:mm");
         }
     }
 }

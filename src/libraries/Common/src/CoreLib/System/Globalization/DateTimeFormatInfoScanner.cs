@@ -635,7 +635,7 @@ namespace System.Globalization
             // Check each string 
             for (int i = 0; i < array1.Length; i++)
             {
-                if (!array1[i].Equals(array2[i]))
+                if (array1[i] != array2[i])
                 {
                     return false;
                 }

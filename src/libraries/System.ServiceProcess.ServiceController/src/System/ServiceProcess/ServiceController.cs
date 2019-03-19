@@ -259,7 +259,7 @@ namespace System.ServiceProcess
                 }
 
                 if (!ServiceBase.ValidServiceName(value))
-                    throw new ArgumentException(SR.Format(SR.ServiceName, value, ServiceBase.MaxNameLength.ToString(CultureInfo.CurrentCulture)));
+                    throw new ArgumentException(SR.Format(SR.ServiceName, value, ServiceBase.MaxNameLength.ToString()));
 
                 Close();
                 _name = value;
@@ -488,7 +488,7 @@ namespace System.ServiceProcess
                 string userGivenName = String.IsNullOrEmpty(_eitherName) ? _displayName : _eitherName;
 
                 if (String.IsNullOrEmpty(userGivenName))
-                    throw new InvalidOperationException(SR.Format(SR.ServiceName, userGivenName, ServiceBase.MaxNameLength.ToString(CultureInfo.CurrentCulture)));
+                    throw new InvalidOperationException(SR.Format(SR.ServiceName, userGivenName, ServiceBase.MaxNameLength.ToString()));
 
                 // Try it as a display name
                 string result = GetServiceKeyName(_serviceManagerHandle, userGivenName);

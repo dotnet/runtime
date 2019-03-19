@@ -8,7 +8,6 @@ using System.Composition.Diagnostics;
 using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -387,8 +386,8 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Contract.Ensures(Contract.Result<string>() != null);
-                
+                Debug.Assert(_fullPath != null);
+
                 return _fullPath;
             }
         }
@@ -400,10 +399,9 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Contract.Ensures(Contract.Result<ReadOnlyCollection<string>>() != null);
-
                 using (new ReadLock(_thisLock))
                 {
+                    Debug.Assert(_loadedFiles != null);
                     return _loadedFiles;
                 }
             }
@@ -416,8 +414,8 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Contract.Ensures(Contract.Result<string>() != null);
-                
+                Debug.Assert(_path != null);
+
                 return _path;
             }
         }

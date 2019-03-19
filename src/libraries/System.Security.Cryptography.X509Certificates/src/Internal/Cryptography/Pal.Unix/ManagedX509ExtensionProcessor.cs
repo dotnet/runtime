@@ -33,7 +33,7 @@ namespace Internal.Cryptography.Pal
         public virtual void DecodeX509KeyUsageExtension(byte[] encoded, out X509KeyUsageFlags keyUsages)
         {
             AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
-            KeyUsageFlagsAsn keyUsagesAsn = reader.GetNamedBitListValue<KeyUsageFlagsAsn>();
+            KeyUsageFlagsAsn keyUsagesAsn = reader.ReadNamedBitListValue<KeyUsageFlagsAsn>();
             reader.ThrowIfNotEmpty();
 
             // DER encodings of BIT_STRING values number the bits as
@@ -180,7 +180,7 @@ namespace Internal.Cryptography.Pal
         {
             AsnReader reader = new AsnReader(encoded, AsnEncodingRules.BER);
             ReadOnlyMemory<byte> contents;
-            if (!reader.TryGetPrimitiveOctetStringBytes(out contents))
+            if (!reader.TryReadPrimitiveOctetStringBytes(out contents))
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }

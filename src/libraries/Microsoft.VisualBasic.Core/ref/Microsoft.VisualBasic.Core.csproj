@@ -4,7 +4,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Microsoft.VisualBasic.cs" />
+    <Compile Include="Microsoft.VisualBasic.Core.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.ComponentModel\ref\System.ComponentModel.csproj" />

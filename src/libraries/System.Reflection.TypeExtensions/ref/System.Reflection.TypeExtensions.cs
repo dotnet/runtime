@@ -5,8 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
-[assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Reflection.BindingFlags))]
 namespace System.Reflection
 {
     public static partial class AssemblyExtensions
@@ -26,8 +24,8 @@ namespace System.Reflection
     }
     public static partial class MemberInfoExtensions
     {
-        public static bool HasMetadataToken(this MemberInfo member) { throw null; }
-        public static int GetMetadataToken(this MemberInfo member) { throw null; }
+        public static int GetMetadataToken(this System.Reflection.MemberInfo member) { throw null; }
+        public static bool HasMetadataToken(this System.Reflection.MemberInfo member) { throw null; }
     }
     public static partial class MethodInfoExtensions
     {
@@ -35,8 +33,8 @@ namespace System.Reflection
     }
     public static partial class ModuleExtensions
     {
-        public static bool HasModuleVersionId(this Module module) { throw null; }
-        public static Guid GetModuleVersionId(this Module module) { throw null; }
+        public static System.Guid GetModuleVersionId(this System.Reflection.Module module) { throw null; }
+        public static bool HasModuleVersionId(this System.Reflection.Module module) { throw null; }
     }
     public static partial class PropertyInfoExtensions
     {

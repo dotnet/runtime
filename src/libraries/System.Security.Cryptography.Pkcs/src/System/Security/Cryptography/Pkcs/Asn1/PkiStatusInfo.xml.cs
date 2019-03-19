@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -27,14 +31,14 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             {
                 // Validator for tag constraint for StatusString
                 {
-                    if (!Asn1Tag.TryParse(StatusString.Value.Span, out Asn1Tag validateTag, out _) ||
+                    if (!Asn1Tag.TryDecode(StatusString.Value.Span, out Asn1Tag validateTag, out _) ||
                         !validateTag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
                     {
                         throw new CryptographicException();
                     }
                 }
 
-                writer.WriteEncodedValue(StatusString.Value);
+                writer.WriteEncodedValue(StatusString.Value.Span);
             }
 
 
@@ -85,13 +89,13 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (sequenceReader.HasData)
             {
-                decoded.StatusString = sequenceReader.GetEncodedValue();
+                decoded.StatusString = sequenceReader.ReadEncodedValue();
             }
 
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.PrimitiveBitString))
             {
-                decoded.FailInfo = sequenceReader.GetNamedBitListValue<System.Security.Cryptography.Pkcs.Asn1.PkiFailureInfo>();
+                decoded.FailInfo = sequenceReader.ReadNamedBitListValue<System.Security.Cryptography.Pkcs.Asn1.PkiFailureInfo>();
             }
 
 

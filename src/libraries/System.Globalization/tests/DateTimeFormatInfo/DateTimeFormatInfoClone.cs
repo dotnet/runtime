@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Clone_TestData))]
-        public void Clone(DateTimeFormatInfo format)
+        public void Clone_Invoke_ReturnsExpected(DateTimeFormatInfo format)
         {
             DateTimeFormatInfo clone = (DateTimeFormatInfo)format.Clone();
             Assert.NotSame(format, clone);

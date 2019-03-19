@@ -418,7 +418,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if (_sourceProvider == null)
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, SR.ObjectMustBeInitialized, "SourceProvider")); // NOLOC
+                throw new InvalidOperationException(SR.Format(SR.ObjectMustBeInitialized, "SourceProvider")); // NOLOC
             }
         }
 
@@ -444,7 +444,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             if ((_isRunning) || (currentValue != null))
             {
-                throw new InvalidOperationException(string.Format(CultureInfo.CurrentCulture, SR.ObjectAlreadyInitialized));
+                throw new InvalidOperationException(SR.ObjectAlreadyInitialized);
             }
         }
     }

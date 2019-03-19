@@ -34,7 +34,7 @@ namespace System.Reflection
     //         The generated DispatchProxy proxy type does not need to generate implementation methods
     //         for the base type's interfaces, because the base type already must have implemented them.
     //  4. RealProxy required a proxy instance to hold a backpointer to the RealProxy instance to mirror
-    //     the .Net Remoting design that required the proxy and RealProxy to be separate instances.
+    //     the .NET Remoting design that required the proxy and RealProxy to be separate instances.
     //     But the DispatchProxy design encourages the proxy type to *be* an DispatchProxy.  Therefore,
     //     the proxy's 'this' becomes the equivalent of RealProxy's backpointer to RealProxy, so we were
     //     able to remove an extraneous field and ctor arg from the DispatchProxy proxies.

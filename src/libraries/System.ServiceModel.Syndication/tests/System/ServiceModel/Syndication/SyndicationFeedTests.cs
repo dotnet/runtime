@@ -22,12 +22,12 @@ namespace System.ServiceModel.Syndication.Tests
 
         public static IEnumerable<object[]> Ctor_Items_TestData()
         {
-            yield return new object[] { null };
             yield return new object[] { new SyndicationItem[0] };
             yield return new object[] { new SyndicationItem[] { new SyndicationItem(), null } };
         }
 
         [Theory]
+        [InlineData(null)]
         [MemberData(nameof(Ctor_Items_TestData))]
         public void Ctor_Items(IEnumerable<SyndicationItem> items)
         {
@@ -236,6 +236,14 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Fact]
+        public void Load_InvalidReader_ThrowsXmlException()
+        {
+            XmlReader reader = new XElement("invalid").CreateReader();
+            Assert.Throws<XmlException>(() => SyndicationFeed.Load(reader));
+            Assert.Throws<XmlException>(() => SyndicationFeed.Load<SyndicationFeed>(reader));
+        }
+
+        [Fact]
         public void GetAtom10Formatter_Invoke_ReturnsExpected()
         {
             var feed = new SyndicationFeed();
@@ -387,6 +395,24 @@ namespace System.ServiceModel.Syndication.Tests
         {
             var feed = new SyndicationFeedSubclass();
             AssertExtensions.Throws<ArgumentNullException>("writer", () => feed.WriteElementExtensionsEntryPoint(null, "version"));
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Items_TestData))]
+        public void Items_Set_GetReturnsExpected(IEnumerable<SyndicationItem> value)
+        {
+            var feed = new SyndicationFeed
+            {
+                Items = value
+            };
+            Assert.Same(value, feed.Items);
+        }
+
+        [Fact]
+        public void Items_SetNull_ThrowsArgumentNullException()
+        {
+            var feed = new SyndicationFeed();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => feed.Items = null);
         }
 
         private static void VerifySyndicationFeed(SyndicationFeed feed, string title, string description, Uri feedAlternateLink, string id, DateTimeOffset lastUpdatedTime, IEnumerable<SyndicationItem> items)

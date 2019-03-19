@@ -27,7 +27,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetMonthName_TestData))]
-        public void GetMonthName(DateTimeFormatInfo format, string[] expected)
+        public void GetMonthName_Invoke_ReturnsExpected(DateTimeFormatInfo format, string[] expected)
         {
             for (int i = MinMonth; i <= MaxMonth; ++i)
             {
@@ -35,11 +35,13 @@ namespace System.Globalization.Tests
             }
         }
 
-        [Fact]
-        public void GetMonthName_Invalid()
+        [Theory]
+        [InlineData(MinMonth - 1)]
+        [InlineData(MaxMonth + 1)]
+        public void GetMonthName_InvalidMonth_ThrowsArgumentOutOfRangeException(int month)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("month", () => new DateTimeFormatInfo().GetMonthName(MinMonth - 1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("month", () => new DateTimeFormatInfo().GetMonthName(MaxMonth + 1));
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("month", () => format.GetMonthName(month));
         }
     }
 }

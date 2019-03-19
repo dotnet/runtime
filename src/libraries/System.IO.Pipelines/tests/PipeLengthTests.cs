@@ -73,7 +73,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task LengthDecreasedAfterReadAdvanceConsume()
+        public async Task LengthDecreasedAfterReadAdvanceExamined()
         {
             _pipe.Writer.GetMemory(100);
             _pipe.Writer.Advance(10);
@@ -87,7 +87,19 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task LengthNotChangeAfterReadAdvanceExamine()
+        public async Task LengthDoesNotChangeIfExamineDoesNotChange()
+        {
+            PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(10);
+            await writableBuffer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.Start);
+
+            Assert.Equal(10, _pipe.Length);
+        }
+
+        [Fact]
+        public async Task LengthChangesIfExaminedChanges()
         {
             PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(10);
             await writableBuffer.FlushAsync();
@@ -95,7 +107,176 @@ namespace System.IO.Pipelines.Tests
             ReadResult result = await _pipe.Reader.ReadAsync();
             _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.End);
 
-            Assert.Equal(10, _pipe.Length);
+            Assert.Equal(0, _pipe.Length);
+        }
+
+        [Fact]
+        public async Task LengthIsBasedOnPreviouslyExamined()
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                PipeWriter writableBuffer = _pipe.Writer.WriteEmpty(10);
+                await writableBuffer.FlushAsync();
+
+                ReadResult result = await _pipe.Reader.ReadAsync();
+                _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.End);
+
+                Assert.Equal(0, _pipe.Length);
+            }
+        }
+
+        [Fact]
+        public async Task PooledSegmentsDontAffectLastExaminedSegment()
+        {
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            // This gets the end of the first block
+            SequencePosition position = result.Buffer.Slice(result.Buffer.Start, _pool.MaxBufferSize).End;
+
+            // This should return the first segment
+            _pipe.Reader.AdvanceTo(position);
+
+            // One block remaining
+            Assert.Equal(4096, _pipe.Length);
+
+            // This should use the segment that was returned
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.Start);
+
+            Assert.Equal(8192, _pipe.Length);
+
+            result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.End);
+
+            Assert.Equal(0, _pipe.Length);
+        }
+
+        [Fact]
+        public async Task PooledSegmentsDontAffectLastExaminedSegmentEmptyGapWithDifferentBlocks()
+        {
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            // This gets the end of the first block
+            SequencePosition endOfFirstBlock = result.Buffer.Slice(result.Buffer.Start, _pool.MaxBufferSize).End;
+            // Start of the next block
+            SequencePosition startOfSecondBlock = result.Buffer.GetPosition(_pool.MaxBufferSize);
+
+            Assert.NotSame(endOfFirstBlock.GetObject(), startOfSecondBlock.GetObject());
+
+            // This should return the first segment
+            _pipe.Reader.AdvanceTo(startOfSecondBlock, endOfFirstBlock);
+
+            // One block remaining
+            Assert.Equal(4096, _pipe.Length);
+
+            // This should use the segment that was returned
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.Start);
+
+            Assert.Equal(8192, _pipe.Length);
+
+            result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.End);
+
+            Assert.Equal(0, _pipe.Length);
+        }
+
+        [Fact]
+        public async Task ExaminedAtSecondLastBlockWorks()
+        {
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            // This gets the end of the first block
+            SequencePosition position = result.Buffer.Slice(result.Buffer.Start, _pool.MaxBufferSize).End;
+
+            // This should return the first segment
+            _pipe.Reader.AdvanceTo(position, result.Buffer.GetPosition(_pool.MaxBufferSize * 2));
+
+            // One block remaining
+            Assert.Equal(4096, _pipe.Length);
+
+            // This should use the segment that was returned
+            _pipe.Writer.WriteEmpty(_pool.MaxBufferSize);
+            await _pipe.Writer.FlushAsync();
+
+            result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.End);
+
+            Assert.Equal(0, _pipe.Length);
+        }
+
+        [Fact]
+        public async Task ExaminedLessThanBeforeThrows()
+        {
+            _pipe.Writer.WriteEmpty(10);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.End);
+
+            Assert.Equal(0, _pipe.Length);
+
+            _pipe.Writer.WriteEmpty(10);
+            await _pipe.Writer.FlushAsync();
+
+            result = await _pipe.Reader.ReadAsync();
+            Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(result.Buffer.Start, result.Buffer.Start));
+        }
+
+        [Fact]
+        public async Task ConsumedGreatherThanExaminedThrows()
+        {
+            _pipe.Writer.WriteEmpty(10);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            Assert.Throws<InvalidOperationException>(() => _pipe.Reader.AdvanceTo(result.Buffer.End, result.Buffer.Start));
+        }
+
+        [Fact]
+        public async Task NullConsumedOrExaminedNoops()
+        {
+            _pipe.Writer.WriteEmpty(10);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(default, result.Buffer.End);
+        }
+
+        [Fact]
+        public async Task NullExaminedNoops()
+        {
+            _pipe.Writer.WriteEmpty(10);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(result.Buffer.Start, default);
+        }
+
+        [Fact]
+        public async Task NullExaminedAndConsumedNoops()
+        {
+            _pipe.Writer.WriteEmpty(10);
+            await _pipe.Writer.FlushAsync();
+
+            ReadResult result = await _pipe.Reader.ReadAsync();
+            _pipe.Reader.AdvanceTo(default, default);
         }
     }
 }

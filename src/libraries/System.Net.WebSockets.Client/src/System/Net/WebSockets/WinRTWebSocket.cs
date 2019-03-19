@@ -124,7 +124,7 @@ namespace System.Net.WebSockets
             {
                 if (!MessageWebSocketClientCertificateSupported)
                 {
-                    throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                    throw new PlatformNotSupportedException(SR.Format(CultureInfo.InvariantCulture,
                         SR.net_WebSockets_UWPClientCertSupportRequiresWindows10GreaterThan1703));
                 }
 
@@ -134,7 +134,7 @@ namespace System.Net.WebSockets
                     RTCertificate winRtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(dotNetClientCert).ConfigureAwait(false);
                     if (winRtClientCert == null)
                     {
-                        throw new PlatformNotSupportedException(string.Format(
+                        throw new PlatformNotSupportedException(SR.Format(
                                     CultureInfo.InvariantCulture,
                                     SR.net_WebSockets_UWPClientCertSupportRequiresCertInPersonalCertificateStore));
                     }
@@ -536,7 +536,7 @@ namespace System.Net.WebSockets
                 {
                     if (_state == currentState)
                     {
-                        // Ordering is important to maintain .Net 4.5 WebSocket implementation exception behavior.
+                        // Ordering is important to maintain .NET Framework 4.5 WebSocket implementation exception behavior.
                         if (_disposed)
                         {
                             throw new ObjectDisposedException(GetType().FullName);

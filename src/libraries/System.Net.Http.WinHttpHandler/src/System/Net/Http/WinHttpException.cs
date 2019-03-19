@@ -25,7 +25,7 @@ namespace System.Net.Http
         {
             // This method allows common error detection code to be used by consumers
             // of HttpClient. This method converts the ErrorCode returned by WinHTTP
-            // to the same HRESULT value as is provided in the .Net Native implementation
+            // to the same HRESULT value as is provided in the .NET Native implementation
             // of HttpClient under the same error conditions. Clients would access
             // HttpRequestException.InnerException.HRESULT to discover what caused
             // the exception.
@@ -70,7 +70,7 @@ namespace System.Net.Http
             Debug.Assert(!string.IsNullOrEmpty(nameOfCalledFunction));
 
             // Look up specific error message in WINHTTP.DLL since it is not listed in default system resources
-            // and thus can't be found by default .Net interop.
+            // and thus can't be found by default .NET interop.
             IntPtr moduleHandle = Interop.Kernel32.GetModuleHandle(Interop.Libraries.WinHttp);
             string httpError = Interop.Kernel32.GetMessage(error, moduleHandle);
 

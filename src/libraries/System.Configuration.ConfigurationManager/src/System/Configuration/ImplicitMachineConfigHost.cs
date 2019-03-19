@@ -23,15 +23,25 @@ namespace System.Configuration
             out string locationConfigPath, IInternalConfigRoot configRoot, params object[] hostInitConfigurationParams)
         {
             // Stash the filemap so we can see if the machine config was explicitly specified
-            _fileMap = hostInitConfigurationParams[0] as ConfigurationFileMap;
+            GetFileMap(hostInitConfigurationParams);
             base.InitForConfiguration(ref locationSubPath, out configPath, out locationConfigPath, configRoot, hostInitConfigurationParams);
         }
 
         public override void Init(IInternalConfigRoot configRoot, params object[] hostInitParams)
         {
             // Stash the filemap so we can see if the machine config was explicitly specified
-            _fileMap = hostInitParams[0] as ConfigurationFileMap;
+            GetFileMap(hostInitParams);
             base.Init(configRoot, hostInitParams);
+        }
+
+        private void GetFileMap(object[] parameters)
+        {
+            foreach (object parameter in parameters)
+            {
+                _fileMap = parameter as ConfigurationFileMap;
+                if (_fileMap != null)
+                    return;
+            }
         }
 
         public override string GetStreamName(string configPath)

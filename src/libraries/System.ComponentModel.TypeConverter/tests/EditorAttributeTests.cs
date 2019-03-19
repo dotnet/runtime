@@ -52,23 +52,23 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public void Ctor_NullEditorTypeName_ThrowsArgumentNullException()
+        public void Ctor_NullTypeName_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>(() => new EditorAttribute(null, "baseTypeName"));
-            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>(() => new EditorAttribute((string)null, typeof(int)));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("typeName", () => new EditorAttribute(null, "baseTypeName"));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("typeName", () => new EditorAttribute((string)null, typeof(int)));
         }
 
         [Fact]
-        public void Ctor_NullType_ThrowsNullReferenceException()
+        public void Ctor_NullType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new EditorAttribute((Type)null, typeof(int)));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("type", () => new EditorAttribute((Type)null, typeof(int)));
         }
 
         [Fact]
-        public void Ctor_NullEditorBaseType_ThrowsNullReferenceException()
+        public void Ctor_NullBaseType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new EditorAttribute("typeName", (Type)null));
-            Assert.Throws<NullReferenceException>(() => new EditorAttribute(typeof(int), null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("baseType", () => new EditorAttribute("typeName", (Type)null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("baseType", () => new EditorAttribute(typeof(int), null));
         }
 
         [Theory]
@@ -82,10 +82,17 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public void TypeId_NullBaseTypeName_ThrowsNullReferenceException()
+        public void TypeId_NullBaseTypeName_ReturnsExpected()
         {
             var attribute = new EditorAttribute("Type", (string)null);
-            Assert.Throws<NullReferenceException>(() => attribute.TypeId);
+            if (!PlatformDetection.IsFullFramework)
+            {
+                Assert.Equal("System.ComponentModel.EditorAttribute", attribute.TypeId);
+            }
+            else
+            {
+                Assert.Throws<NullReferenceException>(() => attribute.TypeId);
+            }
         }
 
         public static IEnumerable<object[]> Equals_TestData()

@@ -78,7 +78,7 @@ namespace System.Xml.Tests
             }
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".Net Framework throws AggregateException")]
+        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws AggregateException")]
         public static void ReadAfterInitializationWithUriOnAsyncReaderTrows()
         {
             using (XmlReader reader = XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = true }))
@@ -87,7 +87,7 @@ namespace System.Xml.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public static void InitializationWithUriOnNonAsyncReaderTrows()
         {
             Assert.Throws<System.Net.WebException>(() => XmlReader.Create("http://test.test/test.html", new XmlReaderSettings() { Async = false }));

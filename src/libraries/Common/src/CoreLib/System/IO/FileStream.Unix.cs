@@ -735,6 +735,11 @@ namespace System.IO
             }, this, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, TaskScheduler.Default));
         }
 
+        public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken) =>
+            // Windows version overrides this method, so the Unix version does as well, but it doesn't
+            // currently have any special optimizations to be done and so just calls to the base.
+            base.CopyToAsync(destination, bufferSize, cancellationToken);
+
         /// <summary>Sets the current position of this stream to the given value.</summary>
         /// <param name="offset">The point relative to origin from which to begin seeking. </param>
         /// <param name="origin">

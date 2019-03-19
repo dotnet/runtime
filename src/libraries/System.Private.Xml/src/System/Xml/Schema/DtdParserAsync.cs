@@ -264,7 +264,7 @@ namespace System.Xml
                         }
                         return;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected token {token}");
                         break;
                 }
 
@@ -1290,7 +1290,7 @@ namespace System.Xml
                                 _scanningFunction = _savedScanningFunction;
                                 goto SwitchAgain;
                             default:
-                                Debug.Assert(false);
+                                Debug.Fail($"Unexpected scanning function {_scanningFunction}");
                                 return Token.None;
                         }
                 }
