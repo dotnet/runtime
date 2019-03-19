@@ -11,6 +11,7 @@
   <PropertyGroup>
     <BuildDebPackage>false</BuildDebPackage>
     <BuildRpmPackage>false</BuildRpmPackage>
+    <GeneratePkg>false</GeneratePkg>
   </PropertyGroup>
 
   <!-- Redistribute package content from other nuget packages. -->
