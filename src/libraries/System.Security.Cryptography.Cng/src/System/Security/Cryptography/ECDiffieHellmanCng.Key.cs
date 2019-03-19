@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
             if (curve.IsNamed)
             {
                 if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
-                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
+                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
 
                 // Map curve name to algorithm to support pre-Win10 curves
                 CngAlgorithm alg = CngKey.EcdhCurveNameToAlgorithm(curve.Oid.FriendlyName);
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography
                         keySize = 521;
                     else
                     {
-                        Debug.Fail(string.Format("Unknown algorithm {0}", alg.ToString()));
+                        Debug.Fail($"Unknown algorithm {alg}");
                         throw new ArgumentException(SR.Cryptography_InvalidKeySize);
                     }
                     CngKey key = _core.GetOrGenerateKey(keySize, alg);
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
+                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
             }
         }
 

@@ -144,7 +144,7 @@ namespace System.Globalization.Tests
             int day = 1;
             if (calendar is JapaneseLunisolarCalendar && PlatformDetection.IsFullFramework)
             {
-                // desktop has a bug in JapaneseLunisolarCalendar which is fixed in .Net Core.
+                // desktop has a bug in JapaneseLunisolarCalendar which is fixed in .NET Core.
                 // in case of a new era starts in the middle of a month which means part of the month will belong to one
                 // era and the rest will belong to the new era. When calculating the calendar year number for dates which
                 // in the rest of the month and exist in the new started era, we should still use the old era info instead

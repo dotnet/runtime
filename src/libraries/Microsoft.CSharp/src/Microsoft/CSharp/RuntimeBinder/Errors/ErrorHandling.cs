@@ -89,7 +89,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                             sym = arg.mpwiMemo.sym;
                             break;
                         default:
-                            Debug.Assert(false, "Shouldn't be here!");
+                            Debug.Fail("Shouldn't be here!");
                             continue;
                     }
 
@@ -133,7 +133,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                                 sym2 = arg2.mpwiMemo.sym;
                                 break;
                             default:
-                                Debug.Assert(false, "Shouldn't be here!");
+                                Debug.Fail("Shouldn't be here!");
                                 continue;
                         }
 

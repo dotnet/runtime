@@ -5,7 +5,6 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-
 namespace System.Diagnostics
 {
     public static partial class Debug
@@ -79,10 +78,10 @@ namespace System.Diagnostics
         public static void Break() { }
         public static bool IsLogging() { throw null; }
         public static bool Launch() { throw null; }
-        public static void Log(int level, string category, string message) {}
+        public static void Log(int level, string category, string message) { }
         public static void NotifyOfCrossThreadDependency() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(384), AllowMultiple = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class DebuggerBrowsableAttribute : System.Attribute
     {
         public DebuggerBrowsableAttribute(System.Diagnostics.DebuggerBrowsableState state) { }
@@ -94,7 +93,7 @@ namespace System.Diagnostics
         Never = 0,
         RootHidden = 3,
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(4509), AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed partial class DebuggerDisplayAttribute : System.Attribute
     {
         public DebuggerDisplayAttribute(string value) { }
@@ -104,22 +103,27 @@ namespace System.Diagnostics
         public string Type { get { throw null; } set { } }
         public string Value { get { throw null; } }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(224), Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property, Inherited=false)]
     public sealed partial class DebuggerHiddenAttribute : System.Attribute
     {
         public DebuggerHiddenAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(236), Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class DebuggerNonUserCodeAttribute : System.Attribute
     {
         public DebuggerNonUserCodeAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(108), Inherited = false)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
+    public sealed partial class DebuggerStepperBoundaryAttribute : System.Attribute
+    {
+        public DebuggerStepperBoundaryAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, Inherited=false)]
     public sealed partial class DebuggerStepThroughAttribute : System.Attribute
     {
         public DebuggerStepThroughAttribute() { }
     }
-    [System.AttributeUsageAttribute((System.AttributeTargets)(13), AllowMultiple = true)]
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
     public sealed partial class DebuggerTypeProxyAttribute : System.Attribute
     {
         public DebuggerTypeProxyAttribute(string typeName) { }
@@ -128,20 +132,15 @@ namespace System.Diagnostics
         public System.Type Target { get { throw null; } set { } }
         public string TargetTypeName { get { throw null; } set { } }
     }
-    [System.AttributeUsage(System.AttributeTargets.Constructor | System.AttributeTargets.Method, Inherited=false)]
-    public sealed class DebuggerStepperBoundaryAttribute : System.Attribute 
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
+    public sealed partial class DebuggerVisualizerAttribute : System.Attribute
     {
-        public DebuggerStepperBoundaryAttribute() { throw null; }
-    }
-    [System.AttributeUsage(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Struct, AllowMultiple=true)]
-    public sealed class DebuggerVisualizerAttribute : System.Attribute 
-    {
-        public DebuggerVisualizerAttribute(string visualizerTypeName) { throw null; }
-        public DebuggerVisualizerAttribute(string visualizerTypeName, string visualizerObjectSourceTypeName) { throw null; }
-        public DebuggerVisualizerAttribute(string visualizerTypeName, Type visualizerObjectSource) { throw null; }
-        public DebuggerVisualizerAttribute(Type visualizer) { throw null; }
-        public DebuggerVisualizerAttribute(Type visualizer, string visualizerObjectSourceTypeName) { throw null; }
-        public DebuggerVisualizerAttribute(Type visualizer, Type visualizerObjectSource) { throw null; }
+        public DebuggerVisualizerAttribute(string visualizerTypeName) { }
+        public DebuggerVisualizerAttribute(string visualizerTypeName, string visualizerObjectSourceTypeName) { }
+        public DebuggerVisualizerAttribute(string visualizerTypeName, System.Type visualizerObjectSource) { }
+        public DebuggerVisualizerAttribute(System.Type visualizer) { }
+        public DebuggerVisualizerAttribute(System.Type visualizer, string visualizerObjectSourceTypeName) { }
+        public DebuggerVisualizerAttribute(System.Type visualizer, System.Type visualizerObjectSource) { }
         public string Description { get { throw null; } set { } }
         public System.Type Target { get { throw null; } set { } }
         public string TargetTypeName { get { throw null; } set { } }

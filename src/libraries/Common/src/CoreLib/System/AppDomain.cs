@@ -4,6 +4,7 @@
 
 #pragma warning disable CS0067 // events are declared but not used
 
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -16,6 +17,9 @@ using System.Threading;
 
 namespace System
 {
+#if PROJECTN
+    [Internal.Runtime.CompilerServices.RelocatedType("System.Runtime.Extensions")]
+#endif
     public sealed partial class AppDomain : MarshalByRefObject
     {
         private static readonly AppDomain s_domain = new AppDomain();
@@ -85,7 +89,7 @@ namespace System
             }
             if (assemblyName.Length == 0 || assemblyName[0] == '\0')
             {
-                throw new ArgumentException(SR.ZeroLengthString);
+                throw new ArgumentException(SR.Argument_StringZeroLength, nameof(assemblyName));
             }
 
             return assemblyName;
@@ -120,7 +124,7 @@ namespace System
             MethodInfo entry = assembly.EntryPoint;
             if (entry == null)
             {
-                throw new MissingMethodException(SR.EntryPointNotFound + assembly.FullName);
+                throw new MissingMethodException(SR.Arg_EntryPointNotFoundException);
             }
 
             object result = entry.Invoke(
@@ -165,7 +169,7 @@ namespace System
             {
                 throw new ArgumentNullException(nameof(domain));
             }
-            throw new CannotUnloadAppDomainException(SR.NotSupported_Platform);
+            throw new CannotUnloadAppDomainException(SR.Arg_PlatformNotSupported);
         }
 
         public Assembly Load(byte[] rawAssembly) => Assembly.Load(rawAssembly);
@@ -395,10 +399,12 @@ namespace System
                         if (s_getUnauthenticatedPrincipal == null)
                         {
                             Type type = Type.GetType("System.Security.Principal.GenericPrincipal, System.Security.Claims", throwOnError: true);
+                            MethodInfo mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static);
+                            Debug.Assert(mi != null);
                             // Don't throw PNSE if null like for WindowsPrincipal as UnauthenticatedPrincipal should
                             // be available on all platforms.
                             Volatile.Write(ref s_getUnauthenticatedPrincipal,
-                                (Func<IPrincipal>)Delegate.CreateDelegate(typeof(Func<IPrincipal>), type, "GetDefaultInstance"));
+                                (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
                         }
 
                         principal = s_getUnauthenticatedPrincipal();
@@ -408,9 +414,13 @@ namespace System
                         if (s_getWindowsPrincipal == null)
                         {
                             Type type = Type.GetType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows", throwOnError: true);
+                            MethodInfo mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static);
+                            if (mi == null)
+                            {
+                                throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal);
+                            }
                             Volatile.Write(ref s_getWindowsPrincipal,
-                                (Func<IPrincipal>)Delegate.CreateDelegate(typeof(Func<IPrincipal>), type, "GetDefaultInstance", ignoreCase: false, throwOnBindFailure: false)
-                                ?? throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal));
+                                (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
                         }
 
                         principal = s_getWindowsPrincipal();

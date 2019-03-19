@@ -121,7 +121,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     {
                         AsnReader reader = new AsnReader(decrypted, AsnEncodingRules.BER);
 
-                        if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
+                        if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> contents))
                         {
                             decrypted = contents.ToArray();
                         }

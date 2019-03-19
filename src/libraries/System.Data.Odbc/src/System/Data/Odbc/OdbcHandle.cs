@@ -43,7 +43,7 @@ namespace System.Data.Odbc
                         break;
                     //              case ODBC32.SQL_HANDLE.DESC:
                     default:
-                        Debug.Assert(false, "unexpected handleType");
+                        Debug.Fail("unexpected handleType");
                         break;
                 }
             }

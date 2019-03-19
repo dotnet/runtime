@@ -1737,7 +1737,7 @@ namespace System.Xml.Schema
                     return ST_double;
 
                 default:
-                    Debug.Assert(false, "Expected type not matched");
+                    Debug.Fail("Expected type not matched");
                     return ST_string;
             }
             /*          if (currentType == null)
@@ -2383,7 +2383,7 @@ namespace System.Xml.Schema
                 return TF_time | TF_string;
             else
             {
-                Debug.Assert(false, "Expected date, time or dateTime");
+                Debug.Fail("Expected date, time or dateTime");
                 return TF_string;
             }
         }

@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
     public class DateTimeFormatInfoGetFormat
     {
         [Fact]
-        public void GetFormat()
+        public void GetFormat_Invoke_ReturnsExpected()
         {
             DateTimeFormatInfo expected = new DateTimeFormatInfo();
             DateTimeFormatInfo format = (DateTimeFormatInfo)expected.GetFormat(typeof(DateTimeFormatInfo));

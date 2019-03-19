@@ -164,7 +164,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (property == null)
             {
-                Debug.Assert(false, "cannot find property for accessor");
+                Debug.Fail("cannot find property for accessor");
                 return false;
             }
 

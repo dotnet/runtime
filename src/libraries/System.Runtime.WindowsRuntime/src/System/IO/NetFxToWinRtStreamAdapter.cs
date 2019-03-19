@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Runtime.InteropServices;
@@ -142,8 +141,6 @@ namespace System.IO
         {
             Debug.Assert(stream != null);
             Debug.Assert(stream.CanRead || stream.CanWrite || stream.CanSeek);
-            Contract.EndContractBlock();
-
             Debug.Assert(!stream.CanRead || (stream.CanRead && this is IInputStream));
             Debug.Assert(!stream.CanWrite || (stream.CanWrite && this is IOutputStream));
             Debug.Assert(!stream.CanSeek || (stream.CanSeek && this is IRandomAccessStream));
@@ -252,10 +249,6 @@ namespace System.IO
                 throw ex;
             }
 
-            // Commented due to a reported CCRewrite bug. Should uncomment when fixed:
-            //Contract.Ensures(Contract.Result<IAsyncOperationWithProgress<IBuffer, UInt32>>() != null);
-            //Contract.EndContractBlock();
-
             Stream str = EnsureNotDisposed();
 
             IAsyncOperationWithProgress<IBuffer, uint> readAsyncOperation;
@@ -275,7 +268,7 @@ namespace System.IO
                 //    break;
 
                 default:
-                    Debug.Assert(false, "We should never get here. Someone forgot to handle an input stream optimisation option.");
+                    Debug.Fail("We should never get here. Someone forgot to handle an input stream optimisation option.");
                     readAsyncOperation = null;
                     break;
             }
@@ -303,10 +296,6 @@ namespace System.IO
                 throw ex;
             }
 
-            // Commented due to a reported CCRewrite bug. Should uncomment when fixed:
-            //Contract.Ensures(Contract.Result<IAsyncOperationWithProgress<UInt32, UInt32>>() != null);
-            //Contract.EndContractBlock();
-
             Stream str = EnsureNotDisposed();
             return StreamOperationsImplementation.WriteAsync_AbstractStream(str, buffer);
         }
@@ -314,9 +303,6 @@ namespace System.IO
 
         public IAsyncOperation<bool> FlushAsync()
         {
-            Contract.Ensures(Contract.Result<IAsyncOperation<Boolean>>() != null);
-            Contract.EndContractBlock();
-
             Stream str = EnsureNotDisposed();
             return StreamOperationsImplementation.FlushAsync_AbstractStream(str);
         }
@@ -337,9 +323,6 @@ namespace System.IO
                 ex.SetErrorCode(__HResults.E_INVALIDARG);
                 throw ex;
             }
-
-            // Commented due to a reported CCRewrite bug. Should uncomment when fixed:
-            //Contract.EndContractBlock();
 
             Stream str = EnsureNotDisposed();
             long pos = unchecked((long)position);
@@ -376,8 +359,6 @@ namespace System.IO
         {
             get
             {
-                Contract.Ensures(Contract.Result<UInt64>() >= 0);
-
                 Stream str = EnsureNotDisposed();
                 return (ulong)str.Position;
             }
@@ -388,8 +369,6 @@ namespace System.IO
         {
             get
             {
-                Contract.Ensures(Contract.Result<UInt64>() >= 0);
-
                 Stream str = EnsureNotDisposed();
                 return (ulong)str.Length;
             }
@@ -402,9 +381,6 @@ namespace System.IO
                     ex.SetErrorCode(__HResults.E_INVALIDARG);
                     throw ex;
                 }
-
-                // Commented due to a reported CCRewrite bug. Should uncomment when fixed:
-                //Contract.EndContractBlock();
 
                 Stream str = EnsureNotDisposed();
 

@@ -9,26 +9,33 @@ namespace System.Globalization.Tests
     public class DateTimeFormatInfoPMDesignator
     {
         [Fact]
-        public void PMDesignator_InvariantInfo()
+        public void PMDesignator_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("PM", DateTimeFormatInfo.InvariantInfo.PMDesignator);
         }
 
         [Theory]
-        [InlineData("AA")]
-        [InlineData("P.M.")]
-        public void PMDesignator_Set(string newPMDesignator)
+        [InlineData("")]
+        [InlineData("PP")]
+        [InlineData("P.M")]
+        public void PMDesignator_Set_GetReturnsExpected(string value)
         {
             var format = new DateTimeFormatInfo();
-            format.PMDesignator = newPMDesignator;
-            Assert.Equal(newPMDesignator, format.PMDesignator);
+            format.PMDesignator = value;
+            Assert.Equal(value, format.PMDesignator);
         }
 
         [Fact]
-        public void PMDesignator_Set_Invalid()
+        public void PMDesignator_SetNullValue_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().PMDesignator = null); // Value is null
-            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.PMDesignator = "AA"); // DateTimeFormatInfo.InvariantInfo is read only
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.PMDesignator = null);
+        }
+        
+        [Fact]
+        public void PMDesignator_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.PMDesignator = "PP");
         }
     }
 }

@@ -783,8 +783,18 @@ check_c_source_compiles(
         return x;
     }
     "
-    HAVE_TCP_H_TCP_KEEPALIVE
-)
+    HAVE_TCP_H_TCP_KEEPALIVE)
+
+check_c_source_compiles(
+    "
+    #include <unistd.h>
+    int main(void)
+    {
+        size_t result;
+        (void)__builtin_mul_overflow(0, 0, &result);
+    }
+    "
+    HAVE_BUILTIN_MUL_OVERFLOW)
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

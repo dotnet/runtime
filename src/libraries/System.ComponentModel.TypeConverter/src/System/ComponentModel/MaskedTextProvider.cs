@@ -228,7 +228,7 @@ namespace System.ComponentModel
         {
             if (string.IsNullOrEmpty(mask))
             {
-                throw new ArgumentException(SR.Format(SR.MaskedTextProviderMaskNullOrEmpty), nameof(mask));
+                throw new ArgumentException(SR.MaskedTextProviderMaskNullOrEmpty, nameof(mask));
             }
 
             foreach (char c in mask)

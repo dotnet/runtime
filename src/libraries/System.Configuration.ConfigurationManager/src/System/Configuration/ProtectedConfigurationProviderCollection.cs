@@ -18,7 +18,7 @@ namespace System.Configuration
             if (!(provider is ProtectedConfigurationProvider))
             {
                 throw new ArgumentException(
-                    string.Format(SR.Config_provider_must_implement_type,
+                    SR.Format(SR.Config_provider_must_implement_type,
                         typeof(ProtectedConfigurationProvider).ToString()), nameof(provider));
             }
 

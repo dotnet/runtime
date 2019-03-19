@@ -79,7 +79,7 @@ namespace System
                 string s = base.Message;
                 if (_actualValue != null)
                 {
-                    string valueMessage = SR.Format(SR.ArgumentOutOfRange_ActualValue, _actualValue.ToString());
+                    string valueMessage = SR.Format(SR.ArgumentOutOfRange_ActualValue, _actualValue);
                     if (s == null)
                         return valueMessage;
                     return s + Environment.NewLine + valueMessage;

@@ -162,7 +162,7 @@ namespace System.Data
             {
                 if (DBNull.Value == value)
                 {
-                    throw DataSetUtil.InvalidCast(string.Format(SR.DataSetLinq_NonNullableCast, typeof(T).ToString()));
+                    throw DataSetUtil.InvalidCast(SR.Format(SR.DataSetLinq_NonNullableCast, typeof(T)));
                 }
                 return (T)value;
             }

@@ -259,7 +259,7 @@ namespace System.Xml.Tests
             _expectedMessage = _expectedMessage.ToLowerInvariant();
             _actualMessage = _actualMessage.ToLowerInvariant();
 
-            if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages.
+            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages.
             {
                 if (Regex.Match(_actualMessage, _expectedMessage, RegexOptions.Singleline).ToString() != _actualMessage)
                 {

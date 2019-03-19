@@ -25,6 +25,7 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Drawing.Drawing2D.Tests
@@ -378,6 +379,12 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddArc_Values_Success()
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             using (GraphicsPath gpi = new GraphicsPath())
             using (GraphicsPath gpf = new GraphicsPath())
             {
@@ -395,6 +402,12 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddArc_Rectangle_Success()
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             using (GraphicsPath gpi = new GraphicsPath())
             using (GraphicsPath gpf = new GraphicsPath())
             {
@@ -716,6 +729,12 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddClosedCurve_Points_Success()
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             using (GraphicsPath gpi = new GraphicsPath())
             using (GraphicsPath gpf = new GraphicsPath())
             {
@@ -750,6 +769,12 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void AddClosedCurve_Tension_Success()
         {
+            if (PlatformDetection.IsArmOrArm64Process)
+            {
+                //ActiveIssue: 35744
+                throw new SkipTestException("Precision on float numbers");
+            }
+
             using (GraphicsPath gpi = new GraphicsPath())
             using (GraphicsPath gpf = new GraphicsPath())
             {

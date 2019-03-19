@@ -192,7 +192,7 @@ namespace System.Configuration
             _useOAEP = GetBooleanValue(configurationValues, "useOAEP", false);
             _useFIPS = GetBooleanValue(configurationValues, "useFIPS", false);
             if (configurationValues.Count > 0)
-                throw new ConfigurationErrorsException(string.Format(SR.Unrecognized_initialization_value, configurationValues.GetKey(0)));
+                throw new ConfigurationErrorsException(SR.Format(SR.Unrecognized_initialization_value, configurationValues.GetKey(0)));
         }
 
         public RSAParameters RsaPublicKey { get { return GetCryptoServiceProvider(false, false).ExportParameters(false); } }
@@ -244,7 +244,7 @@ namespace System.Configuration
                 return true;
             if (s == "false")
                 return false;
-            throw new ConfigurationErrorsException(string.Format(SR.Config_invalid_boolean_attribute, valueName));
+            throw new ConfigurationErrorsException(SR.Format(SR.Config_invalid_boolean_attribute, valueName));
         }
 
         private SymmetricAlgorithm GetSymAlgorithmProvider()

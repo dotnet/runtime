@@ -18,7 +18,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(CurrencyPositivePattern_TestData))]
-        public void CurrencyPositivePattern_Get(NumberFormatInfo format, int expected)
+        public void CurrencyPositivePattern_Get_ReturnsExpected(NumberFormatInfo format, int expected)
         {
             Assert.Equal(expected, format.CurrencyPositivePattern);
         }
@@ -27,18 +27,25 @@ namespace System.Globalization.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(3)]
-        public void CurrencyPositivePattern_Set(int newCurrencyPositivePattern)
+        public void CurrencyPositivePattern_Set_GetReturnsExpected(int newCurrencyPositivePattern)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.CurrencyPositivePattern = newCurrencyPositivePattern;
             Assert.Equal(newCurrencyPositivePattern, format.CurrencyPositivePattern);
         }
 
-        [Fact]
-        public void CurrencyPositivePattern_Set_Invalid()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(4)]
+        public void CurrencyPositivePattern_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("CurrencyPositivePattern", () => new NumberFormatInfo().CurrencyPositivePattern = -1);
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("CurrencyPositivePattern", () => new NumberFormatInfo().CurrencyPositivePattern = 4);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", "CurrencyPositivePattern", () => format.CurrencyPositivePattern = value);
+        }
+
+        [Fact]
+        public void CurrencyPositivePattern_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyPositivePattern = 1);
         }
     }

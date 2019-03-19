@@ -385,9 +385,7 @@ namespace System.Text
                     Debug.Assert(((bLastVirama ? 1 : 0) + (bLastATR ? 1 : 0) +
                                (bLastDevenagariStressAbbr ? 1 : 0) +
                                ((cLastCharForNextNukta > 0) ? 1 : 0)) == 1,
-                        string.Format(CultureInfo.InvariantCulture,
-                            "[ISCIIEncoding.GetChars]Special cases require 1 and only 1 special case flag: LastATR {0} Dev. {1} Nukta {2}",
-                            bLastATR, bLastDevenagariStressAbbr, cLastCharForNextNukta));
+                        $"[ISCIIEncoding.GetChars]Special cases require 1 and only 1 special case flag: LastATR {bLastATR} Dev. {bLastDevenagariStressAbbr} Nukta {cLastCharForNextNukta}");
                     // If the last one was an ATR, then we'll have to do ATR stuff
                     if (bLastATR)
                     {
@@ -613,9 +611,7 @@ namespace System.Text
 
                 // We must be the Devenagari special case for F0, B8 & F0, BF
                 Debug.Assert(currentCodePage == CodeDevanagari && b == DevenagariExt,
-                    string.Format(CultureInfo.InvariantCulture,
-                        "[ISCIIEncoding.GetChars] Devenagari special case must {0} not {1} or in Devanagari code page {2} not {3}.",
-                        DevenagariExt, b, CodeDevanagari, currentCodePage));
+                    $"[ISCIIEncoding.GetChars] Devenagari special case must {DevenagariExt} not {b} or in Devanagari code page {CodeDevanagari} not {currentCodePage}.");
                 bLastDevenagariStressAbbr = bLastSpecial = true;
             }
 

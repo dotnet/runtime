@@ -192,7 +192,7 @@ namespace System.Xml
                     break;
 
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected state {_state}");
                     return false;
             }
 

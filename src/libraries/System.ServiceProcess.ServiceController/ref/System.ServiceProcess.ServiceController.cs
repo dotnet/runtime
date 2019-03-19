@@ -36,7 +36,7 @@ namespace System.ServiceProcess
         public bool CanStop { get { throw null; } set { } }
         public virtual System.Diagnostics.EventLog EventLog { get { throw null; } }
         public int ExitCode { get { throw null; } set { } }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(2))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected System.IntPtr ServiceHandle { get { throw null; } }
         public string ServiceName { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
@@ -51,7 +51,7 @@ namespace System.ServiceProcess
         public void RequestAdditionalTime(int milliseconds) { }
         public static void Run(System.ServiceProcess.ServiceBase service) { }
         public static void Run(System.ServiceProcess.ServiceBase[] services) { }
-        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void ServiceMainCallback(int argCount, System.IntPtr argPointer) { }
         public void Stop() { }
     }
@@ -98,6 +98,12 @@ namespace System.ServiceProcess
         Stopped = 1,
         StopPending = 3,
     }
+    [System.AttributeUsageAttribute(System.AttributeTargets.All)]
+    public partial class ServiceProcessDescriptionAttribute : System.ComponentModel.DescriptionAttribute
+    {
+        public ServiceProcessDescriptionAttribute(string description) { }
+        public override string Description { get { throw null; } }
+    }
     public enum ServiceStartMode
     {
         Automatic = 2,
@@ -105,12 +111,6 @@ namespace System.ServiceProcess
         Disabled = 4,
         Manual = 3,
         System = 1,
-    }
-    [AttributeUsage(AttributeTargets.All)]
-    public partial class ServiceProcessDescriptionAttribute : System.ComponentModel.DescriptionAttribute
-    {
-        public ServiceProcessDescriptionAttribute(string description) : base(description) { }
-        public override string Description { get { throw null; } }
     }
     [System.FlagsAttribute]
     public enum ServiceType
@@ -125,7 +125,7 @@ namespace System.ServiceProcess
     }
     public readonly partial struct SessionChangeDescription
     {
-        private readonly int _dummy;
+        private readonly int _dummyPrimitive;
         public System.ServiceProcess.SessionChangeReason Reason { get { throw null; } }
         public int SessionId { get { throw null; } }
         public override bool Equals(object obj) { throw null; }

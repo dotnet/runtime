@@ -95,7 +95,7 @@ namespace System.ComponentModel.Tests
                 // a CultureInfo object on this computer
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
-                if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+                if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
                 {
                     Assert.NotNull(ex.Message);
                     Assert.True(ex.Message.IndexOf(typeof(CultureInfo).Name) != -1);
@@ -116,7 +116,7 @@ namespace System.ComponentModel.Tests
                 // a CultureInfo object on this computer
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
-                if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+                if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
                 {
                     Assert.NotNull(ex.Message);
                     Assert.True(ex.Message.IndexOf(typeof(CultureInfo).Name) != -1);
@@ -137,7 +137,7 @@ namespace System.ComponentModel.Tests
                 // a CultureInfo object on this computer
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
-                if (!PlatformDetection.IsNetNative) // .Net Native toolchain optimizes away exception messages and paramnames.
+                if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
                 {
                     Assert.NotNull(ex.Message);
                     Assert.True(ex.Message.IndexOf(typeof(CultureInfo).Name) != -1);

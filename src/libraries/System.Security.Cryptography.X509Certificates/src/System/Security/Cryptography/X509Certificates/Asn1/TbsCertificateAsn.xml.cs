@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -69,25 +73,25 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             SignatureAlgorithm.Encode(writer);
             // Validator for tag constraint for Issuer
             {
-                if (!Asn1Tag.TryParse(Issuer.Span, out Asn1Tag validateTag, out _) ||
+                if (!Asn1Tag.TryDecode(Issuer.Span, out Asn1Tag validateTag, out _) ||
                     !validateTag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
                 {
                     throw new CryptographicException();
                 }
             }
 
-            writer.WriteEncodedValue(Issuer);
+            writer.WriteEncodedValue(Issuer.Span);
             Validity.Encode(writer);
             // Validator for tag constraint for Subject
             {
-                if (!Asn1Tag.TryParse(Subject.Span, out Asn1Tag validateTag, out _) ||
+                if (!Asn1Tag.TryDecode(Subject.Span, out Asn1Tag validateTag, out _) ||
                     !validateTag.HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
                 {
                     throw new CryptographicException();
                 }
             }
 
-            writer.WriteEncodedValue(Subject);
+            writer.WriteEncodedValue(Subject.Span);
             SubjectPublicKeyInfo.Encode(writer);
 
             if (IssuerUniqueId.HasValue)
@@ -175,27 +179,27 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
 
             }
 
-            decoded.SerialNumber = sequenceReader.GetIntegerBytes();
+            decoded.SerialNumber = sequenceReader.ReadIntegerBytes();
             System.Security.Cryptography.Asn1.AlgorithmIdentifierAsn.Decode(sequenceReader, out decoded.SignatureAlgorithm);
             if (!sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
                 throw new CryptographicException();
             }
 
-            decoded.Issuer = sequenceReader.GetEncodedValue();
+            decoded.Issuer = sequenceReader.ReadEncodedValue();
             System.Security.Cryptography.X509Certificates.Asn1.ValidityAsn.Decode(sequenceReader, out decoded.Validity);
             if (!sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag((UniversalTagNumber)16)))
             {
                 throw new CryptographicException();
             }
 
-            decoded.Subject = sequenceReader.GetEncodedValue();
+            decoded.Subject = sequenceReader.ReadEncodedValue();
             System.Security.Cryptography.Asn1.SubjectPublicKeyInfoAsn.Decode(sequenceReader, out decoded.SubjectPublicKeyInfo);
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 1)))
             {
 
-                if (sequenceReader.TryGetPrimitiveBitStringValue(new Asn1Tag(TagClass.ContextSpecific, 1), out _, out ReadOnlyMemory<byte> tmpIssuerUniqueId))
+                if (sequenceReader.TryReadPrimitiveBitStringValue(new Asn1Tag(TagClass.ContextSpecific, 1), out _, out ReadOnlyMemory<byte> tmpIssuerUniqueId))
                 {
                     decoded.IssuerUniqueId = tmpIssuerUniqueId;
                 }
@@ -210,7 +214,7 @@ namespace System.Security.Cryptography.X509Certificates.Asn1
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(new Asn1Tag(TagClass.ContextSpecific, 2)))
             {
 
-                if (sequenceReader.TryGetPrimitiveBitStringValue(new Asn1Tag(TagClass.ContextSpecific, 2), out _, out ReadOnlyMemory<byte> tmpSubjectUniqueId))
+                if (sequenceReader.TryReadPrimitiveBitStringValue(new Asn1Tag(TagClass.ContextSpecific, 2), out _, out ReadOnlyMemory<byte> tmpSubjectUniqueId))
                 {
                     decoded.SubjectUniqueId = tmpSubjectUniqueId;
                 }

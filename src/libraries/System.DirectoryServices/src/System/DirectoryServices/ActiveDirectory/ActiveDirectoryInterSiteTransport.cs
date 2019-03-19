@@ -89,7 +89,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         throw new NotSupportedException(SR.NotSupportTransportSMTP);
                     }
 
-                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.TransportNotFound , transport.ToString()), typeof(ActiveDirectoryInterSiteTransport), transport.ToString());
+                    throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.TransportNotFound, transport.ToString()), typeof(ActiveDirectoryInterSiteTransport), transport.ToString());
                 }
                 else
                     throw ExceptionHelper.GetExceptionFromCOMException(context, e);

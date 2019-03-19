@@ -365,7 +365,7 @@ namespace System.Globalization
         //
         // Get the native day names
         //
-        // NOTE: There's a disparity between .Net & windows day orders, the input day should
+        // NOTE: There's a disparity between .NET & windows day orders, the input day should
         //           start with Sunday
         //
         // Parameters:
@@ -455,13 +455,9 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
-            const int LOCALE_NAME_MAX_LENGTH = 85;
-            const uint LOCALE_SNAME = 0x0000005c;
-            const string LOCALE_NAME_USER_DEFAULT = null;
-
             int result;
-            char* localeName = stackalloc char[LOCALE_NAME_MAX_LENGTH];
-            result = CultureData.GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SNAME, localeName, LOCALE_NAME_MAX_LENGTH);
+            char* localeName = stackalloc char[Interop.Kernel32.LOCALE_NAME_MAX_LENGTH];
+            result = CultureData.GetLocaleInfoEx(Interop.Kernel32.LOCALE_NAME_USER_DEFAULT, Interop.Kernel32.LOCALE_SNAME, localeName, Interop.Kernel32.LOCALE_NAME_MAX_LENGTH);
 
             return result <= 0 ? "" : new string(localeName, 0, result - 1); // exclude the null termination
         }

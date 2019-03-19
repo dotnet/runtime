@@ -106,7 +106,7 @@ namespace System.Net.Http
                 }
                 if (!UseCookies)
                 {
-                    throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture,
+                    throw new InvalidOperationException(SR.Format(CultureInfo.InvariantCulture,
                         SR.net_http_invalid_enable_first, nameof(UseCookies), "true"));
                 }
                 CheckDisposedOrStarted();
@@ -200,7 +200,7 @@ namespace System.Net.Http
                 CheckDisposedOrStarted();
                 if (value != null && value != CredentialCache.DefaultCredentials && !(value is NetworkCredential))
                 {
-                    throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                    throw new PlatformNotSupportedException(SR.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(Credentials)));
                 }
                 
@@ -219,7 +219,7 @@ namespace System.Net.Http
                 CheckDisposedOrStarted();
                 if (value != null && value != CredentialCache.DefaultCredentials && !(value is NetworkCredential))
                 {
-                    throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                    throw new PlatformNotSupportedException(SR.Format(CultureInfo.InvariantCulture,
                         SR.net_http_value_not_supported, value, nameof(DefaultProxyCredentials)));
                 }
                 
@@ -306,7 +306,7 @@ namespace System.Net.Http
                 {
                     if (!RTServerCustomValidationRequestedSupported)
                     {
-                        throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                        throw new PlatformNotSupportedException(SR.Format(CultureInfo.InvariantCulture,
                             SR.net_http_feature_requires_Windows10Version1607));
                     }
                 }
@@ -477,7 +477,7 @@ namespace System.Net.Http
                     RTCertificate rtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(clientCert).ConfigureAwait(false);
                     if (rtClientCert == null)
                     {
-                        throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                        throw new PlatformNotSupportedException(SR.Format(CultureInfo.InvariantCulture,
                             SR.net_http_feature_UWPClientCertSupportRequiresCertInPersonalCertificateStore));
                     }
 
@@ -594,7 +594,7 @@ namespace System.Net.Http
                 if (string.Equals(request.Method.Method, HttpMethod.Trace.Method, StringComparison.OrdinalIgnoreCase))
                 {
                     // https://github.com/dotnet/corefx/issues/22161
-                    throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                    throw new PlatformNotSupportedException(SR.Format(CultureInfo.InvariantCulture,
                         SR.net_http_httpmethod_notsupported_error, request.Method.Method));
                 }
 

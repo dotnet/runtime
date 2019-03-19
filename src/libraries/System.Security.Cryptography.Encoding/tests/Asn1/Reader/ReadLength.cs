@@ -2,12 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Reflection;
 using System.Security.Cryptography.Asn1;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Tests.Asn1
 {
+    internal static class AsnReaderExtensions
+    {
+        private delegate Asn1Tag ReadTagAndLengthDelegate(out int? parsedLength, out int bytesRead);
+
+        public static Asn1Tag ReadTagAndLength(this AsnReader reader, out int? parsedLength, out int bytesRead)
+        {
+            return ((ReadTagAndLengthDelegate)
+                typeof(AsnReader).GetMethod("ReadTagAndLength", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .CreateDelegate(typeof(ReadTagAndLengthDelegate), reader)).Invoke(out parsedLength, out bytesRead);
+        }
+    }
+
     public sealed class ReadLength : Asn1ReaderTests
     {
         [Theory]

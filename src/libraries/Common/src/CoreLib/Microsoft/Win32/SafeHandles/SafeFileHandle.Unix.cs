@@ -122,14 +122,7 @@ namespace Microsoft.Win32.SafeHandles
             // to retry, as the descriptor could actually have been closed, been subsequently reassigned, and
             // be in use elsewhere in the process.  Instead, we simply check whether the call was successful.
             int result = Interop.Sys.Close(handle);
-#if DEBUG
-            if (result != 0)
-            {
-                Debug.Fail(string.Format(
-                    "Close failed with result {0} and error {1}", 
-                    result, Interop.Sys.GetLastErrorInfo()));
-            }
-#endif
+            Debug.Assert(result == 0, $"Close failed with result {result} and error {Interop.Sys.GetLastErrorInfo()}");
             return result == 0;
         }
 

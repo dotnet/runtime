@@ -67,7 +67,7 @@ namespace System.Xml
                     await _readBinaryHelper.FinishAsync().ConfigureAwait(false);
                     goto case ParsingFunction.Read;
                 default:
-                    Debug.Assert(false);
+                    Debug.Fail($"Unexpected parsing function {_parsingFunction}");
                     return false;
             }
         }

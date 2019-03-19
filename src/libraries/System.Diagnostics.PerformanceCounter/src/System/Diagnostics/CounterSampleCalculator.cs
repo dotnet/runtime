@@ -79,7 +79,7 @@ namespace System.Diagnostics
             }
             else if (oldSample.CounterType != newSample.CounterType)
             {
-                throw new InvalidOperationException(SR.Format(SR.MismatchedCounterTypes));
+                throw new InvalidOperationException(SR.MismatchedCounterTypes);
             }
 
             if (newCounterType == Interop.Kernel32.PerformanceCounterOptions.PERF_ELAPSED_TIME)

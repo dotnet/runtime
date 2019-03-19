@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         {
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
-            string value = reader.GetCharacterString(UniversalTagNumber.BMPString);
+            string value = reader.ReadCharacterString(UniversalTagNumber.BMPString);
 
             Assert.Equal(expectedValue, value);
         }
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData(PublicEncodingRules.BER, "1E020020", true)]
         [InlineData(PublicEncodingRules.BER, "3E80" + "04020020" + "0000", false)]
         [InlineData(PublicEncodingRules.BER, "3E04" + "04020020", false)]
-        public static void TryGetBMPStringBytes(
+        public static void TryReadBMPStringBytes(
             PublicEncodingRules ruleSet,
             string inputHex,
             bool expectSuccess)
@@ -222,11 +222,11 @@ namespace System.Security.Cryptography.Tests.Asn1
             byte[] inputData = inputHex.HexToByteArray();
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
-            bool got = reader.TryGetBMPStringBytes(out ReadOnlyMemory<byte> contents);
+            bool got = reader.TryReadBMPStringBytes(out ReadOnlyMemory<byte> contents);
 
             if (expectSuccess)
             {
-                Assert.True(got, "reader.TryGetBMPStringBytes");
+                Assert.True(got, "reader.TryReadBMPStringBytes");
 
                 Assert.True(
                     Unsafe.AreSame(
@@ -235,7 +235,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             }
             else
             {
-                Assert.False(got, "reader.TryGetBMPStringBytes");
+                Assert.False(got, "reader.TryReadBMPStringBytes");
                 Assert.True(contents.IsEmpty, "contents.IsEmpty");
             }
         }
@@ -254,7 +254,7 @@ namespace System.Security.Cryptography.Tests.Asn1
         [InlineData("Length Too Long", PublicEncodingRules.CER, "1E0600480069")]
         [InlineData("Length Too Long", PublicEncodingRules.DER, "1E0600480069")]
         [InlineData("Constructed Form", PublicEncodingRules.DER, "3E0404020049")]
-        public static void TryGetBMPStringBytes_Throws(
+        public static void TryReadBMPStringBytes_Throws(
             string description,
             PublicEncodingRules ruleSet,
             string inputHex)
@@ -265,7 +265,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Throws<CryptographicException>(
                 () =>
                 {
-                    reader.TryGetBMPStringBytes(out ReadOnlyMemory<byte> contents);
+                    reader.TryReadBMPStringBytes(out ReadOnlyMemory<byte> contents);
                 });
         }
 
@@ -385,7 +385,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             Assert.Throws<CryptographicException>(
                 () =>
                 {
-                    reader.GetCharacterString(UniversalTagNumber.BMPString);
+                    reader.ReadCharacterString(UniversalTagNumber.BMPString);
                 });
         }
 
@@ -621,16 +621,16 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.TryGetBMPStringBytes(Asn1Tag.Null, out _));
+                () => reader.TryReadBMPStringBytes(Asn1Tag.Null, out _));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
             Assert.Throws<CryptographicException>(
-                () => reader.TryGetBMPStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out _));
+                () => reader.TryReadBMPStringBytes(new Asn1Tag(TagClass.ContextSpecific, 0), out _));
 
             Assert.True(reader.HasData, "HasData after wrong tag");
 
-            Assert.True(reader.TryGetBMPStringBytes(out ReadOnlyMemory<byte> value));
+            Assert.True(reader.TryReadBMPStringBytes(out ReadOnlyMemory<byte> value));
             Assert.Equal("00680069", value.ByteArrayToHex());
             Assert.False(reader.HasData, "HasData after read");
         }
@@ -646,26 +646,26 @@ namespace System.Security.Cryptography.Tests.Asn1
 
             AssertExtensions.Throws<ArgumentException>(
                 "expectedTag",
-                () => reader.TryGetBMPStringBytes(Asn1Tag.Null, out _));
+                () => reader.TryReadBMPStringBytes(Asn1Tag.Null, out _));
 
             Assert.True(reader.HasData, "HasData after bad universal tag");
 
-            Assert.Throws<CryptographicException>(() => reader.TryGetBMPStringBytes(out _));
+            Assert.Throws<CryptographicException>(() => reader.TryReadBMPStringBytes(out _));
 
             Assert.True(reader.HasData, "HasData after default tag");
 
             Assert.Throws<CryptographicException>(
-                () => reader.TryGetBMPStringBytes(new Asn1Tag(TagClass.Application, 0), out _));
+                () => reader.TryReadBMPStringBytes(new Asn1Tag(TagClass.Application, 0), out _));
 
             Assert.True(reader.HasData, "HasData after wrong custom class");
 
             Assert.Throws<CryptographicException>(
-                () => reader.TryGetBMPStringBytes(new Asn1Tag(TagClass.ContextSpecific, 1), out _));
+                () => reader.TryReadBMPStringBytes(new Asn1Tag(TagClass.ContextSpecific, 1), out _));
 
             Assert.True(reader.HasData, "HasData after wrong custom tag value");
 
             Assert.True(
-                reader.TryGetBMPStringBytes(
+                reader.TryReadBMPStringBytes(
                     new Asn1Tag(TagClass.ContextSpecific, 7),
                     out ReadOnlyMemory<byte> value));
 
@@ -690,7 +690,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             AsnReader reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
             Assert.True(
-                reader.TryGetBMPStringBytes(
+                reader.TryReadBMPStringBytes(
                     new Asn1Tag((TagClass)tagClass, tagValue, true),
                     out ReadOnlyMemory<byte> val1));
 
@@ -699,7 +699,7 @@ namespace System.Security.Cryptography.Tests.Asn1
             reader = new AsnReader(inputData, (AsnEncodingRules)ruleSet);
 
             Assert.True(
-                reader.TryGetBMPStringBytes(
+                reader.TryReadBMPStringBytes(
                     new Asn1Tag((TagClass)tagClass, tagValue, false),
                     out ReadOnlyMemory<byte> val2));
 
@@ -711,21 +711,21 @@ namespace System.Security.Cryptography.Tests.Asn1
 
     internal static class ReaderBMPExtensions
     {
-        public static bool TryGetBMPStringBytes(
+        public static bool TryReadBMPStringBytes(
             this AsnReader reader,
             out ReadOnlyMemory<byte> contents)
         {
-            return reader.TryGetPrimitiveCharacterStringBytes(
+            return reader.TryReadPrimitiveCharacterStringBytes(
                 UniversalTagNumber.BMPString,
                 out contents);
         }
 
-        public static bool TryGetBMPStringBytes(
+        public static bool TryReadBMPStringBytes(
             this AsnReader reader,
             Asn1Tag expectedTag,
             out ReadOnlyMemory<byte> contents)
         {
-            return reader.TryGetPrimitiveCharacterStringBytes(
+            return reader.TryReadPrimitiveCharacterStringBytes(
                 expectedTag,
                 UniversalTagNumber.BMPString,
                 out contents);

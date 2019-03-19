@@ -2,6 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>{A7074928-82C3-4739-88FE-9B528977950C}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <!-- Avoid extreme slowness when running NETFX tests (ie with xunit.console.exe) -->
+    <XUnitNoAppdomain>true</XUnitNoAppdomain>
   </PropertyGroup>
   <!-- Compiled Source Files -->
   <ItemGroup>
