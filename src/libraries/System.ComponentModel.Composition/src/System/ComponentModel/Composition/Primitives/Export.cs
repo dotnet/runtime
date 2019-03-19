@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.Threading;
 using Microsoft.Internal;
 
@@ -142,8 +142,6 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get 
             {
-                Contract.Ensures(Contract.Result<ExportDefinition>() != null);
-                
                 if (_definition != null)
                 {
                     return _definition;
@@ -173,7 +171,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get 
             {
-                Contract.Ensures(Contract.Result<IDictionary<string, object>>() != null);
+                Debug.Assert(Definition.Metadata != null);
 
                 return Definition.Metadata; 
             }        

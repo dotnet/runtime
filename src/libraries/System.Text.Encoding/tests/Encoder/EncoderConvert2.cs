@@ -209,7 +209,7 @@ namespace System.Text.Tests
         }
         
         // Call Convert to convert partial of a Unicode character array with UTF8 encoder
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "coreclr #23020 is not fixed in netfx.")]
         public void EncoderUTF8ConvertUnicodeCharArrayPartial()
         {
@@ -230,7 +230,7 @@ namespace System.Text.Tests
         }
  
         // Call Convert to convert partial of a ASCII+Unicode character array with ASCII encoder
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "coreclr #23020 is not fixed in netfx.")]
         public void EncoderASCIIConvertMixedASCIIUnicodeCharArrayPartial()
         {
@@ -253,7 +253,7 @@ namespace System.Text.Tests
         }
         
         // Call Convert to convert partial of a ASCII+Unicode character array with UTF8 encoder
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "coreclr #23020 is not fixed in netfx.")]
         public void EncoderUTF8ConvertMixedASCIIUnicodeCharArrayPartial()
         {

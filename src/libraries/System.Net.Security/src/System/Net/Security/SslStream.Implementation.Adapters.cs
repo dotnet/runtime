@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace System.Net.Security
 {
     // This contains adapters to allow a single code path for sync/async logic
-    internal partial class SslStreamInternal
+    public partial class SslStream
     {
         private interface ISslWriteAdapter
         {
@@ -23,62 +23,62 @@ namespace System.Net.Security
 
         private readonly struct SslReadAsync : ISslReadAdapter
         {
-            private readonly SslState _sslState;
+            private readonly SslStream _sslStream;
             private readonly CancellationToken _cancellationToken;
 
-            public SslReadAsync(SslState sslState, CancellationToken cancellationToken)
+            public SslReadAsync(SslStream sslStream, CancellationToken cancellationToken)
             {
                 _cancellationToken = cancellationToken;
-                _sslState = sslState;
+                _sslStream = sslStream;
             }
 
-            public ValueTask<int> ReadAsync(byte[] buffer, int offset, int count) => _sslState.InnerStream.ReadAsync(new Memory<byte>(buffer, offset, count), _cancellationToken);
+            public ValueTask<int> ReadAsync(byte[] buffer, int offset, int count) => _sslStream.InnerStream.ReadAsync(new Memory<byte>(buffer, offset, count), _cancellationToken);
 
-            public ValueTask<int> LockAsync(Memory<byte> buffer) => _sslState.CheckEnqueueReadAsync(buffer);
+            public ValueTask<int> LockAsync(Memory<byte> buffer) => _sslStream.CheckEnqueueReadAsync(buffer);
         }
 
         private readonly struct SslReadSync : ISslReadAdapter
         {
-            private readonly SslState _sslState;
+            private readonly SslStream _sslStream;
 
-            public SslReadSync(SslState sslState) => _sslState = sslState;
+            public SslReadSync(SslStream sslStream) => _sslStream = sslStream;
 
-            public ValueTask<int> ReadAsync(byte[] buffer, int offset, int count) => new ValueTask<int>(_sslState.InnerStream.Read(buffer, offset, count));
+            public ValueTask<int> ReadAsync(byte[] buffer, int offset, int count) => new ValueTask<int>(_sslStream.InnerStream.Read(buffer, offset, count));
 
-            public ValueTask<int> LockAsync(Memory<byte> buffer) => new ValueTask<int>(_sslState.CheckEnqueueRead(buffer));
+            public ValueTask<int> LockAsync(Memory<byte> buffer) => new ValueTask<int>(_sslStream.CheckEnqueueRead(buffer));
         }
 
         private readonly struct SslWriteAsync : ISslWriteAdapter
         {
-            private readonly SslState _sslState;
+            private readonly SslStream _sslStream;
             private readonly CancellationToken _cancellationToken;
 
-            public SslWriteAsync(SslState sslState, CancellationToken cancellationToken)
+            public SslWriteAsync(SslStream sslStream, CancellationToken cancellationToken)
             {
-                _sslState = sslState;
+                _sslStream = sslStream;
                 _cancellationToken = cancellationToken;
             }
 
-            public Task LockAsync() => _sslState.CheckEnqueueWriteAsync();
+            public Task LockAsync() => _sslStream.CheckEnqueueWriteAsync();
 
-            public ValueTask WriteAsync(byte[] buffer, int offset, int count) => _sslState.InnerStream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), _cancellationToken);
+            public ValueTask WriteAsync(byte[] buffer, int offset, int count) => _sslStream.InnerStream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), _cancellationToken);
         }
 
         private readonly struct SslWriteSync : ISslWriteAdapter
         {
-            private readonly SslState _sslState;
+            private readonly SslStream _sslStream;
 
-            public SslWriteSync(SslState sslState) => _sslState = sslState;
+            public SslWriteSync(SslStream sslStream) => _sslStream = sslStream;
 
             public Task LockAsync()
             {
-                _sslState.CheckEnqueueWrite();
+                _sslStream.CheckEnqueueWrite();
                 return Task.CompletedTask;
             }
 
             public ValueTask WriteAsync(byte[] buffer, int offset, int count)
             {
-                _sslState.InnerStream.Write(buffer, offset, count);
+                _sslStream.InnerStream.Write(buffer, offset, count);
                 return default;
             }
         }

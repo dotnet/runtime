@@ -42,9 +42,6 @@ parameters:
   #     - script: echo Hello World
   #       displayName: MyScript
 
-  # Optional: enableMicrobuild -> Boolean - if microbuild plugin for signing should be enabled
-  # Default: false
-
   # Optional: preBuildSteps -> Array -> list of steps to be executed before common build steps.
   # In example, to install build dependencies, or setup an environment.
   #   preBuildSteps:
@@ -90,15 +87,11 @@ jobs:
 
         - _args: -restore -build -configuration $(_BuildConfig) -ci -buildtests -arch $(_architecture) -framework $(_framework) $(_archiveTestsParameter)
         - _commonArguments: $(_args)
-        - _windowsOfficialBuildArguments: ''
 
         # Windows variables
         - ${{ if eq(parameters.targetOS, 'Windows_NT') }}:
           - _buildScript: build.cmd
           - _msbuildCommand: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 -warnaserror:0 -ci
-          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - _windowsOfficialBuildArguments: -sign
-                                              /p:DotNetSignType=$(_SignType)
 
         # Non-Windows variables
         - ${{ if ne(parameters.targetOS, 'Windows_NT') }}:
@@ -107,13 +100,9 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - _commonArguments: $(_args) -stripSymbols
 
-        - ${{ if and(eq(job.enableMicrobuild, 'true'), eq(parameters.isOfficialBuild, 'true')) }}:
-          - _TeamName: DotNetCore
-          - _SignType: real
-
         # pass along job properties
         ${{ each property in job }}:
-          ${{ if and(ne(property.key, 'job'), ne(property.key, 'variables'), ne(property.key, 'enableMicrobuild')) }}:
+          ${{ if and(ne(property.key, 'job'), ne(property.key, 'variables')) }}:
             ${{ property.key }}: ${{ property.value }}
 
         # enable helix telemetry -- we only send telemetry during official builds
@@ -126,9 +115,6 @@ jobs:
 
         # enabling publish build artifacts, will publish all build logs under /artifacts/log/
         enablePublishBuildArtifacts: true
-
-        ${{ if ne(job.enableMicrobuild, '') }}:
-          enableMicrobuild: ${{ job.enableMicrobuild }}
 
         ${{ if eq(job.timeoutInMinutes, '') }}:
           timeoutInMinutes: 150
@@ -160,7 +146,6 @@ jobs:
                     /p:OuterLoop=$(_outerloop)
                     ${{ job.buildExtraArguments }}
                     $(_msbuildCommonParameters)
-                    $(_windowsOfficialBuildArguments)
               displayName: Build Sources and Tests
 
           - ${{ if ne(job.customBuildSteps[0], '') }}:

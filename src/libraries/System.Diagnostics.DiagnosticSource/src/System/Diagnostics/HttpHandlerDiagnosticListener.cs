@@ -87,7 +87,7 @@ namespace System.Diagnostics
             }
         }
 
-#region private helper classes
+        #region private helper classes
 
         private class HashtableWrapper : Hashtable, IEnumerable
         {
@@ -603,25 +603,52 @@ namespace System.Diagnostics
                     activity.Start();
                 }
 
-                request.Headers.Add(RequestIdHeaderName, activity.Id);
-                // we expect baggage to be empty or contain a few items
-                using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
+                if (activity.IdFormat == ActivityIdFormat.W3C)
                 {
-                    if (e.MoveNext())
+                    // do not inject header if it was injected already 
+                    // perhaps tracing systems wants to override it
+                    if (request.Headers.Get(TraceParentHeaderName) == null)
                     {
-                        StringBuilder baggage = new StringBuilder();
-                        do
+                        request.Headers.Add(TraceParentHeaderName, activity.Id);
+
+                        var traceState = activity.TraceStateString;
+                        if (traceState != null)
                         {
-                            KeyValuePair<string, string> item = e.Current;
-                            baggage.Append(item.Key).Append('=').Append(item.Value).Append(',');
+                            request.Headers.Add(TraceStateHeaderName, traceState);
                         }
-                        while (e.MoveNext());
-                        baggage.Remove(baggage.Length - 1, 1);
-                        request.Headers.Add(CorrelationContextHeaderName, baggage.ToString());
+                    }
+                }
+                else
+                {
+                    // do not inject header if it was injected already 
+                    // perhaps tracing systems wants to override it
+                    if (request.Headers.Get(RequestIdHeaderName) == null)
+                    {
+                        request.Headers.Add(RequestIdHeaderName, activity.Id);
                     }
                 }
 
-                // There is no gurantee that Activity.Current will flow to the Response, so let's stop it here
+                if (request.Headers.Get(CorrelationContextHeaderName) == null)
+                {
+                    // we expect baggage to be empty or contain a few items
+                    using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
+                    {
+                        if (e.MoveNext())
+                        {
+                            StringBuilder baggage = new StringBuilder();
+                            do
+                            {
+                                KeyValuePair<string, string> item = e.Current;
+                                baggage.Append(item.Key).Append('=').Append(item.Value).Append(',');
+                            }
+                            while (e.MoveNext());
+                            baggage.Remove(baggage.Length - 1, 1);
+                            request.Headers.Add(CorrelationContextHeaderName, baggage.ToString());
+                        }
+                    }
+                }
+
+                // There is no guarantee that Activity.Current will flow to the Response, so let's stop it here
                 activity.Stop();
             }
         }
@@ -631,7 +658,7 @@ namespace System.Diagnostics
             // Response event could be received several times for the same request in case it was redirected
             // IsLastResponse checks if response is the last one (no more redirects will happen)
             // based on response StatusCode and number or redirects done so far
-            if (request.Headers[RequestIdHeaderName] != null && IsLastResponse(request, response.StatusCode))
+            if (request.Headers.Get(RequestIdHeaderName) != null && IsLastResponse(request, response.StatusCode))
             {
                 // only send Stop if request was instrumented
                 this.Write(RequestStopName, new { Request = request, Response = response });
@@ -643,7 +670,7 @@ namespace System.Diagnostics
             // Response event could be received several times for the same request in case it was redirected
             // IsLastResponse checks if response is the last one (no more redirects will happen)
             // based on response StatusCode and number or redirects done so far
-            if (request.Headers[RequestIdHeaderName] != null && IsLastResponse(request, statusCode))
+            if (request.Headers.Get(RequestIdHeaderName) != null && IsLastResponse(request, statusCode))
             {
                 this.Write(RequestStopExName, new { Request = request, StatusCode = statusCode, Headers = headers });
             }
@@ -653,10 +680,10 @@ namespace System.Diagnostics
         {
             if (request.AllowAutoRedirect)
             {
-                if (statusCode == HttpStatusCode.Ambiguous        ||  // 300
-                    statusCode == HttpStatusCode.Moved            ||  // 301
-                    statusCode == HttpStatusCode.Redirect         ||  // 302
-                    statusCode == HttpStatusCode.RedirectMethod   ||  // 303
+                if (statusCode == HttpStatusCode.Ambiguous ||  // 300
+                    statusCode == HttpStatusCode.Moved ||  // 301
+                    statusCode == HttpStatusCode.Redirect ||  // 302
+                    statusCode == HttpStatusCode.RedirectMethod ||  // 303
                     statusCode == HttpStatusCode.RedirectKeepVerb ||  // 307
                     (int)statusCode == 308) // 308 Permanent Redirect is not in netfx yet, and so has to be specified this way.
                 {
@@ -696,7 +723,7 @@ namespace System.Diagnostics
                 s_connectionType == null ||
                 s_writeListField == null ||
                 s_httpResponseAccessor == null ||
-                s_autoRedirectsAccessor == null || 
+                s_autoRedirectsAccessor == null ||
                 s_coreResponseDataType == null ||
                 s_coreStatusCodeAccessor == null ||
                 s_coreHeadersAccessor == null)
@@ -727,7 +754,7 @@ namespace System.Diagnostics
             if (field != null)
             {
                 string methodName = field.ReflectedType.FullName + ".get_" + field.Name;
-                DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(TField), new [] { typeof(TClass) }, true);
+                DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(TField), new[] { typeof(TClass) }, true);
                 ILGenerator generator = getterMethod.GetILGenerator();
                 generator.Emit(OpCodes.Ldarg_0);
                 generator.Emit(OpCodes.Ldfld, field);
@@ -749,7 +776,7 @@ namespace System.Diagnostics
             if (field != null)
             {
                 string methodName = classType.FullName + ".get_" + field.Name;
-                DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(TField), new [] { typeof(object) }, true);
+                DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(TField), new[] { typeof(object) }, true);
                 ILGenerator generator = getterMethod.GetILGenerator();
                 generator.Emit(OpCodes.Ldarg_0);
                 generator.Emit(OpCodes.Castclass, classType);
@@ -766,7 +793,7 @@ namespace System.Diagnostics
 
         internal static HttpHandlerDiagnosticListener s_instance = new HttpHandlerDiagnosticListener();
 
-#region private fields
+        #region private fields
         private const string DiagnosticListenerName = "System.Net.Http.Desktop";
         private const string ActivityName = "System.Net.Http.Desktop.HttpRequestOut";
         private const string RequestStartName = "System.Net.Http.Desktop.HttpRequestOut.Start";
@@ -775,6 +802,8 @@ namespace System.Diagnostics
         private const string InitializationFailed = "System.Net.Http.InitializationFailed";
         private const string RequestIdHeaderName = "Request-Id";
         private const string CorrelationContextHeaderName = "Correlation-Context";
+        private const string TraceParentHeaderName = "traceparent";
+        private const string TraceStateHeaderName = "tracestate";
 
         // Fields for controlling initialization of the HttpHandlerDiagnosticListener singleton
         private bool initialized = false;

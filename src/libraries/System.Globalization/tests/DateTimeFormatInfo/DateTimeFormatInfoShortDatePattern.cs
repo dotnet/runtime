@@ -9,35 +9,40 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
         public void ShortDatePattern_InvariantInfo()
         {
             Assert.Equal("MM/dd/yyyy", DateTimeFormatInfo.InvariantInfo.ShortDatePattern);
         }
 
-        public static IEnumerable<object[]> ShortDatePattern_TestData()
+        public static IEnumerable<object[]> ShortDatePattern_Set_TestData()
         {
+            yield return new object[] { string.Empty };
+            yield return new object[] { "garbage" };
             yield return new object[] { "MM/dd/yyyy" };
             yield return new object[] { "MM-DD-yyyy" };
             yield return new object[] { "d" };
-            yield return new object[] { s_randomDataGenerator.GetString(-55, false, 1, 256) };
         }
 
         [Theory]
-        [MemberData(nameof(ShortDatePattern_TestData))]
-        public void ShortDatePattern_Set(string newShortDatePattern)
+        [MemberData(nameof(ShortDatePattern_Set_TestData))]
+        public void ShortDatePattern_Set_GetReturnsExpected(string value)
         {
             var format = new DateTimeFormatInfo();
-            format.ShortDatePattern = newShortDatePattern;
-            Assert.Equal(newShortDatePattern, format.ShortDatePattern);
+            format.ShortDatePattern = value;
+            Assert.Equal(value, format.ShortDatePattern);
         }
 
         [Fact]
-        public void ShortDatePattern_Set_Invalid()
+        public void ShortDatePattern_SetNullValue_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().ShortDatePattern = null); // Value is null
-            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortDatePattern = "MM/dd/yyyy"); // DateTimeFormatInfo.InvariantInfo is read only
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.ShortDatePattern = null);
+        }
+
+        [Fact]
+        public void ShortDatePattern_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.ShortDatePattern = "MM/dd/yyyy");
         }
     }
 }
