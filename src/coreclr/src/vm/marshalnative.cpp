@@ -266,6 +266,11 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsPinnable, Object* obj)
     if (obj->GetMethodTable() == g_pStringClass)
         FC_RETURN_BOOL(TRUE);
 
+#ifdef FEATURE_UTF8STRING
+    if (obj->GetMethodTable() == g_pUtf8StringClass)
+        FC_RETURN_BOOL(TRUE);
+#endif // FEATURE_UTF8STRING
+
     if (obj->GetMethodTable()->IsArray())
     {
         BASEARRAYREF asArray = (BASEARRAYREF)ObjectToOBJECTREF(obj);
@@ -526,6 +531,11 @@ void ValidatePinnedObject(OBJECTREF obj)
 
     if (obj->GetMethodTable() == g_pStringClass)
         return;
+
+#ifdef FEATURE_UTF8STRING
+    if (obj->GetMethodTable() == g_pUtf8StringClass)
+        return;
+#endif // FEATURE_UTF8STRING
 
     if (obj->GetMethodTable()->IsArray())
     {
