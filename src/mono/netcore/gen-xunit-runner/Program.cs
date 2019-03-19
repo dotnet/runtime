@@ -158,6 +158,9 @@ unchecked {
 			return TypeOfExpression (IdentifierName (GetTypeName ((Type)val)));
 		}
 
+		ExpressionSyntax LiteralWithCast (string type, SyntaxToken literal) => 
+			CastExpression(IdentifierName (type), LiteralExpression (SyntaxKind.NumericLiteralExpression, literal));
+
 		switch (Type.GetTypeCode (val.GetType ())) {
 		case TypeCode.Boolean:
 			if ((bool)val)
@@ -166,25 +169,25 @@ unchecked {
 				result = LiteralExpression (SyntaxKind.FalseLiteralExpression);
 			break;
 		case TypeCode.Char:
-			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((char)val));
+			result = LiteralWithCast ("char", Literal ((char)val));
 			break;
 		case TypeCode.SByte:
-			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((sbyte)val));
+			result = LiteralWithCast ("sbyte", Literal ((sbyte)val));
 			break;
 		case TypeCode.Byte:
-			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((byte)val));
+			result = LiteralWithCast ("byte", Literal ((byte)val));
 			break;
 		case TypeCode.Int16:
-			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((short)val));
+			result = LiteralWithCast ("short", Literal ((short)val));
 			break;
 		case TypeCode.UInt16:
-			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((ushort)val));
+			result = LiteralWithCast ("ushort", Literal ((ushort)val));
 			break;
 		case TypeCode.Int32:
 			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((int)val));
 			break;
 		case TypeCode.UInt32:
-			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((uint)val));
+			result = LiteralWithCast ("uint", Literal ((uint)val));
 			break;
 		case TypeCode.Int64:
 			result = LiteralExpression (SyntaxKind.NumericLiteralExpression, Literal ((long)val));
