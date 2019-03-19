@@ -226,7 +226,7 @@ unchecked {
 		}
 
 		if (val != null && expectedType != null && val.GetType () != expectedType && !expectedType.IsGenericParameter)
-			result = CastExpression (IdentifierName (GetTypeName (val.GetType ())), ParenthesizedExpression (result));
+			result = CastExpression (IdentifierName (GetTypeName (expectedType)), ParenthesizedExpression (result));
 		return result;
 	}
 
