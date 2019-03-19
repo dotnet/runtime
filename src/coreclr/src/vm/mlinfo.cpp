@@ -1438,6 +1438,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
     CorNativeType nativeType        = NATIVE_TYPE_DEFAULT;
     Assembly *pAssembly             = pModule->GetAssembly();
+    BOOL fNeedsCopyCtor             = FALSE;
     m_BestFit                       = BestFit;
     m_ThrowOnUnmappableChar         = ThrowOnUnmappableChar;
     m_ms                            = ms;
@@ -1548,6 +1549,21 @@ MarshalInfo::MarshalInfo(Module* pModule,
         IfFailGoto(sig.GetElemType(NULL), lFail);
         mtype = sig.PeekElemTypeNormalized(pModule, pTypeContext); 
 
+        // Check for Copy Constructor Modifier - peek closed elem type here to prevent ELEMENT_TYPE_VALUETYPE
+        // turning into a primitive.
+        if (sig.PeekElemTypeClosed(pModule, pTypeContext) == ELEMENT_TYPE_VALUETYPE) 
+        {
+            // Skip ET_BYREF
+            IfFailGoto(sigtmp.GetByte(NULL), lFail);
+            
+            if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+                sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
+            {
+                mtype = ELEMENT_TYPE_VALUETYPE;
+                fNeedsCopyCtor = TRUE;
+                m_byref = FALSE;
+            }
+        }
     }
     else
     {
@@ -1590,6 +1606,19 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 
+                // Check for Copy Constructor Modifier
+                if (sigtmp.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
+                    sigtmp.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD) )
+                {
+                    mtype = mtype2;
+
+                    // Keep the sig pointer in sync with mtype (skip ELEMENT_TYPE_PTR) because for the rest
+                    // of this method we are pretending that the parameter is a value type passed by-value.
+                    IfFailGoto(sig.GetElemType(NULL), lFail);
+
+                    fNeedsCopyCtor = TRUE;
+                    m_byref = FALSE;
+                }
             }
         }
         else
@@ -2684,6 +2713,29 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                     else
                     {
+                        if (fNeedsCopyCtor)
+                        {
+#ifdef FEATURE_COMINTEROP
+                            if (m_ms == MARSHAL_SCENARIO_WINRT)
+                            {
+                                // our WinRT-optimized GetCOMIPFromRCW helpers don't support copy
+                                // constructor stubs so make sure that this marshaler will not be used
+                                m_resID = IDS_EE_BADMARSHAL_WINRT_COPYCTOR;
+                                IfFailGoto(E_FAIL, lFail);
+                            }
+#endif
+
+                            MethodDesc *pCopyCtor;
+                            MethodDesc *pDtor;
+                            FindCopyCtor(pModule, m_pMT, &pCopyCtor);
+                            FindDtor(pModule, m_pMT, &pDtor);
+
+                            m_args.mm.m_pMT = m_pMT;
+                            m_args.mm.m_pCopyCtor = pCopyCtor;
+                            m_args.mm.m_pDtor = pDtor;
+                            m_type = MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR;
+                        }
+                        else
 #ifdef _TARGET_X86_
                         // JIT64 is not aware of normalized value types and this optimization
                         // (returning small value types by value in registers) is already done in JIT64.
@@ -3398,6 +3450,7 @@ UINT16 MarshalInfo::GetNativeSize(MarshalType mtype, MarshalScenario ms)
         {
             case MARSHAL_TYPE_BLITTABLEVALUECLASS:
             case MARSHAL_TYPE_VALUECLASS:
+            case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
                 return (UINT16) m_pMT->GetNativeSize();
 
             default:
@@ -4049,6 +4102,7 @@ DispParamMarshaler *MarshalInfo::GenerateDispParamMarshaler()
         case MARSHAL_TYPE_BLITTABLEVALUECLASS:
         case MARSHAL_TYPE_BLITTABLEPTR:
         case MARSHAL_TYPE_LAYOUTCLASSPTR:
+        case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
             pDispParamMarshaler = new DispParamRecordMarshaler(m_pMT);
             break;
 
@@ -4349,6 +4403,9 @@ VOID MarshalInfo::MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpeci
                 break;
             case MARSHAL_TYPE_ARGITERATOR:
                 strRetVal = W("ArgIterator");
+                break;
+            case MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR:
+                strRetVal = W("blittable value class with copy constructor");
                 break;
 #ifdef FEATURE_COMINTEROP
             case MARSHAL_TYPE_OBJECT:

@@ -2725,8 +2725,40 @@ protected:
     virtual void EmitConvertContentsNativeToCLR(ILCodeStream* pslILEmit);
 };
 
+class ILBlittableValueClassWithCopyCtorMarshaler : public ILMarshaler
+{
+public:
+    enum
+    {
+        c_fInOnly               = TRUE,
+        c_nativeSize            = VARIABLESIZE,
+        c_CLRSize               = sizeof(OBJECTREF),
+    };
+
+    LocalDesc GetManagedType()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc();
+    }
+
+    LocalDesc GetNativeType()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return LocalDesc();
+    }
+
+    static MarshalerOverrideStatus ArgumentOverride(NDirectStubLinker* psl,
+                                            BOOL               byref,
+                                            BOOL               fin,
+                                            BOOL               fout,
+                                            BOOL               fManagedToNative,
+                                            OverrideProcArgs*  pargs,
+                                            UINT*              pResID,
+                                            UINT               argidx,
+                                            UINT               nativeStackOffset);
 
 
+};
 
 class ILArgIteratorMarshaler : public ILMarshaler
 {
