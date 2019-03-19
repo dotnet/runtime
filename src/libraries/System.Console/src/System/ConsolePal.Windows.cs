@@ -136,7 +136,7 @@ namespace System
 
                 default:
                     // This can never happen.
-                    Debug.Assert(false, "Unexpected handleType value (" + handleType + ")");
+                    Debug.Fail("Unexpected handleType value (" + handleType + ")");
                     return true;
             }
         }

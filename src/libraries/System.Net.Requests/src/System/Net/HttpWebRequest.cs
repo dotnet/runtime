@@ -1152,6 +1152,13 @@ namespace System.Net
                 {
                     handler.Proxy = _proxy;
                 }
+                else
+                {
+                    // Since this HttpWebRequest is using the default system proxy, we need to 
+                    // pass any proxy credentials that the developer might have set via the
+                    // WebRequest.DefaultWebProxy.Credentials property.
+                    handler.DefaultProxyCredentials = _proxy.Credentials;
+                }
 
                 handler.ClientCertificates.AddRange(ClientCertificates);
 

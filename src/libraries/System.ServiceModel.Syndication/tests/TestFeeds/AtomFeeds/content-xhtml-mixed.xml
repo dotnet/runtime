@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  xhtml content with elements and escaped text
 Expect:       !NotInline{parent:entry,element:content}

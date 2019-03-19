@@ -234,7 +234,7 @@ namespace System.Data.Common
 
         public virtual int GetStringLength(int record)
         {
-            Debug.Assert(false, "not a String or SqlString column");
+            Debug.Fail("not a String or SqlString column");
             return int.MaxValue;
         }
 
@@ -342,7 +342,7 @@ namespace System.Data.Common
                 case StorageType.SqlString: return new SqlStringStorage(column);
 
                 default:
-                    Debug.Assert(false, "shouldn't be here");
+                    Debug.Fail("shouldn't be here");
                     goto case StorageType.Object;
             }
         }

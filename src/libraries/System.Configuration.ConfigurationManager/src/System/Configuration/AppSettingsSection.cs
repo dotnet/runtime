@@ -111,7 +111,7 @@ namespace System.Configuration
             {
                 if (xmlUtil.Reader.Name != elementName)
                     throw new ConfigurationErrorsException(
-                        string.Format(SR.Config_name_value_file_section_file_invalid_root, elementName),
+                        SR.Format(SR.Config_name_value_file_section_file_invalid_root, elementName),
                         xmlUtil);
 
                 lineOffset = xmlUtil.Reader.LineNumber;
@@ -133,7 +133,7 @@ namespace System.Configuration
 
             if (internalReader.MoveToNextAttribute())
                 throw new ConfigurationErrorsException(
-                    string.Format(SR.Config_base_unrecognized_attribute, internalReader.Name),
+                    SR.Format(SR.Config_base_unrecognized_attribute, internalReader.Name),
                     (XmlReader)internalReader);
 
             internalReader.MoveToElement();

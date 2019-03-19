@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  White space within start-tags (other than significant white space in attribute values) and end-tags is not significant.
 Expect:       DuplicateAtomLink{parent:feed}

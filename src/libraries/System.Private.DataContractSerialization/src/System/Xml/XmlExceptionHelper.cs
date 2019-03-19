@@ -58,7 +58,7 @@ namespace System.Xml
         private static string GetWhatWasFound(XmlDictionaryReader reader)
         {
             if (reader.EOF)
-                return SR.Format(SR.XmlFoundEndOfFile);
+                return SR.XmlFoundEndOfFile;
             switch (reader.NodeType)
             {
                 case XmlNodeType.Element:

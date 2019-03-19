@@ -152,7 +152,7 @@ namespace System.Data.SqlClient
                 {
                     // No parent, so we better be LocalFromTSQL.  Should we even return in this case -
                     // since it could be argued this is invalid?
-                    Debug.Assert(false, "Why are we calling IsOrphaned with no parent?");
+                    Debug.Fail("Why are we calling IsOrphaned with no parent?");
                     Debug.Assert(_transactionType == TransactionType.LocalFromTSQL, "invalid state");
                     result = false;
                 }

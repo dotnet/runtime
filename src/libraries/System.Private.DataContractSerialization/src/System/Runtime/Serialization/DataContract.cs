@@ -79,7 +79,7 @@ namespace System.Runtime.Serialization
                 {
                     if (DataContractSerializer.Option == SerializationOption.CodeGenOnly)
                     {
-                        throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, type.ToString()));
+                        throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, type));
                     }
                 }
             }
@@ -497,7 +497,7 @@ namespace System.Runtime.Serialization
                 DataContract dataContract = s_dataContractCache[id];
                 if (dataContract == null)
                 {
-                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.DataContractCacheOverflow)));
+                    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
                 }
                 return dataContract;
             }
@@ -517,7 +517,7 @@ namespace System.Runtime.Serialization
                         return i;
                     }
                 }
-                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.DataContractCacheOverflow)));
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
             }
 
             private static bool ContractMatches(DataContract contract, DataContract cachedContract)
@@ -541,7 +541,7 @@ namespace System.Runtime.Serialization
                             if (newSize <= value)
                             {
                                 DiagnosticUtility.DebugAssert("DataContract cache overflow");
-                                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.DataContractCacheOverflow)));
+                                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.DataContractCacheOverflow));
                             }
                             Array.Resize<DataContract>(ref s_dataContractCache, newSize);
                         }
@@ -1202,7 +1202,7 @@ namespace System.Runtime.Serialization
             internal virtual bool IsISerializable
             {
                 get { return false; }
-                set { ThrowInvalidDataContractException(SR.Format(SR.RequiresClassDataContractToSetIsISerializable)); }
+                set { ThrowInvalidDataContractException(SR.RequiresClassDataContractToSetIsISerializable); }
             }
 
             internal XmlDictionaryString Name
@@ -1809,7 +1809,7 @@ namespace System.Runtime.Serialization
 
         internal static string GetClrTypeFullName(Type type)
         {
-            return !type.IsGenericTypeDefinition && type.ContainsGenericParameters ? string.Format(CultureInfo.InvariantCulture, "{0}.{1}", type.Namespace, type.Name) : type.FullName;
+            return !type.IsGenericTypeDefinition && type.ContainsGenericParameters ? type.Namespace + "." + type.Name : type.FullName;
         }
 
         internal static void GetClrNameAndNamespace(string fullTypeName, out string localName, out string ns)

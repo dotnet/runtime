@@ -429,9 +429,7 @@ namespace System.DirectoryServices.AccountManagement
                                         err);
 
                 throw new PrincipalOperationException(
-                            string.Format(CultureInfo.CurrentCulture,
-                                          SR.SAMStoreCtxErrorEnumeratingGroup,
-                                          err));
+                            SR.Format(SR.SAMStoreCtxErrorEnumeratingGroup, err));
             }
 
             if (string.Equals(_storeCtx.MachineFlatName, domainName, StringComparison.OrdinalIgnoreCase))

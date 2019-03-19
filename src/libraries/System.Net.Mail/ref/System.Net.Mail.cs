@@ -9,12 +9,12 @@ namespace System.Net.Mail
 {
     public partial class AlternateView : System.Net.Mail.AttachmentBase
     {
-        public AlternateView(System.IO.Stream contentStream) : base (default(string)) { }
-        public AlternateView(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) : base (default(string)) { }
-        public AlternateView(System.IO.Stream contentStream, string mediaType) : base (default(string)) { }
-        public AlternateView(string fileName) : base (default(string)) { }
-        public AlternateView(string fileName, System.Net.Mime.ContentType contentType) : base (default(string)) { }
-        public AlternateView(string fileName, string mediaType) : base (default(string)) { }
+        public AlternateView(System.IO.Stream contentStream) : base (default(System.IO.Stream)) { }
+        public AlternateView(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
+        public AlternateView(System.IO.Stream contentStream, string mediaType) : base (default(System.IO.Stream)) { }
+        public AlternateView(string fileName) : base (default(System.IO.Stream)) { }
+        public AlternateView(string fileName, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
+        public AlternateView(string fileName, string mediaType) : base (default(System.IO.Stream)) { }
         public System.Uri BaseUri { get { throw null; } set { } }
         public System.Net.Mail.LinkedResourceCollection LinkedResources { get { throw null; } }
         public static System.Net.Mail.AlternateView CreateAlternateViewFromString(string content) { throw null; }
@@ -33,12 +33,12 @@ namespace System.Net.Mail
     }
     public partial class Attachment : System.Net.Mail.AttachmentBase
     {
-        public Attachment(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) : base (default(string)) { }
-        public Attachment(System.IO.Stream contentStream, string name) : base (default(string)) { }
-        public Attachment(System.IO.Stream contentStream, string name, string mediaType) : base (default(string)) { }
-        public Attachment(string fileName) : base (default(string)) { }
-        public Attachment(string fileName, System.Net.Mime.ContentType contentType) : base (default(string)) { }
-        public Attachment(string fileName, string mediaType) : base (default(string)) { }
+        public Attachment(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
+        public Attachment(System.IO.Stream contentStream, string name) : base (default(System.IO.Stream)) { }
+        public Attachment(System.IO.Stream contentStream, string name, string mediaType) : base (default(System.IO.Stream)) { }
+        public Attachment(string fileName) : base (default(System.IO.Stream)) { }
+        public Attachment(string fileName, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
+        public Attachment(string fileName, string mediaType) : base (default(System.IO.Stream)) { }
         public System.Net.Mime.ContentDisposition ContentDisposition { get { throw null; } }
         public string Name { get { throw null; } set { } }
         public System.Text.Encoding NameEncoding { get { throw null; } set { } }
@@ -81,12 +81,12 @@ namespace System.Net.Mail
     }
     public partial class LinkedResource : System.Net.Mail.AttachmentBase
     {
-        public LinkedResource(System.IO.Stream contentStream) : base (default(string)) { }
-        public LinkedResource(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) : base (default(string)) { }
-        public LinkedResource(System.IO.Stream contentStream, string mediaType) : base (default(string)) { }
-        public LinkedResource(string fileName) : base (default(string)) { }
-        public LinkedResource(string fileName, System.Net.Mime.ContentType contentType) : base (default(string)) { }
-        public LinkedResource(string fileName, string mediaType) : base (default(string)) { }
+        public LinkedResource(System.IO.Stream contentStream) : base (default(System.IO.Stream)) { }
+        public LinkedResource(System.IO.Stream contentStream, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
+        public LinkedResource(System.IO.Stream contentStream, string mediaType) : base (default(System.IO.Stream)) { }
+        public LinkedResource(string fileName) : base (default(System.IO.Stream)) { }
+        public LinkedResource(string fileName, System.Net.Mime.ContentType contentType) : base (default(System.IO.Stream)) { }
+        public LinkedResource(string fileName, string mediaType) : base (default(System.IO.Stream)) { }
         public System.Uri ContentLink { get { throw null; } set { } }
         public static System.Net.Mail.LinkedResource CreateLinkedResourceFromString(string content) { throw null; }
         public static System.Net.Mail.LinkedResource CreateLinkedResourceFromString(string content, System.Net.Mime.ContentType contentType) { throw null; }
@@ -171,6 +171,7 @@ namespace System.Net.Mail
         public string Host { get { throw null; } set { } }
         public string PickupDirectoryLocation { get { throw null; } set { } }
         public int Port { get { throw null; } set { } }
+        public System.Net.ServicePoint ServicePoint { get { throw null; } }
         public string TargetName { get { throw null; } set { } }
         public int Timeout { get { throw null; } set { } }
         public bool UseDefaultCredentials { get { throw null; } set { } }
@@ -183,7 +184,6 @@ namespace System.Net.Mail
         public void SendAsync(System.Net.Mail.MailMessage message, object userToken) { }
         public void SendAsync(string from, string recipients, string subject, string body, object userToken) { }
         public void SendAsyncCancel() { }
-        public System.Net.ServicePoint ServicePoint { get { throw null; } }
         public System.Threading.Tasks.Task SendMailAsync(System.Net.Mail.MailMessage message) { throw null; }
         public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string subject, string body) { throw null; }
     }
@@ -261,5 +261,76 @@ namespace System.Net.Mail
         TransactionFailed = 554,
         UserNotLocalTryAlternatePath = 551,
         UserNotLocalWillForward = 251,
+    }
+}
+namespace System.Net.Mime
+{
+    public partial class ContentDisposition
+    {
+        public ContentDisposition() { }
+        public ContentDisposition(string disposition) { }
+        public System.DateTime CreationDate { get { throw null; } set { } }
+        public string DispositionType { get { throw null; } set { } }
+        public string FileName { get { throw null; } set { } }
+        public bool Inline { get { throw null; } set { } }
+        public System.DateTime ModificationDate { get { throw null; } set { } }
+        public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
+        public System.DateTime ReadDate { get { throw null; } set { } }
+        public long Size { get { throw null; } set { } }
+        public override bool Equals(object rparam) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public partial class ContentType
+    {
+        public ContentType() { }
+        public ContentType(string contentType) { }
+        public string Boundary { get { throw null; } set { } }
+        public string CharSet { get { throw null; } set { } }
+        public string MediaType { get { throw null; } set { } }
+        public string Name { get { throw null; } set { } }
+        public System.Collections.Specialized.StringDictionary Parameters { get { throw null; } }
+        public override bool Equals(object rparam) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public static partial class DispositionTypeNames
+    {
+        public const string Attachment = "attachment";
+        public const string Inline = "inline";
+    }
+    public static partial class MediaTypeNames
+    {
+        public static partial class Application
+        {
+            public const string Json = "application/json";
+            public const string Octet = "application/octet-stream";
+            public const string Pdf = "application/pdf";
+            public const string Rtf = "application/rtf";
+            public const string Soap = "application/soap+xml";
+            public const string Xml = "application/xml";
+            public const string Zip = "application/zip";
+        }
+        public static partial class Image
+        {
+            public const string Gif = "image/gif";
+            public const string Jpeg = "image/jpeg";
+            public const string Tiff = "image/tiff";
+        }
+        public static partial class Text
+        {
+            public const string Html = "text/html";
+            public const string Plain = "text/plain";
+            public const string RichText = "text/richtext";
+            public const string Xml = "text/xml";
+        }
+    }
+    public enum TransferEncoding
+    {
+        Base64 = 1,
+        EightBit = 3,
+        QuotedPrintable = 0,
+        SevenBit = 2,
+        Unknown = -1,
     }
 }

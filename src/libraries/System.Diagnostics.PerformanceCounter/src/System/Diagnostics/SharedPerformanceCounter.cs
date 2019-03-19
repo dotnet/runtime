@@ -101,18 +101,18 @@ namespace System.Diagnostics
             if (_categoryData.UseUniqueSharedMemory)
             {
                 if (instanceName != null && instanceName.Length > InstanceNameMaxLength)
-                    throw new InvalidOperationException(SR.Format(SR.InstanceNameTooLong));
+                    throw new InvalidOperationException(SR.InstanceNameTooLong);
             }
             else
             {
                 if (lifetime != PerformanceCounterInstanceLifetime.Global)
-                    throw new InvalidOperationException(SR.Format(SR.ProcessLifetimeNotValidInGlobal));
+                    throw new InvalidOperationException(SR.ProcessLifetimeNotValidInGlobal);
             }
 
             if (counterName != null && instanceName != null)
             {
                 if (!_categoryData.CounterNames.Contains(counterName))
-                    Debug.Assert(false, "Counter " + counterName + " does not exist in category " + catName);
+                    Debug.Fail("Counter " + counterName + " does not exist in category " + catName);
                 else
                     _counterEntryPointer = GetCounter(counterName, instanceName, _categoryData.EnableReuse, lifetime);
             }
@@ -179,7 +179,7 @@ namespace System.Diagnostics
 
             if (newOffset > FileView._fileMappingSize || newOffset < 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.CountersOOM));
+                throw new InvalidOperationException(SR.CountersOOM);
             }
 
             return newOffset;
@@ -593,7 +593,7 @@ namespace System.Diagnostics
                 currentChar++;
             }
 
-            throw new InvalidOperationException(SR.Format(SR.MappingCorrupted));
+            throw new InvalidOperationException(SR.MappingCorrupted);
         }
 
         // Compare a managed string to a string located at a given offset.  If we walk past the end of the 
@@ -607,7 +607,7 @@ namespace System.Diagnostics
             for (i = 0; i < stringA.Length; i++)
             {
                 if ((ulong)(currentChar + i) > (endAddress - 2))
-                    throw new InvalidOperationException(SR.Format(SR.MappingCorrupted));
+                    throw new InvalidOperationException(SR.MappingCorrupted);
 
                 if (stringA[i] != currentChar[i])
                     return false;
@@ -615,7 +615,7 @@ namespace System.Diagnostics
 
             // now check for the null termination. 
             if ((ulong)(currentChar + i) > (endAddress - 2))
-                throw new InvalidOperationException(SR.Format(SR.MappingCorrupted));
+                throw new InvalidOperationException(SR.MappingCorrupted);
 
             return (currentChar[i] == 0);
         }
@@ -1038,7 +1038,7 @@ namespace System.Diagnostics
                                 if (lifetimeEntry != null && lifetimeEntry->ProcessId != 0)
                                 {
                                     if (lifetime != PerformanceCounterInstanceLifetime.Process)
-                                        throw new InvalidOperationException(SR.Format(SR.CantConvertProcessToGlobal));
+                                        throw new InvalidOperationException(SR.CantConvertProcessToGlobal);
 
                                     // make sure only one process is using this instance. 
                                     if (ProcessData.ProcessId != lifetimeEntry->ProcessId)
@@ -1054,7 +1054,7 @@ namespace System.Diagnostics
                                 else
                                 {
                                     if (lifetime == PerformanceCounterInstanceLifetime.Process)
-                                        throw new InvalidOperationException(SR.Format(SR.CantConvertGlobalToProcess));
+                                        throw new InvalidOperationException(SR.CantConvertGlobalToProcess);
                                 }
                                 return true;
                             }
@@ -1627,7 +1627,7 @@ namespace System.Diagnostics
             //It is very important to check the integrity of the shared memory
             //everytime a new address is resolved.
             if (offset > (FileView._fileMappingSize - sizeToRead) || offset < 0)
-                throw new InvalidOperationException(SR.Format(SR.MappingCorrupted));
+                throw new InvalidOperationException(SR.MappingCorrupted);
 
             long address = _baseAddress + offset;
 
@@ -1641,7 +1641,7 @@ namespace System.Diagnostics
             //It is very important to check the integrity of the shared memory
             //everytime a new address is resolved.
             if (offset > (FileView._fileMappingSize - sizeToRead) || offset < 0)
-                throw new InvalidOperationException(SR.Format(SR.MappingCorrupted));
+                throw new InvalidOperationException(SR.MappingCorrupted);
 
             return offset;
         }
@@ -1664,7 +1664,7 @@ namespace System.Diagnostics
                 get
                 {
                     if (_fileViewAddress.IsInvalid)
-                        throw new InvalidOperationException(SR.Format(SR.SharedMemoryGhosted));
+                        throw new InvalidOperationException(SR.SharedMemoryGhosted);
 
                     return _fileViewAddress.DangerousGetHandle();
                 }
@@ -1688,7 +1688,7 @@ namespace System.Diagnostics
 
                     if (!Interop.Advapi32.ConvertStringSecurityDescriptorToSecurityDescriptor(sddlString, Interop.Kernel32.PerformanceCounterOptions.SDDL_REVISION_1,
                                                                                                     out securityDescriptorPointer, IntPtr.Zero))
-                        throw new InvalidOperationException(SR.Format(SR.SetSecurityDescriptorFailed));
+                        throw new InvalidOperationException(SR.SetSecurityDescriptorFailed);
 
                     Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = new Interop.Kernel32.SECURITY_ATTRIBUTES();
                     securityAttributes.bInheritHandle = Interop.BOOL.FALSE;
@@ -1744,17 +1744,17 @@ namespace System.Diagnostics
                     }
                     if (_fileMappingHandle.IsInvalid)
                     {
-                        throw new InvalidOperationException(SR.Format(SR.CantCreateFileMapping));
+                        throw new InvalidOperationException(SR.CantCreateFileMapping);
                     }
 
                     _fileViewAddress = Interop.Kernel32.MapViewOfFile(_fileMappingHandle, Interop.Kernel32.FileMapOptions.FILE_MAP_WRITE, 0, 0, UIntPtr.Zero);
                     if (_fileViewAddress.IsInvalid)
-                        throw new InvalidOperationException(SR.Format(SR.CantMapFileView));
+                        throw new InvalidOperationException(SR.CantMapFileView);
 
                     // figure out what size the share memory really is.
                     Interop.Kernel32.MEMORY_BASIC_INFORMATION meminfo = new Interop.Kernel32.MEMORY_BASIC_INFORMATION();
                     if (Interop.Kernel32.VirtualQuery(_fileViewAddress, ref meminfo, (UIntPtr)sizeof(Interop.Kernel32.MEMORY_BASIC_INFORMATION)) == UIntPtr.Zero)
-                        throw new InvalidOperationException(SR.Format(SR.CantGetMappingSize));
+                        throw new InvalidOperationException(SR.CantGetMappingSize);
 
                     _fileMappingSize = (int)meminfo.RegionSize;
                 }

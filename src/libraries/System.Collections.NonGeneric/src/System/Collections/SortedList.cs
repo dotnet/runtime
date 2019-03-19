@@ -708,7 +708,6 @@ namespace System.Collections
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public override object GetByIndex(int index)
             {
                 lock (_root)
@@ -725,7 +724,6 @@ namespace System.Collections
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public override object GetKey(int index)
             {
                 lock (_root)
@@ -761,7 +759,6 @@ namespace System.Collections
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public override int IndexOfValue(object value)
             {
                 lock (_root)
@@ -770,7 +767,6 @@ namespace System.Collections
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public override void RemoveAt(int index)
             {
                 lock (_root)
@@ -787,7 +783,6 @@ namespace System.Collections
                 }
             }
 
-            [SuppressMessage("Microsoft.Contracts", "CC1055")]  // Skip extra error checking to avoid *potential* AppCompat problems.
             public override void SetByIndex(int index, object value)
             {
                 lock (_root)

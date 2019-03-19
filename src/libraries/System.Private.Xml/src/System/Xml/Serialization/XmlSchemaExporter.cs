@@ -891,7 +891,7 @@ namespace System.Xml.Serialization
 
 #if DEBUG
                 // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
-                if (value.GetType() != typeof(string)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, SR.Format(SR.XmlInvalidDefaultValue, value.ToString(), value.GetType().FullName)));
+                if (value.GetType() != typeof(string)) throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, SR.Format(SR.XmlInvalidDefaultValue, value, value.GetType().FullName)));
 #endif
 
                 // check the validity of the value
@@ -947,10 +947,10 @@ namespace System.Xml.Serialization
             {
                 string defaultValue = XmlCustomFormatter.FromDefaultValue(value, pm.TypeDesc.FormatterName);
                 if (defaultValue == null)
-                    throw new InvalidOperationException(SR.Format(SR.XmlInvalidDefaultValue, value.ToString(), pm.TypeDesc.Name));
+                    throw new InvalidOperationException(SR.Format(SR.XmlInvalidDefaultValue, value, pm.TypeDesc.Name));
                 return defaultValue;
             }
-            throw new InvalidOperationException(SR.Format(SR.XmlInvalidDefaultValue, value.ToString(), pm.TypeDesc.Name));
+            throw new InvalidOperationException(SR.Format(SR.XmlInvalidDefaultValue, value, pm.TypeDesc.Name));
         }
 
         private void ExportRootIfNecessary(TypeScope typeScope)

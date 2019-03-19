@@ -39,7 +39,7 @@ namespace System.Xml
                 if (key != -1)
                 {
                     // If the key is already set, then something is wrong
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlKeyAlreadyExists)));
+                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlKeyAlreadyExists));
                 }
 
                 key = Add(value.Value);

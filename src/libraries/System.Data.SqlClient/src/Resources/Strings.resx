@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -244,7 +243,7 @@
     <value>Keyword not supported: '{0}'.</value>
   </data>
   <data name="ADP_InternalProviderError" xml:space="preserve">
-    <value>Internal .Net Framework Data Provider error {0}.</value>
+    <value>Internal .NET Framework Data Provider error {0}.</value>
   </data>
   <data name="ADP_InvalidMultipartName" xml:space="preserve">
     <value>{0} '{1}'.</value>
@@ -274,7 +273,7 @@
     <value>Connecting to a mirrored SQL Server instance using the MultiSubnetFailover connection option is not supported.</value>
   </data>
   <data name="SQL_NotSupportedEnumerationValue" xml:space="preserve">
-    <value>The {0} enumeration value, {1}, is not supported by the .Net Framework SqlClient Data Provider.</value>
+    <value>The {0} enumeration value, {1}, is not supported by the .NET Framework SqlClient Data Provider.</value>
   </data>
   <data name="ADP_CommandTextRequired" xml:space="preserve">
     <value>{0}: CommandText property has not been initialized</value>
@@ -403,7 +402,7 @@
     <value>The instance of SQL Server you attempted to connect to does not support encryption.</value>
   </data>
   <data name="SQL_InvalidSQLServerVersionUnknown" xml:space="preserve">
-    <value>Unsupported SQL Server version.  The .Net Framework SqlClient Data Provider can only be used with SQL Server versions 7.0 and later.</value>
+    <value>Unsupported SQL Server version.  The .NET Framework SqlClient Data Provider can only be used with SQL Server versions 7.0 and later.</value>
   </data>
   <data name="SQL_CannotCreateNormalizer" xml:space="preserve">
     <value>Cannot create normalizer for '{0}'.</value>

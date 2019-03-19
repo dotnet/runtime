@@ -23,51 +23,51 @@ namespace System.Net.Mail
             {
                 default:
                 case SmtpStatusCode.CommandUnrecognized:
-                    return SR.Format(SR.SmtpCommandUnrecognized);
+                    return SR.SmtpCommandUnrecognized;
                 case SmtpStatusCode.SyntaxError:
-                    return SR.Format(SR.SmtpSyntaxError);
+                    return SR.SmtpSyntaxError;
                 case SmtpStatusCode.CommandNotImplemented:
-                    return SR.Format(SR.SmtpCommandNotImplemented);
+                    return SR.SmtpCommandNotImplemented;
                 case SmtpStatusCode.BadCommandSequence:
-                    return SR.Format(SR.SmtpBadCommandSequence);
+                    return SR.SmtpBadCommandSequence;
                 case SmtpStatusCode.CommandParameterNotImplemented:
-                    return SR.Format(SR.SmtpCommandParameterNotImplemented);
+                    return SR.SmtpCommandParameterNotImplemented;
                 case SmtpStatusCode.SystemStatus:
-                    return SR.Format(SR.SmtpSystemStatus);
+                    return SR.SmtpSystemStatus;
                 case SmtpStatusCode.HelpMessage:
-                    return SR.Format(SR.SmtpHelpMessage);
+                    return SR.SmtpHelpMessage;
                 case SmtpStatusCode.ServiceReady:
-                    return SR.Format(SR.SmtpServiceReady);
+                    return SR.SmtpServiceReady;
                 case SmtpStatusCode.ServiceClosingTransmissionChannel:
-                    return SR.Format(SR.SmtpServiceClosingTransmissionChannel);
+                    return SR.SmtpServiceClosingTransmissionChannel;
                 case SmtpStatusCode.ServiceNotAvailable:
-                    return SR.Format(SR.SmtpServiceNotAvailable);
+                    return SR.SmtpServiceNotAvailable;
                 case SmtpStatusCode.Ok:
-                    return SR.Format(SR.SmtpOK);
+                    return SR.SmtpOK;
                 case SmtpStatusCode.UserNotLocalWillForward:
-                    return SR.Format(SR.SmtpUserNotLocalWillForward);
+                    return SR.SmtpUserNotLocalWillForward;
                 case SmtpStatusCode.MailboxBusy:
-                    return SR.Format(SR.SmtpMailboxBusy);
+                    return SR.SmtpMailboxBusy;
                 case SmtpStatusCode.MailboxUnavailable:
-                    return SR.Format(SR.SmtpMailboxUnavailable);
+                    return SR.SmtpMailboxUnavailable;
                 case SmtpStatusCode.LocalErrorInProcessing:
-                    return SR.Format(SR.SmtpLocalErrorInProcessing);
+                    return SR.SmtpLocalErrorInProcessing;
                 case SmtpStatusCode.UserNotLocalTryAlternatePath:
-                    return SR.Format(SR.SmtpUserNotLocalTryAlternatePath);
+                    return SR.SmtpUserNotLocalTryAlternatePath;
                 case SmtpStatusCode.InsufficientStorage:
-                    return SR.Format(SR.SmtpInsufficientStorage);
+                    return SR.SmtpInsufficientStorage;
                 case SmtpStatusCode.ExceededStorageAllocation:
-                    return SR.Format(SR.SmtpExceededStorageAllocation);
+                    return SR.SmtpExceededStorageAllocation;
                 case SmtpStatusCode.MailboxNameNotAllowed:
-                    return SR.Format(SR.SmtpMailboxNameNotAllowed);
+                    return SR.SmtpMailboxNameNotAllowed;
                 case SmtpStatusCode.StartMailInput:
-                    return SR.Format(SR.SmtpStartMailInput);
+                    return SR.SmtpStartMailInput;
                 case SmtpStatusCode.TransactionFailed:
-                    return SR.Format(SR.SmtpTransactionFailed);
+                    return SR.SmtpTransactionFailed;
                 case SmtpStatusCode.ClientNotPermitted:
-                    return SR.Format(SR.SmtpClientNotPermitted);
+                    return SR.SmtpClientNotPermitted;
                 case SmtpStatusCode.MustIssueStartTlsFirst:
-                    return SR.Format(SR.SmtpMustIssueStartTlsFirst);
+                    return SR.SmtpMustIssueStartTlsFirst;
             }
         }
 

@@ -32,6 +32,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="PipeLengthTests.cs" />
+    <Compile Include="BufferSegmentPoolTest.cs" />
     <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />
     <Compile Include="PipeResetTests.nonnetstandard.cs" />
     <Compile Include="PipePoolTests.nonnetstandard.cs" />

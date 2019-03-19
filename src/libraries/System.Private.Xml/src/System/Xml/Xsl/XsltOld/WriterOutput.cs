@@ -50,7 +50,7 @@ namespace System.Xml.Xsl.XsltOld
                     _writer.WriteString(mainNode.Value);
                     break;
                 case XmlNodeType.CDATA:
-                    Debug.Assert(false, "XSLT never gives us CDATA");
+                    Debug.Fail("XSLT never gives us CDATA");
                     _writer.WriteCData(mainNode.Value);
                     break;
                 case XmlNodeType.EntityReference:

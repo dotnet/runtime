@@ -19,7 +19,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(UniversalSortableDateTimePattern_TestData))]
-        public void UniversalSortableDateTimePattern(DateTimeFormatInfo format)
+        public void UniversalSortableDateTimePattern_Get_ReturnsExpected(DateTimeFormatInfo format)
         {
             Assert.Equal("yyyy'-'MM'-'dd HH':'mm':'ss'Z'", format.UniversalSortableDateTimePattern);
         }

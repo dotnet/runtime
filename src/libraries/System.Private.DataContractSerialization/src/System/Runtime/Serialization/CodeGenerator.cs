@@ -946,7 +946,7 @@ namespace System.Runtime.Serialization
                         break;
                     case TypeCode.Char:
                         DiagnosticUtility.DebugAssert("Char is not a valid schema primitive and should be treated as int in DataContract");
-                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.Format(SR.CharIsInvalidPrimitive)));
+                        throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.CharIsInvalidPrimitive));
                     case TypeCode.SByte:
                     case TypeCode.Byte:
                     case TypeCode.Int16:

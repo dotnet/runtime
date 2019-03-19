@@ -5,7 +5,6 @@
 using Internal.Runtime.InteropServices.WindowsRuntime;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
@@ -87,8 +86,6 @@ namespace System
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
 
-            Contract.EndContractBlock();
-
             // If source is actually a NetFx-to-WinRT adapter, unwrap it instead of creating a new Task:
             var wrapper = source as TaskToAsyncActionAdapter;
             if (wrapper != null && !wrapper.CompletedSynchronously)
@@ -162,8 +159,6 @@ namespace System
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
-            Contract.EndContractBlock();
 
             // If source is actually a NetFx-to-WinRT adapter, unwrap it instead of creating a new Task:
             var wrapper = source as TaskToAsyncOperationAdapter<TResult>;
@@ -261,8 +256,6 @@ namespace System
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
-            Contract.EndContractBlock();
 
             // If source is actually a NetFx-to-WinRT adapter, unwrap it instead of creating a new Task:
             var wrapper = source as TaskToAsyncActionWithProgressAdapter<TProgress>;
@@ -371,8 +364,6 @@ namespace System
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
 
-            Contract.EndContractBlock();
-
             // If source is actually a NetFx-to-WinRT adapter, unwrap it instead of creating a new Task:
             var wrapper = source as TaskToAsyncOperationWithProgressAdapter<TResult, TProgress>;
             if (wrapper != null && !wrapper.CompletedSynchronously)
@@ -436,8 +427,6 @@ namespace System
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
 
-            Contract.EndContractBlock();
-
             return new TaskToAsyncActionAdapter(source, underlyingCancelTokenSource: null);
         }
 
@@ -446,8 +435,6 @@ namespace System
         {
             if (source == null)
                 throw new ArgumentNullException(nameof(source));
-
-            Contract.EndContractBlock();
 
             return new TaskToAsyncOperationAdapter<TResult>(source, underlyingCancelTokenSource: null);
         }
