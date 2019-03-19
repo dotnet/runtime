@@ -9,6 +9,8 @@ namespace System.Text.Json.Tests
 {
     public static partial class Utf8JsonReaderTests
     {
+        public static bool IsX64 { get; } = IntPtr.Size >= 8;
+
         [Fact]
         public static void TestTextEqualsBasic()
         {
@@ -55,6 +57,39 @@ namespace System.Text.Json.Tests
             Assert.True(foundTransports);
             Assert.True(foundValue);
             Assert.True(foundArrayValue);
+        }
+
+        [Theory]
+        [InlineData("{\"name\": \"John\"}", false)]
+        [InlineData("{\"name\": \"\"}", true)]
+        [InlineData("{\"name\": \"Joh\\u006e\"}", false)]
+        public static void TextEqualDefault(string jsonString, bool expectedFound)
+        {
+            byte[] utf8Data = Encoding.UTF8.GetBytes(jsonString);
+
+            var json = new Utf8JsonReader(utf8Data, isFinalBlock: true, state: default);
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.String)
+                {
+                    Assert.Equal(expectedFound, json.TextEquals(default(ReadOnlySpan<byte>)));
+                    Assert.Equal(expectedFound, json.TextEquals(default(ReadOnlySpan<char>)));
+                    break;
+                }
+            }
+
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8Data, 1);
+
+            json = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
+            while (json.Read())
+            {
+                if (json.TokenType == JsonTokenType.String)
+                {
+                    Assert.Equal(expectedFound, json.TextEquals(default(ReadOnlySpan<byte>)));
+                    Assert.Equal(expectedFound, json.TextEquals(default(ReadOnlySpan<char>)));
+                    break;
+                }
+            }
         }
 
         [Theory]
@@ -531,58 +566,55 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
-        [OuterLoop]
-        public static void ReallyLargeLookupUTF16()
+        public static void LargeLookupUTF16()
         {
             string jsonString = "\"hello\"";
-            string lookup = new string('a', 1_000_000_000);
+            string lookup = new string('a', 1_000);
             byte[] utf8Data = Encoding.UTF8.GetBytes(jsonString);
-            bool found = false;
 
             var json = new Utf8JsonReader(utf8Data, isFinalBlock: true, state: default);
-            while (json.Read())
-            {
-                if (json.TokenType == JsonTokenType.String)
-                {
-                    try
-                    {
-                        if (json.TextEquals(lookup.AsSpan()))
-                        {
-                            found = true;
-                        }
-                        Assert.True(false, $"Expected OverflowException was not thrown when calling TextEquals with large lookup string");
-                    }
-                    catch (OverflowException)
-                    { }
-                }
-            }
-
-            Assert.False(found);
+            Assert.True(json.Read());
+            Assert.Equal(JsonTokenType.String, json.TokenType);
+            Assert.False(json.TextEquals(lookup.AsSpan()));
         }
 
         [Fact]
-        public static void ReallyLargeLookupUTF8()
+        public static void LargeLookupUTF8()
         {
             string jsonString = "\"hello\"";
-            byte[] lookup = new byte[1_000_000_000];
+            byte[] lookup = new byte[1_000];
             lookup.AsSpan().Fill((byte)'a');
             byte[] utf8Data = Encoding.UTF8.GetBytes(jsonString);
-            bool found = false;
 
             var json = new Utf8JsonReader(utf8Data, isFinalBlock: true, state: default);
-            while (json.Read())
-            {
-                if (json.TokenType == JsonTokenType.String)
-                {
-                    if (json.TextEquals(lookup))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-            }
+            Assert.True(json.Read());
+            Assert.Equal(JsonTokenType.String, json.TokenType);
+            Assert.False(json.TextEquals(lookup));
+        }
 
-            Assert.False(found);
+        [ConditionalFact(nameof(IsX64))]
+        [OuterLoop]
+        public static void LookupOverflow()
+        {
+            char[] jsonString = new char[400_000_002];
+
+            jsonString.AsSpan().Fill('a');
+            jsonString[0] = '"';
+            jsonString[jsonString.Length - 1] = '"';
+
+            byte[] utf8Data = Encoding.UTF8.GetBytes(jsonString);
+
+            var json = new Utf8JsonReader(utf8Data, isFinalBlock: true, state: default);
+            Assert.True(json.Read());
+            Assert.Equal(JsonTokenType.String, json.TokenType);
+
+            try
+            {
+                json.TextEquals(jsonString.AsSpan(1, jsonString.Length - 2));
+                Assert.True(false, $"Expected OverflowException was not thrown when calling TextEquals with large lookup string");
+            }
+            catch (OverflowException)
+            { }
         }
 
         [Theory]

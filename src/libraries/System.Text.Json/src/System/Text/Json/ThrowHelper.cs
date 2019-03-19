@@ -247,7 +247,7 @@ namespace System.Text.Json
             switch (resource)
             {
                 case ExceptionResource.ArrayDepthTooLarge:
-                    message = SR.Format(SR.ArrayDepthTooLarge, json.CurrentDepth + 1, json.CurrentState.Options.MaxDepth);
+                    message = SR.Format(SR.ArrayDepthTooLarge, json.CurrentState.Options.MaxDepth);
                     break;
                 case ExceptionResource.MismatchedObjectArray:
                     message = SR.Format(SR.MismatchedObjectArray, character);
@@ -295,7 +295,7 @@ namespace System.Text.Json
                     message = SR.Format(SR.InvalidEndOfJsonNonPrimitive, json.TokenType);
                     break;
                 case ExceptionResource.ObjectDepthTooLarge:
-                    message = SR.Format(SR.ObjectDepthTooLarge, json.CurrentDepth + 1, json.CurrentState.Options.MaxDepth);
+                    message = SR.Format(SR.ObjectDepthTooLarge, json.CurrentState.Options.MaxDepth);
                     break;
                 case ExceptionResource.ExpectedFalse:
                     message = SR.Format(SR.ExpectedFalse, characters);
@@ -319,7 +319,7 @@ namespace System.Text.Json
                     message = SR.EndOfCommentNotFound;
                     break;
                 case ExceptionResource.ZeroDepthAtEnd:
-                    message = SR.Format(SR.ZeroDepthAtEnd, json.CurrentDepth);
+                    message = SR.Format(SR.ZeroDepthAtEnd);
                     break;
                 case ExceptionResource.ExpectedJsonTokens:
                     message = SR.ExpectedJsonTokens;

@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoCalendarWeekRule
     {
-        public static IEnumerable<object[]> CalendarWeekRule_TestData()
+        public static IEnumerable<object[]> CalendarWeekRule_Get_TestData()
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, CalendarWeekRule.FirstDay };
             yield return new object[] { new CultureInfo("en-US").DateTimeFormat, CalendarWeekRule.FirstDay };
@@ -17,7 +17,7 @@ namespace System.Globalization.Tests
         }
 
         [Theory]
-        [MemberData(nameof(CalendarWeekRule_TestData))]
+        [MemberData(nameof(CalendarWeekRule_Get_TestData))]
         public void CalendarWeekRuleTest(DateTimeFormatInfo format, CalendarWeekRule expected)
         {
             Assert.Equal(expected, format.CalendarWeekRule);
@@ -27,25 +27,26 @@ namespace System.Globalization.Tests
         [InlineData(CalendarWeekRule.FirstDay)]
         [InlineData(CalendarWeekRule.FirstFourDayWeek)]
         [InlineData(CalendarWeekRule.FirstFullWeek)]
-        public void CalendarWeekRule_Set(CalendarWeekRule newCalendarWeekRule)
+        public void CalendarWeekRule_Set_GetReturnsExpected(CalendarWeekRule value)
         {
             var format = new DateTimeFormatInfo();
-            format.CalendarWeekRule = newCalendarWeekRule;
-            Assert.Equal(newCalendarWeekRule, format.CalendarWeekRule);
+            format.CalendarWeekRule = value;
+            Assert.Equal(value, format.CalendarWeekRule);
         }
 
         [Theory]
         [InlineData(CalendarWeekRule.FirstDay - 1)]
         [InlineData(CalendarWeekRule.FirstFourDayWeek + 1)]
-        public void CalendarWeekRule_Set_Invalid_ThrowsArgumentOutOfRangeException(CalendarWeekRule value)
+        public void CalendarWeekRule_SetInvalidValue_ThrowsArgumentOutOfRangeException(CalendarWeekRule value)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => new DateTimeFormatInfo().CalendarWeekRule = value);
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => format.CalendarWeekRule = value);
         }
 
         [Fact]
-        public void CalendarWeekRule_Set_ReadOnly_ThrowsInvalidOperationException()
+        public void CalendarWeekRule_SetReadOnly_ThrowsInvalidOperationException()
         {
-            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.CalendarWeekRule = CalendarWeekRule.FirstDay); // DateTimeFormatInfo.InvariantInfo is read only
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.CalendarWeekRule = CalendarWeekRule.FirstDay);
         }
     }
 }

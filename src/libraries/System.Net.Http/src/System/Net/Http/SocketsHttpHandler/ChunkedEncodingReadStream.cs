@@ -5,6 +5,7 @@
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -27,8 +28,13 @@ namespace System.Net.Http
             private ulong _chunkBytesRemaining;
             /// <summary>The current state of the parsing state machine for the chunked response.</summary>
             private ParsingState _state = ParsingState.ExpectChunkHeader;
+            private HttpResponseMessage _response;
 
-            public ChunkedEncodingReadStream(HttpConnection connection) : base(connection) { }
+            public ChunkedEncodingReadStream(HttpConnection connection, HttpResponseMessage response) : base(connection)
+            {
+                Debug.Assert(response != null, "The HttpResponseMessage cannot be null.");
+                _response = response;
+            }
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
@@ -279,6 +285,7 @@ namespace System.Net.Http
 
                             while (true)
                             {
+                                // TODO: Consider adding folded trailing header support #35769.
                                 _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
                                 if (!_connection.TryReadNextLine(out currentLine))
                                 {
@@ -300,7 +307,15 @@ namespace System.Net.Http
                                     _state = ParsingState.Done;
                                     _connection.CompleteResponse();
                                     _connection = null;
+
                                     break;
+                                }
+                                // Parse the trailer.
+                                else if (!IsDisposed)
+                                {
+                                    // Make sure that we don't inadvertently consume trailing headers
+                                    // while draining a connection that's being returned back to the pool.
+                                    HttpConnection.ParseHeaderNameValue(currentLine, _response, isFromTrailer : true);
                                 }
                             }
 

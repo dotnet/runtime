@@ -1071,56 +1071,6 @@ namespace System.Net.Http.Functional.Tests
                 dribble ? new LoopbackServer.Options { StreamWrapper = s => new DribbleStream(s) } : null);
         }
 
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task GetAsync_TrailingHeaders_Ignored(bool includeTrailerHeader)
-        {
-            if (IsCurlHandler)
-            {
-                // ActiveIssue #17174: CurlHandler has a problem here
-                // https://github.com/curl/curl/issues/1354
-                return;
-            }
-
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
-                {
-                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
-                    await TestHelper.WhenAllCompletedOrAnyFailed(
-                        getResponseTask,
-                        server.AcceptConnectionSendCustomResponseAndCloseAsync(
-                            "HTTP/1.1 200 OK\r\n" +
-                            "Connection: close\r\n" +
-                            "Transfer-Encoding: chunked\r\n" +
-                            (includeTrailerHeader ? "Trailer: MyCoolTrailerHeader\r\n" : "") +
-                            "\r\n" +
-                            "4\r\n" +
-                            "data\r\n" +
-                            "0\r\n" +
-                            "MyCoolTrailerHeader: amazingtrailer\r\n" +
-                            "\r\n"));
-
-                    using (HttpResponseMessage response = await getResponseTask)
-                    {
-                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                        if (includeTrailerHeader)
-                        {
-                            Assert.Contains("MyCoolTrailerHeader", response.Headers.GetValues("Trailer"));
-                        }
-                        Assert.False(response.Headers.Contains("MyCoolTrailerHeader"), "Trailer should have been ignored");
-
-                        string data = await response.Content.ReadAsStringAsync();
-                        Assert.Contains("data", data);
-                        Assert.DoesNotContain("MyCoolTrailerHeader", data);
-                        Assert.DoesNotContain("amazingtrailer", data);
-                    }
-                }
-            });
-        }
-
         [Fact]
         public async Task GetAsync_NonTraditionalChunkSizes_Accepted()
         {

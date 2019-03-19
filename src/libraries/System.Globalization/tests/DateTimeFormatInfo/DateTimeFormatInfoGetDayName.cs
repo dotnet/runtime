@@ -25,7 +25,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(GetDayName_TestData))]
-        public void GetDayName(DateTimeFormatInfo format, string[] expected)
+        public void GetDayName_Invoke_ReturnsExpected(DateTimeFormatInfo format, string[] expected)
         {
             DayOfWeek[] values = new DayOfWeek[]
             {
@@ -47,9 +47,10 @@ namespace System.Globalization.Tests
         [Theory]
         [InlineData(DayOfWeek.Sunday - 1)]
         [InlineData(DayOfWeek.Saturday + 1)]
-        public void GetDayName_Invalid_ThrowsArgumentOutOfRangeException(DayOfWeek dayofweek)
+        public void GetDayName_InvalidDayOfWeek_ThrowsArgumentOutOfRangeException(DayOfWeek dayofweek)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("dayofweek", () => new DateTimeFormatInfo().GetDayName(dayofweek));
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dayofweek", () => format.GetDayName(dayofweek));
         }
     }
 }
