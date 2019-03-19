@@ -191,7 +191,7 @@ void CodeGenInterface::genMarkTreeInReg(GenTree* tree, regNumber reg)
 // Return value:
 //    Frame size
 
-int CodeGenInterface::genTotalFrameSize()
+int CodeGenInterface::genTotalFrameSize() const
 {
     assert(!IsUninitialized(compiler->compCalleeRegsPushed));
 
@@ -208,7 +208,7 @@ int CodeGenInterface::genTotalFrameSize()
 //
 // There must be a frame pointer to call this function!
 
-int CodeGenInterface::genSPtoFPdelta()
+int CodeGenInterface::genSPtoFPdelta() const
 {
     assert(isFramePointerUsed());
 
@@ -227,7 +227,7 @@ int CodeGenInterface::genSPtoFPdelta()
 //
 // There must be a frame pointer to call this function!
 
-int CodeGenInterface::genCallerSPtoFPdelta()
+int CodeGenInterface::genCallerSPtoFPdelta() const
 {
     assert(isFramePointerUsed());
     int callerSPtoFPdelta = 0;
@@ -255,7 +255,7 @@ int CodeGenInterface::genCallerSPtoFPdelta()
 //
 // This number will be negative.
 
-int CodeGenInterface::genCallerSPtoInitialSPdelta()
+int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
     int callerSPtoSPdelta = 0;
 
