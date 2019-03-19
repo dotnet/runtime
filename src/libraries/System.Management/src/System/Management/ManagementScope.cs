@@ -298,7 +298,7 @@ namespace System.Management
 
             if (netFrameworkInstallRoot == null)
             {
-                // In some Windows versions, like Nano Server, the .Net Framework is not installed by default.
+                // In some Windows versions, like Nano Server, the .NET Framework is not installed by default.
                 // It is possible that general failure to access the registry get to this code branch but it is
                 // very unlikely.
                 // Load PNSE delegates. This way it will throw PNSE when methods are used not when type is loaded.
