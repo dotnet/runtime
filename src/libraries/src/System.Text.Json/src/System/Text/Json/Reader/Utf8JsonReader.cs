@@ -40,13 +40,13 @@ namespace System.Text.Json
         private long _totalConsumed;
         private bool _isLastSegment;
         internal bool _stringHasEscaping;
-        private readonly bool _isSingleSegment;
+        private readonly bool _isMultiSegment;
 
         private SequencePosition _nextPosition;
         private SequencePosition _currentPosition;
         private ReadOnlySequence<byte> _sequence;
 
-        private bool IsLastSpan => _isFinalBlock && (_isSingleSegment || _isLastSegment);
+        private bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
 
         /// <summary>
         /// Gets the value of the last processed token as a ReadOnlySpan&lt;byte&gt; slice
@@ -72,7 +72,19 @@ namespace System.Text.Json
         /// Tracks the recursive depth of the nested objects / arrays within the JSON text
         /// processed so far. This provides the depth of the current token.
         /// </summary>
-        public int CurrentDepth => _bitStack.CurrentDepth;
+        public int CurrentDepth
+        {
+            get
+            {
+                int readerDepth = _bitStack.CurrentDepth;
+                if (TokenType == JsonTokenType.StartArray || TokenType == JsonTokenType.StartObject)
+                {
+                    Debug.Assert(readerDepth >= 1);
+                    readerDepth--;
+                }
+                return readerDepth;
+            }
+        }
 
         internal bool IsInArray => !_inObject;
 
@@ -183,7 +195,7 @@ namespace System.Text.Json
             _consumed = 0;
             _totalConsumed = 0;
             _isLastSegment = _isFinalBlock;
-            _isSingleSegment = true;
+            _isMultiSegment = false;
 
             ValueSpan = ReadOnlySpan<byte>.Empty;
 
@@ -204,7 +216,7 @@ namespace System.Text.Json
         /// </exception>
         public bool Read()
         {
-            bool retVal = _isSingleSegment ? ReadSingleSegment() : ReadMultiSegment();
+            bool retVal = _isMultiSegment ? ReadMultiSegment() : ReadSingleSegment();
 
             if (!retVal)
             {
@@ -496,7 +508,7 @@ namespace System.Text.Json
 
         private void StartObject()
         {
-            if (CurrentDepth >= _readerOptions.MaxDepth)
+            if (_bitStack.CurrentDepth >= _readerOptions.MaxDepth)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ObjectDepthTooLarge);
 
             _bitStack.PushTrue();
@@ -510,7 +522,7 @@ namespace System.Text.Json
 
         private void EndObject()
         {
-            if (!_inObject || CurrentDepth <= 0)
+            if (!_inObject || _bitStack.CurrentDepth <= 0)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.MismatchedObjectArray, JsonConstants.CloseBrace);
 
             _tokenType = JsonTokenType.EndObject;
@@ -521,7 +533,7 @@ namespace System.Text.Json
 
         private void StartArray()
         {
-            if (CurrentDepth >= _readerOptions.MaxDepth)
+            if (_bitStack.CurrentDepth >= _readerOptions.MaxDepth)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ArrayDepthTooLarge);
 
             _bitStack.PushFalse();
@@ -535,7 +547,7 @@ namespace System.Text.Json
 
         private void EndArray()
         {
-            if (_inObject || CurrentDepth <= 0)
+            if (_inObject || _bitStack.CurrentDepth <= 0)
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.MismatchedObjectArray, JsonConstants.CloseBracket);
 
             _tokenType = JsonTokenType.EndArray;
@@ -657,7 +669,7 @@ namespace System.Text.Json
             {
                 if (_isNotPrimitive && IsLastSpan)
                 {
-                    if (CurrentDepth != 0)
+                    if (_bitStack.CurrentDepth != 0)
                     {
                         ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ZeroDepthAtEnd);
                     }
@@ -720,7 +732,7 @@ namespace System.Text.Json
                 // Create local copy to avoid bounds checks.
                 ReadOnlySpan<byte> localBuffer = _buffer;
 
-                if (JsonReaderHelper.IsDigit(first) || first == '-')
+                if (JsonHelpers.IsDigit(first) || first == '-')
                 {
                     if (!TryGetNumber(localBuffer.Slice(_consumed), out int numberOfBytes))
                     {
@@ -729,54 +741,13 @@ namespace System.Text.Json
                     _tokenType = JsonTokenType.Number;
                     _consumed += numberOfBytes;
                     _bytePositionInLine += numberOfBytes;
+                    return true;
                 }
                 else if (!ConsumeValue(first))
                 {
                     return false;
                 }
 
-                // Cannot use HasMoreData since the JSON payload contains a single, non-primitive value
-                // and hence must be handled differently.
-                if (_consumed >= (uint)localBuffer.Length)
-                {
-                    goto SetIsNotPrimitiveAndReturnTrue;
-                }
-
-                if (localBuffer[_consumed] <= JsonConstants.Space)
-                {
-                    SkipWhiteSpace();
-                    if (_consumed >= (uint)localBuffer.Length)
-                    {
-                        goto SetIsNotPrimitiveAndReturnTrue;
-                    }
-                }
-
-                if (_readerOptions.CommentHandling != JsonCommentHandling.Disallow)
-                {
-                    if (_readerOptions.CommentHandling == JsonCommentHandling.Allow)
-                    {
-                        // This is necessary to avoid throwing when the user has 1 or more comments as the first token
-                        // OR if there is a comment after a single, non-primitive value.
-                        // In this mode, ConsumeValue consumes the comment and we need to return it as a token.
-                        // along with future comments in subsequeunt reads.
-                        if (_tokenType == JsonTokenType.Comment || localBuffer[_consumed] == JsonConstants.Slash)
-                        {
-                            return true;
-                        }
-                    }
-                    else
-                    {
-                        Debug.Assert(_readerOptions.CommentHandling == JsonCommentHandling.Skip);
-                        if (_tokenType == JsonTokenType.StartObject || _tokenType == JsonTokenType.StartArray)
-                        {
-                            _isNotPrimitive = true;
-                        }
-                        goto SetIsNotPrimitiveAndReturnTrue;
-                    }
-                }
-                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, localBuffer[_consumed]);
-
-            SetIsNotPrimitiveAndReturnTrue:
                 if (_tokenType == JsonTokenType.StartObject || _tokenType == JsonTokenType.StartArray)
                 {
                     _isNotPrimitive = true;
@@ -835,7 +806,7 @@ namespace System.Text.Json
                 {
                     StartArray();
                 }
-                else if (JsonReaderHelper.IsDigit(marker) || marker == '-')
+                else if (JsonHelpers.IsDigit(marker) || marker == '-')
                 {
                     return ConsumeNumber();
                 }
@@ -1330,7 +1301,7 @@ namespace System.Text.Json
                 }
 
                 nextByte = data[i];
-                if (!JsonReaderHelper.IsDigit(nextByte))
+                if (!JsonHelpers.IsDigit(nextByte))
                 {
                     _bytePositionInLine += i;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundAfterSign, nextByte);
@@ -1382,7 +1353,7 @@ namespace System.Text.Json
             for (; i < data.Length; i++)
             {
                 nextByte = data[i];
-                if (!JsonReaderHelper.IsDigit(nextByte))
+                if (!JsonHelpers.IsDigit(nextByte))
                 {
                     break;
                 }
@@ -1421,7 +1392,7 @@ namespace System.Text.Json
                 return ConsumeNumberResult.NeedMoreData;
             }
             byte nextByte = data[i];
-            if (!JsonReaderHelper.IsDigit(nextByte))
+            if (!JsonHelpers.IsDigit(nextByte))
             {
                 _bytePositionInLine += i;
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundAfterDecimal, nextByte);
@@ -1459,7 +1430,7 @@ namespace System.Text.Json
                 nextByte = data[i];
             }
 
-            if (!JsonReaderHelper.IsDigit(nextByte))
+            if (!JsonHelpers.IsDigit(nextByte))
             {
                 _bytePositionInLine += i;
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.RequiredDigitNotFoundAfterSign, nextByte);
@@ -1515,7 +1486,7 @@ namespace System.Text.Json
                 }
             }
 
-            if (!_isNotPrimitive)
+            if (_bitStack.CurrentDepth == 0)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }
@@ -1613,7 +1584,7 @@ namespace System.Text.Json
                 first = _buffer[_consumed];
             }
 
-            if (!_isNotPrimitive && _tokenType != JsonTokenType.None)
+            if (_bitStack.CurrentDepth == 0 && _tokenType != JsonTokenType.None)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, first);
             }
@@ -1888,7 +1859,7 @@ namespace System.Text.Json
                 }
                 goto Done;
             }
-            else if (!_isNotPrimitive)
+            else if (_bitStack.CurrentDepth == 0)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndAfterSingleJson, marker);
             }

@@ -63,5 +63,11 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsInRangeInclusive(JsonTokenType value, JsonTokenType lowerBound, JsonTokenType upperBound)
             => (value - lowerBound) <= (upperBound - lowerBound);
+
+        /// <summary>
+        /// Returns <see langword="true"/> iff <paramref name="value"/> is in the range [0..9].
+        /// Otherwise, returns <see langword="false"/>.
+        /// </summary>
+        public static bool IsDigit(byte value) => (uint)(value - '0') <= '9' - '0';
     }
 }

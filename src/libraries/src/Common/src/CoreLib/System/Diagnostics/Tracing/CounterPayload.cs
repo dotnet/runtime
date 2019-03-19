@@ -124,7 +124,7 @@ namespace System.Diagnostics.Tracing
 
         public string DisplayName { get; set; }
 
-        public TimeSpan DisplayRateTimeScale { get; set; }
+        public string DisplayRateTimeScale { get; set; }
 
         public float Increment { get; set; }
 
@@ -150,7 +150,7 @@ namespace System.Diagnostics.Tracing
             {
                 yield return new KeyValuePair<string, object>("Name", Name);
                 yield return new KeyValuePair<string, object>("DisplayName", DisplayName);
-                yield return new KeyValuePair<string, object>("DisplayRateTimeScale", DisplayRateTimeScale.ToString("c"));
+                yield return new KeyValuePair<string, object>("DisplayRateTimeScale", DisplayRateTimeScale);
                 yield return new KeyValuePair<string, object>("Increment", Increment);
                 yield return new KeyValuePair<string, object>("IntervalSec", IntervalSec);
                 yield return new KeyValuePair<string, object>("Series", $"Interval={IntervalSec}");

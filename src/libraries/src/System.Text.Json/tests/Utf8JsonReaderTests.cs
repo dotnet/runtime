@@ -14,6 +14,79 @@ namespace System.Text.Json.Tests
 {
     public static partial class Utf8JsonReaderTests
     {
+        [Fact]
+        public static void DefaultUtf8JsonReader()
+        {
+            Utf8JsonReader json = default;
+
+            Assert.Equal(0, json.BytesConsumed);
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.Equal(JsonTokenType.None, json.TokenType);
+            Assert.Equal(default, json.Position);
+            Assert.True(json.ValueSpan.SequenceEqual(default));
+            Assert.False(json.HasValueSequence);
+            Assert.True(json.ValueSequence.IsEmpty);
+
+            Assert.Equal(0, json.CurrentState.BytesConsumed);
+            Assert.Equal(default, json.CurrentState.Position);
+            Assert.Equal(0, json.CurrentState.Options.MaxDepth);
+            Assert.Equal(JsonCommentHandling.Disallow, json.CurrentState.Options.CommentHandling);
+
+            Assert.False(json.Read());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TextEquals("".AsSpan()));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TextEquals(default(ReadOnlySpan<char>)));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TextEquals(default(ReadOnlySpan<byte>)));
+
+            TestGetMethodsOnDefault();
+        }
+
+        private static void TestGetMethodsOnDefault()
+        {
+            Utf8JsonReader json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetDateTime(out _));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetDateTime());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetDateTimeOffset(out _));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetDateTimeOffset());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetDecimal(out _));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetDecimal());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetDouble(out _));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetDouble());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetInt32(out _));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetInt32());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetInt64(out _));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetInt64());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetSingle(out _));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetSingle());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetUInt32(out _));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetUInt32());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetUInt64(out _));
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetUInt64());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetString());
+
+            json = default;
+            JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetBoolean());
+        }
+
         // TestCaseType is only used to give the json strings a descriptive name.
         [Theory]
         [MemberData(nameof(TestCases))]
@@ -245,6 +318,81 @@ namespace System.Text.Json.Tests
                     Assert.Equal(expectedString, actualStr);
                 }
             }
+        }
+
+        [Fact]
+        public static void CurrentDepthArrayTest()
+        {
+            string jsonString =
+@"[
+    [
+        1,
+        2,
+        3
+    ]
+]";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.False(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+        }
+
+        [Fact]
+        public static void CurrentDepthObjectTest()
+        {
+            string jsonString =
+@"{
+    ""array"": [
+        1,
+        2,
+        3,
+        {}
+    ]
+}";
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(2, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.True(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.False(json.Read());
+            Assert.Equal(0, json.CurrentDepth);
         }
 
         [Theory]
@@ -1892,6 +2040,86 @@ namespace System.Text.Json.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(JsonTokenWithExtraValue))]
+        public static void ReadJsonTokenWithExtraValue(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: false);
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: true);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonTokenWithExtraValueAndComments))]
+        public static void ReadJsonTokenWithExtraValueAndComments(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                if (commentHandling == JsonCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: false);
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: true);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonTokenWithExtraValueAndComments))]
+        public static void ReadJsonTokenWithExtraValueAndCommentsAppended(string jsonString)
+        {
+            jsonString = "  /* comment */  /* comment */  " + jsonString;
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                if (commentHandling == JsonCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: false, commentsAppended: true);
+                TestReadTokenWithExtra(utf8, commentHandling, isFinalBlock: true, commentsAppended: true);
+            }
+        }
+
+        private static void TestReadTokenWithExtra(byte[] utf8, JsonCommentHandling commentHandling, bool isFinalBlock, bool commentsAppended = false)
+        {
+            JsonReaderState state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+            Utf8JsonReader reader = new Utf8JsonReader(utf8, isFinalBlock, state);
+
+            if (commentsAppended && commentHandling == JsonCommentHandling.Allow)
+            {
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.Comment, reader.TokenType);
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.Comment, reader.TokenType);
+            }
+
+            Assert.True(reader.Read());
+            if (reader.TokenType == JsonTokenType.StartArray || reader.TokenType == JsonTokenType.StartObject)
+            {
+                Assert.True(reader.Read());
+                Assert.Contains(reader.TokenType, new[] { JsonTokenType.EndArray, JsonTokenType.EndObject });
+            }
+
+            JsonTestHelper.AssertThrows<JsonReaderException>(reader, (jsonReader) =>
+            {
+                jsonReader.Read();
+                if (commentHandling == JsonCommentHandling.Allow && jsonReader.TokenType == JsonTokenType.Comment)
+                {
+                    jsonReader.Read();
+                }
+            });
+        }
+
         public static IEnumerable<object[]> TestCases
         {
             get
@@ -2024,6 +2252,95 @@ namespace System.Text.Json.Tests
                     new object[] {"  null  ", "null"},
                     new object[] {"  true  ", "true"},
                     new object[] {"  false  ", "false"},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> JsonTokenWithExtraValue
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"  true  5 "},
+                    new object[] {"  false  5 "},
+                    new object[] {"  null  5 "},
+                    new object[] {"  5  5 "},
+                    new object[] {"  5.1234e-4  5 "},
+                    new object[] {"  \"hello\"  5 "},
+                    new object[] {"  \"hello\"  \"hello\" "},
+                    new object[] {"  [  ]  5 "},
+                    new object[] {"  [  ]  [] "},
+                    new object[] {"  [  ]  {} "},
+                    new object[] {"  { }  5 "},
+                    new object[] {"  { }  [] "},
+                    new object[] {"  { }  {} "},
+                    new object[] {"  [  ]5 "},
+                    new object[] {"  [  ][] "},
+                    new object[] {"  [  ]{} "},
+                    new object[] {"  { }5 "},
+                    new object[] {"  { }[] "},
+                    new object[] {"  { }{} "},
+                    new object[] {"  { }  5.1234e-4"},
+                    new object[] {"  { }  null "},
+                    new object[] {"  { }  false "},
+                    new object[] {"  { }  true "},
+                    new object[] {"  { }  \"hello\" " },
+                    new object[] {"  { },  5 "},
+                    new object[] {"  { },  [] "},
+                    new object[] {"  { },  {} "},
+                    new object[] {"  { },  5.1234e-4"},
+                    new object[] {"  { },  null "},
+                    new object[] {"  { },  false "},
+                    new object[] {"  { },  true "},
+                    new object[] {"  { },  \"hello\" " },
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> JsonTokenWithExtraValueAndComments
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"  true  /* comment */ 5 "},
+                    new object[] {"  false  /* comment */ 5 "},
+                    new object[] {"  null  /* comment */ 5 "},
+                    new object[] {"  5  /* comment */ 5 "},
+                    new object[] {"  5.1234e-4  /* comment */ 5 "},
+                    new object[] {"  \"hello\"  /* comment */ 5 "},
+                    new object[] {"  \"hello\"  /* comment */ \"hello\" "},
+                    new object[] {"  \"hello\"  // comment \n \"hello\" "},
+                    new object[] {"  [  ]  /* comment */ 5 "},
+                    new object[] {"  [  ]  /* comment */ [ ]"},
+                    new object[] {"  [  ]  /* comment */ { }"},
+                    new object[] {"  [  ]  // comment \n 5 "},
+                    new object[] {"  { }  /* comment */ 5 "},
+                    new object[] {"  { }  /* comment */ [] "},
+                    new object[] {"  { }  /* comment */ {} "},
+                    new object[] {"  [  ]/* comment */5 "},
+                    new object[] {"  [  ]/* comment */[ ]"},
+                    new object[] {"  [  ]/* comment */{ }"},
+                    new object[] {"  [  ]// comment \n5 "},
+                    new object[] {"  { }/* comment */5 "},
+                    new object[] {"  { }/* comment */[] "},
+                    new object[] {"  { }/* comment */{} "},
+                    new object[] {"  { }  /* comment */ 5.1234e-4"},
+                    new object[] {"  { }  /* comment */ null "},
+                    new object[] {"  { }  /* comment */ false "},
+                    new object[] {"  { }  /* comment */ true "},
+                    new object[] {"  { }  /* comment */ \"hello\" "},
+                    new object[] {"  { }  // comment \n \"hello\" "},
+                    new object[] {"  { },  /* comment */ 5 "},
+                    new object[] {"  { },  /* comment */ [] "},
+                    new object[] {"  { },  /* comment */ {} "},
+                    new object[] {"  { },  /* comment */ 5.1234e-4"},
+                    new object[] {"  { },  /* comment */ null "},
+                    new object[] {"  { },  /* comment */ false "},
+                    new object[] {"  { },  /* comment */ true "},
+                    new object[] {"  { },  /* comment */ \"hello\" "},
+                    new object[] {"  { },  // comment \n \"hello\" "},
                 };
             }
         }

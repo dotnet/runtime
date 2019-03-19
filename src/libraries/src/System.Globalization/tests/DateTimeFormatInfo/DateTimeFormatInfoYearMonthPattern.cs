@@ -9,16 +9,14 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoYearMonthPattern
     {
-        private static readonly RandomDataGenerator s_randomDataGenerator = new RandomDataGenerator();
-
-        public static IEnumerable<object[]> YearMonthPattern_TestData()
+        public static IEnumerable<object[]> YearMonthPattern_Get_TestData()
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, "yyyy MMMM" };
             yield return new object[] { new CultureInfo("fr-FR").DateTimeFormat, "MMMM yyyy" };
         }
 
         [Theory]
-        [MemberData(nameof(YearMonthPattern_TestData))]
+        [MemberData(nameof(YearMonthPattern_Get_TestData))]
         public void YearMonthPattern(DateTimeFormatInfo format, string expected)
         {
             Assert.Equal(expected, format.YearMonthPattern);
@@ -26,25 +24,32 @@ namespace System.Globalization.Tests
 
         public static IEnumerable<object[]> YearMonthPattern_Set_TestData()
         {
+            yield return new object[] { string.Empty };
+            yield return new object[] { "garbage" };
             yield return new object[] { "yyyy MMMM" };
             yield return new object[] { "y" };
             yield return new object[] { "Y" };
-            yield return new object[] { s_randomDataGenerator.GetString(-55, false, 1, 256) };
         }
 
         [Theory]
         [MemberData(nameof(YearMonthPattern_Set_TestData))]
-        public void YearMonthPattern_Set(string newYearMonthPattern)
+        public void YearMonthPattern_Set_GetReturnsExpected(string value)
         {
             var format = new DateTimeFormatInfo();
-            format.YearMonthPattern = newYearMonthPattern;
-            Assert.Equal(newYearMonthPattern, format.YearMonthPattern);
+            format.YearMonthPattern = value;
+            Assert.Equal(value, format.YearMonthPattern);
         }
 
         [Fact]
-        public void YearMonthPattern_Set_Invalid()
+        public void YearMonthPattern_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("value", () => new DateTimeFormatInfo().YearMonthPattern = null); // Value is null
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", () => format.YearMonthPattern = null);
+        }
+
+        [Fact]
+        public void YearMonthPattern_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.YearMonthPattern = "yyyy MMMM"); // DateTimeFormatInfo.InvariantInfo is read only
         }
     }
