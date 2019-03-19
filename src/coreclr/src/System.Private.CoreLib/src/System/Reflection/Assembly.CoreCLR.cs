@@ -55,12 +55,12 @@ namespace System.Reflection
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetExecutingAssembly(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
+        private static extern void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
         {
             RuntimeAssembly retAssembly = null;
-            GetExecutingAssembly(JitHelpers.GetStackCrawlMarkHandle(ref stackMark), JitHelpers.GetObjectHandleOnStack(ref retAssembly));
+            GetExecutingAssemblyNative(JitHelpers.GetStackCrawlMarkHandle(ref stackMark), JitHelpers.GetObjectHandleOnStack(ref retAssembly));
             return retAssembly;
         }
 
@@ -83,7 +83,7 @@ namespace System.Reflection
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetEntryAssembly(ObjectHandleOnStack retAssembly);
+        private static extern void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
 
         // internal test hook
         private static bool s_forceNullEntryPoint = false;
@@ -94,7 +94,7 @@ namespace System.Reflection
                 return null;
 
             RuntimeAssembly entryAssembly = null;
-            GetEntryAssembly(JitHelpers.GetObjectHandleOnStack(ref entryAssembly));
+            GetEntryAssemblyNative(JitHelpers.GetObjectHandleOnStack(ref entryAssembly));
             return entryAssembly;
         }
 

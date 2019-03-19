@@ -112,6 +112,10 @@
   <!-- CLR Features -->
   <Import Project="$(MSBuildThisFileDirectory)..\..\clr.coreclr.props" />
   <Import Project="$(MSBuildThisFileDirectory)..\..\clr.defines.targets" />
+  <!-- Experimental features -->
+  <PropertyGroup Condition="'$(FeatureUtf8String)' == 'true'">
+    <DefineConstants>$(DefineConstants);FEATURE_UTF8STRING</DefineConstants>
+  </PropertyGroup>
   <!-- Sources -->
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
@@ -152,7 +156,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\ISymWriter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\SymAddressKind.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Enum.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Enum.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
@@ -273,6 +277,14 @@
     <Compile Include="shared\Interop\Windows\Kernel32\Interop.VerSetConditionMask.cs" />
     <Compile Include="shared\Interop\Windows\Ole32\Interop.CoTaskMemAlloc.cs" />
     <Compile Include="shared\Interop\Windows\OleAut32\Interop.SysAllocStringByteLen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(FeatureUtf8String)' == 'true'">
+    <Compile Include="$(BclSourcesRoot)\System\Char8.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Utf8Extensions.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Utf8String.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Construction.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Manipulation.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Utf8String.Searching.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />

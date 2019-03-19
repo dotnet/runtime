@@ -513,7 +513,7 @@ protected:
 
 #ifdef _TARGET_ARM64_
     virtual void SetSaveFpLrWithAllCalleeSavedRegisters(bool value);
-    virtual bool IsSaveFpLrWithAllCalleeSavedRegisters();
+    virtual bool IsSaveFpLrWithAllCalleeSavedRegisters() const;
     bool         genSaveFpLrWithAllCalleeSavedRegisters;
 #endif // _TARGET_ARM64_
 
