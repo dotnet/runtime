@@ -10,11 +10,13 @@
           DependsOnTargets="
             GenerateDeb;
             GenerateRpm;
-            GenerateMsi" />
+            GenerateMsi;
+            GeneratePkg" />
 
   <Target Name="GenerateDeb" DependsOnTargets="TestDebuild;CreateDeb" Condition="'$(BuildDebPackage)' == 'true'"/>
   <Target Name="GenerateRpm" DependsOnTargets="TestFPMTool;CreateRpm" Condition="'$(BuildRpmPackage)' == 'true'"/>
   <Target Name="GenerateMsi" DependsOnTargets="CreateMsi" Condition="'$(GenerateMSI)' == 'true'"/>
+  <Target Name="GeneratePkg" DependsOnTargets="CreatePkg" Condition="'$(GeneratePkg)' == 'true'"/>
 
   <!--
     Create Debian package.
@@ -222,6 +224,22 @@
 
     <Message Importance="High" Text="Light '$(MSBuildProjectName)'" />
     <Exec Command="light.exe $(_wixArgs)" WorkingDirectory="$(WixToolsDir)" />
+  </Target>
+
+  <!--
+    Create macOS pkg installer.
+  -->
+  <Target Name="CreatePkg">
+    <PropertyGroup>
+      <_pkgArgs></_pkgArgs>
+      <_pkgArgs>$(_pkgArgs) --root $(PackLayoutDir)</_pkgArgs>
+      <_pkgArgs>$(_pkgArgs) --identifier $(MacOSComponentName)</_pkgArgs>
+      <_pkgArgs>$(_pkgArgs) --version $(SharedFrameworkNugetVersion)</_pkgArgs>
+      <_pkgArgs>$(_pkgArgs) --install-location $(MacOSSharedInstallDir)</_pkgArgs>
+      <_pkgArgs>$(_pkgArgs) $(InstallerFile)</_pkgArgs>
+    </PropertyGroup>
+
+    <Exec Command="pkgbuild $(_pkgArgs)" />
   </Target>
 
   <!--

@@ -71,6 +71,8 @@
     <GenerateMSI>true</GenerateMSI>
     <GenerateMSI Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'arm64'">false</GenerateMSI>
     <GenerateMSI Condition="'$(OSGroup)' != 'Windows_NT'">false</GenerateMSI>
+
+    <GeneratePkg Condition="'$(OSGroup)' == 'OSX'">true</GeneratePkg>
   </PropertyGroup>
 
   <PropertyGroup>
