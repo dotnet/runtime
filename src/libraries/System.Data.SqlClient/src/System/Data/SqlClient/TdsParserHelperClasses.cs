@@ -79,7 +79,7 @@ namespace System.Data.SqlClient
         internal byte[] accessToken;
     }
 
-    sealed internal class SqlCollation
+    internal sealed class SqlCollation
     {
         // First 20 bits of info field represent the lcid, bits 21-25 are compare options
         private const uint IgnoreCase = 1 << 20; // bit 21 - IgnoreCase
@@ -234,7 +234,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class SqlEnvChange
+    internal sealed class SqlEnvChange
     {
         internal byte type;
         internal byte oldLength;
@@ -258,9 +258,9 @@ namespace System.Data.SqlClient
         internal bool newBinRented;
         internal bool oldBinRented;
 
-        public SqlEnvChange Next;
+        internal SqlEnvChange Next;
 
-        public void Clear()
+        internal void Clear()
         {
             type = 0;
             oldLength = 0;
@@ -317,7 +317,7 @@ namespace System.Data.SqlClient
 #endif 
         }
 
-        public static SqlEnvChange Allocate()
+        internal static SqlEnvChange Allocate()
         {
             SqlEnvChange retval = null;
             lock (_items)
@@ -345,7 +345,7 @@ namespace System.Data.SqlClient
             return retval;
         }
 
-        public static void Release(SqlEnvChange item, [Runtime.CompilerServices.CallerMemberName] string caller = null)
+        internal static void Release(SqlEnvChange item, [Runtime.CompilerServices.CallerMemberName] string caller = null)
         {
             if (item is null)
             {
@@ -390,23 +390,11 @@ namespace System.Data.SqlClient
             }
         }
 
-        public static int Count
-        {
-            get
-            {
-                return _count;
-            }
-        }
+        internal static int Count => _count;
 
-        public static int Capacity
-        {
-            get
-            {
-                return _capacity;
-            }
-        }
+        internal static int Capacity => _capacity;
 
-        public static void Clear()
+        internal static void Clear()
         {
             Array.Clear(_items, 0, _capacity);
             _count = 0;
@@ -414,7 +402,7 @@ namespace System.Data.SqlClient
 
     }
 
-    sealed internal class SqlLogin
+    internal sealed class SqlLogin
     {
         internal int timeout;                                                       // login timeout
         internal bool userInstance = false;                                   // user instance
@@ -435,7 +423,7 @@ namespace System.Data.SqlClient
         internal SecureString newSecurePassword;
     }
 
-    sealed internal class SqlLoginAck
+    internal sealed class SqlLoginAck
     {
         internal byte majorVersion;
         internal byte minorVersion;
@@ -443,7 +431,7 @@ namespace System.Data.SqlClient
         internal uint tdsVersion;
     }
 
-    sealed internal class _SqlMetaData : SqlMetaDataPriv
+    internal sealed class _SqlMetaData : SqlMetaDataPriv
     {
         [Flags]
         private enum _SqlMetadataFlags : int
@@ -590,7 +578,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class _SqlMetaDataSet
+    internal sealed class _SqlMetaDataSet
     {
         internal ushort id;             // for altrow-columns only
         internal int[] indexMap;
@@ -656,7 +644,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class _SqlMetaDataSetCollection
+    internal sealed class _SqlMetaDataSetCollection
     {
         private readonly List<_SqlMetaDataSet> _altMetaDataSetArray;
         internal _SqlMetaDataSet metaDataSet;
@@ -780,7 +768,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class SqlMetaDataXmlSchemaCollection
+    internal sealed class SqlMetaDataXmlSchemaCollection
     {
         internal string Database;
         internal string OwningSchema;
@@ -797,7 +785,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class SqlMetaDataUdt
+    internal sealed class SqlMetaDataUdt
     {
         internal Type Type;
         internal string DatabaseName;
@@ -818,7 +806,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class _SqlRPC
+    internal sealed class _SqlRPC
     {
         internal string rpcName;
         internal ushort ProcID;       // Used instead of name
@@ -851,7 +839,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class SqlReturnValue : SqlMetaDataPriv
+    internal sealed class SqlReturnValue : SqlMetaDataPriv
     {
         internal string parameter;
         internal readonly SqlBuffer value;
