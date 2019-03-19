@@ -48,8 +48,8 @@ namespace Internal.Cryptography
             AsnReader reader = new AsnReader(input.AsMemory(inputOffset, inputCount), AsnEncodingRules.DER);
             AsnReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
-            ReadOnlySpan<byte> rDer = sequenceReader.GetIntegerBytes().Span;
-            ReadOnlySpan<byte> sDer = sequenceReader.GetIntegerBytes().Span;
+            ReadOnlySpan<byte> rDer = sequenceReader.ReadIntegerBytes().Span;
+            ReadOnlySpan<byte> sDer = sequenceReader.ReadIntegerBytes().Span;
             sequenceReader.ThrowIfNotEmpty();
 
             byte[] response = new byte[2 * size];

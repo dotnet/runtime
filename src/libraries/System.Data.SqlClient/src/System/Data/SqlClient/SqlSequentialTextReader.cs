@@ -58,7 +58,7 @@ namespace System.Data.SqlClient
                 _peekedChar = Read();
             }
 
-            Debug.Assert(_peekedChar == -1 || ((_peekedChar >= char.MinValue) && (_peekedChar <= char.MaxValue)), string.Format("Bad peeked character: {0}", _peekedChar));
+            Debug.Assert(_peekedChar == -1 || ((_peekedChar >= char.MinValue) && (_peekedChar <= char.MaxValue)), $"Bad peeked character: {_peekedChar}");
             return _peekedChar;
         }
 
@@ -92,7 +92,7 @@ namespace System.Data.SqlClient
                 }
             }
 
-            Debug.Assert(readChar == -1 || ((readChar >= char.MinValue) && (readChar <= char.MaxValue)), string.Format("Bad read character: {0}", readChar));
+            Debug.Assert(readChar == -1 || ((readChar >= char.MinValue) && (readChar <= char.MaxValue)), $"Bad read character: {readChar}");
             return readChar;
         }
 
@@ -114,7 +114,7 @@ namespace System.Data.SqlClient
             // Load in peeked char
             if ((charsNeeded > 0) && (HasPeekedChar))
             {
-                Debug.Assert((_peekedChar >= char.MinValue) && (_peekedChar <= char.MaxValue), string.Format("Bad peeked character: {0}", _peekedChar));
+                Debug.Assert((_peekedChar >= char.MinValue) && (_peekedChar <= char.MaxValue), $"Bad peeked character: {_peekedChar}");
                 buffer[index + charsRead] = (char)_peekedChar;
                 charsRead++;
                 charsNeeded--;
@@ -159,7 +159,7 @@ namespace System.Data.SqlClient
                             int peekedChar = _peekedChar;
                             if (peekedChar >= char.MinValue)
                             {
-                                Debug.Assert((_peekedChar >= char.MinValue) && (_peekedChar <= char.MaxValue), string.Format("Bad peeked character: {0}", _peekedChar));
+                                Debug.Assert((_peekedChar >= char.MinValue) && (_peekedChar <= char.MaxValue), $"Bad peeked character: {_peekedChar}");
                                 buffer[adjustedIndex] = (char)peekedChar;
                                 adjustedIndex++;
                                 charsRead++;
@@ -312,7 +312,7 @@ namespace System.Data.SqlClient
         private int InternalRead(char[] buffer, int index, int count)
         {
             Debug.Assert(buffer != null, "Null output buffer");
-            Debug.Assert((index >= 0) && (count >= 0) && (index + count <= buffer.Length), string.Format("Bad count: {0} or index: {1}", count, index));
+            Debug.Assert((index >= 0) && (count >= 0) && (index + count <= buffer.Length), $"Bad count: {count} or index: {index}");
             Debug.Assert(!IsClosed, "Can't read while textreader is closed");
 
             try
@@ -397,9 +397,9 @@ namespace System.Data.SqlClient
         private int DecodeBytesToChars(byte[] inBuffer, int inBufferCount, char[] outBuffer, int outBufferOffset, int outBufferCount)
         {
             Debug.Assert(inBuffer != null, "Null input buffer");
-            Debug.Assert((inBufferCount > 0) && (inBufferCount <= inBuffer.Length), string.Format("Bad inBufferCount: {0}", inBufferCount));
+            Debug.Assert((inBufferCount > 0) && (inBufferCount <= inBuffer.Length), $"Bad inBufferCount: {inBufferCount}");
             Debug.Assert(outBuffer != null, "Null output buffer");
-            Debug.Assert((outBufferOffset >= 0) && (outBufferCount > 0) && (outBufferOffset + outBufferCount <= outBuffer.Length), string.Format("Bad outBufferCount: {0} or outBufferOffset: {1}", outBufferCount, outBufferOffset));
+            Debug.Assert((outBufferOffset >= 0) && (outBufferCount > 0) && (outBufferOffset + outBufferCount <= outBuffer.Length), $"Bad outBufferCount: {outBufferCount} or outBufferOffset: {outBufferOffset}");
 
             int charsRead;
             int bytesUsed;

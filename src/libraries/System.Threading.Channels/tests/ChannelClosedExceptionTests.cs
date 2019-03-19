@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Threading.Channels.Tests
 {
-    public class ChannelClosedExceptionTests
+    public partial class ChannelClosedExceptionTests
     {
         [Fact]
         public void Ctors()

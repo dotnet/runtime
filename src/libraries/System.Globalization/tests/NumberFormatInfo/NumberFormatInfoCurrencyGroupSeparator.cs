@@ -9,7 +9,7 @@ namespace System.Globalization.Tests
     public class NumberFormatInfoCurrencyGroupSeparator
     {
         [Fact]
-        public void CurrencyGroupSeparator_Get_InvariantInfo()
+        public void CurrencyGroupSeparator_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal(",", NumberFormatInfo.InvariantInfo.CurrencyGroupSeparator);
         }
@@ -18,7 +18,7 @@ namespace System.Globalization.Tests
         [InlineData("string")]
         [InlineData("    ")]
         [InlineData("")]
-        public void CurrencyGroupSeparator_Set(string newCurrencyGroupSeparator)
+        public void CurrencyGroupSeparator_Set_GetReturnsExpected(string newCurrencyGroupSeparator)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.CurrencyGroupSeparator = newCurrencyGroupSeparator;
@@ -26,9 +26,15 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        public void CurrencyGroupSeparator_Set_Invalid()
+        public void CurrencyGroupSeparator_SetNull_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentNullException>("CurrencyGroupSeparator", () => new NumberFormatInfo().CurrencyGroupSeparator = null);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentNullException>("value", "CurrencyGroupSeparator", () => format.CurrencyGroupSeparator = null);
+        }
+
+        [Fact]
+        public void CurrencyGroupSeparator_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.CurrencyGroupSeparator = "string");
         }
     }

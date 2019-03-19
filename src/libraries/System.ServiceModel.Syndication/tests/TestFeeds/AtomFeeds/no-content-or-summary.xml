@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <!--
 Description:  an entry with no atom:content or atom:summary produces a warning
 Expect:       MissingTextualContent{element:entry,parent:feed}

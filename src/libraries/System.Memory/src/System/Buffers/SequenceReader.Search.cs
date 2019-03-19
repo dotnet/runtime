@@ -434,6 +434,10 @@ namespace System.Buffers
 
                 if (delimiter.Length == 1)
                 {
+                    if (advancePastDelimiter)
+                    {
+                        Advance(1);
+                    }
                     return true;
                 }
 

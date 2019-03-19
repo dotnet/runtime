@@ -20,7 +20,7 @@ namespace System.Dynamic.Utils
         {
             get
             {
-                Debug.Assert(false, "Unreachable");
+                Debug.Fail("Unreachable");
                 return new InvalidOperationException("Code supposed to be unreachable");
             }
         }

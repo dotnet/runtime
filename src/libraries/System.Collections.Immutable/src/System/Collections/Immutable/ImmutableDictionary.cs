@@ -160,7 +160,6 @@ namespace System.Collections.Immutable
             Requires.NotNull(source, nameof(source));
             Requires.NotNull(keySelector, nameof(keySelector));
             Requires.NotNull(elementSelector, nameof(elementSelector));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             return ImmutableDictionary<TKey, TValue>.Empty.WithComparers(keyComparer, valueComparer)
                 .AddRange(source.Select(element => new KeyValuePair<TKey, TValue>(keySelector(element), elementSelector(element))));
@@ -255,7 +254,6 @@ namespace System.Collections.Immutable
         public static ImmutableDictionary<TKey, TValue> ToImmutableDictionary<TKey, TValue>(this IEnumerable<KeyValuePair<TKey, TValue>> source, IEqualityComparer<TKey> keyComparer, IEqualityComparer<TValue> valueComparer)
         {
             Requires.NotNull(source, nameof(source));
-            Contract.Ensures(Contract.Result<ImmutableDictionary<TKey, TValue>>() != null);
 
             var existingDictionary = source as ImmutableDictionary<TKey, TValue>;
             if (existingDictionary != null)

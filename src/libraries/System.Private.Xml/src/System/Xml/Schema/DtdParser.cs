@@ -624,7 +624,7 @@ namespace System.Xml
                         }
                         return;
                     default:
-                        Debug.Assert(false);
+                        Debug.Fail($"Unexpected token {token}");
                         break;
                 }
 
@@ -1671,7 +1671,7 @@ namespace System.Xml
                                 _scanningFunction = _savedScanningFunction;
                                 goto SwitchAgain;
                             default:
-                                Debug.Assert(false);
+                                Debug.Fail($"Unexpected scanning function {_scanningFunction}");
                                 return Token.None;
                         }
                 }
@@ -3508,7 +3508,7 @@ namespace System.Xml
 
         private void OnUnexpectedError()
         {
-            Debug.Assert(false, "This is an unexpected error that should have been handled in the ScanXXX methods.");
+            Debug.Fail("This is an unexpected error that should have been handled in the ScanXXX methods.");
             Throw(_curPos, SR.Xml_InternalError);
         }
 

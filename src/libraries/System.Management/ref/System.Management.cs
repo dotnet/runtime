@@ -353,7 +353,7 @@ namespace System.Management
         public event System.Management.ProgressEventHandler Progress { add { } remove { } }
         public void Cancel() { }
     }
-    [System.ComponentModel.TypeConverter(typeof(System.ComponentModel.ExpandableObjectConverter))]
+    [System.ComponentModel.TypeConverterAttribute(typeof(System.ComponentModel.ExpandableObjectConverter))]
     public abstract partial class ManagementOptions : System.ICloneable
     {
         internal ManagementOptions() { }
@@ -366,19 +366,19 @@ namespace System.Management
     {
         public ManagementPath() { }
         public ManagementPath(string path) { }
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
+        [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string ClassName { get { throw null; } set { } }
         public static System.Management.ManagementPath DefaultPath { get { throw null; } set { } }
         public bool IsClass { get { throw null; } }
         public bool IsInstance { get { throw null; } }
         public bool IsSingleton { get { throw null; } }
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
+        [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string NamespacePath { get { throw null; } set { } }
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
+        [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string Path { get { throw null; } set { } }
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
+        [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string RelativePath { get { throw null; } set { } }
-        [System.ComponentModel.RefreshPropertiesAttribute((System.ComponentModel.RefreshProperties)(1))]
+        [System.ComponentModel.RefreshPropertiesAttribute(System.ComponentModel.RefreshProperties.All)]
         public string Server { get { throw null; } set { } }
         public System.Management.ManagementPath Clone() { throw null; }
         public void SetAsClass() { }

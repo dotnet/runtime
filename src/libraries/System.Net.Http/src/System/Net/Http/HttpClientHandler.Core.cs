@@ -36,7 +36,7 @@ namespace System.Net.Http
                 if (value > HttpContent.MaxBufferSize)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value,
-                        string.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_limit,
+                        SR.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_limit,
                         HttpContent.MaxBufferSize));
                 }                
 

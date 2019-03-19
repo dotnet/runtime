@@ -67,7 +67,7 @@ namespace System.Xml.Serialization
                 if (iFace == iType)
                     return;
             }
-            Debug.Assert(false);
+            Debug.Fail("Interface not found");
 #endif
         }
 
@@ -186,7 +186,7 @@ namespace System.Xml.Serialization
             object var;
             if (TryGetVariable(name, out var))
                 return var;
-            System.Diagnostics.Debug.Assert(false);
+            System.Diagnostics.Debug.Fail("Variable not found");
             return null;
         }
 
@@ -786,7 +786,7 @@ namespace System.Xml.Serialization
                         Ldc((bool)o);
                         break;
                     case TypeCode.Char:
-                        Debug.Assert(false, "Char is not a valid schema primitive and should be treated as int in DataContract");
+                        Debug.Fail("Char is not a valid schema primitive and should be treated as int in DataContract");
                         throw new NotSupportedException(SR.XmlInvalidCharSchemaPrimitive);
                     case TypeCode.SByte:
                     case TypeCode.Byte:

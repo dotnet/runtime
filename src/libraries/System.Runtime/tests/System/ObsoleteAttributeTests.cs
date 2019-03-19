@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Tests
 {
-    public static class ObsoleteAttributeTests
+    public class ObsoleteAttributeTests
     {
         [Fact]
         public static void Ctor_Default()
@@ -17,20 +16,26 @@ namespace System.Tests
             Assert.False(attribute.IsError);
         }
 
-        [Fact]
-        public static void Ctor_String()
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("message")]
+        public void Ctor_String(string message)
         {
-            var attribute = new ObsoleteAttribute("this is obsolete");
-            Assert.Equal("this is obsolete", attribute.Message);
+            var attribute = new ObsoleteAttribute(message);
+            Assert.Equal(message, attribute.Message);
             Assert.False(attribute.IsError);
         }
 
-        [Fact]
-        public static void Ctor_String_Bool()
+        [Theory]
+        [InlineData(null, true)]
+        [InlineData("", false)]
+        [InlineData("message", true)]
+        public void Ctor_String_Bool(string message, bool error)
         {
-            var attribute = new ObsoleteAttribute("this is obsolete", true);
-            Assert.Equal("this is obsolete", attribute.Message);
-            Assert.True(attribute.IsError);
+            var attribute = new ObsoleteAttribute(message, error);
+            Assert.Equal(message, attribute.Message);
+            Assert.Equal(error, attribute.IsError);
         }
     }
 }

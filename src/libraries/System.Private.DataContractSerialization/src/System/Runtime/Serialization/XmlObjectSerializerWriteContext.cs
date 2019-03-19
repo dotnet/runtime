@@ -247,12 +247,12 @@ namespace System.Runtime.Serialization
             if (isNew)
             {
                 xmlWriter.WriteAttributeString(Globals.SerPrefix, DictionaryGlobals.IdLocalName,
-                                            DictionaryGlobals.SerializationNamespace, string.Format(CultureInfo.InvariantCulture, "{0}{1}", "i", objectId));
+                                            DictionaryGlobals.SerializationNamespace, string.Format(CultureInfo.InvariantCulture, "i{0}", objectId));
                 return false;
             }
             else
             {
-                xmlWriter.WriteAttributeString(Globals.SerPrefix, DictionaryGlobals.RefLocalName, DictionaryGlobals.SerializationNamespace, string.Format(CultureInfo.InvariantCulture, "{0}{1}", "i", objectId));
+                xmlWriter.WriteAttributeString(Globals.SerPrefix, DictionaryGlobals.RefLocalName, DictionaryGlobals.SerializationNamespace, string.Format(CultureInfo.InvariantCulture, "i{0}", objectId));
                 return true;
             }
         }

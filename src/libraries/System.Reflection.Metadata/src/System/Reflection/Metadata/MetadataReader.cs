@@ -540,7 +540,7 @@ namespace System.Reflection.Metadata
             int entryPointRowId = (int)(entryPointToken & TokenTypeIds.RIDMask);
             if (entryPointToken != 0 && ((entryPointToken & TokenTypeIds.TypeMask) != TokenTypeIds.MethodDef || entryPointRowId == 0))
             {
-                throw new BadImageFormatException(string.Format(SR.InvalidEntryPointToken, entryPointToken));
+                throw new BadImageFormatException(SR.Format(SR.InvalidEntryPointToken, entryPointToken));
             }
 
             ulong externalTableMask = reader.ReadUInt64();
@@ -550,7 +550,7 @@ namespace System.Reflection.Metadata
 
             if ((externalTableMask & ~validTables) != 0)
             {
-                throw new BadImageFormatException(string.Format(SR.UnknownTables, externalTableMask));
+                throw new BadImageFormatException(SR.Format(SR.UnknownTables, externalTableMask));
             }
 
             externalTableRowCounts = ReadMetadataTableRowCounts(ref reader, externalTableMask);

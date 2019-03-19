@@ -103,7 +103,7 @@ namespace System.Reflection.PortableExecutable
 
         public static PEHeaderBuilder CreateLibraryHeader()
         {
-            return new PEHeaderBuilder(imageCharacteristics: Characteristics.Dll);
+            return new PEHeaderBuilder(imageCharacteristics: Characteristics.ExecutableImage | Characteristics.Dll);
         }
 
         internal bool Is32Bit => Machine != Machine.Amd64 && Machine != Machine.IA64 && Machine != Machine.Arm64;

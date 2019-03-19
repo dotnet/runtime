@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
             }
             
             Debug.Fail($"Unknown curve {algorithm}");
-            throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, algorithm));
+            throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, algorithm));
         }
     }
 }

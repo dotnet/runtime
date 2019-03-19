@@ -884,10 +884,10 @@ namespace System.Text.RegularExpressions
                                     if (IsCaptureSlot(capnum))
                                         return new RegexNode(RegexNode.Testref, _options, capnum);
                                     else
-                                        throw MakeException(RegexParseError.UndefinedReference, SR.Format(SR.UndefinedReference, capnum.ToString(CultureInfo.CurrentCulture)));
+                                        throw MakeException(RegexParseError.UndefinedReference, SR.Format(SR.UndefinedReference, capnum.ToString()));
                                 }
                                 else
-                                    throw MakeException(RegexParseError.MalformedReference, SR.Format(SR.MalformedReference, capnum.ToString(CultureInfo.CurrentCulture)));
+                                    throw MakeException(RegexParseError.MalformedReference, SR.Format(SR.MalformedReference, capnum.ToString()));
                             }
                             else if (RegexCharClass.IsWordChar(ch))
                             {
@@ -1148,7 +1148,7 @@ namespace System.Text.RegularExpressions
                     if (IsCaptureSlot(capnum))
                         return new RegexNode(RegexNode.Ref, _options, capnum);
                     else
-                        throw MakeException(RegexParseError.UndefinedBackref, SR.Format(SR.UndefinedBackref, capnum.ToString(CultureInfo.CurrentCulture)));
+                        throw MakeException(RegexParseError.UndefinedBackref, SR.Format(SR.UndefinedBackref, capnum.ToString()));
                 }
             }
 
@@ -1181,7 +1181,7 @@ namespace System.Text.RegularExpressions
                     if (IsCaptureSlot(capnum))
                         return new RegexNode(RegexNode.Ref, _options, capnum);
                     else if (capnum <= 9)
-                        throw MakeException(RegexParseError.UndefinedBackref, SR.Format(SR.UndefinedBackref, capnum.ToString(CultureInfo.CurrentCulture)));
+                        throw MakeException(RegexParseError.UndefinedBackref, SR.Format(SR.UndefinedBackref, capnum.ToString()));
                 }
             }
 

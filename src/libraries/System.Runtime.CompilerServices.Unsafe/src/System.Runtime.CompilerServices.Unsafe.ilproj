@@ -11,45 +11,6 @@
   <ItemGroup>
     <Compile Include="System.Runtime.CompilerServices.Unsafe.il" />
     <Reference Include="System.Runtime" />
-    <PackageReference Include="$(MicrosoftNetCoreIldasmPackageName)" Version="$(MicrosoftNETCoreILAsmPackageVersion)" PrivateAssets="all" />
+    <ILResourceReference Include="$(RefPath)$(TargetFileName)" />
   </ItemGroup>
-
-  <Target Name="AddResourcesFileToIlasm" 
-          BeforeTargets="CoreCompile" 
-          Condition="'$(OS)'=='Windows_NT'"
-          Inputs="$(ContractOutputPath)/$(MSBuildProjectName).dll"
-          Outputs="$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj">
-    <PropertyGroup>
-      <_IldasmCommand>"$(ILAsmToolPath)ildasm.exe"</_IldasmCommand>
-      <_IldasmCommand>$(_IldasmCommand) "$(ContractOutputPath)/$(MSBuildProjectName).dll"</_IldasmCommand>
-      <_IldasmCommand>$(_IldasmCommand) /OUT="$(IntermediateOutputPath)/$(MSBuildProjectName).ref.il"</_IldasmCommand>
-
-      <!-- Try to use cvtres.exe from the framework and fallback to the one that is on the PATH in case we can't find it -->
-      <_CvtResCommand Condition="Exists('$(SystemRoot)\Microsoft.NET\Framework\v4.0.30319\cvtres.exe')">$(SystemRoot)\Microsoft.NET\Framework\v4.0.30319\cvtres.exe</_CvtResCommand>
-      <_CvtResCommand Condition="'$(_CvtResCommand)' == ''">cvtres.exe</_CvtResCommand>
-      <_CvtResCommand>$(_CvtResCommand) /MACHINE:x86</_CvtResCommand>
-      <_CvtResCommand>$(_CvtResCommand) /OUT:"$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj"</_CvtResCommand>
-      <_CvtResCommand>$(_CvtResCommand) "$(IntermediateOutputPath)$(MSBuildProjectName).ref.res"</_CvtResCommand>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <FileWrites Include="$(IntermediateOutputPath)$(MSBuildProjectName).ref.*" />
-    </ItemGroup>
-
-    <!-- Getting the res file by disassemblying the contract assembly -->
-    <Exec Command="$(_IldasmCommand)" ConsoleToMSBuild="true" StandardOutputImportance="Low">
-      <Output TaskParameter="ExitCode" PropertyName="_IldasmCommandExitCode" />
-    </Exec>
-    <Error Condition="'$(_IldasmCommandExitCode)' != '0'" Text="ILDasm failed while running command: &quot;$(_IldasmCommand)&quot;" />
-
-    <!-- Calling cvtres.exe which should be on the path in order to transform the resource file to an obj -->
-    <Exec Command="$(_CvtResCommand)" ConsoleToMSBuild="true" StandardOutputImportance="Low">
-      <Output TaskParameter="ExitCode" PropertyName="_CvtResCommandExitCode" />
-    </Exec>
-    <Error Condition="'$(_CvtResCommandExitCode)' != '0'" Text="cvtres failed while running command: &quot;$(_CvtResCommand)&quot;" />
-
-    <PropertyGroup>
-      <IlasmResourceFile>$(IntermediateOutputPath)$(MSBuildProjectName).ref.res.obj</IlasmResourceFile>
-    </PropertyGroup>
-  </Target>
 </Project>

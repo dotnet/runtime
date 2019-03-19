@@ -143,5 +143,40 @@ namespace System.ComponentModel.Tests
 
             Assert.True(propertyDescriptor.ShouldSerializeValue(component));
         }
+
+        [Fact]
+        public static void ReadOnlyPropertyReturnsTrue()
+        {
+            var foo = new ReadOnlyPropertyTestClass();
+            PropertyDescriptor property = TypeDescriptor.GetProperties(foo).Find("BarReadOnly", true);
+            Assert.True(property.IsReadOnly);
+        }
+
+        [Fact]
+        public static void ReadOnlyPropertyReturnsFalse()
+        {
+            var foo = new ReadOnlyPropertyTestClass();
+            PropertyDescriptor property = TypeDescriptor.GetProperties(foo).Find("BarNotReadOnly", true);
+            Assert.False(property.IsReadOnly);
+        }
+
+        [Fact]
+        public static void ReadOnlyVirtualPropertyReturnsTrue()
+        {
+            PropertyDescriptor property = TypeDescriptor.GetProperties(typeof(ReadOnlyPropertyTestClass), new[] { BrowsableAttribute.Yes }).Find("BarReadOnlyBaseClass", true);
+            Assert.True(property.IsReadOnly);
+        }
+
+        class ReadOnlyPropertyTestBaseClass
+        {
+            public virtual bool BarReadOnlyBaseClass { get; }
+        }
+
+        class ReadOnlyPropertyTestClass : ReadOnlyPropertyTestBaseClass
+        {
+            public bool BarReadOnly { get; private set; }
+            public bool BarNotReadOnly { get; set; }
+            public override bool BarReadOnlyBaseClass { get; }
+        }
     }
 }

@@ -1226,8 +1226,7 @@ namespace System.Xml
                 parent2 = curNode2.ParentNode;
             }
 
-            //logically, we shouldn't reach here
-            Debug.Assert(false);
+            Debug.Fail("Logically, we shouldn't reach here.");
             return XmlNodeOrder.Unknown;
         }
 

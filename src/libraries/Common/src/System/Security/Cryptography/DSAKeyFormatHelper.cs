@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
 
             AsnReader reader = new AsnReader(xBytes, AsnEncodingRules.DER);
             // Force a positive interpretation because Windows sometimes writes negative numbers.
-            BigInteger x = new BigInteger(reader.GetIntegerBytes().Span, isUnsigned: true, isBigEndian: true);
+            BigInteger x = new BigInteger(reader.ReadIntegerBytes().Span, isUnsigned: true, isBigEndian: true);
             ret.X = x.ExportKeyParameter(ret.Q.Length);
             reader.ThrowIfNotEmpty();
 
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
             out DSAParameters ret)
         {
             AsnReader reader = new AsnReader(yBytes, AsnEncodingRules.DER);
-            BigInteger y = reader.GetInteger();
+            BigInteger y = reader.ReadInteger();
             reader.ThrowIfNotEmpty();
 
             if (!algId.Parameters.HasValue)

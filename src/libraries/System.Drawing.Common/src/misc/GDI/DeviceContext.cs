@@ -107,7 +107,7 @@ namespace System.Drawing.Internal
 #if GDI_FINALIZATION_WATCH
                     else
                     {
-                        try { Debug.WriteLine(string.Format("Allocation stack:\r\n{0}\r\nDeallocation stack:\r\n{1}", AllocationSite, DeAllocationSite)); } catch  {}
+                        try { Debug.WriteLine($"Allocation stack:\r\n{AllocationSite}\r\nDeallocation stack:\r\n{DeAllocationSite}"); } catch  {}
                     }
 #endif
                 }
@@ -144,7 +144,7 @@ namespace System.Drawing.Internal
             // the hDc will be created on demand.
 
 #if TRACK_HDC
-            Debug.WriteLine( DbgUtil.StackTraceToStr(String.Format( "DeviceContext( hWnd=0x{0:x8} )", unchecked((int) hWnd))));
+            Debug.WriteLine( DbgUtil.StackTraceToStr(string.Format( "DeviceContext( hWnd=0x{0:x8} )", unchecked((int) hWnd))));
 #endif
         }
 
@@ -164,7 +164,7 @@ namespace System.Drawing.Internal
                 _hWnd = IntUnsafeNativeMethods.WindowFromDC(new HandleRef(this, _hDC));
             }
 #if TRACK_HDC
-            Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("DeviceContext( hDC=0x{0:X8}, Type={1} )", unchecked((int) hDC), dcType) ));
+            Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("DeviceContext( hDC=0x{0:X8}, Type={1} )", unchecked((int) hDC), dcType) ));
 #endif
         }
 
@@ -254,7 +254,7 @@ namespace System.Drawing.Internal
                     // CreateDC and CreateIC add an HDC handle to the HandleCollector; to remove it properly we need 
                     // to call DeleteHDC.
 #if TRACK_HDC
-                    Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("DC.DeleteHDC(hdc=0x{0:x8})", unchecked((int) _hDC))));
+                    Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("DC.DeleteHDC(hdc=0x{0:x8})", unchecked((int) _hDC))));
 #endif
 
                     IntUnsafeNativeMethods.DeleteHDC(new HandleRef(this, _hDC));
@@ -267,7 +267,7 @@ namespace System.Drawing.Internal
                     // CreatCompatibleDC adds a GDI handle to HandleCollector, to remove it properly we need to call 
                     // DeleteDC.
 #if TRACK_HDC
-                    Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("DC.DeleteDC(hdc=0x{0:x8})", unchecked((int) _hDC))));
+                    Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("DC.DeleteDC(hdc=0x{0:x8})", unchecked((int) _hDC))));
 #endif
                     IntUnsafeNativeMethods.DeleteDC(new HandleRef(this, _hDC));
 
@@ -300,7 +300,7 @@ namespace System.Drawing.Internal
                 // For example, the default font is System.
                 _hDC = IntUnsafeNativeMethods.GetDC(new HandleRef(this, _hWnd));
 #if TRACK_HDC
-                Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("hdc[0x{0:x8}]=DC.GetHdc(hWnd=0x{1:x8})", unchecked((int) _hDC), unchecked((int) _hWnd))));
+                Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("hdc[0x{0:x8}]=DC.GetHdc(hWnd=0x{1:x8})", unchecked((int) _hDC), unchecked((int) _hWnd))));
 #endif            
             }
 
@@ -321,7 +321,7 @@ namespace System.Drawing.Internal
                 IntUnsafeNativeMethods.ReleaseDC(new HandleRef(this, _hWnd), new HandleRef(this, _hDC));
                 // Note: retVal == 0 means it was not released but doesn't necessarily means an error; class or private DCs are never released.
 #if TRACK_HDC
-                Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("[ret={0}]=DC.ReleaseDC(hDc=0x{1:x8}, hWnd=0x{2:x8})", retVal, unchecked((int) _hDC), unchecked((int) _hWnd))));
+                Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("[ret={0}]=DC.ReleaseDC(hDc=0x{1:x8}, hWnd=0x{2:x8})", retVal, unchecked((int) _hDC), unchecked((int) _hWnd))));
 #endif                 
                 _hDC = IntPtr.Zero;
             }
@@ -347,7 +347,7 @@ namespace System.Drawing.Internal
             IntUnsafeNativeMethods.RestoreDC(new HandleRef(this, _hDC), -1);
 #if TRACK_HDC
             // Note: Winforms may call this method during app exit at which point the DC may have been finalized already causing this assert to popup.
-            Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("ret[0]=DC.RestoreHdc(hDc=0x{1:x8}, state={2})", result, unchecked((int) _hDC), restoreState) ));
+            Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("ret[0]=DC.RestoreHdc(hDc=0x{1:x8}, state={2})", result, unchecked((int) _hDC), restoreState) ));
 #endif 
             Debug.Assert(_contextStack != null, "Someone is calling RestoreHdc() before SaveHdc()");
 
@@ -396,7 +396,7 @@ namespace System.Drawing.Internal
             _contextStack.Push(g);
 
 #if TRACK_HDC
-            Debug.WriteLine( DbgUtil.StackTraceToStr( String.Format("state[0]=DC.SaveHdc(hDc=0x{1:x8})", state, unchecked((int) _hDC)) ));
+            Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("state[0]=DC.SaveHdc(hDc=0x{1:x8})", state, unchecked((int) _hDC)) ));
 #endif
 
             return state;

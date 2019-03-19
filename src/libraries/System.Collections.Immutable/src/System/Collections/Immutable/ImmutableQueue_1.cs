@@ -63,8 +63,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableQueue<T> Clear()
         {
-            Contract.Ensures(Contract.Result<ImmutableQueue<T>>().IsEmpty);
-            Contract.Assume(s_EmptyField.IsEmpty);
+            Debug.Assert(s_EmptyField.IsEmpty);
             return Empty;
         }
 
@@ -90,8 +89,7 @@ namespace System.Collections.Immutable
         {
             get
             {
-                Contract.Ensures(Contract.Result<ImmutableQueue<T>>().IsEmpty);
-                Contract.Assume(s_EmptyField.IsEmpty);
+                Debug.Assert(s_EmptyField.IsEmpty);
                 return s_EmptyField;
             }
         }
@@ -101,7 +99,7 @@ namespace System.Collections.Immutable
         /// </summary>
         IImmutableQueue<T> IImmutableQueue<T>.Clear()
         {
-            Contract.Assume(s_EmptyField.IsEmpty);
+            Debug.Assert(s_EmptyField.IsEmpty);
             return this.Clear();
         }
 
@@ -112,8 +110,6 @@ namespace System.Collections.Immutable
         {
             get
             {
-                Contract.Ensures(Contract.Result<ImmutableStack<T>>() != null);
-
                 // Although this is a lazy-init pattern, no lock is required because
                 // this instance is immutable otherwise, and a double-assignment from multiple
                 // threads is harmless.
@@ -122,6 +118,7 @@ namespace System.Collections.Immutable
                     _backwardsReversed = _backwards.Reverse();
                 }
 
+                Debug.Assert(_backwardsReversed != null);
                 return _backwardsReversed;
             }
         }
@@ -168,8 +165,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableQueue<T> Enqueue(T value)
         {
-            Contract.Ensures(!Contract.Result<ImmutableQueue<T>>().IsEmpty);
-
             if (this.IsEmpty)
             {
                 return new ImmutableQueue<T>(ImmutableStack.Create(value), ImmutableStack<T>.Empty);

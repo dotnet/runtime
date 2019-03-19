@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Primitives;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Threading;
 using Microsoft.Internal;
@@ -169,7 +168,7 @@ namespace System.ComponentModel.Composition.Hosting
             get
             {
                 ThrowIfDisposed();
-                Contract.Ensures(Contract.Result<ICollection<ComposablePartCatalog>>() != null);
+                Debug.Assert(_catalogs != null);
 
                 return _catalogs;
             }

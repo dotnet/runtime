@@ -26,13 +26,13 @@ namespace System.Globalization.Tests
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         [MemberData(nameof(PercentNegativePattern_TestData))]
-        public void PercentNegativePattern_Get(NumberFormatInfo format, int expected)
+        public void PercentNegativePattern_Get_ReturnsExpected(NumberFormatInfo format, int expected)
         {
             Assert.Equal(expected, format.PercentNegativePattern);
         }
 
         [Fact]
-        public void PercentNegativePattern_Invariant_Get()
+        public void PercentNegativePattern_GetInvariant_ReturnsExpected()
         {
             Assert.Equal(0, NumberFormatInfo.InvariantInfo.PercentNegativePattern);
         }
@@ -41,19 +41,25 @@ namespace System.Globalization.Tests
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(11)]
-        public void PercentNegativePattern_Set(int newPercentNegativePattern)
+        public void PercentNegativePattern_Set_GetReturnsExpected(int newPercentNegativePattern)
         {
             NumberFormatInfo format = new NumberFormatInfo();
             format.PercentNegativePattern = newPercentNegativePattern;
             Assert.Equal(newPercentNegativePattern, format.PercentNegativePattern);
         }
 
-        [Fact]
-        public void PercentNegativePattern_Set_Invalid()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(12)]
+        public void PercentNegativePattern_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("PercentNegativePattern", () => new NumberFormatInfo().PercentNegativePattern = -1);
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("PercentNegativePattern", () => new NumberFormatInfo().PercentNegativePattern = 12);
+            var format = new NumberFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", "PercentNegativePattern", () => format.PercentNegativePattern = value);
+        }
 
+        [Fact]
+        public void PercentNegativePattern_SetReadOnly_ThrowsInvalidOperationException()
+        {
             Assert.Throws<InvalidOperationException>(() => NumberFormatInfo.InvariantInfo.PercentNegativePattern = 1);
         }
     }

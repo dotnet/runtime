@@ -522,7 +522,7 @@ namespace System.Security.Cryptography
                 Exception e = errorCode.ToCryptographicException();
                 if (errorCode == ErrorCode.NTE_INVALID_PARAMETER)
                 {
-                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curveName), e);
+                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curveName), e);
                 }
                 throw e;
             }

@@ -383,20 +383,14 @@ namespace System.DirectoryServices.AccountManagement
                             int lastError = Marshal.GetLastWin32Error();
                             GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetCurrentUserSid: OpenProcessToken failed, gle=" + lastError);
 
-                            throw new PrincipalOperationException(
-                                            string.Format(CultureInfo.CurrentCulture,
-                                                          SR.UnableToOpenToken,
-                                                          lastError));
+                            throw new PrincipalOperationException(SR.Format(SR.UnableToOpenToken, lastError));
                         }
                     }
                     else
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetCurrentUserSid: OpenThreadToken failed, gle=" + error);
 
-                        throw new PrincipalOperationException(
-                                        string.Format(CultureInfo.CurrentCulture,
-                                                      SR.UnableToOpenToken,
-                                                      error));
+                        throw new PrincipalOperationException(SR.Format(SR.UnableToOpenToken, error));
                     }
                 }
 
@@ -419,7 +413,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetCurrentUserSid: GetTokenInformation (1st try) failed, gle=" + getTokenInfoError);
 
                     throw new PrincipalOperationException(
-                                    string.Format(CultureInfo.CurrentCulture, SR.UnableToRetrieveTokenInfo, getTokenInfoError));
+                                    SR.Format(SR.UnableToRetrieveTokenInfo, getTokenInfoError));
                 }
 
                 // Allocate the necessary buffer.
@@ -442,7 +436,7 @@ namespace System.DirectoryServices.AccountManagement
                                       "GetCurrentUserSid: GetTokenInformation (2nd try) failed, neededBufferSize=" + neededBufferSize + ", gle=" + lastError);
 
                     throw new PrincipalOperationException(
-                                    string.Format(CultureInfo.CurrentCulture, SR.UnableToRetrieveTokenInfo, lastError));
+                                    SR.Format(SR.UnableToRetrieveTokenInfo, lastError));
                 }
 
                 // Retrieve the user's SID from the user info
@@ -463,7 +457,7 @@ namespace System.DirectoryServices.AccountManagement
                                       "GetCurrentUserSid: CopySid failed, errorcode=" + lastError);
 
                     throw new PrincipalOperationException(
-                                    string.Format(CultureInfo.CurrentCulture, SR.UnableToRetrieveTokenInfo, lastError));
+                                    SR.Format(SR.UnableToRetrieveTokenInfo, lastError));
                 }
 
                 return pCopyOfUserSid;
@@ -501,7 +495,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetMachineDomainSid: LsaOpenPolicy failed, gle=" + SafeNativeMethods.LsaNtStatusToWinError(err));
 
-                    throw new PrincipalOperationException(string.Format(CultureInfo.CurrentCulture,
+                    throw new PrincipalOperationException(SR.Format(
                                                                SR.UnableToRetrievePolicy,
                                                                SafeNativeMethods.LsaNtStatusToWinError(err)));
                 }
@@ -516,7 +510,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetMachineDomainSid: LsaQueryInformationPolicy failed, gle=" + SafeNativeMethods.LsaNtStatusToWinError(err));
 
-                    throw new PrincipalOperationException(string.Format(CultureInfo.CurrentCulture,
+                    throw new PrincipalOperationException(SR.Format(
                                                                SR.UnableToRetrievePolicy,
                                                                SafeNativeMethods.LsaNtStatusToWinError(err)));
                 }
@@ -539,7 +533,7 @@ namespace System.DirectoryServices.AccountManagement
                                       "GetMachineDomainSid: CopySid failed, errorcode=" + lastError);
 
                     throw new PrincipalOperationException(
-                                    string.Format(CultureInfo.CurrentCulture, SR.UnableToRetrievePolicy, lastError));
+                                    SR.Format(SR.UnableToRetrievePolicy, lastError));
                 }
 
                 return pCopyOfSid;
@@ -593,8 +587,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "GetDcName: DsGetDcName failed, err=" + err);
                     throw new PrincipalOperationException(
-                                    string.Format(
-                                            CultureInfo.CurrentCulture,
+                                    SR.Format(
                                             SR.UnableToRetrieveDomainInfo,
                                             err));
                 }
@@ -785,9 +778,7 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "BeginImpersonation: LogonUser failed, gle=" + lastError);
 
                 throw new PrincipalOperationException(
-                    string.Format(CultureInfo.CurrentCulture,
-                                  SR.UnableToImpersonateCredentials,
-                                  lastError));
+                    SR.Format(SR.UnableToImpersonateCredentials, lastError));
             }
 
             result = UnsafeNativeMethods.ImpersonateLoggedOnUser(hToken);
@@ -800,9 +791,7 @@ namespace System.DirectoryServices.AccountManagement
                 UnsafeNativeMethods.CloseHandle(hToken);
 
                 throw new PrincipalOperationException(
-                    string.Format(CultureInfo.CurrentCulture,
-                                  SR.UnableToImpersonateCredentials,
-                                  lastError));
+                    SR.Format(SR.UnableToImpersonateCredentials, lastError));
             }
 
             hUserToken = hToken;
@@ -833,8 +822,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Error, "Utils", "IsMachineDC: DsRoleGetPrimaryDomainInformation failed, err=" + err);
                     throw new PrincipalOperationException(
-                                    string.Format(
-                                            CultureInfo.CurrentCulture,
+                                    SR.Format(
                                             SR.UnableToRetrieveDomainInfo,
                                             err));
                 }

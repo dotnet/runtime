@@ -8,5 +8,8 @@
     <Compile Include="CheckPlatformTests.cs" />
     <Compile Include="CheckPlatformTests.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
     <Compile Include="DescriptionNameTests.cs" />
+    <Compile Include="$(CommonPath)\Interop\Linux\cgroups\Interop.cgroups.cs">
+      <Link>Common\Interop\Linux\Interop.cgroups.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>

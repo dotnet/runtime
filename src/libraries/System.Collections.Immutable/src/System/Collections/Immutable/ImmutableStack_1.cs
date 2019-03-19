@@ -66,9 +66,7 @@ namespace System.Collections.Immutable
         {
             get
             {
-                Contract.Ensures(Contract.Result<ImmutableStack<T>>() != null);
-                Contract.Ensures(Contract.Result<ImmutableStack<T>>().IsEmpty);
-                Contract.Assume(s_EmptyField.IsEmpty);
+                Debug.Assert(s_EmptyField.IsEmpty);
                 return s_EmptyField;
             }
         }
@@ -78,9 +76,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableStack<T> Clear()
         {
-            Contract.Ensures(Contract.Result<ImmutableStack<T>>() != null);
-            Contract.Ensures(Contract.Result<ImmutableStack<T>>().IsEmpty);
-            Contract.Assume(s_EmptyField.IsEmpty);
+            Debug.Assert(s_EmptyField.IsEmpty);
             return Empty;
         }
 
@@ -149,8 +145,6 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableStack<T> Push(T value)
         {
-            Contract.Ensures(Contract.Result<ImmutableStack<T>>() != null);
-            Contract.Ensures(!Contract.Result<ImmutableStack<T>>().IsEmpty);
             return new ImmutableStack<T>(value, this);
         }
 
@@ -173,12 +167,12 @@ namespace System.Collections.Immutable
         [Pure]
         public ImmutableStack<T> Pop()
         {
-            Contract.Ensures(Contract.Result<ImmutableStack<T>>() != null);
             if (this.IsEmpty)
             {
                 throw new InvalidOperationException(SR.InvalidEmptyOperation);
             }
 
+            Debug.Assert(_tail != null);
             return _tail;
         }
 
@@ -253,15 +247,14 @@ namespace System.Collections.Immutable
         [Pure]
         internal ImmutableStack<T> Reverse()
         {
-            Contract.Ensures(Contract.Result<ImmutableStack<T>>() != null);
-            Contract.Ensures(Contract.Result<ImmutableStack<T>>().IsEmpty == this.IsEmpty);
-
             var r = this.Clear();
             for (ImmutableStack<T> f = this; !f.IsEmpty; f = f.Pop())
             {
                 r = r.Push(f.Peek());
             }
 
+            Debug.Assert(r != null);
+            Debug.Assert(r.IsEmpty == IsEmpty);
             return r;
         }
     }

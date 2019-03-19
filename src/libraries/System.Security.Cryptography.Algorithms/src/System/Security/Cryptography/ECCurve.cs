@@ -84,7 +84,7 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(Oid));
 
                 if (string.IsNullOrEmpty(value.Value) && string.IsNullOrEmpty(value.FriendlyName))
-                    throw new ArgumentException(string.Format(SR.Cryptography_InvalidCurveOid));
+                    throw new ArgumentException(SR.Cryptography_InvalidCurveOid);
 
                 _oid = value;
             }
@@ -247,7 +247,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(CurveType == ECCurveType.Implicit);
                 if (HasAnyExplicitParameters() || Oid != null)
                 {
-                    throw new CryptographicException(string.Format(SR.Cryptography_CurveNotSupported, CurveType.ToString()));
+                    throw new CryptographicException(SR.Format(SR.Cryptography_CurveNotSupported, CurveType.ToString()));
                 }
             }
         }
