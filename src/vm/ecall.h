@@ -103,7 +103,7 @@ class ECall
         static void EnumFCallMethods();
 #endif // DACCESS_COMPILE
 
-#define DYNAMICALLY_ASSIGNED_FCALLS() \
+#define _DYNAMICALLY_ASSIGNED_FCALLS_BASE() \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(FastAllocateString,                FramedAllocateString) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorCharArrayManaged,              NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorCharArrayStartLengthManaged,   NULL) \
@@ -115,6 +115,22 @@ class ECall
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorSBytePtrStartLengthManaged,    NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorSBytePtrStartLengthEncodingManaged, NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(InternalGetCurrentThread,          NULL) \
+
+#define _DYNAMICALLY_ASSIGNED_FCALLS_UTF8STRING() \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(FastAllocateUtf8String,            FramedAllocateUtf8String) \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorReadOnlySpanOfByteManaged,   NULL) \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorReadOnlySpanOfCharManaged,   NULL) \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorByteArrayStartLengthManaged, NULL) \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorBytePtrManaged,              NULL) \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorCharArrayStartLengthManaged, NULL) \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorCharPtrManaged,              NULL) \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(Utf8StringCtorStringManaged,               NULL) \
+
+#ifdef FEATURE_UTF8STRING
+#define DYNAMICALLY_ASSIGNED_FCALLS() _DYNAMICALLY_ASSIGNED_FCALLS_BASE() _DYNAMICALLY_ASSIGNED_FCALLS_UTF8STRING()
+#else
+#define DYNAMICALLY_ASSIGNED_FCALLS() _DYNAMICALLY_ASSIGNED_FCALLS_BASE()
+#endif // FEATURE_UTF8STRING
 
         enum
         {

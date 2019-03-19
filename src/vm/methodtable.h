@@ -1743,7 +1743,7 @@ public:
     BOOL IsString()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return HasComponentSize() && !IsArray();
+        return HasComponentSize() && !IsArray() && RawGetComponentSize() == 2;
     }
 
     BOOL            HasComponentSize() const
