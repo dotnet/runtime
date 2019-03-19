@@ -3292,6 +3292,92 @@ ILCriticalHandleMarshaler::ReturnOverride(
     return OVERRIDDEN;
 } // ILCriticalHandleMarshaler::ReturnOverride
 
+MarshalerOverrideStatus ILBlittableValueClassWithCopyCtorMarshaler::ArgumentOverride(NDirectStubLinker* psl,
+                                                BOOL               byref,
+                                                BOOL               fin,
+                                                BOOL               fout,
+                                                BOOL               fManagedToNative,
+                                                OverrideProcArgs*  pargs,
+                                                UINT*              pResID,
+                                                UINT               argidx,
+                                                UINT               nativeStackOffset)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+    
+    ILCodeStream* pslIL         = psl->GetMarshalCodeStream();
+    ILCodeStream* pslILDispatch = psl->GetDispatchCodeStream();
+
+    if (byref)
+    {
+        *pResID = IDS_EE_BADMARSHAL_COPYCTORRESTRICTION;
+        return DISALLOWED;
+    }        
+
+    if (fManagedToNative)
+    {
+        // 1) create new native value type local
+        // 2) run new->CopyCtor(old)
+        // 3) run old->Dtor()
+
+        LocalDesc   locDesc(pargs->mm.m_pMT);
+
+        DWORD       dwNewValueTypeLocal;
+
+        // Step 1
+        dwNewValueTypeLocal = pslIL->NewLocal(locDesc);
+
+        // Step 2
+        if (pargs->mm.m_pCopyCtor)
+        {
+            // Managed copy constructor has signature of CopyCtor(T* new, T old);
+            pslIL->EmitLDLOCA(dwNewValueTypeLocal);
+            pslIL->EmitLDARG(argidx);
+            pslIL->EmitCALL(pslIL->GetToken(pargs->mm.m_pCopyCtor), 2, 0);
+        }
+        else
+        {
+            pslIL->EmitLDARG(argidx);
+            pslIL->EmitLDOBJ(pslIL->GetToken(pargs->mm.m_pMT));
+            pslIL->EmitSTLOC(dwNewValueTypeLocal);
+        }
+
+        // Step 3
+        if (pargs->mm.m_pDtor)
+        {
+            // Managed destructor has signature of Destructor(T old);
+            pslIL->EmitLDARG(argidx);
+            pslIL->EmitCALL(pslIL->GetToken(pargs->mm.m_pDtor), 1, 0);
+        }
+#ifdef _TARGET_X86_
+        pslIL->SetStubTargetArgType(&locDesc);              // native type is the value type
+        pslILDispatch->EmitLDLOC(dwNewValueTypeLocal);      // we load the local directly
+#else
+        pslIL->SetStubTargetArgType(ELEMENT_TYPE_I);        // native type is a pointer
+        pslILDispatch->EmitLDLOCA(dwNewValueTypeLocal);
+#endif
+
+        return OVERRIDDEN;
+    }
+    else
+    {
+        // nothing to do but pass the value along
+        // note that on x86 the argument comes by-value but is converted to pointer by the UM thunk
+        // so that we don't make copies that would not be accounted for by copy ctors
+        LocalDesc   locDesc(pargs->mm.m_pMT);
+        locDesc.MakeCopyConstructedPointer();
+
+        pslIL->SetStubTargetArgType(&locDesc);              // native type is a pointer
+        pslILDispatch->EmitLDARG(argidx);
+
+        return OVERRIDDEN;
+    }
+}
 
 LocalDesc ILArgIteratorMarshaler::GetNativeType()
 {
