@@ -61,16 +61,19 @@
         <HostMsi>$(SharedHostInstallerFile)</HostMsi>
         <HostFxrMsi>$(HostFxrInstallerFile)</HostFxrMsi>
         <SharedBundle>$(CombinedInstallerFile)</SharedBundle>
+       <!-- Warning: changing the value "BundleInstallerOutputGuidString" can only occur on a product-band boundary [ProductBandVersion], 
+               Changing "BundleInstallerOutputGuidString" mid-product-band will break the upgradability of the Shared Framework bundle installer. -->
+        <BundleInstallerOutputGuidString>.NET Core Shared Framework Bundle Installer $(ProductBandVersion) $(PackageTargetRid)</BundleInstallerOutputGuidString>
         <SharedBrandName>$(SharedFrameworkBrandName)</SharedBrandName>
         <ArchParams>"$(MsiArch)" "$(TargetArchitecture)"</ArchParams>
      </PropertyGroup>
 
-     <GenerateGuidFromName Name="$(SharedBundle)">
+     <GenerateGuidFromName Name="$(BundleInstallerOutputGuidString)">
        <Output TaskParameter="GeneratedGuid" PropertyName="SharedBundleCode" />
      </GenerateGuidFromName>
 
      <PropertyGroup>
-        <BundleParameters>$(ShareFXMsi) $(HostMsi) $(HostFxrMsi) $(SharedBundle) $(WixToolsDir) '$(SharedBrandName)' $(MsiVersionString) $(BundleDisplayVersion) $(SharedFrameworkName) $(SharedFrameworkNugetVersion) $(SharedBundleCode) $(ArchParams)</BundleParameters>
+        <BundleParameters>$(ShareFXMsi) $(HostMsi) $(HostFxrMsi) $(SharedBundle) $(WixToolsDir) '$(SharedBrandName)' $(MsiVersionString) $(BundleDisplayVersion) $(ProductBandVersion) $(SharedFrameworkName) $(SharedFrameworkNugetVersion) $(SharedBundleCode) $(ArchParams)</BundleParameters>
      </PropertyGroup>
 
      <Exec Command="powershell -NoProfile -NoLogo $(SharedFxBundleScript) $(BundleParameters)" />
