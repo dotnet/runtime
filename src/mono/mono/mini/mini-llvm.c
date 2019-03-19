@@ -9401,7 +9401,7 @@ emit_aot_file_info (MonoLLVMModule *module)
 		fields [tindex ++] = AddJitGlobal (module, eltype, "method_addresses");
 	else
 		fields [tindex ++] = LLVMConstNull (eltype);
-	if (module->llvm_only) {
+	if (module->llvm_only && module->unbox_tramp_indexes) {
 		fields [tindex ++] = module->unbox_tramp_indexes;
 		fields [tindex ++] = module->unbox_trampolines;
 	} else {
