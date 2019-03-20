@@ -32,6 +32,23 @@ set(SOURCES
     ../version.cpp
 )
 
+set(HEADERS
+    ../runtime_config.h
+    ../json/casablanca/include/cpprest/json.h
+    ../fxr/fx_ver.h
+    ../breadcrumbs.h
+    ../args.h
+    ../hostpolicy_init.h
+    ../host_startup_info.h
+    ../coreclr.h
+    ../deps_resolver.h
+    ../deps_format.h
+    ../deps_entry.h
+    ../fx_definition.h
+    ../fx_reference.h
+    ../version.h
+)
+
 include(../lib.cmake)
 
 install(TARGETS hostpolicy DESTINATION corehost)
