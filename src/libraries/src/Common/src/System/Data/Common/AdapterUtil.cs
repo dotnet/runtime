@@ -361,24 +361,33 @@ namespace System.Data.Common
 
         internal static string BuildQuotedString(string quotePrefix, string quoteSuffix, string unQuotedString)
         {
-            var resultString = new StringBuilder();
+            var resultString = new StringBuilder(unQuotedString.Length + quoteSuffix.Length + quoteSuffix.Length);
+            AppendQuotedString(resultString, quotePrefix, quoteSuffix, unQuotedString);
+            return resultString.ToString();
+        }
+
+        internal static string AppendQuotedString(StringBuilder buffer, string quotePrefix, string quoteSuffix, string unQuotedString)
+        {
+
             if (!string.IsNullOrEmpty(quotePrefix))
             {
-                resultString.Append(quotePrefix);
+                buffer.Append(quotePrefix);
             }
 
             // Assuming that the suffix is escaped by doubling it. i.e. foo"bar becomes "foo""bar".
             if (!string.IsNullOrEmpty(quoteSuffix))
             {
-                resultString.Append(unQuotedString.Replace(quoteSuffix, quoteSuffix + quoteSuffix));
-                resultString.Append(quoteSuffix);
+                int start = buffer.Length;
+                buffer.Append(unQuotedString);
+                buffer.Replace(quoteSuffix, quoteSuffix + quoteSuffix, start, unQuotedString.Length);
+                buffer.Append(quoteSuffix);
             }
             else
             {
-                resultString.Append(unQuotedString);
+                buffer.Append(unQuotedString);
             }
 
-            return resultString.ToString();
+            return buffer.ToString();
         }
 
         //
