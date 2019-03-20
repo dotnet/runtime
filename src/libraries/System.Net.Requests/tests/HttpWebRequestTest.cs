@@ -1321,10 +1321,9 @@ namespace System.Net.Tests
         [Fact]
         public async Task ProxySetViaEnvironmentVariable_DefaultProxyCredentialsUsed()
         {
-            const string ExpectedUsername = "rightusername";
-            const string ExpectedPassword = "rightpassword";
+            var cred = new NetworkCredential(Guid.NewGuid().ToString("N"), Guid.NewGuid().ToString("N"));
             LoopbackServer.Options options =
-                new LoopbackServer.Options { IsProxy = true, Username = ExpectedUsername, Password = ExpectedPassword };
+                new LoopbackServer.Options { IsProxy = true, Username = cred.UserName, Password = cred.Password };
 
             await LoopbackServer.CreateServerAsync(async (proxyServer, proxyUri) =>
             {
@@ -1337,9 +1336,9 @@ namespace System.Net.Tests
                 proxyTask = proxyServer.AcceptConnectionPerformAuthenticationAndCloseAsync("Proxy-Authenticate: Basic realm=\"NetCore\"\r\n");
                 psi.Environment.Add("http_proxy", $"http://{proxyUri.Host}:{proxyUri.Port}");
 
-                RemoteInvoke(async () =>
+                RemoteInvoke(async (user, pw) =>
                 {
-                    WebRequest.DefaultWebProxy.Credentials = new NetworkCredential(ExpectedUsername, ExpectedPassword);
+                    WebRequest.DefaultWebProxy.Credentials = new NetworkCredential(user, pw);
                     HttpWebRequest request = HttpWebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
 
                     using (var response = (HttpWebResponse) await request.GetResponseAsync())
@@ -1348,7 +1347,7 @@ namespace System.Net.Tests
                     }
 
                     return SuccessExitCode;
-                }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+                }, cred.UserName, cred.Password, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
 
                 await proxyTask;
             }, options);
