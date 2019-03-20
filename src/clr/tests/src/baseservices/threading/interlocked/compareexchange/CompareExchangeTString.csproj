@@ -11,8 +11,8 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestKind>BuildAndRun</CLRTestKind>
-    <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestExecutionArguments>empty</CLRTestExecutionArguments>
+    <CLRTestPriority>0</CLRTestPriority>
+    <CLRTestExecutionArguments>"hello"</CLRTestExecutionArguments>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

@@ -10,7 +10,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestKind>RunOnly</CLRTestKind>
-    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestPriority>0</CLRTestPriority>
     <CLRTestProjectToRun>CompareExchangeTClass.csproj</CLRTestProjectToRun>
     <CLRTestExecutionArguments>"hello world"</CLRTestExecutionArguments>
     <GCStressIncompatible>true</GCStressIncompatible>
