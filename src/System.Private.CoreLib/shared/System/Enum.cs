@@ -11,6 +11,7 @@ using Internal.Runtime.CompilerServices;
 #if CORERT
 using CorElementType = System.Runtime.RuntimeImports.RhCorElementType;
 using RuntimeType = System.Type;
+using EnumInfo = Internal.Runtime.Augments.EnumInfo;
 #endif
 
 // The code below includes partial support for float/double and
@@ -132,52 +133,47 @@ namespace System
             }
         }
 
-        internal static string GetEnumName(RuntimeType eT, ulong ulValue)
+        internal static string GetEnumName(RuntimeType enumType, ulong ulValue)
         {
-            Debug.Assert(eT != null);
-            ulong[] ulValues = InternalGetValues(eT);
-            int index = Array.BinarySearch(ulValues, ulValue);
+            return GetEnumName(GetEnumInfo(enumType), ulValue);
+        }
 
+        private static string GetEnumName(EnumInfo enumInfo, ulong ulValue)
+        {
+            int index = Array.BinarySearch(enumInfo.Values, ulValue);
             if (index >= 0)
             {
-                string[] names = InternalGetNames(eT);
-                return names[index];
+                return enumInfo.Names[index];
             }
 
             return null; // return null so the caller knows to .ToString() the input
         }
 
-        private static string InternalFormat(RuntimeType eT, ulong value)
+        private static string InternalFormat(RuntimeType enumType, ulong value)
         {
-            Debug.Assert(eT != null);
+            EnumInfo enumInfo = GetEnumInfo(enumType);
 
-            // These values are sorted by value. Don't change this
-            TypeValuesAndNames entry = GetCachedValuesAndNames(eT, true);
-
-            if (!entry.IsFlag) // Not marked with Flags attribute
+            if (!enumInfo.HasFlagsAttribute)
             {
-                return GetEnumName(eT, value);
+                return GetEnumName(enumInfo, value);
             }
             else // These are flags OR'ed together (We treat everything as unsigned types)
             {
-                return InternalFlagsFormat(eT, entry, value);
+                return InternalFlagsFormat(enumType, enumInfo, value);
             }
         }
 
-        private static string InternalFlagsFormat(RuntimeType eT, ulong result)
+        private static string InternalFlagsFormat(RuntimeType enumType, ulong result)
         {
-            // These values are sorted by value. Don't change this
-            TypeValuesAndNames entry = GetCachedValuesAndNames(eT, true);
-
-            return InternalFlagsFormat(eT, entry, result);
+            return InternalFlagsFormat(enumType, GetEnumInfo(enumType), result);
         }
 
-        private static string InternalFlagsFormat(RuntimeType eT, TypeValuesAndNames entry, ulong resultValue)
+        private static string InternalFlagsFormat(RuntimeType enumType, EnumInfo enumInfo, ulong resultValue)
         {
-            Debug.Assert(eT != null);
+            Debug.Assert(enumType != null);
 
-            string[] names = entry.Names;
-            ulong[] values = entry.Values;
+            string[] names = enumInfo.Names;
+            ulong[] values = enumInfo.Values;
             Debug.Assert(names.Length == values.Length);
 
             // Values are sorted, so if the incoming value is 0, we can check to see whether
@@ -700,9 +696,9 @@ namespace System
         private static bool TryParseByName(RuntimeType enumType, string originalValueString, ReadOnlySpan<char> value, bool ignoreCase, bool throwOnFailure, out ulong result)
         {
             // Find the field. Let's assume that these are always static classes because the class is an enum.
-            TypeValuesAndNames entry = GetCachedValuesAndNames(enumType, getNames: true);
-            string[] enumNames = entry.Names;
-            ulong[] enumValues = entry.Values;
+            EnumInfo enumInfo = GetEnumInfo(enumType);
+            string[] enumNames = enumInfo.Names;
+            ulong[] enumValues = enumInfo.Values;
 
             bool parsed = true;
             ulong localResult = 0;
@@ -782,18 +778,6 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool StartsNumber(char c) => char.IsInRange(c, '0', '9') || c == '-' || c == '+';
 
-        internal static ulong[] InternalGetValues(RuntimeType enumType)
-        {
-            // Get all of the values
-            return GetCachedValuesAndNames(enumType, false).Values;
-        }
-
-        internal static string[] InternalGetNames(RuntimeType enumType)
-        {
-            // Get all of the names
-            return GetCachedValuesAndNames(enumType, true).Names;
-        }
-
         public static object ToObject(Type enumType, object value)
         {
             if (value == null)
@@ -838,14 +822,6 @@ namespace System
                     // All unsigned types will be directly cast
                     throw new ArgumentException(SR.Arg_MustBeEnumBaseTypeOrEnum, nameof(value));
             }
-        }
-
-        public static bool IsDefined(Type enumType, object value)
-        {
-            if (enumType == null)
-                throw new ArgumentNullException(nameof(enumType));
-
-            return enumType.IsEnumDefined(value);
         }
 
         public static string Format(Type enumType, object value, string format)
@@ -903,23 +879,6 @@ namespace System
             }
 
             throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
-        }
-        #endregion
-
-        #region Definitions
-        private class TypeValuesAndNames
-        {
-            public readonly bool IsFlag;
-            public readonly ulong[] Values;
-            public readonly string[] Names;
-
-            // Each entry contains a list of sorted pair of enum field names and values, sorted by values
-            public TypeValuesAndNames(bool isFlag, ulong[] values, string[] names)
-            {
-                IsFlag = isFlag;
-                Values = values;
-                Names = names;
-            }
         }
         #endregion
 
@@ -1063,39 +1022,6 @@ namespace System
         public string ToString(string format, IFormatProvider provider)
         {
             return ToString(format);
-        }
-        #endregion
-
-        #region IComparable
-        public int CompareTo(object target)
-        {
-            const int retIncompatibleMethodTables = 2;  // indicates that the method tables did not match
-            const int retInvalidEnumType = 3; // indicates that the enum was of an unknown/unsupported underlying type
-
-            if (this == null)
-                throw new NullReferenceException();
-
-            int ret = InternalCompareTo(this, target);
-
-            if (ret < retIncompatibleMethodTables)
-            {
-                // -1, 0 and 1 are the normal return codes
-                return ret;
-            }
-            else if (ret == retIncompatibleMethodTables)
-            {
-                Type thisType = this.GetType();
-                Type targetType = target.GetType();
-
-                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, targetType, thisType));
-            }
-            else
-            {
-                // assert valid return code (3)
-                Debug.Assert(ret == retInvalidEnumType, "Enum.InternalCompareTo return code was invalid");
-
-                throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
-            }
         }
         #endregion
 
