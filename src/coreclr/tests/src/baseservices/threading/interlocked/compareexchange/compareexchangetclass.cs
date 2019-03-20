@@ -6,7 +6,7 @@ using System.Threading;
 
 class Class1
 {
-    
+
     static int Main(string[] args)
     {
         int rValue = 0;
@@ -21,21 +21,21 @@ class Class1
             threads[i] = new Thread(new ParameterizedThreadStart(tsi.ThreadWorker));
             threads[i].Start(kcIn);
         }
-			
+
         tsi.Signal();
 
         Console.WriteLine("Joining threads");
-        for(int i=0;i<threads.Length;i++)
+        for (int i = 0; i < threads.Length; i++)
             threads[i].Join();
-        
+
         // Build the expected string
-        KrisClass kcExpected = new KrisClass("hello world! ");      
-        for(int i=0;i<threads.Length * 100;i++)
+        KrisClass kcExpected = new KrisClass("hello world! ");
+        for (int i = 0; i < threads.Length * 100; i++)
             kcExpected = kcExpected + kcIn;
 
-        if(kcExpected == tsi.GetValue)
+        if (kcExpected == tsi.GetValue)
             rValue = 100;
-	Console.WriteLine("Test Expected {0}, but found {1}", kcExpected, tsi.GetValue);
+        Console.WriteLine("Test Expected {0}, but found {1}", kcExpected, tsi.GetValue);
         Console.WriteLine("Test {0}", rValue == 100 ? "Passed" : "Failed");
         return rValue;
     }
@@ -44,9 +44,9 @@ class Class1
 public class ThreadSafe
 {
     ManualResetEvent signal;
-    public KrisClass Val = new KrisClass("hello world! ");		
+    public KrisClass Val = new KrisClass("hello world! ");
     private int numberOfIterations;
-    public ThreadSafe(): this(100) { }
+    public ThreadSafe() : this(100) { }
     public ThreadSafe(int loops)
     {
         signal = new ManualResetEvent(false);
@@ -62,21 +62,23 @@ public class ThreadSafe
     {
         KrisClass kcIn = (KrisClass)objIn;
         signal.WaitOne();
-        for(int i=0;i<numberOfIterations;i++)
+        for (int i = 0; i < numberOfIterations; i++)
             AddToTotal(kcIn);
     }
 
     private KrisClass AddToTotal(KrisClass addend)
     {
-        KrisClass initialValue = new KrisClass(string.Empty);
-        KrisClass newValue = new KrisClass(string.Empty);
+        KrisClass initialValue;
+        KrisClass newValue;
+
         do
         {
             initialValue = Val;
             newValue = initialValue + addend;
-        } 
-        while (initialValue != Interlocked.CompareExchange<KrisClass>(
+        }
+        while ((object)initialValue != Interlocked.CompareExchange<KrisClass>(
             ref Val, newValue, initialValue));
+
         return newValue;
     }
 
@@ -104,7 +106,7 @@ public class KrisClass
             return retVal;
         }
     }
-  
+
     public static KrisClass operator +(KrisClass kc1, KrisClass kc2)
     {
         return new KrisClass(kc1.ClassVal + kc2.ClassVal);
@@ -112,7 +114,7 @@ public class KrisClass
 
     public static bool operator ==(KrisClass kc1, KrisClass kc2)
     {
-        if(kc1.ClassVal == kc2.ClassVal)
+        if (kc1.ClassVal == kc2.ClassVal)
             return true;
         else
             return false;
@@ -120,26 +122,26 @@ public class KrisClass
 
     public static bool operator !=(KrisClass kc1, KrisClass kc2)
     {
-        if(kc1.ClassVal != kc2.ClassVal)
+        if (kc1.ClassVal != kc2.ClassVal)
             return true;
         else
             return false;
     }
 
-    public override bool Equals(object o) 
-    { 
-        try 
-        { 
-            return (bool) (this == (KrisClass) o); 
-        } 
-        catch 
-        { 
-            return false; 
-        } 
-    } 
+    public override bool Equals(object o)
+    {
+        try
+        {
+            return (bool)(this == (KrisClass)o);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
-    public override int GetHashCode() 
-    { 
-        return 0; 
-    } 
+    public override int GetHashCode()
+    {
+        return 0;
+    }
 }
