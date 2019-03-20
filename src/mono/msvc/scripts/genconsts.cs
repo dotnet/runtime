@@ -50,7 +50,17 @@ public static class Program {
                 Console.Write (output);
                 return winsetupProcess.ExitCode;
             } else {
-                var m = Regex.Match (output, "MONO_VERSION=([0-9.]+)");
+                var configDirectory = Path.Combine (executableDirectory, "..", "..");
+                var configPath = Path.Combine (configDirectory, "config.h");
+
+                if (!File.Exists (configPath)) {
+                    Console.Error.WriteLine ($"File not found: {configPath}");
+                    return 1;
+                }
+
+                var configData = File.ReadAllText (configPath);
+
+                var m = Regex.Match (configData, @"#define.*VERSION.*""([0-9.]+)""");
                 if (!m.Success)
                     return 1;
                 monoVersion = m.Groups[1].Value;
@@ -61,7 +71,7 @@ public static class Program {
                     monoVersion += ".0";
 
                 Console.WriteLine ($"MONO_VERSION={monoVersion}");
-                m = Regex.Match (output, "MONO_CORLIB_VERSION=([^\\s]+)");
+                m = Regex.Match (configData, @"#define.*MONO_CORLIB_VERSION.*""([^\\s]+)""");
                 if (!m.Success)
                     return 1;
                 monoCorlibVersion = m.Groups[1].Value;
