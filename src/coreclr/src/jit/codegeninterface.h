@@ -25,6 +25,12 @@
 #include "jitgcinfo.h"
 #include "treelifeupdater.h"
 
+// Disable this flag to avoid using psiScope/siScope info to report reporting
+// variables' home location during the method/prolog code.
+#if 1
+#define USING_SCOPE_INFO
+#endif // USING_SCOPE_INFO
+
 // Forward reference types
 
 class CodeGenInterface;
@@ -385,7 +391,9 @@ private:
     bool m_cgFullPtrRegMap;
 
 public:
+#ifdef USING_SCOPE_INFO
     virtual void siUpdate() = 0;
+#endif // USING_SCOPE_INFO
 
     /* These are the different addressing modes used to access a local var.
      * The JIT has to report the location of the locals back to the EE
