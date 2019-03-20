@@ -2333,11 +2333,12 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
 
     compiler->unwindAllocStack(frameSize);
-
+#ifdef USING_SCOPE_INFO
     if (!doubleAlignOrFramePointerUsed())
     {
         psiAdjustStackLevel(frameSize);
     }
+#endif // USING_SCOPE_INFO
 }
 
 //------------------------------------------------------------------------

@@ -245,8 +245,9 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
                 }
 #endif // DEBUG
             }
-
+#ifdef USING_SCOPE_INFO
             compiler->codeGen->siUpdate();
+#endif // USING_SCOPE_INFO
         }
     }
 
