@@ -195,10 +195,3 @@ jobs:
         targetPath: $(Build.SourcesDirectory)/bin/Logs
       continueOnError: true
       condition: always()
-
-    # Kill tasks that hold onto files on Windows. Otherwise git clean
-    # may fail for later jobs on the same agent.
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: eng/kill_tasks.cmd
-        displayName: Kill tasks that hold on to files
-        condition: always()
