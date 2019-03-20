@@ -131,30 +131,6 @@ bool CodeGenInterface::siVarLoc::vlIsOnStk(regNumber reg, signed offset) const
 }
 
 //------------------------------------------------------------------------
-// siVarLoc: Non-empty constructor of siVarLoc struct
-// Arguments:
-//    varDsc    - a "LclVarDsc *" to the variable it is desired to build the "siVarLoc".
-//    baseReg   - a "regNumber" use as a base for the offset.
-//    offset    - a signed amount of bytes distance from "baseReg" for the position of the variable.
-//    isFramePointerUsed - a boolean variable
-//
-// Notes:
-//    Called for every psiScope in "psiScopeList" codegen.h
-CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg, int offset, bool isFramePointerUsed)
-{
-    var_types type = genActualType(varDsc->TypeGet());
-
-    if (varDsc->lvIsInReg())
-    {
-        siFillRegisterVarLoc(varDsc, type, baseReg, offset, isFramePointerUsed);
-    }
-    else
-    {
-        siFillStackVarLoc(varDsc, type, baseReg, offset, isFramePointerUsed);
-    }
-}
-
-//------------------------------------------------------------------------
 // Equals: Compares first reference and then values of the structures.
 //
 // Arguments:
@@ -225,65 +201,6 @@ bool CodeGenInterface::siVarLoc::Equals(const siVarLoc* lhs, const siVarLoc* rhs
         default:
             unreached();
     }
-}
-
-//------------------------------------------------------------------------
-// getSiVarLoc: Creates a "CodegenInterface::siVarLoc" instance from using the properties
-// of the "psiScope" instance.
-//
-// Notes:
-//    Called for every psiScope in "psiScopeList" codegen.h
-CodeGenInterface::siVarLoc CodeGen::psiScope::getSiVarLoc() const
-{
-    CodeGenInterface::siVarLoc varLoc;
-
-    if (scRegister)
-    {
-        varLoc.vlType       = VLT_REG;
-        varLoc.vlReg.vlrReg = (regNumber)u1.scRegNum;
-    }
-    else
-    {
-        varLoc.vlType           = VLT_STK;
-        varLoc.vlStk.vlsBaseReg = (regNumber)u2.scBaseReg;
-        varLoc.vlStk.vlsOffset  = u2.scOffset;
-    }
-
-    return varLoc;
-}
-
-//------------------------------------------------------------------------
-// getSiVarLoc: Returns a "siVarLoc" instance representing the place where the variable
-// is given its description, "baseReg", and "offset" (if needed).
-//
-// Arguments:
-//    varDsc    - a "LclVarDsc *" to the variable it is desired to build the "siVarLoc".
-//    scope   - a "siScope" Scope info of the variable.
-//
-// Return Value:
-//    A "siVarLoc" filled with the correct case struct fields for the variable, which could live
-//    in a register, an stack position, or a combination of both.
-//
-// Notes:
-//    Called for each siScope in siScopeList when "genSetScopeInfo".
-CodeGenInterface::siVarLoc CodeGen::getSiVarLoc(const LclVarDsc* varDsc, const siScope* scope) const
-{
-    // For stack vars, find the base register, and offset
-
-    regNumber baseReg;
-    signed    offset = varDsc->lvStkOffs;
-
-    if (!varDsc->lvFramePointerBased)
-    {
-        baseReg = REG_SPBASE;
-        offset += scope->scStackLevel;
-    }
-    else
-    {
-        baseReg = REG_FPBASE;
-    }
-
-    return CodeGenInterface::siVarLoc(varDsc, baseReg, offset, isFramePointerUsed());
 }
 
 //------------------------------------------------------------------------
@@ -469,6 +386,90 @@ void CodeGenInterface::siVarLoc::siFillRegisterVarLoc(
         default:
             noway_assert(!"Invalid type");
     }
+}
+
+//------------------------------------------------------------------------
+// siVarLoc: Non-empty constructor of siVarLoc struct
+// Arguments:
+//    varDsc    - a "LclVarDsc *" to the variable it is desired to build the "siVarLoc".
+//    baseReg   - a "regNumber" use as a base for the offset.
+//    offset    - a signed amount of bytes distance from "baseReg" for the position of the variable.
+//    isFramePointerUsed - a boolean variable
+//
+// Notes:
+//    Called for every psiScope in "psiScopeList" codegen.h
+CodeGenInterface::siVarLoc::siVarLoc(const LclVarDsc* varDsc, regNumber baseReg, int offset, bool isFramePointerUsed)
+{
+    var_types type = genActualType(varDsc->TypeGet());
+
+    if (varDsc->lvIsInReg())
+    {
+        siFillRegisterVarLoc(varDsc, type, baseReg, offset, isFramePointerUsed);
+    }
+    else
+    {
+        siFillStackVarLoc(varDsc, type, baseReg, offset, isFramePointerUsed);
+    }
+}
+
+#ifdef USING_SCOPE_INFO
+//------------------------------------------------------------------------
+// getSiVarLoc: Returns a "siVarLoc" instance representing the place where the variable
+// is given its description, "baseReg", and "offset" (if needed).
+//
+// Arguments:
+//    varDsc    - a "LclVarDsc *" to the variable it is desired to build the "siVarLoc".
+//    scope   - a "siScope" Scope info of the variable.
+//
+// Return Value:
+//    A "siVarLoc" filled with the correct case struct fields for the variable, which could live
+//    in a register, an stack position, or a combination of both.
+//
+// Notes:
+//    Called for each siScope in siScopeList when "genSetScopeInfo".
+CodeGenInterface::siVarLoc CodeGen::getSiVarLoc(const LclVarDsc* varDsc, const siScope* scope) const
+{
+    // For stack vars, find the base register, and offset
+
+    regNumber baseReg;
+    signed    offset = varDsc->lvStkOffs;
+
+    if (!varDsc->lvFramePointerBased)
+    {
+        baseReg = REG_SPBASE;
+        offset += scope->scStackLevel;
+    }
+    else
+    {
+        baseReg = REG_FPBASE;
+    }
+
+    return CodeGenInterface::siVarLoc(varDsc, baseReg, offset, isFramePointerUsed());
+}
+
+//------------------------------------------------------------------------
+// getSiVarLoc: Creates a "CodegenInterface::siVarLoc" instance from using the properties
+// of the "psiScope" instance.
+//
+// Notes:
+//    Called for every psiScope in "psiScopeList" codegen.h
+CodeGenInterface::siVarLoc CodeGen::psiScope::getSiVarLoc() const
+{
+    CodeGenInterface::siVarLoc varLoc;
+
+    if (scRegister)
+    {
+        varLoc.vlType       = VLT_REG;
+        varLoc.vlReg.vlrReg = (regNumber)u1.scRegNum;
+    }
+    else
+    {
+        varLoc.vlType           = VLT_STK;
+        varLoc.vlStk.vlsBaseReg = (regNumber)u2.scBaseReg;
+        varLoc.vlStk.vlsOffset  = u2.scOffset;
+    }
+
+    return varLoc;
 }
 
 /*============================================================================
@@ -1613,3 +1614,4 @@ void CodeGen::psiEndProlog()
         psiEndPrologScope(scope);
     }
 }
+#endif // USING_SCOPE_INFO

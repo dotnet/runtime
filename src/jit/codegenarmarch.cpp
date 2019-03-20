@@ -3860,11 +3860,12 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
 #ifdef _TARGET_ARM_
     compiler->unwindAllocStack(frameSize);
-
+#ifdef USING_SCOPE_INFO
     if (!doubleAlignOrFramePointerUsed())
     {
         psiAdjustStackLevel(frameSize);
     }
+#endif // USING_SCOPE_INFO
 #endif // _TARGET_ARM_
 }
 
