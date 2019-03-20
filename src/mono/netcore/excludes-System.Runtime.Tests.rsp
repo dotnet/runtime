@@ -92,3 +92,7 @@
 -nomethod System.Tests.GCTests.KeepAlive_Null
 -nomethod System.Tests.LazyTests.Value_Invalid
 -nomethod System.Tests.LazyTests.Value_ThrownException_DoesntCreateValue
+
+# GCHandle.ctor is not implemented
+-nomethod System.Tests.UriCreateStringTests.Path_Query_Fragment
+-nomethod System.Tests.UriCreateStringTests.OriginalString_AbsoluteUri_ToString
