@@ -1501,6 +1501,14 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 					ins->sreg1 = sreg;
 				}
 
+				/* if any successor block of the immediate post dominator is an
+				 * exception handler, it's not safe to do the code motion */
+				skip = FALSE;
+				for (int j = 0; j < idom->out_count && !skip; j++)
+					skip |= !!(idom->out_bb [j]->flags & BB_EXCEPTION_HANDLER);
+				if (skip)
+					continue;
+
 				if (cfg->verbose_level > 1) {
 					printf ("licm in BB%d on ", bb->block_num);
 					mono_print_ins (ins);
