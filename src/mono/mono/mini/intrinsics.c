@@ -440,6 +440,52 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 	return NULL;
 }
 
+static MonoInst*
+emit_jit_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
+{
+	MonoInst *ins;
+	int dreg;
+	MonoGenericContext *ctx = mono_method_get_context (cmethod);
+	MonoType *t;
+
+	if (!strcmp (cmethod->name, "EnumEquals") || !strcmp (cmethod->name, "EnumCompareTo")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		t = ctx->method_inst->type_argv [0];
+		t = mini_get_underlying_type (t);
+		if (mini_is_gsharedvt_variable_type (t))
+			return NULL;
+
+		gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8);
+
+		// FIXME: Sign/zero extend
+		if (!strcmp (cmethod->name, "EnumEquals")) {
+			dreg = alloc_ireg (cfg);
+			EMIT_NEW_BIALU (cfg, ins, is_i8 ? OP_LCOMPARE : OP_ICOMPARE, -1, args [0]->dreg, args [1]->dreg);
+			EMIT_NEW_UNALU (cfg, ins, is_i8 ? OP_LCEQ : OP_ICEQ, dreg, -1);
+		} else {
+			// Use the branchless code (a > b) - (a < b)
+			int reg1, reg2;
+
+			reg1 = alloc_ireg (cfg);
+			reg2 = alloc_ireg (cfg);
+			dreg = alloc_ireg (cfg);
+
+			EMIT_NEW_BIALU (cfg, ins, is_i8 ? OP_LCOMPARE : OP_ICOMPARE, -1, args [0]->dreg, args [1]->dreg);
+			EMIT_NEW_UNALU (cfg, ins, is_i8 ? OP_LCGT : OP_ICGT, reg1, -1);
+			EMIT_NEW_BIALU (cfg, ins, is_i8 ? OP_LCOMPARE : OP_ICOMPARE, -1, args [0]->dreg, args [1]->dreg);
+			EMIT_NEW_UNALU (cfg, ins, is_i8 ? OP_LCLT : OP_ICLT, reg2, -1);
+			EMIT_NEW_BIALU (cfg, ins, OP_ISUB, dreg, reg1, reg2);
+		}
+		return ins;
+	}
+
+	return NULL;
+}
+
 MonoInst*
 mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
@@ -1583,12 +1629,16 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		return emit_span_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
 			   !strcmp (cmethod_klass_name_space, "Internal.Runtime.CompilerServices") &&
-			   (!strcmp (cmethod_klass_name, "Unsafe"))) {
+			   !strcmp (cmethod_klass_name, "Unsafe")) {
 		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
 			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
-			   (!strcmp (cmethod_klass_name, "Unsafe"))) {
+			   !strcmp (cmethod_klass_name, "Unsafe")) {
 		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
+	} else if (in_corlib &&
+			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
+			   !strcmp (cmethod_klass_name, "JitHelpers")) {
+		return emit_jit_helpers_intrinsics (cfg, cmethod, fsig, args);
 	}
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
