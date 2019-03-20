@@ -76,7 +76,7 @@ public class RunTests
 	const string case_template = @"
 class Foo { void Run () {
 Console.WriteLine(""#MSG#"");
-nrun = (nrun + 1);
+nrun = (nrun + #NRUN#);
 try {
 unchecked {
             CALL();
@@ -119,8 +119,7 @@ unchecked {
 
 	class TcCase {
 		public object[] Values;
-		//public MemberDataAttribute MemberData;
-		//public MemberInfo Member;
+		public MethodInfo MemberDataMethod;
 	}
 
 	static ExpressionSyntax EncodeValue (object val, Type expectedType)
@@ -332,34 +331,11 @@ unchecked {
 						}
 						if (!unhandled)
 							cases.Add (new TcCase () { Values = data });
-					} else if (cattr is MemberDataAttribute memberData) {
+					} else if (cattr is MemberDataAttribute memberData && memberData.Parameters.Length == 0) {
 						MethodInfo testDataMethod = m.DeclaringType.GetMethod (memberData.MemberName);
 						if (testDataMethod == null)
 							continue;
-
-						var rows = testDataMethod.Invoke (null, memberData.Parameters) as IEnumerable<object []>;
-						if (rows == null)
-							continue;
-
-						foreach (ParameterInfo parameter in m.GetParameters ()) {
-							var pType = parameter.ParameterType;
-							if (!pType.IsPrimitive && 
-								pType != typeof (string) && 
-							    pType != typeof (decimal) && 
-							    pType != typeof (Guid)) goto notsupported;
-						}
-
-						foreach (object[] data in rows) {
-							foreach (object dataItem in data) {
-								// literals for NaN and Infinity are not supported yet
-								if (dataItem is double d && !double.IsFinite (d)) goto notsupported;
-								if (dataItem is float f && !float.IsFinite (f)) goto notsupported;
-								
-								cases.Add (new TcCase { Values = data });
-							}
-						}
-						notsupported:
-							continue;
+						cases.Add (new TcCase { MemberDataMethod = testDataMethod });
 					}
 			} else {
 				cases.Add (new TcCase ());
@@ -401,7 +377,9 @@ unchecked {
 					msg = $"{typename}.{m.Name} ...";
 				caseindex ++;
 
-				var block = ParseText<BlockSyntax> (case_template.Replace ("#MSG#", msg));
+				var block = ParseText<BlockSyntax> (case_template
+					.Replace ("#MSG#", msg)
+					.Replace ("#NRUN#", test.MemberDataMethod == null ? "1" : ((IEnumerable<object []>) test.MemberDataMethod.Invoke (null, null)).Count ().ToString ()));
 				// Obtain the node for the CALL () line
 				var try_body_node = block.DescendantNodes ().OfType<ExpressionStatementSyntax> ().Skip (2).First ().Parent;
 				// Replace with the generated call code
@@ -451,16 +429,18 @@ unchecked {
 			return stmts;
 		}
 		string callstr;
-
-		if (m.IsStatic) {
-			var tname = GetTypeName (t);
-			callstr = $"class Foo {{ void Run () {{ {tname}.{m.Name} (); }}";
+		StatementSyntax node = null;
+		
+		var tname = GetTypeName (t);
+		if (test.MemberDataMethod != null) {
+			callstr = $"class Foo {{ void Run () {{ foreach (var row in {tname}.{test.MemberDataMethod.Name} ()) typeof ({tname}).GetMethod (\"{m.Name}\").Invoke ({(m.IsStatic ? "null" : "o")}, (object []) row); }}";
+			node = ParseText<StatementSyntax> (callstr);
 		} else {
-			callstr = $"class Foo {{ void Run () {{ o.{m.Name} (); }}";
+			callstr = $"class Foo {{ void Run () {{ {(m.IsStatic ? tname : "o")}.{m.Name} (); }}";
+			node = ParseText<ExpressionStatementSyntax> (callstr);
 		}
-		var node = ParseText<ExpressionStatementSyntax> (callstr);
-
-		if (test.Values != null) {
+		
+		if (test.Values != null && test.MemberDataMethod == null) {
 			var parameters = m.GetParameters ();
 			var arg_nodes = new List<ArgumentSyntax> ();
 			for (var index = 0; index < test.Values.Length; index++) {
@@ -474,7 +454,7 @@ unchecked {
 			var args_node = node.DescendantNodes ().OfType<ArgumentListSyntax> ().First ();
 			node = node.ReplaceNode (args_node, ArgumentList (SeparatedList (arg_nodes.ToArray ())));
 		}
-
+		
 		stmts.Add (node);
 		return stmts;
 	}
