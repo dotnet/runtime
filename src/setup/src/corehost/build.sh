@@ -245,9 +245,11 @@ echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
 if [ $__CrossBuild == 1 ]; then
     # clang-3.9 or clang-4.0 are default compilers for cross compilation
-    if command -v "clang-3.9" > /dev/null 2>&1; then
-        export CC="$(command -v clang-3.9)"
-        export CXX="$(command -v clang++-3.9)"
+    if [[ "$__build_arch" != "arm" && "$__build_arch" != "armel" ]]; then
+        if command -v "clang-3.9" > /dev/null 2>&1; then
+            export CC="$(command -v clang-3.9)"
+            export CXX="$(command -v clang++-3.9)"
+        fi
     elif command -v "clang-4.0" > /dev/null 2>&1; then
         export CC="$(command -v clang-4.0)"
         export CXX="$(command -v clang++-4.0)"
