@@ -85,7 +85,7 @@ namespace System.Data.SqlClient
             CoercedValueIsDataFeed = 1 << 5,
             IsDerivedParameterTypeName = 1 << 6,
             SourceColumnNullMapping = 1 << 7,
-            HasScale = 1 << 9,  // V1.0 compat, ignore _hasScale
+            HasScale = 1 << 8,  // V1.0 compat, ignore _hasScale
         }
 
         private MetaType _metaType;
