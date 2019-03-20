@@ -80,7 +80,7 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
      -configuration|-c)
-      arguments="$arguments /p:ConfigurationGroup=$2 -configuration $2"
+      arguments="$arguments /p:ConfigurationGroup=${2^} -configuration ${2^}"
       shift 2
       ;;
      -framework|-f)

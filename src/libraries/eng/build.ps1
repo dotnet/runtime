@@ -96,7 +96,7 @@ foreach ($argument in $PSBoundParameters.Keys)
   {
     "buildtests"        { $arguments += " /p:BuildTests=true" }
     "clean"             { }
-    "configuration"     { $arguments += " /p:ConfigurationGroup=$($PSBoundParameters[$argument]) -configuration $($PSBoundParameters[$argument])" }
+    "configuration"     { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
     "framework"         { $arguments += " /p:TargetGroup=$($PSBoundParameters[$argument].ToLowerInvariant())"}
     "os"                { $arguments += " /p:OSGroup=$($PSBoundParameters[$argument])" }
     "allconfigurations" { $arguments += " /p:BuildAllConfigurations=true" }
