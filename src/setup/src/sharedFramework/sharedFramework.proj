@@ -59,6 +59,8 @@
       <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\apphost$(ExeSuffix)" />
       <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\$(LibPrefix)hostfxr$(LibSuffix)" />
       <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\$(LibPrefix)comhost$(LibSuffix)" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\$(LibPrefix)ijwhost$(LibSuffix)" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\ijwhost.lib" />
     </ItemGroup>
 
     <Message Text="To delete: @(ToDelete)" />

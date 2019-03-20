@@ -48,6 +48,9 @@
       <HostFiles Include="comhost">
         <FileDescription>.NET Core COM Host</FileDescription>
       </HostFiles>
+      <HostFiles Include="ijwhost">
+        <FileDescription>.NET Core IJW Host</FileDescription>
+      </HostFiles>
     </ItemGroup>
     
     <MSBuild Projects="$(MSBuildProjectFullPath)"

@@ -3,6 +3,7 @@
   <ItemGroup>
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/apphost.exe" />
     <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/comhost.dll" />
+    <ArchitectureSpecificNativeFile Include="$(DotNetHostBinDir)/ijwhost.dll" />
 
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>

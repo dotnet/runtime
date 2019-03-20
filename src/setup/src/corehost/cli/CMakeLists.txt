@@ -7,4 +7,5 @@ add_subdirectory(test)
 
 if(WIN32)
     add_subdirectory(comhost)
+    add_subdirectory(ijwhost)
 endif()

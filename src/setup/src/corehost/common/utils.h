@@ -97,4 +97,23 @@ public:
 		}
 	}
 };
+
+// Helper class to make it easy to change the error writer within a specific scope only.
+class error_writer_scope_t
+{
+private:
+	trace::error_writer_fn m_old_error_writer;
+
+public:
+	error_writer_scope_t(trace::error_writer_fn new_error_writer)
+	{
+		m_old_error_writer = trace::set_error_writer(new_error_writer);
+	}
+
+	~error_writer_scope_t()
+	{
+		trace::set_error_writer(m_old_error_writer);
+	}
+};
+
 #endif

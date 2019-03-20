@@ -12,8 +12,8 @@ include_directories(../json/casablanca/include)
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
-    ../../corehost.cpp
-    exports.cpp
+    comhost.cpp
+    ../fxr_resolver.cpp
     clsidmap.cpp
     ../fxr/fx_ver.cpp
     ../json/casablanca/src/json/json.cpp

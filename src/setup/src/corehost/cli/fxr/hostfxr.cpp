@@ -8,10 +8,10 @@
 #include "fx_ver.h"
 #include "fx_muxer.h"
 #include "error_codes.h"
-#include "corehost.h"
 #include "runtime_config.h"
 #include "sdk_info.h"
 #include "sdk_resolver.h"
+#include "hostfxr.h"
 
 SHARED_API int hostfxr_main_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path)
 {
@@ -395,8 +395,20 @@ SHARED_API hostfxr_error_writer_fn hostfxr_set_error_writer(hostfxr_error_writer
     return trace::set_error_writer(error_writer);
 }
 
+coreclr_delegate_type hostfxr_delegate_to_coreclr_delegate(hostfxr_delegate_type type)
+{
+    switch (type)
+    {
+    case hostfxr_delegate_type::com_activation:
+        return coreclr_delegate_type::com_activation;
+    case hostfxr_delegate_type::load_in_memory_assembly:
+        return coreclr_delegate_type::load_in_memory_assembly;
+    }
+    return coreclr_delegate_type::invalid;
+}
+
 //
-// Gets a typed delegate to perform an action on the currently loaded CoreCLR or on a newly created one.
+// Gets a typed delegate from the currently loaded CoreCLR or from a newly created one.
 //
 // Parameters:
 //     libhost_path
@@ -404,27 +416,32 @@ SHARED_API hostfxr_error_writer_fn hostfxr_set_error_writer(hostfxr_error_writer
 //     dotnet_root
 //     app_path
 //     delegate
-//          COM activation delegate.
+//          An out parameter that will be assigned the delegate.
 // Return value:
 //     The error code result.
 //
 // A new CoreCLR instance will be created or reused if the existing instance can satisfy the configuration
 // requirements supplied by the runtimeconfig.json file.
 //
-SHARED_API int32_t hostfxr_get_com_activation_delegate(
-    const pal::char_t* libhost_path,
+SHARED_API int32_t hostfxr_get_runtime_delegate(
+    const pal::char_t* host_path,
     const pal::char_t* dotnet_root,
     const pal::char_t* app_path,
-    void **delegate)
+    hostfxr_delegate_type type,
+    void** delegate)
 {
-    if (libhost_path == nullptr || dotnet_root == nullptr || delegate == nullptr)
+    if (host_path == nullptr || dotnet_root == nullptr || delegate == nullptr)
         return StatusCode::InvalidArgFailure;
 
     trace::setup();
 
-    trace::info(_X("--- Invoked hostfxr comhost [commit hash: %s]"), _STRINGIFY(REPO_COMMIT_HASH));
+    trace::info(_X("--- Invoked hostfxr_get_runtime_delegate [commit hash: %s]"), _STRINGIFY(REPO_COMMIT_HASH));
 
-    host_startup_info_t startup_info{ libhost_path, dotnet_root, app_path };
+    host_startup_info_t startup_info{ host_path, dotnet_root, app_path };
 
-    return fx_muxer_t::get_com_activation_delegate(startup_info, delegate);
+    return fx_muxer_t::load_runtime_and_get_delegate(
+        startup_info,
+        host_mode_t::libhost,
+        hostfxr_delegate_to_coreclr_delegate(type),
+        delegate);
 }
