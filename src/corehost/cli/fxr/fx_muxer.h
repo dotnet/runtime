@@ -7,12 +7,18 @@ class fx_definition_t;
 struct fx_ver_t;
 struct host_startup_info_t;
 
-#include <corehost.h>
 #include "fx_definition.h"
 #include "host_interface.h"
 #include "host_startup_info.h"
 
 const int Max_Framework_Resolve_Retries = 100;
+
+enum class coreclr_delegate_type
+{
+    invalid,
+    com_activation,
+    load_in_memory_assembly
+};
 
 class fx_muxer_t
 {
@@ -25,9 +31,12 @@ public:
         pal::char_t result_buffer[],
         int32_t buffer_size,
         int32_t* required_buffer_size);
-    static int get_com_activation_delegate(
-        const host_startup_info_t &host_info,
-        void **delegate);
+    static int load_runtime_and_get_delegate(
+        const host_startup_info_t& host_info,
+        host_mode_t mode,
+        coreclr_delegate_type delegate_type,
+        void** delegate
+    );
 private:
     static int parse_args(
         const host_startup_info_t& host_info,

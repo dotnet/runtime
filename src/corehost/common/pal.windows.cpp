@@ -451,6 +451,11 @@ bool pal::get_own_module_path(string_t* recv)
     return GetModuleFileNameWrapper(hmod, recv);
 }
 
+bool pal::get_module_path(dll_t mod, string_t* recv)
+{
+    return GetModuleFileNameWrapper(mod, recv);
+}
+
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
 {
     out->clear();
