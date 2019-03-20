@@ -21,6 +21,10 @@ set(SOURCES
     ../fxr/fx_ver.cpp
 )
 
+set(HEADERS
+    ../fxr/fx_ver.h
+)
+
 include(../exe.cmake)
 
 add_definitions(-DFEATURE_APPHOST=1)
