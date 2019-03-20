@@ -1,8 +1,8 @@
-name: dotnet-runtime-21
-version: 2.1.9
+name: dotnet-runtime-22
+version: 2.2.3
 summary: Cross-Platform .NET Core Runtime. 
 description: |
-  .NET Core 2.1 Runtime and ASP.NET Core. https://dot.net/core.
+  .NET Core 2.2 Runtime and ASP.NET Core. https://dot.net/core.
 
 grade: stable
 confinement: strict
@@ -18,17 +18,17 @@ apps:
 
 slots:
   dotnet-runtime:
-    content: dotnet-runtime-21
+    content: dotnet-runtime-22
     interface: content
     read: [/]
 
 parts:
   dotnet-runtime:
       plugin: dump
-      source: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/2.1.9/dotnet-runtime-2.1.9-linux-x64.tar.gz
-      source-checksum: sha512/39c6d225196aee9f839f957d326bce682c7855565c7cbbd1f7898430da0134425da106d5c9f43e69cee973af4091a89577add0cf3e85bd313346faa64c82b164
+      source: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/2.2.3/dotnet-runtime-2.2.3-linux-x64.tar.gz
+      source-checksum: sha512/476df111a1a7786b742b69759da36185720707ad45de0550dea418484a401fbe338adb8d1ba2706abdbb7ed5c489e7d7a76579ca50c60168dbebe52e00f7071f
       stage-packages:
-        - libicu55
+        - libicu60
         - libssl1.0.0
         - libcurl3
         - libgssapi-krb5-2
@@ -40,6 +40,7 @@ parts:
         - libunwind8
         - libtinfo5
         - libdb5.3
+        - libc6
       #install: |
       #  mv $SNAPCRAFT_PART_INSTALL/shared $SNAPCRAFT_PART_INSTALL/shared.real
       #  ln -s /var/snap/$SNAPCRAFT_PROJECT_NAME/current $SNAPCRAFT_PART_INSTALL/shared
