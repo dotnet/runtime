@@ -4551,7 +4551,6 @@ add_wrappers (MonoAotCompile *acfg)
 	for (i = 0; i < acfg->image->tables [MONO_TABLE_TYPEDEF].rows; ++i) {
 		ERROR_DECL (error);
 		MonoClass *klass;
-		MonoCustomAttrInfo *cattr;
 		
 		token = MONO_TOKEN_TYPE_DEF | (i + 1);
 		klass = mono_class_get_checked (acfg->image, token, error);
@@ -4579,9 +4578,11 @@ add_wrappers (MonoAotCompile *acfg)
 			if (method)
 				add_method (acfg, mono_marshal_get_delegate_end_invoke (method));
 
+			MonoCustomAttrInfo *cattr;
 			cattr = mono_custom_attrs_from_class_checked (klass, error);
 			if (!is_ok (error)) {
 				mono_error_cleanup (error);
+				g_assert (!cattr);
 				continue;
 			}
 
@@ -4603,6 +4604,7 @@ add_wrappers (MonoAotCompile *acfg)
 					add_method (acfg, wrapper);
 					add_method (acfg, del_invoke);
 				}
+				mono_custom_attrs_free (cattr);
 			}
 		} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && mono_class_is_gtd (klass)) {
 			ERROR_DECL (error);

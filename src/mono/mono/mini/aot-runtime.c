@@ -1088,6 +1088,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!sig)
 					return FALSE;
 				ref->method = mini_get_interp_in_wrapper (sig);
+				g_free (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_INTERP_LMF) {
 				MonoJitICallInfo *info = mono_find_jit_icall_by_name ((char *) p);
 				g_assert (info);
@@ -1097,11 +1098,13 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!sig)
 					return FALSE;
 				ref->method = mini_get_gsharedvt_in_sig_wrapper (sig);
+				g_free (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG) {
 				MonoMethodSignature *sig = decode_signature (module, p, &p);
 				if (!sig)
 					return FALSE;
 				ref->method = mini_get_gsharedvt_out_sig_wrapper (sig);
+				g_free (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_AOT_INIT) {
 				guint32 init_type = decode_value (p, &p);
 				ref->method = mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype) init_type);
@@ -1206,10 +1209,14 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				info = mono_marshal_get_wrapper_info (target);
 				g_assert (info);
 
-				if (info->subtype != subtype)
+				if (info->subtype != subtype) {
+					g_free (sig);
 					return FALSE;
+				}
 				g_assert (info->d.runtime_invoke.sig);
-				if (mono_metadata_signature_equal (sig, info->d.runtime_invoke.sig))
+				const gboolean same_sig = mono_metadata_signature_equal (sig, info->d.runtime_invoke.sig);
+				g_free (sig);
+				if (same_sig)
 					ref->method = target;
 				else
 					return FALSE;
