@@ -22,6 +22,12 @@ set(SOURCES
     ../json/casablanca/src/utilities/asyncrt_utils.cpp
 )
 
+set(HEADERS
+    comhost.h
+    ../fxr/fx_ver.h
+    ../json/casablanca/include/cpprest/json.h
+)
+
 if(WIN32)
     list(APPEND SOURCES
         Exports.def)

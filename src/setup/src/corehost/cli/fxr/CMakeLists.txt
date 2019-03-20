@@ -32,6 +32,23 @@ set(SOURCES
     ./sdk_resolver.cpp
 )
 
+set(HEADERS
+    ../deps_format.h
+    ../deps_entry.h
+    ../host_startup_info.h
+    ../runtime_config.h
+    ../json/casablanca/include/cpprest/json.h
+    ../fx_definition.h
+    ../fx_reference.h
+    ../version.h
+    ./corehost_init.h
+    ./fx_ver.h
+    ./fx_muxer.h
+    ./framework_info.h
+    ./sdk_info.h
+    ./sdk_resolver.h
+)
+
 include(../lib.cmake)
 
 install(TARGETS hostfxr DESTINATION corehost)
