@@ -3,13 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using Microsoft.VisualBasic.CompilerServices.Tests;
 using Xunit;
 
 namespace Microsoft.VisualBasic.Tests
 {
-    public class StringsTests
+    public class StringsTests : RemoteExecutorTestBase
     {
         static StringsTests()
         {
@@ -76,7 +78,12 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(256)]
         public void Chr_CharCodeOutOfRange_ThrowsNotSupportedException(int charCode)
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => Strings.Chr(charCode));
+            RemoteInvoke(charCodeInner =>
+            {
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                CultureInfo.CurrentCulture = new CultureInfo("en-US"); // Strings.Chr doesn't fail on these inputs for all code pages, e.g. 949
+                AssertExtensions.Throws<ArgumentException>(null, () => Strings.Chr(int.Parse(charCodeInner, CultureInfo.InvariantCulture)));
+            }, charCode.ToString(CultureInfo.InvariantCulture)).Dispose();
         }
 
         [Theory]
