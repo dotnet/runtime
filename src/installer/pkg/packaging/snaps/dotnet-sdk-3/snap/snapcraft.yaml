@@ -1,5 +1,5 @@
 name: dotnet-sdk
-version: 3.0.100-preview-010431
+version: 3.0.100-preview3-010478
 summary: Cross-Platform .NET Core SDK
 description: |
   .NET Core SDK. https://dot.net/core.
@@ -14,10 +14,10 @@ apps:
 parts:
   dotnet-sdk:
       plugin: dump
-      source: /home/leecow/Downloads/dotnet-sdk-3.0.100-preview3-010431-linux-x64.tar.gz
-      source-checksum: sha512/EAA1208590E60A793CAA8A35E9A26722A4E3BCD8733EA1F79D18C7A777E1A5A8E9D82EDDABBD18B82D8795838E6DFC3B5EC7C4504E58C0C852F2D69D40131CFE
+      source: https://dotnetcli.blob.core.windows.net/dotnet/Sdk/3.0.100-preview3-010478/dotnet-sdk-3.0.100-preview3-010478-linux-x64.zip
+      source-checksum: sha512/3dae52073c6df1230e8abb788aa79bb8293ed81a1ef4c33a63ab332edf5388123c6884eaf03030a08960745ddd7440f6d22d841cc953e3e8fdd179098cee87a3
       stage-packages:
-        - libicu55
+        - libicu60
         - libssl1.0.0
         - libcurl3
         - libgssapi-krb5-2
@@ -28,6 +28,8 @@ parts:
         - libunwind8
         - libtinfo5
         - libc6
+        - liblttng-ust0
+        - liburcu6
   runtime-wrapper:
       plugin: dump
       source: .
