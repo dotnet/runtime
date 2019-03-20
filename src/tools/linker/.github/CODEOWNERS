@@ -5,8 +5,9 @@
 # the default owners for everything in the repo.
 * @marek-safar
 
-/analyzer @radekdoulik
+/src/analyzer @radekdoulik
 /corebuild @sbomer
 /src/linker @marek-safar @mrvoorhe
+/test @marek-safar @mrvoorhe
 
 netci.groovy @sbomer
