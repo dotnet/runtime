@@ -28,6 +28,9 @@ parts:
         - libunwind8
         - libtinfo5
         - libc6
+        - liblttng-ust0
+        - liburcu6
+
   runtime-wrapper:
       plugin: dump
       source: .
