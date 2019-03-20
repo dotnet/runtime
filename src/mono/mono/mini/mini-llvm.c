@@ -9682,6 +9682,11 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		}
 	}
 
+	/* Note: You can still dump an invalid bitcode file by running `llvm-dis`
+	 * in a debugger, set a breakpoint on `LLVMVerifyModule` and fake its
+	 * result to 0 (indicating success). */
+	LLVMWriteBitcodeToFile (module->lmodule, filename);
+
 #if 1
 	{
 		char *verifier_err;
@@ -9692,8 +9697,6 @@ mono_llvm_emit_aot_module (const char *filename, const char *cu_name)
 		}
 	}
 #endif
-
-	LLVMWriteBitcodeToFile (module->lmodule, filename);
 }
 
 
