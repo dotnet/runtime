@@ -498,6 +498,8 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     };
 
+    // We do not support self-contained in a libhost scenario since in the self-contained scenario,
+    // we cannot determine what assemblies are framework assemblies, and what assemblies are app-local assemblies.
     if (m_host_mode != host_mode_t::libhost)
     {
         // First add managed assembly to the TPA.

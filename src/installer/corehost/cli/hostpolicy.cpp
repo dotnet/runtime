@@ -9,7 +9,6 @@
 #include "fx_muxer.h"
 #include "utils.h"
 #include "coreclr.h"
-#include "corehost.h"
 #include "cpprest/json.h"
 #include "error_codes.h"
 #include "breadcrumbs.h"
@@ -96,7 +95,7 @@ namespace
             append_path(&corelib_path, CORELIB_NAME);
 
             // Append CoreLib path
-            if (probe_paths.tpa.back() != PATH_SEPARATOR)
+            if (!probe_paths.tpa.empty() && probe_paths.tpa.back() != PATH_SEPARATOR)
             {
                 probe_paths.tpa.push_back(PATH_SEPARATOR);
             }
@@ -594,11 +593,11 @@ int corehost_libhost_init(hostpolicy_init_t &hostpolicy_init, const pal::string_
     return StatusCode::Success;
 }
 
-SHARED_API int corehost_get_com_activation_delegate(void **delegate)
+SHARED_API int corehost_get_coreclr_delegate(coreclr_delegate_type type, void** delegate)
 {
     arguments_t args;
 
-    int rc = corehost_libhost_init(g_init, _X("corehost_get_com_activation_delegate"), args);
+    int rc = corehost_libhost_init(g_init, _X("corehost_get_coreclr_delegate"), args);
     if (rc != StatusCode::Success)
         return rc;
 
@@ -607,11 +606,23 @@ SHARED_API int corehost_get_com_activation_delegate(void **delegate)
     if (rc != StatusCode::Success)
         return rc;
 
-    return coreclr->create_delegate(
-        "System.Private.CoreLib",
-        "Internal.Runtime.InteropServices.ComActivator",
-        "GetClassFactoryForTypeInternal",
-        delegate);
+    switch (type)
+    {
+    case coreclr_delegate_type::com_activation:
+        return coreclr->create_delegate(
+            "System.Private.CoreLib",
+            "Internal.Runtime.InteropServices.ComActivator",
+            "GetClassFactoryForTypeInternal",
+            delegate);
+    case coreclr_delegate_type::load_in_memory_assembly:
+        return coreclr->create_delegate(
+            "System.Private.CoreLib",
+            "Internal.Runtime.InteropServices.InMemoryAssemblyLoader",
+            "LoadInMemoryAssembly",
+            delegate);
+    default:
+        return StatusCode::LibHostInvalidArgs;
+    }    
 }
 
 SHARED_API int corehost_unload()
