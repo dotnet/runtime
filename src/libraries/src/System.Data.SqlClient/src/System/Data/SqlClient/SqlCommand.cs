@@ -3332,18 +3332,15 @@ namespace System.Data.SqlClient
                         if (parameter.IsDerivedParameterTypeName)
                         {
                             string[] parts = MultipartIdentifier.ParseMultipartIdentifier(parameter.TypeName, "[\"", "]\"", SR.SQL_TDSParserTableName, false);
-                            if (parts != null)
+                            if (parts != null && parts.Length==4) // will always return int[4] right justified
                             {
-                                int length = parts.Length;
                                 if (
-                                    length >= 3 && //require at least 3 parts
-                                    parts[length - 1] != null && // name must not be null
-                                    parts[length - 2] != null && // schema must not be null
-                                    parts[length - 3] != null && // server should not be null or we don't need to remove it
-                                    (length == 3 || parts[length - 4] == null) // if a database space is availble then is must be null
+                                    parts[3] != null && // name must not be null
+                                    parts[2] != null && // schema must not be null
+                                    parts[1] != null // server should not be null or we don't need to remove it
                                 )
                                 {
-                                    parameter.TypeName = QuoteIdentifier(parts.AsSpan(length-2));
+                                    parameter.TypeName = QuoteIdentifier(parts.AsSpan(2,2));
                                 }
                             }
                         }
