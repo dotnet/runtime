@@ -1,5 +1,0 @@
-Compat issues with assembly System.Runtime:
-TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String System.Runtime.CompilerServices.RuntimeFeature.DefaultImplementationsOfInterfaces' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(System.RuntimeMethodHandle)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(System.RuntimeMethodHandle, System.RuntimeTypeHandle[])' does not exist in the implementation but it does exist in the contract.
