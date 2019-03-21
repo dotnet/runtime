@@ -3496,11 +3496,21 @@ loop_start:
 		case OP_SBB:
 		case OP_ISBB:
 		case OP_SUBCC:
-		case OP_ISUBCC:
-			if (ins->next  && (ins->next->opcode == OP_COND_EXC_C || ins->next->opcode == OP_COND_EXC_IC))
-				/* ARM sets the C flag to 1 if there was _no_ overflow */
-				ins->next->opcode = OP_COND_EXC_NC;
+		case OP_ISUBCC: {
+			int try = 2;
+			MonoInst *current = ins;
+
+			/* may require a look-ahead of a couple instructions due to spilling */
+			while (try-- && current->next) {
+				if (current->next->opcode == OP_COND_EXC_C || current->next->opcode == OP_COND_EXC_IC) {
+					/* ARM sets the C flag to 1 if there was _no_ overflow */
+					current->next->opcode = OP_COND_EXC_NC;
+					break;
+				}
+				current = current->next;
+			}
 			break;
+		}
 		case OP_IDIV_IMM:
 		case OP_IDIV_UN_IMM:
 		case OP_IREM_IMM:

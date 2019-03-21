@@ -1331,6 +1331,48 @@ class Tests
 		return 0;
 	}
 
+	/* Github issue 13284 */
+	public static int test_0_ulong_ovf_spilling () {
+		checked {
+			ulong x = 2UL;
+			ulong y = 1UL;
+			ulong z = 3UL;
+			ulong t = x - y;
+
+			try {
+				var a = x - y >= z;
+				if (a)
+					return 1;
+				// Console.WriteLine ($"u64 ({x} - {y} >= {z}) => {a} [{(a == false ? "OK" : "NG")}]");
+			} catch (OverflowException) {
+				return 2;
+				// Console.WriteLine ($"u64 ({x} - {y} >= {z}) => overflow [NG]");
+			}
+
+			try {
+				var a = t >= z;
+				if (a)
+					return 3;
+				// Console.WriteLine ($"u64 ({t} >= {z}) => {a} [{(a == false ? "OK" : "NG")}]");
+			} catch (OverflowException) {
+				return 4;
+				// Console.WriteLine ($"u64 ({t} >= {z}) => overflow [NG]");
+			}
+
+			try {
+				var a = x - y - z >= 0;
+				if (a)
+					return 5;
+				else
+					return 6;
+				// Console.WriteLine ($"u64 ({x} - {y} - {z} >= 0) => {a} [NG]");
+			} catch (OverflowException) {
+				return 0;
+				// Console.WriteLine ($"u64 ({x} - {y} - {z} >= 0) => overflow [OK]");
+			}
+		}
+	}
+
 	public static int test_0_ulong_cast () {
 		ulong a;
 		bool failed;
