@@ -20,7 +20,17 @@ namespace System.Text.Json.Serialization
             }
 
             // Create the JsonPropertyInfo<TType, TProperty>
-            Type genericPropertyType = typeof(JsonPropertyInfo<,>).MakeGenericType(classType, propertyType);
+            Type genericPropertyType;
+            if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                Type underlyingPropertyType = Nullable.GetUnderlyingType(propertyType);
+                genericPropertyType = typeof(JsonPropertyInfoNullable<,>).MakeGenericType(classType, underlyingPropertyType);
+            }
+            else
+            {
+                genericPropertyType = typeof(JsonPropertyInfoNotNullable<,>).MakeGenericType(classType, propertyType);
+            }
+            
             JsonPropertyInfo jsonInfo = (JsonPropertyInfo)Activator.CreateInstance(
                 genericPropertyType,
                 BindingFlags.Instance | BindingFlags.NonPublic,

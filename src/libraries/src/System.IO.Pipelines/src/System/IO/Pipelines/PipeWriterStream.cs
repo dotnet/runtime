@@ -18,6 +18,12 @@ namespace System.IO.Pipelines
             _pipeWriter = pipeWriter;
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            _pipeWriter.Complete();
+            base.Dispose(disposing);
+        }
+
         public override bool CanRead => false;
 
         public override bool CanSeek => false;
