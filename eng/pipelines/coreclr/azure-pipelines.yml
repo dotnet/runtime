@@ -198,7 +198,7 @@ jobs:
       jobTemplate: test-job.yml
       buildConfig: release
       platforms:
-      - Linux_x64_musl
+      - Linux_musl_x64
       jobParameters:
         testGroup: innerloop
 
