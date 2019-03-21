@@ -57,9 +57,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Arg_MustBeDriveLetterOrRootDir" xml:space="preserve">
-    <value>Drive name must be a root directory (i.e. 'C:\') or a drive letter ('C').</value>
-  </data>
   <data name="Argument_EmptyApplicationName" xml:space="preserve">
     <value>ApplicationId cannot have an empty string for the name.</value>
   </data>
@@ -78,17 +75,11 @@
   <data name="net_emptystringcall" xml:space="preserve">
     <value>The parameter '{0}' cannot be an empty string.</value>
   </data>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
-    <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
-  </data>  
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>
   </data>
   <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
     <value>Specified file length was too large for the file system.</value>
-  </data>
-  <data name="Argument_PathEmpty" xml:space="preserve">
-    <value>Path cannot be the empty string or all whitespace.</value>
   </data>
   <data name="ArgumentOutOfRange_MustBePositive" xml:space="preserve">
     <value>'{0}' must be greater than zero.</value>
@@ -126,15 +117,6 @@
   <data name="IO_FileExists_Name" xml:space="preserve">
     <value>The file '{0}' already exists.</value>
   </data>
-  <data name="Arg_EnumIllegalVal" xml:space="preserve">
-    <value>Illegal enum value: {0}.</value>
-  </data>
-  <data name="InvalidOperation_ComputerName" xml:space="preserve">
-    <value>Computer name could not be obtained.</value>
-  </data>
-  <data name="InvalidOperation_GetVersion" xml:space="preserve">
-    <value>OSVersion's call to GetVersionEx failed</value>
-  </data>
   <data name="PersistedFiles_NoHomeDirectory" xml:space="preserve">
     <value>The home directory of the current user could not be determined.</value>
   </data>
@@ -150,86 +132,17 @@
   <data name="Argument_ResourceScopeWrongDirection" xml:space="preserve">
     <value>Resource type in the ResourceScope enum is going from a more restrictive resource type to a more general one.  From: "{0}"  To: "{1}"</value>
   </data>
-  <data name="AppDomain_Name" xml:space="preserve">
-    <value>Name:</value>
-  </data>
-  <data name="AppDomain_NoContextPolicies" xml:space="preserve">
-    <value>There are no context policies.</value>
-  </data>
-  <data name="Arg_MustBeTrue" xml:space="preserve">
-    <value>Argument must be true.</value>
-  </data>
-  <data name="Arg_CannotUnloadAppDomainException" xml:space="preserve">
-    <value>Attempt to unload the AppDomain failed.</value>
-  </data>
   <data name="Arg_AppDomainUnloadedException" xml:space="preserve">
     <value>Attempted to access an unloaded AppDomain.</value>
   </data>
   <data name="Arg_SwitchExpressionException" xml:space="preserve">
     <value>Non-exhaustive switch expression failed to match its input.</value>
   </data>
-  <data name="ZeroLengthString" xml:space="preserve">
-    <value>String cannot have zero length.</value>
-  </data>
-  <data name="EntryPointNotFound" xml:space="preserve">
-    <value>Entry point not found in assembly</value>
-  </data>
-  <data name="NotSupported_Platform" xml:space="preserve">
-    <value>Not supported on this platform.</value>
-  </data>
   <data name="Arg_ContextMarshalException" xml:space="preserve">
     <value>Attempted to marshal an object across a context boundary.</value>
   </data>
-  <data name="AppDomain_Policy_PrincipalTwice" xml:space="preserve">
-    <value>Default principal object cannot be set twice.</value>
-  </data>
-  <data name="ArgumentNull_Collection" xml:space="preserve">
-    <value>Collection cannot be null.</value>
-  </data>
-  <data name="ArgumentOutOfRange_ArrayListInsert" xml:space="preserve">
-    <value>Insertion index was out of range. Must be non-negative and less than or equal to size.</value>
-  </data>
-  <data name="ArgumentOutOfRange_BiggerThanCollection" xml:space="preserve">
-    <value>Must be less than or equal to the size of the collection.</value>
-  </data>
-  <data name="ArgumentOutOfRange_Count" xml:space="preserve">
-    <value>Count must be positive and count must refer to a location within the string/array/collection.</value>
-  </data>
-  <data name="ArgumentOutOfRange_MustBeNonNegNum" xml:space="preserve">
-    <value>'{0}' must be non-negative.</value>
-  </data>
-  <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
-    <value>capacity was less than the current size.</value>
-  </data>  
   <data name="Argument_InvalidOffLen" xml:space="preserve">
     <value>Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.</value>
-  </data>
-  <data name="Arg_RankMultiDimNotSupported" xml:space="preserve">
-    <value>Only single dimensional arrays are supported for the requested action.</value>
-  </data>
-  <data name="InvalidOperation_EnumEnded" xml:space="preserve">
-    <value>Enumeration already finished.</value>
-  </data>
-  <data name="InvalidOperation_EnumFailedVersion" xml:space="preserve">
-    <value>Collection was modified after the enumerator was instantiated.</value>
-  </data>
-  <data name="InvalidOperation_EnumNotStarted" xml:space="preserve">
-    <value>Enumeration has not started. Call MoveNext.</value>
-  </data>
-  <data name="InvalidOperation_EnumOpCantHappen" xml:space="preserve">
-    <value>Enumeration has either not started or has already finished.</value>
-  </data>
-  <data name="InvalidOperation_UnderlyingArrayListChanged" xml:space="preserve">
-    <value>This range in the underlying list is invalid. A possible cause is that elements were removed.</value>
-  </data>
-  <data name="NotSupported_FixedSizeCollection" xml:space="preserve">
-    <value>Collection was of a fixed size.</value>
-  </data>
-  <data name="NotSupported_RangeCollection" xml:space="preserve">
-    <value>The specified operation is not supported on Ranges.</value>
-  </data>
-  <data name="NotSupported_ReadOnlyCollection" xml:space="preserve">
-    <value>Collection is read-only.</value>
   </data>
   <data name="GenericInvalidData" xml:space="preserve">
     <value>Found invalid data while decoding.</value>
@@ -261,39 +174,6 @@
   <data name="ObjectDisposed_ReaderClosed" xml:space="preserve">
     <value>Cannot read from a closed TextReader.</value>
   </data>
-  <data name="ArgumentNull_Child" xml:space="preserve">
-    <value>Cannot have a null child.</value>
-  </data>
-  <data name="Argument_AttributeNamesMustBeUnique" xml:space="preserve">
-    <value>Attribute names must be unique.</value>
-  </data>
-  <data name="Argument_InvalidElementName" xml:space="preserve">
-    <value>Invalid element name '{0}'.</value>
-  </data>
-  <data name="Argument_InvalidElementTag" xml:space="preserve">
-    <value>Invalid element tag '{0}'.</value>
-  </data>
-  <data name="Argument_InvalidElementText" xml:space="preserve">
-    <value>Invalid element text '{0}'.</value>
-  </data>
-  <data name="Argument_InvalidElementValue" xml:space="preserve">
-    <value>Invalid element value '{0}'.</value>
-  </data>
-  <data name="Argument_InvalidFlag" xml:space="preserve">
-    <value>Value of flags is invalid.</value>
-  </data>
-  <data name="PlatformNotSupported_AppDomains" xml:space="preserve">
-    <value>Secondary AppDomains are not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_CAS" xml:space="preserve">
-    <value>Code Access Security is not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_AppDomain_ResMon" xml:space="preserve">
-    <value>AppDomain resource monitoring is not supported on this platform.</value>
-  </data>
-  <data name="PlatformNotSupported_Principal" xml:space="preserve">
-    <value>Windows Principal functionality is not supported on this platform.</value>
-  </data>
   <data name="SwitchExpressionException_UnmatchedValue" xml:space="preserve">
     <value>Unmatched value was {0}.</value>
   </data>
@@ -302,11 +182,5 @@
   </data>
   <data name="Argument_StringZeroLength" xml:space="preserve">
     <value>String cannot be of zero length.</value>
-  </data>
-  <data name="Arg_EntryPointNotFoundException" xml:space="preserve">
-    <value>Entry point was not found.</value>
-  </data>
-  <data name="Arg_PlatformNotSupported" xml:space="preserve">
-    <value>Operation is not supported on this platform.</value>
   </data>
 </root>

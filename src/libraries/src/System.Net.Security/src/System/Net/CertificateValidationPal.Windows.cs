@@ -24,7 +24,8 @@ namespace System.Net
         {
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
 
-            if (!chain.Build(remoteCertificate)       // Build failed on handle or on policy.
+            bool chainBuildResult = chain.Build(remoteCertificate);
+            if (!chainBuildResult       // Build failed on handle or on policy.
                 && chain.SafeHandle.DangerousGetHandle() == IntPtr.Zero)   // Build failed to generate a valid handle.
             {
                 throw new CryptographicException(Marshal.GetLastWin32Error());
@@ -69,8 +70,7 @@ namespace System.Net
                 }
             }
 
-            X509ChainStatus[] chainStatusArray = chain.ChainStatus;
-            if (chainStatusArray != null && chainStatusArray.Length != 0)
+            if (!chainBuildResult)
             {
                 sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
             }
