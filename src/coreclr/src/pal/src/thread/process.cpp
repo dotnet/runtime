@@ -2296,7 +2296,7 @@ GetProcessIdDisambiguationKey(DWORD processId, UINT64 *disambiguationKey)
 VOID
 PALAPI
 PAL_GetTransportName(
-    const int MAX_TRANSPORT_NAME_LENGTH,
+    const unsigned int MAX_TRANSPORT_NAME_LENGTH,
     OUT char *name,
     IN const char *prefix,
     IN DWORD id,
@@ -2370,7 +2370,7 @@ PAL_GetTransportName(
     }
 
     int chars = snprintf(name, MAX_TRANSPORT_NAME_LENGTH, formatBuffer, prefix, id, disambiguationKey, suffix);
-    _ASSERTE(chars > 0 && chars < MAX_TRANSPORT_NAME_LENGTH);
+    _ASSERTE(chars > 0 && (unsigned int)chars < MAX_TRANSPORT_NAME_LENGTH);
 }
 
 /*++

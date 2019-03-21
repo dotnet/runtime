@@ -475,13 +475,13 @@ PALAPI
 PAL_GetApplicationGroupId();
 #endif
 
-static const int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
+static const unsigned int MAX_DEBUGGER_TRANSPORT_PIPE_NAME_LENGTH = MAX_PATH;
 
 PALIMPORT
 VOID
 PALAPI
 PAL_GetTransportName(
-    const int MAX_TRANSPORT_NAME_LENGTH,
+    const unsigned int MAX_TRANSPORT_NAME_LENGTH,
     OUT char *name,
     IN const char *prefix,
     IN DWORD id,
