@@ -114,6 +114,10 @@ void CodeGen::genInitialize()
     // Make sure a set is allocated for compiler->compCurLife (in the long case), so we can set it to empty without
     // allocation at the start of each basic block.
     VarSetOps::AssignNoCopy(compiler, compiler->compCurLife, VarSetOps::MakeEmpty(compiler));
+
+    // We initialize the stack level before first "BasicBlock" code is generated in case we need to report stack
+    // variable needs home and so its stack offset.
+    SetStackLevel(0);
 }
 
 //------------------------------------------------------------------------
