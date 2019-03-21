@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization
                 Debug.Assert(_index < _previous.Count);
 
                 // Use a previously allocated slot.
-                Current = _previous[_index];
+                _previous[_index] = Current;
             }
 
             Current.Reset();
