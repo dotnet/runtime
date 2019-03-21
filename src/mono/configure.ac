@@ -6203,6 +6203,7 @@ elif test x$platform_android = xyes; then
 	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
 	MONO_NATIVE_CFLAGS=$CFLAGS
 	MONO_NATIVE_LDFLAGS=$LDFLAGS
+	MONO_NATIVE_LIBADD="../mini/$LIBMONO_LA"
 
 	mono_native=yes
 	mono_native_compat=no
