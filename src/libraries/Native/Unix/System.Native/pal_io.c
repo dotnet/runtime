@@ -209,22 +209,6 @@ int32_t SystemNative_LStat(const char* path, FileStatus* output)
     return ret;
 }
 
-// These "2" suffix functions are pending removal
-int32_t SystemNative_Stat2(const char* path, FileStatus* output)
-{
-    return SystemNative_Stat(path, output);
-}
-
-int32_t SystemNative_FStat2(intptr_t fd, FileStatus* output)
-{
-    return SystemNative_FStat(fd, output);
-}
-
-int32_t SystemNative_LStat2(const char* path, FileStatus* output)
-{
-    return SystemNative_LStat(path, output);
-}
-
 static int32_t ConvertOpenFlags(int32_t flags)
 {
     int32_t ret;
