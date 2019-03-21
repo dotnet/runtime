@@ -211,6 +211,8 @@
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceMarkOrderingDoesNotMatter3.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceTypeInOtherUsedOnlyByCopiedAssembly.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceTypeInOtherUsedOnlyByCopiedAssemblyExplicit.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceTypeInOtherUsedOnlyBySavedAssembly.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceTypeInOtherUsedOnlyBySavedAssemblyExplicit.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceUsedOnlyAsConstraintIsKept.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceWithInterfaceFromOtherAssemblyWhenExplicitMethodUsed.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\InterfaceTypeOnlyUsedHasInterfacesRemoved.cs" />
