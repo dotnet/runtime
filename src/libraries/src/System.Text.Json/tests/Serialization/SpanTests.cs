@@ -10,9 +10,9 @@ namespace System.Text.Json.Serialization.Tests
     public static class SpanTests
     {
         [Fact]
-        public static void NullObjectInputFail()
+        public static void ParseNullTypeFail()
         {
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Parse<string>((ReadOnlySpan<byte>)null));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Parse(new ReadOnlySpan<byte>(), (Type)null));
         }
 
         [Theory]
@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void VerifyValueFail()
+        public static void ToStringNullTypeFail()
         {
             Assert.Throws<ArgumentNullException>(() => JsonSerializer.ToString(new object(), (Type)null));
         }
