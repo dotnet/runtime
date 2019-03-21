@@ -4,6 +4,7 @@
 
 #include "common.h"
 #include "fastserializer.h"
+#include "diagnosticsipc.h"
 
 #ifdef FEATURE_PERFTRACING
 
