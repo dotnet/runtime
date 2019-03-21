@@ -142,23 +142,6 @@ namespace System
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         internal static unsafe void Memmove(byte* dest, byte* src, nuint len)
         {
-#if AMD64 || (BIT32 && !ARM)
-            const nuint CopyThreshold = 2048;
-#elif ARM64
-#if PLATFORM_WINDOWS
-            // Determined optimal value for Windows.
-            // https://github.com/dotnet/coreclr/issues/13843
-            const nuint CopyThreshold = ulong.MaxValue;
-#else // PLATFORM_WINDOWS
-            // Managed code is currently faster than glibc unoptimized memmove
-            // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
-            // https://github.com/dotnet/coreclr/issues/13844
-            const nuint CopyThreshold = ulong.MaxValue;
-#endif // PLATFORM_WINDOWS
-#else
-            const nuint CopyThreshold = 512;
-#endif // AMD64 || (BIT32 && !ARM)
-
             // P/Invoke into the native version when the buffers are overlapping.
             if (((nuint)dest - (nuint)src < len) || ((nuint)src - (nuint)dest < len))
             {
@@ -260,14 +243,14 @@ namespace System
 
             MCPY05:
             // PInvoke to the native version when the copy length exceeds the threshold.
-            if (len > CopyThreshold)
+            if (len > MemmoveNativeThreshold)
             {
                 goto PInvoke;
             }
 
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
-            Debug.Assert(len > 64 && len <= CopyThreshold);
+            Debug.Assert(len > 64 && len <= MemmoveNativeThreshold);
             nuint n = len >> 6;
 
         MCPY06:
@@ -356,23 +339,6 @@ namespace System
         // This method has different signature for x64 and other platforms and is done for performance reasons.
         private static void Memmove(ref byte dest, ref byte src, nuint len)
         {
-#if AMD64 || (BIT32 && !ARM)
-            const nuint CopyThreshold = 2048;
-#elif ARM64
-#if PLATFORM_WINDOWS
-            // Determined optimal value for Windows.
-            // https://github.com/dotnet/coreclr/issues/13843
-            const nuint CopyThreshold = ulong.MaxValue;
-#else // PLATFORM_WINDOWS
-            // Managed code is currently faster than glibc unoptimized memmove
-            // TODO-ARM64-UNIX-OPT revisit when glibc optimized memmove is in Linux distros
-            // https://github.com/dotnet/coreclr/issues/13844
-            const nuint CopyThreshold = ulong.MaxValue;
-#endif // PLATFORM_WINDOWS
-#else
-            const nuint CopyThreshold = 512;
-#endif // AMD64 || (BIT32 && !ARM)
-
             // P/Invoke into the native version when the buffers are overlapping.
             if (((nuint)Unsafe.ByteOffset(ref src, ref dest) < len) || ((nuint)Unsafe.ByteOffset(ref dest, ref src) < len))
             {
@@ -484,14 +450,14 @@ namespace System
 
         MCPY05:
             // PInvoke to the native version when the copy length exceeds the threshold.
-            if (len > CopyThreshold)
+            if (len > MemmoveNativeThreshold)
             {
                 goto PInvoke;
             }
 
             // Copy 64-bytes at a time until the remainder is less than 64.
             // If remainder is greater than 16 bytes, then jump to MCPY00. Otherwise, unconditionally copy the last 16 bytes and return.
-            Debug.Assert(len > 64 && len <= CopyThreshold);
+            Debug.Assert(len > 64 && len <= MemmoveNativeThreshold);
             nuint n = len >> 6;
 
         MCPY06:
