@@ -62,6 +62,11 @@ public class InterpOnly : InterpOnlyIFace
 	public static Func<int, int> create_del () {
 		return InterpOnly.entry_1;
 	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int entry_sig (byte b1, byte b2, byte b3, byte b4, byte b5, byte b6) {
+		return b1 + b2 + b3 + b4 + b5 + b6;
+	}
 }
 
 public struct InterpOnlyStruct : InterpOnlyIFace

@@ -467,6 +467,9 @@ mini_emit_method_call_full (MonoCompile *cfg, MonoMethod *method, MonoMethodSign
 	if (cfg->llvm_only && cfg->interp && !virtual_ && !tailcall && can_enter_interp (cfg, method, FALSE)) {
 		MonoInst *ftndesc = mini_emit_get_rgctx_method (cfg, -1, method, MONO_RGCTX_INFO_METHOD_FTNDESC);
 
+		/* Need wrappers for this signature to be able to enter interpreter */
+		cfg->interp_in_signatures = g_slist_prepend_mempool (cfg->mempool, cfg->interp_in_signatures, sig);
+
 		/* This call might need to enter the interpreter so make it indirect */
 		return mini_emit_llvmonly_calli (cfg, sig, args, ftndesc);
 	}

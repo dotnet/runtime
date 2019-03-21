@@ -88,4 +88,8 @@ public class BitcodeMixedTests
 		}
 		return 2;
 	}
+
+	public static int test_21_entry_sig () {
+		return InterpOnly.entry_sig ((byte)1, (byte)2, (byte)3, (byte)4, (byte)5, (byte)6);
+	}
 }
