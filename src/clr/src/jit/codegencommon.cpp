@@ -11578,3 +11578,8 @@ void CodeGen::genStackPointerCheck(bool doStackPointerCheck, unsigned lvaStackPo
 }
 
 #endif // defined(DEBUG) && defined(_TARGET_XARCH_)
+
+unsigned CodeGenInterface::getCurrentStackLevel() const
+{
+    return genStackLevel;
+}
