@@ -393,12 +393,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             SharedFramework.SetRuntimeConfigJson(runtimeConfig, "9999.0.0");
 
             // Add preview version in the exe
-            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.1-dummy1");
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.1-dummy.9");
 
             // Version: 9999.0.0
             // 'Roll forward on no candidate fx' default value of 1 (minor)
-            // exe: 9999.1.1-dummy1
-            // Expected: 9999.1.1-dummy1 since there is no production version
+            // exe: 9999.1.1-dummy.9
+            // Expected: 9999.1.1-dummy.9 since there is no production version
             dotnet.Exec(appDll)
                 .WorkingDirectory(_currentWorkingDir)
                 .EnvironmentVariable("COREHOST_TRACE", "1")
@@ -406,7 +406,39 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1-dummy1"));
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1-dummy.9"));
+
+            // Add preview version in the exe
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.1-dummy.8");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' default value of 1 (minor)
+            // exe: 9999.1.1-dummy.8, 9999.1.1-dummy.9
+            // Expected: 9999.1.1-dummy.9 since there is no production version and latest preview should be selected
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1-dummy.9"));
+
+            // Add preview version in the exe
+            SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.1.1-dummy.10");
+
+            // Version: 9999.0.0
+            // 'Roll forward on no candidate fx' default value of 1 (minor)
+            // exe: 9999.1.1-dummy.8, 9999.1.1-dummy.9, 9999.1.1-dummy.10
+            // Expected: 9999.1.1-dummy.10 since there is no production version and latest preview should be selected
+            dotnet.Exec(appDll)
+                .WorkingDirectory(_currentWorkingDir)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.1-dummy.10"));
 
             // Add a production version with higher value
             SharedFramework.AddAvailableSharedFxVersions(_builtSharedFxDir, _exeSharedFxBaseDir, "9999.2.1");
@@ -462,7 +494,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.1.1-dummy1")
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.1.1-dummy.8")
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.1.1-dummy.9")
+                .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.1.1-dummy.10")
                 .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.2.1")
                 .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.2.1-dummy1")
                 .And.HaveStdOutContaining("Microsoft.NETCore.App 9999.2.2-dummy1");
