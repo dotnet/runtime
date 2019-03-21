@@ -9,18 +9,6 @@
   <ItemGroup>
     <Compile Include="System\Threading\ThreadExceptionEventArgs.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAOT)'=='true'"> <!-- TODO: Remove once AOT builds are updated with moved types -->
-    <Compile Include="$(CommonPath)\CoreLib\System\LocalDataStoreSlot.cs">
-      <Link>Common\CoreLib\System\LocalDataStoreSlot.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Threading\CompressedStack.cs">
-      <Link>Common\CoreLib\System\Threading\CompressedStack.cs</Link>
-    </Compile>
-    <Compile Include="System\Threading\Thread.cs" />
-    <Compile Include="System\Threading\Thread.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
-    <Compile Include="System\Threading\Thread.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Reference Include="System.Security.Principal" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\src\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
