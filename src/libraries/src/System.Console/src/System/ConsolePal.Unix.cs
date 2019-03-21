@@ -46,7 +46,6 @@ namespace System
         }
 
         private static SyncTextReader s_stdInReader;
-        private const int DefaultBufferSize = 255;
 
         private static SyncTextReader StdInReader
         {
@@ -54,16 +53,20 @@ namespace System
             {
                 EnsureInitialized();
 
+                // StdInReader is only used when input isn't redirected and we're working
+                // with an interactive terminal.  In that case, performance isn't critical
+                // and we can use a smaller buffer to minimize working set.
+                const int InteractiveBufferSize = 255;
+
                 return Console.EnsureInitialized(
                         ref s_stdInReader,
                         () => SyncTextReader.GetSynchronizedTextReader(
                             new StdInReader(
                                 encoding: Console.InputEncoding,
-                                bufferSize: DefaultBufferSize)));
+                                bufferSize: InteractiveBufferSize)));
             }
         }
 
-        private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
         internal static TextReader GetOrCreateReader()
         {
             if (Console.IsInputRedirected)
@@ -76,7 +79,7 @@ namespace System
                         stream: inputStream,
                         encoding: Console.InputEncoding,
                         detectEncodingFromByteOrderMarks: false,
-                        bufferSize: DefaultConsoleBufferSize,
+                        bufferSize: Console.ReadBufferSize,
                         leaveOpen: true)
                         );
             }
