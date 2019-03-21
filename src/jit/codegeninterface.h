@@ -542,6 +542,13 @@ public:
             const LclVarDsc* varDsc, var_types type, regNumber baseReg, int offset, bool isFramePointerUsed);
     };
 
+public:
+    unsigned getCurrentStackLevel() const;
+
+protected:
+    //  Keeps track of how many bytes we've pushed on the processor's stack.
+    unsigned genStackLevel;
+
 #ifdef LATE_DISASM
 public:
     virtual const char* siRegVarName(size_t offs, size_t size, unsigned reg) = 0;
