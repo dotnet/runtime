@@ -215,44 +215,12 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
             {
                 if (!s_AssemblyLoadContexts.TryGetValue(assemblyPath, out alc))
                 {
-                    alc = new ComServerLoadContext(assemblyPath);
+                    alc = new IsolatedComponentLoadContext(assemblyPath);
                     s_AssemblyLoadContexts.Add(assemblyPath, alc);
                 }
             }
 
             return alc;
-        }
-
-        private class ComServerLoadContext : AssemblyLoadContext
-        {
-            private readonly AssemblyDependencyResolver _resolver;
-
-            public ComServerLoadContext(string comServerAssemblyPath)
-            {
-                _resolver = new AssemblyDependencyResolver(comServerAssemblyPath);
-            }
-
-            protected override Assembly Load(AssemblyName assemblyName)
-            {
-                string assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
-                if (assemblyPath != null)
-                {
-                    return LoadFromAssemblyPath(assemblyPath);
-                }
-
-                return null;
-            }
-
-            protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
-            {
-                string libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
-                if (libraryPath != null)
-                {
-                    return LoadUnmanagedDllFromPath(libraryPath);
-                }
-
-                return IntPtr.Zero;
-            }
         }
 
         [ComVisible(true)]

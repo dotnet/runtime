@@ -37,8 +37,8 @@
     <Compile Include="NativeCallingManaged.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="IjwNativeCallingManagedDll/CMakeLists.txt" />
-    <ProjectReference Include="../FakeMscoree/CMakeLists.txt" />
+    <ProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />
+    <ProjectReference Include="../ijwhostmock/CMakeLists.txt" />
     <ProjectReference Include="../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
