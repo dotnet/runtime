@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -31,9 +32,24 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern bool InternalHasFlag(Enum flags);
 
-        private static TypeValuesAndNames GetCachedValuesAndNames(RuntimeType enumType, bool getNames)
+        private class EnumInfo
         {
-            TypeValuesAndNames entry = enumType.GenericCache as TypeValuesAndNames;
+            public readonly bool HasFlagsAttribute;
+            public readonly ulong[] Values;
+            public readonly string[] Names;
+
+            // Each entry contains a list of sorted pair of enum field names and values, sorted by values
+            public EnumInfo(bool hasFlagsAttribute, ulong[] values, string[] names)
+            {
+                HasFlagsAttribute = hasFlagsAttribute;
+                Values = values;
+                Names = names;
+            }
+        }
+
+        private static EnumInfo GetEnumInfo(RuntimeType enumType, bool getNames = true)
+        {
+            EnumInfo entry = enumType.GenericCache as EnumInfo;
 
             if (entry == null || (getNames && entry.Names == null))
             {
@@ -44,13 +60,25 @@ namespace System
                     JitHelpers.GetObjectHandleOnStack(ref values),
                     JitHelpers.GetObjectHandleOnStack(ref names),
                     getNames);
-                bool isFlags = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
+                bool hasFlagsAttribute = enumType.IsDefined(typeof(FlagsAttribute), inherit: false);
 
-                entry = new TypeValuesAndNames(isFlags, values, names);
+                entry = new EnumInfo(hasFlagsAttribute, values, names);
                 enumType.GenericCache = entry;
             }
 
             return entry;
+        }
+
+        internal static ulong[] InternalGetValues(RuntimeType enumType)
+        {
+            // Get all of the values
+            return GetEnumInfo(enumType, false).Values;
+        }
+
+        internal static string[] InternalGetNames(RuntimeType enumType)
+        {
+            // Get all of the names
+            return GetEnumInfo(enumType, true).Names;
         }
 
         [Intrinsic]
@@ -99,6 +127,14 @@ namespace System
             return enumType.GetEnumValues();
         }
 
+        public static bool IsDefined(Type enumType, object value)
+        {
+            if (enumType == null)
+                throw new ArgumentNullException(nameof(enumType));
+
+            return enumType.IsEnumDefined(value);
+        }
+
         private static RuntimeType ValidateRuntimeType(Type enumType)
         {
             if (enumType == null)
@@ -108,6 +144,37 @@ namespace System
             if (!(enumType is RuntimeType rtType))
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(enumType));
             return rtType;
+        }
+
+        public int CompareTo(object target)
+        {
+            const int retIncompatibleMethodTables = 2;  // indicates that the method tables did not match
+            const int retInvalidEnumType = 3; // indicates that the enum was of an unknown/unsupported underlying type
+
+            if (this == null)
+                throw new NullReferenceException();
+
+            int ret = InternalCompareTo(this, target);
+
+            if (ret < retIncompatibleMethodTables)
+            {
+                // -1, 0 and 1 are the normal return codes
+                return ret;
+            }
+            else if (ret == retIncompatibleMethodTables)
+            {
+                Type thisType = this.GetType();
+                Type targetType = target.GetType();
+
+                throw new ArgumentException(SR.Format(SR.Arg_EnumAndObjectMustBeSameType, targetType, thisType));
+            }
+            else
+            {
+                // assert valid return code (3)
+                Debug.Assert(ret == retInvalidEnumType, "Enum.InternalCompareTo return code was invalid");
+
+                throw new InvalidOperationException(SR.InvalidOperation_UnknownEnumType);
+            }
         }
     }
 }
