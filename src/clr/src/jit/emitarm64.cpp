@@ -7020,7 +7020,7 @@ void emitter::emitIns_R_AI(instruction ins, emitAttr attr, regNumber ireg, ssize
         // add reg, reg, imm
         ins           = INS_add;
         fmt           = IF_DI_2A;
-        instrDesc* id = emitAllocInstr(attr);
+        instrDesc* id = emitNewInstr(attr);
         assert(id->idIsReloc());
 
         id->idIns(ins);

@@ -1183,6 +1183,8 @@ struct BasicBlock : private LIR::Range
         return false;
     }
 #endif // DEBUG
+
+    static void DisplayStaticSizes(FILE* fout);
 };
 
 template <>
