@@ -205,8 +205,12 @@ public class TestRunner
 
 		if (!String.IsNullOrEmpty (inputFile)) {
 			foreach (string l in File.ReadAllLines (inputFile)) {
-				for (int r = 0; r < repeat; ++r)
-					tests.Add (l);
+				foreach (string m in l.Split (' ')) {
+					if (!String.IsNullOrEmpty (m)) {
+						for (int r = 0; r < repeat; ++r)
+							tests.Add (m);
+					}
+				}
 			}
 		} else {
 			// The remaining arguments are the tests
