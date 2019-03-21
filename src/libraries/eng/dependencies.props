@@ -9,10 +9,10 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <ProjectNTfsCurrentRef>5c4b04430e5fbcf4e380fb2c588dce595bae9895</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>5c4b04430e5fbcf4e380fb2c588dce595bae9895</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>fff00830cfa4d8d1fc4ec39b249999d3457a0f6f</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>fff00830cfa4d8d1fc4ec39b249999d3457a0f6f</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
-    <BuildToolsCurrentRef>d8379e3f82c0b3b917d76828e064bd74ba718bfd</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>fff00830cfa4d8d1fc4ec39b249999d3457a0f6f</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Product dependency versions. -->
@@ -23,9 +23,9 @@
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <ProjectNTfsExpectedPrerelease>beta-27519-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-27519-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27519-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-27521-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-27521-00</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27521-00</ProjectNTfsTestILCPackageVersion>
 
     <!-- CoreFX-built SNI identity package -->
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
@@ -50,7 +50,7 @@
   <!-- Package versions used as toolsets -->
   <PropertyGroup>
     <BuildToolsPackage>Microsoft.DotNet.BuildTools</BuildToolsPackage>
-    <BuildToolsPackageVersion>3.0.0-preview1-03715-01</BuildToolsPackageVersion>
+    <BuildToolsPackageVersion>3.0.0-preview1-03805-01</BuildToolsPackageVersion>
   </PropertyGroup>
 
   <!-- Publish symbol build task package -->
