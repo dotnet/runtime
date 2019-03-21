@@ -11,7 +11,8 @@
 
 #include "fastserializableobject.h"
 #include "fstream.h"
-#include "diagnosticsipc.h"
+
+class IpcStream;
 
 // the enumeration has a specific set of values to keep it compatible with consumer library
 // it's sibling is defined in https://github.com/Microsoft/perfview/blob/10d1f92b242c98073b3817ac5ee6d98cd595d39b/src/FastSerialization/FastSerialization.cs#L2295

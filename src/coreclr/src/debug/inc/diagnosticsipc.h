@@ -26,20 +26,31 @@ public:
     class DiagnosticsIpc final
     {
     public:
-        static DiagnosticsIpc *Create(const char *const pIpcName, ErrorCallback callback = nullptr);
         ~DiagnosticsIpc();
+
+        //! Creates an IPC object
+        static DiagnosticsIpc *Create(const char *const pIpcName, ErrorCallback callback = nullptr);
+
+        //! Enables the underlaying IPC implementation to accept connection.
         IpcStream *Accept(ErrorCallback callback = nullptr) const;
+
+        //! Used to unlink the socket so it can be removed from the filesystem
+        //! when the last reference to it is closed.
+        void Unlink(ErrorCallback callback = nullptr);
 
     private:
 
 #ifdef FEATURE_PAL
-        DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress);
-        const int _serverSocket = -1;
+        const int _serverSocket;
         sockaddr_un *const _pServerAddress;
+        bool _isUnlinked = false;
+
+        DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress);
 #else
         static const uint32_t MaxNamedPipeNameLength = 256;
-        DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength]);
         char _pNamedPipeName[MaxNamedPipeNameLength]; // https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-createnamedpipea
+
+        DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPipeNameLength]);
 #endif /* FEATURE_PAL */
 
         DiagnosticsIpc() = delete;

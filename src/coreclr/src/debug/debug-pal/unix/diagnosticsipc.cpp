@@ -7,7 +7,6 @@
 #include <new>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include "diagnosticsipc.h"
@@ -15,7 +14,8 @@
 
 IpcStream::DiagnosticsIpc::DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress) :
     _serverSocket(serverSocket),
-    _pServerAddress(new (std::nothrow) sockaddr_un)
+    _pServerAddress(new (std::nothrow) sockaddr_un),
+    _isUnlinked(false)
 {
     _ASSERTE(_pServerAddress != nullptr);
     _ASSERTE(_serverSocket != -1);
@@ -33,8 +33,7 @@ IpcStream::DiagnosticsIpc::~DiagnosticsIpc()
         const int fSuccessClose = ::close(_serverSocket);
         _ASSERTE(fSuccessClose != -1); // TODO: Add error handling?
 
-        const int fSuccessUnlink = ::unlink(_pServerAddress->sun_path);
-        _ASSERTE(fSuccessUnlink != -1); // TODO: Add error handling?
+        Unlink();
 
         delete _pServerAddress;
     }
@@ -68,6 +67,26 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
         if (callback != nullptr)
             callback(strerror(errno), errno);
         _ASSERTE(fSuccessBind != -1);
+
+        const int fSuccessClose = ::close(serverSocket);
+        _ASSERTE(fSuccessClose != -1);
+
+        return nullptr;
+    }
+
+    const int fSuccessfulListen = ::listen(serverSocket, /* backlog */ 255);
+    if (fSuccessfulListen == -1)
+    {
+        if (callback != nullptr)
+            callback(strerror(errno), errno);
+        _ASSERTE(fSuccessfulListen != -1);
+
+        const int fSuccessUnlink = ::unlink(serverAddress.sun_path);
+        _ASSERTE(fSuccessUnlink != -1);
+
+        const int fSuccessClose = ::close(serverSocket);
+        _ASSERTE(fSuccessClose != -1);
+
         return nullptr;
     }
 
@@ -76,8 +95,6 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
 
 IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
 {
-    if (::listen(_serverSocket, /* backlog */ 255) == -1)
-        return nullptr;
     sockaddr_un from;
     socklen_t fromlen = sizeof(from);
     const int clientSocket = ::accept(_serverSocket, (sockaddr *)&from, &fromlen);
@@ -92,6 +109,28 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
     if (pIpcStream == nullptr && callback != nullptr)
         callback("Failed to allocate an IpcStream object.", 1);
     return pIpcStream;
+}
+
+//! This helps remove the socket from the filesystem when the runtime exits.
+//! From: http://man7.org/linux/man-pages/man7/unix.7.html#NOTES
+//!   Binding to a socket with a filename creates a socket in the
+//!   filesystem that must be deleted by the caller when it is no longer
+//!   needed (using unlink(2)).  The usual UNIX close-behind semantics
+//!   apply; the socket can be unlinked at any time and will be finally
+//!   removed from the filesystem when the last reference to it is closed.
+void IpcStream::DiagnosticsIpc::Unlink(ErrorCallback callback)
+{
+    if (_isUnlinked)
+        return;
+    _isUnlinked = true;
+
+    const int fSuccessUnlink = ::unlink(_pServerAddress->sun_path);
+    if (fSuccessUnlink == -1)
+    {
+        if (callback != nullptr)
+            callback(strerror(errno), errno);
+        _ASSERTE(fSuccessUnlink == 0);
+    }
 }
 
 IpcStream::~IpcStream()
