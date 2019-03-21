@@ -2482,14 +2482,14 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // TODO: Add -target_branch and -commit_hash arguments based on GitHub variables.
                         buildCommands += "python -u \${WORKSPACE}/tests/scripts/run-pmi-diffs.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} --skip_diffs"
 
-                        // ZIP what we created.
-                        buildCommands += "zip -r product.${os}.${architecture}.${lowerConfiguration}.zip ./bin/Product/Linux.${architecture}.${configuration}"
-                        buildCommands += "zip -r product.baseline.${os}.${architecture}.${lowerConfiguration}.zip ./_/pmi/base/bin/Product/Linux.${architecture}.${configuration}"
-                        buildCommands += "zip -r coreroot.${os}.${architecture}.${lowerConfiguration}.zip ./bin/tests/Linux.${architecture}.${configuration}/Tests/Core_Root"
-                        buildCommands += "zip -r coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.zip ./_/pmi/base/bin/tests/Linux.${architecture}.${configuration}/Tests/Core_Root"
+                        // Archive what we created.
+                        buildCommands += "tar -czf product.${os}.${architecture}.${lowerConfiguration}.tgz ./bin/Product/Linux.${architecture}.${configuration}"
+                        buildCommands += "tar -czf product.baseline.${os}.${architecture}.${lowerConfiguration}.tgz ./_/pmi/base/bin/Product/Linux.${architecture}.${configuration}"
+                        buildCommands += "tar -czf coreroot.${os}.${architecture}.${lowerConfiguration}.tgz ./bin/tests/Linux.${architecture}.${configuration}/Tests/Core_Root"
+                        buildCommands += "tar -czf coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.tgz ./_/pmi/base/bin/tests/Linux.${architecture}.${configuration}/Tests/Core_Root"
 
                         // Archive the built artifacts
-                        Utilities.addArchival(newJob, "product.${os}.${architecture}.${lowerConfiguration}.zip,product.baseline.${os}.${architecture}.${lowerConfiguration}.zip,coreroot.${os}.${architecture}.${lowerConfiguration}.zip,coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.zip")
+                        Utilities.addArchival(newJob, "product.${os}.${architecture}.${lowerConfiguration}.tgz,product.baseline.${os}.${architecture}.${lowerConfiguration}.tgz,coreroot.${os}.${architecture}.${lowerConfiguration}.tgz,coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.tgz")
                     }
                     else {
                         // Then, using the same docker image, build the tests and generate the CORE_ROOT layout.
@@ -3250,10 +3250,10 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                 if (isPmiAsmDiffsScenario) {
                     def workspaceRelativeRootLinux = "_/pmi"
                     shell("mkdir -p ${workspaceRelativeRootLinux}")
-                    shell("wget --progress=dot:giga ${inputUrlRoot}/product.${os}.${architecture}.${lowerConfiguration}.zip")
-                    shell("wget --progress=dot:giga ${inputUrlRoot}/product.baseline.${os}.${architecture}.${lowerConfiguration}.zip")
-                    shell("wget --progress=dot:giga ${inputUrlRoot}/coreroot.${os}.${architecture}.${lowerConfiguration}.zip")
-                    shell("wget --progress=dot:giga ${inputUrlRoot}/coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.zip")
+                    shell("wget --progress=dot:giga ${inputUrlRoot}/product.${os}.${architecture}.${lowerConfiguration}.tgz")
+                    shell("wget --progress=dot:giga ${inputUrlRoot}/product.baseline.${os}.${architecture}.${lowerConfiguration}.tgz")
+                    shell("wget --progress=dot:giga ${inputUrlRoot}/coreroot.${os}.${architecture}.${lowerConfiguration}.tgz")
+                    shell("wget --progress=dot:giga ${inputUrlRoot}/coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.tgz")
                 }
                 else if (doCoreFxTesting) {
                     shell("mkdir -p ${workspaceRelativeFxRootLinux}")
@@ -3285,11 +3285,10 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
             }
 
             if (isPmiAsmDiffsScenario) {
-                // TODO: add back "-q" when we know it works
-                shell("unzip -o ./product.${os}.${architecture}.${lowerConfiguration}.zip || exit 0")
-                shell("unzip -o ./product.baseline.${os}.${architecture}.${lowerConfiguration}.zip || exit 0")
-                shell("unzip -o ./coreroot.${os}.${architecture}.${lowerConfiguration}.zip || exit 0")
-                shell("unzip -o ./coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.zip || exit 0")
+                shell("tar -xzf ./product.${os}.${architecture}.${lowerConfiguration}.tgz || exit 0")
+                shell("tar -xzf ./product.baseline.${os}.${architecture}.${lowerConfiguration}.tgz || exit 0")
+                shell("tar -xzf ./coreroot.${os}.${architecture}.${lowerConfiguration}.tgz || exit 0")
+                shell("tar -xzf ./coreroot.baseline.${os}.${architecture}.${lowerConfiguration}.tgz || exit 0")
             }
             // CoreFX testing downloads the CoreFX tests, not the coreclr tests. Also, unzip the built CoreFX layout/runtime directories.
             else if (doCoreFxTesting) {
@@ -3336,7 +3335,7 @@ def static CreateOtherTestJob(def dslFactory, def project, def branch, def archi
                 shell("""\
 python -u \${WORKSPACE}/tests/scripts/run-pmi-diffs.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} --skip_baseline_build""")
 
-                shell("zip -r dasm.${os}.${architecture}.${configuration}.zip ./_/pmi/asm")
+                shell("tar -czf dasm.${os}.${architecture}.${configuration}.tgz ./_/pmi/asm")
             }
             else if (doCoreFxTesting) {
                 shell("""\
@@ -3378,7 +3377,7 @@ ${runScript} \\
 
     if (isPmiAsmDiffsScenario) {
         // Archive the asm
-        Utilities.addArchival(newJob, "dasm.${os}.${architecture}.${configuration}.zip")
+        Utilities.addArchival(newJob, "dasm.${os}.${architecture}.${configuration}.tgz")
     }
     else if (doCoreFxTesting) {
         Utilities.addArchival(newJob, "${workspaceRelativeFxRootLinux}/artifacts/bin/**/testResults.xml", "", /* doNotFailIfNothingArchived */ true, /* archiveOnlyIfSuccessful */ false)
