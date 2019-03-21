@@ -126,10 +126,6 @@ private:
     bool     genUseBlockInit;  // true if we plan to block-initialize the local stack frame
     unsigned genInitStkLclCnt; // The count of local variables that we need to zero init
 
-    //  Keeps track of how many bytes we've pushed on the processor's stack.
-    //
-    unsigned genStackLevel;
-
     void SubtractStackLevel(unsigned adjustment)
     {
         assert(genStackLevel >= adjustment);
