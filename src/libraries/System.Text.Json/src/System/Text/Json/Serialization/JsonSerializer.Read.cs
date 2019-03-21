@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization
 {
     public static partial class JsonSerializer
     {
-        internal static readonly JsonPropertyInfo s_missingProperty = new JsonPropertyInfo<object, object>();
+        internal static readonly JsonPropertyInfo s_missingProperty = new JsonPropertyInfoNotNullable<object, object>();
         private static readonly JsonSerializerOptions s_defaultSettings = new JsonSerializerOptions();
 
         private static object ReadCore(

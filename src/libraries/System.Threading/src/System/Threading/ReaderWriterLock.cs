@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Internal.Runtime.Augments;
 using System.Diagnostics;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Serialization;
@@ -155,7 +154,7 @@ namespace System.Threading
                         {
                             sleepDurationMilliseconds = 1000;
                         }
-                        RuntimeThread.Sleep(sleepDurationMilliseconds);
+                        Thread.Sleep(sleepDurationMilliseconds);
                         spinCount = 0;
                         currentState = _state;
                         continue;
@@ -171,7 +170,7 @@ namespace System.Threading
                     {
                         if (spinCount > DefaultSpinCount)
                         {
-                            RuntimeThread.Sleep(1);
+                            Thread.Sleep(1);
                             spinCount = 0;
                         }
                         currentState = _state;
@@ -327,7 +326,7 @@ namespace System.Threading
                     // Check for too many waiting writers
                     if ((knownState & LockStates.WaitingWritersMask) == LockStates.WaitingWritersMask)
                     {
-                        RuntimeThread.Sleep(1000);
+                        Thread.Sleep(1000);
                         spinCount = 0;
                         currentState = _state;
                         continue;
@@ -343,7 +342,7 @@ namespace System.Threading
                     {
                         if (spinCount > DefaultSpinCount)
                         {
-                            RuntimeThread.Sleep(1);
+                            Thread.Sleep(1);
                             spinCount = 0;
                         }
                         currentState = _state;
@@ -493,7 +492,7 @@ namespace System.Threading
                         if (writerEvent == null)
                         {
                             // Similar to below, wait for some time and try again
-                            RuntimeThread.Sleep(100);
+                            Thread.Sleep(100);
                             currentState = _state;
                             knownState = 0;
                             Debug.Assert(currentState != knownState);
@@ -518,7 +517,7 @@ namespace System.Threading
                             // Instead, we let the threads that set the WaitingReader bit throw, and here, just wait and try
                             // again. In a low-resource situation, eventually, all such new waiting readers would throw, and the
                             // WaitingReaders bits would not be set anymore, breaking the loop and releasing this thread.
-                            RuntimeThread.Sleep(100);
+                            Thread.Sleep(100);
                             currentState = _state;
                             knownState = 0;
                             Debug.Assert(currentState != knownState);
@@ -613,7 +612,7 @@ namespace System.Threading
                         // Instead, we let the threads that set the WaitingReader bit throw, and here, just wait and try
                         // again. In a low-resource situation, eventually, all such new waiting readers would throw, and the
                         // WaitingReaders bits would not be set anymore, breaking the loop and releasing this thread.
-                        RuntimeThread.Sleep(100);
+                        Thread.Sleep(100);
                         currentState = _state;
                         knownState = 0;
                         Debug.Assert(currentState != knownState);
@@ -627,7 +626,7 @@ namespace System.Threading
                     if (writerEvent == null)
                     {
                         // Similar to above, wait for some time and try again
-                        RuntimeThread.Sleep(100);
+                        Thread.Sleep(100);
                         currentState = _state;
                         knownState = 0;
                         Debug.Assert(currentState != knownState);
@@ -804,7 +803,7 @@ namespace System.Threading
                             // Instead, we let the threads that set the WaitingReader bit throw, and here, just wait and try
                             // again. In a low-resource situation, eventually, all such new waiting readers would throw, and the
                             // WaitingReaders bits would not be set anymore, breaking the loop and releasing this thread.
-                            RuntimeThread.Sleep(100);
+                            Thread.Sleep(100);
                             currentState = _state;
                             knownState = 0;
                             Debug.Assert(currentState != knownState);
@@ -1013,7 +1012,7 @@ namespace System.Threading
             // Indicate to the processor that we are spinning. The return value facilitates usage in do-while spin loops that
             // use 'continue' statements for readability, like:
             //   do { ... } while (YieldProcessor());
-            RuntimeThread.SpinWait(1);
+            Thread.SpinWait(1);
             return true;
         }
 

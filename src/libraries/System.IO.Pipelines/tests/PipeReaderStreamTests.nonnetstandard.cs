@@ -17,6 +17,40 @@ namespace System.IO.Pipelines.Tests
         public delegate Task<int> ReadAsyncDelegate(Stream stream, byte[] data);
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposingPipeReaderStreamCompletesPipeReader(bool dataInPipe)
+        {
+            var pipe = new Pipe();
+            Stream s = pipe.Reader.AsStream();
+
+            if (dataInPipe)
+            {
+                await pipe.Writer.WriteAsync(new byte[42]);
+                await pipe.Writer.FlushAsync();
+            }
+
+            var readerCompletedTask = new TaskCompletionSource<bool>();
+            pipe.Writer.OnReaderCompleted(delegate { readerCompletedTask.SetResult(true); }, null);
+
+            // Call Dispose{Async} multiple times; all should succeed.
+            for (int i = 0; i < 2; i++)
+            {
+                s.Dispose();
+                await s.DisposeAsync();
+            }
+
+            // Make sure OnReaderCompleted was invoked.
+            await readerCompletedTask.Task;
+
+            // Unable to read after disposing.
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await s.ReadAsync(new byte[1]));
+
+            // Writes still work.
+            await pipe.Writer.WriteAsync(new byte[1]);
+        }
+
+        [Theory]
         [MemberData(nameof(ReadCalls))]
         public async Task ReadingFromPipeReaderStreamReadsFromUnderlyingPipeReader(ReadAsyncDelegate readAsync)
         {
@@ -207,6 +241,41 @@ namespace System.IO.Pipelines.Tests
             Stream stream = pipeReader.AsStream();
 
             Assert.Same(stream, pipeReader.AsStream());
+        }
+
+        [Fact]
+        public async Task PipeWriterStreamProducesToConsumingPipeReaderStream()
+        {
+            var pipe = new Pipe();
+
+            int consumedSum = 0, producedSum = 0;
+            Task consumer = Task.Run(() =>
+            {
+                using (Stream reader = pipe.Reader.AsStream())
+                {
+                    int b;
+                    while ((b = reader.ReadByte()) != -1)
+                    {
+                        consumedSum += b;
+                    }
+
+                    Assert.Equal(-1, reader.ReadByte());
+                }
+            });
+
+            var rand = new Random();
+            using (Stream writer = pipe.Writer.AsStream())
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    byte b = (byte)rand.Next(256);
+                    writer.WriteByte(b);
+                    producedSum += b;
+                }
+            }
+
+            await consumer;
+            Assert.Equal(producedSum, consumedSum);
         }
 
         public class BuggyPipeReader : PipeReader
