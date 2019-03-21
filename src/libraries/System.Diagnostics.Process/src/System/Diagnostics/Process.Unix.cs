@@ -159,7 +159,8 @@ namespace System.Diagnostics
                 {
                     if (!_watchingForExit)
                     {
-                        Debug.Assert(_haveProcessHandle, "Process.EnsureWatchingForExit called with no process handle");
+                        Debug.Assert(_waitHandle == null);
+                        Debug.Assert(_registeredWaitHandle == null);
                         Debug.Assert(Associated, "Process.EnsureWatchingForExit called with no associated process");
                         _watchingForExit = true;
                         try
@@ -334,7 +335,8 @@ namespace System.Diagnostics
             }
 
             EnsureState(State.HaveNonExitedId | State.IsLocal);
-            return new SafeProcessHandle(_processId);
+            EnsureWatchingForExit();
+            return new SafeProcessHandle(_processId, _waitHandle.SafeWaitHandle);
         }
 
         /// <summary>
@@ -491,7 +493,7 @@ namespace System.Diagnostics
                     // Store the child's information into this Process object.
                     Debug.Assert(childPid >= 0);
                     SetProcessId(childPid);
-                    SetProcessHandle(new SafeProcessHandle(childPid));
+                    SetProcessHandle(GetProcessHandle());
 
                     return true;
                 }
