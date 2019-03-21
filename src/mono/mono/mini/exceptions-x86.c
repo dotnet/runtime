@@ -1125,8 +1125,11 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	}
 	if (stack_ovf)
 		exc = mono_domain_get ()->stack_overflow_ex;
-	if (!ji)
-		mono_handle_native_crash ("SIGSEGV", sigctx, siginfo);
+	if (!ji) {
+		MonoContext mctx;
+		mono_sigctx_to_monoctx (sigctx, &mctx);
+		mono_handle_native_crash ("SIGSEGV", &mctx, siginfo);
+	}
 	/* setup a call frame on the real stack so that control is returned there
 	 * and exception handling can continue.
 	 * If this was a stack overflow the caller already ensured the stack pages

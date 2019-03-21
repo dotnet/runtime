@@ -134,7 +134,6 @@
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES                (1)
 
 #define MONO_ARCH_USE_SIGACTION          (1)
-#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX (1)
 
 #define MONO_ARCH_HAVE_CONTEXT_SET_INT_REG                  (1)
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS                  (1)

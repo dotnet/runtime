@@ -642,13 +642,10 @@ mono_arch_ip_from_context (void *sigctx)
 }
 
 static void
-altstack_handle_and_restore (void *sigctx, gpointer obj)
+altstack_handle_and_restore (MonoContext *mctx, gpointer obj)
 {
-	MonoContext mctx;
-
-	mono_sigctx_to_monoctx (sigctx, &mctx);
-	mono_handle_exception (&mctx, obj);
-	mono_restore_context (&mctx);
+	mono_handle_exception (mctx, obj);
+	mono_restore_context (mctx);
 }
 
 void
@@ -658,8 +655,8 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	g_assert_not_reached ();
 #else
 #ifdef MONO_ARCH_USE_SIGACTION
-	os_ucontext *uc = (ucontext_t*)sigctx;
-	os_ucontext *uc_copy;
+	os_ucontext *uc = (os_ucontext*)sigctx;
+	MonoContext *uc_copy;
 	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), mono_arch_ip_from_context (sigctx), NULL);
 	gpointer *sp;
 	int frame_size;
@@ -684,14 +681,14 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	 *   ...
 	 * 224 is the size of the red zone
 	 */
-	frame_size = sizeof (ucontext_t) + sizeof (gpointer) * 16 + 224;
+	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 16 + 224;
 	frame_size += 15;
 	frame_size &= ~15;
 	sp = (gpointer)(UCONTEXT_REG_Rn(uc, 1) & ~15);
 	sp = (gpointer)((char*)sp - frame_size);
 	/* may need to adjust pointers in the new struct copy, depending on the OS */
-	uc_copy = (ucontext_t*)(sp + 16);
-	memcpy (uc_copy, uc, sizeof (os_ucontext));
+	uc_copy = (MonoContext*)(sp + 16);
+	mono_sigctx_to_monoctx (uc, uc_copy);
 #if defined(__linux__) && !defined(__mono_ppc64__)
 	uc_copy->uc_mcontext.uc_regs = (gpointer)((char*)uc_copy + ((char*)uc->uc_mcontext.uc_regs - (char*)uc));
 #endif
@@ -714,7 +711,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 #endif
 #endif
 	UCONTEXT_REG_Rn(uc, 1) = (unsigned long)sp;
-	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG) = (unsigned long)(sp + 16);
+	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG) = (unsigned long)uc_copy;
 	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG + 1) = 0;
 	UCONTEXT_REG_Rn(uc, PPC_FIRST_ARG_REG + 2) = 0;
 #endif
