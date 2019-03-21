@@ -16,6 +16,34 @@ namespace System.IO.Pipelines.Tests
     {
         public delegate Task WriteAsyncDelegate(Stream stream, byte[] data);
 
+        [Fact]
+        public async Task DisposingPipeWriterStreamCompletesPipeWriter()
+        {
+            var pipe = new Pipe();
+            Stream s = pipe.Writer.AsStream();
+
+            var writerCompletedTask = new TaskCompletionSource<bool>();
+            pipe.Reader.OnWriterCompleted(delegate { writerCompletedTask.SetResult(true); }, null);
+
+            // Call Dispose{Async} multiple times; all should succeed.
+            for (int i = 0; i < 2; i++)
+            {
+                s.Dispose();
+                await s.DisposeAsync();
+            }
+
+            // Make sure OnWriterCompleted was invoked.
+            await writerCompletedTask.Task;
+
+            // Unable to write after disposing.
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await s.WriteAsync(new byte[1]));
+
+            // Reads still work and return 0.
+            ReadResult rr = await pipe.Reader.ReadAsync();
+            Assert.True(rr.IsCompleted);
+            Assert.Equal(0, rr.Buffer.Length);
+        }
+
         [Theory]
         [MemberData(nameof(WriteCalls))]
         public async Task WritingToPipeStreamWritesToUnderlyingPipeWriter(WriteAsyncDelegate writeAsync)
