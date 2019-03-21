@@ -29,10 +29,6 @@
     <ClearInitLocals Condition=" '$(ClearInitLocals)' == '' ">false</ClearInitLocals>
   </PropertyGroup>
 
-  <!-- This depends on LinkDuringPublish, so it needs to be imported
-       after the property is set. -->
-  <Import Project="$(MSBuildThisFileDirectory)ILLink.CrossGen.targets" />
-
   <ItemGroup>
     <!-- LinkerRootDescriptors (the ItemGroup) is set to contain
          LinkerRootDescriptors (the Property), which allows adding
@@ -161,8 +157,9 @@
        by setting $(ShowLinkerSizeComparison) to true. This runs after
        the ComputeFilesToPublish, so it is output even during
        incremental builds and takes into account all transformations
-       on the files to be published, including link and crossgen. -->
+       on the files to be published. -->
   <UsingTask TaskName="CompareAssemblySizes" AssemblyFile="$(LinkTaskDllPath)" />
+  <UsingTask TaskName="FilterByMetadata" AssemblyFile="$(LinkTaskDllPath)" />
   <Target Name="_CompareLinkedAssemblySizes"
           AfterTargets="ComputeFilesToPublish"
           DependsOnTargets="_ComputeManagedAssembliesToLink;_ComputeLinkedAssemblies;_RemoveDuplicatesFrom_ResolvedCopyLocalPublishAssets"
@@ -200,34 +197,6 @@
                             Condition=" '$(_DebugSymbolsProduced)' == 'true' " />
       <_LinkedDebugSymbols Include="@(__LinkedDebugSymbols)"
                            Condition="Exists('%(Identity)') And '$(_DebugSymbolsProduced)' == 'true' " />
-    </ItemGroup>
-
-  </Target>
-
-  <!-- Compute the default set of assemblies to crossgen after
-       linking. This will include any assemblies modified by the
-       linker that were crossgen'd before linking. -->
-  <Target Name="_ComputeLinkedAssembliesToCrossgen"
-          AfterTargets="_ComputeLinkedAssemblies"
-          Condition=" '$(CrossGenDuringPublish)' == 'true' ">
-    <FilterByMetadata Items="@(_ManagedResolvedAssembliesToPublish);@(IntermediateAssembly)"
-                      MetadataName="Filename"
-                      MetadataValues="@(_LinkedResolvedAssemblies->'%(Filename)');@(_LinkedIntermediateAssembly->'%(Filename)')">
-      <Output TaskParameter="FilteredItems" ItemName="_OriginalLinkedAssemblies" />
-    </FilterByMetadata>
-
-    <ComputeCrossgenedAssemblies Assemblies="@(_OriginalLinkedAssemblies)">
-      <Output TaskParameter="CrossgenedAssemblies" ItemName="_OriginalLinkedAssembliesThatWereCrossgened" />
-    </ComputeCrossgenedAssemblies>
-
-    <!-- Ideally, we would remember which assemblies were R2R and
-         which were fragile crossgen-ed, and do the same after
-         linking. Currently this makes no difference because
-         System.Private.CoreLib is the only fragile image, and it
-         can't be ready-to-run crossgen-ed. -->
-    <ItemGroup>
-      <_LinkedAssembliesToCrossgen Include="@(_OriginalLinkedAssembliesThatWereCrossgened->'$(IntermediateLinkDir)/%(Filename)%(Extension)')" />
-      <FilesToCrossgen Include="@(_LinkedAssembliesToCrossgen)" />
     </ItemGroup>
 
   </Target>

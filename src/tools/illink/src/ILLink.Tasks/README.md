@@ -24,7 +24,6 @@ will:
 
 - Determine the assemblies and options to pass to illink.
 - Remove unused native files from the publish output.
-- Run crossgen on the linked assemblies to improve startup performance.
 
 The full set of options is described below.
 
@@ -101,10 +100,6 @@ duplicate assemblies to analyze. This means that dependencies of the
 un-analyzed duplicates may not be included in the application, so you
 may need to root such dependencies manually.
 
-Native compilation only works when the target platform is the same as
-the host. To use the linker when cross-targeting (building a unix app
-from windows, for example), disable `CrossGenDuringPublish`.
-
 ## Options
 
 The following MSBuild properties can be used to control the behavior
@@ -112,9 +107,7 @@ of the linker, from the command-line (via `dotnet publish
 /p:PropertyName=PropertyValue`), or from the .csproj file (via
 `<PropertyName>PropertyValue</PropertyName>`). They are defined and
 used in
-[ILLink.Tasks.targets](ILLink.Tasks.targets)
-and
-[ILLink.CrossGen.targets](ILLink.CrossGen.targets)
+[ILLink.Tasks.targets](ILLink.Tasks.targets).
 
 - `LinkDuringPublish` (default `true`) - Set to `false` to disable
   linking.
@@ -179,8 +172,3 @@ and
 - `LinkerTrimNativeDeps` (default `true`) - If `true`, enable
   detection and removal of unused native dependencies. If `false`, all
   native dependencies are kept.
-
-- `CrossGenDuringPublish` (default `true`) - If `true`, run crossgen
-  on the set of assemblies modified by the linker that were crossgen'd
-  before linking. If `false`, just output IL for the linked
-  assemblies, even if they were crossgen'd before linking.

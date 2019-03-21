@@ -83,7 +83,6 @@
   <Target Name="BinPlacePackageDeps">
     <Copy SourceFiles="$(NuspecFileName)" DestinationFolder="$(BaseOutputPath)" />
     <Copy SourceFiles="ILLink.Tasks.targets" DestinationFolder="$(BaseOutputPath)" />
-    <Copy SourceFiles="ILLink.CrossGen.targets" DestinationFolder="$(BaseOutputPath)" />
   </Target>
 
   <Target Name="LayoutPackage">
@@ -101,7 +100,6 @@
     <Compile Include="LinkTask.cs" />
     <Compile Include="CheckEmbeddedRootDescriptor.cs" />
     <Compile Include="CompareSizes.cs" />
-    <Compile Include="ComputeCrossgenedAssemblies.cs" />
     <Compile Include="ComputeManagedAssemblies.cs" />
     <Compile Include="ComputeRemovedAssemblies.cs" />
     <Compile Include="CreateRootDescriptorFile.cs" />
@@ -114,10 +112,6 @@
     <Content Include="Sdk\Sdk.props">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <!-- Don't support enumerating runtime libraries in this version -->
-    <None Include="GetRuntimeLibraries.cs" />
-    <None Include="Microsoft.NET.Build.Tasks/LockFileCache.cs" />
-    <None Include="Microsoft.NET.Build.Tasks/BuildErrorException.cs" />
   </ItemGroup>
 
   <!-- TODO: Uncomment this once we can avoid hard-coding this in a
