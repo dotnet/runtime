@@ -295,13 +295,10 @@
     <value>The specified type {0} must derive from the specific value's type {1}.</value>
   </data>
   <data name="SerializationInvalidBufferSize" xml:space="preserve">
-    <value>The value must be greater than zero or equal to -1.</value>
+    <value>The value must be greater than zero.</value>
   </data>
   <data name="BufferWriterAdvancedTooFar" xml:space="preserve">
     <value>Cannot advance past the end of the buffer, which has a size of {0}.</value>
-  </data>
-  <data name="EnumConverterNotImplemented" xml:space="preserve">
-    <value>EnumConverter is not yet supported on .NET Standard 2.0.</value>
   </data>
   <data name="InvalidComparison" xml:space="preserve">
     <value>Cannot compare the value of a token type '{0}' to text.</value>
