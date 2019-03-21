@@ -639,7 +639,7 @@ namespace System.Diagnostics
                             do
                             {
                                 KeyValuePair<string, string> item = e.Current;
-                                baggage.Append(item.Key).Append('=').Append(item.Value).Append(',');
+                                baggage.Append(WebUtility.UrlEncode(item.Key)).Append('=').Append(WebUtility.UrlEncode(item.Value)).Append(',');
                             }
                             while (e.MoveNext());
                             baggage.Remove(baggage.Length - 1, 1);
