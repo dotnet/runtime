@@ -117,6 +117,7 @@ namespace Mono.Linker.Steps {
 				return true;
 
 			switch (Annotations.GetAction (type.Module.Assembly)) {
+			case AssemblyAction.Save:
 			case AssemblyAction.Copy:
 			case AssemblyAction.CopyUsed:
 			case AssemblyAction.AddBypassNGen:
