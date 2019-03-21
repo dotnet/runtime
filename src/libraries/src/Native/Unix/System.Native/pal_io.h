@@ -341,27 +341,6 @@ DLLEXPORT int32_t SystemNative_Stat(const char* path, FileStatus* output);
 DLLEXPORT int32_t SystemNative_LStat(const char* path, FileStatus* output);
 
 /**
- * Get file status from a descriptor. Implemented as shim to fstat(2).
- *
- * Returns 0 for success, -1 for failure. Sets errno on failure.
- */
-DLLEXPORT int32_t SystemNative_FStat2(intptr_t fd, FileStatus* output);
-
-/**
- * Get file status from a full path. Implemented as shim to stat(2).
- *
- * Returns 0 for success, -1 for failure. Sets errno on failure.
- */
-DLLEXPORT int32_t SystemNative_Stat2(const char* path, FileStatus* output);
-
-/**
- * Get file stats from a full path. Implemented as shim to lstat(2).
- *
- * Returns 0 for success, -1 for failure. Sets errno on failure.
- */
-DLLEXPORT int32_t SystemNative_LStat2(const char* path, FileStatus* output);
-
-/**
  * Open or create a file or device. Implemented as shim to open(2).
  *
  * Returns file descriptor or -1 for failure. Sets errno on failure.

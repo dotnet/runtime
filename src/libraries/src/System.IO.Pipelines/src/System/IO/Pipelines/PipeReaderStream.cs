@@ -20,6 +20,12 @@ namespace System.IO.Pipelines
             _pipeReader = pipeReader;
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            _pipeReader.Complete();
+            base.Dispose(disposing);
+        }
+
         public override bool CanRead => true;
 
         public override bool CanSeek => false;
