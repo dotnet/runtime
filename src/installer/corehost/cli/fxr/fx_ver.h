@@ -7,13 +7,15 @@
 
 #include <pal.h>
 
-// Note: This is not SemVer (esp., in comparing pre-release part, fx_ver_t does not
-// compare multiple dot separated identifiers individually.) ex: 1.0.0-beta.2 vs. 1.0.0-beta.11
+// Note: This is intended to implement SemVer 2.0
 struct fx_ver_t
 {
     fx_ver_t();
     fx_ver_t(int major, int minor, int patch);
+    // if not empty pre contains valid prerelease label with leading '-'
     fx_ver_t(int major, int minor, int patch, const pal::string_t& pre);
+    // if not empty pre contains valid prerelease label with leading '-'
+    // if not empty build contains valid build label with leading '+'
     fx_ver_t(int major, int minor, int patch, const pal::string_t& pre, const pal::string_t& build);
 
     int get_major() const { return m_major; }
