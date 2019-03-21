@@ -119,7 +119,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.Associated);
-                return OpenProcessHandle();
+                return GetOrOpenProcessHandle();
             }
         }
 
@@ -657,7 +657,7 @@ namespace System.Diagnostics
                     {
                         if (value)
                         {
-                            OpenProcessHandle();
+                            GetOrOpenProcessHandle();
                             EnsureWatchingForExit();
                         }
                         else
@@ -1130,7 +1130,7 @@ namespace System.Diagnostics
         /// Opens a long-term handle to the process, with all access.  If a handle exists,
         /// then it is reused.  If the process has exited, it throws an exception.
         /// </summary>
-        private SafeProcessHandle OpenProcessHandle()
+        private SafeProcessHandle GetOrOpenProcessHandle()
         {
             if (!_haveProcessHandle)
             {

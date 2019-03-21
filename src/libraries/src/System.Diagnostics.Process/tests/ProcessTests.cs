@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
+using Microsoft.Win32.SafeHandles;
 using Xunit;
 using Xunit.Sdk;
 
@@ -944,6 +945,24 @@ namespace System.Diagnostics.Tests
             CreateDefaultProcess();
 
             Assert.False(_process.SafeHandle.IsInvalid);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Handle_CreateEvent_BlocksUntilProcessCompleted(bool useSafeHandle)
+        {
+            using (RemoteInvokeHandle h = RemoteInvoke(() => Console.ReadLine(), new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardInput = true } }))
+            using (var mre = new ManualResetEvent(false))
+            {
+                mre.SetSafeWaitHandle(new SafeWaitHandle(useSafeHandle ? h.Process.SafeHandle.DangerousGetHandle() : h.Process.Handle, ownsHandle: false));
+
+                Assert.False(mre.WaitOne(millisecondsTimeout: 0), "Event should not yet have been set.");
+
+                h.Process.StandardInput.WriteLine(); // allow child to complete
+
+                Assert.True(mre.WaitOne(FailWaitTimeoutMilliseconds), "Event should have been set.");
+            }
         }
 
         [Fact]
