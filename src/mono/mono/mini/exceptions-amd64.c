@@ -861,15 +861,15 @@ prepare_for_guard_pages (MonoContext *mctx)
 }
 
 static void
-altstack_handle_and_restore (MonoContext *ctx, MonoObject *obj, gboolean stack_ovf)
+altstack_handle_and_restore (void *ctx, MonoObject *obj, gboolean stack_ovf)
 {
 	MonoContext mctx;
-	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), MONO_CONTEXT_GET_IP (ctx), NULL);
+	MonoJitInfo *ji = mini_jit_info_table_find (mono_domain_get (), (gpointer)UCONTEXT_REG_RIP (ctx), NULL);
 
 	if (!ji)
-		mono_handle_native_crash ("SIGSEGV", NULL, NULL);
+		mono_handle_native_crash ("SIGSEGV", ctx, NULL);
 
-	mctx = *ctx;
+	mono_sigctx_to_monoctx (ctx, &mctx);
 
 	mono_handle_exception (&mctx, obj);
 	if (stack_ovf) {
@@ -887,7 +887,7 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	MonoException *exc = NULL;
 	gpointer *sp;
 	int frame_size;
-	MonoContext *copied_ctx;
+	ucontext_t *copied_ctx;
 
 	if (stack_ovf)
 		exc = mono_domain_get ()->stack_overflow_ex;
@@ -900,15 +900,15 @@ mono_arch_handle_altstack_exception (void *sigctx, MONO_SIG_HANDLER_INFO_TYPE *s
 	 *   return ip
 	 * 128 is the size of the red zone
 	 */
-	frame_size = sizeof (MonoContext) + sizeof (gpointer) * 4 + 128;
+	frame_size = sizeof (ucontext_t) + sizeof (gpointer) * 4 + 128;
 	frame_size += 15;
 	frame_size &= ~15;
 	sp = (gpointer *)(UCONTEXT_REG_RSP (sigctx) & ~15);
 	sp = (gpointer *)((char*)sp - frame_size);
-	copied_ctx = (MonoContext*)(sp + 4);
+	copied_ctx = (ucontext_t*)(sp + 4);
 	/* the arguments must be aligned */
 	sp [-1] = (gpointer)UCONTEXT_REG_RIP (sigctx);
-	mono_sigctx_to_monoctx (sigctx, copied_ctx);
+	memcpy (copied_ctx, sigctx, sizeof (ucontext_t));
 	/* at the return form the signal handler execution starts in altstack_handle_and_restore() */
 	UCONTEXT_REG_RIP (sigctx) = (unsigned long)altstack_handle_and_restore;
 	UCONTEXT_REG_RSP (sigctx) = (unsigned long)(sp - 1);
