@@ -9547,6 +9547,11 @@ emit_llvm_file (MonoAotCompile *acfg)
 	if (acfg->aot_opts.mtriple)
 		g_string_append_printf (acfg->llc_args, " -mtriple=%s", acfg->aot_opts.mtriple);
 
+#if defined(TARGET_X86_64_WIN32_MSVC) && LLVM_API_VERSION >= 600
+	if (!acfg->aot_opts.mtriple)
+		g_string_append_printf (acfg->llc_args, " -mtriple=%s", "x86_64-pc-windows-msvc");
+#endif
+
 	g_string_append (acfg->llc_args, " -disable-gnu-eh-frame -enable-mono-eh-frame");
 
 	g_string_append_printf (acfg->llc_args, " -mono-eh-frame-symbol=%s%s", acfg->user_symbol_prefix, acfg->llvm_eh_frame_symbol);
@@ -9560,8 +9565,7 @@ emit_llvm_file (MonoAotCompile *acfg)
 	g_string_append_printf (acfg->llc_args, " -no-x86-call-frame-opt");
 #endif
 
-#if ( defined(TARGET_MACH) && defined(TARGET_ARM) ) || defined(TARGET_ORBIS)
-	/* ios requires PIC code now */
+#if ( defined(TARGET_MACH) && defined(TARGET_ARM) ) || defined(TARGET_ORBIS) || defined(TARGET_X86_64_WIN32_MSVC)
 	g_string_append_printf (acfg->llc_args, " -relocation-model=pic");
 #else
 	if (llvm_acfg->aot_opts.static_link)
@@ -13353,7 +13357,13 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 #ifdef ENABLE_LLVM
 	if (acfg->llvm) {
 		llvm_acfg = acfg;
-		LLVMModuleFlags flags = LLVM_MODULE_FLAG_DWARF;
+		LLVMModuleFlags flags = 0;
+#ifdef EMIT_DWARF_INFO
+		flags = LLVM_MODULE_FLAG_DWARF;
+#endif
+#ifdef EMIT_WIN32_CODEVIEW_INFO
+		flags = LLVM_MODULE_FLAG_CODEVIEW;
+#endif
 		if (acfg->aot_opts.static_link)
 			flags = (LLVMModuleFlags)(flags | LLVM_MODULE_FLAG_STATIC);
 		if (acfg->aot_opts.llvm_only)
