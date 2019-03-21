@@ -52,6 +52,34 @@ namespace System.Runtime.Loader
 
             return loadedAssembly;
         }
+        
+#if !FEATURE_PAL
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern IntPtr LoadFromInMemoryModuleInternal(IntPtr ptrNativeAssemblyLoadContext, IntPtr hModule, ObjectHandleOnStack retAssembly);
+
+
+        /// <summary>
+        /// Load a module that has already been loaded into memory by the OS loader as a .NET assembly.
+        /// </summary>
+        internal Assembly LoadFromInMemoryModule(IntPtr moduleHandle)
+        {
+            if (moduleHandle == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(moduleHandle));
+            }
+            lock (_unloadLock)
+            {
+                VerifyIsAlive();
+
+                RuntimeAssembly loadedAssembly = null;
+                LoadFromInMemoryModuleInternal(
+                    _nativeAssemblyLoadContext,
+                    moduleHandle,
+                    JitHelpers.GetObjectHandleOnStack(ref loadedAssembly));
+                return loadedAssembly;
+            }
+        }
+#endif
 
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.

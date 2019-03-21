@@ -4223,8 +4223,8 @@ static const char *fileLoadLevelName[] =
     "LOADLIBRARY",                        // FILE_LOAD_LOADLIBRARY
     "POST_LOADLIBRARY",                   // FILE_LOAD_POST_LOADLIBRARY                
     "EAGER_FIXUPS",                       // FILE_LOAD_EAGER_FIXUPS
-    "VTABLE FIXUPS",                      // FILE_LOAD_VTABLE_FIXUPS
     "DELIVER_EVENTS",                     // FILE_LOAD_DELIVER_EVENTS
+    "VTABLE FIXUPS",                      // FILE_LOAD_VTABLE_FIXUPS
     "LOADED",                             // FILE_LOADED
     "VERIFY_EXECUTION",                   // FILE_LOAD_VERIFY_EXECUTION
     "ACTIVE",                             // FILE_ACTIVE

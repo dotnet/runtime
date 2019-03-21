@@ -555,12 +555,12 @@ BOOL DomainFile::DoIncrementalLoad(FileLoadLevel level)
         EagerFixups();
         break;
 
-    case FILE_LOAD_VTABLE_FIXUPS:
-        VtableFixups();
-        break;
-
     case FILE_LOAD_DELIVER_EVENTS:
         DeliverSyncEvents();
+        break;
+
+    case FILE_LOAD_VTABLE_FIXUPS:
+        VtableFixups();
         break;
 
     case FILE_LOADED:
