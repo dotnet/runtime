@@ -102,7 +102,17 @@ PAL_GetLogicalCpuCountFromOS()
 {
     int nrcpus = 0;
 
-#if HAVE_SYSCONF
+#if HAVE_SCHED_GETAFFINITY
+
+    cpu_set_t cpuSet;
+    int st = sched_getaffinity(0, sizeof(cpu_set_t), &cpuSet);
+    if (st != 0)
+    {
+        ASSERT("sched_getaffinity failed (%d)\n", errno);
+    }
+
+    nrcpus = CPU_COUNT(&cpuSet);
+#elif HAVE_SYSCONF
 
 #if defined(_ARM_) || defined(_ARM64_)
 #define SYSCONF_GET_NUMPROCS       _SC_NPROCESSORS_CONF
