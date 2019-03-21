@@ -5,12 +5,10 @@ include_directories(../../pal/inc)
 add_definitions(-DPAL_STDCPP_COMPAT=1)
 
 if(WIN32)
-    #use static crt
-    add_definitions(-MT) 
     add_definitions(-DWIN32_LEAN_AND_MEAN)
     include_directories(../../inc) #needed for warning control
 
-    set(TWO_WAY_PIPE_SOURCES 
+    set(TWO_WAY_PIPE_SOURCES
         win/diagnosticsipc.cpp
         win/twowaypipe.cpp
         win/processdescriptor.cpp

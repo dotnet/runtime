@@ -5,9 +5,10 @@
 #ifndef __DIAGNOSTIC_SERVER_H__
 #define __DIAGNOSTIC_SERVER_H__
 
-#include <stdint.h>
-
 #ifdef FEATURE_PERFTRACING // This macro should change to something more generic than performance.
+
+#include <stdint.h>
+#include "diagnosticsipc.h"
 
 //! TODO: Temp class.
 enum class DiagnosticMessageType : uint32_t
@@ -51,6 +52,9 @@ public:
 
     //! Shutdown the event pipe.
     static bool Shutdown();
+
+private:
+    static IpcStream::DiagnosticsIpc *s_pIpc;
 };
 
 #endif // FEATURE_PERFTRACING
