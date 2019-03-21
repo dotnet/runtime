@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization
 
             byte[] result;
 
-            using (var output = new ArrayBufferWriter<byte>(options.EffectiveBufferSize))
+            using (var output = new ArrayBufferWriter<byte>(options.DefaultBufferSize))
             {
                 WriteCore(output, value, type, options);
                 result = output.WrittenMemory.ToArray();
@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization
 
             string result;
 
-            using (var output = new ArrayBufferWriter<byte>(options.EffectiveBufferSize))
+            using (var output = new ArrayBufferWriter<byte>(options.DefaultBufferSize))
             {
                 WriteCore(output, value, type, options);
                 result = JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
