@@ -8,7 +8,6 @@
   </metadata>
   <files>
     <file src="ILLink.Tasks.targets" target="build" />
-    <file src="ILLink.CrossGen.targets" target="build" />
     <file src="netcoreapp2.0/**/*.dll" target="tools" />
     <file src="netcoreapp2.0/**/*.json" target="tools" />
     <file src="netcoreapp2.0/Sdk/Sdk.props" target="Sdk/Sdk.props" />
