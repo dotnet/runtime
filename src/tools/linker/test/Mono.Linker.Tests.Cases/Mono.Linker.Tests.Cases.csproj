@@ -191,6 +191,8 @@
     <Compile Include="Inheritance.AbstractClasses\UnusedVirtualMethodRemoved.cs" />
     <Compile Include="Inheritance.AbstractClasses\UsedOverrideOfAbstractMethodIsKept.cs" />
     <Compile Include="Inheritance.AbstractClasses\UsedOverrideOfVirtualMethodIsKept.cs" />
+    <Compile Include="Inheritance.Complex\NoKeptCtor\OverrideOfAbstractAndInterfaceMethodWhenInterfaceRemoved.cs" />
+    <Compile Include="Inheritance.Complex\NoKeptCtor\OverrideOfAbstractAndInterfaceMethodWhenInterfaceRemoved2.cs" />
     <Compile Include="Inheritance.Interfaces\Dependencies\InterfaceTypeInOtherUsedOnlyByCopiedAssemblyExplicit_Copy.cs" />
     <Compile Include="Inheritance.Interfaces\Dependencies\InterfaceTypeInOtherUsedOnlyByCopiedAssemblyExplicit_Link.cs" />
     <Compile Include="Inheritance.Interfaces\Dependencies\InterfaceTypeInOtherUsedOnlyByCopiedAssembly_Copy.cs" />
@@ -611,7 +613,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Attributes.StructLayout\" />
-    <Folder Include="Inheritance.Complex" />
     <Folder Include="Reflection\Dependencies\" />
     <Folder Include="BCLFeatures\" />
     <Folder Include="BCLFeatures\ETW\" />
