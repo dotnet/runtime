@@ -2541,7 +2541,17 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 // Returns true if the job should be generated.
 def static shouldGenerateJob(def scenario, def isPR, def architecture, def configuration, def os, def isBuildOnly)
 {
-    // The various "innerloop" jobs are only available as PR triggered.
+    // Innerloop jobs (except corefx_innerloop) are no longer created in Jenkins
+    if (isInnerloopTestScenario(scenario)) {
+        assert scenario != 'corefx_innerloop'
+        return false;
+    }
+
+    if (!isPR) {
+        if (scenario == 'corefx_innerloop') {
+            return false
+        }
+    }
 
     if (!isPR) {
         if (isInnerloopTestScenario(scenario)) {
@@ -3529,6 +3539,15 @@ def static shouldGenerateFlowJob(def scenario, def isPR, def architecture, def c
         if (scenario == 'corefx_innerloop') {
             return false
         }
+    }
+
+    // Disable flow jobs for innerloop pr.
+    //
+    // The only exception is windows arm(64)
+    if (isInnerloopTestScenario(scenario) && isPR && os != 'Windows_NT') {
+        assert scenario != 'corefx_innerloop'
+
+        return false;
     }
 
     // Filter based on OS and architecture.
