@@ -77,6 +77,10 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
     return pIpcStream;
 }
 
+void IpcStream::DiagnosticsIpc::Unlink(ErrorCallback callback)
+{
+}
+
 IpcStream::~IpcStream()
 {
     if (_hPipe != INVALID_HANDLE_VALUE)

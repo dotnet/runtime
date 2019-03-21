@@ -4,7 +4,6 @@
 
 #include "common.h"
 #include "diagnosticserver.h"
-#include "diagnosticsipc.h"
 #include "eventpipeprotocolhelper.h"
 
 #ifdef FEATURE_PAL
@@ -12,6 +11,8 @@
 #endif // FEATURE_PAL
 
 #ifdef FEATURE_PERFTRACING
+
+IpcStream::DiagnosticsIpc *DiagnosticServer::s_pIpc = nullptr;
 
 static DWORD WINAPI DiagnosticsServerThread(LPVOID lpThreadParameter)
 {
@@ -28,17 +29,13 @@ static DWORD WINAPI DiagnosticsServerThread(LPVOID lpThreadParameter)
     auto pIpc = reinterpret_cast<IpcStream::DiagnosticsIpc *>(lpThreadParameter);
     if (pIpc == nullptr)
     {
-        STRESS_LOG0(LF_STARTUP, LL_ERROR,"Diagnostics IPC listener was undefined\n");
+        STRESS_LOG0(LF_DIAGNOSTICS_PORT, LL_ERROR, "Diagnostics IPC listener was undefined\n");
         return 1;
     }
 
-#ifdef _DEBUG
     ErrorCallback LoggingCallback = [](const char *szMessage, uint32_t code) {
-        LOG((LF_REMOTING, LL_WARNING, "warning (%d): %s.\n", code, szMessage));
+        STRESS_LOG2(LF_DIAGNOSTICS_PORT, LL_WARNING, "warning (%d): %s.\n", code, szMessage);
     };
-#else
-    ErrorCallback LoggingCallback = nullptr;
-#endif
 
     while (true)
     {
@@ -69,7 +66,7 @@ static DWORD WINAPI DiagnosticsServerThread(LPVOID lpThreadParameter)
             break;
 
         default:
-            LOG((LF_REMOTING, LL_WARNING, "Received unknow request type (%d)\n", header.RequestType));
+            LOG((LF_DIAGNOSTICS_PORT, LL_WARNING, "Received unknow request type (%d)\n", header.RequestType));
             break;
         }
     }
@@ -93,23 +90,25 @@ bool DiagnosticServer::Initialize()
     {
         auto ErrorCallback = [](const char *szMessage, uint32_t code) {
             STRESS_LOG2(
-                LF_STARTUP,                                           // facility
+                LF_DIAGNOSTICS_PORT,                                  // facility
                 LL_ERROR,                                             // level
                 "Failed to create diagnostic IPC: error (%d): %s.\n", // msg
                 code,                                                 // data1
                 szMessage);                                           // data2
         };
-        IpcStream::DiagnosticsIpc *pIpc = IpcStream::DiagnosticsIpc::Create(
+
+        // TODO: Should we handle/assert that (s_pIpc == nullptr)?
+        s_pIpc = IpcStream::DiagnosticsIpc::Create(
             "dotnetcore-diagnostic", ErrorCallback);
 
-        if (pIpc != nullptr)
+        if (s_pIpc != nullptr)
         {
             DWORD dwThreadId = 0;
             HANDLE hThread = ::CreateThread( // TODO: Is it correct to have this "lower" level call here?
                 nullptr,                     // no security attribute
                 0,                           // default stack size
                 DiagnosticsServerThread,     // thread proc
-                (LPVOID)pIpc,                // thread parameter
+                (LPVOID)s_pIpc,              // thread parameter
                 0,                           // not suspended
                 &dwThreadId);                // returns thread ID
 
@@ -117,7 +116,7 @@ bool DiagnosticServer::Initialize()
             {
                 // Failed to create IPC thread.
                 STRESS_LOG1(
-                    LF_STARTUP,                                          // facility
+                    LF_DIAGNOSTICS_PORT,                                 // facility
                     LL_ERROR,                                            // level
                     "Failed to create diagnostic server thread (%d).\n", // msg
                     ::GetLastError());                                   // data1
@@ -155,7 +154,18 @@ bool DiagnosticServer::Shutdown()
 
     EX_TRY
     {
-        // FIXME: Stop IPC server thread?
+        if (s_pIpc != nullptr)
+        {
+            auto ErrorCallback = [](const char *szMessage, uint32_t code) {
+                STRESS_LOG2(
+                    LF_DIAGNOSTICS_PORT,                                  // facility
+                    LL_ERROR,                                             // level
+                    "Failed to unlink diagnostic IPC: error (%d): %s.\n", // msg
+                    code,                                                 // data1
+                    szMessage);                                           // data2
+            };
+            s_pIpc->Unlink(ErrorCallback);
+        }
         fSuccess = true;
     }
     EX_CATCH
