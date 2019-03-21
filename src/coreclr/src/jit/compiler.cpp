@@ -1783,115 +1783,11 @@ void Compiler::compShutdown()
 /* static */
 void Compiler::compDisplayStaticSizes(FILE* fout)
 {
-
 #if MEASURE_NODE_SIZE
     GenTree::DumpNodeSizes(fout);
 #endif
 
-#if MEASURE_BLOCK_SIZE
-
-    BasicBlock* bbDummy = nullptr;
-
-    fprintf(fout, "\n");
-    fprintf(fout, "Offset / size of bbNext                = %3u / %3u\n", offsetof(BasicBlock, bbNext),
-            sizeof(bbDummy->bbNext));
-    fprintf(fout, "Offset / size of bbNum                 = %3u / %3u\n", offsetof(BasicBlock, bbNum),
-            sizeof(bbDummy->bbNum));
-    fprintf(fout, "Offset / size of bbPostOrderNum        = %3u / %3u\n", offsetof(BasicBlock, bbPostOrderNum),
-            sizeof(bbDummy->bbPostOrderNum));
-    fprintf(fout, "Offset / size of bbRefs                = %3u / %3u\n", offsetof(BasicBlock, bbRefs),
-            sizeof(bbDummy->bbRefs));
-    fprintf(fout, "Offset / size of bbFlags               = %3u / %3u\n", offsetof(BasicBlock, bbFlags),
-            sizeof(bbDummy->bbFlags));
-    fprintf(fout, "Offset / size of bbWeight              = %3u / %3u\n", offsetof(BasicBlock, bbWeight),
-            sizeof(bbDummy->bbWeight));
-    fprintf(fout, "Offset / size of bbJumpKind            = %3u / %3u\n", offsetof(BasicBlock, bbJumpKind),
-            sizeof(bbDummy->bbJumpKind));
-    fprintf(fout, "Offset / size of bbJumpOffs            = %3u / %3u\n", offsetof(BasicBlock, bbJumpOffs),
-            sizeof(bbDummy->bbJumpOffs));
-    fprintf(fout, "Offset / size of bbJumpDest            = %3u / %3u\n", offsetof(BasicBlock, bbJumpDest),
-            sizeof(bbDummy->bbJumpDest));
-    fprintf(fout, "Offset / size of bbJumpSwt             = %3u / %3u\n", offsetof(BasicBlock, bbJumpSwt),
-            sizeof(bbDummy->bbJumpSwt));
-    fprintf(fout, "Offset / size of bbEntryState          = %3u / %3u\n", offsetof(BasicBlock, bbEntryState),
-            sizeof(bbDummy->bbEntryState));
-    fprintf(fout, "Offset / size of bbStkTempsIn          = %3u / %3u\n", offsetof(BasicBlock, bbStkTempsIn),
-            sizeof(bbDummy->bbStkTempsIn));
-    fprintf(fout, "Offset / size of bbStkTempsOut         = %3u / %3u\n", offsetof(BasicBlock, bbStkTempsOut),
-            sizeof(bbDummy->bbStkTempsOut));
-    fprintf(fout, "Offset / size of bbTryIndex            = %3u / %3u\n", offsetof(BasicBlock, bbTryIndex),
-            sizeof(bbDummy->bbTryIndex));
-    fprintf(fout, "Offset / size of bbHndIndex            = %3u / %3u\n", offsetof(BasicBlock, bbHndIndex),
-            sizeof(bbDummy->bbHndIndex));
-    fprintf(fout, "Offset / size of bbCatchTyp            = %3u / %3u\n", offsetof(BasicBlock, bbCatchTyp),
-            sizeof(bbDummy->bbCatchTyp));
-    fprintf(fout, "Offset / size of bbStkDepth            = %3u / %3u\n", offsetof(BasicBlock, bbStkDepth),
-            sizeof(bbDummy->bbStkDepth));
-    fprintf(fout, "Offset / size of bbFPinVars            = %3u / %3u\n", offsetof(BasicBlock, bbFPinVars),
-            sizeof(bbDummy->bbFPinVars));
-    fprintf(fout, "Offset / size of bbPreds               = %3u / %3u\n", offsetof(BasicBlock, bbPreds),
-            sizeof(bbDummy->bbPreds));
-    fprintf(fout, "Offset / size of bbReach               = %3u / %3u\n", offsetof(BasicBlock, bbReach),
-            sizeof(bbDummy->bbReach));
-    fprintf(fout, "Offset / size of bbIDom                = %3u / %3u\n", offsetof(BasicBlock, bbIDom),
-            sizeof(bbDummy->bbIDom));
-    fprintf(fout, "Offset / size of bbDfsNum              = %3u / %3u\n", offsetof(BasicBlock, bbDfsNum),
-            sizeof(bbDummy->bbDfsNum));
-    fprintf(fout, "Offset / size of bbCodeOffs            = %3u / %3u\n", offsetof(BasicBlock, bbCodeOffs),
-            sizeof(bbDummy->bbCodeOffs));
-    fprintf(fout, "Offset / size of bbCodeOffsEnd         = %3u / %3u\n", offsetof(BasicBlock, bbCodeOffsEnd),
-            sizeof(bbDummy->bbCodeOffsEnd));
-    fprintf(fout, "Offset / size of bbVarUse              = %3u / %3u\n", offsetof(BasicBlock, bbVarUse),
-            sizeof(bbDummy->bbVarUse));
-    fprintf(fout, "Offset / size of bbVarDef              = %3u / %3u\n", offsetof(BasicBlock, bbVarDef),
-            sizeof(bbDummy->bbVarDef));
-    fprintf(fout, "Offset / size of bbLiveIn              = %3u / %3u\n", offsetof(BasicBlock, bbLiveIn),
-            sizeof(bbDummy->bbLiveIn));
-    fprintf(fout, "Offset / size of bbLiveOut             = %3u / %3u\n", offsetof(BasicBlock, bbLiveOut),
-            sizeof(bbDummy->bbLiveOut));
-    fprintf(fout, "Offset / size of bbMemorySsaPhiFunc      = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaPhiFunc),
-            sizeof(bbDummy->bbMemorySsaPhiFunc));
-    fprintf(fout, "Offset / size of bbMemorySsaNumIn        = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaNumIn),
-            sizeof(bbDummy->bbMemorySsaNumIn));
-    fprintf(fout, "Offset / size of bbMemorySsaNumOut       = %3u / %3u\n", offsetof(BasicBlock, bbMemorySsaNumOut),
-            sizeof(bbDummy->bbMemorySsaNumOut));
-    fprintf(fout, "Offset / size of bbScope               = %3u / %3u\n", offsetof(BasicBlock, bbScope),
-            sizeof(bbDummy->bbScope));
-    fprintf(fout, "Offset / size of bbCseGen              = %3u / %3u\n", offsetof(BasicBlock, bbCseGen),
-            sizeof(bbDummy->bbCseGen));
-    fprintf(fout, "Offset / size of bbCseIn               = %3u / %3u\n", offsetof(BasicBlock, bbCseIn),
-            sizeof(bbDummy->bbCseIn));
-    fprintf(fout, "Offset / size of bbCseOut              = %3u / %3u\n", offsetof(BasicBlock, bbCseOut),
-            sizeof(bbDummy->bbCseOut));
-
-    fprintf(fout, "Offset / size of bbEmitCookie          = %3u / %3u\n", offsetof(BasicBlock, bbEmitCookie),
-            sizeof(bbDummy->bbEmitCookie));
-
-#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-    fprintf(fout, "Offset / size of bbUnwindNopEmitCookie = %3u / %3u\n", offsetof(BasicBlock, bbUnwindNopEmitCookie),
-            sizeof(bbDummy->bbUnwindNopEmitCookie));
-#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
-
-#ifdef VERIFIER
-    fprintf(fout, "Offset / size of bbStackIn             = %3u / %3u\n", offsetof(BasicBlock, bbStackIn),
-            sizeof(bbDummy->bbStackIn));
-    fprintf(fout, "Offset / size of bbStackOut            = %3u / %3u\n", offsetof(BasicBlock, bbStackOut),
-            sizeof(bbDummy->bbStackOut));
-    fprintf(fout, "Offset / size of bbTypesIn             = %3u / %3u\n", offsetof(BasicBlock, bbTypesIn),
-            sizeof(bbDummy->bbTypesIn));
-    fprintf(fout, "Offset / size of bbTypesOut            = %3u / %3u\n", offsetof(BasicBlock, bbTypesOut),
-            sizeof(bbDummy->bbTypesOut));
-#endif // VERIFIER
-
-#ifdef DEBUG
-    fprintf(fout, "Offset / size of bbLoopNum             = %3u / %3u\n", offsetof(BasicBlock, bbLoopNum),
-            sizeof(bbDummy->bbLoopNum));
-#endif // DEBUG
-
-    fprintf(fout, "\n");
-    fprintf(fout, "Size   of BasicBlock                   = %3u\n", sizeof(BasicBlock));
-
-#endif // MEASURE_BLOCK_SIZE
+    BasicBlock::DisplayStaticSizes(fout);
 
 #if EMITTER_STATS
     emitterStaticStats(fout);

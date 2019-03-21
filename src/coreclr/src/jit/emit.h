@@ -589,7 +589,8 @@ protected:
         static_assert_no_msg(INS_count <= 256);
         instruction _idIns : 8;
 #endif // !(defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_))
-       // The format for the instruction
+
+// The format for the instruction
 #if defined(_TARGET_XARCH_)
         static_assert_no_msg(IF_COUNT <= 128);
         insFormat _idInsFmt : 7;
@@ -1613,9 +1614,9 @@ private:
 // and must store them all to the frame on entry. If the frame is very large, we generate
 // ugly code like "movw r10, 0x488; add r10, sp; vstr s0, [r10]" for each store, which
 // eats up our insGroup buffer.
-#define SC_IG_BUFFER_SIZE (100 * sizeof(instrDesc) + 14 * SMALL_IDSC_SIZE)
+#define SC_IG_BUFFER_SIZE (100 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
 #else // !_TARGET_ARMARCH_
-#define SC_IG_BUFFER_SIZE (50 * sizeof(instrDesc) + 14 * SMALL_IDSC_SIZE)
+#define SC_IG_BUFFER_SIZE (50 * sizeof(emitter::instrDesc) + 14 * SMALL_IDSC_SIZE)
 #endif // !_TARGET_ARMARCH_
 
     size_t emitIGbuffSize;
@@ -1771,32 +1772,52 @@ private:
 
     int emitNextRandomNop();
 
-    void* emitAllocInstr(size_t sz, emitAttr attr);
+    //
+    // Functions for allocating instrDescs.
+    //
+    // The emitAllocXXX functions are the base level that allocate memory, and do little else.
+    // The emitters themselves use emitNewXXX, which might be thin wrappers over the emitAllocXXX functions.
+    //
+
+    void* emitAllocAnyInstr(size_t sz, emitAttr attr);
 
     instrDesc* emitAllocInstr(emitAttr attr)
     {
-        return (instrDesc*)emitAllocInstr(sizeof(instrDesc), attr);
+#if EMITTER_STATS
+        emitTotalIDescCnt++;
+#endif // EMITTER_STATS
+        return (instrDesc*)emitAllocAnyInstr(sizeof(instrDesc), attr);
     }
 
     instrDescJmp* emitAllocInstrJmp()
     {
-        return (instrDescJmp*)emitAllocInstr(sizeof(instrDescJmp), EA_1BYTE);
+#if EMITTER_STATS
+        emitTotalIDescJmpCnt++;
+#endif // EMITTER_STATS
+        return (instrDescJmp*)emitAllocAnyInstr(sizeof(instrDescJmp), EA_1BYTE);
     }
 
 #if !defined(_TARGET_ARM64_)
     instrDescLbl* emitAllocInstrLbl()
     {
-        return (instrDescLbl*)emitAllocInstr(sizeof(instrDescLbl), EA_4BYTE);
+#if EMITTER_STATS
+        emitTotalIDescLblCnt++;
+#endif // EMITTER_STATS
+        return (instrDescLbl*)emitAllocAnyInstr(sizeof(instrDescLbl), EA_4BYTE);
     }
 #endif // !_TARGET_ARM64_
 
     instrDescCns* emitAllocInstrCns(emitAttr attr)
     {
-        return (instrDescCns*)emitAllocInstr(sizeof(instrDescCns), attr);
+#if EMITTER_STATS
+        emitTotalIDescCnsCnt++;
+#endif // EMITTER_STATS
+        return (instrDescCns*)emitAllocAnyInstr(sizeof(instrDescCns), attr);
     }
-    instrDescCns* emitAllocInstrCns(emitAttr attr, int cns)
+
+    instrDescCns* emitAllocInstrCns(emitAttr attr, target_size_t cns)
     {
-        instrDescCns* result = (instrDescCns*)emitAllocInstr(sizeof(instrDescCns), attr);
+        instrDescCns* result = emitAllocInstrCns(attr);
         result->idSetIsLargeCns();
         result->idcCnsVal = cns;
         return result;
@@ -1804,31 +1825,46 @@ private:
 
     instrDescDsp* emitAllocInstrDsp(emitAttr attr)
     {
-        return (instrDescDsp*)emitAllocInstr(sizeof(instrDescDsp), attr);
+#if EMITTER_STATS
+        emitTotalIDescDspCnt++;
+#endif // EMITTER_STATS
+        return (instrDescDsp*)emitAllocAnyInstr(sizeof(instrDescDsp), attr);
     }
 
     instrDescCnsDsp* emitAllocInstrCnsDsp(emitAttr attr)
     {
-        return (instrDescCnsDsp*)emitAllocInstr(sizeof(instrDescCnsDsp), attr);
+#if EMITTER_STATS
+        emitTotalIDescCnsDspCnt++;
+#endif // EMITTER_STATS
+        return (instrDescCnsDsp*)emitAllocAnyInstr(sizeof(instrDescCnsDsp), attr);
     }
 
 #ifdef _TARGET_XARCH_
 
     instrDescAmd* emitAllocInstrAmd(emitAttr attr)
     {
-        return (instrDescAmd*)emitAllocInstr(sizeof(instrDescAmd), attr);
+#if EMITTER_STATS
+        emitTotalIDescAmdCnt++;
+#endif // EMITTER_STATS
+        return (instrDescAmd*)emitAllocAnyInstr(sizeof(instrDescAmd), attr);
     }
 
     instrDescCnsAmd* emitAllocInstrCnsAmd(emitAttr attr)
     {
-        return (instrDescCnsAmd*)emitAllocInstr(sizeof(instrDescCnsAmd), attr);
+#if EMITTER_STATS
+        emitTotalIDescCnsAmdCnt++;
+#endif // EMITTER_STATS
+        return (instrDescCnsAmd*)emitAllocAnyInstr(sizeof(instrDescCnsAmd), attr);
     }
 
 #endif // _TARGET_XARCH_
 
     instrDescCGCA* emitAllocInstrCGCA(emitAttr attr)
     {
-        return (instrDescCGCA*)emitAllocInstr(sizeof(instrDescCGCA), attr);
+#if EMITTER_STATS
+        emitTotalIDescCGCACnt++;
+#endif // EMITTER_STATS
+        return (instrDescCGCA*)emitAllocAnyInstr(sizeof(instrDescCGCA), attr);
     }
 
     instrDesc* emitNewInstrSmall(emitAttr attr);
@@ -2103,13 +2139,37 @@ public:
 
     static unsigned emitTotalInsCnt;
 
+    static unsigned emitCurPrologInsCnt; // current number of prolog instrDescs
+    static size_t   emitCurPrologIGSize; // current size of prolog instrDescs
+    static unsigned emitMaxPrologInsCnt; // maximum number of prolog instrDescs
+    static size_t   emitMaxPrologIGSize; // maximum size of prolog instrDescs
+
     static unsigned emitTotalIGcnt;   // total number of insGroup allocated
     static unsigned emitTotalPhIGcnt; // total number of insPlaceholderGroupData allocated
     static unsigned emitTotalIGicnt;
     static size_t   emitTotalIGsize;
-    static unsigned emitTotalIGmcnt; // total method count
+    static unsigned emitTotalIGmcnt;    // total method count
+    static unsigned emitTotalIGEmitAdd; // total number of 'emitAdd' (overflow) groups
     static unsigned emitTotalIGjmps;
     static unsigned emitTotalIGptrs;
+
+    static unsigned emitTotalIDescSmallCnt;
+    static unsigned emitTotalIDescCnt;
+    static unsigned emitTotalIDescJmpCnt;
+#if !defined(_TARGET_ARM64_)
+    static unsigned emitTotalIDescLblCnt;
+#endif // !defined(_TARGET_ARM64_)
+    static unsigned emitTotalIDescCnsCnt;
+    static unsigned emitTotalIDescDspCnt;
+    static unsigned emitTotalIDescCnsDspCnt;
+#ifdef _TARGET_XARCH_
+    static unsigned emitTotalIDescAmdCnt;
+    static unsigned emitTotalIDescCnsAmdCnt;
+#endif // _TARGET_XARCH_
+    static unsigned emitTotalIDescCGCACnt;
+#ifdef _TARGET_ARM_
+    static unsigned emitTotalIDescRelocCnt;
+#endif // _TARGET_ARM_
 
     static size_t emitTotMemAlloc;
 
@@ -2294,9 +2354,12 @@ inline emitter::instrDesc* emitter::emitNewInstrSmall(emitAttr attr)
 {
     instrDesc* id;
 
-    // This is larger than the Tiny Descr
-    id = (instrDesc*)emitAllocInstr(SMALL_IDSC_SIZE, attr);
+    id = (instrDesc*)emitAllocAnyInstr(SMALL_IDSC_SIZE, attr);
     id->idSetIsSmallDsc();
+
+#if EMITTER_STATS
+    emitTotalIDescSmallCnt++;
+#endif // EMITTER_STATS
 
     return id;
 }
@@ -2359,12 +2422,11 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, target_ssize_
     if (instrDesc::fitsInSmallCns(cns))
     {
         instrDesc* id = emitAllocInstr(attr);
-
         id->idSmallCns(cns);
 
 #if EMITTER_STATS
         emitSmallCnsCnt++;
-        if (cns - ID_MIN_SMALL_CNS >= SMALL_CNS_TSZ)
+        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
             emitSmallCns[SMALL_CNS_TSZ - 1]++;
         else
             emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
@@ -2374,10 +2436,7 @@ inline emitter::instrDesc* emitter::emitNewInstrCns(emitAttr attr, target_ssize_
     }
     else
     {
-        instrDescCns* id = emitAllocInstrCns(attr);
-
-        id->idSetIsLargeCns();
-        id->idcCnsVal = cns;
+        instrDescCns* id = emitAllocInstrCns(attr, cns);
 
 #if EMITTER_STATS
         emitLargeCnsCnt++;
@@ -2414,29 +2473,36 @@ inline size_t emitter::emitGetInstrDescSize(const instrDesc* id)
  *  constant operand. This is the same as emitNewInstrCns() except that here
  *  any constant that is small enough for instrDesc::fitsInSmallCns() only gets
  *  allocated SMALL_IDSC_SIZE bytes (and is thus a small descriptor, whereas
- *  emitNewInstrCns() always allocates at least sizeof(instrDesc).
+ *  emitNewInstrCns() always allocates at least sizeof(instrDesc)).
  */
 
 inline emitter::instrDesc* emitter::emitNewInstrSC(emitAttr attr, target_ssize_t cns)
 {
-    instrDesc* id;
-
     if (instrDesc::fitsInSmallCns(cns))
     {
-        id = (instrDesc*)emitAllocInstr(SMALL_IDSC_SIZE, attr);
-
+        instrDesc* id = emitNewInstrSmall(attr);
         id->idSmallCns(cns);
-        id->idSetIsSmallDsc();
+
+#if EMITTER_STATS
+        emitSmallCnsCnt++;
+        if ((cns - ID_MIN_SMALL_CNS) >= (SMALL_CNS_TSZ - 1))
+            emitSmallCns[SMALL_CNS_TSZ - 1]++;
+        else
+            emitSmallCns[cns - ID_MIN_SMALL_CNS]++;
+#endif
+
+        return id;
     }
     else
     {
-        id = (instrDesc*)emitAllocInstr(sizeof(instrDescCns), attr);
+        instrDescCns* id = emitAllocInstrCns(attr, cns);
 
-        id->idSetIsLargeCns();
-        ((instrDescCns*)id)->idcCnsVal = cns;
+#if EMITTER_STATS
+        emitLargeCnsCnt++;
+#endif
+
+        return id;
     }
-
-    return id;
 }
 
 /*****************************************************************************
@@ -2466,10 +2532,14 @@ inline emitter::instrDesc* emitter::emitNewInstrReloc(emitAttr attr, BYTE* addr)
 {
     assert(EA_IS_RELOC(attr));
 
-    instrDescReloc* id = (instrDescReloc*)emitAllocInstr(sizeof(instrDescReloc), attr);
+    instrDescReloc* id = (instrDescReloc*)emitAllocAnyInstr(sizeof(instrDescReloc), attr);
     assert(id->idIsReloc());
 
     id->idrRelocVal = addr;
+
+#if EMITTER_STATS
+    emitTotalIDescRelocCnt++;
+#endif // EMITTER_STATS
 
     return id;
 }
