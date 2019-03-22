@@ -2709,7 +2709,6 @@ public:
     // If you modify the order of these fields, make sure to update the definition in 
     // BCL for this object.
 private:
-    STRINGREF   _className;  //Needed for serialization.
     OBJECTREF   _exceptionMethod;  //Needed for serialization.
     STRINGREF   _message;
     OBJECTREF   _data;
@@ -2722,13 +2721,10 @@ private:
     PTRARRAYREF _dynamicMethods;
     STRINGREF   _source;         // Mainly used by VB.
 
-    IN_WIN64(void* _xptrs;)
-    IN_WIN64(UINT_PTR    _ipForWatsonBuckets;) // Contains the IP of exception for watson bucketing
-    INT32       _remoteStackIndex;
-    INT32       _HResult;
-    IN_WIN32(void* _xptrs;)
+    UINT_PTR    _ipForWatsonBuckets; // Contains the IP of exception for watson bucketing
+    void*       _xptrs;
     INT32       _xcode;
-    IN_WIN32(UINT_PTR    _ipForWatsonBuckets;) // Contains the IP of exception for watson bucketing
+    INT32       _HResult;
 };
 
 // Defined in Contracts.cs
@@ -2757,10 +2753,9 @@ public:
 
 private:
     // keep these in sync with ndp/clr/src/bcl/system/diagnostics/contracts/contractsbcl.cs
-    IN_WIN64(INT32 _Kind;)
     STRINGREF _UserMessage;
     STRINGREF _Condition;
-    IN_WIN32(INT32 _Kind;)
+    INT32 _Kind;
 };
 #include "poppack.h"
 
