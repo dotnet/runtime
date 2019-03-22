@@ -226,6 +226,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Enum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Exception.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ExecutionEngineException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\FieldAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\FlagsAttribute.cs" />
