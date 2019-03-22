@@ -56,12 +56,10 @@ variables:
         /p:VersionsRepoPath=build-info/dotnet/core-setup/$(FullBranchName)
 
     # Symbol Server update
-    - name: _SymbolServerPath
-      value: https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection
     - name: _SymbolServerArgs
-      value: /p:SymbolServerPath=$(_SymbolServerPath)
-         /p:SymbolServerPAT=$(microsoft-symbol-server-pat)
-         /p:SymbolExpirationInDays=365
+      value: >-
+        /p:MicrosoftSymbolServerPat=$(microsoft-symbol-server-pat)
+        /p:SymwebSymbolServerPat=$(symweb-symbol-server-pat)
 
     # ******** Official values *****
     - name: _CommonPublishArgs
