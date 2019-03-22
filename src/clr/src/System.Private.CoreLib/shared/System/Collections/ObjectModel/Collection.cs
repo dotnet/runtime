@@ -49,7 +49,7 @@ namespace System.Collections.ObjectModel
                     ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
                 }
 
-                if (index < 0 || index >= items.Count)
+                if ((uint)index >= (uint)items.Count)
                 {
                     ThrowHelper.ThrowArgumentOutOfRange_IndexException();
                 }
@@ -108,9 +108,9 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
             }
 
-            if (index < 0 || index > items.Count)
+            if ((uint)index > (uint)items.Count)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
             InsertItem(index, item);
@@ -125,12 +125,12 @@ namespace System.Collections.ObjectModel
 
             if (collection == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.list);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
             if ((uint)index > (uint)items.Count)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index, ExceptionResource.ArgumentOutOfRange_ListInsert);
+                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
 
             InsertItemsRange(index, collection);
@@ -198,7 +198,7 @@ namespace System.Collections.ObjectModel
 
             if (collection == null)
             {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.list);
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
             ReplaceItemsRange(index, count, collection);
@@ -211,7 +211,7 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
             }
 
-            if (index < 0 || index >= items.Count)
+            if ((uint)index >= (uint)items.Count)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
