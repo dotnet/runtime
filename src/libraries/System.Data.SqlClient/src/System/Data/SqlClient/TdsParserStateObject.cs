@@ -1725,7 +1725,7 @@ namespace System.Data.SqlClient
                 {
                     if (_bTmp == null || _bTmp.Length < length)
                     {
-                        _bTmp = ArrayPool<byte>.Shared.Rent(length); // new byte[length];
+                        _bTmp = ArrayPool<byte>.Shared.Rent(length);
                         rentedBuffer = true;
                     }
 

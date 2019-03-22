@@ -385,8 +385,6 @@ namespace System.Data.SqlClient
                         tries += 1;
                     }
                 }
-
-
             }
         }
 
@@ -399,7 +397,6 @@ namespace System.Data.SqlClient
             Array.Clear(_items, 0, _capacity);
             _count = 0;
         }
-
     }
 
     internal sealed class SqlLogin
