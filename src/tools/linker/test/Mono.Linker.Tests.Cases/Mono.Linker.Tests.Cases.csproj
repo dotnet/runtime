@@ -243,6 +243,9 @@
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\NestedInterfaces3.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\NestedInterfacesWithExplicit1.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\NestedInterfacesWithExplicitAndNormal1.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\ParameterAndLocal.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\ParameterOutAndLocal.cs" />
+    <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\ParameterRefAndLocal.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\ReturnValueDowncastedToInterface.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtorButInterfaceNeeded\GenericTypeWithConstraint.cs" />
     <Compile Include="Inheritance.Interfaces\OnReferenceType\NoKeptCtor\ComInterfaceTypeRemovedWhenOnlyUsedByClassWithOnlyStaticMethod.cs" />
