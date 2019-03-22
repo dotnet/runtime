@@ -141,11 +141,6 @@
     <EnableDumpling>false</EnableDumpling>
     <CrashDumpFolder Condition="'$(OS)' == 'Windows_NT'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
   </PropertyGroup>
-  <!-- Disable VS support files on CI and official builds. -->
-  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuildId)' != ''">
-    <EnableLaunchSettings>false</EnableLaunchSettings>
-    <EnableVSTestReferences>false</EnableVSTestReferences>
-  </PropertyGroup>
 
   <!-- list of nuget package sources passed to nuget restore -->
   <!-- Example to consume local CoreCLR package:
