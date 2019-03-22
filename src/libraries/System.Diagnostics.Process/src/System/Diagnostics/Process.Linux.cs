@@ -150,7 +150,7 @@ namespace System.Diagnostics
             if (_processInfo.HandleCount <= 0 && _haveProcessId)
             {
                 // Don't get information for a PID that exited and has possibly been recycled.
-                if (GetWaitState().GetExited(out _, refresh: false))
+                if (GetHasExited(refresh: false))
                 {
                     return;
                 }

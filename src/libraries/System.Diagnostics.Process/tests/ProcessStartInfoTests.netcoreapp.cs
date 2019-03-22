@@ -65,8 +65,7 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    if (process != null && !process.HasExited)
-                        process.Kill();
+                    process?.Kill();
                 }
             }
         }
