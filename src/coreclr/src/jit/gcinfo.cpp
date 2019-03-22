@@ -638,8 +638,6 @@ void GCInfo::gcRegPtrSetInit()
 
 GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tgtAddr)
 {
-    GCInfo::WriteBarrierForm result = GCInfo::WBF_BarrierUnknown; // Default case, we have no information.
-
     // If we store through an int to a GC_REF field, we'll assume that needs to use a checked barriers.
     if (tgtAddr->TypeGet() == TYP_I_IMPL)
     {

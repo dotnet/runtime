@@ -550,7 +550,10 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
 
     const unsigned argSigLen = info.compMethodInfo->args.numArgs;
 
+#ifdef _TARGET_ARM_
     regMaskTP doubleAlignMask = RBM_NONE;
+#endif // _TARGET_ARM_
+
     for (unsigned i = 0; i < argSigLen;
          i++, varDscInfo->varNum++, varDscInfo->varDsc++, argLst = info.compCompHnd->getArgNext(argLst))
     {
@@ -569,8 +572,12 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo)
         }
 
         // For ARM, ARM64, and AMD64 varargs, all arguments go in integer registers
-        var_types argType     = mangleVarArgsType(varDsc->TypeGet());
+        var_types argType = mangleVarArgsType(varDsc->TypeGet());
+
+#ifdef _TARGET_ARM_
         var_types origArgType = argType;
+#endif // TARGET_ARM
+
         // ARM softfp calling convention should affect only the floating point arguments.
         // Otherwise there appear too many surplus pre-spills and other memory operations
         // with the associated locations .
@@ -1992,8 +1999,6 @@ bool Compiler::StructPromotionHelper::TryPromoteStructField(lvaStructFieldInfo& 
         return false;
     }
 
-    COMP_HANDLE compHandl = compiler->info.compCompHnd;
-
     // Do not promote if the single field is not aligned at its natural boundary within
     // the struct field.
     CORINFO_FIELD_HANDLE innerFieldHndl   = compHandle->getFieldInClass(fieldInfo.fldTypeHnd, 0);
@@ -2451,7 +2456,6 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
     }
 
     // Set the type and associated info if we haven't already set it.
-    var_types structType = varDsc->lvType;
     if (varDsc->lvType == TYP_UNDEF)
     {
         varDsc->lvType = TYP_STRUCT;

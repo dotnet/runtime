@@ -907,8 +907,6 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** be
     assert(begBlk != nullptr);
     assert(endBlk != nullptr);
 
-    EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
-
 #if FEATURE_EH_CALLFINALLY_THUNKS
     bool     inTryRegion;
     unsigned callFinallyRegionIndex = ehGetCallFinallyRegionIndex(finallyIndex, &inTryRegion);
@@ -934,8 +932,9 @@ void Compiler::ehGetCallFinallyBlockRange(unsigned finallyIndex, BasicBlock** be
         }
     }
 #else  // !FEATURE_EH_CALLFINALLY_THUNKS
-    *begBlk = ehDsc->ebdTryBeg;
-    *endBlk = ehDsc->ebdTryLast->bbNext;
+    EHblkDsc* ehDsc = ehGetDsc(finallyIndex);
+    *begBlk         = ehDsc->ebdTryBeg;
+    *endBlk         = ehDsc->ebdTryLast->bbNext;
 #endif // !FEATURE_EH_CALLFINALLY_THUNKS
 }
 

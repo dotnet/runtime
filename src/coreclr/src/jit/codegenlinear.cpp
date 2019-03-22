@@ -1147,7 +1147,7 @@ void CodeGen::genConsumeRegAndCopy(GenTree* node, regNumber needReg)
     {
         return;
     }
-    regNumber treeReg = genConsumeReg(node);
+    genConsumeReg(node);
     genCopyRegIfNeeded(node, needReg);
 }
 
@@ -1846,9 +1846,8 @@ void CodeGen::genProduceReg(GenTree* tree)
 
                 for (unsigned i = 0; i < regCount; ++i)
                 {
-                    var_types type    = retTypeDesc->GetReturnRegType(i);
-                    regNumber fromReg = call->GetRegNumByIdx(i);
-                    regNumber toReg   = copy->GetRegNumByIdx(i);
+                    var_types type  = retTypeDesc->GetReturnRegType(i);
+                    regNumber toReg = copy->GetRegNumByIdx(i);
 
                     if (toReg != REG_NA)
                     {

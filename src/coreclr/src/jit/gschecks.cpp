@@ -105,7 +105,6 @@ Compiler::fgWalkResult Compiler::gsMarkPtrsAndAssignGroups(GenTree** pTree, fgWa
     GenTree*             tree          = *pTree;
     ShadowParamVarInfo*  shadowVarInfo = pState->comp->gsShadowVarInfo;
     assert(shadowVarInfo);
-    bool     fIsBlk = false;
     unsigned lclNum;
 
     assert(!pState->isAssignSrc || pState->lvAssignDef != (unsigned)-1);
