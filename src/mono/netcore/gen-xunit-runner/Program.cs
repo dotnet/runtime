@@ -379,7 +379,7 @@ unchecked {
 
 				var block = ParseText<BlockSyntax> (case_template
 					.Replace ("#MSG#", msg)
-					.Replace ("#NRUN#", test.MemberDataMethod == null ? "1" : ((IEnumerable<object []>) test.MemberDataMethod.Invoke (null, null)).Count ().ToString ()));
+					.Replace ("#NRUN#", test.MemberDataMethod == null ? "1" : ((IEnumerable) test.MemberDataMethod.Invoke (null, null)).Cast<object> ().Count ().ToString ()));
 				// Obtain the node for the CALL () line
 				var try_body_node = block.DescendantNodes ().OfType<ExpressionStatementSyntax> ().Skip (2).First ().Parent;
 				// Replace with the generated call code
