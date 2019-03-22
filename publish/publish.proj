@@ -32,7 +32,7 @@
 
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
-          DependsOnTargets="PublishCoreHostPackages;SetupPublishSymbols;PublishSymbols;FinalizeBuildInAzure" />
+          DependsOnTargets="PublishCoreHostPackages;RunPublishSymbols;FinalizeBuildInAzure" />
     
   <Target Name="GetPackagesToSign" DependsOnTargets="GatherShippingPackages">
     <ItemGroup>
@@ -239,16 +239,50 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="SetupPublishSymbols" Condition="'$(SymbolServerPath)'!=''" >
-    <PropertyGroup>
-      <SymbolExpirationInDays Condition="'$(SymbolExpirationInDays)'=='' and '$(SymbolExpirationDate)'==''">1</SymbolExpirationInDays>
-      <ConvertPortablePdbsToWindowsPdbs>false</ConvertPortablePdbsToWindowsPdbs>
-    </PropertyGroup>
+  <Target Name="RunPublishSymbols">
     <ItemGroup>
-      <SymbolPackagesToPublish Include="$(DownloadDirectory)**\*.symbols.nupkg" Exclude="$(DownloadDirectory)**\*freebsd*.nupkg" />
+      <SymbolServerConfig
+        Include="msdl"
+        Url="https://microsoftpublicsymbols.artifacts.visualstudio.com/DefaultCollection" 
+        Pat="$(MicrosoftSymbolServerPat)" />
+
+      <SymbolServerConfig
+        Include="symweb"
+        Url="https://microsoft.artifacts.visualstudio.com/DefaultCollection" 
+        Pat="$(SymwebSymbolServerPat)" />
     </ItemGroup>
-    <Error Condition="'$(SymbolServerPAT)'==''" Text="Missing property SymbolServerPAT" />
-    <Message Importance="High" Text="Publishing @(SymbolPackagesToPublish) to $(SymbolServerPath)"/>
+
+    <Error
+      Condition="'%(SymbolServerConfig.Pat)' == ''"
+      Text="Missing symbol server publish PAT for '%(SymbolServerConfig.Identity)'" />
+
+    <ItemGroup>
+      <SymbolServerPublishProject
+        Include="$(MSBuildProjectFullPath)"
+        AdditionalProperties="
+          SymbolServerPath=%(SymbolServerConfig.Url);
+          SymbolServerPAT=%(SymbolServerConfig.Pat)" />
+    </ItemGroup>
+
+    <!-- Note: Can't run in parallel. Symbol publish opens the zips exclusively. -->
+    <MSBuild
+      Projects="@(SymbolServerPublishProject)"
+      Targets="SetupPublishSymbols;PublishSymbols"
+      Properties="DownloadDirectory=$(DownloadDirectory)" />
+  </Target>
+
+  <Target Name="SetupPublishSymbols">
+    <PropertyGroup>
+      <SymbolExpirationInDays>180</SymbolExpirationInDays>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <SymbolPackagesToPublish
+        Include="$(DownloadDirectory)**\*.symbols.nupkg"
+        Exclude="$(DownloadDirectory)**\*freebsd*.nupkg" />
+    </ItemGroup>
+
+    <Message Importance="High" Text="Publishing symbol packages to '$(SymbolServerPath)': @(SymbolPackagesToPublish)"/>
   </Target>
 
   <Target Name="DoPushCoreHostPackagesToFeed">
