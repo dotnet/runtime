@@ -322,7 +322,6 @@ GenTree* Compiler::optEarlyPropRewriteTree(GenTree* tree)
                         GenTree* comma = check->gtGetParent(nullptr);
                         if ((comma != nullptr) && comma->OperIs(GT_COMMA) && (comma->gtGetOp1() == check))
                         {
-                            GenTree* next = check->gtNext;
                             optRemoveRangeCheck(comma, compCurStmt);
                             // Both `tree` and `check` have been removed from the statement.
                             // 'tree' was replaced with 'nop' or side effect list under 'comma'.
