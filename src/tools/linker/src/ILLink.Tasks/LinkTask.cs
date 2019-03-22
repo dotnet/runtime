@@ -26,6 +26,12 @@ namespace ILLink.Tasks
 		public ITaskItem [] AssemblyPaths { get; set; }
 
 		/// <summary>
+		///    Paths to assembly files that are reference assemblies,
+		///    representing the surface area for compilation.
+		/// </summary>
+		public ITaskItem [] ReferenceAssemblyPaths { get; set; }
+
+		/// <summary>
 		///   The names of the assemblies to root. This should contain
 		///   assembly names without an extension, not file names or
 		///   paths. Exactly which parts of the assemblies get rooted
@@ -132,8 +138,13 @@ namespace ILLink.Tasks
 			}
 
 			HashSet<string> directories = new HashSet<string> ();
+			HashSet<string> assemblyNames = new HashSet<string> ();
 			foreach (var assembly in AssemblyPaths) {
 				var assemblyPath = assembly.ItemSpec;
+				var assemblyName = Path.GetFileNameWithoutExtension (assemblyPath);
+
+				assemblyNames.Add (assemblyName);
+
 				var dir = Path.GetDirectoryName (assemblyPath);
 				if (!directories.Contains (dir)) {
 					directories.Add (dir);
@@ -144,8 +155,29 @@ namespace ILLink.Tasks
 				if ((action != null) && (action.Length > 0)) {
 					args.Append (" -p ");
 					args.Append (action);
-					args.Append (" ").Append (Path.GetFileNameWithoutExtension (assemblyPath));
+					args.Append (" ").Append (assemblyName);
 				}
+			}
+
+			foreach (var assembly in ReferenceAssemblyPaths) {
+				var assemblyPath = assembly.ItemSpec;
+				var assemblyName = Path.GetFileNameWithoutExtension (assemblyPath);
+
+				// Don't process references for which we already have
+				// implementation assemblies.
+				if (assemblyNames.Contains (assemblyName))
+					continue;
+
+				var dir = Path.GetDirectoryName (assemblyPath);
+				if (!directories.Contains (dir)) {
+					directories.Add (dir);
+					args.Append (" -d ").Append (dir);
+				}
+
+				// Treat reference assemblies as "skip". Ideally we
+				// would not even look at the IL, but only use them to
+				// resolve surface area.
+				args.Append (" -p skip ").Append (assemblyName);
 			}
 
 			if (OutputDirectory != null) {
