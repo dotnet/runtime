@@ -220,7 +220,7 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 mono_bool
 mono_class_is_delegate       (MonoClass* klass);
 
-MONO_API mono_bool
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
 mono_class_implements_interface (MonoClass* klass, MonoClass* iface);
 
 /* MonoClassField accessors */

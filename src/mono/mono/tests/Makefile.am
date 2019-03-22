@@ -1003,9 +1003,12 @@ TESTS_IL_SRC=			\
 	dim-sharedgenerics.il	\
 	dim-simple.il	\
 	dim-valuetypes.il \
+	dim-nested-types.il \
 	dim-generic-interface.il \
 	dim-implements-multiple-interfaces.il \
 	dim-sealed.il \
+	dim-protected-accessibility1.il \
+	dim-protected-accessibility2.il \
 	tailcall-generic-cast-conservestack-il.il \
 	tailcall-generic-cast-nocrash-il.il \
 	tailcall-member-function-in-valuetype.il \

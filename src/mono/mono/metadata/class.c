@@ -3832,6 +3832,7 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 				}
 			}
 		}
+
 		*result = FALSE;
 		return;
 	} else if (m_class_is_delegate (klass)) {
@@ -4982,6 +4983,36 @@ mono_class_implements_interface (MonoClass* klass, MonoClass* iface)
 	return mono_class_is_assignable_from_internal (iface, klass);
 }
 
+static mono_bool
+class_implements_interface_ignore_generics (MonoClass* klass, MonoClass* iface)
+{
+	int i;
+	ERROR_DECL (error);
+	if (mono_class_is_ginst (iface))
+		iface = mono_class_get_generic_type_definition (iface);
+	while (klass != NULL) {
+		if (mono_class_is_assignable_from_internal (iface, klass))
+			return TRUE;
+		mono_class_setup_interfaces (klass, error);
+		if (!is_ok (error)) {
+			mono_error_cleanup  (error);
+			return FALSE;
+		}
+		MonoClass **klass_interfaces = m_class_get_interfaces (klass);
+		for (i = 0; i < m_class_get_interface_count (klass); i++) {
+			MonoClass *ic = klass_interfaces [i];
+			if (mono_class_is_ginst (ic))
+				ic = mono_class_get_generic_type_definition (ic);
+			if (ic == iface) {
+				return TRUE;
+			}
+		}
+		klass = m_class_get_parent (klass);
+	}
+	return FALSE;
+}
+		
+
 /**
  * mono_field_get_name:
  * \param field the \c MonoClassField to act on
@@ -5502,6 +5533,8 @@ mono_class_get_generic_type_definition (MonoClass *klass)
  * Generic instantiations are ignored for all super types of @klass.
  * 
  * Visibility checks ignoring generic instantiations.  
+ * 
+ * Class implementing interface visibility checks ignore generic instantiations 
  */
 gboolean
 mono_class_has_parent_and_ignore_generics (MonoClass *klass, MonoClass *parent)
@@ -5515,6 +5548,10 @@ mono_class_has_parent_and_ignore_generics (MonoClass *klass, MonoClass *parent)
 		if (parent == mono_class_get_generic_type_definition (m_class_get_supertypes (klass) [i]))
 			return TRUE;
 	}
+
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (parent) && class_implements_interface_ignore_generics (klass, parent))
+		return TRUE;
+		
 	return FALSE;
 }
 /*
@@ -5537,7 +5574,7 @@ is_valid_family_access (MonoClass *access_klass, MonoClass *member_klass, MonoCl
 {
 	if (MONO_CLASS_IS_INTERFACE_INTERNAL (member_klass) && !MONO_CLASS_IS_INTERFACE_INTERNAL (access_klass)) {
 		/* Can happen with default interface methods */
-		if (!mono_class_implements_interface (access_klass, member_klass))
+		if (!class_implements_interface_ignore_generics (access_klass, member_klass))
 			return FALSE;
 	} else if (member_klass != access_klass && MONO_CLASS_IS_INTERFACE_INTERNAL (member_klass) && MONO_CLASS_IS_INTERFACE_INTERNAL (access_klass)) {
 		/* Can happen with default interface methods */
