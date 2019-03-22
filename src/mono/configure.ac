@@ -6392,6 +6392,7 @@ mono/profiler/Makefile
 mono/eglib/Makefile
 mono/eglib/eglib-config.h
 mono/eglib/test/Makefile
+netcore/Makefile
 m4/Makefile
 ikvm-native/Makefile
 scripts/Makefile
