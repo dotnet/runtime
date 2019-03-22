@@ -4123,7 +4123,9 @@ add_extra_method_with_depth (MonoAotCompile *acfg, MonoMethod *method, int depth
 
 	if (mono_method_is_generic_sharable_full (method, TRUE, TRUE, FALSE)) {
 		method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
-		mono_error_assert_ok (error);
+		if (!is_ok (error))
+			/* vtype constraint */
+			return;
 	} else if ((acfg->opts & MONO_OPT_GSHAREDVT) && prefer_gsharedvt_method (acfg, method) && mono_method_is_generic_sharable_full (method, FALSE, FALSE, TRUE)) {
 		/* Use the gsharedvt version */
 		method = mini_get_shared_method_full (method, SHARE_MODE_GSHAREDVT, error);
