@@ -55,3 +55,11 @@ DLLEXPORT uint32_t SystemNative_RegisterForSigChld(SigChldCallback callback);
  * It could also be a custom handler registered by other code before us.
  */
 DLLEXPORT void SystemNative_RestoreAndHandleCtrl(CtrlCode ctrlCode);
+
+typedef void (*TerminalInvalidationCallback)(void);
+
+/**
+ * Hooks up the specified callback for notifications when SIGCHLD, SIGCONT, SIGWINCH are received.
+  *
+ */
+DLLEXPORT void SystemNative_SetTerminalInvalidationHandler(TerminalInvalidationCallback callback);
