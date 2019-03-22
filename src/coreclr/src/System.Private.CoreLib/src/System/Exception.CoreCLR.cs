@@ -2,15 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: The base class for all exceptional conditions.
-**
-**
-=============================================================================*/
-
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
@@ -20,60 +11,11 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class Exception : ISerializable
+    public partial class Exception : ISerializable
     {
-        public Exception()
+        partial void RestoreRemoteStackTrace(SerializationInfo info, StreamingContext context)
         {
-            _message = null;
-            _stackTrace = null;
-            _dynamicMethods = null;
-            HResult = HResults.COR_E_EXCEPTION;
-            _xcode = _COMPlusExceptionCode;
-            _xptrs = (IntPtr)0;
-
-            // Initialize the WatsonBuckets to be null
-            _watsonBuckets = null;
-
-            // Initialize the watson bucketing IP
-            _ipForWatsonBuckets = UIntPtr.Zero;
-        }
-
-        public Exception(string message)
-            : this()
-        {
-            _message = message;
-        }
-
-        // Creates a new Exception.  All derived classes should 
-        // provide this constructor.
-        // Note: the stack trace is not started until the exception 
-        // is thrown
-        // 
-        public Exception(string message, Exception innerException)
-            : this()
-        {
-            _message = message;
-            _innerException = innerException;
-        }
-
-        protected Exception(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-                throw new ArgumentNullException(nameof(info));
-
-            _className = info.GetString("ClassName"); // Do not rename (binary serialization)
-            _message = info.GetString("Message"); // Do not rename (binary serialization)
-            _data = (IDictionary)(info.GetValueNoThrow("Data", typeof(IDictionary))); // Do not rename (binary serialization)
-            _innerException = (Exception)(info.GetValue("InnerException", typeof(Exception))); // Do not rename (binary serialization)
-            _helpURL = info.GetString("HelpURL"); // Do not rename (binary serialization)
-            _stackTraceString = info.GetString("StackTraceString"); // Do not rename (binary serialization)
             _remoteStackTraceString = info.GetString("RemoteStackTraceString"); // Do not rename (binary serialization)
-            _remoteStackIndex = info.GetInt32("RemoteStackIndex"); // Do not rename (binary serialization)
-
-            HResult = info.GetInt32("HResult"); // Do not rename (binary serialization)
-            _source = info.GetString("Source"); // Do not rename (binary serialization)
 
             // Get the WatsonBuckets that were serialized - this is particularly
             // done to support exceptions going across AD transitions.
@@ -82,10 +24,6 @@ namespace System
             // exception object that may not have this entry. In such a case, we would
             // get null.
             _watsonBuckets = (object)info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
-
-
-            if (_className == null || HResult == 0)
-                throw new SerializationException(SR.Serialization_InsufficientState);
 
             // If we are constructing a new exception after a cross-appdomain call...
             if (context.State == StreamingContextStates.CrossAppDomain)
@@ -106,38 +44,13 @@ namespace System
             }
         }
 
-
-        public virtual string Message
+        private IDictionary CreateDataContainer()
         {
-            get
-            {
-                if (_message == null)
-                {
-                    if (_className == null)
-                    {
-                        _className = GetClassName();
-                    }
-                    return SR.Format(SR.Exception_WasThrown, _className);
-                }
-                else
-                {
-                    return _message;
-                }
-            }
-        }
+            if (IsImmutableAgileException(this))
+                return new EmptyReadOnlyDictionaryInternal();
+            else
+                return new ListDictionaryInternal();
 
-        public virtual IDictionary Data
-        {
-            get
-            {
-                if (_data == null)
-                    if (IsImmutableAgileException(this))
-                        _data = new EmptyReadOnlyDictionaryInternal();
-                    else
-                        _data = new ListDictionaryInternal();
-
-                return _data;
-            }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -209,40 +122,6 @@ namespace System
             return false;
         }
 #endif // FEATURE_COMINTEROP
-
-        private string GetClassName()
-        {
-            // Will include namespace but not full instantiation and assembly name.
-            if (_className == null)
-                _className = GetType().ToString();
-
-            return _className;
-        }
-
-        // Retrieves the lowest exception (inner most) for the given Exception.
-        // This will traverse exceptions using the innerException property.
-        //
-        public virtual Exception GetBaseException()
-        {
-            Exception inner = InnerException;
-            Exception back = this;
-
-            while (inner != null)
-            {
-                back = inner;
-                inner = inner.InnerException;
-            }
-
-            return back;
-        }
-
-        // Returns the inner exception contained in this exception
-        // 
-        public Exception InnerException
-        {
-            get { return _innerException; }
-        }
-
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static private extern IRuntimeMethodInfo GetMethodFromStackTrace(object stackTrace);
@@ -320,136 +199,31 @@ namespace System
             return new StackTrace(e, needFileInfo).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
-        // Sets the help link for this exception.
-        // This should be in a URL/URN form, such as:
-        // "file:///C:/Applications/Bazzal/help.html#ErrorNum42"
-        // Changed to be a read-write String and not return an exception
-        public virtual string HelpLink
+        private string CreateSourceName()
         {
-            get
+            StackTrace st = new StackTrace(this, fNeedFileInfo: false);
+            if (st.FrameCount > 0)
             {
-                return _helpURL;
-            }
-            set
-            {
-                _helpURL = value;
-            }
-        }
+                StackFrame sf = st.GetFrame(0);
+                MethodBase method = sf.GetMethod();
 
-        public virtual string Source
-        {
-            get
-            {
-                if (_source == null)
+                Module module = method.Module;
+
+                RuntimeModule rtModule = module as RuntimeModule;
+
+                if (rtModule == null)
                 {
-                    StackTrace st = new StackTrace(this, fNeedFileInfo: false);
-                    if (st.FrameCount > 0)
-                    {
-                        StackFrame sf = st.GetFrame(0);
-                        MethodBase method = sf.GetMethod();
-
-                        Module module = method.Module;
-
-                        RuntimeModule rtModule = module as RuntimeModule;
-
-                        if (rtModule == null)
-                        {
-                            System.Reflection.Emit.ModuleBuilder moduleBuilder = module as System.Reflection.Emit.ModuleBuilder;
-                            if (moduleBuilder != null)
-                                rtModule = moduleBuilder.InternalModule;
-                            else
-                                throw new ArgumentException(SR.Argument_MustBeRuntimeReflectionObject);
-                        }
-
-                        _source = rtModule.GetRuntimeAssembly().GetSimpleName();
-                    }
+                    System.Reflection.Emit.ModuleBuilder moduleBuilder = module as System.Reflection.Emit.ModuleBuilder;
+                    if (moduleBuilder != null)
+                        rtModule = moduleBuilder.InternalModule;
+                    else
+                        throw new ArgumentException(SR.Argument_MustBeRuntimeReflectionObject);
                 }
 
-                return _source;
-            }
-            set { _source = value; }
-        }
-
-        public override string ToString()
-        {
-            return ToString(true, true);
-        }
-
-        private string ToString(bool needFileLineInfo, bool needMessage)
-        {
-            string message = (needMessage ? Message : null);
-            string s;
-
-            if (message == null || message.Length <= 0)
-            {
-                s = GetClassName();
-            }
-            else
-            {
-                s = GetClassName() + ": " + message;
+                return rtModule.GetRuntimeAssembly().GetSimpleName();
             }
 
-            if (_innerException != null)
-            {
-                s = s + " ---> " + _innerException.ToString(needFileLineInfo, needMessage) + Environment.NewLine +
-                "   " + SR.Exception_EndOfInnerExceptionStack;
-            }
-
-            string stackTrace = GetStackTrace(needFileLineInfo);
-            if (stackTrace != null)
-            {
-                s += Environment.NewLine + stackTrace;
-            }
-
-            return s;
-        }
-
-        protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
-        {
-            add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
-            remove { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
-        }
-
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            string tempStackTraceString = _stackTraceString;
-
-            if (_stackTrace != null)
-            {
-                if (tempStackTraceString == null)
-                {
-                    tempStackTraceString = GetStackTrace(true, this);
-                }
-                if (_exceptionMethod == null)
-                {
-                    _exceptionMethod = GetExceptionMethodFromStackTrace();
-                }
-            }
-
-            if (_source == null)
-            {
-                _source = Source; // Set the Source information correctly before serialization
-            }
-
-            info.AddValue("ClassName", GetClassName(), typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("Message", _message, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("Data", _data, typeof(IDictionary)); // Do not rename (binary serialization)
-            info.AddValue("InnerException", _innerException, typeof(Exception)); // Do not rename (binary serialization)
-            info.AddValue("HelpURL", _helpURL, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("StackTraceString", tempStackTraceString, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("RemoteStackTraceString", _remoteStackTraceString, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("RemoteStackIndex", _remoteStackIndex, typeof(int)); // Do not rename (binary serialization)
-            info.AddValue("ExceptionMethod", null, typeof(string)); // Do not rename (binary serialization)
-            info.AddValue("HResult", HResult); // Do not rename (binary serialization)
-            info.AddValue("Source", _source, typeof(string)); // Do not rename (binary serialization)
-
-            // Serialize the Watson bucket details as well
-            info.AddValue("WatsonBuckets", _watsonBuckets, typeof(byte[])); // Do not rename (binary serialization)
+            return null;
         }
 
         // This method will clear the _stackTrace of the exception object upon deserialization
@@ -604,18 +378,15 @@ namespace System
             }
         }
 
-        private string _className;  //Needed for serialization.  
         private MethodBase _exceptionMethod;  //Needed for serialization.  
         internal string _message;
         private IDictionary _data;
         private Exception _innerException;
         private string _helpURL;
         private object _stackTrace;
-        [OptionalField] // This isnt present in pre-V4 exception objects that would be serialized.
         private object _watsonBuckets;
         private string _stackTraceString; //Needed for serialization.  
         private string _remoteStackTraceString;
-        private int _remoteStackIndex;
 #pragma warning disable 414  // Field is not used from managed.        
         // _dynamicMethods is an array of System.Resolver objects, used to keep
         // DynamicMethodDescs alive for the lifetime of the exception. We do this because
@@ -624,31 +395,15 @@ namespace System
         private object _dynamicMethods;
 #pragma warning restore 414
 
-        // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
-        private int _HResult;       // HResult
-
-        public int HResult
-        {
-            get
-            {
-                return _HResult;
-            }
-            set
-            {
-                _HResult = value;
-            }
-        }
-
-        private string _source;         // Mainly used by VB. 
-        // WARNING: Don't delete/rename _xptrs and _xcode - used by functions
-        // on Marshal class.  Native functions are in COMUtilNative.cpp & AppDomain
+        private string _source;         // Mainly used by VB.
+        private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private IntPtr _xptrs;             // Internal EE stuff 
 #pragma warning disable 414  // Field is not used from managed.
-        private int _xcode;             // Internal EE stuff 
+        private int _xcode = _COMPlusExceptionCode;             // Internal EE stuff 
 #pragma warning restore 414
-        [OptionalField]
-        private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
 
+        // @MANAGED: HResult is used from within the EE!  Rename with care - check VM directory
+        private int _HResult;       // HResult
 
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
@@ -660,18 +415,30 @@ namespace System
             return ToString(true, true);
         }
 
-        // this method is required so Object.GetType is not made virtual by the compiler
-        // _Exception.GetType()
-        public new Type GetType()
-        {
-            return base.GetType();
-        }
-
         internal bool IsTransient
         {
             get
             {
                 return nIsTransient(HResult);
+            }
+        }
+
+        private string SerializationRemoteStackTraceString => _remoteStackTraceString;
+
+        private object SerializationWatsonBuckets => _watsonBuckets;
+
+        private string SerializationStackTraceString
+        {
+            get
+            {
+                string stackTraceString = _stackTraceString;
+
+                if (stackTraceString == null && _stackTrace != null)
+                {
+                    stackTraceString = GetStackTrace(true, this);
+                }
+
+                return stackTraceString;
             }
         }
 

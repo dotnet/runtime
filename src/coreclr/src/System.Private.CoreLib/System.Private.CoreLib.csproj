@@ -159,7 +159,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\SymbolStore\Token.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Enum.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.CoreCLR.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Exception.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Exception.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
