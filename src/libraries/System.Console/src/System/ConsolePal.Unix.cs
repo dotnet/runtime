@@ -21,6 +21,11 @@ namespace System
     //       to also change the test class.
     internal static class ConsolePal
     {
+        // StdInReader is only used when input isn't redirected and we're working
+        // with an interactive terminal.  In that case, performance isn't critical
+        // and we can use a smaller buffer to minimize working set.
+        private const int InteractiveBufferSize = 255;
+
         // For performance we cache Cursor{Left,Top} and Window{Width,Height}.
         // These values must be read/written under lock (Console.Out).
         // We also need to invalidate these values when certain signals occur.
@@ -69,11 +74,6 @@ namespace System
             get
             {
                 EnsureInitialized();
-
-                // StdInReader is only used when input isn't redirected and we're working
-                // with an interactive terminal.  In that case, performance isn't critical
-                // and we can use a smaller buffer to minimize working set.
-                const int InteractiveBufferSize = 255;
 
                 return Console.EnsureInitialized(
                         ref s_stdInReader,
@@ -1281,7 +1281,7 @@ namespace System
                 int left, top;
                 if (cursorVersion != s_cursorVersion               ||  // the cursor was changed during the write by another operation
                     !TryGetCachedCursorPosition(out left, out top) ||  // we don't have a cursor position
-                    count > DefaultConsoleBufferSize)                  // limit the amount of bytes we are willing to inspect
+                    count > InteractiveBufferSize)                     // limit the amount of bytes we are willing to inspect
                 {
                     InvalidateCachedCursorPosition();
                     return;
