@@ -102,7 +102,6 @@ typedef struct _InterpMethod
 	unsigned int vararg : 1;
 	unsigned int needs_thread_attach : 1;
 	unsigned short *code;
-	unsigned short *new_body_start; /* after all STINARG instrs */
 	MonoPIFunc func;
 	int num_clauses;
 	MonoExceptionClause *clauses;

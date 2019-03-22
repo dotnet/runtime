@@ -45,7 +45,7 @@ mono_interp_dis_mintop_len (const guint16 *ip)
 		g_assert_not_reached ();
 	} else if (len == 0) { /* SWITCH */
 		int n = READ32 (ip + 1);
-		len = 3 + n * 2;
+		len = MINT_SWITCH_LEN (n);
 	}
 
 	return ip + len;
