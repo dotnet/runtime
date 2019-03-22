@@ -97,7 +97,7 @@ dotnet --roll-forward LatestMinor app.dll
 
 The order above defines precedence. Later scopes take precedence over earlier ones. So command line wins over everything, environment variable wins over `.runtimeconfig.json` and per-framework setting wins over config-wide setting.
 
-*Note: There's no inheritance applied when chaining framework references. So for example if the application references FX1, then if FX1 has a reference to FX2, the roll-forward value used to resolved FX2 will be determined solely by looking at the `.runtimeconfig.json` from FX1 and the CLI and env. variables. Any roll-forward settings in the app's `.runtimeconfig.json` will have not effect on the resolution of FX2.*
+*Note: There's no inheritance applied when chaining framework references. So for example if the application references FX1, then if FX1 has a reference to FX2, the roll-forward value used to resolved FX2 will be determined solely by looking at the `.runtimeconfig.json` from FX1 and the CLI and env. variables. Any roll-forward settings in the app's `.runtimeconfig.json` will have no effect on the resolution of FX2.*
 
 ## Pre-release versions
 Pre-release version is a version which has a pre-release part, for example `3.0.0-preview4-27415-15`. Everything after the `-` (dash) character is a pre-release identifier. Per [semantic versioning rules](https://semver.org/) pre-release versions are ordered before the same version without any pre-release part. So `3.0.0-preview4-27415-15` comes before `3.0.0`.
@@ -107,12 +107,27 @@ Note that due to the above described ordering, application which refers framewor
 ### Behavior before 3.0
 Before .NET Core 3.0 (so 2.2 and older) the roll-forward behavior for pre-release versions ignored any of the roll-forward related settings, that is both `rollForwardOnNoCandidateFx` as well as `applyPatches`.
 The behavior was that:
-* Release version will never roll forward to pre-release version. So for example `2.1.0` will not roll forward to `3.0.0-preview4-27415-15` even if `Major` roll-forward is allowed (same for all the other settings of `rollForwardOnNoCandidateFx` as well as `applyPatches`).
-* Pre-release version will never roll forward to release version. So for example `3.0.0-preview4-27415-15` will not roll forward to `3.0.0`. Also pre-release will only roll forward to the same `major.minor.patch`. So for example `3.0.0-preview4-27415-15` will not roll forward to `3.0.1-preview1-29000-0`.
+* Release version will prefer to roll forward to release. If no matching release version is available, release will roll forward to pre-release. (AP = ApplyPatches)
+
+| Framework reference       | Available versions             | Resolved framework | Notes                                             |
+| ------------------------- | ------------------------------ | ------------------ | ------------------------------------------------- |
+| 2.1.0 Minor, AP=true      | 2.1.1-preview, 2.2.0           | 2.2.0              | 2.2.0 is found first, pre-release is ignored      |
+| 2.1.0 Minor, AP=true      | 2.0.0, 2.2.0-preview           | 2.2.0-preview      | No matching release found, so pre-release used    |
+| 2.1.0 Major, AP=true      | 3.0.0-preview                  | 3.0.0-preview      | Pre-release is the only one available             |
+| 2.1.0 Minor, AP=true      | 2.1.1-preview, 2.1.2-preview   | 2.1.2-preview      | Roll forward to latest patch works on pre-release |
+| 2.1.0 Minor, AP=false     | 2.1.1-preview, 2.1.2-preview   | 2.1.1-preview      | `ApplyPatches=false` means no roll forward to latest patch, even on pre-release |
+| 2.1.0 Disabled, AP=true   | 2.1.1-preview                  | failure            | For some reason we prevent roll forward on patch only to pre-release |
+| 2.1.0 Minor, AP=true      | 2.1.1-preview1, 2.1.1-preview2 | 2.1.1-preview2     | Roll forward to latest patch including latest pre-release |
+
+* Pre-release version will never roll forward to release version. So for example `3.0.0-preview4-27415-15` will not roll forward to `3.0.0`. Also pre-release will only roll forward to the same `major.minor.patch`. So for example `3.0.0-preview4-27415-15` will not roll forward to `3.0.1-preview1-29000-0`. Both `rollForwardOnNoCandidateFx` and `applyPatches` are completely ignored.
+
+| Framework reference       | Available versions             | Resolved framework | Notes                                             |
+| ------------------------- | ------------------------------ | ------------------ | ------------------------------------------------- |
+| 2.1.0-preview             | 2.1.0-preview2, 2.1.0-preview3 | 2.1.0-preview2     | Pre-release only rolls forward to closest higher  |
+| 2.1.0-preview             | 2.1.0                          | failure            | Pre-release never rolls forward to release        |
+| 2.1.0-preview             | 2.1.1-preview                  | failure            | Pre-release never rolls to different `major.minor.patch` |
 
 ### Proposed behavior for 3.0 and forward
-*Assumption: It's desirable to have a behavior where installing a pre-release version on a machine doesn't modify behavior of any apps which use release versions.*
-
 When resolving framework reference with a **pre-release** version, treat all versions the same and include both release and pre-release versions in the set. This means pre-release can resolve to both release or pre-release.
 
 When resolving framework reference with a **release** version, prefer release versions. This means that if there's a release version on the machine which satisfies all the requirements it will be chosen, regardless of what pre-release versions are installed. Only if there's no suitable release version, then pre-release versions are also considered (and then they're treated all the same).
@@ -183,13 +198,13 @@ The host will use the `rollForward` setting to determine framework reference res
 The behavior of these settings are exactly the same, so switching to using `rollForward` internally will maintain 100% backward compatibility.
 
 To reconcile the various scopes the host will apply the following precedence:
-1. command line arguments - `rollFoward` and `rollForwardOnNoCandidateFx` (it's invalid to specify both)
-1. environment variable `DOTNET_ROLL_FORWARD`
-1. `.runtimeconfig.json` per-framework setting - `rollForward` and `rollForwardOnNoCandidateFx` (it's invalid to specify both)
-1. `.runtimeconfig.json` global setting - `rollForward` and `rollForwardOnNoCandidateFx` (it's invalid to specify both)
 1. environment variable `DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX`
+1. `.runtimeconfig.json` global setting - `rollForward` and `rollForwardOnNoCandidateFx` (it's invalid to specify both)
+1. `.runtimeconfig.json` per-framework setting - `rollForward` and `rollForwardOnNoCandidateFx` (it's invalid to specify both)
+1. environment variable `DOTNET_ROLL_FORWARD`
+1. command line arguments - `rollFoward` and `rollForwardOnNoCandidateFx` (it's invalid to specify both)
 
-Higher precedence scope from list above overwrites the lower one. At each precedence scope the host will determine an effective value of `rollForward` by converting any potential `rollForwardOnNoCandidateFx` setting to `rollForward`.
+Items lower in the list override those higher in the list. At each precedence scope the host will determine an effective value of `rollForward` by converting any potential `rollForwardOnNoCandidateFx` setting to `rollForward`. *Note that there are never collisions between `rollForward` and `rollForwardOnNoCandidateFx` since both can't appear at the same level.*
 
 #### Apply patches
 This setting is also described in [roll-forward-on-no-candidate-fx](roll-forward-on-no-candidate-fx.md). It can be specified as a property either for the entire `.runtimeconfig.json` or per framework reference (it has no environment variable of command line argument). It disables rolling forward to the latest patch.
@@ -199,7 +214,9 @@ The `applyPatches` value is only considered if the effective `rollForward` value
 * `LatestPatch`
 * `Minor`
 * `Major`
-For the other values `applyPatches` is ignored.
+
+For the other values `applyPatches` is ignored.  
+*This is to maintain backward compatibility with `rollForwardOnNoCandidateFx`. `applyPatches` is now considered obsolete.*
 
 If `applyPatches` is set to `true` (the default), then the roll-forward rules described above apply fully.
 If `applyPatches` is set to `false` then for effective roll-forward setting:
@@ -260,15 +277,17 @@ Steps
    * By doing this for all references here, before the next loop, we minimize the number of re-try attempts.
 4. For each framework reference in `config fx references`:
 5. --> If the framework is not in `resolved frameworks` Then resolve the framework reference to the actual framework on disk
-   * If the framework `name` already exists in the `newest fx references` resolve the currently processed reference with the one from the `newest fx references` (see above for the algorithm).
+   * If the framework `name` already exists in the `newest fx references` resolve the currently processed reference with the one from the `newest fx references` (see above for the algorithm).  
+   *Term "soft roll-forward" is used for this in the code*
      * The resolution will always pick the higher `version` and will consolidate the `rollForward` and `applyPatches` settings.
      * The resolution may fail if it's not possible to roll forward from one reference to the other.
      * Update the `newest fx references` with the resolved reference.
-   * Probe for the framework on disk
+   * Probe for the framework on disk  
+   *Term "hard roll-forward" is used for this in the code*
      * This follows the roll-forward rules as describe above.
    * If success add it to `resolved frameworks`
      * Parse the `.runtimeconfig.json` of the resolved framework and create a new `config fx references`. Make a recursive call back to Step 2 with this new `config fx references`.
-6. --> ElseIf the `version` is < resolved `version` Then perform a "soft" roll-forward to the resolved framework.
+6. --> ElseIf the `version` is < resolved `version` Then perform a "soft roll-forward" to the resolved framework.
    * We may fail here if not compatible.
 7. --> Else re-start the algorithm (goto Step 1) with new/clear state except for `newest fx references` so we attempt to use the newer version next time.
 
