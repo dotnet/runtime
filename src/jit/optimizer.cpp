@@ -7915,8 +7915,6 @@ void Compiler::optRemoveRangeCheck(GenTree* tree, GenTree* stmt)
 
     noway_assert(bndsChkTree->OperIsBoundsCheck());
 
-    GenTreeBoundsChk* bndsChk = tree->gtOp.gtOp1->AsBoundsChk();
-
 #ifdef DEBUG
     if (verbose)
     {

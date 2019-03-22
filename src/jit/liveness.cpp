@@ -955,7 +955,6 @@ void Compiler::fgExtendDbgLifetimes()
         VarSetOps::DiffD(this, initVars, block->bbLiveIn);
 
         /* Add statements initializing the vars, if there are any to initialize */
-        unsigned blockWeight = block->getBBWeight(this);
 
         VarSetOps::Iter iter(this, initVars);
         unsigned        varIndex = 0;
@@ -1001,6 +1000,7 @@ void Compiler::fgExtendDbgLifetimes()
                     initRange.InsertBefore(nullptr, zero, store);
 
 #if !defined(_TARGET_64BIT_)
+                    unsigned blockWeight = block->getBBWeight(this);
                     DecomposeLongs::DecomposeRange(this, blockWeight, initRange);
 #endif // !defined(_TARGET_64BIT_)
                     m_pLowering->LowerRange(block, initRange);
