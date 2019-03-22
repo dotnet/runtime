@@ -193,6 +193,17 @@
       <FrameworkListFile>$(IntermediateOutputPath)FrameworkList.xml</FrameworkListFile>
     </PropertyGroup>
 
+    <ItemGroup>
+      <FrameworkListRootAttributes Include="Name" Value="$(FrameworkListName)" />
+      <FrameworkListRootAttributes Include="TargetFrameworkIdentifier" Value="$(FrameworkListTargetFrameworkIdentifier)" />
+      <FrameworkListRootAttributes Include="TargetFrameworkVersion" Value="$(FrameworkListTargetFrameworkVersion)" />
+      <FrameworkListRootAttributes Include="FrameworkName" Value="$(FrameworkListFrameworkName)" />
+    </ItemGroup>
+
+    <Error
+      Condition="'%(FrameworkListRootAttributes.Value)' == ''"
+      Text="Missing value for property 'FrameworkList%(FrameworkListRootAttributes.Identity)'" />
+
     <CreateFrameworkListFile
       Files="@(File)"
       TargetFile="$(FrameworkListFile)"
