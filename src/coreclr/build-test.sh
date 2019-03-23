@@ -154,10 +154,6 @@ generate_layout()
 
     # Make sure to copy over the pulled down packages
     cp -r $__BinDir/* $CORE_ROOT/ > /dev/null
-    
-    nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --outputDir=$CORE_ROOT"
-    echo "Resolve runtime dependences via $nextCommand"
-    eval $nextCommand
 }
 
 generate_testhost()
