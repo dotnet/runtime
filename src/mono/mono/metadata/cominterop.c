@@ -625,7 +625,6 @@ cominterop_get_interface (MonoComObject *obj_raw, MonoClass *ic)
 	gpointer const itf = cominterop_get_interface_checked (obj, ic, error);
 	g_assert (!!itf == is_ok (error)); // two equal success indicators
 	mono_error_set_pending_exception (error);
-	return itf;
 	HANDLE_FUNCTION_RETURN_VAL (itf);
 }
 
