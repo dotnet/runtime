@@ -1155,7 +1155,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         Marshal.QueryInterface(exceptionIUnknown, ref s_iidIErrorInfo, out exceptionIErrorInfo);
                         if (exceptionIErrorInfo != IntPtr.Zero)
                         {
-                            if (RoOriginateLanguageException(Marshal.GetHRForException_WinRT(e), e.Message, exceptionIErrorInfo))
+                            if (RoOriginateLanguageException(Marshal.GetHRForException(e), e.Message, exceptionIErrorInfo))
                             {
                                 IRestrictedErrorInfo restrictedError = UnsafeNativeMethods.GetRestrictedErrorInfo();
                                 if (restrictedError != null)
@@ -1199,7 +1199,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             // If the type has any associated factory interfaces (i.e. supports non-default activation
             // or has statics), the CCW for this instance of ManagedActivationFactory must support them.
-            Marshal.InitializeManagedWinRTFactoryObject(activationFactory, (RuntimeType)type);
+            InitializeManagedWinRTFactoryObject(activationFactory, (RuntimeType)type);
             return activationFactory;
         }
 
@@ -1223,7 +1223,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (type.IsWindowsRuntimeObject && type.IsImport)
             {
-                return (IActivationFactory)Marshal.GetNativeActivationFactory(type);
+                return (IActivationFactory)GetNativeActivationFactory(type);
             }
             else
             {
@@ -1275,6 +1275,33 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 UnsafeNativeMethods.WindowsDeleteString(ptr);
             }
         }
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        public static extern object GetUniqueObjectForIUnknownWithoutUnboxing(IntPtr unknown);
+        
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void InitializeWrapper(object o, ref IntPtr pUnk);
+        
+        /// <summary>
+        /// Converts the CLR exception to an HRESULT. This function also sets
+        /// up an IErrorInfo for the exception.
+        /// This function is only used in WinRT and converts ObjectDisposedException
+        /// to RO_E_CLOSED
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern int GetHRForException(Exception e);
+
+        
+#if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern void InitializeManagedWinRTFactoryObject(object o, RuntimeType runtimeClassType);
+#endif
+
+        /// <summary>
+        /// Create activation factory and wraps it with a unique RCW.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern object GetNativeActivationFactory(Type type);
 
         [Conditional("_LOGGING")]
         private static void Log(string s)

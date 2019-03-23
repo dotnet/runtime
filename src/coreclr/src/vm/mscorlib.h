@@ -492,9 +492,7 @@ DEFINE_CLASS(LCID_CONVERSION_TYPE,  Interop,                LCIDConversionAttrib
 
 DEFINE_CLASS(MARSHAL,               Interop,                Marshal)
 #ifdef FEATURE_COMINTEROP
-DEFINE_METHOD(MARSHAL,              INITIALIZE_WRAPPER_FOR_WINRT, InitializeWrapperForWinRT, SM_Obj_RefIntPtr_RetVoid)
 DEFINE_METHOD(MARSHAL,              GET_HR_FOR_EXCEPTION,              GetHRForException,             SM_Exception_RetInt)
-DEFINE_METHOD(MARSHAL,              GET_HR_FOR_EXCEPTION_WINRT,        GetHRForException_WinRT,       SM_Exception_RetInt)
 #endif // FEATURE_COMINTEROP
 DEFINE_METHOD(MARSHAL,              GET_FUNCTION_POINTER_FOR_DELEGATE, GetFunctionPointerForDelegate, SM_Delegate_RetIntPtr)
 DEFINE_METHOD(MARSHAL,              GET_DELEGATE_FOR_FUNCTION_POINTER, GetDelegateForFunctionPointer, SM_IntPtr_Type_RetDelegate)
@@ -936,6 +934,8 @@ DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,             
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(WINDOWSRUNTIMEMARSHAL, WinRT,  WindowsRuntimeMarshal)
+DEFINE_METHOD(WINDOWSRUNTIMEMARSHAL, GET_HR_FOR_EXCEPTION, GetHRForException, SM_Exception_RetInt)
+DEFINE_METHOD(WINDOWSRUNTIMEMARSHAL, INITIALIZE_WRAPPER, InitializeWrapper, SM_Obj_RefIntPtr_RetVoid)
 #ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
 DEFINE_METHOD(WINDOWSRUNTIMEMARSHAL, GET_ACTIVATION_FACTORY_FOR_TYPE, GetActivationFactoryForType, SM_Type_RetIntPtr)
 #endif // FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION

@@ -309,15 +309,6 @@ namespace System.Runtime.InteropServices
         public static extern int GetHRForException(Exception e);
 
         /// <summary>
-        /// Converts the CLR exception to an HRESULT. This function also sets
-        /// up an IErrorInfo for the exception.
-        /// This function is only used in WinRT and converts ObjectDisposedException
-        /// to RO_E_CLOSED
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetHRForException_WinRT(Exception e);
-
-        /// <summary>
         /// Given a managed object that wraps an ITypeInfo, return its name.
         /// </summary>
         public static string GetTypeInfoName(ITypeInfo typeInfo)
@@ -743,21 +734,6 @@ namespace System.Runtime.InteropServices
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void ChangeWrapperHandleStrength(object otp, bool fIsWeak);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void InitializeWrapperForWinRT(object o, ref IntPtr pUnk);
-
-#if FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void InitializeManagedWinRTFactoryObject(object o, RuntimeType runtimeClassType);
-#endif
-
-        /// <summary>
-        /// Create activation factory and wraps it with a unique RCW.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object GetNativeActivationFactory(Type type);
-
 #endif // FEATURE_COMINTEROP
 
         [MethodImpl(MethodImplOptions.InternalCall)]
