@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -246,5 +247,28 @@ namespace System.Text.Json
                                                0x03ul << 32 |
                                                0x02ul << 40 |
                                                0x01ul << 48) + 1;
+
+        public static bool TryGetEscapedGuid(ReadOnlySpan<byte> span, out Guid value)
+        {
+            Debug.Assert(span.Length <= JsonConstants.MaximumEscapedGuidLength);
+
+            int idx = span.IndexOf(JsonConstants.BackSlash);
+            Debug.Assert(idx != -1);
+
+            Span<byte> utf8Unescaped = stackalloc byte[span.Length];
+
+            Unescape(span, utf8Unescaped, idx, out int written);
+            Debug.Assert(written > 0);
+
+            utf8Unescaped = utf8Unescaped.Slice(0, written);
+            Debug.Assert(!utf8Unescaped.IsEmpty);
+
+            if (utf8Unescaped.Length != JsonConstants.MaximumFormatGuidLength)
+            {
+                value = default;
+                return false;
+            }
+            return Utf8Parser.TryParse(utf8Unescaped, out value, out int bytesConsumed, 'D') && utf8Unescaped.Length == bytesConsumed;
+        }
     }
 }
