@@ -8,6 +8,10 @@
     <DefineConstants Condition="'$(OSGroup)' == 'Windows_NT'">$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
+    <LangVersion>7.1</LangVersion>
+  </PropertyGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
   </ItemGroup>
