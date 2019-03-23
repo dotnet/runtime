@@ -147,7 +147,7 @@ initDistroRidGlobal ${__BuildOS} x64 ${isPortable}
 # The CoreDisTools package is currently manually packaged and we only have
 # 14.04 and 16.04 packages. Use the oldest package which will work on newer
 # platforms.
-if [[ ${__DistroRid} == "ubuntu"* ]]; then
+if [[ ${__BuildOS} == "Linux" ]]; then
    __DistroRid=ubuntu.14.04
 fi
 
@@ -170,6 +170,8 @@ fi
 
 # Get library path
 libPath=`find $packageDir | grep $rid | grep -m 1 libcoredistools`
+echo "libPath to be used: ${libPath}"
+
 if [ ! -e $libPath ] || [ -z "$libPath" ]; then
     exit_with_error 1 'Failed to locate the downloaded library'
 fi
