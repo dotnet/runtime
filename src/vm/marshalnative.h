@@ -122,6 +122,11 @@ public:
     static FCDECL1(Object*, GetUniqueObjectForIUnknown, IUnknown* pUnk);
 
     //====================================================================
+    // return a unique cacheless Object for IUnknown
+    //====================================================================
+    static FCDECL1(Object*, GetUniqueObjectForIUnknownWithoutUnboxing, IUnknown* pUnk);
+
+    //====================================================================
     // return an Object for IUnknown, using the Type T, 
     //	NOTE: 
     //	Type T should be either a COM imported Type or a sub-type of COM imported Type
