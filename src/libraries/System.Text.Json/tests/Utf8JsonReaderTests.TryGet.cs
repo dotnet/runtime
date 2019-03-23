@@ -522,6 +522,10 @@ namespace System.Text.Json.Tests
                     }
                     catch (InvalidOperationException)
                     { }
+
+                    JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetGuid());
+
+                    JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetGuid(out _));
                 }
 
                 if (json.TokenType != JsonTokenType.True && json.TokenType != JsonTokenType.False)
@@ -937,6 +941,43 @@ namespace System.Text.Json.Tests
                     { }
                 }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonGuidTestData.ValidGuidTests), MemberType = typeof(JsonGuidTestData))]
+        [MemberData(nameof(JsonGuidTestData.ValidHexGuidTests), MemberType = typeof(JsonGuidTestData))]
+        public static void TestingStringsConversionToGuid(string testString, string expectedStr)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+
+            Guid expected = new Guid(expectedStr);
+
+            Assert.True(json.Read(), "Read string value");
+            Assert.Equal(JsonTokenType.String, json.TokenType);
+
+            Assert.True(json.TryGetGuid(out Guid actual));
+            Assert.Equal(expected, actual);
+            Assert.Equal(expected, json.GetGuid());
+
+            Assert.Equal(dataUtf8.Length, json.BytesConsumed);
+            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonGuidTestData.InvalidGuidTests), MemberType = typeof(JsonGuidTestData))]
+        public static void TestingStringsInvalidConversionToGuid(string testString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+
+            Assert.True(json.Read(), "Read string value");
+            Assert.Equal(JsonTokenType.String, json.TokenType);
+
+            Assert.False(json.TryGetGuid(out Guid actual));
+            Assert.Equal(Guid.Empty, actual);
+
+            JsonTestHelper.AssertThrows<FormatException>(json, (jsonReader) => jsonReader.GetGuid());
         }
     }
 }
