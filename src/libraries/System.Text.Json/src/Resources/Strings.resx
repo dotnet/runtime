@@ -304,9 +304,12 @@
     <value>Cannot compare the value of a token type '{0}' to text.</value>
   </data>
   <data name="FormatDateTime" xml:space="preserve">
-    <value>The JSON value is of unsupported format for a DateTime.</value>
+    <value>The JSON value is not in a supported DateTime format.</value>
   </data>
   <data name="FormatDateTimeOffset" xml:space="preserve">
-    <value>The JSON value is of unsupported format for a DateTimeOffset.</value>
+    <value>The JSON value is not in a supported DateTimeOffset format.</value>
+  </data>
+  <data name="FormatGuid" xml:space="preserve">
+    <value>The JSON value is not in a supported Guid format.</value>
   </data>
 </root>
