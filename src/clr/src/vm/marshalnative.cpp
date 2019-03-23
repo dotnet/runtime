@@ -1024,6 +1024,28 @@ FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknown, IUnknown* pUnk)
 }
 FCIMPLEND
 
+FCIMPL1(Object*, MarshalNative::GetUniqueObjectForIUnknownWithoutUnboxing, IUnknown* pUnk)
+{
+    FCALL_CONTRACT;
+
+    OBJECTREF oref = NULL;
+    HELPER_METHOD_FRAME_BEGIN_RET_1(oref);
+
+    HRESULT hr = S_OK;
+
+    if(!pUnk)
+        COMPlusThrowArgumentNull(W("pUnk"));
+
+    // Ensure COM is started up.
+    EnsureComStarted();
+
+    GetObjectRefFromComIP(&oref, pUnk, NULL, NULL, ObjFromComIP::UNIQUE_OBJECT | ObjFromComIP::IGNORE_WINRT_AND_SKIP_UNBOXING);
+
+    HELPER_METHOD_FRAME_END();
+    return OBJECTREFToObject(oref);    
+}
+FCIMPLEND
+
 //====================================================================
 // return an Object for IUnknown, using the Type T, 
 //  NOTE: 
