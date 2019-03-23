@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.Build.Bundle
     /// file embedded in the bundle:
     /// * Type       (1 byte)
     /// * NameLength (7-bit extension encoding, typically 1 byte)
-    /// * Name       (<NameLength> Bytes)
+    /// * Name       ("NameLength" Bytes)
     /// * Offset     (Int64)
     /// * Size       (Int64)
     /// </summary>
