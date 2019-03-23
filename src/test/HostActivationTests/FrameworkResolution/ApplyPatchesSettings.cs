@@ -108,37 +108,40 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
         }
 
-        [Fact]
-        public void NoInheritance()
+        [Theory]
+        [InlineData(SettingLocation.RuntimeOptions)]
+        [InlineData(SettingLocation.FrameworkReference)]
+        public void NoInheritance(SettingLocation settingLocation)
         {
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithApplyPatches(false)
-                    .WithFramework(MiddleWare, "2.1.2"),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"));
-
-            RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(new RuntimeConfig.Framework(MiddleWare, "2.1.2")
-                        .WithApplyPatches(false)),
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(MiddleWare, "2.1.2"))
+                    .With(ApplyPatchesSetting(settingLocation, false, MiddleWare)),
                 result => result.Should().Pass()
                     .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"));
         }
 
         private void RunTest(
             Func<RuntimeConfig, RuntimeConfig> runtimeConfig,
-            Action<CommandResult> resultAction,
-            string[] environment = null,
-            string[] commandLine = null)
+            Action<CommandResult> resultAction)
         {
             RunTest(
                 SharedState.DotNetWithFrameworks,
                 SharedState.FrameworkReferenceApp,
                 runtimeConfig,
-                resultAction,
-                environment,
-                commandLine);
+                resultAction);
+        }
+
+        private void RunTest(
+            TestSettings testSettings,
+            Action<CommandResult> resultAction)
+        {
+            RunTest(
+                SharedState.DotNetWithFrameworks,
+                SharedState.FrameworkReferenceApp,
+                testSettings,
+                resultAction);
         }
 
         public class SharedTestState : SharedTestStateBase

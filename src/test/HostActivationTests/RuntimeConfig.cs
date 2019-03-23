@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 if (RollForwardOnNoCandidateFx.HasValue)
                 {
                     frameworkReference.Add(
-                        Constants.RollFowardOnNoCandidateFxSetting.RuntimeConfigPropertyName,
+                        Constants.RollForwardOnNoCandidateFxSetting.RuntimeConfigPropertyName,
                         RollForwardOnNoCandidateFx.Value);
                 }
 
@@ -67,7 +67,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 return new Framework((string)jobject["name"], (string)jobject["version"])
                 {
-                    RollForwardOnNoCandidateFx = (int?)jobject[Constants.RollFowardOnNoCandidateFxSetting.RuntimeConfigPropertyName],
+                    RollForwardOnNoCandidateFx = (int?)jobject[Constants.RollForwardOnNoCandidateFxSetting.RuntimeConfigPropertyName],
                     ApplyPatches = (bool?)jobject[Constants.ApplyPatchesSetting.RuntimeConfigPropertyName]
                 };
             }
@@ -105,7 +105,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                         runtimeConfig.WithFramework(Framework.FromJson(framework));
                     }
 
-                    runtimeConfig._rollForwardOnNoCandidateFx = (int?)runtimeOptions[Constants.RollFowardOnNoCandidateFxSetting.RuntimeConfigPropertyName];
+                    runtimeConfig._rollForwardOnNoCandidateFx = (int?)runtimeOptions[Constants.RollForwardOnNoCandidateFxSetting.RuntimeConfigPropertyName];
                     runtimeConfig._applyPatches = (bool?)runtimeOptions[Constants.ApplyPatchesSetting.RuntimeConfigPropertyName];
                 }
             }
@@ -156,7 +156,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             if (_rollForwardOnNoCandidateFx.HasValue)
             {
                 runtimeOptions.Add(
-                    Constants.RollFowardOnNoCandidateFxSetting.RuntimeConfigPropertyName,
+                    Constants.RollForwardOnNoCandidateFxSetting.RuntimeConfigPropertyName,
                     _rollForwardOnNoCandidateFx.Value);
             }
 

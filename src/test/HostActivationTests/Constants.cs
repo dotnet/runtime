@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public const string RuntimeConfigPropertyName = "applyPatches";
         }
 
-        public static class RollFowardOnNoCandidateFxSetting
+        public static class RollForwardOnNoCandidateFxSetting
         {
             public const string RuntimeConfigPropertyName = "rollForwardOnNoCandidateFx";
             public const string CommandLineArgument = "--roll-forward-on-no-candidate-fx";
