@@ -1099,7 +1099,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ' Apparently, for remote objects (objects in a different process), CLR will report
         ' allow cast to an interface (isinst instruction returns non-null) even though the object
         ' doesn't implement the interface. Therefore we are checking that the object resides 
-        ' in the same app domain in addition to implementing the IDynamicMetaObjectProcider interface.
+        ' in the same app domain in addition to implementing the IDynamicMetaObjectProvider interface.
         Friend Shared Function TryCastToIDMOP(ByVal o As Object) As IDynamicMetaObjectProvider
             Dim ido As IDynamicMetaObjectProvider = TryCast(o, IDynamicMetaObjectProvider)
             If ido IsNot Nothing Then
