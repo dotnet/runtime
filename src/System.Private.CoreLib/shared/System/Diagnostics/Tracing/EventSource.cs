@@ -2085,7 +2085,7 @@ namespace System.Diagnostics.Tracing
                         SendManifest(manifestBuilder.CreateManifest());
                     }
 
-                    // We use this low level routine to to bypass the enabled checking, since the eventSource itself is only partially inited. 
+                    // We use this low level routine to bypass the enabled checking, since the eventSource itself is only partially inited. 
                     fixed (char* msgStringPtr = msgString)
                     {
                         EventDescriptor descr = new EventDescriptor(0, 0, 0, (byte)level, 0, 0, keywords);
@@ -3875,7 +3875,7 @@ namespace System.Diagnostics.Tracing
                                 break;
                             if (cur == this)
                             {
-                                // Found our Listener, remove references to to it in the eventSources
+                                // Found our Listener, remove references to it in the eventSources
                                 prev.m_Next = cur.m_Next;       // Remove entry. 
                                 RemoveReferencesToListenerInEventSources(cur);
                                 break;
