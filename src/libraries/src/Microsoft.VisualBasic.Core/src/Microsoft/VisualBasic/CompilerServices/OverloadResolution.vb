@@ -1970,7 +1970,7 @@ skipargument:
             ByVal lookupFlags As BindingFlags)
 
             'No need to copy back if there are no valid targets .
-            'The copy back array will be be Nothing if the compiler determined that all
+            'The copy back array will be Nothing if the compiler determined that all
             'arguments are Rvalues.
             If copyBack Is Nothing Then
                 Return

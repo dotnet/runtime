@@ -33,7 +33,7 @@ Attributes
 Strings
 -------
 
-When the CharSet is Unicode or the argument is explicitly marked as `[MarshalAs(UnmanagedType.LPWSTR)]` _and_ the string is passed by value (not `ref` or `out`) the string will be be pinned and used directly by native code (rather than copied).
+When the CharSet is Unicode or the argument is explicitly marked as `[MarshalAs(UnmanagedType.LPWSTR)]` _and_ the string is passed by value (not `ref` or `out`) the string will be pinned and used directly by native code (rather than copied).
 
 Remember to mark the `[DllImport]` as `Charset.Unicode` unless you explicitly want ANSI treatment of your strings.
 
