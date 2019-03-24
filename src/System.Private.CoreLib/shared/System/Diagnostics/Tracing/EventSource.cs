@@ -5369,7 +5369,7 @@ namespace System.Diagnostics.Tracing
         // support). The manifest generated *MUST* have the channels specified in the same order (that's how our computed keywords are mapped
         // to channels by the OS infrastructure).
         // If channelKeyworkds is present, and has keywords bits in the ValidPredefinedChannelKeywords then it is 
-        // assumed that that the keyword for that channel should be that bit.   
+        // assumed that the keyword for that channel should be that bit.   
         // otherwise we allocate a channel bit for the channel.  
         // explicit channel bits are only used by WCF to mimic an existing manifest, 
         // so we don't dont do error checking.  

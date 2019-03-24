@@ -197,7 +197,7 @@ namespace System.Threading.Tasks.Sources
             }
         }
 
-        /// <summary>Signals that that the operation has completed.  Invoked after the result or error has been set.</summary>
+        /// <summary>Signals that the operation has completed.  Invoked after the result or error has been set.</summary>
         private void SignalCompletion()
         {
             if (_completed)
