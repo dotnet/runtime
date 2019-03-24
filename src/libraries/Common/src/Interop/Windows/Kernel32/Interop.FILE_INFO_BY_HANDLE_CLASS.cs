@@ -98,7 +98,7 @@ internal partial class Interop
             FileAttributeTagInfo,
 
             /// <summary>
-            /// Starts a query for for file information in a directory.
+            /// Starts a query for file information in a directory.
             /// </summary>
             /// <remarks>
             /// Thunks to NtQueryDirectoryFile and FileIdBothDirectoryInformation with RestartScan
@@ -132,7 +132,7 @@ internal partial class Interop
             FileRemoteProtocolInfo,
 
             /// <summary>
-            /// Starts a query for for file information in a directory. Uses FILE_FULL_DIR_INFO.
+            /// Starts a query for file information in a directory. Uses FILE_FULL_DIR_INFO.
             /// </summary>
             /// <remarks>
             /// Thunks to NtQueryDirectoryFile and FileFullDirectoryInformation with RestartScan
