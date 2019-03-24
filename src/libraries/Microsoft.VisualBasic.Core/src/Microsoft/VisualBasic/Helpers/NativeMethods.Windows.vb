@@ -184,7 +184,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ''' Notifies the system of an event that an application has performed.
         ''' An application should use this function if it performs an action that may affect the shell.
         ''' </summary>
-        ''' <param name="wEventId">Describes the event that has occurred. Typically, only one event is specified at at a time.
+        ''' <param name="wEventId">Describes the event that has occurred. Typically, only one event is specified at a time.
         '''       If more than one event is specified, the values contained in dwItem1 and dwItem2 must be the same,
         '''       respectively, for all specified events. See ShellChangeNotificationEvents.</param>
         ''' <param name="uFlags">Flags that indicate the meaning of the dwItem1 and dwItem2 parameter. See ShellChangeNotificationFlags.</param>
