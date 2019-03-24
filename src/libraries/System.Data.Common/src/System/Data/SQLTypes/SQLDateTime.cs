@@ -260,7 +260,7 @@ namespace System.Data.SqlTypes
             // Usually we round the DateTime value to the nearest SqlDateTime value.
             // but for DateTime.MaxValue, if we round it up, it will overflow.
             // Although the overflow would be the correct behavior, we simply
-            // returned SqlDateTime.MaxValue in v1. In order not to break exisiting
+            // returned SqlDateTime.MaxValue in v1. In order not to break existing
             // code, we'll keep this logic.
             //
             if (value == DateTime.MaxValue)
