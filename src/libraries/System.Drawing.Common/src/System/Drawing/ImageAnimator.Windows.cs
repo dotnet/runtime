@@ -107,7 +107,7 @@ namespace System.Drawing
             }
 
             // If the current thread already has the writer lock, no reader lock is acquired. Instead, the lock count on 
-            // the writer lock is incremented. It it already has a reader lock, the locks ref count will be incremented
+            // the writer lock is incremented. It already has a reader lock, the locks ref count will be incremented
             // w/o placing the request at the end of the reader queue.
 
             s_rwImgListLock.AcquireReaderLock(Timeout.Infinite);
