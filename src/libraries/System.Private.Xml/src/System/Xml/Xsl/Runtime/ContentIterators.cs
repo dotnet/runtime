@@ -444,7 +444,7 @@ namespace System.Xml.Xsl.Runtime
             cmp = _navCurrent.ComparePosition(_navNext);
 
             // If navCurrent is before navNext in document order,
-            // If cmp = XmlNodeOrder.Unknown, then navCurrent is before navNext (since input is is doc order)
+            // If cmp = XmlNodeOrder.Unknown, then navCurrent is before navNext (since input is in doc order)
             if (cmp == XmlNodeOrder.Before || cmp == XmlNodeOrder.Unknown)
             {
                 // Then navCurrent can be returned (it is guaranteed to be first in document order)
