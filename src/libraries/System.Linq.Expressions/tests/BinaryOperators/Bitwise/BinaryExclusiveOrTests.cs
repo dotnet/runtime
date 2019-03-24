@@ -273,7 +273,7 @@ namespace System.Linq.Expressions.Tests
             BinaryExpression e = Expression.ExclusiveOr(Expression.Parameter(typeof(int), "a"), Expression.Parameter(typeof(int), "b"));
             Assert.Equal("(a ^ b)", e.ToString());
 
-            // NB: Unlike And and Or, there's no special case for bool and bool? here.
+            // NB: Unlike 'Expression.And' and 'Expression.Or', there's no special case for bool and bool? here.
         }
     }
 }
