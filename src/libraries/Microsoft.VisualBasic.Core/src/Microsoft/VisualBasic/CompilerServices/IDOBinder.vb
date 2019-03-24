@@ -1085,7 +1085,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         '   y.F(b)
         '
         ' Both of these call sites are calling "F" with one argument, so they
-        ' can potentially use the same generated rule. Constrast with:
+        ' can potentially use the same generated rule. Contrast with:
         '   z.F(c, d)
         '
         ' Now we have two arguments, so we can't share rules with the other two

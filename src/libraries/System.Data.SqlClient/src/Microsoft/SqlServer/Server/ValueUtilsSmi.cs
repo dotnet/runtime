@@ -2801,7 +2801,7 @@ namespace Microsoft.SqlServer.Server
         //  The tables should only be accessed from the CanAccessXetterDirectly methods.
         //
 
-        // A couple of private constants to increase the getter/setter access tables' constrast
+        // A couple of private constants to increase the getter/setter access tables' contrast
         private const bool X = true;
         private const bool _ = false;
 
