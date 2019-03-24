@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+if [ ${BASH_VERSION:0:1} -lt 4 ]; then
+  echo $BASH_VERSION
+  echo "Bash version too low. Please upgrade to >= v4"
+  exit 1
+fi
+
 source="${BASH_SOURCE[0]}"
 
 # resolve $source until the file is no longer a symlink
@@ -80,6 +86,7 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
      -configuration|-c)
+      val=${2^}
       arguments="$arguments /p:ConfigurationGroup=${2^} -configuration ${2^}"
       shift 2
       ;;
