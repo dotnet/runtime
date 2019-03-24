@@ -590,7 +590,7 @@ namespace System.Diagnostics.Tracing
         /// while that task is running.   Thus m_current 'flows' to any task that is caused by the current thread that
         /// last set it.   
         /// 
-        /// This variable points a a linked list that represents all Activities that have started but have not stopped.  
+        /// This variable points to a linked list that represents all Activities that have started but have not stopped.  
         /// </summary>
         AsyncLocal<ActivityInfo> m_current;
         bool m_checkedForEnable;

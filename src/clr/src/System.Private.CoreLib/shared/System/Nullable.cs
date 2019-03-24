@@ -7,7 +7,7 @@ using System.Runtime.Versioning;
 
 namespace System
 {
-    // Because we have special type system support that says a a boxed Nullable<T>
+    // Because we have special type system support that says a boxed Nullable<T>
     // can be used where a boxed<T> is use, Nullable<T> can not implement any intefaces
     // at all (since T may not).   Do NOT add any interfaces to Nullable!
     //
