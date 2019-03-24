@@ -220,7 +220,7 @@ Structs
 
 Managed structs are created on the stack and aren't removed until the method returns. By definition then, they are "pinned" (it won't get moved by the GC). You can also simply take the address in unsafe code blocks if native code won't use the pointer past the end of the current method.
 
-Blittable structs are much more performant as they they can simply be used directly by the marshalling layer. Try to make structs blittable (for example, avoid `bool`). See the "Blittable Types" section above for more details.
+Blittable structs are much more performant as they can simply be used directly by the marshalling layer. Try to make structs blittable (for example, avoid `bool`). See the "Blittable Types" section above for more details.
 
 *If* the struct is blittable use `sizeof()` instead of `Marshal.SizeOf<MyStruct>()` for better performance. As mentioned above, you can validate that the type is blittable by attempting to create a pinned `GCHandle`. If the type is not a string or considered blittable `GCHandle.Alloc` will throw an `ArgumentException`.
 
