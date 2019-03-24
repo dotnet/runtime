@@ -880,7 +880,7 @@ namespace System.Threading.Tasks
 
                 Interlocked.Exchange(ref _progressHandler, value);
 
-                // We we transitioned into CLOSED after the above check, we will need to null out m_progressHandler:
+                // We transitioned into CLOSED after the above check, we will need to null out m_progressHandler:
                 if (IsInClosedState)
                     Interlocked.Exchange(ref _progressHandler, null);
             }
