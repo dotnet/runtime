@@ -219,7 +219,7 @@ namespace System.Management
         ///				current timezone. The lowest precision in DMTF is microseconds and 
         ///				in <see cref='System.DateTime'/> is Ticks , which is equivalent to 100 of nanoseconds.
         ///				 During conversion these Ticks are converted to microseconds and rounded 
-        ///				 off to the the nearest microsecond.
+        ///				 off to the nearest microsecond.
         ///			</para>
         /// </remarks>
         /// <example>
@@ -369,7 +369,7 @@ namespace System.Management
 
             timespan = new System.TimeSpan(days, hours, minutes, seconds, 0);
             // Get a timepan for the additional ticks obtained for the microsecond part of DMTF time interval
-            // and then add it to the the original timespan
+            // and then add it to the original timespan
             TimeSpan tsTemp = System.TimeSpan.FromTicks(ticks);
             timespan = timespan + tsTemp;
             
@@ -389,7 +389,7 @@ namespace System.Management
         ///				is explained in WMI SDK documentation. The lowest precision in 
         ///				DMTF is microseconds and in <see cref='System.TimeSpan'/> is Ticks , which is equivalent 
         ///				to 100 of nanoseconds.During conversion these Ticks are converted to 
-        ///				microseconds and rounded off to the the nearest microsecond.
+        ///				microseconds and rounded off to the nearest microsecond.
         ///			</para>
         /// </remarks>
         /// <example>
