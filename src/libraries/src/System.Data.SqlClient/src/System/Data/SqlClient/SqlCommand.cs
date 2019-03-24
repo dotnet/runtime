@@ -2226,7 +2226,7 @@ namespace System.Data.SqlClient
                         // the constructed type name above is incorrectly formatted, it should be a 2 part name not 3
                         // for compatibility we can't change this because the bug has existed for a long time and been 
                         // worked around by users, so identify that it is present and catch it later in the execution
-                        // process once users can no longer interact with with the parameter type name
+                        // process once users can no longer interact with the parameter type name
                         p.IsDerivedParameterTypeName = true;
 
                     }
