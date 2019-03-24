@@ -5,7 +5,7 @@
 // The worker functions in this file was optimized for performance. If you make changes
 // you should use care to consider all of the interesting cases.
 
-// The code of all worker functions in this file is written twice: Once as as a slow loop, and the
+// The code of all worker functions in this file is written twice: Once as a slow loop, and the
 // second time as a fast loop. The slow loops handles all special cases, throws exceptions, etc.
 // The fast loops attempts to blaze through as fast as possible with optimistic range checks,
 // processing multiple characters at a time, and falling back to the slow loop for all special cases.
