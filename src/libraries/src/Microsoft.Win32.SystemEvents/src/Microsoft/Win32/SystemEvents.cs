@@ -508,7 +508,7 @@ namespace Microsoft.Win32
 
         /// <internalonly/>
         /// <devdoc>
-        ///    <para>Creates a new window timer asociated with the
+        ///    <para>Creates a new window timer associated with the
         ///       system events window.</para>
         /// </devdoc>
         public static IntPtr CreateTimer(int interval)
