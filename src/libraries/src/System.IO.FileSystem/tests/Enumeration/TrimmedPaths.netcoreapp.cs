@@ -106,7 +106,7 @@ namespace System.IO.Tests.Enumeration
         {
             // Trailing spaces and periods are eaten when normalizing in Windows, making them impossible
             // to access without using the \\?\ device syntax. We should, however, be able to open readers
-            // and writers from the the info class when enumerating.
+            // and writers from the info class when enumerating.
 
             DirectoryInfo directory = Directory.CreateDirectory(GetTestFilePath());
             string fileOne = Path.Join(directory.FullName, "Trailing space ");

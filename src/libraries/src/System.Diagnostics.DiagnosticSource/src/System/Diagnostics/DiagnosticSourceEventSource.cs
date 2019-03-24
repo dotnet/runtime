@@ -703,7 +703,7 @@ namespace System.Diagnostics
             public FilterAndTransform Next;
 
             #region private
-            // Given a type generate all the the implicit transforms for type (that is for every field 
+            // Given a type generate all the implicit transforms for type (that is for every field 
             // generate the spec that fetches it).  
             private static TransformSpec MakeImplicitTransforms(Type type)
             {
