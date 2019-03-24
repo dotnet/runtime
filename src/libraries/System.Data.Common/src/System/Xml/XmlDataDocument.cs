@@ -1222,7 +1222,7 @@ namespace System.Xml
             _fAssociateDataRow = false;
 
             DataTable[] orderedTables = OrderTables(ds);
-            // problem is after we add support for Namespace  for DataTable, when infering we do not guarantee that table would be 
+            // problem is after we add support for Namespace  for DataTable, when inferring we do not guarantee that table would be 
             // in the same sequence that they were in XML because of namespace, some would be on different schema, so since they
             // won't be in the same sequence as in XML, we may end up with having a child table, before its parent (which is not doable
             // with XML; and this happend because they are in different namespace)

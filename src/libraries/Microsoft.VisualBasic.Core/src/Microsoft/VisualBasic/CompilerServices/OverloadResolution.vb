@@ -1307,7 +1307,7 @@ RetryInference:
                 parameterType = GetElementType(parameterType)
             End If
             Dim argumentType As Type = GetArgumentType(argument)
-            Debug.Assert(targetProcedure.IsMethod, "we shouldn't be infering type arguments for non-methods")
+            Debug.Assert(targetProcedure.IsMethod, "we shouldn't be inferring type arguments for non-methods")
             If Not InferTypeArgumentsFromArgument(
                         argumentType,
                         parameterType,
