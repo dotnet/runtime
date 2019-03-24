@@ -725,7 +725,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             'the largest (most encompassing) type that widens to S.  In this way, the algorithm
             'always prefers widening from S over narrowing from S.
             '
-            'Similarily, each operator presents a possibility for Tx (the return type of the operator).
+            'Similarly, each operator presents a possibility for Tx (the return type of the operator).
             'Given these choices, the "closest" type to T is the largest (most encompassing) type that
             'widens to T.  If none of the possible types widen to T, then the "closest" type to T is
             'the smallest (most encompassed) type that T widens to.  In this way, the algorithm
