@@ -67,7 +67,7 @@ namespace System.IO
             switch (status)
             {
                 case 0:
-                    // We we're successful
+                    // We were successful
                     break;
                 case Interop.NtDll.STATUS_INVALID_HANDLE:
                     if (!ignoreInvalid)
