@@ -53,7 +53,7 @@ namespace System
 
                     Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
 
-                    // We need to reinitialize Console.In in the next call to s_in
+                    // We need to reinitialize 'Console.In' in the next call to s_in
                     // This will discard the current StreamReader, potentially 
                     // losing buffered data.
                     Volatile.Write(ref s_in, null);
