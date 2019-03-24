@@ -18,6 +18,7 @@ using System.Transactions;
 using Microsoft.SqlServer.Server;
 using Xunit;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
@@ -62,13 +63,20 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 
             var enumerator = new WraparoundRowEnumerator(1000000);
 
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
             int returned = Task.WaitAny(
                 Task.Factory.StartNew(
                     () => RunPacketNumberWraparound(enumerator),
                     TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning
                 ),
-                Task.Delay(TimeSpan.FromSeconds(5))
+                Task.Delay(TimeSpan.FromSeconds(60))
             );
+            stopwatch.Stop();
+            if (enumerator.MaxCount != enumerator.Count)
+            {
+                Console.WriteLine($"enumerator.Count={enumerator.Count}, enumerator.MaxCount={enumerator.MaxCount}, elapsed={stopwatch.Elapsed.TotalSeconds}");
+            }
             Assert.True(enumerator.MaxCount == enumerator.Count);
         }
 
