@@ -2259,7 +2259,7 @@ namespace System.Xml
         private void PromoteInnerRegions(XmlNode parent)
         {
             Debug.Assert(parent != null);
-            Debug.Assert(parent.NodeType != XmlNodeType.Attribute);   // We need to get get the grand-parent region
+            Debug.Assert(parent.NodeType != XmlNodeType.Attribute);   // We need to get the grand-parent region
             Debug.Assert(parent != DocumentElement);                  // We cannot promote children of the DocumentElement
 
             XmlNode prevSibling = parent;
