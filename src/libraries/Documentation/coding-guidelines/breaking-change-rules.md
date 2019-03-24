@@ -99,7 +99,7 @@ Breaking Change Rules
 
 * Adding the `checked` keyword to a code-block
 
-    This may cause code in a block to to begin to throwing exceptions, an unacceptable change.
+    This may cause code in a block to begin to throwing exceptions, an unacceptable change.
 
 * Changing the order in which events are fired
 
