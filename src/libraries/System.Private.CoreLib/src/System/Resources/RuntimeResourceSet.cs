@@ -148,7 +148,7 @@ namespace System.Resources
     // resources, add the hash &amp; location of last byte in the name section
     // to the array of resource hashes and resource name positions (carefully
     // keeping these arrays sorted), add the name to the end of the name &amp; 
-    // offset list, possibly add the type list of types types (and increase 
+    // offset list, possibly add the type list of types (and increase 
     // the number of items in the type table), and add the resource value at 
     // the end of the file.  The other offsets wouldn't need to be updated to 
     // reflect the longer header section.
