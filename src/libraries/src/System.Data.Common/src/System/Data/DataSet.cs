@@ -2144,7 +2144,7 @@ namespace System.Data
                         //While inference we ignore root elements text content
                         if (!fSchemaFound && Tables.Count == 0 && !topNode.HasChildNodes)
                         {
-                            //We shoule not come add SC of root elemnt to topNode if we are not infering
+                            //We shoule not come add SC of root elemnt to topNode if we are not inferring
                             _fTopLevelTable = true;
                             isfTopLevelTableSet = true;
                             if ((rootNodeSimpleContent != null && rootNodeSimpleContent.Length > 0))
