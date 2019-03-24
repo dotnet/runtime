@@ -608,7 +608,7 @@ namespace System.Security
         public SecurityElement SearchForChildByTag(string tag)
         {
             // Go through all the children and see if we can
-            // find the one are are asked for (matching tags)
+            // find the ones that are asked for (matching tags)
             if (tag == null)
                 throw new ArgumentNullException(nameof(tag));
 
