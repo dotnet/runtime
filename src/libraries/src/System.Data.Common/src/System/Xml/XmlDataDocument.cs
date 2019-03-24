@@ -37,7 +37,7 @@ namespace System.Xml
         private bool _optimizeStorage;       // false if we should only have foilated regions.
         private ElementState _autoFoliationState;    // When XmlBoundElement will foliate because of member functions, this will contain the foliation mode: usually this is
                                                      // ElementState.StrongFoliation, however when foliation occurs due to DataDocumentNavigator operations (InsertNode for example),
-                                                     // it it usually ElementState.WeakFoliation
+                                                     // it is usually ElementState.WeakFoliation
         private bool _fAssociateDataRow;     // if true, CreateElement will create and associate data rows w/ the newly created XmlBoundElement.
                                              // If false, then CreateElement will just create the XmlBoundElement nodes. This is usefull for Loading case,
                                              // when CreateElement is called by DOM.
