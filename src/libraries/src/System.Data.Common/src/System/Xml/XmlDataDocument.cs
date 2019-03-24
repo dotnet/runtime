@@ -1937,7 +1937,7 @@ namespace System.Xml
             {
                 // Sync the old region if it is not deleted
                 DataRow row = oldRowElem.Row;
-                // Since the old old region was disconnected, then the row can be only Deleted or Detached
+                // Since the old region was disconnected, then the row can be only Deleted or Detached
                 Debug.Assert(!IsRowLive(row));
                 if (oldRowElem.Row.RowState == DataRowState.Detached)
                     SynchronizeRowFromRowElement(oldRowElem);
