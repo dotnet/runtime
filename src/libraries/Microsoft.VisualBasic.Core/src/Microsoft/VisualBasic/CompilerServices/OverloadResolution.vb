@@ -515,7 +515,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             newCandidateParamArrayIndex,
                             expandNewCandidateParamArray)
 
-                    ' Inferring of type arguments is done when when determining the callability of this
+                    ' Inferring of type arguments is done when determining the callability of this
                     ' procedure with these arguments by comparing them against the corresponding parameters.
                     '
                     ' Note that although RejectUncallableProcedure needs to be invoked on the non-generics
