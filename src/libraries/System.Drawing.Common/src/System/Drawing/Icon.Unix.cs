@@ -874,7 +874,7 @@ namespace System.Drawing
                         //both XOR as well as AND mask bytes
                         int iconHeight = bih.biHeight / 2;
 
-                        //bytes per line should should be uint aligned
+                        //bytes per line should be uint aligned
                         int numBytesPerLine = checked((((bih.biWidth * bih.biPlanes * bih.biBitCount) + 31) >> 5) << 2);
 
                         //Determine the XOR array Size
