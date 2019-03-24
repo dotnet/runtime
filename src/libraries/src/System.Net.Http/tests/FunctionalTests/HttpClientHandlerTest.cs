@@ -778,7 +778,7 @@ namespace System.Net.Http.Functional.Tests
                 // System.InvalidCastException: "Unable to cast object of type 'System.Object[]' to type 'System.Net.Http.WinHttpRequestState'"
                 // This appears to be due to adding the Expect: 100-continue header, which causes winhttp
                 // to fail with a "The parameter is incorrect" error, which in turn causes the request to
-                // be torn down, and in doing so, we this this during disposal of the SafeWinHttpHandle.
+                // be torn down, and in doing so, we handle this during disposal of the SafeWinHttpHandle.
                 return;
             }
 
