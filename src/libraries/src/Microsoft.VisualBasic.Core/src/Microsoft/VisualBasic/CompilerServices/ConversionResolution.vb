@@ -673,7 +673,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     ElseIf leastGeneric IsNot Nothing Then
                         ' The current operator is less generic than an existing operator,
                         ' so remove the existing operator from the list and continue to
-                        ' check if any other exisiting operator can be removed from the
+                        ' check if any other existing operator can be removed from the
                         ' result set.
                         '
                         operatorList.Remove(existing)
