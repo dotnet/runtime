@@ -23,7 +23,7 @@ using System;
 
 namespace System.Security.AccessControl
 {
-    // Constants from from winnt.h - search for FILE_WRITE_DATA, etc.
+    // Constants from winnt.h - search for FILE_WRITE_DATA, etc.
     [Flags]
     public enum FileSystemRights
     {
