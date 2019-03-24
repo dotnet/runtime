@@ -695,7 +695,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             'This function resolves which user-defined conversion operator contained in the input set
             'can be used to perform the conversion from source type S to target type T.
             '
-            'The algorithm defies succinct explaination, but roughly:
+            'The algorithm defies succinct explanation, but roughly:
             '
             'Conversions of the form S-->T use only one user-defined conversion at a time, i.e.,
             'user-defined conversions are not chained together.  It may be necessary to convert to and
