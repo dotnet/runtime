@@ -1159,7 +1159,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         'If the CallSite had byref arguments, the values in packedArgs may be updated
-        'We need to propegate those changes back to the original arguments array.
+        'We need to propagate those changes back to the original arguments array.
         Public Shared Sub CopyBackArguments(ByVal callInfo As CallInfo, ByVal packedArgs As Object(), ByVal args As Object())
             If packedArgs IsNot args Then
                 'This works like UnpackArguments, but just copies the values
