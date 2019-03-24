@@ -1126,7 +1126,7 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// Helper function both both overloads of GetCachedReadOnlyCulture.  If lcid is 0, we use the name.
+        /// Helper function overloads of GetCachedReadOnlyCulture.  If lcid is 0, we use the name.
         /// If lcid is -1, use the altName and create one of those special SQL cultures.
         /// </summary>
         internal static CultureInfo GetCultureInfoHelper(int lcid, string name, string altName)
