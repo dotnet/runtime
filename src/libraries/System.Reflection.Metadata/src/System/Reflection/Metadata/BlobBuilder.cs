@@ -600,7 +600,7 @@ namespace System.Reflection.Metadata
         private int ReserveBytesPrimitive(int byteCount)
         {
             // If the primitive doesn't fit to the current chuck we'll allocate a new chunk that is at least MinChunkSize.
-            // That chunk has to fit the primitive otherwise we might keep allocating new chunks and never never end up with one that fits.
+            // That chunk has to fit the primitive otherwise we might keep allocating new chunks and never end up with one that fits.
             Debug.Assert(byteCount <= MinChunkSize);
             return ReserveBytesImpl(byteCount);
         }
