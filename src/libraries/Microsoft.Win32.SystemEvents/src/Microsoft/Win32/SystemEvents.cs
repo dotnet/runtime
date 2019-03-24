@@ -811,7 +811,7 @@ namespace Microsoft.Win32
 
         /// <devdoc>
         ///     Called on the control's owning thread to perform the actual callback.
-        ///     This empties this control's callback queue, propagating any excpetions
+        ///     This empties this control's callback queue, propagating any exceptions
         ///     back as needed.
         /// </devdoc>
         [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
