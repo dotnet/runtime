@@ -1,1 +1,2 @@
 add_subdirectory(mockhostpolicy)
+add_subdirectory(nativehost)

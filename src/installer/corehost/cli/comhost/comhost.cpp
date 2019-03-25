@@ -62,7 +62,7 @@ namespace
     {
         get_comhost_error_stream() << msg;
     }
-    
+
     int get_com_activation_delegate(pal::string_t *app_path, com_activation_fn *delegate)
     {
         pal::string_t host_path;
@@ -74,7 +74,7 @@ namespace
 
         pal::string_t dotnet_root;
         pal::string_t fxr_path;
-        if (!resolve_fxr_path(get_directory(host_path), &dotnet_root, &fxr_path))
+        if (!fxr_resolver::try_get_path(get_directory(host_path), &dotnet_root, &fxr_path))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
@@ -130,7 +130,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
     {
         trace::setup();
         reset_comhost_error_stream();
-        
+
         error_writer_scope_t writer_scope(comhost_error_writer);
 
         int ec = get_com_activation_delegate(&app_path, &act);
