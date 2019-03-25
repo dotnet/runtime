@@ -4221,7 +4221,13 @@ mono_assembly_candidate_predicate_sn_same_name (MonoAssembly *candidate, gpointe
 gboolean
 exact_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
 {
+#if ENABLE_NETCORE
+	gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_VERSION);
+	if (result && assembly_names_compare_versions (wanted_name, candidate_name, -1) > 0)
+		result = false;
+#else
 	gboolean result = mono_assembly_names_equal (wanted_name, candidate_name);
+#endif
 
 	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Predicate: candidate and wanted names %s\n",
 		    result ? "match, returning TRUE" : "don't match, returning FALSE");

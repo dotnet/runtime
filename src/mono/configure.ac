@@ -1228,6 +1228,7 @@ elif test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_reflection_emit_save='yes'
    mono_feature_disable_appdomains='yes'
    mono_feature_disable_cleanup='yes'
+   mono_feature_disable_assembly_remapping='yes'
    disable_mono_native=yes
 elif test x$with_runtime_preset = xnet_4_x; then
    with_profile4_x_default=yes
