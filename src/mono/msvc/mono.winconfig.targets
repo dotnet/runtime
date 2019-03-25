@@ -22,35 +22,51 @@
 
                 public class _WinConfigSetup : Task
                 {
-                  void GetVersionsFromConfigureAC (string configureACFile, out string monoVersion, out string monoCorlibVersion)
+                  bool GetVersionsFromConfigureAC (string configureACFile, out string monoVersion, out string monoCorlibVersion)
                   {
+                      bool result = true;
                       monoVersion = null;
                       monoCorlibVersion = null;
                       if (File.Exists (configureACFile))
                       {
-                          var monoVersionRegEx = new Regex (@"(.*AC_INIT\(mono, \[)(\d+\.\d+\.\d+)");
-                          var monoCorlibVersionRegEx = new Regex (@"(MONO_CORLIB_VERSION=)([A-F0-9]{8}(?:-[A-F0-9]{4}){3}-[A-F0-9]{12})");
+                          // These are both fairly arbitrary strings.
+                          var monoVersionRegEx = new Regex (@"^AC_INIT\s*\(\s*mono,\s*\[?\s*([^\],\s]+)");
+                          var monoCorlibVersionRegEx = new Regex (@"^MONO_CORLIB_VERSION\s*=\s*(\S+)");
                           using (StreamReader reader = new StreamReader (configureACFile))
                           {
                               string line;
                               while ((line = reader.ReadLine ()) != null && (monoVersion == null || monoCorlibVersion == null))
                               {
                                   var monoVersionMatch = monoVersionRegEx.Match (line);
-                                  if (monoVersionMatch != null && monoVersionMatch.Success && monoVersionMatch.Groups.Count == 3)
+                                  if (monoVersionMatch.Success)
                                   {
-                                      monoVersion = monoVersionMatch.Groups[2].Value;
+                                      if (monoVersion != null)
+                                      {
+                                          Log.LogError("duplicate MONO_INIT in {0}", configureACFile);
+                                          result = false;
+                                      }
+                                      monoVersion = monoVersionMatch.Groups[1].Value;
+                                      Log.LogMessage ("{0}:AC_INIT:MONO_VERSION=\"{1}\"", configureACFile, monoVersion);
                                       continue;
                                   }
 
                                   var monoCorlibVersionMatch = monoCorlibVersionRegEx.Match (line);
-                                  if (monoCorlibVersionMatch != null && monoCorlibVersionMatch.Success && monoCorlibVersionMatch.Groups.Count == 3)
+                                  if (monoCorlibVersionMatch.Success)
                                   {
-                                      monoCorlibVersion = monoCorlibVersionMatch.Groups[2].Value;
+                                      if (monoCorlibVersion != null)
+                                      {
+                                          // This is misleading. The loop stops when both found, so duplicates usually not noticed.
+                                          Log.LogError("duplicate MONO_CORLIB_VERSION in {0}", configureACFile);
+                                          result = false;
+                                      }
+                                      monoCorlibVersion = monoCorlibVersionMatch.Groups[1].Value;
+                                      Log.LogMessage ("{0}:MONO_CORLIB_VERSION=\"{1}\"", configureACFile, monoCorlibVersion);
                                       continue;
                                   }
                               }
                           }
                       }
+                      return result;
                   }
 
                   string [] GetDisabledConfigFeatures (string path)
@@ -258,7 +274,20 @@
 
                     string monoVersion = null;
                     string monoCorlibVersion = null;
-                    GetVersionsFromConfigureAC (configureACFile, out monoVersion, out monoCorlibVersion);
+                    if (!GetVersionsFromConfigureAC (configureACFile, out monoVersion, out monoCorlibVersion))
+                        return false;
+
+                    if (monoVersion == null)
+                    {
+                        Log.LogError("failed to parse version from AC_INIT in {0}", configureACFile);
+                        return false;
+                    }
+
+                    if (monoCorlibVersion == null)
+                    {
+                        Log.LogError("failed to parse MONO_CORLIB_VERSION from {0}", configureACFile);
+                        return false;
+                    }
 
                     var disableDefines = GetDisabledConfigFeatures (cygConfigFile);
                     var enableDefines = (EnableDefines != null) ? EnableDefines.Split (';') : null;
@@ -267,7 +296,7 @@
 
                     CreateVersionFile (versionFile);
 
-                    Log.LogMessage (MessageImportance.High, "Successfully setup Mono configuration headers.");
+                    Log.LogMessage (MessageImportance.High, "Successfully setup Mono configuration headers {0} and {1} from {2}.", configFile, versionFile, winConfigFile);
 
                     return true;
                   }

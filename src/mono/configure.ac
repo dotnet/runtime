@@ -1,6 +1,9 @@
 # Process this file with autoconf to produce a configure script.
 #AC_PREREQ([2.62])
 
+# This line is parsed by tools besides autoconf, such as msvc/mono.winconfig.targets.
+# It should remain in the format they expect.
+#
 AC_INIT(mono, [6.1.0],
         [https://github.com/mono/mono/issues/new])
 
@@ -40,13 +43,21 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # of classes the runtime knows about, changing icall signature or
 # semantics etc), change this variable.
 #
-# This must be unique relative to corlib interface/semantics.
+# This must be unique relative to corlib interface and semantics.
+#
+# If you change corlib such that a runtime change is required, or
+# vice versa, change this string. Examples include removing icalls,
+# adding icalls, changing icall signatures, and changing type layouts
+# that both sides know.
+#
+# It is an arbitrary string and should be parsed as such.
+# A guid works and is encouraged.
 #
 # Generate it with uuidgen. For example:
 # perl -pi.bak -e "s/^MONO_CORLIB_VERSION=\S+/MONO_CORLIB_VERSION=`uuidgen`/" configure.ac
 #
-# There is no ordering of corlib versions, no old or new,
-# the runtime expects an exact match.
+# This line is parsed by tools besides autoconf, such as msvc/mono.winconfig.targets.
+# It should remain in the format they expect.
 #
 MONO_CORLIB_VERSION=4A9CEBCF-2544-4CB4-9F84-07A10C16BEEB
 
