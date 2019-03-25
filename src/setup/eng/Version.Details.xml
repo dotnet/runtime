@@ -12,9 +12,10 @@
     <PinnedDependency Name="Microsoft.NETCore.Targets" Version="2.0.0">
       <Uri>https://github.com/dotnet/corefx</Uri>
     </PinnedDependency>
-    <PinnedDependency Name="NETStandard.Library" Version="2.0.3">
+    <Dependency Name="NETStandard.Library" Version="2.1.0-prerelease.19168.1">
       <Uri>https://github.com/dotnet/standard</Uri>
-    </PinnedDependency>
+      <Sha>fc4a92712cff169e451bc097b2dc57590fd5de36</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview4-27525-71">
       <Uri>https://github.com/dotnet/coreclr</Uri>
       <Sha>a593024b85a6e074770c88867491f4f30cc6fc8a</Sha>
