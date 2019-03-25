@@ -12,7 +12,7 @@
 
 #if FEATURE_APPHOST
 #define CURHOST_TYPE    _X("apphost")
-#define CUREXE_PKG_VER  APPHOST_PKG_VER
+#define CUREXE_PKG_VER  COMMON_HOST_PKG_VER
 #define CURHOST_EXE
 
 /**
@@ -156,7 +156,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
     pal::string_t dotnet_root;
     pal::string_t fxr_path;
-    if (!resolve_fxr_path(app_root, &dotnet_root, &fxr_path))
+    if (!fxr_resolver::try_get_path(app_root, &dotnet_root, &fxr_path))
     {
         return StatusCode::CoreHostLibMissingFailure;
     }

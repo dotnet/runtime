@@ -7,7 +7,7 @@
   <!-- Target that builds dotnet, hostfxr and hostpolicy with the same version as what NetCoreApp will be built for
        since the build produced artifacts should always version the same (even if they may not get used).
   -->
-  <Target Name="Build" DependsOnTargets="BuildCoreHostUnix;BuildCoreHostWindows" /> 
+  <Target Name="Build" DependsOnTargets="BuildCoreHostUnix;BuildCoreHostWindows" />
 
   <PropertyGroup Condition="'$(OSGroup)' != 'Windows_NT'">
     <GenerateVersionSourceFile>true</GenerateVersionSourceFile>
@@ -19,11 +19,11 @@
           DependsOnTargets="GetLatestCommitHash;GenerateVersionSourceFile">
     <PropertyGroup>
       <CMakeBuildDir>$(IntermediateOutputRootPath)corehost\cmake\</CMakeBuildDir>
-    
+
       <BuildArgs>--configuration $(ConfigurationGroup) --arch $(TargetArchitecture) --apphostver $(AppHostVersion) --hostver $(HostVersion) --fxrver $(HostResolverVersion) --policyver $(HostPolicyVersion) --commithash $(LatestCommit)</BuildArgs>
-      <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) -portable</BuildArgs>     
-      <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) --cross</BuildArgs>  
-      <BuildArgs Condition="'$(StripSymbols)' == 'true'">$(BuildArgs) --stripsymbols</BuildArgs>   
+      <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) -portable</BuildArgs>
+      <BuildArgs Condition="'$(CrossBuild)' == 'true'">$(BuildArgs) --cross</BuildArgs>
+      <BuildArgs Condition="'$(StripSymbols)' == 'true'">$(BuildArgs) --stripsymbols</BuildArgs>
     </PropertyGroup>
 
     <Message Text="$(MSBuildProjectDirectory)\build.sh $(BuildArgs)" Importance="High"/>
@@ -51,15 +51,18 @@
       <HostFiles Include="ijwhost">
         <FileDescription>.NET Core IJW Host</FileDescription>
       </HostFiles>
+      <HostFiles Include="nethost">
+        <FileDescription>.NET Core Component Host</FileDescription>
+      </HostFiles>
     </ItemGroup>
-    
+
     <MSBuild Projects="$(MSBuildProjectFullPath)"
              Properties="GenerateNativeVersionInfo=true;FileDescription=%(HostFiles.FileDescription);NativeVersionFileDir=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity);NativeVersionHeaderFile=$(IntermediateOutputRootPath)hostResourceFiles\%(HostFiles.Identity)\version_info.h"
-             Targets="GenerateVersionHeader" 
+             Targets="GenerateVersionHeader"
              Condition="'$(IncrementalNativeBuild)' != 'true'"/>
     <PropertyGroup>
       <BuildArgs>$(ConfigurationGroup) $(TargetArchitecture) apphostver $(AppHostVersion) hostver $(HostVersion) fxrver $(HostResolverVersion) policyver $(HostPolicyVersion) commit $(LatestCommit) rid $(OutputRid)</BuildArgs>
-      <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>  
+      <BuildArgs Condition="'$(PortableBuild)' == 'true'">$(BuildArgs) portable</BuildArgs>
       <BuildArgs Condition="'$(IncrementalNativeBuild)' == 'true'">$(BuildArgs) incremental-native-build</BuildArgs>
     </PropertyGroup>
 

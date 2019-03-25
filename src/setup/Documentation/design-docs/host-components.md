@@ -9,7 +9,7 @@ The .NET Core default hosting setup consists of several components which are des
 * `comhost` (library) - which is used to enable COM server hosting. Component which wants to expose COM server objects will be built with this dynamic library in its output. The `comhost` then acts as the main entry point for the OS.
 
 The executable does just one thing, it finds the `hostfxr` library and passes control to it. It also exposes the right entry points for its purpose (so the "main" for `dotnet` and `apphost`, the COM exports for `comhost` and so on).
-* `dotnet` host - `hostfxr` is obtained from the `./shared/host/fxr<highestversion>` folder (relative to the location of the `dotnet` host).
+* `dotnet` host - `hostfxr` is obtained from the `./host/fxr<highestversion>` folder (relative to the location of the `dotnet` host).
 * `apphost` and `comhost` - `hostfxr` is located by
     1. The app's folder is searched first. This is either the folder where the `apphost` or `comhost` lives or in case of `apphost` it is the path it has embedded in it as the app path.
     1. If the `DOTNET_ROOT` environment variable is defined, that path is searched

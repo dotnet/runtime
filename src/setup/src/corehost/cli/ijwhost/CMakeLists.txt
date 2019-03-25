@@ -29,13 +29,6 @@ if(WIN32)
         Exports.def)
 endif()
 
-# Move to setup.cmake if IJWHOST is ever built on non-Windows
-if("${CLI_CMAKE_IJWHOST_VER}" STREQUAL "")
-    message(FATAL_ERROR "ijwhost version is not specified")
-else()
-    add_definitions(-DLIBHOST_PKG_VER="${CLI_CMAKE_IJWHOST_VER}")
-endif()
-
 set (ASM_HELPERS_SOURCES
     ${ARCH_SPECIFIC_FOLDER_NAME}/asmhelpers.asm)
 

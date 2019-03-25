@@ -335,21 +335,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
 
-            RegistryKey hkcu = RegistryKey.OpenBaseKey(RegistryHive.CurrentUser, RegistryView.Registry32);
-            RegistryKey interfaceKey = hkcu.CreateSubKey(@"Software\Classes\Interface");
-            string testKeyName = "_DOTNET_Test" + System.Diagnostics.Process.GetCurrentProcess().Id.ToString();
-            RegistryKey testKey = interfaceKey.CreateSubKey(testKeyName);
-            try
+            using (var regKeyOverride = new RegisteredInstallKeyOverride())
             {
                 string architecture = fixture.CurrentRid.Split('-')[1];
-                RegistryKey dotnetLocationKey = testKey.CreateSubKey($@"Setup\InstalledVersions\{architecture}");
-                dotnetLocationKey.SetValue("InstallLocation", builtDotnet);
+                regKeyOverride.SetInstallLocation(builtDotnet, architecture);
 
                 // Verify running with the default working directory
                 Command.Create(appExe)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .EnvironmentVariable("_DOTNET_TEST_SDK_REGISTRY_PATH", testKey.Name)
+                    .EnvironmentVariable("_DOTNET_TEST_SDK_REGISTRY_PATH", regKeyOverride.KeyPath)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
@@ -358,17 +353,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // Verify running from within the working directory
                 Command.Create(appExe)
                     .WorkingDirectory(fixture.TestProject.OutputDirectory)
-                    .EnvironmentVariable("_DOTNET_TEST_SDK_REGISTRY_PATH", testKey.Name)
+                    .EnvironmentVariable("_DOTNET_TEST_SDK_REGISTRY_PATH", regKeyOverride.KeyPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
                     .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
-            }
-            finally
-            {
-                interfaceKey.DeleteSubKeyTree(testKeyName);
             }
         }
 
