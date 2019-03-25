@@ -8,7 +8,7 @@ $(NETCORESDK_FILE):
 	tar -xvf $(NETCORESDK_FILE)
 
 build-sample:
-	dotnet build HelloWorld
+	dotnet build sample/HelloWorld
 
 run-sample:
 	COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(VERSION)" sample/HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
