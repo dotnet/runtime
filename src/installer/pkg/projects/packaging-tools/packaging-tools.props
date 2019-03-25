@@ -22,7 +22,7 @@
     <BuildRuntimePackages>false</BuildRuntimePackages>
 
     <PackageType>DotnetPlatform</PackageType>
-    <Version>$(SharedFrameworkNugetVersion)</Version>
+    <Version>$(ProductVersion)</Version>
 
     <!-- Include the platform manifest in the data dir. -->
     <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
@@ -41,7 +41,7 @@
 
     <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
 
-    <MacOSComponentName>com.microsoft.$(ShortFrameworkName).pack.$(FrameworkPackType).$(SharedFrameworkNuGetVersion).component.osx.x64</MacOSComponentName>
+    <MacOSComponentName>com.microsoft.$(ShortFrameworkName).pack.$(FrameworkPackType).$(ProductVersion).component.osx.x64</MacOSComponentName>
     <MacOSSharedInstallDir>/usr/local/share/dotnet</MacOSSharedInstallDir>
   </PropertyGroup>
 
@@ -52,7 +52,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <VersionedInstallerName>$(InstallerName)-$(PackageNameSuffix)</VersionedInstallerName>
+    <VersionedInstallerName>$(InstallerName)-$(ProductBandVersion)</VersionedInstallerName>
     <VersionedInstallerName>$(VersionedInstallerName.ToLowerInvariant())</VersionedInstallerName>
     <InstallerPackageRelease>1</InstallerPackageRelease>
 
@@ -73,7 +73,7 @@
 
     <InstallerBuildPart>$(ProductMoniker)</InstallerBuildPart>
     <InstallerBuildPart Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'"
-      >$(SharedFrameworkNugetVersion)-$(TargetArchitecture)</InstallerBuildPart>
+      >$(ProductVersion)-$(TargetArchitecture)</InstallerBuildPart>
 
     <!-- Location to place the installer, in bin. -->
     <InstallerFileNameWithoutExtension>$(InstallerName)-$(InstallerBuildPart)</InstallerFileNameWithoutExtension>
@@ -81,7 +81,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsFrameworkPackage)' == 'true'">
-    <Version>$(SharedFrameworkNugetVersion)</Version>
+    <Version>$(ProductVersion)</Version>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
   </PropertyGroup>

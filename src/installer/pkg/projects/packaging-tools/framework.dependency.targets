@@ -33,7 +33,7 @@
     </ItemGroup>
 
     <!-- Add versions file with the hashes of the repos we consume -->
-    <ItemGroup>
+    <ItemGroup Condition="'$(FrameworkPackageName)' != ''">
       <FilesToPackage Include="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt">
         <TargetPath></TargetPath>
       </FilesToPackage>
@@ -59,7 +59,9 @@
   </Target>
 
   <!-- Creates the *.versions.txt file describing where data in this package came from. -->
-  <Target Name="GenerateHashVersionsFile" DependsOnTargets="GetDependencyVersionFiles">
+  <Target Name="GenerateHashVersionsFile"
+          DependsOnTargets="GetDependencyVersionFiles"
+          Condition="'$(FrameworkPackageName)' != ''">
     <Error
       Condition="!Exists('%(DependencyVersionFile.Identity)')"
       Text="'%(Name)' version file does not exist: %(Identity)" />

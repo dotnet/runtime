@@ -5,11 +5,11 @@
     <rpmPackagingConfigPath>$(PackagingRoot)rpm/</rpmPackagingConfigPath>
     <SharedHostRpmPkgName>dotnet-host</SharedHostRpmPkgName>
     <SharedHostRpmPkgName>$(SharedHostRpmPkgName.ToLower())</SharedHostRpmPkgName>
-    <HostFxrRpmPkgName>dotnet-hostfxr-$(PackageNameSuffix)</HostFxrRpmPkgName>
+    <HostFxrRpmPkgName>dotnet-hostfxr-$(ProductBandVersion)</HostFxrRpmPkgName>
     <HostFxrRpmPkgName>$(HostFxrRpmPkgName.ToLower())</HostFxrRpmPkgName>
-    <SharedFxRpmPkgName>dotnet-runtime-$(PackageNameSuffix)</SharedFxRpmPkgName>
+    <SharedFxRpmPkgName>dotnet-runtime-$(ProductBandVersion)</SharedFxRpmPkgName>
     <SharedFxRpmPkgName>$(SharedFxRpmPkgName.ToLower())</SharedFxRpmPkgName>
-    <RuntimeDependenciesRpmPkgName>$(DotnetRuntimeDependenciesPackageString)$(PackageNameSuffix)</RuntimeDependenciesRpmPkgName>
+    <RuntimeDependenciesRpmPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductBandVersion)</RuntimeDependenciesRpmPkgName>
     <RuntimeDependenciesRpmPkgName>$(RuntimeDependenciesRpmPkgName.ToLower())</RuntimeDependenciesRpmPkgName>
 
     <TemplatesDir>$(RpmTemplatesDir)</TemplatesDir>
