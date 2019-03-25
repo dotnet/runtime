@@ -336,6 +336,7 @@ x86_push_membase: src1:b len:8
 x86_push_obj: src1:b len:40
 x86_lea: dest:i src1:i src2:i len:8
 x86_lea_membase: dest:i src1:i len:11
+amd64_lea_membase: dest:i src1:i len:11
 x86_xchg: src1:i src2:i clob:x len:2
 x86_fpop: src1:f len:3
 x86_seteq_membase: src1:b len:9

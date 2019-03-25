@@ -2460,7 +2460,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		mini_emit_memcpy (cfg, load->dreg, 0, src->dreg, 0, size, TARGET_SIZEOF_VOID_P);
 
 		if (ainfo->pair_storage [0] == ArgInIReg) {
-			MONO_INST_NEW (cfg, arg, OP_X86_LEA_MEMBASE);
+			MONO_INST_NEW (cfg, arg, OP_AMD64_LEA_MEMBASE);
 			arg->dreg = mono_alloc_ireg (cfg);
 			arg->sreg1 = load->dreg;
 			arg->inst_imm = 0;
@@ -3201,7 +3201,7 @@ mono_arch_peephole_pass_1 (MonoCompile *cfg, MonoBasicBlock *bb)
 				 * sreg1==dreg restriction. inst_imm > 0 is needed since LEA sign-extends 
 				 * its operand to 64 bit.
 				 */
-				ins->opcode = OP_X86_LEA_MEMBASE;
+				ins->opcode = ins->opcode == OP_IADD_IMM ? OP_X86_LEA_MEMBASE : OP_AMD64_LEA_MEMBASE;
 				ins->inst_basereg = ins->sreg1;
 			}
 			break;
@@ -5074,6 +5074,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_lea_memindex (code, ins->dreg, ins->sreg1, ins->inst_imm, ins->sreg2, ins->backend.shift_amount);
 			break;
 		case OP_X86_LEA_MEMBASE:
+			amd64_lea4_membase (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			break;
+		case OP_AMD64_LEA_MEMBASE:
 			amd64_lea_membase (code, ins->dreg, ins->sreg1, ins->inst_imm);
 			break;
 		case OP_X86_XCHG:

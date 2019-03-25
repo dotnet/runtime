@@ -450,15 +450,18 @@ typedef union {
 	} while (0)
 
 
-#define amd64_lea_membase_body(inst,reg,basereg,disp)	\
+#define amd64_lea_membase_body(inst,reg,basereg,disp,width)	\
 	do {	\
-		amd64_emit_rex(inst, 8, (reg), 0, (basereg)); \
+		amd64_emit_rex(inst, width, (reg), 0, (basereg)); \
 		*(inst)++ = (unsigned char)0x8d;	\
 		amd64_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
+#define amd64_lea4_membase(inst,reg,basereg,disp) \
+	amd64_lea_membase_body((inst), (reg), (basereg), (disp), 4)
+
 #define amd64_lea_membase(inst,reg,basereg,disp) \
-	amd64_lea_membase_body((inst), (reg), (basereg), (disp))
+	amd64_lea_membase_body((inst), (reg), (basereg), (disp), 8)
 
 /* Instruction are implicitly 64-bits so don't generate REX for just the size. */
 #define amd64_push_reg(inst,reg)	\
