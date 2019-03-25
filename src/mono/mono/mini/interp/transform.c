@@ -5561,7 +5561,7 @@ generate (MonoMethod *method, MonoMethodHeader *header, InterpMethod *rtm, MonoG
 		int end_off = c->try_offset + c->try_len;
 		c->try_offset = get_in_offset (td, c->try_offset);
 		c->try_len = get_in_offset (td, end_off) - c->try_offset;
-		g_assert (c->try_len >= 0 && (c->try_offset + c->try_len) < code_len);
+		g_assert ((c->try_offset + c->try_len) < code_len);
 		end_off = c->handler_offset + c->handler_len;
 		c->handler_offset = get_in_offset (td, c->handler_offset);
 		c->handler_len = get_in_offset (td, end_off) - c->handler_offset;
