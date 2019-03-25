@@ -96,3 +96,8 @@
 # GCHandle.ctor is not implemented
 -nomethod System.Tests.UriCreateStringTests.Path_Query_Fragment
 -nomethod System.Tests.UriCreateStringTests.OriginalString_AbsoluteUri_ToString
+
+-noclass System.Tests.TypeTestsExtended
+-noclass System.Tests.ArgIteratorTests
+-nomethod System.Tests.ActivatorTests.CreateInstance_InvalidType_ThrowsNotSupportedException
+-nomethod System.Tests.ArrayTests.CreateInstance_NotSupportedType_ThrowsNotSupportedException
