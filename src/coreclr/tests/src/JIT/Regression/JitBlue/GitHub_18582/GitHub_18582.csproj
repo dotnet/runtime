@@ -27,6 +27,7 @@
   <PropertyGroup>
     <DebugType></DebugType>
     <Optimize>True</Optimize>
+    <JitOptimizationSensitive>True</JitOptimizationSensitive>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GitHub_18582.cs" />
