@@ -449,7 +449,7 @@ namespace R2RDump
                 foreach (string filename in _inputFilenames)
                 {
                     // parse the ReadyToRun image
-                    R2RReader r2r = new R2RReader(filename);
+                    R2RReader r2r = new R2RReader(_options, filename);
 
                     if (_options.Disasm)
                     {
