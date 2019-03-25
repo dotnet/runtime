@@ -258,10 +258,12 @@ class PEDecoder
     PTR_VOID GetTlsRange(COUNT_T *pSize = NULL) const;
     UINT32 GetTlsIndex() const;
 
-#ifndef FEATURE_PAL
     // Win32 resources
     void *GetWin32Resource(LPCWSTR lpName, LPCWSTR lpType, COUNT_T *pSize = NULL) const;
-#endif // FEATURE_PAL
+  private:
+    DWORD ReadResourceDictionary(DWORD rvaOfResourceSection, DWORD rva, LPCWSTR name, BOOL *pIsDictionary) const;
+    DWORD ReadResourceDataEntry(DWORD rva, COUNT_T *pSize) const;
+  public:
 
     // COR header fields
 
