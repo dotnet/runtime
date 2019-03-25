@@ -34,7 +34,7 @@ pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_m
 
     pal::string_t dotnet_root;
     pal::string_t fxr_path;
-    if (!resolve_fxr_path(get_directory(host_path), &dotnet_root, &fxr_path))
+    if (!fxr_resolver::try_get_path(get_directory(host_path), &dotnet_root, &fxr_path))
     {
         return StatusCode::CoreHostLibMissingFailure;
     }
@@ -61,7 +61,7 @@ pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_m
         trace::error(_X("Failed to resolve full path of the current mixed-mode module [%s]"), host_path.c_str());
         return StatusCode::LibHostCurExeFindFailure;
     }
-    
+
     return get_delegate_from_hostfxr(host_path.c_str(), dotnet_root.c_str(), app_path.c_str(), hostfxr_delegate_type::load_in_memory_assembly, (void**)delegate);
 }
 

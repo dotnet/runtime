@@ -24,10 +24,10 @@ else()
     add_definitions(-DHOST_PKG_VER="${CLI_CMAKE_HOST_VER}")
 endif()
 
-if("${CLI_CMAKE_APPHOST_VER}" STREQUAL "")
-    message(FATAL_ERROR "apphost version is not specified")
+if("${CLI_CMAKE_COMMON_HOST_VER}" STREQUAL "")
+    message(FATAL_ERROR "Common host version is not specified")
 else()
-    add_definitions(-DAPPHOST_PKG_VER="${CLI_CMAKE_APPHOST_VER}")
+    add_definitions(-DCOMMON_HOST_PKG_VER="${CLI_CMAKE_COMMON_HOST_VER}")
 endif()
 
 if("${CLI_CMAKE_PKG_RID}" STREQUAL "")

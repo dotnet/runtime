@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "pal.h"
+#include <pal.h>
 #include "fxr_resolver.h"
-#include "error_codes.h"
-#include "fx_ver.h"
-#include "trace.h"
-#include "utils.h"
+#include <fx_ver.h>
+#include <trace.h>
+#include <utils.h>
 
 namespace
-{ 
+{
     bool get_latest_fxr(pal::string_t fxr_root, pal::string_t* out_fxr_path)
     {
         trace::info(_X("Reading fx resolver directory=[%s]"), fxr_root.c_str());
@@ -54,12 +53,12 @@ namespace
     }
 }
 
-bool resolve_fxr_path(const pal::string_t& root_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path)
+bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path)
 {
     pal::string_t fxr_dir;
 #if FEATURE_APPHOST || FEATURE_LIBHOST
-    // If a hostfxr exists in app_root, then assume self-contained.
-    if (library_exists_in_dir(root_path, LIBFXR_NAME, out_fxr_path))
+    // If a hostfxr exists in root_path, then assume self-contained.
+    if (root_path.length() > 0 && library_exists_in_dir(root_path, LIBFXR_NAME, out_fxr_path))
     {
         trace::info(_X("Resolved fxr [%s]..."), out_fxr_path->c_str());
         out_dotnet_root->assign(root_path);
@@ -67,7 +66,6 @@ bool resolve_fxr_path(const pal::string_t& root_path, pal::string_t* out_dotnet_
     }
 
     // For framework-dependent apps, use DOTNET_ROOT
-
     pal::string_t default_install_location;
     pal::string_t dotnet_root_env_var_name = get_dotnet_root_env_var_name();
     if (get_file_path_from_env(dotnet_root_env_var_name.c_str(), out_dotnet_root))
@@ -86,8 +84,6 @@ bool resolve_fxr_path(const pal::string_t& root_path, pal::string_t* out_dotnet_
             trace::error(_X("A fatal error occurred, the default install location cannot be obtained."));
             return false;
         }
-        trace::info(_X("Using default installation location [%s] as runtime location."), default_install_location.c_str());
-        out_dotnet_root->assign(default_install_location);
     }
 
     fxr_dir = *out_dotnet_root;

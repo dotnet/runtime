@@ -40,6 +40,9 @@
       <FilesToSign Include="$(OutDir)corehost/**/ijwhost.dll">
         <Authenticode>$(CertificateId)</Authenticode>
       </FilesToSign>
+      <FilesToSign Include="$(OutDir)corehost/**/nethost.dll">
+        <Authenticode>$(CertificateId)</Authenticode>
+      </FilesToSign>
     </ItemGroup>
 
     <ItemGroup>
