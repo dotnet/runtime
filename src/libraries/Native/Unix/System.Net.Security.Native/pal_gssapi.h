@@ -82,7 +82,6 @@ Shims the gss_import_name method with nametype = GSS_C_NT_USER_NAME.
 DLLEXPORT uint32_t NetSecurityNative_ImportTargetName(uint32_t* minorStatus,
                                                          char* inputName,
                                                          uint32_t inputNameLen,
-                                                         uint32_t isNtlmTarget,
                                                          GssName** outputName);
 
 /*
@@ -110,9 +109,7 @@ DLLEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                     uint32_t isNtlm,
                                                     void* cbt,
                                                     int32_t cbtSize,
-                                                    int32_t isNtlmFallback,
-                                                    GssName* targetNameKerberos,
-                                                    GssName* targetNameNtlm,
+                                                    GssName* targetName,
                                                     uint32_t reqFlags,
                                                     uint8_t* inputBytes,
                                                     uint32_t inputLength,
