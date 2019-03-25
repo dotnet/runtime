@@ -8,7 +8,7 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Implementation of IOptionsMonitor.
+    /// Implementation of <see cref="IOptionsMonitor{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions"></typeparam>
     public class OptionsMonitor<TOptions> : IOptionsMonitor<TOptions>, IDisposable where TOptions : class, new()
@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Returns a configured TOptions instance with the given name.
+        /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
         public virtual TOptions Get(string name)
         {
@@ -71,10 +71,10 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Registers a listener to be called whenever TOptions changes.
+        /// Registers a listener to be called whenever <typeparamref name="TOptions"/> changes.
         /// </summary>
-        /// <param name="listener">The action to be invoked when TOptions has changed.</param>
-        /// <returns>An IDisposable which should be disposed to stop listening for changes.</returns>
+        /// <param name="listener">The action to be invoked when <typeparamref name="TOptions"/> has changed.</param>
+        /// <returns>An <see cref="IDisposable"/> which should be disposed to stop listening for changes.</returns>
         public IDisposable OnChange(Action<TOptions, string> listener)
         {
             var disposable = new ChangeTrackerDisposable(this, listener);

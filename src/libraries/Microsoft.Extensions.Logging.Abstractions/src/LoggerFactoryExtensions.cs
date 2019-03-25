@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging
     public static class LoggerFactoryExtensions
     {
         /// <summary>
-        /// Creates a new ILogger instance using the full name of the given type.
+        /// Creates a new <see cref="ILogger"/> instance using the full name of the given type.
         /// </summary>
         /// <typeparam name="T">The type.</typeparam>
         /// <param name="factory">The factory.</param>
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging
             return new Logger<T>(factory);
         }
         /// <summary>
-        /// Creates a new ILogger instance using the full name of the given type.
+        /// Creates a new <see cref="ILogger"/> instance using the full name of the given <paramref name="type"/>.
         /// </summary>
         /// <param name="factory">The factory.</param>
         /// <param name="type">The type.</param>
