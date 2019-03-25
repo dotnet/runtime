@@ -34,51 +34,17 @@ namespace R2RDump
 
         public virtual string GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind = 0)
         {
-            TypeDefinition definition = reader.GetTypeDefinition(handle);
-
-            string name = definition.Namespace.IsNil
-                ? reader.GetString(definition.Name)
-                : reader.GetString(definition.Namespace) + "." + reader.GetString(definition.Name);
-
-            if ((definition.Attributes & TypeAttributes.NestedPublic) != 0 || (definition.Attributes & TypeAttributes.NestedFamily) != 0)
-            {
-                TypeDefinitionHandle declaringTypeHandle = definition.GetDeclaringType();
-                return GetTypeFromDefinition(reader, declaringTypeHandle, 0) + "." + name;
-            }
-
-            return name;
+            return MetadataNameFormatter.FormatHandle(reader, handle);
         }
 
         public virtual string GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind = 0)
         {
-            TypeReference reference = reader.GetTypeReference(handle);
-            Handle scope = reference.ResolutionScope;
-
-            string name = reference.Namespace.IsNil
-                ? reader.GetString(reference.Name)
-                : reader.GetString(reference.Namespace) + "." + reader.GetString(reference.Name);
-
-            switch (scope.Kind)
-            {
-                case HandleKind.ModuleReference:
-                    return "[.module  " + reader.GetString(reader.GetModuleReference((ModuleReferenceHandle)scope).Name) + "]" + name;
-
-                case HandleKind.AssemblyReference:
-                    var assemblyReferenceHandle = (AssemblyReferenceHandle)scope;
-                    var assemblyReference = reader.GetAssemblyReference(assemblyReferenceHandle);
-                    return "[" + reader.GetString(assemblyReference.Name) + "]" + name;
-
-                case HandleKind.TypeReference:
-                    return GetTypeFromReference(reader, (TypeReferenceHandle)scope) + "+" + name;
-
-                default:
-                    return name;
-            }
+            return MetadataNameFormatter.FormatHandle(reader, handle);
         }
 
         public virtual string GetTypeFromSpecification(MetadataReader reader, DisassemblingGenericContext genericContext, TypeSpecificationHandle handle, byte rawTypeKind = 0)
         {
-            return reader.GetTypeSpecification(handle).DecodeSignature(this, genericContext);
+            return MetadataNameFormatter.FormatHandle(reader, handle);
         }
 
         public virtual string GetSZArrayType(string elementType)
@@ -161,20 +127,7 @@ namespace R2RDump
 
         public virtual string GetTypeFromHandle(MetadataReader reader, DisassemblingGenericContext genericContext, EntityHandle handle)
         {
-            switch (handle.Kind)
-            {
-                case HandleKind.TypeDefinition:
-                    return GetTypeFromDefinition(reader, (TypeDefinitionHandle)handle);
-
-                case HandleKind.TypeReference:
-                    return GetTypeFromReference(reader, (TypeReferenceHandle)handle);
-
-                case HandleKind.TypeSpecification:
-                    return GetTypeFromSpecification(reader, genericContext, (TypeSpecificationHandle)handle);
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(handle));
-            }
+            return MetadataNameFormatter.FormatHandle(reader, handle);
         }
 
         public virtual string GetModifiedType(string modifierType, string unmodifiedType, bool isRequired)

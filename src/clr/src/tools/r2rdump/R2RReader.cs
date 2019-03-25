@@ -78,6 +78,11 @@ namespace R2RDump
     public class R2RReader
     {
         /// <summary>
+        /// Option are used to specify details of signature formatting.
+        /// </summary>
+        public readonly DumpOptions Options;
+
+        /// <summary>
         /// Underlying PE image reader is used to access raw PE structures like header
         /// or section list.
         /// </summary>
@@ -178,8 +183,9 @@ namespace R2RDump
         /// </summary>
         /// <param name="filename">PE image</param>
         /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
-        public unsafe R2RReader(string filename)
+        public unsafe R2RReader(DumpOptions options, string filename)
         {
+            Options = options;
             Filename = filename;
             Image = File.ReadAllBytes(filename);
 
@@ -370,7 +376,7 @@ namespace R2RDump
             NativeParser curParser = allEntriesEnum.GetNext();
             while (!curParser.IsNull())
             {
-                SignatureDecoder decoder = new SignatureDecoder(this, (int)curParser.Offset);
+                SignatureDecoder decoder = new SignatureDecoder(Options, this, (int)curParser.Offset);
 
                 string owningType = null;
 
@@ -634,7 +640,7 @@ namespace R2RDump
                     long section = NativeReader.ReadInt64(Image, ref sectionOffset);
                     uint sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
-                    string cellName = MetadataNameFormatter.FormatSignature(this, sigOffset);
+                    string cellName = MetadataNameFormatter.FormatSignature(Options, this, sigOffset);
                     entries.Add(new R2RImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, cellName));
                     ImportCellNames.Add(rva + entrySize * i, cellName);
                 }
