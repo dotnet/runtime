@@ -187,7 +187,7 @@
       <_wixArgs>$(_wixArgs) -dMicrosoftEula="$(MicrosoftEulaFile)"</_wixArgs>
       <_wixArgs>$(_wixArgs) -dProductMoniker="$(TargetingPackBrandName)"</_wixArgs>
       <_wixArgs>$(_wixArgs) -dBuildVersion="$(MsiVersionString)"</_wixArgs>
-      <_wixArgs>$(_wixArgs) -dNugetVersion="$(SharedFrameworkNugetVersion)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dNugetVersion="$(ProductVersion)"</_wixArgs>
       <_wixArgs>$(_wixArgs) -dTargetArchitecture="$(TargetArchitecture)"</_wixArgs>
       <_wixArgs>$(_wixArgs) -dUpgradeCode="$(UpgradeCode)"</_wixArgs>
       <_wixArgs>$(_wixArgs) -dDependencyKeyName="$(InstallerName.Replace('-', '_'))"</_wixArgs>
@@ -234,7 +234,7 @@
       <_pkgArgs></_pkgArgs>
       <_pkgArgs>$(_pkgArgs) --root $(PackLayoutDir)</_pkgArgs>
       <_pkgArgs>$(_pkgArgs) --identifier $(MacOSComponentName)</_pkgArgs>
-      <_pkgArgs>$(_pkgArgs) --version $(SharedFrameworkNugetVersion)</_pkgArgs>
+      <_pkgArgs>$(_pkgArgs) --version $(ProductVersion)</_pkgArgs>
       <_pkgArgs>$(_pkgArgs) --install-location $(MacOSSharedInstallDir)</_pkgArgs>
       <_pkgArgs>$(_pkgArgs) $(InstallerFile)</_pkgArgs>
     </PropertyGroup>
