@@ -1790,7 +1790,96 @@ void PEDecoder::LayoutILOnly(void *base, BOOL allowFullPE) const
 
 #endif // #ifndef DACCESS_COMPILE
 
-#ifndef FEATURE_PAL
+DWORD PEDecoder::ReadResourceDictionary(DWORD rvaOfResourceSection, DWORD rva, LPCWSTR name, BOOL *pIsDictionary) const
+{
+    *pIsDictionary = FALSE;
+
+    if (!CheckRva(rva, sizeof(IMAGE_RESOURCE_DIRECTORY)))
+    {
+        return 0;
+    }
+
+    IMAGE_RESOURCE_DIRECTORY *pResourceDirectory = (IMAGE_RESOURCE_DIRECTORY *)GetRvaData(rva);
+
+    if (pResourceDirectory->MajorVersion != 4)
+        return 0;
+
+    if (pResourceDirectory->MinorVersion != 0)
+        return 0;
+
+    // Check to see if entire resource dictionary is accessible
+    if (!CheckRva(rva + sizeof(IMAGE_RESOURCE_DIRECTORY), 
+                       (sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pResourceDirectory->NumberOfNamedEntries) +
+                       (sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pResourceDirectory->NumberOfIdEntries)))
+    {
+        return 0;
+    }
+
+    IMAGE_RESOURCE_DIRECTORY_ENTRY* pDirectoryEntries = (IMAGE_RESOURCE_DIRECTORY_ENTRY *)GetRvaData(rva + sizeof(IMAGE_RESOURCE_DIRECTORY));
+
+    // A fast implementation of resource lookup uses a binary search, but our needs are simple, and a linear search
+    // is easier to prove correct, so do that instead.
+    DWORD iEntryCount = (DWORD)pResourceDirectory->NumberOfNamedEntries + (DWORD)pResourceDirectory->NumberOfIdEntries;
+
+    for (DWORD iEntry = 0; iEntry < iEntryCount; iEntry++)
+    {
+        BOOL foundEntry = FALSE;
+
+        if (((UINT_PTR)name) <= 0xFFFF)
+        {
+            // name is id
+            if (pDirectoryEntries[iEntry].Name == (DWORD)name)
+                foundEntry = TRUE;
+        }
+        else
+        {
+            // name is string
+            DWORD entryName = pDirectoryEntries[iEntry].Name;
+            if (!(entryName & IMAGE_RESOURCE_NAME_IS_STRING))
+                continue;
+            
+            DWORD entryNameRva = (entryName & ~IMAGE_RESOURCE_NAME_IS_STRING) + rvaOfResourceSection;
+
+            if (!CheckRva(entryNameRva, sizeof(WORD)))
+                return 0;
+
+            size_t entryNameLen = *(WORD*)GetRvaData(entryNameRva);
+            if (wcslen(name) != entryNameLen)
+                continue;
+
+            if (!CheckRva(entryNameRva, (COUNT_T)(sizeof(WORD) * (1 + entryNameLen))))
+                return 0;
+            
+            if (memcmp((WCHAR*)GetRvaData(entryNameRva + sizeof(WORD)), name, entryNameLen * sizeof(WCHAR)) == 0)
+                foundEntry = TRUE;
+        }
+
+        if (!foundEntry)
+            continue;
+
+        *pIsDictionary = !!(pDirectoryEntries[iEntry].OffsetToData & IMAGE_RESOURCE_DATA_IS_DIRECTORY);
+        DWORD offsetToData = pDirectoryEntries[iEntry].OffsetToData & ~IMAGE_RESOURCE_DATA_IS_DIRECTORY;
+        DWORD dataRva = rvaOfResourceSection + offsetToData;
+        return dataRva;
+    }
+
+    return 0;
+}
+
+DWORD PEDecoder::ReadResourceDataEntry(DWORD rva, COUNT_T *pSize) const
+{
+    *pSize = 0;
+
+    if (!CheckRva(rva, sizeof(IMAGE_RESOURCE_DATA_ENTRY)))
+    {
+        return 0;
+    }
+
+    IMAGE_RESOURCE_DATA_ENTRY *pDataEntry = (IMAGE_RESOURCE_DATA_ENTRY *)GetRvaData(rva);
+    *pSize = pDataEntry->Size;
+    return pDataEntry->OffsetToData;
+}
+
 void * PEDecoder::GetWin32Resource(LPCWSTR lpName, LPCWSTR lpType, COUNT_T *pSize /*=NULL*/) const
 {
     CONTRACTL {
@@ -1800,31 +1889,57 @@ void * PEDecoder::GetWin32Resource(LPCWSTR lpName, LPCWSTR lpType, COUNT_T *pSiz
         GC_NOTRIGGER;
     } CONTRACTL_END;
 
-    if (pSize != NULL)
+    COUNT_T sizeUnused = 0; // Use this variable if pSize is null
+    if (pSize == NULL)
+        pSize = &sizeUnused;
+
+    *pSize = 0;
+
+    if (!HasDirectoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE))
+        return NULL;
+
+    COUNT_T resourceDataSize = 0;
+    IMAGE_DATA_DIRECTORY *pDir = GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE);
+
+    if (pDir->VirtualAddress == 0)
+        return NULL;
+
+    BOOL isDictionary = FALSE;
+    DWORD nameTableRva = ReadResourceDictionary(pDir->VirtualAddress, pDir->VirtualAddress, lpType, &isDictionary);
+
+    if (!isDictionary)
+        return NULL;
+    
+    if (nameTableRva == 0)
+        return NULL;
+
+    DWORD languageTableRva = ReadResourceDictionary(pDir->VirtualAddress, nameTableRva, lpName, &isDictionary);
+    if (!isDictionary)
+        return NULL;
+
+    if (languageTableRva == 0)
+        return NULL;
+
+    // This api is designed to find resources with LANGID = MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL)
+    // This translates to LANGID 0 as the initial lookup point, which is sufficient for the needs of this api at this time
+    // (FindResource in the Windows api implements a large number of fallback paths which this api does not implement)
+
+    DWORD resourceDataEntryRva = ReadResourceDictionary(pDir->VirtualAddress, languageTableRva, 0, &isDictionary);
+    if (isDictionary) // This must not be a resource dictionary itself
+        return NULL;
+
+    if (resourceDataEntryRva == 0)
+        return NULL;
+
+    DWORD resourceDataRva = ReadResourceDataEntry(resourceDataEntryRva, pSize);
+    if (!CheckRva(resourceDataRva, *pSize))
+    {
         *pSize = 0;
-
-    HMODULE hModule = (HMODULE) dac_cast<TADDR>(GetBase());
-
-    // Use the Win32 functions to decode the resources
-
-    HRSRC hResource = WszFindResourceEx(hModule, lpType, lpName, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
-    if (!hResource)
         return NULL;
+    }
 
-    HGLOBAL hLoadedResource = ::LoadResource(hModule, hResource);
-    if (!hLoadedResource)
-        return NULL;
-
-    PVOID pResource = ::LockResource(hLoadedResource);
-    if (!pResource)
-        return NULL;
-
-    if (pSize != NULL)
-        *pSize = ::SizeofResource(hModule, hResource);
-
-    return pResource;
+    return (void*)GetRvaData(resourceDataRva);
 }
-#endif // FEATURE_PAL
 
 BOOL PEDecoder::HasNativeHeader() const
 {
