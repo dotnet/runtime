@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.AspNetCore.Testing.xunit;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.EventLog;
 using Xunit;
 
@@ -97,6 +99,27 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal(settings.LogName, windowsEventLog.DiagnosticsEventLog.Log);
             Assert.Equal(settings.SourceName, windowsEventLog.DiagnosticsEventLog.Source);
             Assert.Equal(settings.MachineName, windowsEventLog.DiagnosticsEventLog.MachineName);
+        }
+
+        [Fact]
+        public void IOptions_CreatesWindowsEventLog_WithSuppliedEventLogSettings()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging(builder => builder.AddEventLog());
+            serviceCollection.Configure<EventLogSettings>(options =>
+            {
+                options.SourceName = "foo";
+                options.LogName = "bar";
+                options.MachineName = "blah";
+                options.EventLog = null;
+            });
+
+            var services = serviceCollection.BuildServiceProvider();
+            var provider = (EventLogLoggerProvider)(services.GetRequiredService<IEnumerable<ILoggerProvider>>().First());
+            var settings = provider._settings;
+            Assert.Equal("bar", settings.LogName);
+            Assert.Equal("foo", settings.SourceName);
+            Assert.Equal("blah", settings.MachineName);
         }
 
         [ConditionalTheory]
