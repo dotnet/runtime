@@ -13055,36 +13055,36 @@ mono_compile_deferred_assemblies (guint32 opts, const char *aot_options, gpointe
 }
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
-static const char* interp_in_static_sigs[] = {
-	"bool ptr int32 ptr&",
-	"bool ptr ptr&",
-	"int32 int32 ptr&",
-	"int32 int32 ptr ptr&",
-	"int32 ptr int32 ptr",
-	"int32 ptr int32 ptr&",
-	"int32 ptr ptr&",
-	"object object ptr ptr ptr",
-	"object",
-	"ptr int32 ptr&",
-	"ptr ptr int32 ptr ptr ptr&",
-	"ptr ptr int32 ptr ptr&",
-	"ptr ptr int32 ptr&",
-	"ptr ptr ptr int32 ptr&",
-	"ptr ptr ptr ptr& ptr&",
-	"ptr ptr ptr ptr ptr&",
-	"ptr ptr ptr ptr&",
-	"ptr ptr ptr&",
-	"ptr ptr uint32 ptr&",
-	"ptr uint32 ptr&",
-	"void object ptr ptr ptr",
-	"void ptr ptr int32 ptr ptr& ptr ptr&",
-	"void ptr ptr int32 ptr ptr&",
-	"void ptr ptr ptr&",
-	"void ptr ptr&",
-	"void ptr",
-	"void int32 ptr&",
-	"void uint32 ptr&",
-	"void"
+static MonoMethodSignature * const * const interp_in_static_sigs [] = {
+    &mono_icall_sig_bool_ptr_int32_ptrref,
+    &mono_icall_sig_bool_ptr_ptrref,
+    &mono_icall_sig_int32_int32_ptrref,
+    &mono_icall_sig_int32_int32_ptr_ptrref,
+    &mono_icall_sig_int32_ptr_int32_ptr,
+    &mono_icall_sig_int32_ptr_int32_ptrref,
+    &mono_icall_sig_int32_ptr_ptrref,
+    &mono_icall_sig_object_object_ptr_ptr_ptr,
+    &mono_icall_sig_object,
+    &mono_icall_sig_ptr_int32_ptrref,
+    &mono_icall_sig_ptr_ptr_int32_ptr_ptr_ptrref,
+    &mono_icall_sig_ptr_ptr_int32_ptr_ptrref,
+    &mono_icall_sig_ptr_ptr_int32_ptrref,
+    &mono_icall_sig_ptr_ptr_ptr_int32_ptrref,
+    &mono_icall_sig_ptr_ptr_ptr_ptrref_ptrref,
+    &mono_icall_sig_ptr_ptr_ptr_ptr_ptrref,
+    &mono_icall_sig_ptr_ptr_ptr_ptrref,
+    &mono_icall_sig_ptr_ptr_ptrref,
+    &mono_icall_sig_ptr_ptr_uint32_ptrref,
+    &mono_icall_sig_ptr_uint32_ptrref,
+    &mono_icall_sig_void_object_ptr_ptr_ptr,
+    &mono_icall_sig_void_ptr_ptr_int32_ptr_ptrref_ptr_ptrref,
+    &mono_icall_sig_void_ptr_ptr_int32_ptr_ptrref,
+    &mono_icall_sig_void_ptr_ptr_ptrref,
+    &mono_icall_sig_void_ptr_ptrref,
+    &mono_icall_sig_void_ptr,
+    &mono_icall_sig_void_int32_ptrref,
+    &mono_icall_sig_void_uint32_ptrref,
+    &mono_icall_sig_void,
 };
 #endif
 
@@ -13388,8 +13388,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		add_method (acfg, wrapper);
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
-		for (int i = 0; i < sizeof (interp_in_static_sigs) / sizeof (const char *); i++) {
-			MonoMethodSignature *sig = mono_create_icall_signature (interp_in_static_sigs [i]);
+		for (int i = 0; i < G_N_ELEMENTS (interp_in_static_sigs); i++) {
+			MonoMethodSignature *sig = *interp_in_static_sigs [i];
 			sig = mono_metadata_signature_dup_full (mono_get_corlib (), sig);
 			sig->pinvoke = FALSE;
 			wrapper = mini_get_interp_in_wrapper (sig);

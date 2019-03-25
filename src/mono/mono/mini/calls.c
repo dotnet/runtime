@@ -16,6 +16,7 @@
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/class-abi-details.h>
 #include <mono/utils/mono-utils-debug.h>
+#include "mono/metadata/icall-signatures.h"
 
 static const gboolean debug_tailcall_break_compile = FALSE; // break in method_to_ir
 static const gboolean debug_tailcall_break_run = FALSE;     // insert breakpoint in generated code
@@ -691,7 +692,7 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 		variant_iface = TRUE;
 
 	if (!helper_sig_llvmonly_imt_trampoline) {
-		MonoMethodSignature *tmp = mono_create_icall_signature ("ptr ptr ptr");
+		MonoMethodSignature *tmp = mono_icall_sig_ptr_ptr_ptr;
 		mono_memory_barrier ();
 		helper_sig_llvmonly_imt_trampoline = tmp;
 	}

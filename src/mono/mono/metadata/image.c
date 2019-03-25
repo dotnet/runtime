@@ -809,7 +809,6 @@ mono_image_init (MonoImage *image)
 
 	image->typespec_cache = mono_conc_hashtable_new (NULL, NULL);
 	image->memberref_signatures = g_hash_table_new (NULL, NULL);
-	image->helper_signatures = g_hash_table_new (g_str_hash, g_str_equal);
 	image->method_signatures = g_hash_table_new (NULL, NULL);
 
 	image->property_hash = mono_property_hash_new ();
@@ -2226,7 +2225,6 @@ mono_image_close_except_pools (MonoImage *image)
 
 	/* The ownership of signatures is not well defined */
 	g_hash_table_destroy (image->memberref_signatures);
-	g_hash_table_destroy (image->helper_signatures);
 	g_hash_table_destroy (image->method_signatures);
 
 	if (image->rgctx_template_hash)

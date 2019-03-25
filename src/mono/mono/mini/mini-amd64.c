@@ -6813,7 +6813,7 @@ void
 mono_arch_register_lowlevel_calls (void)
 {
 	/* The signature doesn't matter */
-	mono_register_jit_icall (mono_amd64_throw_exception, "mono_amd64_throw_exception", mono_create_icall_signature ("void"), TRUE);
+	mono_register_jit_icall (mono_amd64_throw_exception, "mono_amd64_throw_exception", mono_icall_sig_void, TRUE);
 
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
 #if _MSC_VER

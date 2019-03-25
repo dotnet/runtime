@@ -110,6 +110,7 @@
 #endif
 #include "icall-decl.h"
 #include "mono/utils/mono-threads-coop.h"
+#include "mono/metadata/icall-signatures.h"
 
 //#define MONO_DEBUG_ICALLARRAY
 
@@ -8733,111 +8734,132 @@ mono_lookup_icall_symbol (MonoMethod *m)
 	return icall_table.lookup_icall_symbol (func);
 }
 
-static MonoType*
-type_from_typename (char *type_name)
-{
-	MonoClass *klass = NULL;	/* assignment to shut GCC warning up */
-
-	if (!strcmp (type_name, "int"))
-		klass = mono_defaults.int_class;
-	else if (!strcmp (type_name, "ptr&"))
-		return mono_class_get_byref_type (mono_defaults.int_class);
-	else if (!strcmp (type_name, "ptr"))
-		klass = mono_defaults.int_class;
-	else if (!strcmp (type_name, "void"))
-		klass = mono_defaults.void_class;
-	else if (!strcmp (type_name, "int32"))
-		klass = mono_defaults.int32_class;
-	else if (!strcmp (type_name, "uint32"))
-		klass = mono_defaults.uint32_class;
-	else if (!strcmp (type_name, "int8"))
-		klass = mono_defaults.sbyte_class;
-	else if (!strcmp (type_name, "uint8"))
-		klass = mono_defaults.byte_class;
-	else if (!strcmp (type_name, "int16"))
-		klass = mono_defaults.int16_class;
-	else if (!strcmp (type_name, "uint16"))
-		klass = mono_defaults.uint16_class;
-	else if (!strcmp (type_name, "long"))
-		klass = mono_defaults.int64_class;
-	else if (!strcmp (type_name, "ulong"))
-		klass = mono_defaults.uint64_class;
-	else if (!strcmp (type_name, "float"))
-		klass = mono_defaults.single_class;
-	else if (!strcmp (type_name, "double"))
-		klass = mono_defaults.double_class;
-	else if (!strcmp (type_name, "object"))
-		klass = mono_defaults.object_class;
-	else if (!strcmp (type_name, "obj"))
-		klass = mono_defaults.object_class;
-	else if (!strcmp (type_name, "string"))
-		klass = mono_defaults.string_class;
-	else if (!strcmp (type_name, "bool"))
-		klass = mono_defaults.boolean_class;
-	else if (!strcmp (type_name, "boolean"))
-		klass = mono_defaults.boolean_class;
-	else {
-		g_error ("%s", type_name);
-		g_assert_not_reached ();
-	}
-	return m_class_get_byval_arg (klass);
-}
-
-/**
- * LOCKING: Take the corlib image lock.
- */
-MonoMethodSignature*
-mono_create_icall_signature (const char *sigstr)
-{
-	gchar **parts;
-	int i, len;
-	gchar **tmp;
-	MonoMethodSignature *res, *res2;
-	MonoImage *corlib = mono_defaults.corlib;
-
-	mono_image_lock (corlib);
-	res = (MonoMethodSignature *)g_hash_table_lookup (corlib->helper_signatures, sigstr);
-	mono_image_unlock (corlib);
-
-	if (res)
-		return res;
-
-	parts = g_strsplit (sigstr, " ", 256);
-
-	tmp = parts;
-	len = 0;
-	while (*tmp) {
-		len ++;
-		tmp ++;
-	}
-
-	res = mono_metadata_signature_alloc (corlib, len - 1);
-	res->pinvoke = 1;
-
 #if defined(TARGET_WIN32) && defined(TARGET_X86)
-	/* 
-	 * Under windows, the default pinvoke calling convention is STDCALL but
-	 * we need CDECL.
-	 */
-	res->call_convention = MONO_CALL_C;
+/*
+ * Under windows, the default pinvoke calling convention is STDCALL but
+ * we need CDECL.
+ */
+#define MONO_ICALL_SIGNATURE_CALL_CONVENTION MONO_CALL_C
+#else
+#define MONO_ICALL_SIGNATURE_CALL_CONVENTION 0
 #endif
 
-	res->ret = type_from_typename (parts [0]);
-	for (i = 1; i < len; ++i) {
-		res->params [i - 1] = type_from_typename (parts [i]);
+// Storage for these enums is pointer-sized as it gets replaced with MonoType*.
+//
+// mono_create_icall_signatures depends on this order. Handle with care.
+// It is alphabetical.
+typedef enum ICallSigType {
+	ICALL_SIG_TYPE_bool     = 0x00,
+	ICALL_SIG_TYPE_boolean  = ICALL_SIG_TYPE_bool,
+	ICALL_SIG_TYPE_double   = 0x01,
+	ICALL_SIG_TYPE_float    = 0x02,
+	ICALL_SIG_TYPE_int      = 0x03,
+	ICALL_SIG_TYPE_int16    = 0x04,
+	ICALL_SIG_TYPE_int32    = 0x05,
+	ICALL_SIG_TYPE_int8     = 0x06,
+	ICALL_SIG_TYPE_long     = 0x07,
+	ICALL_SIG_TYPE_obj      = 0x08,
+	ICALL_SIG_TYPE_object   = ICALL_SIG_TYPE_obj,
+	ICALL_SIG_TYPE_ptr      = ICALL_SIG_TYPE_int,
+	ICALL_SIG_TYPE_ptrref   = 0x09,
+	ICALL_SIG_TYPE_string   = 0x0A,
+	ICALL_SIG_TYPE_uint16   = 0x0B,
+	ICALL_SIG_TYPE_uint32   = 0x0C,
+	ICALL_SIG_TYPE_uint8    = 0x0D,
+	ICALL_SIG_TYPE_ulong    = 0x0E,
+	ICALL_SIG_TYPE_void     = 0x0F,
+} ICallSigType;
+
+#define ICALL_SIG_TYPES_1(a) 		  	ICALL_SIG_TYPE_ ## a,
+#define ICALL_SIG_TYPES_2(a, b) 	  	ICALL_SIG_TYPES_1 (a            ) ICALL_SIG_TYPES_1 (b)
+#define ICALL_SIG_TYPES_3(a, b, c) 	  	ICALL_SIG_TYPES_2 (a, b         ) ICALL_SIG_TYPES_1 (c)
+#define ICALL_SIG_TYPES_4(a, b, c, d) 	  	ICALL_SIG_TYPES_3 (a, b, c      ) ICALL_SIG_TYPES_1 (d)
+#define ICALL_SIG_TYPES_5(a, b, c, d, e)	ICALL_SIG_TYPES_4 (a, b, c, d   ) ICALL_SIG_TYPES_1 (e)
+#define ICALL_SIG_TYPES_6(a, b, c, d, e, f)	ICALL_SIG_TYPES_5 (a, b, c, d, e) ICALL_SIG_TYPES_1 (f)
+#define ICALL_SIG_TYPES_7(a, b, c, d, e, f, g)	ICALL_SIG_TYPES_6 (a, b, c, d, e, f) ICALL_SIG_TYPES_1 (g)
+#define ICALL_SIG_TYPES_8(a, b, c, d, e, f, g, h) ICALL_SIG_TYPES_7 (a, b, c, d, e, f, g) ICALL_SIG_TYPES_1 (h)
+
+#define ICALL_SIG_TYPES(n, types) ICALL_SIG_TYPES_ ## n types
+
+// A scheme to make these const would be nice.
+static struct {
+#define ICALL_SIG(n, xtypes) 			\
+	struct {				\
+		MonoMethodSignature sig;	\
+		gsize types [n];		\
+	} ICALL_SIG_NAME (n, xtypes);
+ICALL_SIGS
+	MonoMethodSignature end; // terminal zeroed element
+} mono_icall_signatures = {
+#undef ICALL_SIG
+#define ICALL_SIG(n, types) { { \
+	0,			/* ret */ \
+	n,			/* param_count */ \
+	-1,			/* sentinelpos */ \
+	0,			/* generic_param_count */ \
+	MONO_ICALL_SIGNATURE_CALL_CONVENTION, \
+	0,			/* hasthis */ \
+	0, 			/* explicit_this */ \
+	1, 			/* pinvoke */ \
+	0, 			/* is_inflated */ \
+	0,			/* has_type_parameters */ \
+},  /* possible gap here, depending on MONO_ZERO_LEN_ARRAY */ \
+    { ICALL_SIG_TYPES (n, types) } }, /* params and ret */
+ICALL_SIGS
+};
+
+#undef ICALL_SIG
+#define ICALL_SIG(n, types) MonoMethodSignature * const ICALL_SIG_NAME (n, types) = &mono_icall_signatures.ICALL_SIG_NAME (n, types).sig;
+ICALL_SIGS
+#undef ICALL_SIG
+
+void
+mono_create_icall_signatures (void)
+{
+	// Fixup the mostly statically initialized icall signatures.
+	//   x = m_class_get_byval_arg (x)
+	//   Initialize ret with params [0] and params [i] with params [i + 1].
+	//   ptrref is special
+	//
+	// FIXME This is a bit obscure.
+
+	typedef MonoMethodSignature G_MAY_ALIAS MonoMethodSignature_a;
+	typedef gsize G_MAY_ALIAS gsize_a;
+
+	MonoType * const lookup [ ] = {
+		m_class_get_byval_arg (mono_defaults.boolean_class), // ICALL_SIG_TYPE_bool
+		m_class_get_byval_arg (mono_defaults.double_class),	 // ICALL_SIG_TYPE_double
+		m_class_get_byval_arg (mono_defaults.single_class),  // ICALL_SIG_TYPE_float
+		m_class_get_byval_arg (mono_defaults.int_class),	 // ICALL_SIG_TYPE_int
+		m_class_get_byval_arg (mono_defaults.int16_class),	 // ICALL_SIG_TYPE_int16
+		m_class_get_byval_arg (mono_defaults.int32_class),	 // ICALL_SIG_TYPE_int32
+		m_class_get_byval_arg (mono_defaults.sbyte_class),	 // ICALL_SIG_TYPE_int8
+		m_class_get_byval_arg (mono_defaults.int64_class),	 // ICALL_SIG_TYPE_long
+		m_class_get_byval_arg (mono_defaults.object_class),	 // ICALL_SIG_TYPE_obj
+		mono_class_get_byref_type (mono_defaults.int_class), // ICALL_SIG_TYPE_ptrref
+		m_class_get_byval_arg (mono_defaults.string_class),	 // ICALL_SIG_TYPE_string
+		m_class_get_byval_arg (mono_defaults.uint16_class),	 // ICALL_SIG_TYPE_uint16
+		m_class_get_byval_arg (mono_defaults.uint32_class),	 // ICALL_SIG_TYPE_uint32
+		m_class_get_byval_arg (mono_defaults.byte_class),	 // ICALL_SIG_TYPE_uint8
+		m_class_get_byval_arg (mono_defaults.uint64_class),	 // ICALL_SIG_TYPE_ulong
+		m_class_get_byval_arg (mono_defaults.void_class),	 // ICALL_SIG_TYPE_void
+	};
+
+	MonoMethodSignature_a *sig = (MonoMethodSignature*)&mono_icall_signatures;
+	int n;
+	while ((n = sig->param_count)) {
+		--sig->param_count; // remove ret
+		gsize_a *types = (gsize*)(sig + 1);
+		for (int i = 0; i < n; ++i) {
+			gsize index = *types++;
+			g_assert (index < G_N_ELEMENTS (lookup));
+			// Casts on next line are attempt to follow strict aliasing rules,
+			// to ensure reading from *types precedes writing
+			// to params [].
+			*(gsize*)(i ? &sig->params [i - 1] : &sig->ret) = (gsize)lookup [index];
+		}
+		sig = (MonoMethodSignature*)types;
 	}
-
-	g_strfreev (parts);
-
-	mono_image_lock (corlib);
-	res2 = (MonoMethodSignature *)g_hash_table_lookup (corlib->helper_signatures, sigstr);
-	if (res2)
-		res = res2; /*Value is allocated in the image pool*/
-	else
-		g_hash_table_insert (corlib->helper_signatures, (gpointer)sigstr, res);
-	mono_image_unlock (corlib);
-
-	return res;
 }
 
 MonoJitICallInfo *

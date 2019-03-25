@@ -108,14 +108,14 @@ public:
 
 #endif
 
-#ifdef __cplusplus
-
 // G++4.4 breaks opeq below without this.
 #if defined  (__GNUC__) || defined  (__clang__)
 #define G_MAY_ALIAS  __attribute__((__may_alias__))
 #else
 #define G_MAY_ALIAS /* nothing */
 #endif
+
+#ifdef __cplusplus
 
 // Provide for bit operations on enums, but not all integer operations.
 // This alleviates a fair number of casts in porting C to C++.

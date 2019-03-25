@@ -71,6 +71,7 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/icall-decl.h>
+#include "mono/metadata/icall-signatures.h"
 
 #include "trace.h"
 
@@ -178,11 +179,6 @@ static MonoInst*
 convert_value (MonoCompile *cfg, MonoType *type, MonoInst *ins);
 
 /* helper methods signatures */
-static MonoMethodSignature *helper_sig_domain_get;
-static MonoMethodSignature *helper_sig_rgctx_lazy_fetch_trampoline;
-static MonoMethodSignature *helper_sig_jit_thread_attach;
-static MonoMethodSignature *helper_sig_get_tls_tramp;
-static MonoMethodSignature *helper_sig_set_tls_tramp;
 
 /* type loading helpers */
 static GENERATE_TRY_GET_CLASS_WITH_CACHE (debuggable_attribute, "System.Diagnostics", "DebuggableAttribute")
@@ -386,16 +382,6 @@ mono_print_bb (MonoBasicBlock *bb, const char *msg)
 
 	for (tree = bb->code; tree; tree = tree->next)
 		mono_print_ins_index (-1, tree);
-}
-
-void
-mono_create_helper_signatures (void)
-{
-	helper_sig_domain_get = mono_create_icall_signature ("ptr");
-	helper_sig_rgctx_lazy_fetch_trampoline = mono_create_icall_signature ("ptr ptr");
-	helper_sig_jit_thread_attach = mono_create_icall_signature ("ptr ptr");
-	helper_sig_get_tls_tramp = mono_create_icall_signature ("ptr");
-	helper_sig_set_tls_tramp = mono_create_icall_signature ("void ptr");
 }
 
 static MONO_NEVER_INLINE gboolean
@@ -1722,7 +1708,7 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 		 * to crashes and infinite recursions.
 		 */
 		EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_GET_TLS_TRAMP, GUINT_TO_POINTER(key));
-		return mini_emit_calli (cfg, helper_sig_get_tls_tramp, NULL, addr, NULL, NULL);
+		return mini_emit_calli (cfg, mono_icall_sig_ptr, NULL, addr, NULL, NULL);
 	} else {
 		gpointer getter = mono_tls_get_tls_getter (key, FALSE);
 		return mono_emit_jit_icall (cfg, getter, NULL);
@@ -2604,7 +2590,7 @@ emit_rgctx_fetch (MonoCompile *cfg, MonoInst *rgctx, MonoJumpInfoRgctxEntry *ent
 	if (cfg->llvm_only)
 		return emit_rgctx_fetch_inline (cfg, rgctx, entry);
 	else
-		return mini_emit_abs_call (cfg, MONO_PATCH_INFO_RGCTX_FETCH, entry, helper_sig_rgctx_lazy_fetch_trampoline, &rgctx);
+		return mini_emit_abs_call (cfg, MONO_PATCH_INFO_RGCTX_FETCH, entry, mono_icall_sig_ptr_ptr, &rgctx);
 }
 
 /*
