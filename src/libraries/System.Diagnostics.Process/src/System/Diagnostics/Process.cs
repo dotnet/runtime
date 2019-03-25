@@ -657,7 +657,6 @@ namespace System.Diagnostics
                     {
                         if (value)
                         {
-                            GetOrOpenProcessHandle();
                             EnsureWatchingForExit();
                         }
                         else
@@ -834,16 +833,17 @@ namespace System.Diagnostics
         {
             if (Associated)
             {
+                // We need to lock to ensure we don't run concurrently with CompletionCallback.
+                // Without this lock we could reset _raisedOnExited which causes CompletionCallback to
+                // raise the Exited event a second time for the same process.
+                lock (this)
+                {
+                    // This sets _waitHandle to null which causes CompletionCallback to not emit events.
+                    StopWatchingForExit();
+                }
+
                 if (_haveProcessHandle)
                 {
-                    // We need to lock to ensure we don't run concurrently with CompletionCallback.
-                    // Without this lock we could reset _raisedOnExited which causes CompletionCallback to
-                    // raise the Exited event a second time for the same process.
-                    lock (this)
-                    {
-                        // This sets _waitHandle to null which causes CompletionCallback to not emit events.
-                        StopWatchingForExit();
-                    }
                     _processHandle.Dispose();
                     _processHandle = null;
                     _haveProcessHandle = false;
