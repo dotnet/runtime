@@ -41,9 +41,9 @@ namespace R2RDump
             return formatter.EmitHandleName(handle, namespaceQualified, owningTypeOverride);
         }
 
-        public static string FormatSignature(R2RReader r2rReader, int imageOffset)
+        public static string FormatSignature(DumpOptions options, R2RReader r2rReader, int imageOffset)
         {
-            SignatureDecoder decoder = new SignatureDecoder(r2rReader, imageOffset);
+            SignatureDecoder decoder = new SignatureDecoder(options, r2rReader, imageOffset);
             string result = decoder.ReadR2RSignature();
             return result;
         }
@@ -142,7 +142,7 @@ namespace R2RDump
             builder.Append(" ");
             if (owningTypeOverride == null)
             {
-                owningTypeOverride = EmitHandleName(methodDef.GetDeclaringType(), namespaceQualified: false, owningTypeOverride: null);
+                owningTypeOverride = EmitHandleName(methodDef.GetDeclaringType(), namespaceQualified: true, owningTypeOverride: null);
             }
             builder.Append(owningTypeOverride);
             builder.Append(".");
@@ -296,6 +296,11 @@ namespace R2RDump
         private readonly MetadataReader _metadataReader;
 
         /// <summary>
+        /// Dump options are used to specify details of signature formatting.
+        /// </summary>
+        private readonly DumpOptions _options;
+
+        /// <summary>
         /// Byte array representing the R2R PE file read from disk.
         /// </summary>
         private readonly byte[] _image;
@@ -315,10 +320,12 @@ namespace R2RDump
         /// </summary>
         /// <param name="reader">R2RReader object representing the R2R PE file</param>
         /// <param name="offset">Signature offset within the array</param>
-        public SignatureDecoder(R2RReader reader, int offset)
+        /// <param name="options">Formatting options</param>
+        public SignatureDecoder(DumpOptions options, R2RReader reader, int offset)
         {
-            _image = reader.Image;
             _metadataReader = reader.MetadataReader;
+            _options = options;
+            _image = reader.Image;
             _offset = offset;
         }
 
@@ -328,10 +335,11 @@ namespace R2RDump
         /// <param name="metadataReader">Metadata reader for the R2R image</param>
         /// <param name="signature">Signature to parse</param>
         /// <param name="offset">Optional signature offset within the signature byte array, 0 by default</param>
-        public SignatureDecoder(MetadataReader metadataReader, byte[] signature, int offset = 0)
+        public SignatureDecoder(DumpOptions options, MetadataReader metadataReader, byte[] signature, int offset = 0)
         {
-            _image = signature;
             _metadataReader = metadataReader;
+            _options = options;
+            _image = signature;
             _offset = offset;
         }
 
@@ -516,12 +524,14 @@ namespace R2RDump
                     {
                         ParseMethodDefToken(builder, owningTypeOverride: null);
                     }
-                    builder.Append(" (METHOD_ENTRY_DEF_TOKEN)");
+                    builder.Append(" (METHOD_ENTRY");
+                    builder.Append(_options.Naked ? ")" : "_DEF_TOKEN)");
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_RefToken:
                     ParseMethodRefToken(builder, owningTypeOverride: null);
-                    builder.Append(" (METHOD_ENTRY_REF_TOKEN)");
+                    builder.Append(" (METHOD_ENTRY");
+                    builder.Append(_options.Naked ? ")" : "_REF_TOKEN)");
                     break;
 
 
@@ -535,12 +545,14 @@ namespace R2RDump
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_DefToken:
                     ParseMethodDefToken(builder, owningTypeOverride: null);
-                    builder.Append(" (VIRTUAL_ENTRY_DEF_TOKEN)");
+                    builder.Append(" (VIRTUAL_ENTRY");
+                    builder.Append(_options.Naked ? ")" : "_DEF_TOKEN)");
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_RefToken:
                     ParseMethodRefToken(builder, owningTypeOverride: null);
-                    builder.Append(" (VIRTUAL_ENTRY_REF_TOKEN)");
+                    builder.Append(" (VIRTUAL_ENTRY");
+                    builder.Append(_options.Naked ? ")" : "_REF_TOKEN)");
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_Slot:
@@ -622,12 +634,13 @@ namespace R2RDump
 
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_FieldBaseOffset:
-                    builder.Append("FIELD_BASE_OFFSET");
-                    // TODO
+                    ParseType(builder);
+                    builder.Append(" (FIELD_BASE_OFFSET)");
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_FieldOffset:
-                    builder.Append("FIELD_OFFSET");
+                    ParseField(builder);
+                    builder.Append(" (FIELD_OFFSET)");
                     // TODO
                     break;
 
@@ -915,7 +928,7 @@ namespace R2RDump
             string owningTypeOverride = null;
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
-                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_metadataReader, _image, _offset);
+                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_options, _metadataReader, _image, _offset);
                 owningTypeOverride = owningTypeDecoder.ReadTypeSignature();
                 _offset = owningTypeDecoder._offset;
             }
