@@ -678,7 +678,7 @@ namespace System.Data.SqlClient
         internal int warningsIndexEnd;
         internal SqlErrorCollection warnings;
 
-        public SqlParameter GetParameterByIndex(int index, out byte options)
+        internal SqlParameter GetParameterByIndex(int index, out byte options)
         {
             options = 0;
             SqlParameter retval = null;
