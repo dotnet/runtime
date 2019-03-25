@@ -357,8 +357,7 @@ namespace System.Diagnostics
             }
 
             EnsureState(State.HaveNonExitedId | State.IsLocal);
-            EnsureWatchingForExit();
-            return new SafeProcessHandle(_processId, _waitHandle.SafeWaitHandle);
+            return new SafeProcessHandle(_processId, GetSafeWaitHandle());
         }
 
         /// <summary>
@@ -515,7 +514,7 @@ namespace System.Diagnostics
                     // Store the child's information into this Process object.
                     Debug.Assert(childPid >= 0);
                     SetProcessId(childPid);
-                    SetProcessHandle(GetProcessHandle());
+                    SetProcessHandle(new SafeProcessHandle(_processId, GetSafeWaitHandle()));
 
                     return true;
                 }
@@ -866,6 +865,9 @@ namespace System.Diagnostics
             }
             return _waitStateHolder._state;
         }
+
+        private SafeWaitHandle GetSafeWaitHandle()
+            => GetWaitState().EnsureExitedEvent().GetSafeWaitHandle();
 
         private static (uint userId, uint groupId, uint[] groups) GetUserAndGroupIds(ProcessStartInfo startInfo)
         {
