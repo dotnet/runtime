@@ -95,6 +95,8 @@ public:
       "Specifies the ratio compacting GCs vs sweeping")                                        \
   INT_CONFIG(GCHeapAffinitizeMask, "GCHeapAffinitizeMask", 0,                                  \
       "Specifies processor mask for Server GC threads")                                        \
+  STRING_CONFIG(GCHeapAffinitizeRanges, "GCHeapAffinitizeRanges",                              \
+      "Specifies list of processors for Server GC threads")                                    \
   INT_CONFIG(GCHighMemPercent, "GCHighMemPercent", 0,                                          \
       "The percent for GC to consider as high memory")                                         \
   INT_CONFIG(GCProvModeStress, "GCProvModeStress", 0,                                          \
