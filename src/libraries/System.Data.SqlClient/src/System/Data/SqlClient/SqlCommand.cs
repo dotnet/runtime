@@ -3295,8 +3295,7 @@ namespace System.Data.SqlClient
             }
         }
 
-
-        private void SetUpRPCParameters(_SqlRPC rpc, int startCount, bool inSchema, SqlParameterCollection parameters)
+        private void SetUpRPCParameters(_SqlRPC rpc, bool inSchema, SqlParameterCollection parameters)
         {
             int paramCount = GetParameterCount(parameters);
             int userParamCount = 0;
@@ -3399,7 +3398,7 @@ namespace System.Data.SqlClient
             sqlParam.Size = text.Length;
             sqlParam.Value = text;
 
-            SetUpRPCParameters(rpc, systemParameterCount, false, _parameters);
+            SetUpRPCParameters(rpc, false, _parameters);
 
             return rpc;
         }
@@ -3461,7 +3460,7 @@ namespace System.Data.SqlClient
             rpc.ProcID = 0;
             rpc.rpcName = this.CommandText; // just get the raw command text
 
-            SetUpRPCParameters(rpc, 0, inSchema, parameters);
+            SetUpRPCParameters(rpc, inSchema, parameters);
         }
 
         //
@@ -3494,7 +3493,7 @@ namespace System.Data.SqlClient
             sqlParam.Value = _prepareHandle;
             sqlParam.Direction = ParameterDirection.Input;
 
-            SetUpRPCParameters(rpc, systemParameterCount, inSchema, _parameters);
+            SetUpRPCParameters(rpc, inSchema, _parameters);
             return rpc;
         }
 
@@ -3546,7 +3545,7 @@ namespace System.Data.SqlClient
                 sqlParam.Value = paramList;
 
                 bool inSchema = (0 != (behavior & CommandBehavior.SchemaOnly));
-                SetUpRPCParameters(rpc, systemParamCount, inSchema, parameters);
+                SetUpRPCParameters(rpc, inSchema, parameters);
             }
         }
 
