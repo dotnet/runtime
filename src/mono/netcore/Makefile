@@ -10,6 +10,9 @@ $(NETCORESDK_FILE):
 build-sample:
 	dotnet build HelloWorld
 
+run-sample:
+	COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(VERSION)" sample/HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
+
 # COREHOST_TRACE=1 
 VERSION:=3.0.0-preview4-27514-06
 SHAREDRUNTIME:=shared/Microsoft.NETCore.App/$(VERSION)
@@ -24,7 +27,7 @@ runtime:
 
 link-mono:
 	cp ../mono/mini/.libs/libmonosgen-2.0.dylib $(SHAREDRUNTIME)/libcoreclr.dylib
-	cp ../mcs/class/System.Private.CoreLib/bin/x64/System.Private.CoreLib.dll $(SHAREDRUNTIME)
+	cp ../mcs/class/System.Private.CoreLib/bin/x64/System.Private.CoreLib.{dll,pdb} $(SHAREDRUNTIME)
 
 prepare: $(NETCORESDK_FILE) link-mono
 
