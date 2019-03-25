@@ -143,6 +143,13 @@ namespace Microsoft.Extensions.Hosting
                 EnvironmentName = _hostConfiguration[HostDefaults.EnvironmentKey] ?? Environments.Production,
                 ContentRootPath = ResolveContentRootPath(_hostConfiguration[HostDefaults.ContentRootKey], AppContext.BaseDirectory),
             };
+
+            if (string.IsNullOrEmpty(_hostingEnvironment.ApplicationName))
+            {
+                // Note GetEntryAssembly returns null for the net4x console test runner.
+                _hostingEnvironment.ApplicationName = Assembly.GetEntryAssembly()?.GetName().Name;
+            }
+
             _hostingEnvironment.ContentRootFileProvider = new PhysicalFileProvider(_hostingEnvironment.ContentRootPath);
         }
 

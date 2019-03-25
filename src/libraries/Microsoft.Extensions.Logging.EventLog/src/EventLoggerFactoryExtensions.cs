@@ -50,5 +50,23 @@ namespace Microsoft.Extensions.Logging
 
             return builder;
         }
+
+        /// <summary>
+        /// Adds an event logger. Use <paramref name="configure"/> to enable logging for specific <see cref="LogLevel"/>s.
+        /// </summary>
+        /// <param name="builder">The extension method argument.</param>
+        /// <param name="configure">A delegate to configure the <see cref="EventLogSettings"/>.</param>
+        public static ILoggingBuilder AddEventLog(this ILoggingBuilder builder, Action<EventLogSettings> configure)
+        {
+            if (configure == null)
+            {
+                throw new ArgumentNullException(nameof(configure));
+            }
+
+            builder.AddEventLog();
+            builder.Services.Configure(configure);
+
+            return builder;
+        }
     }
 }
