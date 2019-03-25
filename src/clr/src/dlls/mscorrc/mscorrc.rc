@@ -1079,6 +1079,7 @@ BEGIN
         BFA_UNEXPECTED_TOKEN_AFTER_GENINST      "A valid typedef or typeref token is expected to follow a ELEMENT_TYPE_GENERICINST."
         BFA_TYPEDBYREFCANNOTHAVEBYREF           "An ELEMENT_TYPE_TYPEDBYREF cannot have a ELEMENT_TYPE_BYREF modifier."
         BFA_REFERENCE_ASSEMBLY                  "Cannot load a reference assembly for execution."
+        BFA_IJW_IN_COLLECTIBLE_ALC              "Cannot load a mixed assembly into a collectible AssemblyLoadContext."
 
 #ifdef FEATURE_COMINTEROP
         BFA_WINRT_INVALID_NAMESPACE_FOR_TYPE    "Windows Runtime type '%1' has invalid namespace that does not begin with the file name in assembly '%2'."
