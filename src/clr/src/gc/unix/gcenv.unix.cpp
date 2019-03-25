@@ -47,8 +47,11 @@
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
 #endif
 
-// The cachced number of logical CPUs observed.
+// The cached number of logical CPUs observed.
 static uint32_t g_logicalCpuCount = 0;
+
+// The cached number of CPUs available for the current process.
+static uint32_t g_currentProcessCpuCount = 0;
 
 // Helper memory page used by the FlushProcessWriteBuffers
 static uint8_t* g_helperPage = 0;
@@ -63,6 +66,8 @@ bool GetCpuLimit(uint32_t* val);
 static size_t g_RestrictedPhysicalMemoryLimit = 0;
 
 uint32_t g_pageSizeUnixInl = 0;
+
+AffinitySet g_processAffinitySet;
 
 // Initialize the interface implementation
 // Return:
@@ -121,6 +126,42 @@ bool GCToOSInterface::Initialize()
 
     InitializeCGroup();
 
+#if HAVE_SCHED_GETAFFINITY
+
+    g_currentProcessCpuCount = 0;
+
+    cpu_set_t cpuSet;
+    int st = sched_getaffinity(0, sizeof(cpu_set_t), &cpuSet);
+
+    if (st == 0)
+    {
+        for (size_t i = 0; i < g_logicalCpuCount; i++)
+        {
+            if (CPU_ISSET(i, &cpuSet))
+            {
+                g_currentProcessCpuCount++;
+                g_processAffinitySet.Add(i);
+            }
+        }
+    }
+    else
+    {
+        // We should not get any of the errors that the sched_getaffinity can return since none
+        // of them applies for the current thread, so this is an unexpected kind of failure.
+        assert(false);
+    }
+
+#else // HAVE_SCHED_GETAFFINITY
+
+    g_currentProcessCpuCount = g_logicalCpuCount;
+
+    for (size_t i = 0; i < g_logicalCpuCount; i++)
+    {
+        g_processAffinitySet.Add(i);
+    }
+
+#endif // HAVE_SCHED_GETAFFINITY
+
     return true;
 }
 
@@ -163,15 +204,15 @@ uint32_t GCToOSInterface::GetCurrentProcessId()
     return getpid();
 }
 
-// Set ideal affinity for the current thread
+// Set ideal processor for the current thread
 // Parameters:
-//  affinity - ideal processor affinity for the thread
+//  srcProcNo - processor number the thread currently runs on
+//  dstProcNo - processor number the thread should be migrated to
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::SetCurrentThreadIdealAffinity(GCThreadAffinity* affinity)
+bool GCToOSInterface::MigrateThread(uint16_t srcProcNo, uint16_t dstProcNo)
 {
-    // TODO(segilles)
-    return false;
+    return GCToOSInterface::SetThreadAffinity(dstProcNo);
 }
 
 // Get the number of the current processor
@@ -324,7 +365,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size    - size of the virtual memory range
 // Return:
 //  true if it has succeeded, false if it has failed
-bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint32_t node)
+bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
 {
     assert(node == NUMA_NODE_UNDEFINED && "Numa allocation is not ported to local GC on unix yet");
     return mprotect(address, size, PROT_WRITE | PROT_READ) == 0;
@@ -416,16 +457,25 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 }
 
 // Sets the calling thread's affinity to only run on the processor specified
-// in the GCThreadAffinity structure.
 // Parameters:
-//  affinity - The requested affinity for the calling thread. At most one processor
-//             can be provided.
+//  procNo - The requested processor for the calling thread.
 // Return:
 //  true if setting the affinity was successful, false otherwise.
-bool GCToOSInterface::SetThreadAffinity(GCThreadAffinity* affinity)
+bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
-    // [LOCALGC TODO] Thread affinity for unix
+#if HAVE_PTHREAD_GETAFFINITY_NP
+    cpu_set_t cpuSet;
+    CPU_ZERO(&cpuSet);
+    CPU_SET((int)procNo, &cpuSet);
+
+    int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+
+    return (st == 0);
+
+#else  // HAVE_PTHREAD_GETAFFINITY_NP
+    // There is no API to manage thread affinity, so let's ignore the request
     return false;
+#endif // HAVE_PTHREAD_GETAFFINITY_NP
 }
 
 // Boosts the calling thread's thread priority to a level higher than the default
@@ -440,87 +490,12 @@ bool GCToOSInterface::BoostThreadPriority()
     return false;
 }
 
-/*++
-Function:
-  GetFullAffinityMask
-
-Get affinity mask for the specified number of processors with all
-the processors enabled.
---*/
-static uintptr_t GetFullAffinityMask(int cpuCount)
-{
-    if ((size_t)cpuCount < sizeof(uintptr_t) * 8)
-    {
-        return ((uintptr_t)1 << cpuCount) - 1;
-    }
-
-    return ~(uintptr_t)0;
-}
-
-// Get affinity mask of the current process
-// Parameters:
-//  processMask - affinity mask for the specified process
-//  systemMask  - affinity mask for the system
+// Get set of processors enabled for GC for the current process
 // Return:
-//  true if it has succeeded, false if it has failed
-// Remarks:
-//  A process affinity mask is a bit vector in which each bit represents the processors that
-//  a process is allowed to run on. A system affinity mask is a bit vector in which each bit
-//  represents the processors that are configured into a system.
-//  A process affinity mask is a subset of the system affinity mask. A process is only allowed
-//  to run on the processors configured into a system. Therefore, the process affinity mask cannot
-//  specify a 1 bit for a processor when the system affinity mask specifies a 0 bit for that processor.
-bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processAffinityMask, uintptr_t* systemAffinityMask)
+//  set of enabled processors
+AffinitySet* GCToOSInterface::GetCurrentProcessAffinitySet()
 {
-    unsigned int cpuCountInMask = (g_logicalCpuCount > 64) ? 64 : g_logicalCpuCount;
-
-    uintptr_t systemMask = GetFullAffinityMask(cpuCountInMask);
-
-#if HAVE_SCHED_GETAFFINITY
-
-    int pid = getpid();
-    cpu_set_t cpuSet;
-    int st = sched_getaffinity(pid, sizeof(cpu_set_t), &cpuSet);
-    if (st == 0)
-    {
-        uintptr_t processMask = 0;
-
-        for (unsigned int i = 0; i < cpuCountInMask; i++)
-        {
-            if (CPU_ISSET(i, &cpuSet))
-            {
-                processMask |= ((uintptr_t)1) << i;
-            }
-        }
-
-        *processAffinityMask = processMask;
-        *systemAffinityMask = systemMask;
-        return true;
-    }
-    else if (errno == EINVAL)
-    {
-        // There are more processors than can fit in a cpu_set_t
-        // return all bits set for all processors (upto 64) for both masks
-        *processAffinityMask = systemMask;
-        *systemAffinityMask = systemMask;
-        return true;
-    }
-    else
-    {
-        // We should not get any of the errors that the sched_getaffinity can return since none
-        // of them applies for the current thread, so this is an unexpected kind of failure.
-        return false;
-    }
-
-#else // HAVE_SCHED_GETAFFINITY
-
-    // There is no API to manage thread affinity, so let's return both affinity masks
-    // with all the CPUs on the system set.
-    *systemAffinityMask = systemMask;
-    *processAffinityMask = systemMask;
-    return true;
-
-#endif // HAVE_SCHED_GETAFFINITY
+    return &g_processAffinitySet;
 }
 
 // Get number of processors assigned to the current process
@@ -528,35 +503,7 @@ bool GCToOSInterface::GetCurrentProcessAffinityMask(uintptr_t* processAffinityMa
 //  The number of processors
 uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
 {
-    uintptr_t pmask, smask;
-    uint32_t cpuLimit;
-
-    if (!GetCurrentProcessAffinityMask(&pmask, &smask))
-        return 1;
-
-    pmask &= smask;
-
-    unsigned int count = 0;
-    while (pmask)
-    {
-        pmask &= (pmask - 1);
-        count++;
-    }
-
-    // GetProcessAffinityMask can return pmask=0 and smask=0 on systems with more
-    // than 64 processors, which would leave us with a count of 0.  Since the GC
-    // expects there to be at least one processor to run on (and thus at least one
-    // heap), we'll return 64 here if count is 0, since there are likely a ton of
-    // processors available in that case.  The GC also cannot (currently) handle
-    // the case where there are more than 64 processors, so we will return a
-    // maximum of 64 here.
-    if (count == 0 || count > 64)
-        count = 64;
-
-    if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
-        count = cpuLimit;
-
-    return count;
+    return g_currentProcessCpuCount;
 }
 
 // Return the size of the user-mode portion of the virtual address space of this process.
@@ -715,20 +662,52 @@ bool GCToOSInterface::CanEnableGCNumaAware()
     return false;
 }
 
-bool GCToOSInterface::GetNumaProcessorNode(PPROCESSOR_NUMBER proc_no, uint16_t *node_no)
+bool GCToOSInterface::GetNumaProcessorNode(uint16_t proc_no, uint16_t *node_no)
 {
     assert(!"Numa has not been ported to local GC for unix");
     return false;
 }
 
-bool GCToOSInterface::CanEnableGCCPUGroups()
+// Get processor number and optionally its NUMA node number for the specified heap number
+// Parameters:
+//  heap_number - heap number to get the result for
+//  proc_no     - set to the selected processor number
+//  node_no     - set to the NUMA node of the selected processor or to NUMA_NODE_UNDEFINED
+// Return:
+//  true if it succeeded
+bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_no, uint16_t* node_no)
 {
-    return false;
-}
+    bool success = false;
 
-void GCToOSInterface::GetGroupForProcessor(uint16_t processor_number, uint16_t* group_number, uint16_t* group_processor_number)
-{
-    assert(!"CpuGroup has not been ported to local GC for unix");
+    uint16_t availableProcNumber = 0;
+    for (size_t procNumber = 0; procNumber < g_logicalCpuCount; procNumber++)
+    {
+        if (g_processAffinitySet.Contains(procNumber))
+        {
+            if (availableProcNumber == heap_number)
+            {
+                *proc_no = procNumber;
+
+                if (GCToOSInterface::CanEnableGCNumaAware())
+                {
+                    if (!GCToOSInterface::GetNumaProcessorNode(procNumber, node_no))
+                    {
+                        *node_no = NUMA_NODE_UNDEFINED;
+                    }
+                }
+                else
+                {
+                    *node_no = NUMA_NODE_UNDEFINED;
+                }
+
+                success = true;
+                break;
+            }
+            availableProcNumber++;
+        }
+    }
+
+    return success;
 }
 
 // Initialize the critical section
