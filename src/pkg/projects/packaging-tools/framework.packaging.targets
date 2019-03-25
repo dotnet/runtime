@@ -383,6 +383,22 @@
       Include="@(TargetingPackDataEntries)" />
   </Target>
 
+  <!--
+    Add note to Targeting Pack nupkg description that this package shouldn't be referenced directly.
+    The packaging tooling normally only adds this to runtime packages.
+  -->
+  <Target Name="AddTargetingPackNuGetDescriptionInternalNotice"
+          AfterTargets="GetPackageDescription"
+          Condition="'$(FrameworkPackType)' == 'targeting'">
+    <GetPackageDescription DescriptionFile="$(PackageDescriptionFile)" PackageId="RuntimePackage">
+      <Output TaskParameter="Description" PropertyName="RuntimeDisclaimer" />
+    </GetPackageDescription>
+
+    <PropertyGroup>
+      <Description>$(RuntimeDisclaimer) %0A$(Description)</Description>
+    </PropertyGroup>
+  </Target>
+
   <!-- Target overrides (can't be shared with other package projects) -->
 
   <Target Name="GetPackageReport" />
