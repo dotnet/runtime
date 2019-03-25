@@ -19,6 +19,9 @@
 
     <!-- IJW is not supported on ARM64 -->
     <DisableProjectBuild Condition="'$(Platform)' == 'arm64'">true</DisableProjectBuild>
+  
+    <!-- Loading IJW assemblies into an unloadable context is not allowed -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
