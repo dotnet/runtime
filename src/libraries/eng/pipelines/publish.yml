@@ -7,7 +7,6 @@ jobs:
   - template: ../common/templates/jobs/jobs.yml
     parameters:
       enableMicrobuild: true
-      enablePublishBuildArtifacts: true
       jobs:
       - job: PublishPackages
         displayName: Publish Packages
@@ -56,6 +55,7 @@ jobs:
           - script: build.cmd
                     -restore
                     -sign
+                    -ci
                     /p:DotNetSignType=$(_SignType)
                     /p:OfficialBuildId=$(Build.BuildNumber)
             displayName: Sign packages
@@ -141,7 +141,7 @@ jobs:
               artifactName: packages
               downloadPath: ${{ parameters.artifactsDir }}
 
-          - script: build.cmd -restore
+          - script: build.cmd -restore -ci
             displayName: Restore Tools
 
           - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
