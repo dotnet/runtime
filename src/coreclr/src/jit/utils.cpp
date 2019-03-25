@@ -1469,7 +1469,8 @@ void HelperCallProperties::init()
 // The string should be of the form
 // MyAssembly
 // MyAssembly;mscorlib;System
-// MyAssembly;mscorlib System
+//
+// You must use ';' as a separator; whitespace no longer works
 
 AssemblyNamesList2::AssemblyNamesList2(const wchar_t* list, HostAllocator alloc) : m_alloc(alloc)
 {
@@ -1481,12 +1482,9 @@ AssemblyNamesList2::AssemblyNamesList2(const wchar_t* list, HostAllocator alloc)
     {
         WCHAR curChar = *listWalk;
 
-        if (iswspace(curChar) || curChar == W(';') || curChar == W('\0'))
+        if (curChar == W(';') || curChar == W('\0'))
         {
-            //
-            // Found white-space
-            //
-
+            // Found separator or end of string
             if (nameStart)
             {
                 // Found the end of the current name; add a new assembly name to the list.
