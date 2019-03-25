@@ -1201,12 +1201,8 @@ int fx_muxer_t::read_framework(
                 break; // Error or retry case
             }
 
-            fx_reference_t& newest_ref = newest_references[fx_name];
-            if (fx_ref.get_fx_version_number() == newest_ref.get_fx_version_number())
-            {
-                // Success but move it to the back (without calling dtors) so that lower-level frameworks come last including Microsoft.NetCore.App
-                std::rotate(existing_framework, existing_framework + 1, fx_definitions.end());
-            }
+            // Success but move it to the back (without calling dtors) so that lower-level frameworks come last including Microsoft.NetCore.App
+            std::rotate(existing_framework, existing_framework + 1, fx_definitions.end());
         }
     }
 

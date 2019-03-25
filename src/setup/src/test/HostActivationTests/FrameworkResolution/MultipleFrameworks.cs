@@ -60,13 +60,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // the inner framework reference .
         [Theory]
         [InlineData("5.0.0", 0, null, null)]
-        //[InlineData("5.1.0", 0, null, "5.1.3")] https://github.com/dotnet/core-setup/issues/4947
+        [InlineData("5.1.0", 0, null, "5.1.3")]
         [InlineData("5.1.0", 0, false, null)]
         [InlineData("5.1.3", 0, false, "5.1.3")]
-        // [InlineData("5.0.0", null, null, "5.1.3")] https://github.com/dotnet/core-setup/issues/4947
-        // [InlineData("5.0.0", 1, null, "5.1.3")] https://github.com/dotnet/core-setup/issues/4947
+        [InlineData("5.0.0", null, null, "5.1.3")]
+        [InlineData("5.0.0", 1, null, "5.1.3")]
         [InlineData("1.0.0", 1, null, null)]
-        // [InlineData("1.0.0", 2, null, "5.1.3")] https://github.com/dotnet/core-setup/issues/4947
+        [InlineData("1.0.0", 2, null, "5.1.3")]
         public void SoftRollForward_InnerFrameworkReference_ToLower_HardResolve(
             string versionReference,
             int? rollForwardOnNoCandidateFx,
@@ -116,7 +116,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // and only then the soft roll forward to the inner reference is performed. So the hard resolved version
         // is use in the soft roll forward.
         [Theory]
-        // [InlineData("5.4.0", null, null, "5.4.1")] https://github.com/dotnet/core-setup/issues/4947
+        [InlineData("5.4.0", null, null, "5.4.1")]
         [InlineData("6.0.0", null, null, null)]
         public void SoftRollForward_InnerFrameworkReference_ToHigher_HardResolve(
             string versionReference,
@@ -141,11 +141,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Soft roll forward from app's 5.1.1 (defaults) to inner framework reference with [specified version]
         [Theory]
         [InlineData("6.0.0", null, null)]    // Can't roll forward from release to pre-release
-
-        // This fails due to bug https://github.com/dotnet/core-setup/issues/4947
-        // It should be possible to roll forward from pre-release to pre-release, but the bug causes wrong framework order
-        // and inability to resolve hostpolicy.
-        // [InlineData("6.0.1-preview.0", null, "6.0.1-preview.1")]
+        [InlineData("6.0.1-preview.0", null, "6.0.1-preview.1")]
         public void SoftRollForward_InnerFrameworkReference_PreRelease(
             string versionReference,
             int? rollForwardOnNoCandidateFx,
@@ -221,12 +217,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Soft roll forward inner framework reference (defaults) to inner framework reference with [specified version]
         [Theory]
         [InlineData("5.0.0", 0,    null,  null)]
-        // [InlineData("5.1.0", 0,    null,  "5.1.3")] https://github.com/dotnet/core-setup/issues/4947
+        [InlineData("5.1.0", 0,    null,  "5.1.3")]
         [InlineData("5.1.0", 0,    false, null)]
-        // [InlineData("5.0.0", null, null,  "5.1.3")] https://github.com/dotnet/core-setup/issues/4947
-        // [InlineData("5.0.0", 1,    null,  "5.1.3")] https://github.com/dotnet/core-setup/issues/4947
+        [InlineData("5.0.0", null, null,  "5.1.3")]
+        [InlineData("5.0.0", 1,    null,  "5.1.3")]
         [InlineData("1.0.0", 1,    null,  null)]
-        // [InlineData("1.0.0", 2,    null,  "5.1.3")] https://github.com/dotnet/core-setup/issues/4947
+        [InlineData("1.0.0", 2,    null,  "5.1.3")]
         public void SoftRollForward_InnerToInnerFrameworkReference_ToLower(
             string versionReference,
             int? rollForwardOnNoCandidateFx,
@@ -254,7 +250,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         // Soft roll forward inner framework reference (defaults) to inner framework reference with [specified version]
         [Theory]
-        // [InlineData("5.4.0", null, null, "5.4.1")] https://github.com/dotnet/core-setup/issues/4947
+        [InlineData("5.4.0", null, null, "5.4.1")]
         [InlineData("6.0.0", null, null, null)]
         public void SoftRollForward_InnerToInnerFrameworkReference_ToHigher(
             string versionReference,
