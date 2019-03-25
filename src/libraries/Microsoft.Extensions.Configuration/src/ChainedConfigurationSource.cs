@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Represents a chained IConfiguration as an <see cref="IConfigurationSource"/>.
+    /// Represents a chained <see cref="IConfiguration"/> as an <see cref="IConfigurationSource"/>.
     /// </summary>
     public class ChainedConfigurationSource : IConfigurationSource
     {
