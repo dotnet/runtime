@@ -135,12 +135,11 @@ namespace System.Diagnostics
                 {
                     if (!_watchingForExit)
                     {
-                        Debug.Assert(_haveProcessHandle, "Process.EnsureWatchingForExit called with no process handle");
                         Debug.Assert(Associated, "Process.EnsureWatchingForExit called with no associated process");
                         _watchingForExit = true;
                         try
                         {
-                            _waitHandle = new Interop.Kernel32.ProcessWaitHandle(_processHandle);
+                            _waitHandle = new Interop.Kernel32.ProcessWaitHandle(GetOrOpenProcessHandle());
                             _registeredWaitHandle = ThreadPool.RegisterWaitForSingleObject(_waitHandle,
                                 new WaitOrTimerCallback(CompletionCallback), _waitHandle, -1, true);
                         }
