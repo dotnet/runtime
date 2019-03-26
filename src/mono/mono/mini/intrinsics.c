@@ -344,17 +344,21 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		int mul_reg = alloc_preg (cfg);
 
 		t = ctx->method_inst->type_argv [0];
+		MonoInst *esize_ins;
 		if (mini_is_gsharedvt_variable_type (t)) {
-			MonoInst *esize_ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (t), MONO_RGCTX_INFO_CLASS_SIZEOF);
-			EMIT_NEW_BIALU (cfg, ins, OP_IMUL, mul_reg, args [1]->dreg, esize_ins->dreg);
+			esize_ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (t), MONO_RGCTX_INFO_CLASS_SIZEOF);
+			if (SIZEOF_REGISTER == 8)
+				MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, esize_ins->dreg, esize_ins->dreg);
 		} else {
 			t = mini_type_get_underlying_type (t);
 			int esize = mono_class_array_element_size (mono_class_from_mono_type_internal (t));
-
-			EMIT_NEW_BIALU_IMM (cfg, ins, OP_IMUL_IMM, mul_reg, args [1]->dreg, esize);
+			EMIT_NEW_ICONST (cfg, esize_ins, esize);
 		}
-		if (SIZEOF_REGISTER == 8)
-			MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, mul_reg, mul_reg);
+		esize_ins->type = STACK_I4;
+
+		EMIT_NEW_BIALU (cfg, ins, OP_PMUL, mul_reg, args [1]->dreg, esize_ins->dreg);
+		ins->type = STACK_PTR;
+
 		dreg = alloc_preg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, mul_reg);
 		ins->type = STACK_PTR;
