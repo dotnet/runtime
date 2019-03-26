@@ -119,7 +119,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.Associated);
-                return OpenProcessHandle();
+                return GetOrOpenProcessHandle();
             }
         }
 
@@ -657,7 +657,6 @@ namespace System.Diagnostics
                     {
                         if (value)
                         {
-                            OpenProcessHandle();
                             EnsureWatchingForExit();
                         }
                         else
@@ -834,16 +833,17 @@ namespace System.Diagnostics
         {
             if (Associated)
             {
+                // We need to lock to ensure we don't run concurrently with CompletionCallback.
+                // Without this lock we could reset _raisedOnExited which causes CompletionCallback to
+                // raise the Exited event a second time for the same process.
+                lock (this)
+                {
+                    // This sets _waitHandle to null which causes CompletionCallback to not emit events.
+                    StopWatchingForExit();
+                }
+
                 if (_haveProcessHandle)
                 {
-                    // We need to lock to ensure we don't run concurrently with CompletionCallback.
-                    // Without this lock we could reset _raisedOnExited which causes CompletionCallback to
-                    // raise the Exited event a second time for the same process.
-                    lock (this)
-                    {
-                        // This sets _waitHandle to null which causes CompletionCallback to not emit events.
-                        StopWatchingForExit();
-                    }
                     _processHandle.Dispose();
                     _processHandle = null;
                     _haveProcessHandle = false;
@@ -1130,7 +1130,7 @@ namespace System.Diagnostics
         /// Opens a long-term handle to the process, with all access.  If a handle exists,
         /// then it is reused.  If the process has exited, it throws an exception.
         /// </summary>
-        private SafeProcessHandle OpenProcessHandle()
+        private SafeProcessHandle GetOrOpenProcessHandle()
         {
             if (!_haveProcessHandle)
             {

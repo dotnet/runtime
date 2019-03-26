@@ -114,7 +114,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                             newEc.GenerateKey(ECCurve.NamedCurves.nistP256);
                             Assert.Equal(256, newEc.KeySize);
                             param2 = newEc.ExportExplicitParameters(true);
-                            // Keys should should not match
+                            // Keys should not match
                             ComparePrivateKey(param, param2, false);
                             ComparePublicKey(param.Q, param2.Q, false);
                             // P,X,Y (and others) should not match
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                             newEc.GenerateKey(param2.Curve);
                             Assert.Equal(256, newEc.KeySize);
                             param2 = newEc.ExportExplicitParameters(true);
-                            // Keys should should not match
+                            // Keys should not match
                             ComparePrivateKey(param, param2, false);
                             ComparePublicKey(param.Q, param2.Q, false);
                             // P,X,Y (and others) should not match
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography.EcDsa.Tests
                                 newEc.GenerateKey(ECCurve.CreateFromValue(ECDSA_Sect193r1_OID_VALUE));
                                 Assert.Equal(193, newEc.KeySize);
                                 param2 = newEc.ExportExplicitParameters(true);
-                                // Keys should should not match
+                                // Keys should not match
                                 ComparePrivateKey(param, param2, false);
                                 ComparePublicKey(param.Q, param2.Q, false);
                                 // Polynomial,X,Y (and others) should not match

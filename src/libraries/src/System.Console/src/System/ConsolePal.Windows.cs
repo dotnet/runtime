@@ -12,8 +12,6 @@ namespace System
     // Provides Windows-based support for System.Console.
     internal static class ConsolePal
     {
-        private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
-
         private static IntPtr InvalidHandleValue => new IntPtr(-1);
 
         private static bool IsWindows7()
@@ -179,7 +177,7 @@ namespace System
                     stream: inputStream,
                     encoding: new ConsoleEncoding(Console.InputEncoding),
                     detectEncodingFromByteOrderMarks: false,
-                    bufferSize: DefaultConsoleBufferSize,
+                    bufferSize: Console.ReadBufferSize,
                     leaveOpen: true));
         }
 

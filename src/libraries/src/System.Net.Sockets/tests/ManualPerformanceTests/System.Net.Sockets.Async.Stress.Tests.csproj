@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}</ProjectGuid>
+    <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SocketPerformanceAsyncTests.cs" />
+    <Compile Include="SocketTestClientAPMMock.cs" />
+    <Compile Include="SocketTestServerAPMMock.cs" />
+    <!-- Common Sockets files -->
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\TestSettings.cs">
+      <Link>SocketCommon\TestSettings.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServer.cs">
+      <Link>SocketCommon\SocketTestServer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketTestServerAsync.cs">
+      <Link>SocketCommon\SocketTestServerAsync.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\SocketImplementationType.cs">
+      <Link>SocketCommon\SocketImplementationType.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketPerformanceTests.cs">
+      <Link>SocketCommon\SocketPerformanceFactories.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketTestClient.cs">
+      <Link>SocketCommon\SocketTestClient.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketTestClientAsync.cs">
+      <Link>SocketCommon\SocketTestClientAsync.cs</Link>
+    </Compile>
+    <!-- Common test files -->
+    <Compile Include="$(CommonTestPath)\System\Net\TestLogging.cs">
+      <Link>Common\System\Net\TestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\VerboseTestLogging.cs">
+      <Link>Common\System\Net\VerboseTestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
+      <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.Sockets.cs">
+      <Link>Common\System\Net\Capability.Sockets.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Threading\Tasks\TaskTimeoutExtensions.cs">
+      <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketTestMemcmp.Windows.cs">
+      <Link>SocketCommon\SocketTestMemcmp.Windows.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="$(CommonTestPath)\System\Net\Sockets\Performance\SocketTestMemcmp.Unix.cs">
+      <Link>SocketCommon\SocketTestMemcmp.Unix.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>

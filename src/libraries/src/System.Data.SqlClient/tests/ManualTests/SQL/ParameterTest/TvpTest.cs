@@ -17,6 +17,8 @@ using System.Transactions;
 
 using Microsoft.SqlServer.Server;
 using Xunit;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
@@ -42,11 +44,42 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private string _connStr;
 
         [ActiveIssue(27858, TestPlatforms.AnyUnix)]
-        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestMain()
         {
             Assert.True(RunTestCoreAndCompareWithBaseline());
         }
+
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
+        public void TestPacketNumberWraparound()
+        {
+            // this test uses a specifically crafted sql record enumerator and data to put the TdsParserStateObject.WritePacket(byte,bool)
+            // into a state where it can't differentiate between a packet in the middle of a large packet-set after a byte counter wraparound
+            // and the first packet of the connection and in doing so trips over a check for packet length from the input which has been 
+            // forced to tell it that there is no output buffer space left, this causes an uncancellable infinite loop
+
+            // if the enumerator is completely read to the end then the bug is no longer present and the packet creation task returns,
+            // if the timeout occurs it is probable (but not absolute) that the write is stuck
+
+            var enumerator = new WraparoundRowEnumerator(1000000);
+
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            int returned = Task.WaitAny(
+                Task.Factory.StartNew(
+                    () => RunPacketNumberWraparound(enumerator),
+                    TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning
+                ),
+                Task.Delay(TimeSpan.FromSeconds(60))
+            );
+            stopwatch.Stop();
+            if (enumerator.MaxCount != enumerator.Count)
+            {
+                Console.WriteLine($"enumerator.Count={enumerator.Count}, enumerator.MaxCount={enumerator.MaxCount}, elapsed={stopwatch.Elapsed.TotalSeconds}");
+            }
+            Assert.True(enumerator.MaxCount == enumerator.Count);
+        }
+
 
         public TvpTest()
         {
@@ -216,7 +249,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-#region Main test methods
+        #region Main test methods
         private void ColumnBoundariesTest()
         {
             IEnumerator<StePermutation> boundsMD = SteStructuredTypeBoundaries.AllColumnTypesExceptUdts.GetEnumerator(
@@ -550,9 +583,34 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-#endregion
+        private static async Task RunPacketNumberWraparound(WraparoundRowEnumerator enumerator)
+        {
+            using (var connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (var cmd = new SqlCommand("unimportant")
+            {
+                CommandType = System.Data.CommandType.StoredProcedure,
+                Connection = connection,
+            })
+            {
+                await cmd.Connection.OpenAsync();
+                cmd.Parameters.Add(new SqlParameter("@rows", SqlDbType.Structured)
+                {
+                    TypeName = "unimportant",
+                    Value = enumerator,
+                });
+                try
+                {
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                catch (Exception)
+                {
+                    // ignore the errors caused by the sproc and table type not existing
+                }
+            }
+        }
+        #endregion
 
-#region Utility Methods
+        #region Utility Methods
 
         private bool AllowableDifference(string source, object result, StePermutation metadata)
         {
@@ -1371,7 +1429,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
 
-#endregion
+        #endregion
     }
 
     internal class TvpRestartableReader : DbDataReader
@@ -1626,4 +1684,49 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
     }
 
+    internal class WraparoundRowEnumerator : IEnumerable<SqlDataRecord>, IEnumerator<SqlDataRecord>
+    {
+        private int _count;
+        private int _maxCount;
+        private SqlDataRecord _record;
+
+        public WraparoundRowEnumerator(int maxCount)
+        {
+            _maxCount = maxCount;
+            _record = new SqlDataRecord(new SqlMetaData("someData", SqlDbType.VarBinary, 8000));
+
+            // 56 31 0 0 is result of calling BitConverter.GetBytes((int)7992)
+            // The rest of the bytes are just padding to get 56, 31, 0, 0 to be in bytes 8-11 of TdsParserStatObject._outBuff after the 256th packet
+            _record.SetBytes(
+                0,
+                0,
+                new byte[] { 1, 2, 56, 31, 0, 0, 7, 8, 9, 10, 11, 12, 13, 14 },
+                0,
+                14);
+
+            // change any of the 56 31 0 0 bytes and this program completes as expected in a couple seconds
+        }
+
+        public bool MoveNext()
+        {
+            _count++;
+            return _count < _maxCount;
+        }
+
+        public SqlDataRecord Current => _record;
+
+        object IEnumerator.Current => Current;
+
+        public int Count { get => this._count; set => this._count = value; }
+        public int MaxCount { get => this._maxCount; set => this._maxCount = value; }
+
+        public IEnumerator<SqlDataRecord> GetEnumerator() => this;
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Dispose() { }
+        public void Reset() { }
+
+
+    }
 }

@@ -872,7 +872,7 @@ namespace System.Data
             if (Next(z_id) != NIL)
                 return RBDeleteX(Next(z_id), Next(z_id), z_id); // delete root of satelite tree.
 
-            // if we we reach here, we are guaranteed z_id.next is NIL.
+            // if we reach here, we are guaranteed z_id.next is NIL.
             bool isCase3 = false;
             int mNode = ((_accessMethod == TreeAccessMethod.KEY_SEARCH_AND_INDEX) ? mainTreeNodeID : z_id);
 

@@ -1504,7 +1504,7 @@ Changes in 0.4:
 - renamed deflateOptions as deflateInit2, call one or the other but not both
 - added the method parameter for deflateInit2.
 - added inflateInit2
-- simplied considerably deflateInit and inflateInit by not supporting
+- simplified considerably deflateInit and inflateInit by not supporting
   user-provided history buffer. This is supported only in deflateInit2
   and inflateInit2.
 

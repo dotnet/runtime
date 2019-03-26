@@ -141,11 +141,6 @@
     <EnableDumpling>false</EnableDumpling>
     <CrashDumpFolder Condition="'$(OS)' == 'Windows_NT'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
   </PropertyGroup>
-  <!-- Disable VS support files on CI and official builds. -->
-  <PropertyGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(OfficialBuildId)' != ''">
-    <EnableLaunchSettings>false</EnableLaunchSettings>
-    <EnableVSTestReferences>false</EnableVSTestReferences>
-  </PropertyGroup>
 
   <!-- list of nuget package sources passed to nuget restore -->
   <!-- Example to consume local CoreCLR package:
@@ -244,7 +239,9 @@
   
   <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
     <Copyright>$(CopyrightNetFoundation)</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- Temporarily disable PackageLicenseExpression until we can workaround 
+         https://github.com/NuGet/Home/issues/7894 -->
+    <!-- PackageLicenseExpression>MIT</PackageLicenseExpression -->
   </PropertyGroup>
 
   <!-- Import packaging props -->
@@ -260,7 +257,7 @@
 
     <!-- Rhel 6 and FreeBSD doesn't support the source control git package so disable SourceLink -->
     <EnableSourceLink Condition="$(RuntimeOS.StartsWith('rhel.6')) OR '$(_runtimeOSFamily)' == 'FreeBSD'">false</EnableSourceLink>
-    <!-- is is not supported on ARM platforms either. -->
+    <!-- is not supported on ARM platforms either. -->
     <EnableSourceLink Condition="'$(HostArch)' == 'Arm' OR '$(HostArch)' == 'Arm64'">false</EnableSourceLink>
     <!-- Disable source link on local builds. -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>

@@ -18,7 +18,7 @@ namespace System.Net.Http
         {
             get
             {
-                // First check for the AppContext switch, giving it priority over over the environment variable.
+                // First check for the AppContext switch, giving it priority over the environment variable.
                 if (AppContext.TryGetSwitch(SocketsHttpHandlerAppCtxSettingName, out bool useSocketsHttpHandler))
                 {
                     return useSocketsHttpHandler;

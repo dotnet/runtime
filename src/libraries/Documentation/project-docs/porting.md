@@ -27,7 +27,7 @@ The same is true for platforms: the implementation of .NET Framework only runs o
 * OS X
 * Linux
 
-(Please note that that the specific version numbers, editions, and distros aren't fully finalized yet.)
+(Please note that the specific version numbers, editions, and distros aren't fully finalized yet.)
 
 While we try to be mindful of other ports actively happening (such a BSD Unix), we prioritize those three platforms. It's also worth pointing out that we generally don't prioritize within these platforms; in other words we consider them all as equals. Of course, we start from a Windows implementation so the support is currently more complete there. Also, we're mindful of the ways developers are most likely to use the platforms as well. For instance, many web developers debug and test on OS X but deploy to Linux. This guides us when prioritizing work to address point-in-time issues.
 

@@ -463,7 +463,7 @@ namespace System.Data.SqlClient
             EnlistedTransaction = tx; // Tell the base class about our enlistment
 
 
-            // If we're on a Yukon or newer server, and we we delegate the 
+            // If we're on a Yukon or newer server, and we delegate the 
             // transaction successfully, we will have done a begin transaction, 
             // which produces a transaction id that we should execute all requests
             // on.  The TdsParser or SmiEventSink will store this information as
