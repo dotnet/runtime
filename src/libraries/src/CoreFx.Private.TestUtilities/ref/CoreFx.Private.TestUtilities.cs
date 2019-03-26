@@ -48,6 +48,7 @@ namespace System
         public static bool IsArm64Process { get { throw null; } }
         public static bool IsArmOrArm64Process { get { throw null; } }
         public static bool IsArmProcess { get { throw null; } }
+        public static bool Is32BitProcess { get { throw null; } }
         public static bool IsCentos6 { get { throw null; } }
         public static bool IsDebian { get { throw null; } }
         public static bool IsDebian8 { get { throw null; } }
