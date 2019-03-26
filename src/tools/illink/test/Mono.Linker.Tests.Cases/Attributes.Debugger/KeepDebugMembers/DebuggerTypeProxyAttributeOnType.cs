@@ -9,7 +9,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.Debugger.KeepDebugMembers {
 	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
 	
-	[KeptMemberInAssembly ("mscorlib.dll", typeof (DebuggerTypeProxyAttribute), ".ctor(System.Type)")]
+	[KeptMemberInAssembly (PlatformAssemblies.CoreLib, typeof (DebuggerTypeProxyAttribute), ".ctor(System.Type)")]
 	public class DebuggerTypeProxyAttributeOnType {
 		public static void Main ()
 		{

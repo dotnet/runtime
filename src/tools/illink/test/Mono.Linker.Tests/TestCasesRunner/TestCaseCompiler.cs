@@ -7,6 +7,12 @@ using System.Linq;
 using System.Text;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
+#if NETCOREAPP
+using System.Runtime.InteropServices;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Emit;
+using Microsoft.CodeAnalysis.CSharp;
+#endif
 
 namespace Mono.Linker.Tests.TestCasesRunner {
 	public class TestCaseCompiler {
@@ -185,6 +191,97 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual NPath CompileCSharpAssemblyWithDefaultCompiler (CompilerOptions options)
 		{
+#if NETCOREAPP
+			return CompileCSharpAssemblyWithRoslyn (options);
+#else
+			return CompileCSharpAssemblyWithCodeDom (options);
+#endif
+		}
+
+#if NETCOREAPP
+		protected virtual NPath CompileCSharpAssemblyWithRoslyn (CompilerOptions options)
+		{
+			var parseOptions = new CSharpParseOptions (preprocessorSymbols: options.Defines);
+			var compilationOptions = new CSharpCompilationOptions (
+				outputKind: options.OutputPath.FileName.EndsWith (".exe") ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary
+			);
+			// Default debug info format for the current platform.
+			DebugInformationFormat debugType = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? DebugInformationFormat.Pdb : DebugInformationFormat.PortablePdb;
+			bool emitPdb = false;
+			if (options.AdditionalArguments != null) {
+				foreach (var option in options.AdditionalArguments) {
+					switch (option) {
+						case "/unsafe":
+							compilationOptions = compilationOptions.WithAllowUnsafe(true);
+							break;
+						case "/optimize+":
+							compilationOptions = compilationOptions.WithOptimizationLevel(OptimizationLevel.Release);
+							break;
+						case "/debug:full":
+						case "/debug:pdbonly":
+							// Use platform's default debug info. This behavior is the same as csc.
+							emitPdb = true;
+							break;
+						case "/debug:portable":
+							emitPdb = true;
+							debugType = DebugInformationFormat.PortablePdb;
+							break;
+						case "/debug:embedded":
+							emitPdb = true;
+							debugType = DebugInformationFormat.Embedded;
+							break;
+					}
+				}
+			}
+			var emitOptions = new EmitOptions (debugInformationFormat: debugType);
+			var pdbPath = (!emitPdb || debugType == DebugInformationFormat.Embedded) ? null : options.OutputPath.ChangeExtension (".pdb").ToString ();
+
+			var syntaxTrees = options.SourceFiles.Select (p =>
+				CSharpSyntaxTree.ParseText (
+					text: p.ReadAllText (),
+					options: parseOptions
+				)
+			);
+
+			var compilation = CSharpCompilation.Create (
+				assemblyName: options.OutputPath.FileNameWithoutExtension,
+				syntaxTrees: syntaxTrees,
+				references: options.References.Select (r => MetadataReference.CreateFromFile (r)),
+				options: compilationOptions
+			);
+
+			var manifestResources = options.Resources.Select (r => {
+				var fullPath = r.ToString ();
+				return new ResourceDescription (
+					resourceName: Path.GetFileName (fullPath),
+					dataProvider: () => new FileStream (fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite),
+					isPublic: true
+				);
+			});
+
+			EmitResult result;
+			using (var outputStream = File.Create (options.OutputPath.ToString ()))
+			using (var pdbStream = (pdbPath == null ? null : File.Create (pdbPath))) {
+				result = compilation.Emit(
+					peStream: outputStream,
+					pdbStream: pdbStream,
+					manifestResources: manifestResources,
+					options: emitOptions
+				);
+			}
+
+			var errors = new StringBuilder ();
+			if (result.Success)
+				return options.OutputPath;
+
+			foreach (var diagnostic in result.Diagnostics)
+				errors.AppendLine (diagnostic.ToString ());
+			throw new Exception ("Roslyn compilation errors: " + errors);
+		}
+#endif
+
+		protected virtual NPath CompileCSharpAssemblyWithCodeDom (CompilerOptions options)
+		{
 			var compilerOptions = CreateCodeDomCompilerOptions (options);
 			var provider = CodeDomProvider.CreateProvider ("C#");
 			var result = provider.CompileAssemblyFromFile (compilerOptions, options.SourceFiles.Select (p => p.ToString ()).ToArray ());
@@ -199,7 +296,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual NPath CompileCSharpAssemblyWithCsc (CompilerOptions options)
 		{
+#if NETCOREAPP
+			return CompileCSharpAssemblyWithRoslyn (options);
+#else
 			return CompileCSharpAssemblyWithExternalCompiler (LocateCscExecutable (), options);
+#endif
 		}
 
 		protected virtual NPath CompileCSharpAssemblyWithMcs(CompilerOptions options)

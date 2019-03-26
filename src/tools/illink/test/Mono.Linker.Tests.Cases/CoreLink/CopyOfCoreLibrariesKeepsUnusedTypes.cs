@@ -6,8 +6,8 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 {
 	[SetupLinkerCoreAction ("copy")]
 
-	[KeptAssembly ("mscorlib.dll")]
-	[KeptAllTypesAndMembersInAssembly ("mscorlib.dll")]
+	[KeptAssembly (PlatformAssemblies.CoreLib)]
+	[KeptAllTypesAndMembersInAssembly (PlatformAssemblies.CoreLib)]
 
 	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]

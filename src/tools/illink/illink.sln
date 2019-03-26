@@ -14,6 +14,14 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILLink.CustomSteps", "src\I
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILLink.Tasks", "src\ILLink.Tasks\ILLink.Tasks.csproj", "{A7A026C4-DEB4-4EF6-963E-17E7B98A6527}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Linker.Tests", "test\Mono.Linker.Tests\Mono.Linker.Tests.csproj", "{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Linker.Tests.Cases", "test\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj", "{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Linker.Tests.Cases.Expectations", "test\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj", "{2C26601F-3E2F-45B9-A02F-58EE9296E19E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,11 +107,52 @@ Global
 		{A7A026C4-DEB4-4EF6-963E-17E7B98A6527}.Release|x64.Build.0 = Release|Any CPU
 		{A7A026C4-DEB4-4EF6-963E-17E7B98A6527}.Release|x86.ActiveCfg = Release|Any CPU
 		{A7A026C4-DEB4-4EF6-963E-17E7B98A6527}.Release|x86.Build.0 = Release|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Debug|Any CPU.ActiveCfg = illink_Debug|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Debug|Any CPU.Build.0 = illink_Debug|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Debug|x64.ActiveCfg = illink_Debug|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Debug|x64.Build.0 = illink_Debug|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Debug|x86.ActiveCfg = illink_Debug|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Debug|x86.Build.0 = illink_Debug|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Release|Any CPU.ActiveCfg = illink_Release|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Release|Any CPU.Build.0 = illink_Release|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Release|x64.ActiveCfg = illink_Release|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Release|x64.Build.0 = illink_Release|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Release|x86.ActiveCfg = illink_Release|Any CPU
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}.Release|x86.Build.0 = illink_Release|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Debug|Any CPU.ActiveCfg = illink_Debug|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Debug|Any CPU.Build.0 = illink_Debug|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Debug|x64.ActiveCfg = illink_Debug|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Debug|x64.Build.0 = illink_Debug|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Debug|x86.ActiveCfg = illink_Debug|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Debug|x86.Build.0 = illink_Debug|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Release|Any CPU.ActiveCfg = illink_Release|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Release|Any CPU.Build.0 = illink_Release|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Release|x64.ActiveCfg = illink_Release|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Release|x64.Build.0 = illink_Release|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Release|x86.ActiveCfg = illink_Release|Any CPU
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}.Release|x86.Build.0 = illink_Release|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Debug|Any CPU.ActiveCfg = illink_Debug|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Debug|Any CPU.Build.0 = illink_Debug|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Debug|x64.ActiveCfg = illink_Debug|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Debug|x64.Build.0 = illink_Debug|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Debug|x86.ActiveCfg = illink_Debug|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Debug|x86.Build.0 = illink_Debug|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|Any CPU.ActiveCfg = illink_Release|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|Any CPU.Build.0 = illink_Release|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|x64.ActiveCfg = illink_Release|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|x64.Build.0 = illink_Release|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|x86.ActiveCfg = illink_Release|Any CPU
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|x86.Build.0 = illink_Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E43A3901-42B0-48CA-BB36-5CD40A99A6EE}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07} = {A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}
+		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5} = {A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}
+		{2C26601F-3E2F-45B9-A02F-58EE9296E19E} = {A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}
 	EndGlobalSection
 EndGlobal

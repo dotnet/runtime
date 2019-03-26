@@ -4,11 +4,16 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
+#if NETCOREAPP
+	[IgnoreTestCase ("Needs investigation")]
+#endif
 	[Reference ("System.dll")]
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
-	[RemovedAttributeInAssembly ("mscorlib.dll", typeof (AssemblyDescriptionAttribute))]
+	[RemovedAttributeInAssembly (PlatformAssemblies.CoreLib, typeof (AssemblyDescriptionAttribute))]
+#if !NETCOREAPP
 	[RemovedAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
+#endif
 	[SkipPeVerify]
 	public class CoreLibraryUnusedAssemblyAttributesAreRemoved {
 		public static void Main ()

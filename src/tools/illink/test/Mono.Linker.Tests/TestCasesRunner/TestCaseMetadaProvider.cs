@@ -55,23 +55,55 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return tclo;
 		}
 
+#if NETCOREAPP
+		public static IEnumerable<string> GetTrustedPlatformAssemblies ()
+		{
+			if (AppContext.GetData ("TRUSTED_PLATFORM_ASSEMBLIES") is string tpaPaths) {
+				foreach (var path in tpaPaths.Split(Path.PathSeparator)) {
+					if (Path.GetExtension (path) == ".dll")
+						yield return path;
+				}
+			}
+		}
+#endif
+
 		public virtual IEnumerable<string> GetCommonReferencedAssemblies (NPath workingDirectory)
 		{
 			yield return workingDirectory.Combine ("Mono.Linker.Tests.Cases.Expectations.dll").ToString ();
+#if NETCOREAPP
+			foreach (var path in GetTrustedPlatformAssemblies ()) {
+				// Don't reference testcases dll, as these will be compiled dynamically.
+				if (Path.GetFileName (path) != "Mono.Linker.Tests.Cases.dll")
+					yield return path;
+			}
+#else
 			yield return "mscorlib.dll";
+#endif
 		}
 
 		public virtual IEnumerable<string> GetReferencedAssemblies (NPath workingDirectory)
 		{
 			foreach (var fileName in GetReferenceValues ()) {
-				if (fileName.StartsWith ("System.", StringComparison.Ordinal) || fileName.StartsWith ("Mono.", StringComparison.Ordinal) || fileName.StartsWith ("Microsoft.", StringComparison.Ordinal))
+				if (fileName.StartsWith ("System.", StringComparison.Ordinal) || fileName.StartsWith ("Mono.", StringComparison.Ordinal) || fileName.StartsWith ("Microsoft.", StringComparison.Ordinal)) {
+#if NETCOREAPP
+					// Try to find the assembly alongside the host's framework dependencies
+					var frameworkDir = Path.GetDirectoryName (typeof (object).Assembly.Location);
+					var filePath = Path.Combine (frameworkDir, fileName);
+					if (File.Exists (filePath)) {
+						yield return filePath;
+					} else {
+						yield return fileName;
+					}
+#else
 					yield return fileName;
-				else
+#endif
+				} else {
 					// Drop any relative path information.  Sandboxing will have taken care of copying the reference to the directory
 					yield return workingDirectory.Combine (Path.GetFileName (fileName));
+				}
 			}
 		}
-		
+
 		public virtual IEnumerable<string> GetReferenceDependencies ()
 		{
 			return _testCaseTypeDefinition.CustomAttributes
@@ -101,7 +133,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		public virtual IEnumerable<NPath> GetExtraLinkerSearchDirectories ()
 		{
+#if NETCOREAPP
+			var tpaDirs = GetTrustedPlatformAssemblies ().Select (p => Path.GetDirectoryName (p)).Distinct ();
+			foreach (var dir in tpaDirs)
+				yield return dir.ToNPath ();
+#else
 			yield break;
+#endif
 		}
 
 		public virtual bool IsIgnored (out string reason)
@@ -143,6 +181,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			// To enable test cases to define different expected behavior we set this special define
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 				yield return "WIN32";
+
+#if NETCOREAPP
+			yield return "NETCOREAPP";
+#endif
 
 			foreach (var attr in  _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (DefineAttribute)))
 				yield return (string) attr.ConstructorArguments.First ().Value;

@@ -3,8 +3,6 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.TestFramework.Dependencies;
 
-[assembly: KeptAttributeAttribute (typeof (System.Diagnostics.DebuggableAttribute))]
-
 namespace Mono.Linker.Tests.Cases.TestFramework {
 	[SetupCSharpCompilerToUse ("csc")]
 

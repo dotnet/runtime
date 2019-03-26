@@ -2,6 +2,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
+#if NETCOREAPP
+	[IgnoreTestCase ("Needs investigation")]
+#endif
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[Define ("IL_ASSEMBLY_AVAILABLE")]
 	[SetupCompileBefore ("library.dll", new [] { "Dependencies/AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" })]

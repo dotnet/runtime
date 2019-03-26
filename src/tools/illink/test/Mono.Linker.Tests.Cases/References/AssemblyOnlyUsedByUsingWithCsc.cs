@@ -19,7 +19,11 @@ namespace Mono.Linker.Tests.Cases.References {
 	
 	// We library should be gone.  The `using` statement leaves no traces in the IL so nothing in `library` will be marked
 	[RemovedAssembly ("library.dll")]
+#if NETCOREAPP
+	[KeptReferencesInAssembly ("copied.dll", new [] {"System.Private.CoreLib"})]
+#else
 	[KeptReferencesInAssembly ("copied.dll", new [] {"mscorlib"})]
+#endif
 	public class AssemblyOnlyUsedByUsingWithCsc {
 		public static void Main ()
 		{

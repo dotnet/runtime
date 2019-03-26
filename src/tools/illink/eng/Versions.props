@@ -4,4 +4,16 @@
     <VersionPrefix>0.1.6</VersionPrefix>
     <PreReleaseVersionLabel>prerelease</PreReleaseVersionLabel>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview4-27520-71</MicrosoftNetCoreIlasmPackageVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RestoreSources>
+      $(RestoreSources);
+      https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json
+    </RestoreSources>
+  </PropertyGroup>
+
 </Project>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+
+  <!-- This project exists solely to restore ilasm for use in the test
+  project. -->
+
+  <!-- Get version number of ilasm package -->
+  <Import Condition=" '$(ArcadeBuild)' != 'true' " Project="$(MSBuildThisFileDirectory)Versions.props" />
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+
+</Project>

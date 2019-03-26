@@ -162,14 +162,47 @@ namespace Mono.Linker.Tests.TestCases
 
 		static void GetDirectoryPaths(out string rootSourceDirectory, out string testCaseAssemblyPath, [CallerFilePath] string thisFile = null)
 		{
-			var thisDirectory = Path.GetDirectoryName(thisFile);
-			rootSourceDirectory = Path.GetFullPath(Path.Combine(thisDirectory, "..", "..", "Mono.Linker.Tests.Cases"));
+
+#if ILLINK
+#if DEBUG
+			var configDirectoryName = "illink_Debug";
+#else
+			var configDirectoryName = "illink_Release";
+#endif
+#else
 #if DEBUG
 			var configDirectoryName = "Debug";
 #else
 			var configDirectoryName = "Release";
 #endif
-			testCaseAssemblyPath = Path.GetFullPath(Path.Combine(rootSourceDirectory, "bin", configDirectoryName, "Mono.Linker.Tests.Cases.dll"));
+#endif
+
+#if NETCOREAPP3_0
+			var tfm = "netcoreapp3.0";
+#else
+			var tfm = "";
+#endif
+
+#if ILLINK
+			// Deterministic builds sanitize source paths, so CallerFilePathAttribute gives an incorrect path.
+			// Instead, get the testcase dll based on the working directory of the test runner.
+#if ARCADE
+			// working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
+			var artifactsBinDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..");
+			rootSourceDirectory = Path.GetFullPath (Path.Combine (artifactsBinDir, "..", "..", "test", "Mono.Linker.Tests.Cases"));
+			testCaseAssemblyPath = Path.GetFullPath (Path.Combine (artifactsBinDir, "Mono.Linker.Tests.Cases", configDirectoryName, tfm, "Mono.Linker.Tests.Cases.dll"));
+#else
+			// working directory is test/Mono.Linker.Tests/bin/<config>/<tfm>
+			var testDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..", "..");
+			rootSourceDirectory = Path.GetFullPath (Path.Combine (testDir, "Mono.Linker.Tests.Cases"));
+			testCaseAssemblyPath = Path.GetFullPath (Path.Combine (rootSourceDirectory, "bin", configDirectoryName, tfm, "Mono.Linker.Tests.Cases.dll"));
+#endif // ARCADE
+
+#else
+			var thisDirectory = Path.GetDirectoryName (thisFile);
+			rootSourceDirectory = Path.GetFullPath (Path.Combine (thisDirectory, "..", "..", "Mono.Linker.Tests.Cases"));
+			testCaseAssemblyPath = Path.GetFullPath (Path.Combine (rootSourceDirectory, "bin", configDirectoryName, tfm, "Mono.Linker.Tests.Cases.dll"));
+#endif // ILLINK
 		}
 	}
 }

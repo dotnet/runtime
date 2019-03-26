@@ -1,5 +1,10 @@
 ﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
+    <ILLinkBuild Condition=" $(Configuration.StartsWith('illink')) ">true</ILLinkBuild>
+    <ILLinkBuild Condition=" '$(ILLinkBuild)' == '' ">false</ILLinkBuild>
+  </PropertyGroup>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" Condition=" $(ILLinkBuild) " />
+  <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.50727</ProductVersion>
@@ -9,7 +14,17 @@
     <AssemblyName>Mono.Linker.Tests</AssemblyName>
     <StartupObject>
     </StartupObject>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <TargetFramework Condition=" $(ILLinkBuild) ">netcoreapp3.0</TargetFramework>
+    <EnableDefaultCompileItems Condition=" $(ILLinkBuild) ">false</EnableDefaultCompileItems>
+    <TargetFrameworkVersion Condition=" ! $(ILLinkBuild) ">v4.7.1</TargetFrameworkVersion>
+    <!-- Simulate https://github.com/dotnet/sdk/pull/2073 until it ships. -->
+    <DefineConstants Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">$(DefineConstants);NETCOREAPP</DefineConstants>
+    <DefineConstants Condition=" $(ILLinkBuild) ">$(DefineConstants);ILLINK</DefineConstants>
+    <DefineConstants Condition=" '$(Configuration)' == 'illink_Debug' ">$(DefineConstants);DEBUG</DefineConstants>
+    <DefineConstants Condition=" '$(ArcadeBuild)' == 'true' ">$(DefineConstants);ARCADE</DefineConstants>
+    <IsTestProject Condition=" $(ILLinkBuild) ">true</IsTestProject>
+    <!-- Arcade's custom test imports assume that we are using xunit. -->
+    <DisableArcadeTestFramework Condition=" '$(ArcadeBuild)' == 'true' ">true</DisableArcadeTestFramework>
     <RootNamespace>Mono.Linker.Tests</RootNamespace>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -29,7 +44,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" ! $(ILLinkBuild) " />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
@@ -37,7 +52,7 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup>
+  <ItemGroup Condition=" ! $(ILLinkBuild) ">
     <Reference Include="System" />
     <Reference Include="System.Xml" />
     <Reference Include="System.Core" />
@@ -52,14 +67,20 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj">
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
       <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
       <Name>Mono.Cecil</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj">
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
       <Project>{8559dd7f-a16f-46d0-a05a-9139faeba8fd}</Project>
       <Name>Mono.Cecil.Mdb</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
       <Project>{63e6915c-7ea4-4d76-ab28-0d7191eea626}</Project>
       <Name>Mono.Cecil.Pdb</Name>
     </ProjectReference>
@@ -68,6 +89,8 @@
       <Name>Mono.Linker</Name>
     </ProjectReference>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj">
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=illink_Debug</SetConfiguration>
+      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=illink_Release</SetConfiguration>
       <Project>{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}</Project>
       <Name>Mono.Linker.Tests.Cases</Name>
     </ProjectReference>
@@ -112,4 +135,36 @@
     <Compile Include="Tests\TypeNameParserTests.cs" />
     <Compile Include="Tests\ParseResponseFileLinesTests.cs" />
   </ItemGroup>
+
+  <ItemGroup Condition=" $(ILLinkBuild) ">
+    <PackageReference Include="System.CodeDom" Version="4.5.0" />
+    <PackageReference Include="Microsoft.Win32.Registry" Version="4.5.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.10.0" />
+    <PackageReference Include="nunit" Version="3.10.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="3.10.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.7.2" />
+    <!-- This reference is purely so that the linker can resolve this
+         dependency of mscorlib. It is not actually required to build
+         the tests. -->
+    <PackageReference Include="System.Threading.AccessControl" Version="4.5.0" />
+  </ItemGroup>
+
+  <Target Name="PrepareTools"
+          BeforeTargets="Build"
+          Condition=" $(ILLinkBuild) ">
+    <!-- Restore ilasm using ilasm.ilproj. Restore must be done
+         separately from copy with a different set of input
+         properties, to force MSBuild to re-evaluate using new props
+         and targets from the restored package. -->
+    <PropertyGroup>
+      <IlasmProject>$(MSBuildThisFileDirectory)../../eng/ilasm.ilproj</IlasmProject>
+      <IlasmDir Condition=" '$(ArcadeBuild)' == 'true' ">$(ArtifactsDir)tools</IlasmDir>
+      <IlasmDir Condition=" '$(ArcadeBuild)' != 'true' ">$(MSBuildThisFileDirectory)$(BaseIntermediateOutputPath)tools</IlasmDir>
+    </PropertyGroup>
+
+    <MSBuild Projects="$(IlasmProject)" Targets="Restore" Properties="BaseIntermediateOutputPath=$(IlasmDir)" />
+    <MSBuild Projects="$(IlasmProject)" Targets="CopyILAsmTool" Properties="BaseIntermediateOutputPath=$(IlasmDir);__BuildPhase=Copy" />
+  </Target>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" Condition=" $(ILLinkBuild) " />
 </Project>

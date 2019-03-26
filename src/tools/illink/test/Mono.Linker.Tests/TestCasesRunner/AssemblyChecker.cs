@@ -80,7 +80,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			ModuleDefinition linkedModule = linked?.Module;
 
 			//
-			// Little bit complex check to allow easier test writting to match
+			// Little bit complex check to allow easier test writing to match
 			// - It has [Kept] attribute or any variation of it
 			// - It contains Main method
 			// - It contains at least one member which has [Kept] attribute (not recursive)
@@ -613,6 +613,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 					// When mcs is used to compile the test cases, backing fields end up with this attribute on them
 					case "System.Diagnostics.DebuggerBrowsableAttribute":
+						continue;
+
+					// When compiling with roslyn, assemblies get the DebuggableAttribute by default.
+					case "System.Diagnostics.DebuggableAttribute":
 						continue;
 
 					case "System.Runtime.CompilerServices.CompilationRelaxationsAttribute":

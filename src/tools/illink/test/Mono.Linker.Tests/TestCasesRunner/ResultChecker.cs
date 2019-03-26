@@ -58,7 +58,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 				VerifyLinkingOfOtherAssemblies (original);
 
+#if !NETCOREAPP
+				// the PE Verifier does not know how to resolve .NET Core assemblies.
 				_peVerifier.Check (linkResult, original);
+#endif
 
 				AdditionalChecking (linkResult, original, linked);
 			}

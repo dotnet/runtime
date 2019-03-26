@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
@@ -12,7 +14,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		public ILCompiler ()
 		{
-			_ilasmExecutable = Environment.OSVersion.Platform == PlatformID.Win32NT ? LocateIlasmOnWindows ().ToString () : "ilasm";
+			_ilasmExecutable = LocateIlasm ().ToString ();
 		}
 
 		public ILCompiler (string ilasmExecutable)
@@ -51,10 +53,36 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		private string BuildArguments (CompilerOptions options)
 		{
 			var args = new StringBuilder();
+#if ILLINK
+			args.Append(options.OutputPath.ExtensionWithDot == ".dll" ? "-dll" : "-exe");
+			args.Append($" -out:{options.OutputPath.InQuotes ()}");
+#else
 			args.Append(options.OutputPath.ExtensionWithDot == ".dll" ? "/dll" : "/exe");
 			args.Append($" /out:{options.OutputPath.InQuotes ()}");
+#endif
 			args.Append($" {options.SourceFiles.Aggregate (string.Empty, (buff, file) => $"{buff} {file.InQuotes ()}")}");
 			return args.ToString ();
+		}
+
+		public static NPath LocateIlasm ()
+		{
+#if ILLINK
+			var extension = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? ".exe" : "";
+#if ARCADE
+			// working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
+			var toolsDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..", "..", "tools");
+#else
+			// working directory is test/Mono.Linker.Tests/bin/<config>/<tfm>
+			var toolsDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..", "obj", "tools");
+#endif // ARCADE
+			var ilasmPath = Path.GetFullPath (Path.Combine (toolsDir, "ilasm", $"ilasm{extension}")).ToNPath ();
+			if (ilasmPath.FileExists ())
+				return ilasmPath;
+
+			throw new InvalidOperationException ("ilasm not found at " + ilasmPath);
+#else
+			return Environment.OSVersion.Platform == PlatformID.Win32NT ? LocateIlasmOnWindows () : "ilasm".ToNPath ();
+#endif
 		}
 
 		public static NPath LocateIlasmOnWindows ()
@@ -62,7 +90,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 				throw new InvalidOperationException ("This method should only be called on windows");
 
-			var possiblePath = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory ().ToNPath ().Combine ("ilasm.exe");
+			var possiblePath = RuntimeEnvironment.GetRuntimeDirectory ().ToNPath ().Combine ("ilasm.exe");
 			if (possiblePath.FileExists ())
 				return possiblePath;
 
