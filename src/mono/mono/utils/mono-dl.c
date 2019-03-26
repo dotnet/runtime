@@ -205,33 +205,6 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 }
 
 /**
- * mono_dl_symbol_default:
- * \param module a MonoDl pointer
- * \param name symbol name
- * Load the address of symbol \p name from the given \p module.
- * \returns Address of the symbol or NULL on failure
- */
-void*
-mono_dl_symbol_default (MonoDl *module, const char *name)
-{
-	void * sym;
-	{
-#if MONO_DL_NEED_USCORE
-		{
-			char *usname = g_malloc (strlen (name) + 2);
-			*usname = '_';
-			strcpy (usname + 1, name);
-			sym = mono_dl_lookup_symbol (module, usname);
-			g_free (usname);
-		}
-#else
-		sym = mono_dl_lookup_symbol (module, name);
-#endif
-	}
-	return sym;
-}
-
-/**
  * mono_dl_symbol:
  * \param module a MonoDl pointer
  * \param name symbol name
@@ -249,7 +222,17 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 	if (module->dl_fallback) {
 		sym = module->dl_fallback->symbol_func (module->handle, name, &err, module->dl_fallback->user_data);
 	} else {
-		sym = mono_dl_symbol_default (module, name);
+#if MONO_DL_NEED_USCORE
+		{
+			char *usname = g_malloc (strlen (name) + 2);
+			*usname = '_';
+			strcpy (usname + 1, name);
+			sym = mono_dl_lookup_symbol (module, usname);
+			g_free (usname);
+		}
+#else
+		sym = mono_dl_lookup_symbol (module, name);
+#endif
 	}
 
 	if (sym) {
@@ -374,15 +357,6 @@ mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol sy
 {
 	MonoDlFallbackHandler *handler = NULL;
 	MONO_ENTER_GC_UNSAFE;
-	handler = mono_dl_fallback_register_internal (load_func, symbol_func, close_func, user_data);
-	MONO_EXIT_GC_UNSAFE;
-	return handler;
-}
-
-MonoDlFallbackHandler *
-mono_dl_fallback_register_internal (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, MonoDlFallbackClose close_func, void *user_data)
-{
-	MonoDlFallbackHandler *handler = NULL;
 	if (load_func == NULL || symbol_func == NULL)
 		goto leave;
 
@@ -395,6 +369,7 @@ mono_dl_fallback_register_internal (MonoDlFallbackLoad load_func, MonoDlFallback
 	fallback_handlers = g_slist_prepend (fallback_handlers, handler);
 	
 leave:
+	MONO_EXIT_GC_UNSAFE;
 	return handler;
 }
 

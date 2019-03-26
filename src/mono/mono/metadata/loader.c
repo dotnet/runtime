@@ -76,6 +76,11 @@ static gint32 signatures_size;
  */
 static MonoNativeTlsKey loader_lock_nest_id;
 
+#if ENABLE_NETCORE
+static int pinvoke_search_directories_count;
+static char **pinvoke_search_directories;
+#endif
+
 static void dllmap_cleanup (void);
 static void cached_module_cleanup(void);
 
@@ -1586,6 +1591,15 @@ pinvoke_probe_for_module (MonoImage *image, const char*new_scope, const char *im
 	return module;
 }
 
+#if ENABLE_NETCORE
+void
+mono_set_pinvoke_search_directories (int dir_count, char **dirs)
+{
+	pinvoke_search_directories_count = dir_count;
+	pinvoke_search_directories = dirs;
+}
+#endif
+
 static MonoDl*
 pinvoke_probe_for_module_relative_directories (MonoImage *image, const char *file_name, char **found_name_out)
 {
@@ -1595,10 +1609,41 @@ pinvoke_probe_for_module_relative_directories (MonoImage *image, const char *fil
 
 	g_assert (found_name_out);
 
-			int j;
-			void *iter;
-			char *mdirname;
+	int j;
+	void *iter;
+	char *mdirname;
 
+#if ENABLE_NETCORE
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "netcore DllImport handler: wanted '%s'", file_name);
+
+	for (j = 0; j < pinvoke_search_directories_count + 1 && module == NULL; ++j) {
+		if (j < pinvoke_search_directories_count) {
+			mdirname = pinvoke_search_directories[j];
+		} else {
+			// TODO: Check DefaultDllImportSearchPathsAttribute, NativeLibrary callback
+			mdirname = g_path_get_dirname (image->name);
+			if (!mdirname)
+				continue;
+		}
+
+		iter = NULL;
+		while ((full_name = mono_dl_build_path (mdirname, file_name, &iter)) && module == NULL) {
+			char *error_msg;
+			module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
+			if (!module) {
+				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
+				g_free (error_msg);
+			} else {
+				found_name = g_strdup (full_name);
+			}
+			g_free (full_name);
+		}
+
+		if (j >= pinvoke_search_directories_count) {
+			g_free (mdirname);
+		}
+	}
+#else
 			for (j = 0; j < 3; ++j) {
 				iter = NULL;
 				mdirname = NULL;
@@ -1675,9 +1720,10 @@ pinvoke_probe_for_module_relative_directories (MonoImage *image, const char *fil
 				if (module)
 					break;
 			}
+#endif
 
-		*found_name_out = found_name;
-		return module;
+	*found_name_out = found_name;
+	return module;
 }
 
 
