@@ -42,7 +42,7 @@ APIs and some code samples that show how it should be used. If changes are neces
 
 Pull requests against **corefx** shouldn't be submitted before getting approval. Also, we don't want to get work in progress (WIP). The reason being that we want to reduce the number pending PRs so that we can focus on the work the community expects we take action on.
 
-If you want to collaborate with other people on the design, feel free to perform the work in a branch in your own fork. If you want to track your TODOs in the description of a PR, you can always submit a PR against your own fork. Also, feel free to advertise your PR by linking it from from the issue you filed against **corefx** in the first step above.
+If you want to collaborate with other people on the design, feel free to perform the work in a branch in your own fork. If you want to track your TODOs in the description of a PR, you can always submit a PR against your own fork. Also, feel free to advertise your PR by linking it from the issue you filed against **corefx** in the first step above.
 
 ## API Design Guidelines
 

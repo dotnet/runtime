@@ -12,29 +12,37 @@
 ===========================================================*/
 
 using System;
-using System.Runtime.InteropServices;
-using System.Security;
 
 namespace Microsoft.Win32.SafeHandles
 {
     public sealed partial class SafeProcessHandle : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private const int DefaultInvalidHandleValue = -1;
+        // On Windows, SafeProcessHandle represents the actual OS handle for the process.
+        // On Unix, there's no such concept.  Instead, the implementation manufactures
+        // a WaitHandle that it manually sets when the process completes; SafeProcessHandle
+        // then just wraps that same WaitHandle instance.  This allows consumers that use
+        // Process.{Safe}Handle to initalize and use a WaitHandle to successfull use it on
+        // Unix as well to wait for the process to complete.
 
-        internal SafeProcessHandle(int processId) : 
-            this((IntPtr)processId)
+        private readonly SafeWaitHandle _handle;
+        private readonly bool _releaseRef;
+
+        internal SafeProcessHandle(int processId, SafeWaitHandle handle) : 
+            this(handle.DangerousGetHandle(), ownsHandle: false)
         {
+            ProcessId = processId;
+            _handle = handle;
+            handle.DangerousAddRef(ref _releaseRef);
         }
 
-        public override bool IsInvalid
-        {
-            get { return ((int)handle) < 0; } // Unix processes have non-negative ID values
-        }
+        internal int ProcessId { get; }
 
         protected override bool ReleaseHandle()
         {
-            // Nop.  We don't actually hold handles to a process, as there's no equivalent
-            // concept on Unix.  SafeProcessHandle justs wrap a process ID.
+            if (_releaseRef)
+            {
+                _handle.DangerousRelease();
+            }
             return true;
         }
     }

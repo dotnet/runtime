@@ -219,7 +219,7 @@ namespace System.Management
         ///				current timezone. The lowest precision in DMTF is microseconds and 
         ///				in <see cref='System.DateTime'/> is Ticks , which is equivalent to 100 of nanoseconds.
         ///				 During conversion these Ticks are converted to microseconds and rounded 
-        ///				 off to the the nearest microsecond.
+        ///				 off to the nearest microsecond.
         ///			</para>
         /// </remarks>
         /// <example>
@@ -268,7 +268,7 @@ namespace System.Management
             dmtfDateTime = (dmtfDateTime + date.Second.ToString(frmInt32).PadLeft(2, '0'));
             dmtfDateTime = (dmtfDateTime + ".");
             
-            // Construct a DateTime with with the precision to Second as same as the passed DateTime and so get
+            // Construct a DateTime with the precision to Second as same as the passed DateTime and so get
             // the ticks difference so that the microseconds can be calculated
             DateTime dtTemp = new DateTime(date.Year ,date.Month,date.Day ,date.Hour ,date.Minute ,date.Second,0);
             long microsec = ((date.Ticks-dtTemp.Ticks) * 1000) / System.TimeSpan.TicksPerMillisecond;
@@ -369,7 +369,7 @@ namespace System.Management
 
             timespan = new System.TimeSpan(days, hours, minutes, seconds, 0);
             // Get a timepan for the additional ticks obtained for the microsecond part of DMTF time interval
-            // and then add it to the the original timespan
+            // and then add it to the original timespan
             TimeSpan tsTemp = System.TimeSpan.FromTicks(ticks);
             timespan = timespan + tsTemp;
             
@@ -389,7 +389,7 @@ namespace System.Management
         ///				is explained in WMI SDK documentation. The lowest precision in 
         ///				DMTF is microseconds and in <see cref='System.TimeSpan'/> is Ticks , which is equivalent 
         ///				to 100 of nanoseconds.During conversion these Ticks are converted to 
-        ///				microseconds and rounded off to the the nearest microsecond.
+        ///				microseconds and rounded off to the nearest microsecond.
         ///			</para>
         /// </remarks>
         /// <example>
@@ -423,7 +423,7 @@ namespace System.Management
             dmtftimespan = (dmtftimespan + timespan.Seconds.ToString(frmInt32).PadLeft(2, '0'));
             dmtftimespan = (dmtftimespan + ".");
             
-            // Construct a DateTime with with the precision to Second as same as the passed DateTime and so get
+            // Construct a DateTime with the precision to Second as same as the passed DateTime and so get
             // the ticks difference so that the microseconds can be calculated
             TimeSpan tsTemp = new TimeSpan(timespan.Days ,timespan.Hours,timespan.Minutes ,timespan.Seconds ,0);
             long microsec = ((timespan.Ticks-tsTemp.Ticks) * 1000) / System.TimeSpan.TicksPerMillisecond;

@@ -30,17 +30,13 @@ DLLEXPORT int32_t SystemNative_UTimensat(const char* path, TimeSpec* times);
 
 /**
  * Gets the resolution of the timestamp, in counts per second.
- *
- * Returns 1 on success; otherwise, 0 on failure.
  */
-DLLEXPORT int32_t SystemNative_GetTimestampResolution(uint64_t* resolution);
+DLLEXPORT uint64_t SystemNative_GetTimestampResolution(void);
 
 /**
  * Gets a high-resolution timestamp that can be used for time-interval measurements.
- *
- * Returns 1 on success; otherwise, 0 on failure.
  */
-DLLEXPORT int32_t SystemNative_GetTimestamp(uint64_t* timestamp);
+DLLEXPORT uint64_t SystemNative_GetTimestamp(void);
 
 DLLEXPORT int32_t SystemNative_GetAbsoluteTime(uint64_t* timestamp);
 

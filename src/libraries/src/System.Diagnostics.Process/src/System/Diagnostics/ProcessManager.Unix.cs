@@ -56,7 +56,7 @@ namespace System.Diagnostics
         /// <returns>The process ID.</returns>
         public static int GetProcessIdFromHandle(SafeProcessHandle processHandle)
         {
-            return (int)processHandle.DangerousGetHandle(); // not actually dangerous; just wraps a process ID
+            return processHandle.ProcessId;
         }
 
         private static bool IsRemoteMachineCore(string machineName)

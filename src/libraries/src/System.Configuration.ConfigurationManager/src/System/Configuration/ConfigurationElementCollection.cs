@@ -684,7 +684,7 @@ namespace System.Configuration
                 ((CollectionType == ConfigurationElementCollectionType.AddRemoveClearMap) ||
                 (CollectionType == ConfigurationElementCollectionType.AddRemoveClearMapAlternate)))
             {
-                // If it's an AddRemoveClearMap*** collection, turn the index passed into into a real internal index
+                // If it's an AddRemoveClearMap*** collection, turn the index passed into a real internal index
                 int realIndex = 0;
 
                 if (index > 0)

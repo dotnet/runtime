@@ -619,7 +619,7 @@ namespace System.Globalization
 
         /// <summary>
         /// Returns  the leap month in a calendar year of the specified era. This method returns 0
-        /// if this this year is not a leap year.
+        /// if this year is not a leap year.
         /// </summary>
         public override int GetLeapMonth(int year, int era)
         {

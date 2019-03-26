@@ -28,7 +28,6 @@ function Get-Help() {
   Write-Host "  -buildtests             Build all test projects"
   Write-Host "  -rebuild                Rebuild all source projects"
   Write-Host "  -test                   Run all unit tests (short: -t)"
-  Write-Host "  -performanceTest        Run all performance tests"
   Write-Host "  -pack                   Package build outputs into NuGet packages"
   Write-Host "  -sign                   Sign build outputs"
   Write-Host "  -publish                Publish artifacts (e.g. symbols)"
@@ -54,7 +53,7 @@ if ($MyInvocation.InvocationName -eq ".") {
 }
 
 # Check if an action is passed in
-$actions = "r","restore","b","build","rebuild","deploy","deployDeps","test","integrationTest","performanceTest","sign","publish","buildtests"
+$actions = "r","restore","b","build","rebuild","deploy","deployDeps","test","integrationTest","sign","publish","buildtests"
 $actionPassedIn = @(Compare-Object -ReferenceObject @($PSBoundParameters.Keys) -DifferenceObject $actions -ExcludeDifferent -IncludeEqual).Length -ne 0
 if ($null -ne $properties -and $actionPassedIn -ne $true) {
   $actionPassedIn = @(Compare-Object -ReferenceObject $properties -DifferenceObject $actions.ForEach({ "-" + $_ }) -ExcludeDifferent -IncludeEqual).Length -ne 0

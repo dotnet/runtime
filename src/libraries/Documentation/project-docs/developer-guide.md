@@ -44,7 +44,7 @@ For more details on the build configurations see [project-guidelines](../coding-
 
 The most common workflow for developers is to call `build` from the root once and then go and work on the individual library that you are trying to make changes for.
 
-By default build only builds the product libraries and none of the tests. If you want to build the tests you can call `build -buildtests`. If you want to run the tests you can call `build -test` or `build -performanceTest`. To build and run the tests combine both arguments: `build -buildtests -test`. To build both the product libraries and the test libraries pass `build -build -buildtests` to the command line. If you want to further configure which test libraries to build you can pass `/p:TestProjectFilter=Tests|PerformanceTests` to the command. 
+By default build only builds the product libraries and none of the tests. If you want to build the tests you can call `build -buildtests`. If you want to run the tests you can call `build -test`. To build and run the tests combine both arguments: `build -buildtests -test`. To build both the product libraries and the test libraries pass `build -build -buildtests` to the command line.
 
 If you invoke the build script without any argument the default arguments will be executed `-restore -build`. Note that -restore and -build are only implicit if no actions are passed in.
 
@@ -205,6 +205,12 @@ One can build in Debug or Release mode from the root by doing `build -c Release`
 ### Building other Architectures
 
 One can build 32- or 64-bit binaries or for any architecture by specifying in the root `build -arch [value]` or in a project `/p:ArchGroup=[value]` after the `dotnet msbuild` command.
+
+### Benchmarks
+
+All Benchmarks have been moved to the [dotnet/performance/](https://github.com/dotnet/performance/) repository.
+
+Please read the [Benchmarking workflow for CoreFX](https://github.com/dotnet/performance/blob/master/docs/benchmarking-workflow-corefx.md) document to find out how to build and run the Benchmarks.
 
 ### Tests
 

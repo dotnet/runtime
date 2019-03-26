@@ -20,7 +20,7 @@ namespace System.Tests
         //
         // For example, a test with an expect result in the format of 0.xxxxxxxxxxxxxxxxx will use
         // CrossPlatformMachineEpsilon for the variance, while an expected result in the format of 0.0xxxxxxxxxxxxxxxxx
-        // will use CrossPlatformMachineEpsilon / 10 and and expected result in the format of x.xxxxxxxxxxxxxxxx will
+        // will use CrossPlatformMachineEpsilon / 10 and expected result in the format of x.xxxxxxxxxxxxxxxx will
         // use CrossPlatformMachineEpsilon * 10.
         private const double CrossPlatformMachineEpsilon = 8.8817841970012523e-16;
 
