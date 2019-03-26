@@ -1601,52 +1601,54 @@ mono_set_pinvoke_search_directories (int dir_count, char **dirs)
 #endif
 
 static MonoDl*
+pinvoke_probe_for_module_in_directory (const char *mdirname, const char *file_name, char **found_name_out)
+{
+	void *iter = NULL;
+	char *full_name;
+	MonoDl* module = NULL;
+
+	while ((full_name = mono_dl_build_path (mdirname, file_name, &iter)) && module == NULL) {
+		char *error_msg;
+		module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
+		if (!module) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
+			g_free (error_msg);
+		} else {
+			*found_name_out = g_strdup (full_name);
+		}
+		g_free (full_name);
+	}
+
+	return module;
+}
+
+static MonoDl*
 pinvoke_probe_for_module_relative_directories (MonoImage *image, const char *file_name, char **found_name_out)
 {
-	char *full_name;
 	char *found_name = NULL;
 	MonoDl* module = NULL;
 
 	g_assert (found_name_out);
 
-	int j;
-	void *iter;
-	char *mdirname;
-
 #if ENABLE_NETCORE
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "netcore DllImport handler: wanted '%s'", file_name);
 
-	for (j = 0; j < pinvoke_search_directories_count + 1 && module == NULL; ++j) {
-		if (j < pinvoke_search_directories_count) {
-			mdirname = pinvoke_search_directories[j];
-		} else {
-			// TODO: Check DefaultDllImportSearchPathsAttribute, NativeLibrary callback
-			mdirname = g_path_get_dirname (image->name);
-			if (!mdirname)
-				continue;
-		}
+	// Search in predefined directories first
+	for (int j = 0; j < pinvoke_search_directories_count && module == NULL; ++j) {
+		module = pinvoke_probe_for_module_in_directory (pinvoke_search_directories[j], file_name, &found_name);
+	}
 
-		iter = NULL;
-		while ((full_name = mono_dl_build_path (mdirname, file_name, &iter)) && module == NULL) {
-			char *error_msg;
-			module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
-			if (!module) {
-				mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
-				g_free (error_msg);
-			} else {
-				found_name = g_strdup (full_name);
-			}
-			g_free (full_name);
-		}
-
-		if (j >= pinvoke_search_directories_count) {
-			g_free (mdirname);
-		}
+	// Fallback to image directory
+	if (module == NULL) {
+		// TODO: Check DefaultDllImportSearchPathsAttribute, NativeLibrary callback
+		char *mdirname = g_path_get_dirname (image->name);
+		if (mdirname)
+			module = pinvoke_probe_for_module_in_directory (mdirname, file_name, &found_name);
+		g_free (mdirname);
 	}
 #else
-			for (j = 0; j < 3; ++j) {
-				iter = NULL;
-				mdirname = NULL;
+			for (int j = 0; j < 3; ++j) {
+				char *mdirname = NULL;
 				switch (j) {
 					case 0:
 						mdirname = g_path_get_dirname (image->name);
@@ -1700,22 +1702,7 @@ pinvoke_probe_for_module_relative_directories (MonoImage *image, const char *fil
 				if (!mdirname)
 					continue;
 
-				while ((full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
-					char *error_msg;
-					module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
-					if (!module) {
-						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-							"DllImport error loading library '%s': '%s'.",
-									full_name, error_msg);
-						g_free (error_msg);
-					} else {
-						found_name = g_strdup (full_name);
-					}
-					g_free (full_name);
-					if (module)
-						break;
-
-				}
+				module = pinvoke_probe_for_module_in_directory (mdirname, file_name, &found_name);
 				g_free (mdirname);
 				if (module)
 					break;
