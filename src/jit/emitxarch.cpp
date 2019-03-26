@@ -2849,6 +2849,12 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     id->idReg1(dstReg);
     emitHandleMemOp(mem, id, IF_RWR_ARD, ins);
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    if (Is4ByteSSEInstruction(ins))
+    {
+        // The 4-Byte SSE instructions require an additional byte.
+        sz += 1;
+    }
+
     id->idCodeSize(sz);
     dispIns(id);
     emitCurIGsize += sz;
@@ -4037,6 +4043,12 @@ void emitter::emitIns_R_A(instruction ins, emitAttr attr, regNumber reg1, GenTre
     emitHandleMemOp(indir, id, IF_RRW_ARD, ins);
 
     UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    if (Is4ByteSSEInstruction(ins))
+    {
+        // The 4-Byte SSE instructions require an additional byte.
+        sz += 1;
+    }
+
     id->idCodeSize(sz);
 
     dispIns(id);
@@ -4088,8 +4100,8 @@ void emitter::emitIns_R_AR_I(instruction ins, emitAttr attr, regNumber reg1, reg
 
     if (Is4ByteSSEInstruction(ins))
     {
-        // The 4-Byte SSE instructions require two additional bytes
-        sz += 2;
+        // The 4-Byte SSE instructions require an additional byte.
+        sz += 1;
     }
 
     id->idCodeSize(sz);
@@ -5165,8 +5177,8 @@ void emitter::emitIns_R_AR(instruction ins, emitAttr attr, regNumber ireg, regNu
 
     if (Is4ByteSSEInstruction(ins))
     {
-        // The 4-Byte SSE instructions require two additional bytes
-        sz += 2;
+        // The 4-Byte SSE instructions require an additional byte.
+        sz += 1;
     }
 
     id->idCodeSize(sz);
@@ -5640,7 +5652,7 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 
 #ifdef FEATURE_HW_INTRINSICS
 //------------------------------------------------------------------------
-// emitIns_SIMD_R_R_I: emits the code for a SIMD instruction that takes a register operand, an immediate operand
+// emitIns_SIMD_R_R_I: emits the code for an instruction that takes a register operand, an immediate operand
 //                     and that returns a value in register
 //
 // Arguments:
@@ -5649,6 +5661,13 @@ void emitter::emitIns_AX_R(instruction ins, emitAttr attr, regNumber ireg, regNu
 //    targetReg -- The target register
 //    op1Reg    -- The register of the first operand
 //    ival      -- The immediate value
+//
+// Notes:
+//    This will handle the required register copy if 'op1Reg' and 'targetReg' are not the same, and
+//    the 3-operand format is not available.
+//    This is not really SIMD-specific, but is currently only used in that context, as that's
+//    where we frequently need to handle the case of generating 3-operand or 2-operand forms
+//    depending on what target ISA is supported.
 //
 void emitter::emitIns_SIMD_R_R_I(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, int ival)
 {
@@ -5704,12 +5723,14 @@ void emitter::emitIns_SIMD_R_R_A(
 //    targetReg -- The target register
 //    op1Reg    -- The register of the first operand
 //    base      -- The base register used for the memory address
+//    offset    -- The memory offset
 //
-void emitter::emitIns_SIMD_R_R_AR(instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber base)
+void emitter::emitIns_SIMD_R_R_AR(
+    instruction ins, emitAttr attr, regNumber targetReg, regNumber op1Reg, regNumber base, int offset)
 {
     if (UseVEXEncoding())
     {
-        emitIns_R_R_AR(ins, attr, targetReg, op1Reg, base, 0);
+        emitIns_R_R_AR(ins, attr, targetReg, op1Reg, base, offset);
     }
     else
     {
@@ -5717,7 +5738,7 @@ void emitter::emitIns_SIMD_R_R_AR(instruction ins, emitAttr attr, regNumber targ
         {
             emitIns_R_R(INS_movaps, attr, targetReg, op1Reg);
         }
-        emitIns_R_AR(ins, attr, targetReg, base, 0);
+        emitIns_R_AR(ins, attr, targetReg, base, offset);
     }
 }
 

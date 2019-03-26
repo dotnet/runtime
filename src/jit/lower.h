@@ -104,6 +104,7 @@ private:
     void ContainCheckSIMD(GenTreeSIMD* simdNode);
 #endif // FEATURE_SIMD
 #ifdef FEATURE_HW_INTRINSICS
+    void ContainCheckHWIntrinsicAddr(GenTreeHWIntrinsic* node, GenTree** pAddr);
     void ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node);
 #endif // FEATURE_HW_INTRINSICS
 
