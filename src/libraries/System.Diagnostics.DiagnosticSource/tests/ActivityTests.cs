@@ -263,7 +263,6 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void RootId()
         {
-
             var parentIds = new[]{
                 "123",   //Parent does not start with '|' and does not contain '.'
                 "123.1", //Parent does not start with '|' but contains '.'
@@ -610,6 +609,65 @@ namespace System.Diagnostics.Tests
                 Activity.DefaultIdFormat = ActivityIdFormat.Hierarchical;
                 Activity.Current = null;
             }
+        }
+
+        [Fact]
+        public void TraceIdBeforeStartTests()
+        {
+            try
+            {
+                Activity activity;
+
+                // from traceparent header
+                activity = new Activity("activity1");
+                activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01");
+                Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+
+                // from explicit TraceId and SpanId
+                activity = new Activity("activity2");
+                activity.SetParentId(
+                    ActivityTraceId.CreateFromString("0123456789abcdef0123456789abcdef".AsSpan()),
+                    ActivitySpanId.CreateFromString("0123456789abcdef".AsSpan()));
+
+                Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+
+                // from in-proc parent
+                Activity parent = new Activity("parent");
+                parent.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01");
+                parent.Start();
+
+                activity = new Activity("child");
+                activity.Start();
+                Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+                parent.Stop();
+                activity.Stop();
+
+                // no parent
+                Activity.DefaultIdFormat = ActivityIdFormat.W3C;
+                Activity.ForceDefaultIdFormat = true;
+
+                activity = new Activity("activity3");
+                Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
+
+                // from invalid traceparent header
+                activity.SetParentId("123");
+                Assert.Equal("00000000000000000000000000000000", activity.TraceId.ToHexString());
+            }
+            finally
+            {
+                Activity.ForceDefaultIdFormat = false;
+                Activity.DefaultIdFormat = ActivityIdFormat.Hierarchical;
+                Activity.Current = null;
+            }
+        }
+
+        [Fact]
+        public void RootIdBeforeStartTests()
+        {
+            Activity activity = new Activity("activity1");
+            Assert.Null(activity.RootId);
+            activity.SetParentId("|0123456789abcdef0123456789abcdef.0123456789abcdef.");
+            Assert.Equal("0123456789abcdef0123456789abcdef", activity.RootId);
         }
 
         /// <summary>
