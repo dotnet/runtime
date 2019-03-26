@@ -673,7 +673,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     ElseIf leastGeneric IsNot Nothing Then
                         ' The current operator is less generic than an existing operator,
                         ' so remove the existing operator from the list and continue to
-                        ' check if any other exisiting operator can be removed from the
+                        ' check if any other existing operator can be removed from the
                         ' result set.
                         '
                         operatorList.Remove(existing)
@@ -695,7 +695,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             'This function resolves which user-defined conversion operator contained in the input set
             'can be used to perform the conversion from source type S to target type T.
             '
-            'The algorithm defies succinct explaination, but roughly:
+            'The algorithm defies succinct explanation, but roughly:
             '
             'Conversions of the form S-->T use only one user-defined conversion at a time, i.e.,
             'user-defined conversions are not chained together.  It may be necessary to convert to and
@@ -725,7 +725,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             'the largest (most encompassing) type that widens to S.  In this way, the algorithm
             'always prefers widening from S over narrowing from S.
             '
-            'Similarily, each operator presents a possibility for Tx (the return type of the operator).
+            'Similarly, each operator presents a possibility for Tx (the return type of the operator).
             'Given these choices, the "closest" type to T is the largest (most encompassing) type that
             'widens to T.  If none of the possible types widen to T, then the "closest" type to T is
             'the smallest (most encompassed) type that T widens to.  In this way, the algorithm

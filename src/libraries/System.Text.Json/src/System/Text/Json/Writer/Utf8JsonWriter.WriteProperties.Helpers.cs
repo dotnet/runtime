@@ -33,7 +33,7 @@ namespace System.Text.Json
                 if (!_inObject)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, tokenType: _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, currentDepth: default, token: default, _tokenType);
                 }
             }
         }
@@ -46,7 +46,7 @@ namespace System.Text.Json
                 if (!_inObject)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.StartObject);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, tokenType: _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWritePropertyWithinArray, currentDepth: default, token: default, _tokenType);
                 }
                 UpdateBitStackOnStart(token);
             }

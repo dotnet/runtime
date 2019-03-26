@@ -2557,7 +2557,7 @@ MisMatch:
                 ByVal Expression As Object, ByVal TargetType As Type) As Object
 
             Return ObjectUserDefinedConversion(Expression, TargetType)
-        End Function 'FalbackUserDefinedConversion
+        End Function 'FallbackUserDefinedConversion
 
         <DebuggerHidden()>
         <DebuggerStepThrough()>
@@ -2654,7 +2654,7 @@ MisMatch:
 
         End Function 'UserDefinedConversion
 
-        ' Simplied version of ObjectUserDefinedConversion, above
+        ' Simplified version of ObjectUserDefinedConversion, above
         ' Determines if conversion is possible
         Friend Shared Function CanUserDefinedConvert(ByVal Expression As Object, ByVal TargetType As Type) As Boolean
 

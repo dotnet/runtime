@@ -357,8 +357,7 @@ namespace System.Diagnostics.Tests
             }
             finally
             {
-                if (!testProcess.HasExited)
-                    testProcess.Kill();
+                testProcess.Kill();
 
                 Assert.True(testProcess.WaitForExit(WaitInMS));
             }
@@ -438,8 +437,7 @@ namespace System.Diagnostics.Tests
 
                 if (hasStarted)
                 {
-                    if (!p.HasExited)
-                        p.Kill();
+                    p.Kill();
 
                     Assert.True(p.WaitForExit(WaitInMS));
                 }
@@ -994,8 +992,7 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    if (process != null && !process.HasExited)
-                        process.Kill();
+                    process?.Kill();
                 }
             }
         }
@@ -1043,8 +1040,7 @@ namespace System.Diagnostics.Tests
                 }
                 finally
                 {
-                    if (process != null && !process.HasExited)
-                        process.Kill();
+                    process?.Kill();
                 }
             }
         }

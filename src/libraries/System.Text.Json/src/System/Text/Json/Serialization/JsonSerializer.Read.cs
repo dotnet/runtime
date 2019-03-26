@@ -7,6 +7,10 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
 {
+    /// <summary>
+    /// Provides functionality to serialize objects or value types to JSON and
+    /// deserialize JSON into objects or value types.
+    /// </summary>
     public static partial class JsonSerializer
     {
         internal static readonly JsonPropertyInfo s_missingProperty = new JsonPropertyInfoNotNullable<object, object>();

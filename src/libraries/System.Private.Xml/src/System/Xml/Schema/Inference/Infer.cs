@@ -15,7 +15,7 @@ using System.Globalization;
 namespace System.Xml.Schema
 {
     /// <summary>
-    /// Infer class serves for infering XML Schema from given XML instance document.
+    /// Infer class serves for inferring XML Schema from given XML instance document.
     /// </summary>
     public sealed class XmlSchemaInference
     {

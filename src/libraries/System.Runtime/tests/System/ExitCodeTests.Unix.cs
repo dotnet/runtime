@@ -49,7 +49,7 @@ namespace System.Tests
                 Assert.Equal("Application started", processOutput);
 
                 // Send SIGTERM
-                int rv = kill(process.Handle.ToInt32(), SIGTERM);
+                int rv = kill(process.Id, SIGTERM);
                 Assert.Equal(0, rv);
 
                 // Process exits in a timely manner

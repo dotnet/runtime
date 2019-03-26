@@ -263,7 +263,7 @@ A typical use of the `AllListeners` static property looks like this:
 ```
 
 This code basically creates a callback delegate and using the `AllListeners.Subscribe` method requests
-that that delegate be called for every active `DiagnosticListener` in the system. Typically you inspect
+that the delegate be called for every active `DiagnosticListener` in the system. Typically you inspect
 the name of the listener and based on that, decide whether to subscribe to the listener or not. The
 code above is looking for our 'System.Net.Http' listener that we created previously.
 
