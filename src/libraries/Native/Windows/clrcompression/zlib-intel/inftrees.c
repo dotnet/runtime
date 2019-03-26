@@ -87,7 +87,7 @@ unsigned short FAR *work;
 
        This routine assumes, but does not check, that all of the entries in
        lens[] are in the range 0..MAXBITS.  The caller must assure this.
-       1..MAXBITS is interpreted as that code length.  zero means that that
+       1..MAXBITS is interpreted as that code length.  zero means that the
        symbol does not occur in this code.
 
        The codes are sorted by computing a count of codes for each length,

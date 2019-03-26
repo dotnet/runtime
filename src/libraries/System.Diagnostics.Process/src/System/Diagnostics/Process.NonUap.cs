@@ -18,7 +18,7 @@ namespace System.Diagnostics
             }
             else
             {
-                EnsureState(State.Associated | State.IsLocal | State.HaveNonExitedId);
+                EnsureState(State.Associated | State.IsLocal);
 
                 if (IsSelfOrDescendantOf(GetCurrentProcess()))
                     throw new InvalidOperationException(SR.KillEntireProcessTree_DisallowedBecauseTreeContainsCallingProcess);

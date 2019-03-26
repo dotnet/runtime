@@ -13,7 +13,7 @@ internal static partial class Interop
     internal struct UNICODE_STRING
     {
         /// <summary>
-        /// Length, in bytes, not including the the null, if any.
+        /// Length in bytes, not including the null terminator, if any.
         /// </summary>
         internal ushort Length;
 

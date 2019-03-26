@@ -7,11 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Vectors.Tes
 		{53134B0C-0D57-481B-B84E-D1991E8D54FF} = {53134B0C-0D57-481B-B84E-D1991E8D54FF}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Vectors.PerformanceTests", "tests\Performance\System.Numerics.Vectors.PerformanceTests.csproj", "{D9906F1A-A41A-43CD-81D2-BA94CF0001C9}"
-	ProjectSection(ProjectDependencies) = postProject
-		{53134B0C-0D57-481B-B84E-D1991E8D54FF} = {53134B0C-0D57-481B-B84E-D1991E8D54FF}
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Vectors", "src\System.Numerics.Vectors.csproj", "{53134B0C-0D57-481B-B84E-D1991E8D54FF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{650277B5-9423-4ACE-BB54-2659995B21C7} = {650277B5-9423-4ACE-BB54-2659995B21C7}
@@ -35,10 +30,6 @@ Global
 		{99E1E564-0EF4-4E33-BECE-8ABE64771349}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{99E1E564-0EF4-4E33-BECE-8ABE64771349}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{99E1E564-0EF4-4E33-BECE-8ABE64771349}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{D9906F1A-A41A-43CD-81D2-BA94CF0001C9}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
-		{D9906F1A-A41A-43CD-81D2-BA94CF0001C9}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
-		{D9906F1A-A41A-43CD-81D2-BA94CF0001C9}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
-		{D9906F1A-A41A-43CD-81D2-BA94CF0001C9}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{53134B0C-0D57-481B-B84E-D1991E8D54FF}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{53134B0C-0D57-481B-B84E-D1991E8D54FF}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{53134B0C-0D57-481B-B84E-D1991E8D54FF}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
@@ -53,7 +44,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{99E1E564-0EF4-4E33-BECE-8ABE64771349} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
-		{D9906F1A-A41A-43CD-81D2-BA94CF0001C9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{53134B0C-0D57-481B-B84E-D1991E8D54FF} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{650277B5-9423-4ACE-BB54-2659995B21C7} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection

@@ -8,7 +8,7 @@ using Microsoft.Internal;
 
 namespace System.ComponentModel.Composition.Hosting
 {
-    // This a a lock class that needs to be held in order to perform any mutation of the parts/parts state in the composition
+    // This is a lock class that needs to be held in order to perform any mutation of the parts/parts state in the composition
     // Today's implementation relies on the AppDomain-wide re-entrant lock for changes on the composition, and a narrow lock for changes in 
     // the state of the specific ImportEngine
     // Today we make several assumptions to ensure thread-safety:

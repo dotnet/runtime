@@ -6538,7 +6538,7 @@ namespace System.Data.SqlClient
                 if (ADP.IsCatchableExceptionType(e))
                 {
                     // be sure to wipe out our buffer if we started sending stuff
-                    _physicalStateObj._outputPacketNumber = 1;  // end of message - reset to 1 - per ramas
+                    _physicalStateObj.ResetPacketCounters();
                     _physicalStateObj.ResetBuffer();
                 }
 
@@ -6915,7 +6915,7 @@ namespace System.Data.SqlClient
 
             // be sure to wipe out our buffer if we started sending stuff
             stateObj.ResetBuffer();
-            stateObj._outputPacketNumber = 1;  // end of message - reset to 1 - per ramas
+            stateObj.ResetPacketCounters();
 
             if (old_outputPacketNumber != 1 && _state == TdsParserState.OpenLoggedIn)
             {

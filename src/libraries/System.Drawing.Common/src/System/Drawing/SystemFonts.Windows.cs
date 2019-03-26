@@ -214,7 +214,7 @@ namespace System.Drawing
                 {
                     try
                     {
-                        // Use MS Shell Dlg 2, 8pt for anything other than than Japanese.
+                        // Use MS Shell Dlg 2, 8pt for anything other than Japanese.
                         dialogFont = new Font("MS Shell Dlg 2", 8);
                     }
                     catch (ArgumentException)
