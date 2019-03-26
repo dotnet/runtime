@@ -232,6 +232,12 @@
             "Project": "signing\\sign.proj"
           }
         },
+        "test": {
+          "description": "Build tests then run tests. Assumes product packages are already built.",
+          "settings": {
+            "Project": "src\\test\\dir.proj"
+          }
+        },
         "GenerateVersion": {
           "description": "Generates the version header for native binaries.",
           "settings": {
