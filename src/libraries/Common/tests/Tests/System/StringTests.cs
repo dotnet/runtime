@@ -1732,6 +1732,7 @@ namespace System.Tests
         [Fact]
         public static void EndsWith_StringBoolCultureInfo_Valid()
         {
+#pragma warning disable 0618 // suppress obsolete warning for String.Copy
             // Same string
             string s = "foo";
             Assert.True(s.EndsWith(s, false, null));
@@ -1750,6 +1751,7 @@ namespace System.Tests
             // Different object, same string, current culture
             Assert.True(s.EndsWith(string.Copy(s), false, CultureInfo.InvariantCulture));
             Assert.True(s.EndsWith(string.Copy(s), true, CultureInfo.InvariantCulture));
+#pragma warning restore 0618 // restore warning when accessing obsolete members
         }
 
         [Fact]
@@ -7307,12 +7309,14 @@ namespace System.Tests
         [Fact]
         public static unsafe void CopyTest()
         {
+#pragma warning disable 0618 // suppress obsolete warning for String.Copy
             AssertExtensions.Throws<ArgumentNullException>("str", () => string.Copy(null));
 
             string s = "some string to copy";
             string copy = string.Copy(s);
             Assert.Equal(s, copy);
             Assert.False(object.ReferenceEquals(s, copy), "copy should return new instance of the string");
+#pragma warning restore 0618 // restore warning when accessing obsolete members
         }
 
         [Fact]
@@ -7337,6 +7341,7 @@ namespace System.Tests
         [Fact]
         public static void InternalTestAotSubset()
         {
+#pragma warning disable 0618 // suppress obsolete warning for String.Copy
             string emptyFromField = string.Empty;
             string emptyFromInternTable = string.IsInterned(emptyFromField);
             Assert.Same(emptyFromInternTable, emptyFromField);
@@ -7348,6 +7353,7 @@ namespace System.Tests
             Assert.Same(sInterned1, sInterned2);
             string sNew = string.Copy(sInterned1);
             Assert.NotSame(sInterned1, sNew);
+#pragma warning restore 0618 // restore warning when accessing obsolete members
         }
 
         [Fact]

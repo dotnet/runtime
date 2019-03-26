@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Security.Authentication.ExtendedProtection;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace System.Net
@@ -163,16 +164,22 @@ namespace System.Net
                 {
                     throw new ArgumentException(SR.net_listener_slash, nameof(uriPrefix));
                 }
-                registeredPrefix = uriPrefix[j] == ':' ? string.Copy(uriPrefix) : uriPrefix.Substring(0, j) + (i == 7 ? ":80" : ":443") + uriPrefix.Substring(j);
-                fixed (char* pChar = registeredPrefix)
+                StringBuilder registeredPrefixBuilder = new StringBuilder();
+                if (uriPrefix[j] == ':')
                 {
-                    i = 0;
-                    while (pChar[i] != ':')
-                    {
-                        pChar[i] = (char)CaseInsensitiveAscii.AsciiToLower[(byte)pChar[i]];
-                        i++;
-                    }
+                    registeredPrefixBuilder.Append(uriPrefix);
                 }
+                else
+                {
+                    registeredPrefixBuilder.Append(uriPrefix, 0, j);
+                    registeredPrefixBuilder.Append(i == 7 ? ":80" : ":443");
+                    registeredPrefixBuilder.Append(uriPrefix, j, uriPrefix.Length - j);
+                }
+                for (i = 0; registeredPrefixBuilder[i] != ':'; i++)
+                {
+                    registeredPrefixBuilder[i] = (char)CaseInsensitiveAscii.AsciiToLower[(byte)registeredPrefixBuilder[i]];
+                }
+                registeredPrefix = registeredPrefixBuilder.ToString();
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"mapped uriPrefix: {uriPrefix} to registeredPrefix: {registeredPrefix}");
                 if (_state == State.Started)
                 {
