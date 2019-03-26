@@ -31,20 +31,9 @@ namespace System.Diagnostics
 
         static Stopwatch()
         {
-            bool succeeded = QueryPerformanceFrequency(out Frequency);
-
-            if (!succeeded)
-            {
-                IsHighResolution = false;
-                Frequency = TicksPerSecond;
-                s_tickFrequency = 1;
-            }
-            else
-            {
-                IsHighResolution = true;
-                s_tickFrequency = TicksPerSecond;
-                s_tickFrequency /= Frequency;
-            }
+            Frequency = QueryPerformanceFrequency();
+            IsHighResolution = true;
+            s_tickFrequency = (double)TicksPerSecond / Frequency;
         }
 
         public Stopwatch()
@@ -129,16 +118,8 @@ namespace System.Diagnostics
 
         public static long GetTimestamp()
         {
-            if (IsHighResolution)
-            {
-                long timestamp = 0;
-                QueryPerformanceCounter(out timestamp);
-                return timestamp;
-            }
-            else
-            {
-                return DateTime.UtcNow.Ticks;
-            }
+            Debug.Assert(IsHighResolution);
+            return QueryPerformanceCounter();
         }
 
         // Get the elapsed ticks.        
@@ -160,18 +141,9 @@ namespace System.Diagnostics
         // Get the elapsed ticks.        
         private long GetElapsedDateTimeTicks()
         {
-            long rawTicks = GetRawElapsedTicks();
-            if (IsHighResolution)
-            {
-                // convert high resolution perf counter to DateTime ticks
-                double dticks = rawTicks;
-                dticks *= s_tickFrequency;
-                return unchecked((long)dticks);
-            }
-            else
-            {
-                return rawTicks;
-            }
+            Debug.Assert(IsHighResolution);
+            // convert high resolution perf counter to DateTime ticks
+            return unchecked((long)(GetRawElapsedTicks() * s_tickFrequency));
         }
     }
 }
