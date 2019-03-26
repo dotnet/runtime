@@ -296,12 +296,7 @@ namespace System.Net
                 {
                     if (!s_initialized)
                     {
-                        Interop.Winsock.WSAData wsaData = new Interop.Winsock.WSAData();
-
-                        SocketError errorCode =
-                            Interop.Winsock.WSAStartup(
-                                (short)0x0202, // we need 2.2
-                                out wsaData);
+                        SocketError errorCode = Interop.Winsock.WSAStartup();
 
                         if (errorCode != SocketError.Success)
                         {

@@ -99,9 +99,7 @@ namespace System.Net.Security
             SafeGssCredHandle credential,
             bool isNtlm,
             ChannelBinding channelBinding,
-            bool isNtlmFallback,
-            SafeGssNameHandle targetNameKerberos,
-            SafeGssNameHandle targetNameNtlm,
+            SafeGssNameHandle targetName,
             Interop.NetSecurityNative.GssFlags inFlags,
             byte[] buffer,
             out byte[] outputBuffer,
@@ -143,9 +141,7 @@ namespace System.Net.Security
                                                           isNtlm,
                                                           cbtAppData,
                                                           cbtAppDataSize,
-                                                          isNtlmFallback,
-                                                          targetNameKerberos,
-                                                          targetNameNtlm,
+                                                          targetName,
                                                           (uint)inFlags,
                                                           buffer,
                                                           (buffer == null) ? 0 : buffer.Length,
@@ -180,7 +176,6 @@ namespace System.Net.Security
           ref ContextFlagsPal outFlags)
         {
             bool isNtlmOnly = credential.IsNtlmOnly;
-            bool initialContext = false;
 
             if (context == null)
             {
@@ -190,7 +185,6 @@ namespace System.Net.Security
                     NetEventSource.Info(null, $"requested protocol = {protocol}, target = {targetName}");
                 }
 
-                initialContext = true;
                 context = new SafeDeleteNegoContext(credential, targetName);
             }
 
@@ -207,27 +201,19 @@ namespace System.Net.Security
                    credential.GssCredential,
                    isNtlmOnly,
                    channelBinding,
-                   negoContext.IsNtlmFallback,
-                   negoContext.TargetNameKerberos,
-                   negoContext.TargetNameNtlm,
+                   negoContext.TargetName,
                    inputFlags,
                    incomingBlob,
                    out resultBuffer,
                    out outputFlags,
                    out isNtlmUsed);
 
-                if (initialContext)
+                if (done)
                 {
                     if (NetEventSource.IsEnabled)
                     {
                         string protocol = isNtlmOnly ? "NTLM" : isNtlmUsed ? "SPNEGO-NTLM" : "SPNEGO-Kerberos";
                         NetEventSource.Info(null, $"actual protocol = {protocol}");
-                    }
-
-                    // Remember if SPNEGO did a fallback from Kerberos to NTLM while generating the initial context.                 
-                    if (!isNtlmOnly && isNtlmUsed)
-                    {
-                        negoContext.IsNtlmFallback = true;
                     }
 
                     // Populate protocol used for authentication

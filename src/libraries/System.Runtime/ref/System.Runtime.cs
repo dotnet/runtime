@@ -2344,6 +2344,8 @@ namespace System
         public bool Contains(char value, System.StringComparison comparisonType) { throw null; }
         public bool Contains(System.String value) { throw null; }
         public bool Contains(System.String value, System.StringComparison comparisonType) { throw null; }
+        [System.ObsoleteAttribute("This API should not be used to create mutable strings. See https://go.microsoft.com/fwlink/?linkid=2084035 for alternatives.")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public static System.String Copy(System.String str) { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
         public static System.String Create<TState>(int length, TState state, System.Buffers.SpanAction<char, TState> action) { throw null; }

@@ -11,7 +11,16 @@ namespace System
 {
     public static class Console
     {
-        private const int DefaultConsoleBufferSize = 256; // default size of buffer used in stream readers/writers
+        // Unlike many other buffer sizes throughout .NET, which often only affect performance, this buffer size has a
+        // functional impact on interactive console apps, where the size of the buffer passed to ReadFile/Console impacts
+        // how many characters the cmd window will allow to be typed as part of a single line. It also does affect perf,
+        // in particular when input is redirected and data may be consumed from a larger source. This 4K default size is the
+        // same as is currently used by most other environments/languages tried.
+        internal const int ReadBufferSize = 4096;
+        // There's no visible functional impact to the write buffer size, and as we auto flush on every write,
+        // there's little benefit to having a large buffer.  So we use a smaller buffer size to reduce working set.
+        private const int WriteBufferSize = 256;
+
         private static object InternalSyncObject = new object(); // for synchronizing changing of Console's static fields
         private static TextReader s_in;
         private static TextWriter s_out, s_error;
@@ -44,7 +53,7 @@ namespace System
 
                     Volatile.Write(ref s_inputEncoding, (Encoding)value.Clone());
 
-                    // We need to reinitialize Console.In in the next call to s_in
+                    // We need to reinitialize 'Console.In' in the next call to s_in
                     // This will discard the current StreamReader, potentially 
                     // losing buffered data.
                     Volatile.Write(ref s_in, null);
@@ -120,7 +129,7 @@ namespace System
                 new StreamWriter(
                     stream: outputStream,
                     encoding: OutputEncoding.RemovePreamble(), // This ensures no prefix is written to the stream.
-                    bufferSize: DefaultConsoleBufferSize,
+                    bufferSize: WriteBufferSize,
                     leaveOpen: true) { AutoFlush = true });
         }
 

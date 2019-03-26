@@ -250,7 +250,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (buffPtr != IntPtr.Zero)
                 return buffPtr;
 
-            // Ok, we we are not yet pinned. Let's do it.
+            // Ok, we are not yet pinned. Let's do it.
             return new IntPtr(PinUnderlyingData());
         }
 

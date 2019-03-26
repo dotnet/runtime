@@ -763,7 +763,6 @@ namespace System.Net
         }
 
 
-        //public Version Version {
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
