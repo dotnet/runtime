@@ -144,14 +144,6 @@ namespace System.Data.SqlClient.SNI
 
         internal override PacketHandle CreateAndSetAttentionPacket()
         {
-            //if (_sniAsyncAttnPacket == null)
-            //{
-            //    SNIPacket attnPacket = new SNIPacket();
-            //    SetPacketData(PacketHandle.FromManagedPacket(attnPacket), SQL.AttentionHeader, TdsEnums.HEADER_LEN);
-            //    _sniAsyncAttnPacket = attnPacket;
-            //}
-            //return PacketHandle.FromManagedPacket(_sniAsyncAttnPacket);
-
             PacketHandle packetHandle = GetResetWritePacket(TdsEnums.HEADER_LEN);
             SetPacketData(packetHandle, SQL.AttentionHeader, TdsEnums.HEADER_LEN);
             return packetHandle;
