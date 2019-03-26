@@ -1083,7 +1083,7 @@ Namespace Microsoft.VisualBasic.FileIO
         '''   ArgumentException: If Source or Target is device path (\\.\).
         '''   FileNotFoundException: If SourceFilePath does not exist (including pointing to an existing directory).
         '''   IOException: If TargetFilePath points to an existing directory.
-        '''   ArgumenNullException: If NewName = "".
+        '''   ArgumentNullException: If NewName = "".
         '''   ArgumentException: If NewName contains path information.
         ''' </exception>
         Private Shared Sub CopyOrMoveFile(ByVal operation As CopyOrMove,

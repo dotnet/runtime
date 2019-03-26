@@ -195,7 +195,7 @@ namespace System.Text.Json
         private void WriteStart(byte token)
         {
             if (CurrentDepth >= JsonConstants.MaxWriterDepth)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth, token: default, tokenType: default);
 
             if (_writerOptions.IndentedOrNotSkipValidation)
             {
@@ -259,14 +259,14 @@ namespace System.Text.Json
             if (_inObject)
             {
                 Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty, tokenType: _tokenType);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty, currentDepth: default, token: default, _tokenType);
             }
             else
             {
                 Debug.Assert(_tokenType != JsonTokenType.StartObject);
                 if (_tokenType != JsonTokenType.None && (!_isNotPrimitive || CurrentDepth == 0))
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayAfterPrimitiveOrClose, tokenType: _tokenType);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayAfterPrimitiveOrClose, currentDepth: default, token: default, _tokenType);
                 }
             }
         }
@@ -684,14 +684,14 @@ namespace System.Text.Json
         private void ValidateEnd(byte token)
         {
             if (_bitStack.CurrentDepth <= 0)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, token);
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, tokenType: default);
 
             if (token == JsonConstants.CloseBracket)
             {
                 if (_inObject)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.None);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, token);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, tokenType: default);
                 }
             }
             else
@@ -700,7 +700,7 @@ namespace System.Text.Json
 
                 if (!_inObject)
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, token);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, tokenType: default);
                 }
             }
 

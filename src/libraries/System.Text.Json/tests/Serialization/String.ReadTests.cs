@@ -9,10 +9,10 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class StringTests
     {
         [Fact]
-        public static void NullObjectInputFail()
+        public static void ParseNullArgumentFail()
         {
-
             Assert.Throws<ArgumentNullException>(() => JsonSerializer.Parse<string>((string)null));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Parse("1", (Type)null));
         }
 
         [Fact]

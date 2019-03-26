@@ -38,23 +38,23 @@ namespace System.Text.Json.Serialization.Tests
         public double MyDouble { get; set; }
         public DateTime MyDateTime { get; set; }
         public SampleEnum MyEnum { get; set; }
-        public short[] MyInt16Array{ get; set; }
-        public int[] MyInt32Array{ get; set; }
-        public long[] MyInt64Array{ get; set; }
-        public ushort[] MyUInt16Array{ get; set; }
-        public uint[] MyUInt32Array{ get; set; }
-        public ulong[] MyUInt64Array{ get; set; }
-        public byte[] MyByteArray{ get; set; }
-        public sbyte[] MySByteArray{ get; set; }
-        public char[] MyCharArray{ get; set; }
-        public string[] MyStringArray{ get; set; }
-        public decimal[] MyDecimalArray{ get; set; }
-        public bool[] MyBooleanTrueArray{ get; set; }
-        public bool[] MyBooleanFalseArray{ get; set; }
-        public float[] MySingleArray{ get; set; }
-        public double[] MyDoubleArray{ get; set; }
-        public DateTime[] MyDateTimeArray{ get; set; }
-        public SampleEnum[] MyEnumArray{ get; set; }
+        public short[] MyInt16Array { get; set; }
+        public int[] MyInt32Array { get; set; }
+        public long[] MyInt64Array { get; set; }
+        public ushort[] MyUInt16Array { get; set; }
+        public uint[] MyUInt32Array { get; set; }
+        public ulong[] MyUInt64Array { get; set; }
+        public byte[] MyByteArray { get; set; }
+        public sbyte[] MySByteArray { get; set; }
+        public char[] MyCharArray { get; set; }
+        public string[] MyStringArray { get; set; }
+        public decimal[] MyDecimalArray { get; set; }
+        public bool[] MyBooleanTrueArray { get; set; }
+        public bool[] MyBooleanFalseArray { get; set; }
+        public float[] MySingleArray { get; set; }
+        public double[] MyDoubleArray { get; set; }
+        public DateTime[] MyDateTimeArray { get; set; }
+        public SampleEnum[] MyEnumArray { get; set; }
 
         public static readonly string s_json =
                 @"{" +
@@ -600,7 +600,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class EmptyClass { }
 
-    public class BasicJson : ITestClass
+    public class BasicPerson : ITestClass
     {
         public int age { get; set; }
         public string first { get; set; }
@@ -656,5 +656,77 @@ namespace System.Text.Json.Serialization.Tests
         public string street { get; set; }
         public string city { get; set; }
         public int zip { get; set; }
+    }
+
+    public class BasicCompany : ITestClass
+    {
+        public List<BasicJsonAddress> sites { get; set; }
+        public BasicJsonAddress mainSite { get; set; }
+        public string name { get; set; }
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
+            "{" +
+                @"""name"" : ""Microsoft""," +
+                @"""sites"" : [" +
+                    "{" +
+                        @"""street"" : ""1 Lone Tree Rd S""," +
+                        @"""city"" : ""Fargo""," +
+                        @"""zip"" : 58104" +
+                    "}," +
+                    "{" +
+                        @"""street"" : ""8055 Microsoft Way""," +
+                        @"""city"" : ""Charlotte""," +
+                        @"""zip"" : 28273" +
+                    "}" +
+                @"]," +
+                @"""mainSite"" : " +
+                    "{" +
+                        @"""street"" : ""1 Microsoft Way""," +
+                        @"""city"" : ""Redmond""," +
+                        @"""zip"" : 98052" +
+                    "}" +
+            "}");
+
+        public void Initialize()
+        {
+            name = "Microsoft";
+            sites = new List<BasicJsonAddress>
+            {
+                new BasicJsonAddress
+                {
+                    street = "1 Lone Tree Rd S",
+                    city = "Fargo",
+                    zip = 58104
+                },
+                new BasicJsonAddress
+                {
+                    street = "8055 Microsoft Way",
+                    city = "Charlotte",
+                    zip = 28273
+                }
+            };
+
+            mainSite =
+                new BasicJsonAddress
+                {
+                    street = "1 Microsoft Way",
+                    city = "Redmond",
+                    zip = 98052
+                };
+        }
+
+        public void Verify()
+        {
+            Assert.Equal("Microsoft", name);
+            Assert.Equal("1 Lone Tree Rd S", sites[0].street);
+            Assert.Equal("Fargo", sites[0].city);
+            Assert.Equal(58104, sites[0].zip);
+            Assert.Equal("8055 Microsoft Way", sites[1].street);
+            Assert.Equal("Charlotte", sites[1].city);
+            Assert.Equal(28273, sites[1].zip);
+            Assert.Equal("1 Microsoft Way", mainSite.street);
+            Assert.Equal("Redmond", mainSite.city);
+            Assert.Equal(98052, mainSite.zip);
+        }
     }
 }

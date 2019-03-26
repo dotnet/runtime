@@ -82,7 +82,7 @@ namespace XLinqTests
         // - only one root element
         // - no CDATA,
         // - no Attribute
-        // - no no text (except whitespace)
+        // - no text (except whitespace)
 
         //[Variation(Priority = 1, Desc = "XDocument invalid add - double DTD")]
         public void InvalidAddIntoXDocument1()

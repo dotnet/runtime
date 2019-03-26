@@ -189,7 +189,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         ' LateCallInvokeDefault is used to optionally invoke the default action on a call target.
-        ' If the arguemnts are non-empty, then it isn't optional, and is treated
+        ' If the arguments are non-empty, then it isn't optional, and is treated
         ' as an error if there is no default action.
         ' Currently we can get here only in the process of execution of NewLateBinding.LateCall. 
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>
@@ -204,7 +204,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         ' LateGetInvokeDefault is used to optionally invoke the default action.
-        ' If the arguemnts are non-empty, then it isn't optional, and is treated
+        ' If the arguments are non-empty, then it isn't optional, and is treated
         ' as an error if there is no default action.
         ' Currently we can get here only in the process of execution of NewLateBinding.LateGet. 
         <System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)>

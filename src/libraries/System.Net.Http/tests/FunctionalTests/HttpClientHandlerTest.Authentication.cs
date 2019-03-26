@@ -522,6 +522,41 @@ namespace System.Net.Http.Functional.Tests
 
         private static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
         private static bool IsWindowsServerAvailable => !string.IsNullOrEmpty(Configuration.Http.WindowsServerHttpHost);
+        private static bool IsDomainJoinedServerAvailable => !string.IsNullOrEmpty(Configuration.Http.DomainJoinedHttpHost);
+
+        [ConditionalFact(nameof(IsDomainJoinedServerAvailable))]
+        public async Task Credentials_DomainJoinedServerUsesKerberos_Success()
+        {
+            if (IsCurlHandler)
+            {
+                throw new SkipTestException("Skipping test on CurlHandler (libCurl)");
+            }
+
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (var client = new HttpClient(handler))
+            {
+                handler.Credentials = new NetworkCredential(
+                    Configuration.Security.ActiveDirectoryUserName,
+                    Configuration.Security.ActiveDirectoryUserPassword,
+                    Configuration.Security.ActiveDirectoryName);
+
+                var request = new HttpRequestMessage();
+                var server = $"http://{Configuration.Http.DomainJoinedHttpHost}/test/auth/kerberos/showidentity.ashx";
+                request.RequestUri = new Uri(server);
+
+                // Force HTTP/1.1 since both CurlHandler and SocketsHttpHandler have problems with
+                // HTTP/2.0 and Windows authentication (due to HTTP/2.0 -> HTTP/1.1 downgrade handling).
+                // Issue #35195 (for SocketsHttpHandler).
+                request.Version = new Version(1,1);
+
+                using (HttpResponseMessage response = await client.SendAsync(request))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    string body = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(body);
+                }
+            }
+        }
 
         [ConditionalTheory(nameof(IsNtlmInstalled), nameof(IsWindowsServerAvailable))]
         [MemberData(nameof(ServerUsesWindowsAuthentication_MemberData))]

@@ -460,7 +460,7 @@ namespace System.Transactions.Tests
                 {
                     try
                     {
-                        // Since we use BlockCommitUntilComplete dependent transaction to syncronize the root TransactionScope, the ambient Tx may not be available and will be be disposed and block on Commit.
+                        // Since we use BlockCommitUntilComplete dependent transaction to syncronize the root TransactionScope, the ambient Tx may not be available and will be disposed and block on Commit.
                         // The flag will ensure we explicitly syncronize before disposing the root TransactionScope and the ambient transaction will still be available in the Task.
                         if (syncronizeScope)
                         {

@@ -457,7 +457,7 @@ namespace System.Globalization
 
             DateBuffer lunarDate = new DateBuffer();    // lunar month and day for Jan 1
 
-            // From the table looking-up value of HebrewTable[index] (stored in lunarDate.day), we get the the
+            // From the table looking-up value of HebrewTable[index] (stored in lunarDate.day), we get the
             // lunar month and lunar day where the Gregorian date 1/1 falls.
             lunarDate.year = gregorianYear + HebrewYearOf1AD;
             hebrewYearType = GetLunarMonthDay(gregorianYear, lunarDate);

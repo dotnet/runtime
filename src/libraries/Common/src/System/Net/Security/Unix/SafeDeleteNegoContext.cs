@@ -12,28 +12,13 @@ namespace System.Net.Security
 {
     internal sealed class SafeDeleteNegoContext : SafeDeleteContext
     {
-        private SafeGssNameHandle _targetNameKerberos;
-        private SafeGssNameHandle _targetNameNtlm;
+        private SafeGssNameHandle _targetName;
         private SafeGssContextHandle _context;
-        private bool _isNtlmFallback;
         private bool _isNtlmUsed;
-
-        public SafeGssNameHandle TargetNameKerberos
+        
+        public SafeGssNameHandle TargetName
         {
-            get { return _targetNameKerberos; }
-        }
-
-        public SafeGssNameHandle TargetNameNtlm
-        {
-            get { return _targetNameNtlm; }
-        }
-
-        // Property represents if SPNEGO needed to fall back from Kerberos to NTLM when
-        // generating initial context token.
-        public bool IsNtlmFallback
-        {
-            get { return _isNtlmFallback; }
-            set { _isNtlmFallback = value; }
+            get { return _targetName; }
         }
 
         // Property represents if final protocol negotiated is Ntlm or not.
@@ -53,8 +38,10 @@ namespace System.Net.Security
             Debug.Assert((null != credential), "Null credential in SafeDeleteNegoContext");
             try
             {
-                _targetNameKerberos = SafeGssNameHandle.CreateTarget(targetName, isNtlmTarget: false);
-                _targetNameNtlm = SafeGssNameHandle.CreateTarget(targetName, isNtlmTarget: true);
+                // Convert any "SERVICE/HOST" style of targetName to use "SERVICE@HOST" style.
+                // This is because the System.Net.Security.Native GSS-API layer uses
+                // GSS_C_NT_HOSTBASED_SERVICE format for targetName.
+                _targetName = SafeGssNameHandle.CreateTarget(targetName.Replace('/', '@'));
             }
             catch
             {
@@ -84,16 +71,10 @@ namespace System.Net.Security
                     _context = null;
                 }
 
-                if (_targetNameKerberos != null)
+                if (_targetName != null)
                 {
-                    _targetNameKerberos.Dispose();
-                    _targetNameKerberos = null;
-                }
-
-                if (_targetNameNtlm != null)
-                {
-                    _targetNameNtlm.Dispose();
-                    _targetNameNtlm = null;
+                    _targetName.Dispose();
+                    _targetName = null;
                 }
             }
             base.Dispose(disposing);

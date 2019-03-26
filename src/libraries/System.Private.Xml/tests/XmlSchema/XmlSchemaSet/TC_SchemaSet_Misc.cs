@@ -1023,7 +1023,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(Desc = "615444 XmlSchema.Write ((XmlWriter)null) throws InvalidOperationException instead of ArgumenNullException")]
+        //[Variation(Desc = "615444 XmlSchema.Write ((XmlWriter)null) throws InvalidOperationException instead of ArgumentNullException")]
         [Fact]
         public void v125()
         {

@@ -133,7 +133,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var catalogExports = catalog.GetExports(definition);
                 if (catalogExports != ComposablePartCatalog._EmptyExportsList)
                 {
-                    // ideally this is is the case we will always hit
+                    // ideally this is the case we will always hit
                     if (result == null)
                     {
                         result = catalogExports;

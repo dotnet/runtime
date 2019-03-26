@@ -952,7 +952,7 @@ namespace System.IO.Ports.Tests
 
                 if (encoding.EncodingName == Encoding.UTF7.EncodingName)
                 {
-                    //If UTF7Encoding is being used we we might leave a - in the stream
+                    //If UTF7Encoding is being used we might leave a - in the stream
                     if (com1.BytesToRead == xmitByteBuffer.Length + 1)
                     {
                         int byteRead;

@@ -238,6 +238,9 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.RestoreAndHandleCtrl.cs">
       <Link>Common\Interop\Unix\Interop.RestoreAndHandleCtrl.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SetTerminalInvalidationHandler.cs">
+      <Link>Common\Interop\Unix\Interop.SetTerminalInvalidationHandler.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SetSignalForBreak.cs">
       <Link>Common\Interop\Unix\Interop.SetSignalForBreak.cs</Link>
     </Compile>
