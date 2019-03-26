@@ -2360,12 +2360,14 @@ static void
 emit_args_to_vtype (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMValueRef address, LLVMArgInfo *ainfo, LLVMValueRef *args)
 {
 	int j, size, nslots;
+	MonoClass *klass;
 
-	size = mono_class_value_size (mono_class_from_mono_type_internal (t), NULL);
+	t = mini_get_underlying_type (t);
+	klass = mono_class_from_mono_type_internal (t);
+	size = mono_class_value_size (klass, NULL);
 
-	if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (t))) {
+	if (MONO_CLASS_IS_SIMD (ctx->cfg, klass))
 		address = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (LLVMInt8Type (), 0), "");
-	}
 
 	if (ainfo->storage == LLVMArgAsFpArgs)
 		nslots = ainfo->nslots;
@@ -2386,7 +2388,7 @@ emit_args_to_vtype (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 		switch (ainfo->pair_storage [j]) {
 		case LLVMArgInIReg: {
 			part_type = LLVMIntType (part_size * 8);
-			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (t))) {
+			if (MONO_CLASS_IS_SIMD (ctx->cfg, klass)) {
 				index [0] = LLVMConstInt (LLVMInt32Type (), j * TARGET_SIZEOF_VOID_P, FALSE);
 				addr = LLVMBuildGEP (builder, address, index, 1, "");
 			} else {

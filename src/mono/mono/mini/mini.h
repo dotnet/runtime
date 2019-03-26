@@ -623,7 +623,7 @@ typedef struct {
 	LLVMArgStorage storage;
 
 	/*
-	 * Only if storage == ArgValuetypeInReg/LLVMArgAsFpArgs.
+	 * Only if storage == ArgVtypeInReg/LLVMArgAsFpArgs.
 	 * This contains how the parts of the vtype are passed.
 	 */
 	LLVMArgStorage pair_storage [8];
