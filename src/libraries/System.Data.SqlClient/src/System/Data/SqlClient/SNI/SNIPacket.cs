@@ -32,8 +32,8 @@ namespace System.Data.SqlClient.SNI
         private byte[] _data;
         private SNIAsyncCallback _completionCallback;
 
-        public SNIPacket(int capacity, bool reserveMuxHeader=false)
-		{
+        public SNIPacket(int capacity, bool reserveMuxHeader = false)
+        {
             Allocate(capacity, reserveMuxHeader);
         }
 
@@ -98,7 +98,7 @@ namespace System.Data.SqlClient.SNI
                 else
                 {
                     // if the current array is big enough and rented keep it
-                    flags |= (_flags & SNIPacketFlags.ArrayFromPool); 
+                    flags |= (_flags & SNIPacketFlags.ArrayFromPool);
                 }
             }
 
@@ -175,7 +175,7 @@ namespace System.Data.SqlClient.SNI
                 size = _length - _offset;
             }
 
-            Buffer.BlockCopy(_data, (_header + _offset), buffer, dataOffset, size);
+            Buffer.BlockCopy(_data, _header + _offset, buffer, dataOffset, size);
             _offset += size;
             return size;
         }
