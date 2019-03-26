@@ -3510,6 +3510,26 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     costSz = 2 * 2;
                     break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(_TARGET_XARCH_)
+                case GT_HWIntrinsic:
+                {
+                    if (tree->AsHWIntrinsic()->OperIsMemoryLoadOrStore())
+                    {
+                        costEx = IND_COST_EX;
+                        costSz = 2;
+                        // See if we can form a complex addressing mode.
+
+                        GenTree* addr = op1->gtEffectiveVal();
+
+                        if (addr->OperIs(GT_ADD) && gtMarkAddrMode(addr, &costEx, &costSz, tree->TypeGet()))
+                        {
+                            goto DONE;
+                        }
+                    }
+                }
+                break;
+#endif // FEATURE_HW_INTRINSICS && _TARGET_XARCH_
+
                 case GT_BLK:
                 case GT_IND:
 
