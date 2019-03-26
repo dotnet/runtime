@@ -158,12 +158,13 @@ case "$host" in
 			fi
 		fi
 		HOST_CC="gcc"
-
+		RID="win-x86"
 		# Boehm not supported on 64-bit Windows.
 		case "$host" in
 		x86_64-*-* | amd64-*-*)
 			support_boehm=no
 			with_gc=sgen
+			RID="win-x64"
 			;;
 		esac
 
@@ -317,9 +318,30 @@ case "$host" in
 			;;
 		esac
 		case "$host" in
+		ppc64-*)
+			RID="linux-ppc64"
+			;;
+		ppc64le-*)
+			RID="linux-ppc64el"
+			;;
+		mipsel-*)
+			RID="linux-mipsel"
+			;;
+		x86-*)
+			RID="linux-x86"
+			;;
+		x86_64-*)
+			RID="linux-x64"
+			;;
+		arm-*)
+			# deal with this in the FPU detection section, since
+			# we cannot determine FPU from triplet and don't want
+			# to duplicate the logic
+			;;
 		aarch64-*)
 			support_boehm=no
 			with_gc=sgen
+			RID="linux-arm64"
 			;;
 		powerpc*-*-linux*)
 			# https://bugzilla.novell.com/show_bug.cgi?id=504411
@@ -393,9 +415,11 @@ case "$host" in
 				CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC $BROKEN_DARWIN_CPPFLAGS"
 				CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC $BROKEN_DARWIN_FLAGS"
 				with_sgen_default_concurrent=yes
+				RID="osx-x86"
 				;;
 			x*64-*-darwin*)
 				with_sgen_default_concurrent=yes
+				RID="osx-x64"
 				;;
 			arm*-darwin*)
 				platform_ios=yes
@@ -454,6 +478,7 @@ case "$host" in
 		with_tls=pthread
 		dnl ppc Linux is the same? test further
 		disable_munmap=yes
+		RID="aix-ppc64"
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.ac checks!])
@@ -5198,7 +5223,16 @@ if test ${TARGET} = ARM; then
 		AC_DEFINE(HAVE_ARMV7, 1, [ARM v7])
 		CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DHAVE_ARMV7=1"
 	fi
+
+	if test x$host_linux = xyes; then
+		RID="linux-arm"
+		if test x$fpu = xNONE; then
+			RID="linux-armel"
+		fi
+	fi
 fi
+
+AC_SUBST(RID)
 
 if test ${TARGET} = RISCV32 -o ${TARGET} = RISCV64; then
 	AC_ARG_WITH([riscv-fpabi], [  --with-riscv-fpabi=auto,double,soft   Select RISC-V floating point ABI (auto)], [fpabi=$withval], [fpabi=double])
