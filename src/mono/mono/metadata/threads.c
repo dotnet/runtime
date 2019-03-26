@@ -1706,7 +1706,7 @@ void
 ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThreadHandle this_obj_handle, MonoError *error)
 {
 	MonoInternalThread *this_obj = mono_internal_thread_handle_ptr (this_obj_handle);
-	THREAD_DEBUG (g_message ("%s: Closing thread %p, handle %p", __func__, this, this_obj->handle));
+	THREAD_DEBUG (g_message ("%s: Closing thread %p, handle %p", __func__, this_obj, this_obj->handle));
 
 	/*
 	 * Since threads keep a reference to their thread object while running, by
@@ -6681,7 +6681,7 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 
 	internal->state &= ~ThreadState_Unstarted;
 
-	THREAD_DEBUG (g_message ("%s: Started thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, tid, thread));
+	THREAD_DEBUG (g_message ("%s: Started thread ID %" G_GSIZE_FORMAT " (handle %p)", __func__, (gsize)internal->tid, internal->handle));
 
 	UNLOCK_THREAD (internal);
 }
