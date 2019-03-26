@@ -519,7 +519,7 @@ namespace System.Management
         /// <param name=' useAmendedQualifiers'><see langword='true'/> to specify whether the returned objects should contain amended (locale-aware) qualifiers; otherwise, <see langword='false'/> .</param>
         /// <param name=' ensureLocatable'><see langword='true'/> to specify to WMI that it should ensure all returned objects have valid paths; otherwise, <see langword='false'/> .</param>
         /// <param name=' prototypeOnly'><see langword='true'/> to return a prototype of the result set instead of the actual results; otherwise, <see langword='false'/> .</param>
-        /// <param name=' directRead'><see langword='true'/> to to retrieve objects of only the specified class only or from derived classes as well; otherwise, <see langword='false'/> .</param>
+        /// <param name=' directRead'><see langword='true'/> to retrieve objects of only the specified class only or from derived classes as well; otherwise, <see langword='false'/> .</param>
         /// <param name=' enumerateDeep'><see langword='true'/> to specify recursive enumeration in subclasses; otherwise, <see langword='false'/> .</param>
         public EnumerationOptions(
             ManagementNamedValueCollection context, 

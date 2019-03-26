@@ -421,6 +421,37 @@ namespace System.Diagnostics.Tests
             parentActivity.Stop();
         }
 
+
+        [OuterLoop]
+        [Fact]
+        public async Task TestInvalidBaggage()
+        {
+            var parentActivity = new Activity("parent")
+                .AddBaggage("key", "value")
+                .AddBaggage("bad/key", "value")
+                .AddBaggage("goodkey", "bad/value")
+                .Start();
+            using (var eventRecords = new EventObserverAndRecorder())
+            {
+                using (var client = new HttpClient())
+                {
+                    (await client.GetAsync(Configuration.Http.RemoteEchoServer)).Dispose();
+                }
+
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Start")));
+                Assert.Equal(1, eventRecords.Records.Count(rec => rec.Key.EndsWith("Stop")));
+
+                WebRequest thisRequest = ReadPublicProperty<WebRequest>(eventRecords.Records.First().Value, "Request");
+                string[] correlationContext = thisRequest.Headers["Correlation-Context"].Split(',');
+
+                Assert.Equal(3, correlationContext.Length);
+                Assert.True(correlationContext.Contains("key=value"));
+                Assert.True(correlationContext.Contains("bad%2Fkey=value"));
+                Assert.True(correlationContext.Contains("goodkey=bad%2Fvalue"));
+            }
+            parentActivity.Stop();
+        }
+
         /// <summary>
         /// Tests IsEnabled order and parameters
         /// </summary>

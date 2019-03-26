@@ -30,11 +30,8 @@ namespace System.Diagnostics.Tests
             {
                 try
                 {
-                    if (!p.HasExited)
-                    {
-                        p.Kill();
-                        Assert.True(p.WaitForExit(WaitInMS));
-                    }
+                    p.Kill();
+                    Assert.True(p.WaitForExit(WaitInMS));
                 }
                 catch (InvalidOperationException) { } // in case it was never started
             }

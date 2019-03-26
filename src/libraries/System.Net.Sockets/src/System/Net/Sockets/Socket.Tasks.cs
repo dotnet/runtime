@@ -863,7 +863,7 @@ namespace System.Net.Sockets
                     ExecutionContext ec = _executionContext;
                     if (ec == null)
                     {
-                        InvokeContinuation(c, continuationState, forceAsync: false);
+                        InvokeContinuation(c, continuationState, forceAsync: false, requiresExecutionContextFlow: false);
                     }
                     else
                     {
@@ -874,7 +874,7 @@ namespace System.Net.Sockets
                         ExecutionContext.Run(ec, runState =>
                         {
                             var t = (Tuple<AwaitableSocketAsyncEventArgs, Action<object>, object>)runState;
-                            t.Item1.InvokeContinuation(t.Item2, t.Item3, forceAsync: false);
+                            t.Item1.InvokeContinuation(t.Item2, t.Item3, forceAsync: false, requiresExecutionContextFlow: false);
                         }, Tuple.Create(this, c, continuationState));
                     }
                 }
@@ -993,9 +993,10 @@ namespace System.Net.Sockets
                     // avoid a stack dive.  However, since all of the queueing mechanisms flow
                     // ExecutionContext, and since we're still in the same context where we
                     // captured it, we can just ignore the one we captured.
+                    bool requiresExecutionContextFlow = _executionContext != null;
                     _executionContext = null;
                     UserToken = null; // we have the state in "state"; no need for the one in UserToken
-                    InvokeContinuation(continuation, state, forceAsync: true);
+                    InvokeContinuation(continuation, state, forceAsync: true, requiresExecutionContextFlow);
                 }
                 else if (prevContinuation != null)
                 {
@@ -1005,7 +1006,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            private void InvokeContinuation(Action<object> continuation, object state, bool forceAsync)
+            private void InvokeContinuation(Action<object> continuation, object state, bool forceAsync, bool requiresExecutionContextFlow)
             {
                 object scheduler = _scheduler;
                 _scheduler = null;
@@ -1028,7 +1029,14 @@ namespace System.Net.Sockets
                 }
                 else if (forceAsync)
                 {
-                    ThreadPool.QueueUserWorkItem(continuation, state, preferLocal: true);
+                    if (requiresExecutionContextFlow)
+                    {
+                        ThreadPool.QueueUserWorkItem(continuation, state, preferLocal: true);
+                    }
+                    else
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItem(continuation, state, preferLocal: true);
+                    }
                 }
                 else
                 {

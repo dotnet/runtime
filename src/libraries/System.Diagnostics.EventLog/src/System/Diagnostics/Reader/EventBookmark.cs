@@ -13,7 +13,7 @@ namespace System.Diagnostics.Eventing.Reader
     /// <summary>
     /// Represents an opaque Event Bookmark obtained from an EventRecord.
     /// The bookmark denotes a unique identifier for the event instance as
-    /// well as marks the location in the the result set of the EventReader
+    /// well as marks the location in the result set of the EventReader
     /// that the event instance was obtained from.
     /// </summary>
     public class EventBookmark

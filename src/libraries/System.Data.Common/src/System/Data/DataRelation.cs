@@ -6,7 +6,7 @@
 Rules for Multiple Nested Parent, enforce following constraints
 
 1) At all times, only 1(ONE) FK can be NON-Null in a row.
-2) NULL FK values are not associated with PARENT(x), even if if PK is NULL in Parent
+2) NULL FK values are not associated with PARENT(x), even if PK is NULL in Parent
 3) Enforce <rule 1> when
         a) Any FK value is changed
         b) A relation created that result in Multiple Nested Child
