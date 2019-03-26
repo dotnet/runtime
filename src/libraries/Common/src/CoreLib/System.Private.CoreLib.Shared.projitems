@@ -226,6 +226,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Enum.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventArgs.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\EventHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Exception.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ExecutionEngineException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\FieldAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\FlagsAttribute.cs" />
@@ -1051,6 +1052,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFindHandle.Windows.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.Windows.cs" />
@@ -1203,6 +1205,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Unix\System.Native\Interop.Write.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Buffer.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\DateTime.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\DebugProvider.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Environment.Unix.cs" />

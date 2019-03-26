@@ -515,7 +515,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
                             newCandidateParamArrayIndex,
                             expandNewCandidateParamArray)
 
-                    ' Inferring of type arguments is done when when determining the callability of this
+                    ' Inferring of type arguments is done when determining the callability of this
                     ' procedure with these arguments by comparing them against the corresponding parameters.
                     '
                     ' Note that although RejectUncallableProcedure needs to be invoked on the non-generics
@@ -1307,7 +1307,7 @@ RetryInference:
                 parameterType = GetElementType(parameterType)
             End If
             Dim argumentType As Type = GetArgumentType(argument)
-            Debug.Assert(targetProcedure.IsMethod, "we shouldn't be infering type arguments for non-methods")
+            Debug.Assert(targetProcedure.IsMethod, "we shouldn't be inferring type arguments for non-methods")
             If Not InferTypeArgumentsFromArgument(
                         argumentType,
                         parameterType,
@@ -1970,7 +1970,7 @@ skipargument:
             ByVal lookupFlags As BindingFlags)
 
             'No need to copy back if there are no valid targets .
-            'The copy back array will be be Nothing if the compiler determined that all
+            'The copy back array will be Nothing if the compiler determined that all
             'arguments are Rvalues.
             If copyBack Is Nothing Then
                 Return

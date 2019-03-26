@@ -12,7 +12,25 @@ namespace System.Text.Json.Serialization
 {
     public static partial class JsonSerializer
     {
-        public static ValueTask<TValue> ReadAsync<TValue>(Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Read the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// The Stream will be read to completion.
+        /// </summary>
+        /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <param name="utf8Json">JSON data to parse.</param>
+        /// <param name="options">Options to control the behavior during reading.</param>
+        /// <param name="cancellationToken">
+        /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
+        /// </param>
+        /// <exception cref="JsonReaderException">
+        /// Thrown when the JSON is invalid,
+        /// <typeparamref name="TValue"/> is not compatible with the JSON,
+        /// or when there is remaining data in the Stream.
+        /// </exception>
+        public static ValueTask<TValue> ReadAsync<TValue>(
+            Stream utf8Json,
+            JsonSerializerOptions options = null,
+            CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
                 throw new ArgumentNullException(nameof(utf8Json));
@@ -20,7 +38,30 @@ namespace System.Text.Json.Serialization
             return ReadAsync<TValue>(utf8Json, typeof(TValue), options, cancellationToken);
         }
 
-        public static ValueTask<object> ReadAsync(Stream utf8Json, Type returnType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Read the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// The Stream will be read to completion.
+        /// </summary>
+        /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
+        /// <param name="utf8Json">JSON data to parse.</param>
+        /// <param name="returnType">The type of the object to convert to and return.</param>
+        /// <param name="options">Options to control the behavior during reading.</param>
+        /// <param name="cancellationToken">
+        /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
+        /// </param>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown if <paramref name="utf8Json"/> or <paramref name="returnType"/> is null.
+        /// </exception>
+        /// <exception cref="JsonReaderException">
+        /// Thrown when the JSON is invalid,
+        /// the <paramref name="returnType"/> is not compatible with the JSON,
+        /// or when there is remaining data in the Stream.
+        /// </exception>
+        public static ValueTask<object> ReadAsync(
+            Stream utf8Json,
+            Type returnType,
+            JsonSerializerOptions options = null,
+            CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
                 throw new ArgumentNullException(nameof(utf8Json));
@@ -31,7 +72,11 @@ namespace System.Text.Json.Serialization
             return ReadAsync<object>(utf8Json, returnType, options, cancellationToken);
         }
 
-        private static async ValueTask<TValue> ReadAsync<TValue>(Stream utf8Json, Type returnType, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        private static async ValueTask<TValue> ReadAsync<TValue>(
+            Stream utf8Json,
+            Type returnType,
+            JsonSerializerOptions options = null,
+            CancellationToken cancellationToken = default)
         {
             options ??= s_defaultSettings;
 
@@ -46,7 +91,7 @@ namespace System.Text.Json.Serialization
             var readerState = new JsonReaderState(options.ReaderOptions);
 
             // todo: switch to ArrayBuffer implementation to handle and simplify the allocs?
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(options.EffectiveBufferSize);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(options.DefaultBufferSize);
             int bytesInBuffer = 0;
             long totalBytesRead = 0;
             int clearMax = 0;

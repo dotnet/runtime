@@ -44,7 +44,7 @@ namespace System.Drawing.Printing
         {
             Debug.Assert(_dc == null && _graphics == null, "PrintController methods called in the wrong order?");
 
-            // For security purposes, don't assume our public methods methods are called in any particular order
+            // For security purposes, don't assume our public methods are called in any particular order
             CheckSecurity();
 
             base.OnStartPrint(document, e);
@@ -64,7 +64,7 @@ namespace System.Drawing.Printing
         {
             Debug.Assert(_dc != null && _graphics == null, "PrintController methods called in the wrong order?");
 
-            // For security purposes, don't assume our public methods methods are called in any particular order
+            // For security purposes, don't assume our public methods are called in any particular order
             CheckSecurity();
 
             base.OnStartPage(document, e);
@@ -131,7 +131,7 @@ namespace System.Drawing.Printing
         {
             Debug.Assert(_dc != null && _graphics != null, "PrintController methods called in the wrong order?");
 
-            // For security purposes, don't assume our public methods methods are called in any particular order
+            // For security purposes, don't assume our public methods are called in any particular order
             CheckSecurity();
 
             _graphics.Dispose();
@@ -158,7 +158,7 @@ namespace System.Drawing.Printing
 
         public PreviewPageInfo[] GetPreviewPageInfo()
         {
-            // For security purposes, don't assume our public methods methods are called in any particular order
+            // For security purposes, don't assume our public methods are called in any particular order
             CheckSecurity();
 
             PreviewPageInfo[] temp = new PreviewPageInfo[_list.Count];

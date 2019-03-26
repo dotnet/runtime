@@ -154,7 +154,7 @@ namespace System.Data.Tests
             // DataColumn.Unique - with constraint
             Assert.Equal(false, dtParent.Columns[0].Unique);
 
-            // Ctor - add exisiting column
+            // Ctor - add existing column
             dtParent.Rows.Add(new object[] { 99, "str1", "str2" });
             dtParent.Constraints.Add(uc);
             Assert.Throws<ConstraintException>(() => dtParent.Rows.Add(new object[] { 99, "str1", "str2" }));
@@ -219,7 +219,7 @@ namespace System.Data.Tests
             // Ctor - parent
             Assert.Equal(false, uc == null);
 
-            // Ctor - add exisiting column
+            // Ctor - add existing column
             dtParent.Rows.Add(new object[] { 99, "str1", "str2" });
             dtParent.Constraints.Add(uc);
             Assert.Throws<ConstraintException>(() => dtParent.Rows.Add(new object[] { 99, "str1", "str2" }));

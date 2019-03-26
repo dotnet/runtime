@@ -783,6 +783,63 @@ namespace System.Diagnostics.Tests
             Assert.True(foundRecycled);
         }
 
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Kill_ExitedNonChildProcess_DoesNotThrow(bool killTree)
+        {
+            // In this test, we kill a process in a way the Process instance
+            // is not aware the process has terminated when we invoke Process.Kill.
+
+            using (Process nonChildProcess = CreateNonChildProcess())
+            {
+                // Kill the process.
+                int rv = kill(nonChildProcess.Id, SIGKILL);
+                Assert.Equal(0, rv);
+
+                // Wait until the process is reaped.
+                while (rv == 0)
+                {
+                    rv = kill(nonChildProcess.Id, 0);
+                    if (rv == 0)
+                    {
+                        // process still exists, wait some time.
+                        await Task.Delay(100);
+                    }
+                }
+
+                // Call Process.Kill.
+                nonChildProcess.Kill(killTree);
+            }
+
+            Process CreateNonChildProcess()
+            {
+                // Create a process that isn't a direct child.
+                int nonChildPid = -1;
+                RemoteInvokeHandle createNonChildProcess = RemoteInvoke(arg =>
+                {
+                    RemoteInvokeHandle nonChildProcess = RemoteInvoke(
+                        // Process that lives as long as the test process.
+                        testProcessPid => Process.GetProcessById(int.Parse(testProcessPid)).WaitForExit(), arg,
+                        // Don't pass our standard out to the sleepProcess or the ReadToEnd below won't return.
+                        new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } });
+
+                    using (nonChildProcess)
+                    {
+                        Console.WriteLine(nonChildProcess.Process.Id);
+
+                        // Don't wait for the process to exit.
+                        nonChildProcess.Process = null;
+                    }
+                }, Process.GetCurrentProcess().Id.ToString(), new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } });
+                using (createNonChildProcess)
+                {
+                    nonChildPid = int.Parse(createNonChildProcess.Process.StandardOutput.ReadToEnd());
+                }
+                return Process.GetProcessById(nonChildPid);
+            }
+        }
+
         private static IDictionary GetWaitStateDictionary(bool childDictionary)
         {
             Assembly assembly = typeof(Process).Assembly;
@@ -851,6 +908,11 @@ namespace System.Diagnostics.Tests
 
         [DllImport("libc")]
         private static unsafe extern int setgroups(int length, uint* groups);
+
+        private const int SIGKILL = 9;
+
+        [DllImport("libc", SetLastError = true)]
+        private static extern int kill(int pid, int sig);
 
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
 

@@ -10,7 +10,7 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
     ''' When applied to a class, the compiler will generate an implicit call to
     ''' to a private InitializeComponent method from the default synthetic
     ''' constructor. The compiler will also verify that this method is called
-    ''' from user defined constructors and report a warning or error it it is not.
+    ''' from user defined constructors and report a warning or error if it is not.
     ''' The IDE will honor this attribute when generating code on behalf of the
     ''' user. 
     ''' </summary>

@@ -72,7 +72,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// </summary>
         /// <value>
         ///     An <see cref="IEnumerable{T}"/> of <see cref="ComposablePartDefinition"/> objects that 
-        ///     have been removed from from the <see cref="ComposablePartCatalog"/>.
+        ///     have been removed from the <see cref="ComposablePartCatalog"/>.
         /// </value>
         public IEnumerable<ComposablePartDefinition> RemovedDefinitions 
         {
