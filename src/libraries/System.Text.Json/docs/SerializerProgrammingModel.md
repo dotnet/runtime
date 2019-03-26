@@ -1,7 +1,8 @@
 This document describes the current serializer API (both committed and forward-looking) and provides information on associated features.
 
-Main API issue: https://github.com/dotnet/corefx/issues/34372
-_note: there will be additional issues added here for new features_
+Related API issues:
+- [Main API](https://github.com/dotnet/corefx/issues/34372)
+- [Property Name Policy](https://github.com/dotnet/corefx/issues/36351)
 
 Design points:
 - Due to time constraints, and to gather feedback, the feature set is intended to a minimum viable product for 3.0.
@@ -11,7 +12,11 @@ Design points:
 - Design-time attributes for defining the various options, but still support modifications at run-time.
 - High performance - Minimal CPU and memory allocation overhead on top of the lower-level reader\writer.
 
-# Programming Model
+# API
+## JsonSerializer
+This static class is the main entry point.
+
+
 Let's start with coding examples before the formal API is provided.
 
 Using a simple POCO class:
@@ -21,7 +26,6 @@ Using a simple POCO class:
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public DateTime BirthDay { get; set; }
-        public PhoneNumber PrimaryPhoneNumber { get; set; } // PhoneNumber is a custom data type
     }
 ```
 
@@ -36,68 +40,6 @@ To serialize an object to JSON bytes:
     Person person = ...
     byte[] utf8 = JsonSerializer.ToBytes(person);
 ```
-
-Custom attributes are used to specify serialization semantics. To change the options so that the JSON property names are CamelCased (e.g. "FirstName" to "firstName") an attribute can be applied to the class:
-```cs
-    [JsonCamelCasingConverter]
-    public class Person
-````
-or to selected property(s):
-```cs
-    public class Person
-    {
-...
-        [JsonCamelCasingConverter] public string FirstName { get; set; }
-...
-    }
-```
-
-If CamelCasing needs to be specified at run-time, the attribute can be specified globally on an options instance:
-```cs
-    var options = new JsonSerializerOptions();
-    options.PropertyNamePolicyDefault = new JsonCamelCasingAttribute();
-    Person poco = JsonSerializer.Parse<Person>(utf8, options);
-```
-or for a given POCO class:
-```cs
-    options.GetClassInfo(typeof(Person)).PropertyNamePolicyDefault = new JsonCamelCasingAttribute();
-```
-or to property(s):
-```cs
-    options.GetClassInfo(typeof(Person)).GetProperty("LastName").PropertyNamePolicyDefault = new JsonCamelCasingAttribute();
-```
-
-To specify a custom PhoneNumber data type converter:
-```cs
-     // All properties on Person that are of type PhoneNumber will use this converter.
-    [MyPhoneNumberConverter]
-    public class Person
-````
-or to property(s):
-```cs
-    public class Person
-    {
-...
-        [MyPhoneNumberConverter] public PhoneNumber PrimaryPhoneNumber { get; set; }
-...
-    }
-```
-or at run-time globally:
-```cs
-    options.AddDataTypeConverter(new MyPhoneNumberConverterAttribute());
-```
-or for a given POCO class:
-```cs
-    options.GetClassInfo(typeof(Person)).AddDataTypeConverter(new MyPhoneNumberConverterAttribute());
-```
-or to property(s):
-```cs
-    options.GetClassInfo(typeof(Person)).GetProperty("PrimaryPhoneNumber").DataTypeConverter = new MyPhoneNumberConverterAttribute();
-```
-
-# API
-## JsonSerializer
-This static class is the main entry point.
 
 The string-based `Parse()` and `ToString()` are convenience methods for strings, but slower than using the `<byte>` flavors because UTF8 must be converted to\from UTF16.
 
@@ -133,7 +75,7 @@ _note: Json.Net also has a [JsonSerializer class](https://www.newtonsoft.com/jso
 ## JsonSerializerOptions
 This class contains the options that are used during (de)serialization.
 
-The design-time attributes can be overridden at runtime here or disabled by using the constructor `JsonSerializerOptions(disableDesignTimeAttributes:true)`.
+The design-time attributes can be specified or overridden at runtime here through the use of `AddAttribute()` methods.
 
 If an instance of `JsonSerializerOptions` is not specified when calling read\write then a default instance is used which is immutable and private. Having a global\static instance is not a viable feature because of unintended side effects when more than one area of code changes the same settings. Having a instance specified per thread\context mechanism is possible, but will only be added pending feedback. It is expected that ASP.NET and other consumers that have non-default settings maintain their own global, thread or stack variable and pass that in on every call. ASP.NET and others may also want to read a .config file at startup in order to initialize the options instance.
 
@@ -152,102 +94,170 @@ namespace System.Text.Json.Serialization
         public int DefaultBufferSize { get; set; }
 
         // These are passed to the Utf8JsonReader\Utf8JsonWriter
-        public WriteIndented { get; set; }
-        public JsonCommentHandling ReadCommentHandling { get; set; }
         public int MaxReadDepth { get; set; }
-		
-        // Get the metadata for a type. Used to add run-time attributes to the class or inspect the metadata.
-        public JsonTypeInfo GetTypeInfo(Type type);
-
-        // Review note: the members below are used for run-time extensibility.
-        // These could all be replaced with a loosely-typed "AddAttribute()" call as in previous
-        // iterations of this design. However based on feedback that was not intuitive enough so
-        // now each extension point is explicit through the use of a method or property.
+        public JsonCommentHandling ReadCommentHandling { get; set; }
+        public bool WriteIndented { get; set; }
 
         // The metadata set by the members below is used when the same attribute is not present at
         // design-time for a given POCO class or property.
 
         // Add a data type converter (e.g. a PhoneNumber converter)
-        public void AddDataTypeConverter(JsonDataTypeConverterAttribute attribute);
+        public void AddAttribute(JsonDataTypeConverterAttribute value);
+        public void AddAttribute(Type type, JsonDataTypeConverterAttribute value);
+        public void AddAttribute(Type type, string propertyName, JsonDataTypeConverterAttribute value);
 
-        // Consolidated options for property values
-        public JsonPropertyValueAttribute PropertyPolicyDefault { get; set; }
+        // Policy for ignoring property values
+        public void AddAttribute(JsonIgnorePropertyAttribute value);
+        public void AddAttribute(Type type, JsonIgnorePropertyAttribute value);
+        public void AddAttribute(Type type, string propertyName, JsonIgnorePropertyAttribute value);
 
         // Property name policy (e.g. enable camel-casing)
-        public JsonPropertyNamePolicyAttribute PropertyNamePolicyDefault { get; set; }
+        public void AddAttribute(JsonPropertyNamePolicyAttribute value);
+        public void AddAttribute(Type type, JsonPropertyNamePolicyAttribute value);
+        public void AddAttribute(Type type, string propertyName, JsonPropertyNamePolicyAttribute value);
     }
 }
 ```
-## JsonPropertyValueAttribute (consolidated options for property values)
-This attribute specifies the options that pertain to a POCO property value.
+## JsonIgnorePropertyAttribute
+This attribute specifies the options that determine whether a property is (de)serialized. Default values assume `false` semantics. If any of the options for a given property are `true` (and pertain to the current property) then the property is not (de)serialized.
 
-It contains simple primitive values; more complex or extensible ones have their own attributes. Combining multiple settings prevents an explosion of perhaps 10-20 additional attributes\classes in the future.
+To change null semantics for all properties, the JsonIgnorePropertyAttribute can be applied to a POCO type:
+```cs
+    // Properties that do not have a setter will not be written to JSON
+    [JsonIgnoreProperty(IgnoreReadOnly = true)]
+    public class Person
+````
+or to a POCO property:
+```cs
+    public class Person
+    {
+...
+        [JsonIgnoreProperty(IgnoreReadOnly = true)] public DateTime BirthDay { get; set; }
+...
+    }
+```
+or at run-time globally to the options instance:
+```cs
+    options.AddAttribute(new JsonIgnorePropertyAttribute {IgnoreReadOnly = true});
+```
+or for a given POCO class:
+```cs
+    options.AddAttribute(typeof(Person), new JsonIgnorePropertyAttribute {IgnoreReadOnly = true});
+```
+or to a property:
+```cs
+    options.GetClassInfo(typeof(Person)), "BirthDay", new JsonNullPolicyAttribute {IgnoreReadOnly = true});
+```
 
+### API
 ```cs
 namespace System.Text.Json.Serialization
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property, AllowMultiple = false)]
-    public class JsonPropertyValueAttribute : Attribute
+    public sealed class JsonIgnorePropertyAttribute : Attribute
     {
-        // A null value indicates no setting which can be overridden at a higher level.
-        // All bool? properties assume false semantics by default.
+        public JsonIgnorePropertyAttribute() { }
 
-        public JsonPropertyValueAttribute() { }
-
-        public bool? CaseInsensitivePropertyName { get; set; }
+        public bool? Ignore { get; set; }
+        public bool? IgnoreReadOnly { get; set; } // For properties without a setter
         public bool? IgnoreNullValueOnRead { get; set; }
-
-        // Several more options TBD
+        public bool? IgnoreNullValueOnWrite { get; set; }
     }
+}
+```
+
+Methods are added to `JsonSerializerOptions` to specify options at run-time.
+
+These methods can be called until (de)serialization occurs. If the first `AddAttribute` method (options for all types) is  called after (de)serialization occurs for any type, then the method will throw an `InvalidOperationException`. If the last two methods are called after serialization occurs for the given type, then the methods will throw an `InvalidOperationException`.
+```cs
+namespace System.Text.Json.Serialization
+{
+    public class JsonSerializerOptions
+    {
+...
+        public void AddAttribute(JsonIgnorePropertyAttribute value);
+        public void AddAttribute(Type type, JsonIgnorePropertyAttribute value);
+        public void AddAttribute(Type type, string propertyName, JsonIgnorePropertyAttribute value);
+    }
+}
 ```
 
 ## Property Name feature
-These attributes determine how a property name can be different between Json and POCO. New attributes (for example, to support a richer camel-casing approach or to add snake-casing) can easily be added by anyone by creating a new attribute derived from `JsonPropertyNamePolicyAttribute`.
+These attributes determine how a property name is (de)serialized. Functionality includes:
+- An attribute used to specify an explicit name (`JsonPropertyNameAttribute`).
+- An attribute used to specify camel casing (`JsonCamelCasingConverterAttribute`).
+- A base attribute of the above two (`JsonPropertyNamePolicyAttribute`) that:
+  - specifies whether to use case-insensitive property name comparisons (by default case-sensitive)
+  - is an extension point that can be used to create additional attributes, such as one to support snake-casing.
 
-_Review note: currently these attributes do not return a "converter" type like other attributes since there is reason such as generics that force it; however for consistency and perhaps re-use outside of "attributes" perhaps the Read\Write methods should exist on a new converter type_
+To change a property name explicitly (JSON will contain "birthdate" instead of "BirthDay")
+```cs
+    public class Person
+    {
+...
+        [JsonPropertyName("birthdate")] public DateTime BirthDay { get; set; }
+...
+    }
+```
 
+To use camel-casing (JSON will contain "birthDay" instead of "BirthDay")
+```cs
+        [JsonCamelCasingConverter] public DateTime BirthDay { get; set; }
+```
+
+### API
 ```cs
 namespace System.Text.Json.Serialization
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property, AllowMultiple = false)]
-    public class JsonCamelCasingConverterAttribute : JsonPropertyNamePolicyAttribute
+    public sealed class JsonCamelCasingConverterAttribute : JsonPropertyNamePolicyAttribute
     {
         public JsonCamelCasingConverterAttribute();
 
-        public override string Read(string value);
-        public override string Write(string value);
+        public override string ResolvePropertyName(string value);
     }
 
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
-    public class JsonPropertyNameAttribute : JsonPropertyNamePolicyAttribute
+    public sealed class JsonPropertyNameAttribute : JsonPropertyNamePolicyAttribute
     {
         public JsonPropertyNameAttribute();
         public JsonPropertyNameAttribute(string name);
 
         public string Name { get; set; }
 
-        public override string Read(string value);
-        public override string Write(string value);
+        public override string ResolvePropertyName(string value);
     }
-}
 
-namespace System.Text.Json.Serialization.Policies
-{
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property, AllowMultiple = false)]
-    public abstract class JsonPropertyNamePolicyAttribute : Attribute
+    public class JsonPropertyNamePolicyAttribute : Attribute
     {
         public bool? CaseInsensitive { get; set; }
 
-        public abstract string Read(string value);
-        public abstract string Write(string value);
+        public virtual string ResolvePropertyName(string value);
     }
 }
 ```
 
-## Date Converter feature
-Dates are not part of JSON, so we need a converter. Dates are typically JSON strings. Currently there is an internal `DateTime` converter that currently only supports a limited ISO 8601 format of `"yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffffffK"` however this is being replaced with a more general-purpose ISO implemenation via https://github.com/dotnet/corefx/issues/34690.
+Methods are added to `JsonSerializerOptions` to specify options at run-time:
+```cs
+namespace System.Text.Json.Serialization
+{
+    public class JsonSerializerOptions
+    {
+...
+        public void AddAttribute(JsonPropertyNamePolicyAttribute value);
+        public void AddAttribute(Type type, JsonPropertyNamePolicyAttribute value);
+        public void AddAttribute(Type type, string propertyName, JsonPropertyNamePolicyAttribute value);
+    }
+}
+```
 
-If the internal converter is not sufficient, such as when the format is a custom format or not ISO 8601 compatible, a developer can add a new type that derives from `JsonDataTypeConverterAttribute` and specifies `PropertyType=typeof(DateTime)` on that attribute.
+_Note that these attributes are not used to change the naming policy for Dictionary keys, Enum item names or other cases. Dictionary and Enum support is TBD but may have their own attribute for this and\or a callback approach may be used._
+
+## Date Converter feature
+Dates are not part of JSON, so we need a converter. Dates are typically JSON strings. Currently there is an internal `DateTime` and `DateTimeOffset` converter that currently supports ISO 8601 format of `"yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffffffK"`. See https://github.com/dotnet/corefx/issues/34690 for more information.
+
+If the internal converter is not sufficient, such as when the format has a custom format or is not ISO 8601 compatible, then a developer can add a new type that derives from `JsonDataTypeConverterAttribute` and specifies `PropertyType=typeof(DateTime)` or `PropertyType=typeof(DateTimeConverter)` on that attribute.
 
 ## Enum Converter feature
 By default, Enums are treated as longs in the JSON. This is most efficient and supports bit-wise attributes without any extra work.
@@ -597,22 +607,18 @@ Design notes:
 ### Loosely-typed arrays and objects
 Support for the equivalent of `JArray.Load(serializer)` and `JObject.Load(serializer)` to process out-of-order properties or loosely-typed objects that have to be manually (de)serialized.
 ### Underflow \ overflow feature
+These are important for version resiliency as they can be used to be backwards- or forward- compatible with changes to JSON schemas. It also allows the POCO object to have minimal deserialized properties for the local logic but enables preserving the other loosely-typed properties for later serialization \ round-trip support.
 #### Default values \ underflow
 Support default values for underflow (missing JSON data when deserializing), and trimming of default values when serializing.
 #### Overflow
 Ability to remember overflow (JSON data with no matching POCO property). Must support round-tripping meaning the ability to pass back this state (obtained during deserialize) back to a serialize method.
 ### Required Fields
 Ability to specify which fields are required.
-### Ignored Fields
-Ability to specify which fields are to be ignored.
 
 ## Pending features that do not affect the public API
 
 ### IDictionary support
-### DateTime and DateTimeOffset type 
 ### Default creation of types for collections of type IEnumerable<T>, IList<T> or ICollection<T>.
-### Exception semantics for both serialization and deserialization. The reader exception will include message, line number, byte offline and property path. The writer exceptions will include message and property path.
-#### Research need for having TryRead methods instead of throwing.
 
 # Currently supported Types
 - Array (see the feature notes)
@@ -620,6 +626,7 @@ Ability to specify which fields are to be ignored.
 - Byte
 - Char (as a JSON string of length 1)
 - DateTime (see the feature notes)
+- DateTimeOffset (see the feature notes)
 - Double
 - Enum (see the feature notes)
 - Int16
