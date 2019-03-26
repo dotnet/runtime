@@ -1230,6 +1230,7 @@ elif test x$with_runtime_preset = xnetcore; then
    mono_feature_disable_cleanup='yes'
    mono_feature_disable_assembly_remapping='yes'
    disable_mono_native=yes
+   support_boehm=no
 elif test x$with_runtime_preset = xnet_4_x; then
    with_profile4_x_default=yes
    TEST_PROFILE=net_4_x
