@@ -20,7 +20,6 @@
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
 
   <ItemGroup>
-    <PackageReference Include="$(BuildToolsPackage)" Version="$(BuildToolsPackageVersion)" GeneratePathProperty="true" />
     <PackageReference Include="$(PublishSymbolsPackage)" Version="$(PublishSymbolsPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.SourceRewriter" Version="$(MicrosoftDotNetSourceRewriterPackageVersion)" />
@@ -30,6 +29,7 @@
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.CoreFxTesting" Version="$(MicrosoftDotNetCoreFxTestingPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Configuration" Version="$(MicrosoftDotNetBuildTasksConfigurationPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksPackageVersion)" />
 
     <!-- Include the SourceLink packages -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />

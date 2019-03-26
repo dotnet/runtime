@@ -82,6 +82,10 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>2eb45ff0eed6f86f1071b16b11a447cadeeeec59</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.VersionTools.Tasks" Version="1.0.0-beta.19171.6">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>2eb45ff0eed6f86f1071b16b11a447cadeeeec59</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.Net.Compilers" Version="3.0.0-beta4-final">
       <Uri>https://github.com/dotnet/roslyn</Uri>
       <Sha>ec366687c8caead948e58704ad61ed644eb91b5b</Sha>
