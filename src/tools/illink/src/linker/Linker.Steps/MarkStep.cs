@@ -1436,6 +1436,8 @@ namespace Mono.Linker.Steps {
 				// could exist
 				case "Delegate":
 				case "MulticastDelegate":
+				case "ValueType":
+				case "Enum":
 					return td.Namespace == "System";
 			}
 

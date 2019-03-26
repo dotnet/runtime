@@ -176,6 +176,7 @@
     <Compile Include="CommandLine\ResponseFilesWork.cs" />
     <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
     <Compile Include="CoreLink\DelegateAndMulticastDelegateKeepInstantiatedReqs.cs" />
+    <Compile Include="CoreLink\InstantiatedStructWithOverridesFromObject.cs" />
     <Compile Include="CoreLink\NeverInstantiatedTypeWithOverridesFromObject.cs" />
     <Compile Include="CoreLink\NoSecurityPlusOnlyKeepUsedRemovesAllSecurityAttributesFromCoreLibraries.cs" />
     <Compile Include="CoreLink\InstantiatedTypeWithOverridesFromObject.cs" />
