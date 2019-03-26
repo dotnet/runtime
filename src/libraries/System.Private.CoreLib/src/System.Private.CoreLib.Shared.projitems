@@ -766,6 +766,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\SystemException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIUtility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIUtility.Helpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilderCache.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\CodePageDataItem.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Decoder.cs" />
@@ -804,6 +805,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ValueStringBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.Helpers.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.Transcoding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Unicode\Utf8Utility.Validation.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\TimeSpan.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AbandonedMutexException.cs" />

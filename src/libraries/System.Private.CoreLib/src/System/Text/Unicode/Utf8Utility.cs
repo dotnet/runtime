@@ -6,10 +6,12 @@ using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Text.Unicode
 {
-    internal static class Utf8Utility
+    internal static partial class Utf8Utility
     {
         /// <summary>
         /// The maximum number of bytes that can result from UTF-8 transcoding
@@ -29,26 +31,16 @@ namespace System.Text.Unicode
         /// comes first) is ASCII.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int GetIndexOfFirstInvalidUtf8Sequence(ReadOnlySpan<byte> utf8Data, out bool isAscii)
+        public unsafe static int GetIndexOfFirstInvalidUtf8Sequence(ReadOnlySpan<byte> utf8Data, out bool isAscii)
         {
-            // TODO_UTF8STRING: Replace this with the faster drop-in replacement when it's available (coreclr #21948).
-
-            bool tempIsAscii = true;
-            int originalDataLength = utf8Data.Length;
-
-            while (!utf8Data.IsEmpty)
+            fixed (byte* pUtf8Data = &MemoryMarshal.GetReference(utf8Data))
             {
-                if (Rune.DecodeFromUtf8(utf8Data, out Rune result, out int bytesConsumed) != OperationStatus.Done)
-                {
-                    break;
-                }
+                byte* pFirstInvalidByte = GetPointerToFirstInvalidByte(pUtf8Data, utf8Data.Length, out int utf16CodeUnitCountAdjustment, out _);
+                int index = (int)(void*)Unsafe.ByteOffset(ref *pUtf8Data, ref *pFirstInvalidByte);
 
-                tempIsAscii &= result.IsAscii;
-                utf8Data = utf8Data.Slice(bytesConsumed);
+                isAscii = (utf16CodeUnitCountAdjustment == 0); // If UTF-16 char count == UTF-8 byte count, it's ASCII.
+                return (index <= utf8Data.Length) ? index : -1;
             }
-
-            isAscii = tempIsAscii;
-            return (utf8Data.IsEmpty) ? -1 : (originalDataLength - utf8Data.Length);
         }
 
 #if FEATURE_UTF8STRING
