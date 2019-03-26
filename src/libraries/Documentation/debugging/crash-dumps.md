@@ -1,4 +1,4 @@
-Crash dumps can be useful for analyzing and debugging intermittent or hard-to-reproduce bugs. In all of our CI test runs and official build test runs, we use a utility called "Dumpling" to collect and archive crash dumps that are created during test execution. These crash dumps are archived on on the [Dumpling web portal](https://dumpling.azurewebsites.net/), which has download links, as well as auxiliary triage information gathered during crash dump collection.
+Crash dumps can be useful for analyzing and debugging intermittent or hard-to-reproduce bugs. In all of our CI test runs and official build test runs, we use a utility called "Dumpling" to collect and archive crash dumps that are created during test execution. These crash dumps are archived on the [Dumpling web portal](https://dumpling.azurewebsites.net/), which has download links, as well as auxiliary triage information gathered during crash dump collection.
 
 When a crash is encountered in a test run (and crash dump collection is enabled), the following information will be printed to the log:
 

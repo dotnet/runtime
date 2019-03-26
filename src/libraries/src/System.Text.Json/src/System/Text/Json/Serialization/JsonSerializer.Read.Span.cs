@@ -6,18 +6,42 @@ namespace System.Text.Json.Serialization
 {
     public static partial class JsonSerializer
     {
+        /// <summary>
+        /// Parse the UTF-8 encoded text representing a single JSON value into a <typeparamref name="TValue"/>.
+        /// </summary>
+        /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <param name="utf8Json">JSON text to parse.</param>
+        /// <param name="options">Options to control the behavior during parsing.</param>
+        /// <exception cref="JsonReaderException">
+        /// Thrown when the JSON is invalid,
+        /// <typeparamref name="TValue"/> is not compatible with the JSON,
+        /// or when there is remaining data in the Stream.
+        /// </exception>
         public static TValue Parse<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions options = null)
         {
-            if (utf8Json == null)
-                throw new ArgumentNullException(nameof(utf8Json));
-
             return (TValue)ParseCore(utf8Json, typeof(TValue), options);
         }
 
+        /// <summary>
+        /// Parse the UTF-8 encoded text representing a single JSON value into a <paramref name="returnType"/>.
+        /// </summary>
+        /// <returns>A <paramref name="returnType"/> representation of the JSON value.</returns>
+        /// <param name="utf8Json">JSON text to parse.</param>
+        /// <param name="returnType">The type of the object to convert to and return.</param>
+        /// <param name="options">Options to control the behavior during parsing.</param>
+        /// <exception cref="System.ArgumentNullException">
+        /// Thrown if <paramref name="returnType"/> is null.
+        /// </exception>
+        /// <exception cref="JsonReaderException">
+        /// Thrown when the JSON is invalid,
+        /// <paramref name="returnType"/> is not compatible with the JSON,
+        /// or when there is remaining data in the Stream.
+        /// </exception>
+
         public static object Parse(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions options = null)
         {
-            if (utf8Json == null)
-                throw new ArgumentNullException(nameof(utf8Json));
+            if (returnType == null)
+                throw new ArgumentNullException(nameof(returnType));
 
             return ParseCore(utf8Json, returnType, options);
         }

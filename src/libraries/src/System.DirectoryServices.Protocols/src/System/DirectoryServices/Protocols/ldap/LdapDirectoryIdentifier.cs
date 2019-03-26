@@ -55,31 +55,7 @@ namespace System.DirectoryServices.Protocols
             PortNumber = portNumber;
         }
 
-        public string[] Servers
-        {
-            get
-            {
-                if (_servers == null)
-                {
-                    return Array.Empty<string>();
-                }
-                
-                var temporaryServers = new string[_servers.Length];
-                for (int i = 0; i < _servers.Length; i++)
-                {
-                    if (_servers[i] != null)
-                    {
-                        temporaryServers[i] = string.Copy(_servers[i]);
-                    }
-                    else
-                    {
-                        temporaryServers[i] = null;
-                    }
-                }
-
-                return temporaryServers;
-            }
-        }
+        public string[] Servers => (_servers == null) ? Array.Empty<string>() : (string[])_servers.Clone();
 
         public bool Connectionless { get; }
 

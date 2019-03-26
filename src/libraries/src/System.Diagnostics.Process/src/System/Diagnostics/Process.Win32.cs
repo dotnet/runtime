@@ -383,14 +383,20 @@ namespace System.Diagnostics
         {
             // The process's structures will be preserved as long as a handle is held pointing to them, even if the process exits or 
             // is terminated. A handle is held here to ensure a stable reference to the process during execution.
-            using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION))
+            using (SafeProcessHandle handle = GetProcessHandle(Interop.Advapi32.ProcessOptions.PROCESS_QUERY_LIMITED_INFORMATION, throwIfExited: false))
             {
+                // If the process has exited, the handle is invalid.
+                if (handle.IsInvalid)
+                    return Enumerable.Empty<Exception>();
+
                 return KillTree(handle);
             }
         }
 
         private IEnumerable<Exception> KillTree(SafeProcessHandle handle)
         {
+            Debug.Assert(!handle.IsInvalid);
+
             List<Exception> exceptions = new List<Exception>();
 
             try
@@ -399,11 +405,6 @@ namespace System.Diagnostics
                 //
                 // This method can return before stopping has completed. Down the road, could possibly wait for termination to complete before continuing.
                 Kill();
-            }
-            catch (InvalidOperationException)
-            {
-                // The process isn't in a valid state for termination (e.g. already dead), so ignore the exception
-                // but don't give up in case children can still be enumerated.
             }
             catch (Win32Exception e)
             {

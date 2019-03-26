@@ -1085,7 +1085,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         '   y.F(b)
         '
         ' Both of these call sites are calling "F" with one argument, so they
-        ' can potentially use the same generated rule. Constrast with:
+        ' can potentially use the same generated rule. Contrast with:
         '   z.F(c, d)
         '
         ' Now we have two arguments, so we can't share rules with the other two
@@ -1099,7 +1099,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         ' Apparently, for remote objects (objects in a different process), CLR will report
         ' allow cast to an interface (isinst instruction returns non-null) even though the object
         ' doesn't implement the interface. Therefore we are checking that the object resides 
-        ' in the same app domain in addition to implementing the IDynamicMetaObjectProcider interface.
+        ' in the same app domain in addition to implementing the IDynamicMetaObjectProvider interface.
         Friend Shared Function TryCastToIDMOP(ByVal o As Object) As IDynamicMetaObjectProvider
             Dim ido As IDynamicMetaObjectProvider = TryCast(o, IDynamicMetaObjectProvider)
             If ido IsNot Nothing Then
@@ -1159,7 +1159,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         'If the CallSite had byref arguments, the values in packedArgs may be updated
-        'We need to propegate those changes back to the original arguments array.
+        'We need to propagate those changes back to the original arguments array.
         Public Shared Sub CopyBackArguments(ByVal callInfo As CallInfo, ByVal packedArgs As Object(), ByVal args As Object())
             If packedArgs IsNot args Then
                 'This works like UnpackArguments, but just copies the values

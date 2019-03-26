@@ -79,7 +79,7 @@ namespace System.IO
             //         read into a managed array. If we used the user-supplied buffer we would need to copy data into it after every read.
             //         The spec allows to return a buffer instance that is not the same as passed by the user. So, we will create an own
             //         buffer instance, read data *directly* into the array backing it and then return it to the user.
-            //         Note: the allocation costs we are paying for the new buffer are unavoidable anyway, as we we would need to create
+            //         Note: the allocation costs we are paying for the new buffer are unavoidable anyway, as we would need to create
             //         an array to read into either way.
 
             IBuffer dataBuffer = buffer as WindowsRuntimeBuffer;

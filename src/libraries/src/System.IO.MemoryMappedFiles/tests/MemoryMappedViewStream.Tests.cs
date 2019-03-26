@@ -5,6 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.MemoryMappedFiles.Tests
@@ -56,7 +57,7 @@ namespace System.IO.MemoryMappedFiles.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory]
         [InlineData(MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.Read)]
         [InlineData(MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.Write)]
         [InlineData(MemoryMappedFileAccess.ReadWriteExecute, MemoryMappedFileAccess.ReadWrite)]
@@ -80,10 +81,22 @@ namespace System.IO.MemoryMappedFiles.Tests
             AssertExtensions.ThrowsIf<IOException>(PlatformDetection.IsUap && mapAccess == MemoryMappedFileAccess.ReadWriteExecute && viewAccess == MemoryMappedFileAccess.ReadWriteExecute,
             () =>
             {
-                using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Capacity, mapAccess))
-                using (MemoryMappedViewStream s = mmf.CreateViewStream(0, Capacity, viewAccess))
+                try
                 {
-                    ValidateMemoryMappedViewStream(s, Capacity, viewAccess);
+                    using (MemoryMappedFile mmf = MemoryMappedFile.CreateNew(null, Capacity, mapAccess))
+                    using (MemoryMappedViewStream s = mmf.CreateViewStream(0, Capacity, viewAccess))
+                    {
+                        ValidateMemoryMappedViewStream(s, Capacity, viewAccess);
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    if (PlatformDetection.IsInContainer && (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
+                    {
+                        throw new SkipTestException("Execute permission failing in container.");
+                    }
+
+                    throw;
                 }
             });
         }

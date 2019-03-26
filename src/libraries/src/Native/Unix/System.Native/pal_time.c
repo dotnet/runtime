@@ -48,75 +48,47 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
     return result;
 }
 
-int32_t SystemNative_GetTimestampResolution(uint64_t* resolution)
+// Gets the number of "ticks per second" of the underlying monotonic timer.
+//
+// On most Unix platforms, the methods that query the resolution return a value
+// that is "nanoseconds per tick" in which case we need to scale before returning.
+uint64_t SystemNative_GetTimestampResolution()
 {
-    assert(resolution);
-
 #if HAVE_MACH_ABSOLUTE_TIME
     mach_timebase_info_data_t mtid;
-    if (mach_timebase_info(&mtid) == KERN_SUCCESS)
+
+    if (mach_timebase_info(&mtid) != KERN_SUCCESS)
     {
-        *resolution = SecondsToNanoSeconds * ((uint64_t)(mtid.denom) / (uint64_t)(mtid.numer));
-        return 1;
-    }
-    else
-    {
-        *resolution = 0;
         return 0;
     }
 
-#elif HAVE_CLOCK_MONOTONIC
-    // Make sure we can call clock_gettime with MONOTONIC.  Stopwatch invokes
-    // GetTimestampResolution as the very first thing, and by calling this here
-    // to verify we can successfully, we don't have to branch in GetTimestamp.
+    uint64_t nanosecondsPerTick = ((uint64_t)(mtid.denom) / (uint64_t)(mtid.numer));
+    return SecondsToNanoSeconds * nanosecondsPerTick;
+#else
     struct timespec ts;
-    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) 
+
+    if (clock_getres(CLOCK_MONOTONIC, &ts) != 0)
     {
-        *resolution = SecondsToNanoSeconds;
-        return 1;
-    }
-    else
-    {
-        *resolution = 0;
         return 0;
     }
 
-#else /* gettimeofday */
-    *resolution = SecondsToMicroSeconds;
-    return 1;
-
+    uint64_t nanosecondsPerTick = ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
+    return SecondsToNanoSeconds * nanosecondsPerTick;
 #endif
 }
 
-int32_t SystemNative_GetTimestamp(uint64_t* timestamp)
+uint64_t SystemNative_GetTimestamp()
 {
-    assert(timestamp);
-
 #if HAVE_MACH_ABSOLUTE_TIME
-    *timestamp = mach_absolute_time();
-    return 1;
-
-#elif HAVE_CLOCK_MONOTONIC
+    return mach_absolute_time();
+#else
     struct timespec ts;
+
     int result = clock_gettime(CLOCK_MONOTONIC, &ts);
     assert(result == 0); // only possible errors are if MONOTONIC isn't supported or &ts is an invalid address
     (void)result; // suppress unused parameter warning in release builds
-    *timestamp = ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
-    return 1;
 
-#else
-    struct timeval tv;
-    if (gettimeofday(&tv, NULL) == 0)
-    {
-        *timestamp = ((uint64_t)(tv.tv_sec) * SecondsToMicroSeconds) + (uint64_t)(tv.tv_usec);
-        return 1;
-    }
-    else
-    {
-        *timestamp = 0;
-        return 0;
-    }
-
+    return ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
 #endif
 }
 
@@ -193,13 +165,8 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
             ((uint64_t)(resUsage.ru_utime.tv_usec) * MicroSecondsToNanoSeconds);
     }
 
-    uint64_t timestamp;
-    uint64_t resolution;
-
-    if (!SystemNative_GetTimestamp(&timestamp) || !SystemNative_GetTimestampResolution(&resolution))
-    {
-        return 0;
-    }
+    uint64_t resolution = SystemNative_GetTimestampResolution();
+    uint64_t timestamp = SystemNative_GetTimestamp();
 
     uint64_t currentTime = timestamp * SecondsToNanoSeconds / resolution;
 

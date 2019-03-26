@@ -37,7 +37,7 @@ namespace System.Xml
         private bool _optimizeStorage;       // false if we should only have foilated regions.
         private ElementState _autoFoliationState;    // When XmlBoundElement will foliate because of member functions, this will contain the foliation mode: usually this is
                                                      // ElementState.StrongFoliation, however when foliation occurs due to DataDocumentNavigator operations (InsertNode for example),
-                                                     // it it usually ElementState.WeakFoliation
+                                                     // it is usually ElementState.WeakFoliation
         private bool _fAssociateDataRow;     // if true, CreateElement will create and associate data rows w/ the newly created XmlBoundElement.
                                              // If false, then CreateElement will just create the XmlBoundElement nodes. This is usefull for Loading case,
                                              // when CreateElement is called by DOM.
@@ -1222,7 +1222,7 @@ namespace System.Xml
             _fAssociateDataRow = false;
 
             DataTable[] orderedTables = OrderTables(ds);
-            // problem is after we add support for Namespace  for DataTable, when infering we do not guarantee that table would be 
+            // problem is after we add support for Namespace  for DataTable, when inferring we do not guarantee that table would be 
             // in the same sequence that they were in XML because of namespace, some would be on different schema, so since they
             // won't be in the same sequence as in XML, we may end up with having a child table, before its parent (which is not doable
             // with XML; and this happend because they are in different namespace)
@@ -1937,7 +1937,7 @@ namespace System.Xml
             {
                 // Sync the old region if it is not deleted
                 DataRow row = oldRowElem.Row;
-                // Since the old old region was disconnected, then the row can be only Deleted or Detached
+                // Since the old region was disconnected, then the row can be only Deleted or Detached
                 Debug.Assert(!IsRowLive(row));
                 if (oldRowElem.Row.RowState == DataRowState.Detached)
                     SynchronizeRowFromRowElement(oldRowElem);
@@ -2259,7 +2259,7 @@ namespace System.Xml
         private void PromoteInnerRegions(XmlNode parent)
         {
             Debug.Assert(parent != null);
-            Debug.Assert(parent.NodeType != XmlNodeType.Attribute);   // We need to get get the grand-parent region
+            Debug.Assert(parent.NodeType != XmlNodeType.Attribute);   // We need to get the grand-parent region
             Debug.Assert(parent != DocumentElement);                  // We cannot promote children of the DocumentElement
 
             XmlNode prevSibling = parent;

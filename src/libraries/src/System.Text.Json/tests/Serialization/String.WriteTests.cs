@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class StringTests
     {
         [Fact]
-        public static void VerifyValueFail()
+        public static void ToStringNullArgumentFail()
         {
             Assert.Throws<ArgumentNullException>(() => JsonSerializer.ToString("", (Type)null));
         }

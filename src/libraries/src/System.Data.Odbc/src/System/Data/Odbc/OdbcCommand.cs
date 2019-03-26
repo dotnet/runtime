@@ -819,7 +819,7 @@ namespace System.Data.Odbc
 
                 // XXXCommand.Execute should position reader on first row returning result
                 // any exceptions in the initial non-row returning results should be thrown
-                // from from ExecuteXXX not the DataReader
+                // from ExecuteXXX not the DataReader
                 if (!localReader.IsBehavior(CommandBehavior.SchemaOnly))
                 {
                     localReader.FirstResult();

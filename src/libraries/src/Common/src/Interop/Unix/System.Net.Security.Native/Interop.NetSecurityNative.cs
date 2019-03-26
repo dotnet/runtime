@@ -41,7 +41,6 @@ internal static partial class Interop
             out Status minorStatus,
             string inputName,
             int inputNameByteCount,
-            bool isNtlmTarget,
             out SafeGssNameHandle outputName);
 
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ReleaseName")]
@@ -77,9 +76,7 @@ internal static partial class Interop
             bool isNtlmOnly,
             IntPtr cbt,
             int cbtSize,
-            bool isNtlmFallback,
-            SafeGssNameHandle targetNameKerberos,
-            SafeGssNameHandle targetNameNtlm,
+            SafeGssNameHandle targetName,
             uint reqFlags,
             byte[] inputBytes,
             int inputLength,

@@ -57,12 +57,33 @@ namespace System.Diagnostics
         /// <summary>Terminates the associated process immediately.</summary>
         public void Kill()
         {
-            EnsureState(State.HaveNonExitedId);
-            if (Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL) != 0)
+            EnsureState(State.HaveId);
+
+            // Check if we know the process has exited. This avoids us targetting another
+            // process that has a recycled PID. This only checks our internal state, the Kill call below
+            // activly checks if the process is still alive.
+            if (GetHasExited(refresh: false))
             {
+                return;
+            }
+
+            int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
+            if (killResult != 0)
+            {
+                Interop.Error error = Interop.Sys.GetLastError();
+
+                // Don't throw if the process has exited.
+                if (error == Interop.Error.ESRCH)
+                {
+                    return;
+                }
+
                 throw new Win32Exception(); // same exception as on Windows
             }
         }
+
+        private bool GetHasExited(bool refresh)
+            => GetWaitState().GetExited(out _, refresh);
 
         private IEnumerable<Exception> KillTree()
         {
@@ -74,7 +95,8 @@ namespace System.Diagnostics
         private void KillTree(ref List<Exception> exceptions)
         {
             // If the process has exited, we can no longer determine its children.
-            if (HasExited)
+            // If we know the process has exited, stop already.
+            if (GetHasExited(refresh: false))
             {
                 return;
             }
@@ -159,7 +181,8 @@ namespace System.Diagnostics
                 {
                     if (!_watchingForExit)
                     {
-                        Debug.Assert(_haveProcessHandle, "Process.EnsureWatchingForExit called with no process handle");
+                        Debug.Assert(_waitHandle == null);
+                        Debug.Assert(_registeredWaitHandle == null);
                         Debug.Assert(Associated, "Process.EnsureWatchingForExit called with no associated process");
                         _watchingForExit = true;
                         try
@@ -314,7 +337,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            if (GetWaitState().GetExited(out _, refresh))
+            if (GetHasExited(refresh))
             {
                 throw new InvalidOperationException(SR.Format(SR.ProcessHasExited, _processId.ToString()));
             }
@@ -334,7 +357,7 @@ namespace System.Diagnostics
             }
 
             EnsureState(State.HaveNonExitedId | State.IsLocal);
-            return new SafeProcessHandle(_processId);
+            return new SafeProcessHandle(_processId, GetSafeWaitHandle());
         }
 
         /// <summary>
@@ -491,7 +514,7 @@ namespace System.Diagnostics
                     // Store the child's information into this Process object.
                     Debug.Assert(childPid >= 0);
                     SetProcessId(childPid);
-                    SetProcessHandle(new SafeProcessHandle(childPid));
+                    SetProcessHandle(new SafeProcessHandle(_processId, GetSafeWaitHandle()));
 
                     return true;
                 }
@@ -842,6 +865,9 @@ namespace System.Diagnostics
             }
             return _waitStateHolder._state;
         }
+
+        private SafeWaitHandle GetSafeWaitHandle()
+            => GetWaitState().EnsureExitedEvent().GetSafeWaitHandle();
 
         private static (uint userId, uint groupId, uint[] groups) GetUserAndGroupIds(ProcessStartInfo startInfo)
         {

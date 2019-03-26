@@ -147,28 +147,15 @@ NetSecurityNative_ImportUserName(uint32_t* minorStatus, char* inputName, uint32_
 uint32_t NetSecurityNative_ImportTargetName(uint32_t* minorStatus,
                                             char* inputName,
                                             uint32_t inputNameLen,
-                                            uint32_t isNtlmTarget,
                                             GssName** outputName)
 {
     assert(minorStatus != NULL);
     assert(inputName != NULL);
-    assert(isNtlmTarget == 0 || isNtlmTarget == 1);
     assert(outputName != NULL);
     assert(*outputName == NULL);
 
-    gss_OID nameType;
-
-    if (isNtlmTarget)
-    {
-        nameType = GSS_C_NT_HOSTBASED_SERVICE;
-    }
-    else
-    {
-        nameType = (gss_OID)(unsigned long)GSS_KRB5_NT_PRINCIPAL_NAME;
-    }
-
     GssBuffer inputNameBuffer = {.length = inputNameLen, .value = inputName};
-    return gss_import_name(minorStatus, &inputNameBuffer, nameType, outputName);
+    return gss_import_name(minorStatus, &inputNameBuffer, GSS_C_NT_HOSTBASED_SERVICE, outputName);
 }
 
 uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
@@ -177,9 +164,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                           uint32_t isNtlm,
                                           void* cbt,
                                           int32_t cbtSize,
-                                          int32_t isNtlmFallback,
-                                          GssName* targetNameKerberos,
-                                          GssName* targetNameNtlm,
+                                          GssName* targetName,
                                           uint32_t reqFlags,
                                           uint8_t* inputBytes,
                                           uint32_t inputLength,
@@ -190,9 +175,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
     assert(minorStatus != NULL);
     assert(contextHandle != NULL);
     assert(isNtlm == 0 || isNtlm == 1);
-    assert(isNtlm == 1 || targetNameKerberos != NULL);
-    assert(isNtlmFallback == 0 || isNtlmFallback == 1);
-    assert(targetNameNtlm != NULL);
+    assert(targetName != NULL);
     assert(inputBytes != NULL || inputLength == 0);
     assert(outBuffer != NULL);
     assert(retFlags != NULL);
@@ -203,6 +186,7 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
 // Note: *contextHandle is null only in the first call and non-null in the subsequent calls
 
 #if HAVE_GSS_SPNEGO_MECHANISM
+    gss_OID krbMech = GSS_KRB5_MECHANISM;
     gss_OID desiredMech;
     if (isNtlm)
     {
@@ -212,9 +196,8 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
     {
         desiredMech = GSS_SPNEGO_MECHANISM;
     }
-
-    gss_OID krbMech = GSS_KRB5_MECHANISM;
 #else
+    gss_OID krbMech = (gss_OID)(unsigned long)gss_mech_krb5;
     gss_OID_desc gss_mech_OID_desc;
     if (isNtlm)
     {
@@ -226,10 +209,8 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
     }
 
     gss_OID desiredMech = &gss_mech_OID_desc;
-    gss_OID krbMech = (gss_OID)(unsigned long)gss_mech_krb5;
 #endif
 
-    *isNtlmUsed = 1;
     GssBuffer inputToken = {.length = inputLength, .value = inputBytes};
     GssBuffer gssBuffer = {.length = 0, .value = NULL};
     gss_OID_desc* outmech;
@@ -242,50 +223,21 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
         gssCbt.application_data.value = cbt;
     }
 
-    GssName* targetName;
-    if (isNtlm || isNtlmFallback)
-    {
-        targetName = targetNameNtlm;
-    }
-    else
-    {
-        targetName = targetNameKerberos;
-    }
-    
-    uint32_t majorStatus;
-    uint32_t retryCount = 0;
-    bool retry;
-    do
-    {
-        majorStatus = gss_init_sec_context(minorStatus,
-                                           claimantCredHandle,
-                                           contextHandle,
-                                           targetName,
-                                           desiredMech,
-                                           reqFlags,
-                                           0,
-                                           (cbt != NULL) ? &gssCbt : GSS_C_NO_CHANNEL_BINDINGS,
-                                           &inputToken,
-                                           &outmech,
-                                           &gssBuffer,
-                                           retFlags,
-                                           NULL);
+    uint32_t majorStatus = gss_init_sec_context(minorStatus,
+                                                claimantCredHandle,
+                                                contextHandle,
+                                                targetName,
+                                                desiredMech,
+                                                reqFlags,
+                                                0,
+                                                (cbt != NULL) ? &gssCbt : GSS_C_NO_CHANNEL_BINDINGS,
+                                                &inputToken,
+                                                &outmech,
+                                                &gssBuffer,
+                                                retFlags,
+                                                NULL);
 
-        // If SPNEGO fails to generate optimistic Kerberos token on initial call then fall back to SPNEGO-wrapped NTLM.
-        retry = false;
-        if ((majorStatus == GSS_S_FAILURE || majorStatus == GSS_S_BAD_NAMETYPE) &&
-            *contextHandle == NULL && !isNtlm && ++retryCount <= 1)
-        {
-            targetName = targetNameNtlm;
-            retry = true;
-        }
-    } while (retry);
-
-    // Outmech can be null when gssntlmssp lib uses NTLM mechanism
-    if (outmech != NULL && gss_oid_equal(outmech, krbMech) != 0)
-    {
-        *isNtlmUsed = 0;
-    }
+    *isNtlmUsed = (isNtlm || majorStatus != GSS_S_COMPLETE || gss_oid_equal(outmech, krbMech) == 0) ? 1 : 0;
 
     NetSecurityNative_MoveBuffer(&gssBuffer, outBuffer);
     return majorStatus;
