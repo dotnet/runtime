@@ -104,6 +104,13 @@ jobs:
       displayName: Build sharedframework layout
       condition: succeeded()
 
+    - ${{ if ne(parameters.skipTests, 'true') }}:
+      - script: build.cmd
+          -test
+          -- '$(CommonMSBuildArgs)
+          /bl:$(Build.SourcesDirectory)\test.binlog'
+        displayName: Test
+
     - ${{ if and(ne(parameters.displayName,'Build_Windows_x86'), ne(parameters.displayName,'Build_Windows_x64')) }}:
       - script: build.cmd -packaging
             -- '$(CommonMSBuildArgs)
