@@ -4,6 +4,9 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed {
+#if NETCOREAPP
+	[IgnoreTestCase ("Needs investigation")]
+#endif
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
 	[Reference ("System.dll")]

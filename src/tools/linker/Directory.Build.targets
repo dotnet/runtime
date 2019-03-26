@@ -1,3 +1,10 @@
 <Project>
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition=" '$(ArcadeBuild)' == 'true' " />
+
+  <!-- Map the Arcade "Test" target to the "VSTest" target used by "dotnet test" -->
+  <Target Name="Test"
+          Condition=" '$(ArcadeBuild)' == 'true' And '$(DisableArcadeTestFramework)' == 'true' ">
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="VSTest" />
+  </Target>
+
 </Project>

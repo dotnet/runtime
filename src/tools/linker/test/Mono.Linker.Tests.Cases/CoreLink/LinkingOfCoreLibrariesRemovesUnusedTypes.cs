@@ -7,15 +7,21 @@ namespace Mono.Linker.Tests.Cases.CoreLink {
 	[SetupLinkerCoreAction ("link")]
 	[Reference("System.dll")]
 
-	[KeptAssembly ("mscorlib.dll")]
-	[KeptAssembly("System.dll")]
+	[KeptAssembly (PlatformAssemblies.CoreLib)]
 	// We can't check everything that should be removed, but we should be able to check a few niche things that
-	// we known should be removed which will at least verify that the core library was processed
-	[KeptTypeInAssembly ("mscorlib.dll", typeof (System.Collections.Generic.IEnumerable<>))]
+	// we know should be removed which will at least verify that the core library was processed
+	[KeptTypeInAssembly (PlatformAssemblies.CoreLib, typeof (System.Collections.Generic.IEnumerable<>))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (System.Resources.ResourceWriter))]
+#if NETCOREAPP
+	// SortedList<,> and SortedDictionary<,> live in System.Collections on .NET Core.
+	[KeptAssembly("System.Collections.dll")]
+	[KeptTypeInAssembly ("System.Collections.dll", typeof (System.Collections.Generic.SortedList<,>))]
+	[RemovedTypeInAssembly ("System.Collections.dll", typeof (System.Collections.Generic.SortedDictionary<,>))]
+#else
+	[KeptAssembly("System.dll")]
 	[KeptTypeInAssembly ("System.dll", typeof (System.Collections.Generic.SortedList<,>))]
-
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (System.Resources.ResourceWriter))]
 	[RemovedTypeInAssembly ("System.dll", typeof (System.Collections.Generic.SortedDictionary<,>))]
+#endif
 
 	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]

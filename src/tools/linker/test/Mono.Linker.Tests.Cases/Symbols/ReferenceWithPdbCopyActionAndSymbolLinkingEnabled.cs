@@ -3,6 +3,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols {
+#if NETCOREAPP
+	[IgnoreTestCase ("Needs investigation")]
+#endif
 	[Reference ("Dependencies/LibraryWithPdb/LibraryWithPdb.dll")]
 	[ReferenceDependency ("Dependencies/LibraryWithPdb/LibraryWithPdb.pdb")]
 	[SetupLinkerLinkSymbols ("true")]

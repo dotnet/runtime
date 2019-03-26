@@ -9,22 +9,22 @@ namespace Mono.Linker.Tests.Cases.Attributes.NoSecurity {
 	[SetupLinkerArgument ("--strip-security", "true")]
 	[Reference ("System.dll")]
 	// Attributes from System.Security.Permissions
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (SecurityPermissionAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (PermissionSetAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (ReflectionPermissionAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (RegistryPermissionAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (StrongNameIdentityPermissionAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (CodeAccessSecurityAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (EnvironmentPermissionAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (FileIOPermissionAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (HostProtectionAttribute))]
-	
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (SecurityPermissionAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (PermissionSetAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (ReflectionPermissionAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (RegistryPermissionAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (StrongNameIdentityPermissionAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (CodeAccessSecurityAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (EnvironmentPermissionAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (FileIOPermissionAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (HostProtectionAttribute))]
+
 	// "Special" attributes from System.Security namespace that we seem to need to remove in order to set HasSecurity = false and not have
 	// pe verify complain
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (SecurityCriticalAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (SecuritySafeCriticalAttribute))]
-	[RemovedTypeInAssembly ("mscorlib.dll", typeof (SuppressUnmanagedCodeSecurityAttribute))]
-	
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (SecurityCriticalAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (SecuritySafeCriticalAttribute))]
+	[RemovedTypeInAssembly (PlatformAssemblies.CoreLib, typeof (SuppressUnmanagedCodeSecurityAttribute))]
+
 	// Fails with `Runtime critical type System.Reflection.CustomAttributeData not found` which is a known short coming
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
 	[SkipPeVerify ("System.dll")]

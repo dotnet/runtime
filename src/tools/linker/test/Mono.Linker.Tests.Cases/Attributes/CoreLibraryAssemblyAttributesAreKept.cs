@@ -6,10 +6,12 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Attributes {
 	[Reference ("System.dll")]
 	[SetupLinkerCoreAction ("link")]
-	[KeptAttributeInAssembly ("mscorlib.dll", typeof (AssemblyDescriptionAttribute))]
-	[KeptAttributeInAssembly ("mscorlib.dll", typeof (AssemblyCompanyAttribute))]
+	[KeptAttributeInAssembly (PlatformAssemblies.CoreLib, typeof (AssemblyDescriptionAttribute))]
+	[KeptAttributeInAssembly (PlatformAssemblies.CoreLib, typeof (AssemblyCompanyAttribute))]
+#if !NETCOREAPP
 	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyDescriptionAttribute))]
 	[KeptAttributeInAssembly ("System.dll", typeof (AssemblyCompanyAttribute))]
+#endif
 	[SkipPeVerify]
 	public class CoreLibraryAssemblyAttributesAreKept {
 		public static void Main ()
