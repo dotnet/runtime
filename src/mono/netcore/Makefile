@@ -91,6 +91,6 @@ xtest-%: prepare check-env
 		$(COREFX_BINDIR)/testhost/netcoreapp-OSX-Debug-x64/shared/Microsoft.NETCore.App/9.9.9/xunit.console.dll \
 		$(COREFX_BINDIR)/$*/$($*_PROFILE)/$*.dll -notrait category=outerloop -notrait category=nonosxtests -notrait category=failing \
 		-notrait category=nonnetcoreapptests -noappdomain -noshadow -parallel all -nunit TestResult-$*-netcore-xunit.xml \
-		$(shell grep -v '^#\|^$$' excludes-$*.rsp)
+		$(shell grep -v '^#\|^$$' excludes-$*.rsp) $(FIXTURE)
 
 xtest-all: $(addprefix xtest-, $(TEST_SUITES))
