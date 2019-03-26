@@ -25,7 +25,14 @@ typedef struct {
 	char **assembly_filepaths; /* /blah/blah/blah/Foo.dll */
 } MonoCoreTrustedPlatformAssemblies;
 
+typedef struct {
+	int dir_count;
+	char **dirs;
+} MonoCoreNativeLibPaths;
+
 static MonoCoreTrustedPlatformAssemblies *trusted_platform_assemblies;
+static MonoCoreNativeLibPaths *native_lib_paths;
+static MonoDlFallbackHandler *dl_fallback_handler;
 
 static void
 mono_core_trusted_platform_assemblies_free (MonoCoreTrustedPlatformAssemblies *a)
@@ -35,6 +42,15 @@ mono_core_trusted_platform_assemblies_free (MonoCoreTrustedPlatformAssemblies *a
 	g_strfreev (a->basenames);
 	g_strfreev (a->assembly_filepaths);
 	g_free (a);
+}
+
+static void
+mono_core_native_lib_paths_free (MonoCoreNativeLibPaths *dl)
+{
+	if (!dl)
+		return;
+	g_strfreev (dl->dirs);
+	g_free (dl);
 }
 
 static gboolean
@@ -63,6 +79,27 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	a->basenames [asm_count] = NULL;
 
 	trusted_platform_assemblies = a;
+	return TRUE;
+}
+
+static gboolean
+parse_native_dll_search_directories (const char *native_dlls_dirs)
+{
+	char **parts = g_strsplit (native_dlls_dirs, G_SEARCHPATH_SEPARATOR_S, 0);
+	int dir_count = 0;
+	for (char **p = parts; *p != NULL && **p != '\0'; p++) {
+#if 0
+		const char *part = *p;
+		// can't use logger, it's not initialized yet.
+		printf ("\t\tnative search dir %d = <%s>\n", dir_count, part);
+#endif
+		dir_count++;
+	}
+	MonoCoreNativeLibPaths *dl = g_new0 (MonoCoreNativeLibPaths, 1);
+	dl->dirs = parts;
+	dl->dir_count = dir_count;
+
+	native_lib_paths = dl;
 	return TRUE;
 }
 
@@ -118,19 +155,65 @@ install_assembly_loader_hooks (void)
 	mono_install_assembly_preload_hook (mono_core_preload_hook, (void*)trusted_platform_assemblies);
 }
 
+static void*
+mono_core_dl_load (const char *name, int flags, char **error_msg, void *user_data)
+{
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "netcore DllImport fallback handler: wanted '%s'", name);
+
+	if (g_path_is_absolute(name)) {
+		return mono_dl_open_file (name, flags);
+	} else if (native_lib_paths != NULL) {
+		for (int i = 0; i < native_lib_paths->dir_count; ++i) {
+			char *fullpath = g_build_filename (native_lib_paths->dirs[i], name);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "netcore DllImport fallback handler: trying '%s'", fullpath);
+			void *lib = mono_dl_open_file (fullpath, flags);
+			g_free (fullpath);
+			if (lib)
+				return lib;
+		}
+	}
+	return NULL;
+}
+
+static void*
+mono_core_dl_symbol (void *handle, const char *name, char **err, void *user_data)
+{
+	return mono_dl_symbol_default ((MonoDl*)handle, name);
+}
+
+static void*
+mono_core_dl_close (void *module, void* usr_data)
+{
+	mono_dl_close_handle ((MonoDl*)module);
+	return NULL;
+}
+
+static void
+install_dl_fallback_handlers (void)
+{
+	dl_fallback_handler = mono_dl_fallback_register_internal (&mono_core_dl_load, &mono_core_dl_symbol, &mono_core_dl_close, NULL);
+}
+
+static void
+cleanup_dl_fallback_handlers (void)
+{
+	mono_dl_fallback_unregister (dl_fallback_handler);
+	dl_fallback_handler = NULL;
+}
+
 static gboolean
 parse_properties (int propertyCount, const char** propertyKeys, const char** propertyValues)
 {
 	// The a partial list of relevant properties is
 	// https://docs.microsoft.com/en-us/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
-	// TODO: We should also pick up at least
-	//  APP_PATHS, APP_NI_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES
-	//
-	//  and PLATFORM_RESOURCE_ROOTS for satellite assemblies in culture-specific subdirectories
+	// TODO: We should also pick up at least APP_PATHS and APP_NI_PATHS
+	// and PLATFORM_RESOURCE_ROOTS for satellite assemblies in culture-specific subdirectories
 
 	for (int i = 0; i < propertyCount; ++i) {
 		if (!strcmp (propertyKeys[i], "TRUSTED_PLATFORM_ASSEMBLIES")) {
 			parse_trusted_platform_assemblies (propertyValues[i]);
+		} else if (!strcmp (propertyKeys[i], "NATIVE_DLL_SEARCH_DIRECTORIES")) {
+			parse_native_dll_search_directories (propertyValues[i]);
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.
@@ -167,6 +250,7 @@ int coreclr_initialize (const char* exePath, const char* appDomainFriendlyName,
 		return 0x80004005; /* E_FAIL */
 
 	install_assembly_loader_hooks ();
+	install_dl_fallback_handlers ();
 
 	return 0;
 }
@@ -232,6 +316,11 @@ int coreclr_execute_assembly (void* hostHandle, unsigned int domainId,
 //
 int coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, int* latchedExitCode)
 {
+	cleanup_dl_fallback_handlers ();
+	MonoCoreNativeLibPaths *dl = native_lib_paths;
+	native_lib_paths = NULL;
+	mono_core_native_lib_paths_free (dl);
+
 	MonoCoreTrustedPlatformAssemblies *a = trusted_platform_assemblies;
 	trusted_platform_assemblies = NULL;
 	mono_core_trusted_platform_assemblies_free (a);
