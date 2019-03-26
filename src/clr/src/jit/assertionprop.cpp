@@ -3897,7 +3897,8 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 
 GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, GenTreeStmt* stmt)
 {
-    noway_assert(newTree != nullptr);
+    assert(newTree != nullptr);
+    assert(tree != nullptr);
 
     if (stmt == nullptr)
     {
@@ -3908,33 +3909,20 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, GenT
         noway_assert(!optLocalAssertionProp);
 
         // If newTree == tree then we modified the tree in-place otherwise we have to
-        // locate our parent node and update it so that it points to newTree
+        // locate our parent node and update it so that it points to newTree.
         if (newTree != tree)
         {
             GenTree** link = gtFindLink(stmt, tree);
-#ifdef DEBUG
-            if (link == nullptr)
-            {
-                noway_assert(!"gtFindLink failed!");
-                printf("\nCould not find parent of:\n");
-                gtDispTree(tree);
-                printf("\nIn this stmt:\n");
-                gtDispTree(stmt);
-            }
-#endif
             noway_assert(link != nullptr);
-            noway_assert(tree != nullptr);
-            if (link != nullptr)
-            {
-                // Replace the old operand with the newTree
-                *link = newTree;
 
-                // We only need to ensure that the gtNext field is set as it is used to traverse
-                // to the next node in the tree. We will re-morph this entire statement in
-                // optAssertionPropMain(). It will reset the gtPrev and gtNext links for all nodes.
+            // Replace the old operand with the newTree
+            *link = newTree;
 
-                newTree->gtNext = tree->gtNext;
-            }
+            // We only need to ensure that the gtNext field is set as it is used to traverse
+            // to the next node in the tree. We will re-morph this entire statement in
+            // optAssertionPropMain(). It will reset the gtPrev and gtNext links for all nodes.
+            newTree->gtNext = tree->gtNext;
+
         }
     }
 
