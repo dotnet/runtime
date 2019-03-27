@@ -1326,6 +1326,7 @@ void CodeGen::psiBegProlog()
                     regNumber otherRegNum = REG_NA;
                     for (unsigned nCnt = 0; nCnt < structDesc.eightByteCount; nCnt++)
                     {
+                        unsigned  len     = structDesc.eightByteSizes[nCnt];
                         var_types regType = TYP_UNDEF;
 
                         if (nCnt == 0)

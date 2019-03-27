@@ -3079,6 +3079,7 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
     assert(op1->IsLocal() && op1->TypeGet() == TYP_SIMD32);
     regNumber srcReg    = simdNode->gtRegNum;
     regNumber lclVarReg = genConsumeReg(op1);
+    unsigned  varNum    = op1->AsLclVarCommon()->gtLclNum;
     assert(lclVarReg != REG_NA);
     assert(srcReg != REG_NA);
     if (simdNode->gtFlags & GTF_SPILLED)
