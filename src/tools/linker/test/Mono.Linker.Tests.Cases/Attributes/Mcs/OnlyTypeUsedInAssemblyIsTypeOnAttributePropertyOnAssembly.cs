@@ -9,6 +9,9 @@ namespace Mono.Linker.Tests.Cases.Attributes.Mcs {
 	/// In the case of attributes on assemblies, we expect both assemblies to be removed because we don't keep assembly level attributes
 	/// when that is the only type marked in the assembly
 	/// </summary>
+#if NETCOREAPP
+	[IgnoreTestCase ("Don't try to compile with mcs on .NET Core")]
+#endif
 	[SetupCSharpCompilerToUse ("mcs")]
 	[SetupCompileBefore ("LibraryWithType.dll", new [] { typeof(TypeDefinedInReference) })]
 	[SetupCompileBefore ("LibraryWithAttribute.dll", new [] { typeof(AttributeDefinedInReference) })]
