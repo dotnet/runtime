@@ -1,0 +1,2 @@
+# Stack size setting causes stack overflow
+-nomethod System.Threading.Threads.Tests.ThreadTests.ConstructorTest
