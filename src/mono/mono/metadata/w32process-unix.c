@@ -2022,6 +2022,12 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		goto done;
 
 	if (!ret) {
+
+#if defined(TARGET_IOS) || defined(TARGET_ANDROID)
+		// don't try the "open" handlers on iOS/Android, they don't exist there anyway
+		goto done;
+#endif
+
 		static char *handler;
 		static gunichar2 *handler_utf16;
 
