@@ -89,8 +89,6 @@ clean:
 	rm -rf sdk shared host dotnet tests LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE)
 
 xtest-%: prepare check-env
-	ln -sf $(CURDIR)/$(SHAREDRUNTIME)/System.Globalization.Native.dylib \
-		$(COREFX_BINDIR)/testhost/netcoreapp-OSX-Debug-x64/shared/Microsoft.NETCore.App/9.9.9/
 	COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(VERSION)" \
 		$(COREFX_BINDIR)/testhost/netcoreapp-OSX-Debug-x64/shared/Microsoft.NETCore.App/9.9.9/xunit.console.dll \
 		$(COREFX_BINDIR)/$*/$($*_PROFILE)/$*.dll -notrait category=outerloop -notrait category=nonosxtests -notrait category=failing \
