@@ -6464,7 +6464,6 @@ data/config
 tools/Makefile
 tools/locale-builder/Makefile
 tools/sgen/Makefile
-tools/monograph/Makefile
 tools/pedump/Makefile
 runtime/Makefile
 msvc/Makefile
