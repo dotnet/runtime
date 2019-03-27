@@ -3757,15 +3757,15 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
-        public void SupportNonPartEnumerableDerivedPackageTypes()
+        public void GetPartCallsGetPartCore()
         {
             // Package is an abstract class that others can derive from. Those derived classes can override GetPartsCore and potentially not
             // return anything. Furthermore, it is not guaranteed that GetPartsCore will have been called if the package wasn't created using
             // the Package.Open API, which only ensures that ZipPackage's internal data structures are filled in.
-            var mockPackage = new NonEnumerablePackage();
+            NonEnumerablePackage mockPackage = new NonEnumerablePackage();
 
-            var partUri = new Uri("/idontexist.xml", UriKind.Relative);
-            var part = mockPackage.GetPart(partUri);
+            Uri partUri = new Uri("/idontexist.xml", UriKind.Relative);
+            PackagePart part = mockPackage.GetPart(partUri);
 
             Assert.NotNull(part);
             Assert.Equal(part.Uri, partUri);
