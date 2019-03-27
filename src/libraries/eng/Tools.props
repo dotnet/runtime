@@ -77,7 +77,7 @@
 
   </Target>
 
-  <Target Name="InitGlobalTools" AfterTargets="Restore">
+  <Target Name="InitGlobalTools" Condition="'@(RepoTool)' != ''" AfterTargets="Restore">
 
     <PropertyGroup>
       <GlobalToolsDir>$(ArtifactsDir)tools</GlobalToolsDir>
