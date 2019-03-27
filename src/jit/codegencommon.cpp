@@ -11317,6 +11317,17 @@ GenTreeIndir CodeGen::indirForm(var_types type, GenTree* base)
 }
 
 //------------------------------------------------------------------------
+// indirForm: Make a temporary indir we can feed to pattern matching routines
+//    in cases where we don't want to instantiate all the indirs that happen.
+//
+GenTreeStoreInd CodeGen::storeIndirForm(var_types type, GenTree* base, GenTree* data)
+{
+    GenTreeStoreInd i(type, base, data);
+    i.gtRegNum = REG_NA;
+    return i;
+}
+
+//------------------------------------------------------------------------
 // intForm: Make a temporary int we can feed to pattern matching routines
 //    in cases where we don't want to instantiate.
 //

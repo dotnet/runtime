@@ -1039,7 +1039,126 @@ void CodeGen::inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regN
 
     getEmitter()->emitIns_R_R_I(ins, size, reg1, reg2, ival);
 }
-#endif
+
+#ifdef FEATURE_HW_INTRINSICS
+//------------------------------------------------------------------------
+// inst_RV_TT_IV: Generates an instruction that takes 3 operands:
+//                a register operand, an operand that may be memory or register and an immediate
+//                and that returns a value in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    attr      -- The emit attribute
+//    reg1      -- The first operand, a register
+//    rmOp      -- The second operand, which may be a memory node or a node producing a register
+//    ival      -- The immediate operand
+//
+// Notes:
+//    This isn't really specific to HW intrinsics, but depends on other methods that are
+//    only defined for FEATURE_HW_INTRINSICS, and is currently only used in that context.
+//
+void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival)
+{
+    noway_assert(getEmitter()->emitVerifyEncodable(ins, EA_SIZE(attr), reg1));
+
+    if (rmOp->isContained() || rmOp->isUsedFromSpillTemp())
+    {
+        TempDsc* tmpDsc = nullptr;
+        unsigned varNum = BAD_VAR_NUM;
+        unsigned offset = (unsigned)-1;
+
+        if (rmOp->isUsedFromSpillTemp())
+        {
+            assert(rmOp->IsRegOptional());
+
+            tmpDsc = getSpillTempDsc(rmOp);
+            varNum = tmpDsc->tdTempNum();
+            offset = 0;
+
+            regSet.tmpRlsTemp(tmpDsc);
+        }
+        else if (rmOp->OperIsHWIntrinsic())
+        {
+            getEmitter()->emitIns_R_AR_I(ins, attr, reg1, rmOp->gtGetOp1()->gtRegNum, 0, ival);
+            return;
+        }
+        else if (rmOp->isIndir())
+        {
+            GenTreeIndir* memIndir = rmOp->AsIndir();
+            GenTree*      memBase  = memIndir->gtOp1;
+
+            switch (memBase->OperGet())
+            {
+                case GT_LCL_VAR_ADDR:
+                {
+                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    offset = 0;
+
+                    // Ensure that all the GenTreeIndir values are set to their defaults.
+                    assert(!memIndir->HasIndex());
+                    assert(memIndir->Scale() == 1);
+                    assert(memIndir->Offset() == 0);
+
+                    break;
+                }
+
+                case GT_CLS_VAR_ADDR:
+                {
+                    getEmitter()->emitIns_R_C_I(ins, attr, reg1, memBase->gtClsVar.gtClsVarHnd, 0, ival);
+                    return;
+                }
+
+                default:
+                {
+                    getEmitter()->emitIns_R_A_I(ins, attr, reg1, memIndir, ival);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            switch (rmOp->OperGet())
+            {
+                case GT_LCL_FLD:
+                {
+                    GenTreeLclFld* lclField = rmOp->AsLclFld();
+
+                    varNum = lclField->GetLclNum();
+                    offset = lclField->gtLclFld.gtLclOffs;
+                    break;
+                }
+
+                case GT_LCL_VAR:
+                {
+                    assert(rmOp->IsRegOptional() || !compiler->lvaGetDesc(rmOp->gtLclVar.gtLclNum)->lvIsRegCandidate());
+                    varNum = rmOp->AsLclVar()->GetLclNum();
+                    offset = 0;
+                    break;
+                }
+
+                default:
+                    unreached();
+                    break;
+            }
+        }
+
+        // Ensure we got a good varNum and offset.
+        // We also need to check for `tmpDsc != nullptr` since spill temp numbers
+        // are negative and start with -1, which also happens to be BAD_VAR_NUM.
+        assert((varNum != BAD_VAR_NUM) || (tmpDsc != nullptr));
+        assert(offset != (unsigned)-1);
+
+        getEmitter()->emitIns_R_S_I(ins, attr, reg1, varNum, offset, ival);
+    }
+    else
+    {
+        regNumber rmOpReg = rmOp->gtRegNum;
+        getEmitter()->emitIns_SIMD_R_R_I(ins, attr, reg1, rmOpReg, ival);
+    }
+}
+#endif // FEATURE_HW_INTRINSICS
+
+#endif // _TARGET_XARCH_
 
 /*****************************************************************************
  *

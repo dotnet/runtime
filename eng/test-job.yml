@@ -39,7 +39,8 @@ jobs:
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
     variables:
-    - group: DotNet-HelixApi-Access
+    - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+      - group: DotNet-HelixApi-Access
     # Map template parameters to command line arguments
     - name: priorityArg
       value: ''

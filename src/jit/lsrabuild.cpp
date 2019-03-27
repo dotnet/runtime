@@ -2672,6 +2672,11 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
 int LinearScan::BuildIndirUses(GenTreeIndir* indirTree, regMaskTP candidates)
 {
     GenTree* const addr = indirTree->gtOp1;
+    return BuildAddrUses(addr, candidates);
+}
+
+int LinearScan::BuildAddrUses(GenTree* addr, regMaskTP candidates)
+{
     if (!addr->isContained())
     {
         BuildUse(addr, candidates);
@@ -2725,11 +2730,17 @@ int LinearScan::BuildOperandUses(GenTree* node, regMaskTP candidates)
     {
         return BuildIndirUses(node->AsIndir(), candidates);
     }
+#ifdef FEATURE_HW_INTRINSICS
     if (node->OperIsHWIntrinsic())
     {
+        if (node->AsHWIntrinsic()->OperIsMemoryLoad())
+        {
+            return BuildAddrUses(node->gtGetOp1());
+        }
         BuildUse(node->gtGetOp1(), candidates);
         return 1;
     }
+#endif // FEATURE_HW_INTRINSICS
 
     return 0;
 }
