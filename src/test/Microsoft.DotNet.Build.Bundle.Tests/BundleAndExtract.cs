@@ -26,9 +26,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
 
             var dotnet = fixture.SdkDotnet;
             var appDll = fixture.TestProject.AppDll;
+            var hostName = Path.GetFileName(fixture.TestProject.AppExe);
+            var publishDir = fixture.TestProject.OutputDirectory;
 
             // Run the App normally
-            dotnet.Exec(appDll)
+           Command.Create(Path.Combine(publishDir, hostName))
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -37,7 +39,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
                 .And
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
 
-
             // Create a directory for bundle/extraction output.
             // This directory shouldn't be within TestProject.OutputDirectory, since the bundler
             // will (attempt to) embed all files below the TestProject.OutputDirectory tree into one file.
@@ -45,12 +46,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
             Directory.CreateDirectory(singleFileDir);
 
             // Bundle to a single-file
-            string hostName = Path.GetFileName(fixture.TestProject.AppExe);
             string bundleDll = Path.Combine(sharedTestState.RepoDirectories.Artifacts,
                                             "Microsoft.DotNet.Build.Bundle",
                                             "netcoreapp2.0",
                                             "Microsoft.DotNet.Build.Bundle.dll");
-            string[] bundleArgs = { "--source", fixture.TestProject.OutputDirectory,
+            string[] bundleArgs = { "--source", publishDir,
                                     "--apphost", hostName,
                                     "--output", singleFileDir };
 
