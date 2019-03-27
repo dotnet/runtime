@@ -10,7 +10,7 @@
     <ItemGroup>
       <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.PlatformAbstractions/Microsoft.DotNet.PlatformAbstractions.csproj" />
       <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.DependencyModel/Microsoft.Extensions.DependencyModel.csproj" />
-      <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.DotNet.Build.Bundle/Microsoft.DotNet.Build.Bundle.csproj" />
+      <PackageProjects Include="$(MSBuildThisFileDirectory)Microsoft.NET.Build.Bundle/Microsoft.NET.Build.Bundle.csproj" />
     </ItemGroup>
 
     <PropertyGroup>

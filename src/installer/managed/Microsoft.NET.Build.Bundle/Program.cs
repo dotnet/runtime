@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Microsoft.DotNet.Build.Bundle
+namespace Microsoft.NET.Build.Bundle
 {
     /// <summary>
     ///  The main driver for Bundle and Extract operations.
