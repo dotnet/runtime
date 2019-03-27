@@ -3770,6 +3770,9 @@ namespace System.IO.Packaging.Tests
             Assert.NotNull(part);
             Assert.Equal(part.Uri, partUri);
             Assert.IsType(typeof(MockPackagePart), part);
+
+            // Validate we get the same object back if we call GetPart again
+            Assert.Same(part, mockPackage.GetPart(partUri));
         }
 
         private const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
