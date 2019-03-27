@@ -2,6 +2,9 @@
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink {
+#if NETCOREAPP
+	[IgnoreTestCase ("Don't try to compile with mcs on .NET Core")]
+#endif
 	[SetupLinkerCoreAction ("link")]
 	[Il8n ("all")]
 	

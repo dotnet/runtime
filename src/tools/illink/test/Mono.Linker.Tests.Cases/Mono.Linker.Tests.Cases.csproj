@@ -103,6 +103,24 @@
     <Compile Include="Attributes\Dependencies\TypeDefinedInReference2.cs" />
     <Compile Include="Attributes\Dependencies\TypeDefinedInReferenceWithReference.cs" />
     <Compile Include="Attributes\FixedLengthArrayAttributesArePreserved.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeArrayOnAttributeCtorOnType.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnAssembly.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnAssemblyOtherTypesInAttributeAssemblyUsed.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnEvent.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnMethod.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnProperty.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnType.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnAssembly.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnEvent.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnMethod.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnProperty.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnType.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnAssembly.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnEvent.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnMethod.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnProperty.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnType.cs" />
+    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyWithReferenceIsTypeOnAttributeCtorOnType.cs" />
     <Compile Include="Attributes\NoSecurity\SecurityAttributesOnUsedMethodAreRemoved.cs" />
     <Compile Include="Attributes\NoSecurity\SecurityAttributesOnUsedTypeAreRemoved.cs" />
     <Compile Include="Attributes\NoSecurity\CoreLibrarySecurityAttributeTypesAreRemoved.cs" />
@@ -164,6 +182,7 @@
     <Compile Include="BCLFeatures\ETW\LocalsOfModifiedMethodAreRemoved.cs" />
     <Compile Include="BCLFeatures\ETW\StubbedMethodWithExceptionHandlers.cs" />
     <Compile Include="CommandLine\ResponseFilesWork.cs" />
+    <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
     <Compile Include="CoreLink\DelegateAndMulticastDelegateKeepInstantiatedReqs.cs" />
     <Compile Include="CoreLink\InstantiatedStructWithOverridesFromObject.cs" />
     <Compile Include="CoreLink\NeverInstantiatedTypeWithOverridesFromObject.cs" />
@@ -335,6 +354,7 @@
     <Compile Include="PreserveDependencies\PreserveDependencyOnUnusedMethodInNonReferencedAssemblyWithEmbeddedXml.cs" />
     <Compile Include="References\AssemblyOnlyUsedByUsingWithCsc.cs" />
     <Compile Include="References\AssemblyOnlyUsedByUsingWithCscWithKeepFacades.cs" />
+    <Compile Include="References\AssemblyOnlyUsedByUsingWithMcs.cs" />
     <Compile Include="References\Dependencies\AssemblyOnlyUsedByUsing_Copied.cs" />
     <Compile Include="References\Dependencies\AssemblyOnlyUsedByUsing_Lib.cs" />
     <Compile Include="References\Individual\CanSkipUnresolved.cs" />
@@ -407,14 +427,17 @@
     <Compile Include="TestFramework\CanCompileReferencesUsingTypes.cs" />
     <Compile Include="TestFramework\CanCompileReferencesWithResources.cs" />
     <Compile Include="TestFramework\CanCompileReferencesWithResourcesWithCsc.cs" />
+    <Compile Include="TestFramework\CanCompileReferencesWithResourcesWithMcs.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithDebugPdbs.cs" />
     <Compile Include="TestFramework\CanCompileTestCaseWithCsc.cs" />
+    <Compile Include="TestFramework\CanCompileTestCaseWithMcs.cs" />
     <Compile Include="TestFramework\CanSandboxDependenciesUsingType.cs" />
     <Compile Include="TestFramework\CanVerifyInterfacesOnTypesInAssembly.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileReferencesUsingTypes_LibSource1.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileReferencesUsingTypes_LibSource2.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.cs" />
     <Compile Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc_Lib.cs" />
+    <Compile Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs_Lib.cs" />
     <Compile Include="TestFramework\Dependencies\CanSandboxDependenciesUsingType_Source1.cs" />
     <Compile Include="TestFramework\Dependencies\CanSandboxDependenciesUsingType_Source2.cs" />
     <Compile Include="TestFramework\Dependencies\CanVerifyInterfacesOnTypesInAssembly_Lib.cs" />
@@ -585,37 +608,11 @@
     <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.txt" />
     <Content Include="TestFramework\Dependencies\CanCompileReferencesWithResources_Lib1.log" />
     <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithCsc.txt" />
+    <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs.txt" />
     <Content Include="TestFramework\Dependencies\VerifyResourceInAssemblyAttributesBehavior.txt" />
     <Content Include="LinkXml\PreserveBackingFieldWhenPropertyIsKept.xml" />
     <Content Include="TypeForwarding\TypeForwarderOnlyAssemblyCanBePreservedViaLinkXml.xml" />
     <Content Include="LinkXml\UnusedTypeDeclarationPreservedByLinkXmlIsKept.xml" />
-  </ItemGroup>
-  <ItemGroup Condition=" ! $(ILLinkBuild) ">
-    <!-- Mcs tests -->
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeArrayOnAttributeCtorOnType.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnAssembly.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnAssemblyOtherTypesInAttributeAssemblyUsed.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnEvent.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnMethod.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnProperty.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeCtorOnType.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnAssembly.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnEvent.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnMethod.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnProperty.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributeFieldOnType.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnAssembly.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnEvent.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnMethod.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnProperty.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyIsTypeOnAttributePropertyOnType.cs" />
-    <Compile Include="Attributes\Mcs\OnlyTypeUsedInAssemblyWithReferenceIsTypeOnAttributeCtorOnType.cs" />
-    <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
-    <Compile Include="References\AssemblyOnlyUsedByUsingWithMcs.cs" />
-    <Compile Include="TestFramework\CanCompileReferencesWithResourcesWithMcs.cs" />
-    <Compile Include="TestFramework\CanCompileTestCaseWithMcs.cs" />
-    <Compile Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs_Lib.cs" />
-    <Content Include="TestFramework\Dependencies\CanCompileTestCaseWithMcs.txt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
