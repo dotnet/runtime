@@ -31,6 +31,9 @@ link-mono:
 
 prepare: $(NETCORESDK_FILE) link-mono
 
+nupkg:
+	nuget pack runtime.nuspec -properties VERSION=@VERSION@\;RID=@RID@\;PLATFORM_AOT_SUFFIX=@PLATFORM_AOT_SUFFIX@
+
 COREFX_BINDIR=$(COREFX_ROOT)/artifacts/bin
 
 check-env:
