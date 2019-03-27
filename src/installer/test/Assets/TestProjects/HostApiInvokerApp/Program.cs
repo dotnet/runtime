@@ -44,7 +44,7 @@ namespace HostApiInvokerApp
 
             if (testMultilevelLookupProgramFiles != null && testMultilevelLookupSelfRegistered != null)
             {
-                Environment.SetEnvironmentVariable("_DOTNET_TEST_SDK_SELF_REGISTERED_DIR", testMultilevelLookupSelfRegistered);
+                Environment.SetEnvironmentVariable("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH", testMultilevelLookupSelfRegistered);
                 Environment.SetEnvironmentVariable("ProgramFiles", testMultilevelLookupProgramFiles);
                 Environment.SetEnvironmentVariable("ProgramFiles(x86)", testMultilevelLookupProgramFiles);
                 Environment.SetEnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "1");
