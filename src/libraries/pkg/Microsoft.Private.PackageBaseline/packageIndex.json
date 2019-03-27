@@ -5307,6 +5307,12 @@
         "uap10.0.16299": "4.0.1.0"
       }
     },
+    "System.Utf8String.Experimental": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
+      }
+    },
     "System.ValueTuple": {
       "StableVersions": [
         "4.3.0",
