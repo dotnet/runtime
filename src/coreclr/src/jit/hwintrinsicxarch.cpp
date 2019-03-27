@@ -847,6 +847,15 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             case 1:
                 argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, argList, &argClass)));
                 op1     = getArgForHWIntrinsic(argType, argClass);
+                if ((category == HW_Category_MemoryLoad) && op1->OperIs(GT_CAST))
+                {
+                    // Although the API specifies a pointer, if what we have is a BYREF, that's what
+                    // we really want, so throw away the cast.
+                    if (op1->gtGetOp1()->TypeGet() == TYP_BYREF)
+                    {
+                        op1 = op1->gtGetOp1();
+                    }
+                }
                 retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, baseType, simdSize);
                 break;
             case 2:
