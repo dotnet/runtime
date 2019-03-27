@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 
-namespace Microsoft.DotNet.Build.Bundle
+namespace Microsoft.NET.Build.Bundle
 {
     /// <summary>
     /// FileEntry: Records information about embedded files.

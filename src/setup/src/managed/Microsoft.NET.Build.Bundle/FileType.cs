@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.DotNet.Build.Bundle
+namespace Microsoft.NET.Build.Bundle
 {
     /// <summary>
     /// FileType: Identifies the type of file embedded into the bundle.

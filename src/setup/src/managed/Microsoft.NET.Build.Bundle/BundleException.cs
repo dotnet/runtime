@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Microsoft.DotNet.Build.Bundle
+namespace Microsoft.NET.Build.Bundle
 {
     /// <summary>
     /// This exception is thrown when a bundle/extraction
