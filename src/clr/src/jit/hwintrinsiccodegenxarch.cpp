@@ -89,11 +89,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     if (genIsTableDrivenHWIntrinsic(intrinsicId, category))
     {
-        GenTree*  op1        = node->gtGetOp1();
-        GenTree*  op2        = node->gtGetOp2();
-        regNumber targetReg  = node->gtRegNum;
-        var_types targetType = node->TypeGet();
-        var_types baseType   = node->gtSIMDBaseType;
+        GenTree*  op1       = node->gtGetOp1();
+        GenTree*  op2       = node->gtGetOp2();
+        regNumber targetReg = node->gtRegNum;
+        var_types baseType  = node->gtSIMDBaseType;
 
         regNumber op1Reg = REG_NA;
         regNumber op2Reg = REG_NA;
@@ -384,11 +383,10 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 //
 void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emitAttr attr)
 {
-    var_types targetType = node->TypeGet();
-    regNumber targetReg  = node->gtRegNum;
-    GenTree*  op1        = node->gtGetOp1();
-    GenTree*  op2        = node->gtGetOp2();
-    emitter*  emit       = getEmitter();
+    regNumber targetReg = node->gtRegNum;
+    GenTree*  op1       = node->gtGetOp1();
+    GenTree*  op2       = node->gtGetOp2();
+    emitter*  emit      = getEmitter();
 
     if (op2 != nullptr)
     {
@@ -523,11 +521,10 @@ void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emi
 //
 void CodeGen::genHWIntrinsic_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival)
 {
-    var_types targetType = node->TypeGet();
-    regNumber targetReg  = node->gtRegNum;
-    GenTree*  op1        = node->gtGetOp1();
-    emitAttr  simdSize   = EA_ATTR(node->gtSIMDSize);
-    emitter*  emit       = getEmitter();
+    regNumber targetReg = node->gtRegNum;
+    GenTree*  op1       = node->gtGetOp1();
+    emitAttr  simdSize  = EA_ATTR(node->gtSIMDSize);
+    emitter*  emit      = getEmitter();
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
@@ -717,12 +714,11 @@ void CodeGen::genHWIntrinsic_R_R_RM(
 //
 void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins, int8_t ival)
 {
-    var_types targetType = node->TypeGet();
-    regNumber targetReg  = node->gtRegNum;
-    GenTree*  op1        = node->gtGetOp1();
-    GenTree*  op2        = node->gtGetOp2();
-    emitAttr  simdSize   = EA_ATTR(node->gtSIMDSize);
-    emitter*  emit       = getEmitter();
+    regNumber targetReg = node->gtRegNum;
+    GenTree*  op1       = node->gtGetOp1();
+    GenTree*  op2       = node->gtGetOp2();
+    emitAttr  simdSize  = EA_ATTR(node->gtSIMDSize);
+    emitter*  emit      = getEmitter();
 
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
@@ -873,13 +869,12 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
 //
 void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
 {
-    var_types targetType = node->TypeGet();
-    regNumber targetReg  = node->gtRegNum;
-    GenTree*  op1        = node->gtGetOp1();
-    GenTree*  op2        = node->gtGetOp2();
-    GenTree*  op3        = nullptr;
-    emitAttr  simdSize   = EA_ATTR(node->gtSIMDSize);
-    emitter*  emit       = getEmitter();
+    regNumber targetReg = node->gtRegNum;
+    GenTree*  op1       = node->gtGetOp1();
+    GenTree*  op2       = node->gtGetOp2();
+    GenTree*  op3       = nullptr;
+    emitAttr  simdSize  = EA_ATTR(node->gtSIMDSize);
+    emitter*  emit      = getEmitter();
 
     assert(op1->OperIsList());
     assert(op2 == nullptr);
@@ -1156,7 +1151,6 @@ void CodeGen::genHWIntrinsicJumpTableFallback(NamedIntrinsic            intrinsi
     BasicBlock* jmpTable[256];
 
     unsigned jmpTableBase = emit->emitBBTableDataGenBeg(maxByte, true);
-    unsigned jmpTableOffs = 0;
 
     // Emit the jump table
     for (unsigned i = 0; i < maxByte; i++)
@@ -1333,16 +1327,10 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
     GenTree*       op1         = node->gtGetOp1();
     GenTree*       op2         = node->gtGetOp2();
-    GenTree*       op3         = nullptr;
-    GenTree*       op4         = nullptr;
     regNumber      targetReg   = node->gtRegNum;
-    var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->gtSIMDBaseType;
 
     regNumber op1Reg = REG_NA;
-    regNumber op2Reg = REG_NA;
-    regNumber op3Reg = REG_NA;
-    regNumber op4Reg = REG_NA;
     emitter*  emit   = getEmitter();
 
     genConsumeHWIntrinsicOperands(node);
@@ -1706,16 +1694,10 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicId = node->gtHWIntrinsicId;
     GenTree*       op1         = node->gtGetOp1();
     GenTree*       op2         = node->gtGetOp2();
-    GenTree*       op3         = nullptr;
-    GenTree*       op4         = nullptr;
     regNumber      targetReg   = node->gtRegNum;
-    var_types      targetType  = node->TypeGet();
     var_types      baseType    = node->gtSIMDBaseType;
 
     regNumber op1Reg = REG_NA;
-    regNumber op2Reg = REG_NA;
-    regNumber op3Reg = REG_NA;
-    regNumber op4Reg = REG_NA;
     emitter*  emit   = getEmitter();
 
     genConsumeHWIntrinsicOperands(node);
