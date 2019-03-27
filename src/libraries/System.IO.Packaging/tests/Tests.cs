@@ -3756,6 +3756,22 @@ namespace System.IO.Packaging.Tests
             }
         }
 
+        [Fact]
+        public void SupportNonPartEnumerableDerivedPackageTypes()
+        {
+            // Package is an abstract class that others can derive from. Those derived classes can override GetPartsCore and potentially not
+            // return anything. Furthermore, it is not guaranteed that GetPartsCore will have been called if the package wasn't created using
+            // the Package.Open API, which only ensures that ZipPackage's internal data structures are filled in.
+            var mockPackage = new NonEnumerablePackage();
+
+            var partUri = new Uri("/idontexist.xml", UriKind.Relative);
+            var part = mockPackage.GetPart(partUri);
+
+            Assert.NotNull(part);
+            Assert.Equal(part.Uri, partUri);
+            Assert.IsType(typeof(MockPackagePart), part);
+        }
+
         private const string DocumentRelationshipType = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument";
     }
 
@@ -3770,6 +3786,49 @@ namespace System.IO.Packaging.Tests
             }
             var s = string.Format(format, args) + ", ";
             sb.Append(s);
+        }
+    }
+
+    public class NonEnumerablePackage : Package
+    {
+        public NonEnumerablePackage() : base(FileAccess.Read)
+        {
+        }
+
+        protected override PackagePart CreatePartCore(Uri partUri, string contentType, CompressionOption compressionOption)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void DeletePartCore(Uri partUri)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override void FlushCore()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected override PackagePart GetPartCore(Uri uri)
+        {
+            return new MockPackagePart(this, uri);
+        }
+        protected override PackagePart[] GetPartsCore()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class MockPackagePart : PackagePart
+    {
+        public MockPackagePart(Package package, Uri uri) : base(package, uri)
+        {
+        }
+
+        protected override Stream GetStreamCore(FileMode mode, FileAccess access)
+        {
+            throw new NotImplementedException();
         }
     }
 }
