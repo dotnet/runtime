@@ -102,7 +102,6 @@ namespace
             }
 
             probe_paths.tpa.append(corelib_path);
-            probe_paths.tpa.push_back(PATH_SEPARATOR);
 
             pal::string_t clrjit_path = probe_paths.clrjit;
             if (clrjit_path.empty())
