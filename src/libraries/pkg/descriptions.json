@@ -2132,6 +2132,14 @@
     ]
   },
   {
+    "Name": "System.Utf8String.Experimental",
+    "Description": "Provides types for representation of UTF-8 string data.",
+    "CommonTypes": [
+        "System.Char8",
+        "System.Utf8String"
+    ]
+  },
+  {
     "Name": "System.ValueTuple",
     "Description": "Provides the System.ValueTuple structs, which implement the underlying types for tuples in C# and Visual Basic.",
     "CommonTypes": [
