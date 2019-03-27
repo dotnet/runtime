@@ -95,6 +95,7 @@ private:
     static bool genShouldRoundFP();
 
     GenTreeIndir indirForm(var_types type, GenTree* base);
+    GenTreeStoreInd storeIndirForm(var_types type, GenTree* base, GenTree* data);
 
     GenTreeIntCon intForm(var_types type, ssize_t value);
 
@@ -1040,6 +1041,9 @@ protected:
 
     void genConsumeRegs(GenTree* tree);
     void genConsumeOperands(GenTreeOp* tree);
+#ifdef FEATURE_HW_INTRINSICS
+    void genConsumeHWIntrinsicOperands(GenTreeHWIntrinsic* tree);
+#endif // FEATURE_HW_INTRINSICS
     void genEmitGSCookieCheck(bool pushReg);
     void genSetRegToIcon(regNumber reg, ssize_t val, var_types type = TYP_INT, insFlags flags = INS_FLAGS_DONT_CARE);
     void genCodeForShift(GenTree* tree);
@@ -1309,6 +1313,7 @@ public:
 
 #if defined(_TARGET_XARCH_)
     void inst_RV_RV_IV(instruction ins, emitAttr size, regNumber reg1, regNumber reg2, unsigned ival);
+    void inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenTree* rmOp, int ival);
 #endif
 
     void inst_RV_RR(instruction ins, emitAttr size, regNumber reg1, regNumber reg2);

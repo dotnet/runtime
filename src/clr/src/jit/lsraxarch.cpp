@@ -2699,11 +2699,29 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         {
             assert((numArgs > 0) && (numArgs < 4));
 
-            srcCount += BuildOperandUses(op1);
+            if (intrinsicTree->OperIsMemoryLoadOrStore())
+            {
+                srcCount += BuildAddrUses(op1);
+            }
+            else
+            {
+                srcCount += BuildOperandUses(op1);
+            }
 
             if (op2 != nullptr)
             {
-                srcCount += (isRMW) ? BuildDelayFreeUses(op2) : BuildOperandUses(op2);
+                if (op2->OperIs(GT_HWIntrinsic) && op2->AsHWIntrinsic()->OperIsMemoryLoad() && op2->isContained())
+                {
+                    srcCount += BuildAddrUses(op2->gtGetOp1());
+                }
+                else if (isRMW)
+                {
+                    srcCount += BuildDelayFreeUses(op2);
+                }
+                else
+                {
+                    srcCount += BuildOperandUses(op2);
+                }
 
                 if (op3 != nullptr)
                 {

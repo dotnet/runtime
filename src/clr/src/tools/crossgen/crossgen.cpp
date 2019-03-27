@@ -114,8 +114,7 @@ void PrintUsageHelper()
        W("                           response file\n")
        W("    /in <file>           - Specifies input filename (optional)\n")
        W("    /out <file>          - Specifies output filename (optional)\n")
-       W("    /Trusted_Platform_Assemblies <path[") PATH_SEPARATOR_STR_W W("path]>\n")
-       W("                         - List of assemblies treated as trusted platform\n")
+       W("    /r <file>            - Specifies a trusted platform assembly reference\n")
        W("                         - Cannot be used with Platform_Assemblies_Paths\n")
        W("    /Platform_Resource_Roots <path[") PATH_SEPARATOR_STR_W W("path]>\n")
        W("                         - List of paths containing localized assembly directories\n")
@@ -448,6 +447,8 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     int argc2;
     LPWSTR *argv2;
 
+    SString ssTrustedPlatformAssemblies;
+
     if (argc == 0)
     {
         PrintUsageHelper();
@@ -554,9 +555,14 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argv++;
             argc--;
         }
-        else if (MatchParameter(*argv, W("Trusted_Platform_Assemblies")) && (argc > 1))
+        else if (MatchParameter(*argv, W("r")) && (argc > 1))
         {
-            pwzTrustedPlatformAssemblies = argv[1];
+            if (!ssTrustedPlatformAssemblies.IsEmpty())
+            {
+                // Add the path delimiter if we already have entries in the TPAList
+                ssTrustedPlatformAssemblies.Append(PATH_SEPARATOR_CHAR_W);
+            }
+            ssTrustedPlatformAssemblies.Append(argv[1]);
 
             // skip path list
             argv++;
@@ -783,9 +789,14 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     }
 #endif // !defined(NO_NGENPDB)
 
+    if (!ssTrustedPlatformAssemblies.IsEmpty())
+    {
+        pwzTrustedPlatformAssemblies = (WCHAR *)ssTrustedPlatformAssemblies.GetUnicode();
+    }
+
     if ((pwzTrustedPlatformAssemblies != nullptr) && (pwzPlatformAssembliesPaths != nullptr))
     {
-        Output(W("The /Trusted_Platform_Assemblies and /Platform_Assemblies_Paths switches cannot be both specified.\n"));
+        Output(W("The /r and /Platform_Assemblies_Paths switches cannot be both specified.\n"));
         exit(FAILURE_RESULT);
     }
 
