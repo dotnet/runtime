@@ -25,9 +25,11 @@ jobs:
         name: dnceng-freebsd-internal
       ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64') }}:
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          name: dnceng-linux-external-temp
+          name: NetCorePublic-Int-Pool
+          queue: buildpool.ubuntu.1604.amd64.open
         ${{ if ne(variables['System.TeamProject'], 'public') }}:
-          name: dnceng-linux-internal-temp
+          name: NetCoreInternal-Int-Pool
+          queue: buildpool.ubuntu.1604.amd64
     strategy: ${{ parameters.strategy }}
     variables:
 
@@ -153,6 +155,20 @@ jobs:
               outputRidArg: /p:OutputRid=${{ rid }}-${{ parameters.targetArchitecture }}
               packageStepDescription: Runtime Deps installers
               packagingArgs: /p:BuildDistroIndependentInstallers=false
+
+    # Files may be owned by root because builds don't set user ID. The next AzDO step runs 'find' in
+    # the source tree, which fails due to permissions in the 'NetCore*-Int-Pool' queues. This step
+    # prevents the failure by using chown to clean up our source tree.
+    - script: |
+        set -x
+        docker run --rm \
+          -v "$(Agent.BuildDirectory):/root/build" \
+          -w /root/build \
+          ${{ parameters.dockerImage }} \
+          bash -c "chown -R $(id -u):$(id -g) *"
+      displayName: Update file ownership from root to build agent account
+      continueOnError: true
+      condition: succeededOrFailed()
 
     - task: CopyFiles@2
       displayName: Copy logs to stage
