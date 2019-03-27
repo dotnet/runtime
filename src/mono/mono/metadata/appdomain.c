@@ -857,6 +857,29 @@ mono_class_get_appdomain_do_type_resolve_method (MonoError *error)
 }
 
 /**
+ * mono_class_get_appdomain_do_type_builder_resolve_method:
+ *
+ * This routine returns System.AppDomain.DoTypeBuilderResolve.
+ */
+static MonoMethod *
+mono_class_get_appdomain_do_type_builder_resolve_method (MonoError *error)
+{
+	static MonoMethod *method; // cache
+
+	if (method)
+		return method;
+
+	// not cached yet, fill cache under caller's lock
+
+	method = mono_class_get_method_from_name_checked (mono_class_get_appdomain_class (), "DoTypeBuilderResolve", -1, 0, error);
+
+	if (method == NULL)
+		g_warning ("%s method AppDomain.DoTypeBuilderResolve not found. %s\n", __func__, mono_error_get_message (error));
+
+	return method;
+}
+
+/**
  * mono_domain_try_type_resolve_name:
  * \param domain application domain in which to resolve the type
  * \param name the name of the type to resolve.
@@ -902,7 +925,7 @@ exit:
  * \param domain application domain in which to resolve the type
  * \param typebuilder A \c System.Reflection.Emit.TypeBuilder; typebuilder.FullName is the name of the type to resolve.
  *
- * This routine invokes the internal \c System.AppDomain.DoTypeResolve and returns
+ * This routine invokes the internal \c System.AppDomain.DoTypeBuilderResolve and returns
  * the assembly that matches typebuilder.FullName.
  *
  * \returns A \c MonoReflectionAssembly or NULL_HANDLE if not found
@@ -918,7 +941,7 @@ mono_domain_try_type_resolve_typebuilder (MonoDomain *domain, MonoReflectionType
 
 	error_init (error);
 
-	MonoMethod * const method = mono_class_get_appdomain_do_type_resolve_method (error);
+	MonoMethod * const method = mono_class_get_appdomain_do_type_builder_resolve_method (error);
 	goto_if_nok (error, return_null);
 
 	MonoAppDomainHandle appdomain;
