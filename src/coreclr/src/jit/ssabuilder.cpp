@@ -1870,9 +1870,9 @@ void Compiler::JitTestCheckSSA()
     for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
     {
         TestLabelAndNum tlAndN;
-        GenTree*        node       = ki.Get();
-        bool            nodeExists = testData->Lookup(node, &tlAndN);
-        assert(nodeExists);
+        GenTree*        node = ki.Get();
+        bool            b    = testData->Lookup(node, &tlAndN);
+        assert(b);
         if (tlAndN.m_tl == TL_SsaName)
         {
             if (node->OperGet() != GT_LCL_VAR)
@@ -1911,8 +1911,7 @@ void Compiler::JitTestCheckSSA()
                 }
                 // The mapping(s) must be one-to-one: if the label has a mapping, then the ssaNm must, as well.
                 ssize_t num2;
-                bool    ssaExists = ssaToLabel->Lookup(ssaNm, &num2);
-                assert(ssaExists);
+                bool    b = ssaToLabel->Lookup(ssaNm, &num2);
                 // And the mappings must be the same.
                 if (tlAndN.m_num != num2)
                 {

@@ -2327,9 +2327,9 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
     unsigned R = bmImm.immR;
     unsigned S = bmImm.immS;
 
-    unsigned elemWidth = 64; // used when N == 1
+    unsigned elemWidth = 64; // used when immN == 1
 
-    if (N == 0) // find the smaller elemWidth when N == 0
+    if (bmImm.immN == 0) // find the smaller elemWidth when immN == 0
     {
         // Scan S for the highest bit not set
         elemWidth = 32;
@@ -3393,8 +3393,9 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, ssize_t imm)
 
 void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 {
-    insFormat  fmt = IF_NONE;
-    instrDesc* id  = nullptr;
+    emitAttr   size = EA_SIZE(attr);
+    insFormat  fmt  = IF_NONE;
+    instrDesc* id   = nullptr;
 
     /* Figure out the encoding format of the instruction */
     switch (ins)
@@ -3536,6 +3537,7 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
                 ssize_t  imm8 = 0;
                 unsigned pos  = 0;
                 canEncode     = true;
+                bool failed   = false;
                 while (uimm != 0)
                 {
                     INT64 loByte = uimm & 0xFF;
@@ -6087,7 +6089,8 @@ void emitter::emitIns_R_R_R_R(
 
 void emitter::emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insCond cond)
 {
-    insFormat    fmt = IF_NONE;
+    emitAttr     size = EA_SIZE(attr);
+    insFormat    fmt  = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
 
@@ -6129,7 +6132,8 @@ void emitter::emitIns_R_COND(instruction ins, emitAttr attr, regNumber reg, insC
 
 void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCond cond)
 {
-    insFormat    fmt = IF_NONE;
+    emitAttr     size = EA_SIZE(attr);
+    insFormat    fmt  = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
 
@@ -6174,7 +6178,8 @@ void emitter::emitIns_R_R_COND(instruction ins, emitAttr attr, regNumber reg1, r
 void emitter::emitIns_R_R_R_COND(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, regNumber reg3, insCond cond)
 {
-    insFormat    fmt = IF_NONE;
+    emitAttr     size = EA_SIZE(attr);
+    insFormat    fmt  = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
 
@@ -6224,7 +6229,8 @@ void emitter::emitIns_R_R_R_COND(
 void emitter::emitIns_R_R_FLAGS_COND(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, insCflags flags, insCond cond)
 {
-    insFormat    fmt = IF_NONE;
+    emitAttr     size = EA_SIZE(attr);
+    insFormat    fmt  = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
 
@@ -6268,7 +6274,8 @@ void emitter::emitIns_R_R_FLAGS_COND(
 void emitter::emitIns_R_I_FLAGS_COND(
     instruction ins, emitAttr attr, regNumber reg, int imm, insCflags flags, insCond cond)
 {
-    insFormat    fmt = IF_NONE;
+    emitAttr     size = EA_SIZE(attr);
+    insFormat    fmt  = IF_NONE;
     condFlagsImm cfi;
     cfi.immCFVal = 0;
 
@@ -6869,6 +6876,7 @@ void emitter::emitIns_R_C(
 
     emitAttr      size = EA_SIZE(attr);
     insFormat     fmt  = IF_NONE;
+    int           disp = 0;
     instrDescJmp* id   = emitNewInstrJmp();
 
     switch (ins)
@@ -9063,13 +9071,14 @@ unsigned emitter::emitOutputCall(insGroup* ig, BYTE* dst, instrDesc* id, code_t 
 
 size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 {
-    BYTE*       dst  = *dp;
-    BYTE*       odst = dst;
-    code_t      code = 0;
-    size_t      sz   = emitGetInstrDescSize(id); // TODO-ARM64-Cleanup: on ARM, this is set in each case. why?
-    instruction ins  = id->idIns();
-    insFormat   fmt  = id->idInsFmt();
-    emitAttr    size = id->idOpSize();
+    BYTE*         dst  = *dp;
+    BYTE*         odst = dst;
+    code_t        code = 0;
+    size_t        sz   = emitGetInstrDescSize(id); // TODO-ARM64-Cleanup: on ARM, this is set in each case. why?
+    instruction   ins  = id->idIns();
+    insFormat     fmt  = id->idInsFmt();
+    emitAttr      size = id->idOpSize();
+    unsigned char callInstrSize = 0;
 
 #ifdef DEBUG
 #if DUMP_GC_TABLES
@@ -9080,6 +9089,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 #endif // DEBUG
 
     assert(REG_NA == (int)REG_NA);
+
+    VARSET_TP GCvars(VarSetOps::UninitVal());
 
     /* What instruction format have we got? */
 
@@ -11694,6 +11705,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
 
 regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src)
 {
+    regNumber result = REG_NA;
+
     // dst can only be a reg
     assert(!dst->isContained());
 
@@ -11724,6 +11737,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
 
 regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, GenTree* src1, GenTree* src2)
 {
+    regNumber result = REG_NA;
+
     // dst can only be a reg
     assert(!dst->isContained());
 

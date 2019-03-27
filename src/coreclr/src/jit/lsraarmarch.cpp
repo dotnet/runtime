@@ -46,6 +46,8 @@ int LinearScan::BuildIndir(GenTreeIndir* indirTree)
         return srcCount;
     }
 
+    bool isStore = (indirTree->gtOper == GT_STOREIND);
+
     GenTree* addr  = indirTree->Addr();
     GenTree* index = nullptr;
     int      cns   = 0;
