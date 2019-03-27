@@ -11,6 +11,7 @@ struct host_startup_info_t;
 #include "fx_definition.h"
 #include "host_interface.h"
 #include "host_startup_info.h"
+#include "error_codes.h"
 
 const int Max_Framework_Resolve_Retries = 100;
 
@@ -102,24 +103,29 @@ private:
         const fx_ver_t& specified,
         bool patch_roll_fwd,
         roll_fwd_on_no_candidate_fx_option roll_fwd_on_no_candidate_fx);
-    static int read_framework(
+    static StatusCode read_framework(
         const host_startup_info_t& host_info,
         const fx_reference_t& override_settings,
         const runtime_config_t& config,
         fx_name_to_fx_reference_map_t& newest_references,
         fx_name_to_fx_reference_map_t& oldest_references,
         fx_definition_vector_t& fx_definitions);
+    static StatusCode resolve_frameworks_for_app(
+        const host_startup_info_t& host_info,
+        const fx_reference_t& override_settings,
+        const runtime_config_t& app_config,
+        fx_definition_vector_t& fx_definitions);
     static fx_definition_t* resolve_fx(
         const fx_reference_t& config,
         const pal::string_t& oldest_requested_version,
         const pal::string_t& dotnet_dir);
     static void muxer_usage(bool is_sdk_present);
-    static int soft_roll_forward_helper(
+    static StatusCode soft_roll_forward_helper(
         const fx_reference_t& newer,
         const fx_reference_t& older,
         bool older_is_hard_roll_forward,
         fx_name_to_fx_reference_map_t& newest_references);
-    static int soft_roll_forward(
+    static StatusCode soft_roll_forward(
         const fx_reference_t existing_ref,
         bool current_is_hard_roll_forward,
         fx_name_to_fx_reference_map_t& newest_references);
