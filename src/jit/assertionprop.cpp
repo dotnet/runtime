@@ -3923,6 +3923,8 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, GenT
             // optAssertionPropMain(). It will reset the gtPrev and gtNext links for all nodes.
             newTree->gtNext = tree->gtNext;
 
+            // Old tree should not be referenced anymore.
+            DEBUG_DESTROY_NODE(tree);
         }
     }
 
