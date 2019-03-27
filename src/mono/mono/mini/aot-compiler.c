@@ -5301,13 +5301,12 @@ add_types_from_method_header (MonoAotCompile *acfg, MonoMethod *method)
 
 	depth = GPOINTER_TO_UINT (g_hash_table_lookup (acfg->method_depth, method));
 
-	sig = mono_method_signature_checked (method, error);
+	sig = mono_method_signature_internal (method);
+
 	if (sig) {
 		for (j = 0; j < sig->param_count; ++j)
 			if (sig->params [j]->type == MONO_TYPE_GENERICINST)
 				add_generic_class_with_depth (acfg, mono_class_from_mono_type_internal (sig->params [j]), depth + 1, "arg");
-	} else {
-		mono_error_cleanup (error);
 	}
 
 	header = mono_method_get_header_checked (method, error);
@@ -8290,10 +8289,6 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 		return;
 
 	if (acfg->aot_opts.profile_only && !method->is_inflated && !g_hash_table_lookup (acfg->profile_methods, method))
-		return;
-
-	if (method->is_generic || mono_class_is_gtd (method->klass))
-		/* generic method which has no ref instantiation */
 		return;
 
 	mono_atomic_inc_i32 (&acfg->stats.mcount);
@@ -11603,12 +11598,12 @@ collect_methods (MonoAotCompile *acfg)
 
 		if (method->is_generic || mono_class_is_gtd (method->klass)) {
 			/* Compile the ref shared version instead */
-			MonoMethod *shared_method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
-			if (!shared_method) {
-				/* Fails ref constraints */
-				/* Keep the original method, compile_method () will skip it */
-			} else {
-				method = shared_method;
+			method = mini_get_shared_method_full (method, SHARE_MODE_NONE, error);
+			if (!method) {
+				aot_printerrf (acfg, "Failed to load method 0x%x from '%s' due to %s.\n", token, image->name, mono_error_get_message (error));
+				aot_printerrf (acfg, "Run with MONO_LOG_LEVEL=debug for more information.\n");
+				mono_error_cleanup (error);
+				return FALSE;
 			}
 		}
 

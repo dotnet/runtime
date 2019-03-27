@@ -623,6 +623,7 @@ can_inflate_gparam_with (MonoGenericParam *gparam, MonoType *type)
 {
 	if (!mono_type_is_valid_generic_argument (type))
 		return FALSE;
+#if FALSE
 	/* Avoid inflating gparams with valuetype constraints with ref types during gsharing */
 	MonoGenericParamInfo *info = mono_generic_param_info (gparam);
 	if (info && (info->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT)) {
@@ -632,6 +633,7 @@ can_inflate_gparam_with (MonoGenericParam *gparam, MonoType *type)
 				return FALSE;
 		}
 	}
+#endif
 	return TRUE;
 }
 
