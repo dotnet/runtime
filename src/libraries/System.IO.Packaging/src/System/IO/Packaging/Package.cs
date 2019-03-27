@@ -1135,7 +1135,23 @@ namespace System.IO.Packaging
             if (_partList.ContainsKey(validatePartUri))
                 return _partList[validatePartUri];
             else
-                return null;
+            {
+                //Ideally we should decide whether we should query the underlying layer for the part based on the
+                //FileShare enum. But since we do not have that information, currently the design is to always
+                //ask the underlying layer, this allows for incremental access to the package.
+                //Note:
+                //Currently this incremental behavior for GetPart is not consistent with the GetParts method
+                //which just queries the underlying layer once.
+                PackagePart returnedPart = GetPartCore(validatePartUri);
+
+                if (returnedPart != null)
+                {
+                    // Add the part to the _partList if there is no prefix collision
+                    AddIfNoPrefixCollisionDetected(validatePartUri, returnedPart);
+                }
+
+                return returnedPart;
+            }
         }
 
         /// <summary>
