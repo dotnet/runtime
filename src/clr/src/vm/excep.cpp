@@ -5139,17 +5139,29 @@ LONG InternalUnhandledExceptionFilter(
 
 } // LONG InternalUnhandledExceptionFilter()
 
-static bool s_useEntryPointFilter = false;
+
+// Represent the value of USE_ENTRYPOINT_FILTER as passed in the property bag to the host during construction
+static bool s_useEntryPointFilterCorhostProperty = false;
 
 void ParseUseEntryPointFilter(LPCWSTR value)
 {
-#ifdef PLATFORM_WINDOWS // This feature has only been tested on Windows, keep it disabled on other platforms
     // set s_useEntryPointFilter true if value != "0"
     if (value && (_wcsicmp(value, W("0")) != 0))
     {
-        s_useEntryPointFilter = true;
+        s_useEntryPointFilterCorhostProperty = true;
     }
+}
+
+bool GetUseEntryPointFilter()
+{
+#ifdef PLATFORM_WINDOWS // This feature has only been tested on Windows, keep it disabled on other platforms
+    static bool s_useEntryPointFilterEnv = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_UseEntryPointFilter) != 0;
+
+    return s_useEntryPointFilterCorhostProperty || s_useEntryPointFilterEnv;
+#else
+    return false;
 #endif
+
 }
 
 // This filter is used to trigger unhandled exception processing for the entrypoint thread
@@ -5172,7 +5184,7 @@ LONG EntryPointFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID _pData)
         return ret;
     }
 
-    if (!s_useEntryPointFilter)
+    if (!GetUseEntryPointFilter())
     {
         return EXCEPTION_CONTINUE_SEARCH;
     }
