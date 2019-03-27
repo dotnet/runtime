@@ -7,12 +7,12 @@ jobs:
     # Run after all dependent legs are executed
     dependsOn: ${{ parameters.DependsOn }}
     pool:
-      # For public or PR jobs, use the hosted pool.  For internal jobs use the internal pool.
-      # Will eventually change this to two BYOC pools.
+      # Use a hosted pool when possible.
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         name: Hosted VS2017
       ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        name: dotnet-internal-temp
+        name: NetCoreInternal-Int-Pool
+        queue: buildpool.windows.10.amd64.vs2017
     # Double the default timeout. Publishing is subject to huge delays due to contention on the dotnet-core blob feed
     timeoutInMinutes: 120
     workspace:
