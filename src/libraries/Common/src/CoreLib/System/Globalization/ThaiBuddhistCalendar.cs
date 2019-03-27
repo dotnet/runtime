@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Globalization
 {
     /// <summary>
@@ -124,7 +125,7 @@ namespace System.Globalization
             return _helper.ToDateTime(year, month, day, hour, minute, second, millisecond, era);
         }
 
-        public override int[] Eras => _helper.Eras;
+        public override int[]? Eras => _helper.Eras;
 
         private const int DefaultTwoDigitYearMax = 2572;
 
