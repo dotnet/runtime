@@ -103,9 +103,6 @@ public:
     // Get the timestamp of the most recent event in the buffer.
     LARGE_INTEGER GetMostRecentTimeStamp() const;
 
-    // Clear the buffer.
-    void Clear();
-
     // Get the next event from the buffer as long as it is before the specified timestamp.
     // Input of NULL gets the first event.
     EventPipeEventInstance* GetNext(EventPipeEventInstance *pEvent, LARGE_INTEGER beforeTimeStamp);
