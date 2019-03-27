@@ -344,7 +344,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Command.Create(appExe)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .EnvironmentVariable("_DOTNET_TEST_SDK_REGISTRY_PATH", regKeyOverride.KeyPath)
+                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.RegistryPath, regKeyOverride.KeyPath)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
@@ -353,7 +353,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // Verify running from within the working directory
                 Command.Create(appExe)
                     .WorkingDirectory(fixture.TestProject.OutputDirectory)
-                    .EnvironmentVariable("_DOTNET_TEST_SDK_REGISTRY_PATH", regKeyOverride.KeyPath)
+                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.RegistryPath, regKeyOverride.KeyPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .Execute()
