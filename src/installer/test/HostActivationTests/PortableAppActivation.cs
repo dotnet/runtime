@@ -363,6 +363,25 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
         }
 
+        [Fact]
+        public void ComputedTPADoesntEndWithPathSeparator()
+        {
+            var fixture = sharedTestState.PortableAppFixture_Built
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            dotnet.Exec(appDll)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdErrMatching($"Property TRUSTED_PLATFORM_ASSEMBLIES = .*[^{Path.PathSeparator}]$", System.Text.RegularExpressions.RegexOptions.Multiline);
+        }
+
+
         private string MoveDepsJsonToSubdirectory(TestProjectFixture testProjectFixture)
         {
             var subdirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "d");
