@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace System.Runtime.Loader
 {
-    public abstract partial class AssemblyLoadContext
+    public partial class AssemblyLoadContext
     {
         private enum InternalState
         {
@@ -44,18 +44,25 @@ namespace System.Runtime.Loader
         // Contains the reference to VM's representation of the AssemblyLoadContext
         private readonly IntPtr _nativeAssemblyLoadContext;
 
-        protected AssemblyLoadContext() : this(false, false)
+        protected AssemblyLoadContext() : this(false, false, null)
         {
         }
 
-        protected AssemblyLoadContext(bool isCollectible) : this(false, isCollectible)
+        protected AssemblyLoadContext(bool isCollectible) : this(false, isCollectible, null)
         {
         }
 
-        private protected AssemblyLoadContext(bool representsTPALoadContext, bool isCollectible)
+        public AssemblyLoadContext(string name, bool isCollectible = true) : this(false, isCollectible, name)
+        {
+        }
+
+        private protected AssemblyLoadContext(bool representsTPALoadContext, bool isCollectible, string name)
         {
             // Initialize the VM side of AssemblyLoadContext if not already done.
             IsCollectible = isCollectible;
+
+            Name = name;
+
             // The _unloadLock needs to be assigned after the IsCollectible to ensure proper behavior of the finalizer
             // even in case the following allocation fails or the thread is aborted between these two lines.
             _unloadLock = new object();
@@ -132,6 +139,22 @@ namespace System.Runtime.Loader
             }
         }
 
+        public IEnumerable<Assembly> Assemblies
+        {
+            get
+            {
+                foreach (Assembly a in GetLoadedAssemblies())
+                {
+                    AssemblyLoadContext alc = GetLoadContext(a);
+
+                    if (alc == this)
+                    {
+                        yield return a;
+                    }
+                }
+            }
+        }
+
         // Event handler for resolving native libraries.
         // This event is raised if the native library could not be resolved via
         // the default resolution logic [including AssemblyLoadContext.LoadUnmanagedDll()]
@@ -167,6 +190,37 @@ namespace System.Runtime.Loader
 
         public bool IsCollectible { get; }
 
+        public string Name { get; }
+
+        public override string ToString() => "\"" + Name + "\" " + GetType().ToString() + " #" + _id;
+
+        public static IEnumerable<AssemblyLoadContext> All
+        {
+            get
+            {
+                AssemblyLoadContext d = AssemblyLoadContext.Default; // Ensure default is initialized
+
+                List<WeakReference<AssemblyLoadContext>> alcList = null;
+                lock (s_contextsToUnload)
+                {
+                    // To make this thread safe we need a quick snapshot while locked
+                    alcList = new List<WeakReference<AssemblyLoadContext>>(s_contextsToUnload.Values);
+                }
+
+                foreach (WeakReference<AssemblyLoadContext> weakAlc in alcList)
+                {
+                    AssemblyLoadContext alc = null;
+
+                    weakAlc.TryGetTarget(out alc);
+
+                    if (alc != null)
+                    {
+                        yield return alc;
+                    }
+                }
+            }
+        }
+
         // Helper to return AssemblyName corresponding to the path of an IL assembly
         public static AssemblyName GetAssemblyName(string assemblyPath)
         {
@@ -181,7 +235,10 @@ namespace System.Runtime.Loader
         // Custom AssemblyLoadContext implementations can override this
         // method to perform custom processing and use one of the protected
         // helpers above to load the assembly.
-        protected abstract Assembly Load(AssemblyName assemblyName);
+        protected virtual Assembly Load(AssemblyName assemblyName)
+        {
+            return null;
+        }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
@@ -356,27 +413,15 @@ namespace System.Runtime.Loader
     {
         internal static readonly AssemblyLoadContext s_loadContext = new DefaultAssemblyLoadContext();
 
-        internal DefaultAssemblyLoadContext() : base(true, false)
+        internal DefaultAssemblyLoadContext() : base(true, false, "Default")
         {
-        }
-
-        protected override Assembly Load(AssemblyName assemblyName)
-        {
-            // We were loading an assembly into TPA ALC that was not found on TPA list. As a result we are here.
-            // Returning null will result in the AssemblyResolve event subscribers to be invoked to help resolve the assembly.
-            return null;
         }
     }
 
     internal sealed class IndividualAssemblyLoadContext : AssemblyLoadContext
     {
-        internal IndividualAssemblyLoadContext() : base(false, false)
+        internal IndividualAssemblyLoadContext(String name) : base(false, false, name)
         {
-        }
-
-        protected override Assembly Load(AssemblyName assemblyName)
-        {
-            return null;
         }
     }
 }
