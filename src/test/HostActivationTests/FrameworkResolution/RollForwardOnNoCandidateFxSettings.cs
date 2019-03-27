@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build;
-using Microsoft.DotNet.Cli.Build.Framework;
 using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
@@ -27,60 +25,60 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         public void Default()
         {
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(MicrosoftNETCoreApp, "4.0.0"),
-                result => result.Should().Fail()
-                    .And.DidNotFindCompatibleFrameworkVersion());
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(MicrosoftNETCoreApp, "4.0.0")),
+                resolvedFramework: null);
 
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(MicrosoftNETCoreApp, "5.0.0"),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"));
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(MicrosoftNETCoreApp, "5.0.0")),
+                resolvedFramework: "5.1.3");
         }
 
         [Fact]
         public void RuntimeConfigOnly()
         {
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithRollForwardOnNoCandidateFx(2)
-                    .WithFramework(MicrosoftNETCoreApp, "4.0.0"),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"));
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithRollForwardOnNoCandidateFx(2)
+                        .WithFramework(MicrosoftNETCoreApp, "4.0.0")),
+                resolvedFramework: "5.1.3");
         }
 
         [Fact]
         public void FrameworkReferenceOnly()
         {
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, "4.0.0")
-                        .WithRollForwardOnNoCandidateFx(2)),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"));
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, "4.0.0")
+                            .WithRollForwardOnNoCandidateFx(2))),
+                resolvedFramework: "5.1.3");
         }
 
         [Fact]
         public void EnvironmentVariableOnly()
         {
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(MicrosoftNETCoreApp, "4.0.0"),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"),
-                environment: new Dictionary<string, string>() { { "DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX", "2" } });
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(MicrosoftNETCoreApp, "4.0.0"))
+                    .WithEnvironment(Constants.RollForwardOnNoCandidateFxSetting.EnvironmentVariable, "2"),
+                resolvedFramework: "5.1.3");
         }
 
         [Fact]
         public void CommandLineOnly()
         {
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(MicrosoftNETCoreApp, "4.0.0"),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"),
-                commandLine: new string[] { Constants.RollForwardOnNoCandidateFxSetting.CommandLineArgument, "2" });
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(MicrosoftNETCoreApp, "4.0.0"))
+                    .WithCommandLine(Constants.RollForwardOnNoCandidateFxSetting.CommandLineArgument, "2"),
+                resolvedFramework: "5.1.3");
         }
 
         [Theory]  // CLI wins over everything
@@ -89,7 +87,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(SettingLocation.FrameworkReference, "5.1.3")]
         public void CommandLinePriority(SettingLocation settingLocation, string resolvedFramework)
         {
-            RunTestWithRollForwardOnNoCandidateFxSetting(
+            RunTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(MicrosoftNETCoreApp, "4.0.0"))
@@ -104,7 +102,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(SettingLocation.RuntimeOptions, "5.1.3")]
         public void FrameworkPriority(SettingLocation settingLocation, string resolvedFramework)
         {
-            RunTestWithRollForwardOnNoCandidateFxSetting(
+            RunTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, "4.0.0")
@@ -119,7 +117,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(SettingLocation.FrameworkReference, null)]
         public void RuntimeConfigPriority(SettingLocation settingLocation, string resolvedFramework)
         {
-            RunTestWithRollForwardOnNoCandidateFxSetting(
+            RunTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithRollForwardOnNoCandidateFx(2)
@@ -134,7 +132,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(SettingLocation.FrameworkReference, null)]
         public void EnvironmentPriority(SettingLocation settingLocation, string resolvedFramework)
         {
-            RunTestWithRollForwardOnNoCandidateFxSetting(
+            RunTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(MicrosoftNETCoreApp, "4.0.0"))
@@ -150,7 +148,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(SettingLocation.Environment, "5.1.3")]
         public void InnerFrameworkReference(SettingLocation settingLocation, string resolvedFramework)
         {
-            RunTestWithRollForwardOnNoCandidateFxSetting(
+            RunTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(new RuntimeConfig.Framework(MiddleWare, "2.1.0")))
@@ -169,7 +167,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(SettingLocation.Environment, "5.1.3")]     // Since none is specified for the inner reference, environment is used
         public void NoInheritance_MoreRelaxed(SettingLocation settingLocation, string resolvedFramework)
         {
-            RunTestWithRollForwardOnNoCandidateFxSetting(
+            RunTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(MiddleWare, "1.0.0"))
@@ -187,7 +185,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData(SettingLocation.Environment, null)]           // Since none is specified for the inner reference, environment is used
         public void NoInheritance_MoreRestrictive(SettingLocation settingLocation, string resolvedFramework)
         {
-            RunTestWithRollForwardOnNoCandidateFxSetting(
+            RunTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(new RuntimeConfig.Framework(MiddleWare, "2.1.2")))
@@ -198,7 +196,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 resolvedFramework);
         }
 
-        private void RunTestWithRollForwardOnNoCandidateFxSetting(
+        private void RunTest(
             TestSettings testSettings,
             Action<DotNetCliExtensions.DotNetCliCustomizer> customizeDotNet = null,
             string resolvedFramework = null)
@@ -225,21 +223,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                         }
                     });
             }
-        }
-
-        private void RunTest(
-            Func<RuntimeConfig, RuntimeConfig> runtimeConfig,
-            Action<CommandResult> resultAction,
-            IDictionary<string, string> environment = null,
-            string[] commandLine = null)
-        {
-            RunTest(
-                SharedState.DotNetWithFrameworks,
-                SharedState.FrameworkReferenceApp,
-                runtimeConfig,
-                resultAction,
-                environment,
-                commandLine);
         }
 
         public class SharedTestState : SharedTestStateBase

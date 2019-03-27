@@ -17,5 +17,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public const string CommandLineArgument = "--roll-forward-on-no-candidate-fx";
             public const string EnvironmentVariable = "DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX";
         }
+
+        public static class FxVersion
+        {
+            public const string CommandLineArgument = "--fx-version";
+        }
     }
 }
