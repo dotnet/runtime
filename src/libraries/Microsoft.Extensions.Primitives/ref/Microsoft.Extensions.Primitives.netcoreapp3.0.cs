@@ -135,8 +135,8 @@ namespace Microsoft.Extensions.Primitives
         public static readonly Microsoft.Extensions.Primitives.StringValues Empty;
         public StringValues(string value) { throw null; }
         public StringValues(string[] values) { throw null; }
-        public int Count { get { throw null; } }
-        public string this[int index] { get { throw null; } }
+        public int Count { [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]get { throw null; } }
+        public string this[int index] { [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]get { throw null; } }
         bool System.Collections.Generic.ICollection<System.String>.IsReadOnly { get { throw null; } }
         string System.Collections.Generic.IList<System.String>.this[int index] { get { throw null; } set { } }
         public static Microsoft.Extensions.Primitives.StringValues Concat(Microsoft.Extensions.Primitives.StringValues values1, Microsoft.Extensions.Primitives.StringValues values2) { throw null; }
