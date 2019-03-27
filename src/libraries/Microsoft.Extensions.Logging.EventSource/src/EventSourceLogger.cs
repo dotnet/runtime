@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             CategoryName = categoryName;
 
             // Default is to turn off logging
-            Level = LoggingEventSource.LoggingDisabled;
+            Level = LogLevel.None;
 
             _factoryID = factoryID;
             _eventSource = eventSource;
@@ -37,22 +37,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         public string CategoryName { get; }
 
-        private LogLevel _level;
-
-        public LogLevel Level
-        {
-            get
-            {
-                // need to check if the filter spec and internal event source level has changed
-                // and update the loggers level if it has
-                _eventSource.ApplyFilterSpec();
-                return _level;
-            }
-            set
-            {
-                _level = value;
-            }
-        }
+        public LogLevel Level { get; set; }
 
         // Loggers created by a single provider form a linked list
         public EventSourceLogger Next { get; }

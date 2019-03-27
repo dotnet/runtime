@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using Microsoft.Extensions.FileSystemGlobbing;
 using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 using Microsoft.Extensions.Primitives;
@@ -16,10 +17,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
     /// <summary>
     /// A polling based <see cref="IChangeToken"/> for wildcard patterns.
     /// </summary>
-    public class PollingWildCardChangeToken : IChangeToken
+    public class PollingWildCardChangeToken : IPollingChangeToken
     {
-        // Internal for unit testing.
-        internal static readonly TimeSpan DefaultPollingInterval = TimeSpan.FromSeconds(4);
         private static readonly byte[] Separator = Encoding.Unicode.GetBytes("|");
         private readonly object _enumerationLock = new object();
         private readonly DirectoryInfoBase _directoryInfo;
@@ -28,6 +27,8 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private DateTime? _lastScanTimeUtc;
         private byte[] _byteBuffer;
         private byte[] _previousHash;
+        private CancellationTokenSource _tokenSource;
+        private CancellationChangeToken _changeToken;
 
         /// <summary>
         /// Initializes a new instance of <see cref="PollingWildCardChangeToken"/>.
@@ -59,10 +60,24 @@ namespace Microsoft.Extensions.FileProviders.Physical
         }
 
         /// <inheritdoc />
-        public bool ActiveChangeCallbacks => false;
+        public bool ActiveChangeCallbacks { get; internal set; }
 
         // Internal for unit testing.
-        internal TimeSpan PollingInterval { get; set; } = DefaultPollingInterval;
+        internal TimeSpan PollingInterval { get; set; } = PhysicalFilesWatcher.DefaultPollingInterval;
+
+        internal CancellationTokenSource CancellationTokenSource
+        {
+            get => _tokenSource;
+            set
+            {
+                Debug.Assert(_tokenSource == null, "We expect CancellationTokenSource to be initialized exactly once.");
+
+                _tokenSource = value;
+                _changeToken = new CancellationChangeToken(_tokenSource.Token);
+            }
+        }
+
+        CancellationTokenSource IPollingChangeToken.CancellationTokenSource => CancellationTokenSource;
 
         private IClock Clock { get; }
 
@@ -175,7 +190,14 @@ namespace Microsoft.Extensions.FileProviders.Physical
             sha256.AppendData(Separator, 0, Separator.Length);
         }
 
-        IDisposable IChangeToken.RegisterChangeCallback(Action<object> callback, object state) =>
-            EmptyDisposable.Instance;
+        IDisposable IChangeToken.RegisterChangeCallback(Action<object> callback, object state)
+        {
+            if (!ActiveChangeCallbacks)
+            {
+                return EmptyDisposable.Instance;
+            }
+
+            return _changeToken.RegisterChangeCallback(callback, state);
+        }
     }
 }

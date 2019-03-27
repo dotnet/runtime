@@ -1,7 +1,12 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Threading;
+using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.Extensions.Logging.EventSource
 {
@@ -100,31 +105,13 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// </summary>
         internal static readonly LoggingEventSource Instance = new LoggingEventSource();
 
-        internal static readonly LogLevel LoggingDisabled = LogLevel.None + 1;
+        private LoggerFilterRule[] _filterSpec;
+        private CancellationTokenSource _cancellationTokenSource;
 
-        private readonly object _providerLock = new object();
-        private string _filterSpec;
-        private EventSourceLoggerProvider _loggingProviders;
-        private bool _checkLevel;
-
-        internal EventSourceLoggerProvider CreateLoggerProvider()
+        private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
-            lock (_providerLock)
-            {
-                var newLoggerProvider = new EventSourceLoggerProvider(this, _loggingProviders);
-                _loggingProviders = newLoggerProvider;
-
-                // If the EventSource has already been turned on.  set the filters.
-                if (_filterSpec != null)
-                {
-                    newLoggerProvider.SetFilterSpec(_filterSpec);
-                }
-
-                return newLoggerProvider;
-            }
+            _filterSpec = new LoggerFilterRule[0];
         }
-
-        private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat) { }
 
         /// <summary>
         /// FormattedMessage() is called when ILogger.Log() is called. and the FormattedMessage keyword is active
@@ -182,22 +169,18 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <inheritdoc />
         protected override void OnEventCommand(EventCommandEventArgs command)
         {
-            lock (_providerLock)
+            if (command.Command == EventCommand.Update || command.Command == EventCommand.Enable)
             {
-                if (command.Command == EventCommand.Update || command.Command == EventCommand.Enable)
+                if (!command.Arguments.TryGetValue("FilterSpecs", out var filterSpec))
                 {
-                    string filterSpec;
-                    if (!command.Arguments.TryGetValue("FilterSpecs", out filterSpec))
-                    {
-                        filterSpec = string.Empty; // This means turn on everything.
-                    }
+                    filterSpec = string.Empty; // This means turn on everything.
+                }
 
-                    SetFilterSpec(filterSpec);
-                }
-                else if (command.Command == EventCommand.Update || command.Command == EventCommand.Disable)
-                {
-                    SetFilterSpec(null); // This means disable everything.
-                }
+                SetFilterSpec(filterSpec);
+            }
+            else if (command.Command == EventCommand.Disable)
+            {
+                SetFilterSpec(null); // This means disable everything.
             }
         }
 
@@ -208,29 +191,168 @@ namespace Microsoft.Extensions.Logging.EventSource
         [NonEvent]
         private void SetFilterSpec(string filterSpec)
         {
-            _filterSpec = filterSpec;
+            _filterSpec = ParseFilterSpec(filterSpec, GetDefaultLevel());
 
-            // In .NET 4.5.2 the internal EventSource level hasn't been correctly set
-            // when this callback is invoked. To still have the logger behave correctly
-            // in .NET 4.5.2 we delay checking the level until the logger is used the first
-            // time after this callback.
-            _checkLevel = true;
+            FireChangeToken();
         }
 
         [NonEvent]
-        internal void ApplyFilterSpec()
+        internal IChangeToken GetFilterChangeToken()
         {
-            lock (_providerLock)
+            var cts = LazyInitializer.EnsureInitialized(ref _cancellationTokenSource, () => new CancellationTokenSource());
+            return new CancellationChangeToken(cts.Token);
+        }
+
+        [NonEvent]
+        private void FireChangeToken()
+        {
+            var tcs = Interlocked.Exchange(ref _cancellationTokenSource, null);
+            tcs.Cancel();
+        }
+
+         /// <summary>
+        /// Given a set of specifications  Pat1:Level1;Pat1;Level2 ... Where
+        /// Pat is a string pattern (a logger Name with a optional trailing wildcard * char)
+        /// and Level is a number 0 (Trace) through 5 (Critical).
+        ///
+        /// The :Level can be omitted (thus Pat1;Pat2 ...) in which case the level is 1 (Debug).
+        ///
+        /// A completely emtry sting act like * (all loggers set to Debug level).
+        ///
+        /// The first specification that 'loggers' Name matches is used.
+        /// </summary>
+        [NonEvent]
+        public static LoggerFilterRule[] ParseFilterSpec(string filterSpec, LogLevel defaultLevel)
+        {
+            if (filterSpec == string.Empty)
             {
-                if (_checkLevel)
+                return new [] { new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, defaultLevel, null) };
+            }
+
+            var rules = new List<LoggerFilterRule>();
+
+            // All event source loggers are disabled by default
+            rules.Add(new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, LogLevel.None, null));
+
+            if (filterSpec != null)
+            {
+                var ruleStrings = filterSpec.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var rule in ruleStrings)
                 {
-                    for (var cur = _loggingProviders; cur != null; cur = cur.Next)
+                    var level = defaultLevel;
+                    var parts = rule.Split(new[] { ':' }, 2);
+                    var loggerName = parts[0];
+                    if (loggerName.Length == 0)
                     {
-                        cur.SetFilterSpec(_filterSpec);
+                        continue;
                     }
-                    _checkLevel = false;
+
+                    if (loggerName[loggerName.Length-1] == '*')
+                    {
+                        loggerName = loggerName.Substring(0, loggerName.Length - 1);
+                    }
+
+                    if (parts.Length == 2)
+                    {
+                        if (!TryParseLevel(defaultLevel, parts[1], out level))
+                        {
+                            continue;
+                        }
+                    }
+
+                    rules.Add(new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, loggerName, level, null));
                 }
             }
+
+            return rules.ToArray();
+        }
+
+        /// <summary>
+        /// Parses the level specification (which should look like :N where n is a  number 0 (Trace)
+        /// through 5 (Critical).   It can also be an empty string (which means 1 (Debug) and ';' marks
+        /// the end of the specifcation This specification should start at spec[curPos]
+        /// It returns the value in 'ret' and returns true if successful.  If false is returned ret is left unchanged.
+        /// </summary>
+        [NonEvent]
+        private static bool TryParseLevel(LogLevel defaultLevel, string levelString, out LogLevel ret)
+        {
+            ret = defaultLevel;
+
+            if (levelString.Length == 0)
+            {
+                // No :Num spec means Debug
+                ret = defaultLevel;
+                return true;
+            }
+
+            int level;
+            switch (levelString)
+            {
+                case "Trace":
+                    ret = LogLevel.Trace;
+                    break;
+                case "Debug":
+                    ret = LogLevel.Debug;
+                    break;
+                case "Information":
+                    ret = LogLevel.Information;
+                    break;
+                case "Warning":
+                    ret = LogLevel.Warning;
+                    break;
+                case "Error":
+                    ret = LogLevel.Error;
+                    break;
+                case "Critical":
+                    ret = LogLevel.Critical;
+                    break;
+                default:
+                    if (!int.TryParse(levelString, out level))
+                    {
+                        return false;
+                    }
+                    if (!(LogLevel.Trace <= (LogLevel)level && (LogLevel)level <= LogLevel.None))
+                    {
+                        return false;
+                    }
+                    ret = (LogLevel)level;
+                    break;
+            }
+            return true;
+        }
+
+        [NonEvent]
+        private LogLevel GetDefaultLevel()
+        {
+            var allMessageKeywords = Keywords.Message | Keywords.FormattedMessage | Keywords.JsonMessage;
+
+            if (IsEnabled(EventLevel.Verbose, allMessageKeywords))
+            {
+                return LogLevel.Debug;
+            }
+
+            if (IsEnabled(EventLevel.Informational, allMessageKeywords))
+            {
+                return LogLevel.Information;
+            }
+
+            if (IsEnabled(EventLevel.Warning, allMessageKeywords))
+            {
+                return LogLevel.Warning;
+            }
+
+            if (IsEnabled(EventLevel.Error, allMessageKeywords))
+            {
+                return LogLevel.Error;
+            }
+
+            return LogLevel.Critical;
+        }
+
+        [NonEvent]
+        public LoggerFilterRule[] GetFilterRules()
+        {
+            return _filterSpec;
         }
     }
 }

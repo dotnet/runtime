@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging
                 var scopeSize = 0;
                 foreach (var loggerInformation in value)
                 {
-                    if (!loggerInformation.ExternalScope)
+                    if (loggerInformation.CreateScopes)
                     {
                         scopeSize++;
                     }
@@ -153,7 +153,7 @@ namespace Microsoft.Extensions.Logging
             for (var index = 0; index < loggers.Length; index++)
             {
                 var loggerInformation = loggers[index];
-                if (loggerInformation.ExternalScope)
+                if (!loggerInformation.CreateScopes)
                 {
                     continue;
                 }

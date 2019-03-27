@@ -2,7 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Diagnostics.Tracing;
+using System.Diagnostics;
+using System.Threading;
 
 namespace Microsoft.Extensions.Logging.EventSource
 {
@@ -12,226 +13,103 @@ namespace Microsoft.Extensions.Logging.EventSource
     [ProviderAlias("EventSource")]
     internal class EventSourceLoggerProvider : ILoggerProvider
     {
-        // A small integer that uniquely identifies the LoggerFactory assoicated with this LoggingProvider.
-        // Zero is illegal (it means we are uninitialized), and have to be added to the factory.
-        private int _factoryID;
+        private static int _globalFactoryID;
 
-        private LogLevel _defaultLevel;
-        private string _filterSpec;
+        // A small integer that uniquely identifies the LoggerFactory associated with this LoggingProvider.
+        private readonly int _factoryID;
+
+        private LoggerFilterRule[] _rules;
         private EventSourceLogger _loggers; // Linked list of loggers that I have created
         private readonly LoggingEventSource _eventSource;
+        private readonly bool _handleFilters;
 
-        public EventSourceLoggerProvider(LoggingEventSource eventSource, EventSourceLoggerProvider next = null)
+        private IDisposable _filterChangeToken;
+
+        public EventSourceLoggerProvider(LoggingEventSource eventSource) : this(eventSource, handleFilters: false)
+        {
+
+        }
+
+        public EventSourceLoggerProvider(LoggingEventSource eventSource, bool handleFilters)
         {
             if (eventSource == null)
             {
                 throw new ArgumentNullException(nameof(eventSource));
             }
             _eventSource = eventSource;
-            Next = next;
+            _handleFilters = handleFilters;
+            _factoryID = Interlocked.Increment(ref _globalFactoryID);
+            if (_handleFilters)
+            {
+                OnFilterConfigurationChange();
+            }
         }
 
-        public EventSourceLoggerProvider Next { get; }
+        private void OnFilterConfigurationChange()
+        {
+            _filterChangeToken = _eventSource
+                .GetFilterChangeToken()
+                .RegisterChangeCallback(state => ((EventSourceLoggerProvider)state).OnFilterConfigurationChange(), this);
+
+            SetFilterSpec(_eventSource.GetFilterRules());
+        }
 
         /// <inheritdoc />
         public ILogger CreateLogger(string categoryName)
         {
-            // need to check if the filter spec and internal event source level has changed
-            // and update the _defaultLevel if it has
-            _eventSource.ApplyFilterSpec();
             var newLogger = _loggers = new EventSourceLogger(categoryName, _factoryID, _eventSource, _loggers);
-            newLogger.Level = ParseLevelSpecs(_filterSpec, _defaultLevel, newLogger.CategoryName);
+            newLogger.Level = GetLoggerLevel(newLogger.CategoryName);
             return newLogger;
         }
 
         public void Dispose()
         {
-            SetFilterSpec(null); // Turn off any logging
+            _filterChangeToken?.Dispose();
+
+            // Turn off any logging
+            for (var logger = _loggers; logger != null; logger = logger.Next)
+            {
+                logger.Level = LogLevel.None;
+            }
         }
 
         // Sets the filtering for a particular logger provider
-        internal void SetFilterSpec(string filterSpec)
+        internal void SetFilterSpec(LoggerFilterRule[] rules)
         {
-            _filterSpec = filterSpec;
-            _defaultLevel = GetDefaultLevel();
+            _rules = rules;
 
             // Update the levels of all the loggers to match what the filter specification asks for.
             for (var logger = _loggers; logger != null; logger = logger.Next)
             {
-                logger.Level = ParseLevelSpecs(filterSpec, _defaultLevel, logger.CategoryName);
-            }
-
-            if (_factoryID == 0)
-            {
-                // Compute an ID for the Factory.  It is its position in the list (starting at 1, we reserve 0 to mean unstarted).
-                _factoryID = 1;
-                for (var cur = Next; cur != null; cur = cur.Next)
-                {
-                    _factoryID++;
-                }
+                logger.Level = GetLoggerLevel(logger.CategoryName);
             }
         }
 
-        private LogLevel GetDefaultLevel()
+        private LogLevel GetLoggerLevel(string loggerCategoryName)
         {
-            var allMessageKeywords = LoggingEventSource.Keywords.Message | LoggingEventSource.Keywords.FormattedMessage | LoggingEventSource.Keywords.JsonMessage;
-
-            if (_eventSource.IsEnabled(EventLevel.Informational, allMessageKeywords))
+            if (!_handleFilters)
             {
-                if (_eventSource.IsEnabled(EventLevel.Verbose, allMessageKeywords))
-                {
-                    return LogLevel.Debug;
-                }
-                else
-                {
-                    return LogLevel.Information;
-                }
-            }
-            else
-            {
-                if (_eventSource.IsEnabled(EventLevel.Warning, allMessageKeywords))
-                {
-                    return LogLevel.Warning;
-                }
-                else
-                {
-                    if (_eventSource.IsEnabled(EventLevel.Error, allMessageKeywords))
-                    {
-                        return LogLevel.Error;
-                    }
-                    else
-                    {
-                        return LogLevel.Critical;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Given a set of specifications  Pat1:Level1;Pat1;Level2 ... Where
-        /// Pat is a string pattern (a logger Name with a optional trailing wildcard * char)
-        /// and Level is a number 0 (Trace) through 5 (Critical).
-        ///
-        /// The :Level can be omitted (thus Pat1;Pat2 ...) in which case the level is 1 (Debug).
-        ///
-        /// A completely emtry sting act like * (all loggers set to Debug level).
-        ///
-        /// The first speciciation that 'loggers' Name matches is used.
-        /// </summary>
-        private LogLevel ParseLevelSpecs(string filterSpec, LogLevel defaultLevel, string loggerName)
-        {
-            if (filterSpec == null)
-            {
-                return LoggingEventSource.LoggingDisabled;      // Null means disable.
-            }
-            if (filterSpec == string.Empty)
-            {
-                return defaultLevel;
+                return LogLevel.Trace;
             }
 
-            var level = LoggingEventSource.LoggingDisabled;   // If the logger does not match something, it is off.
-
-            // See if logger.Name  matches a _filterSpec pattern.
-            var namePos = 0;
-            var specPos = 0;
-            for (;;)
+            var level = LogLevel.None;
+            foreach (var rule in _rules)
             {
-                if (namePos < loggerName.Length)
-                {
-                    if (filterSpec.Length <= specPos)
-                    {
-                        break;
-                    }
-                    var specChar = filterSpec[specPos++];
-                    var nameChar = loggerName[namePos++];
-                    if (specChar == nameChar)
-                    {
-                        continue;
-                    }
+                Debug.Assert(rule.LogLevel.HasValue);
+                Debug.Assert(rule.ProviderName == GetType().FullName);
 
-                    // We allow wildcards at the end.
-                    if (specChar == '*' && ParseLevel(defaultLevel, filterSpec, specPos, ref level))
-                    {
-                        return level;
-                    }
-                }
-                else if (ParseLevel(defaultLevel, filterSpec, specPos, ref level))
+                if (rule.CategoryName == null)
                 {
-                    return level;
+                    level = rule.LogLevel.Value;
                 }
-
-                // Skip to the next spec in the ; separated list.
-                specPos = filterSpec.IndexOf(';', specPos) + 1;
-                if (specPos <= 0) // No ; done.
+                else if (loggerCategoryName.StartsWith(rule.CategoryName))
                 {
+                    level = rule.LogLevel.Value;
                     break;
                 }
-                namePos = 0;    // Reset where we are searching in the name.
             }
 
             return level;
-        }
-
-        /// <summary>
-        /// Parses the level specification (which should look like :N where n is a  number 0 (Trace)
-        /// through 5 (Critical).   It can also be an empty string (which means 1 (Debug) and ';' marks
-        /// the end of the specifcation This specification should start at spec[curPos]
-        /// It returns the value in 'ret' and returns true if successful.  If false is returned ret is left unchanged.
-        /// </summary>
-        private bool ParseLevel(LogLevel defaultLevel, string spec, int specPos, ref LogLevel ret)
-        {
-            var endPos = spec.IndexOf(';', specPos);
-            if (endPos < 0)
-            {
-                endPos = spec.Length;
-            }
-
-            if (specPos == endPos)
-            {
-                // No :Num spec means Debug
-                ret = defaultLevel;
-                return true;
-            }
-            if (spec[specPos++] != ':')
-            {
-                return false;
-            }
-
-            string levelStr = spec.Substring(specPos, endPos - specPos);
-            int level;
-            switch (levelStr)
-            {
-                case "Trace":
-                    ret = LogLevel.Trace;
-                    break;
-                case "Debug":
-                    ret = LogLevel.Debug;
-                    break;
-                case "Information":
-                    ret = LogLevel.Information;
-                    break;
-                case "Warning":
-                    ret = LogLevel.Warning;
-                    break;
-                case "Error":
-                    ret = LogLevel.Error;
-                    break;
-                case "Critical":
-                    ret = LogLevel.Critical;
-                    break;
-                default:
-                    if (!int.TryParse(levelStr, out level))
-                    {
-                        return false;
-                    }
-                    if (!(LogLevel.Trace <= (LogLevel)level && (LogLevel)level <= LogLevel.None))
-                    {
-                        return false;
-                    }
-                    ret = (LogLevel)level;
-                    break;
-            }
-            return true;
         }
     }
 }

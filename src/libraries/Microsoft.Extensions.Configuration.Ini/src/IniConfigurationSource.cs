@@ -5,7 +5,7 @@ namespace Microsoft.Extensions.Configuration.Ini
 {
     /// <summary>
     /// Represents an INI file as an <see cref="IConfigurationSource"/>.
-    /// Files are simple line structures (<a href="http://en.wikipedia.org/wiki/INI_file">INI Files on Wikipedia</a>)
+    /// Files are simple line structures (<a href="https://en.wikipedia.org/wiki/INI_file">INI Files on Wikipedia</a>)
     /// </summary>
     /// <examples>
     /// [Section:Header]

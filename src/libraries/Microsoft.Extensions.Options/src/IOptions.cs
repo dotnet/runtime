@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.Options
     public interface IOptions<out TOptions> where TOptions : class, new()
     {
         /// <summary>
-        /// The default configured TOptions instance, equivalent to Get(string.Empty).
+        /// The default configured TOptions instance
         /// </summary>
         TOptions Value { get; }
     }

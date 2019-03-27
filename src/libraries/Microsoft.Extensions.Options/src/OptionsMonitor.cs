@@ -58,6 +58,9 @@ namespace Microsoft.Extensions.Options
             get => Get(Options.DefaultName);
         }
 
+        /// <summary>
+        /// Returns a configured TOptions instance with the given name.
+        /// </summary>
         public virtual TOptions Get(string name)
         {
             name = name ?? Options.DefaultName;

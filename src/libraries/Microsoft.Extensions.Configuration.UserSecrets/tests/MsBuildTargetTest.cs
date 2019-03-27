@@ -4,6 +4,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -38,34 +40,62 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
             }
         }
 
-        [Fact]
-        public void GeneratesAssemblyAttributeFile()
+        [Theory]
+        [InlineData(".csproj", ".cs")]
+        [InlineData(".fsproj", ".fs")]
+        public void GeneratesAssemblyAttributeFile(string projectExt, string sourceExt)
         {
+            var testTfm = typeof(MsBuildTargetTest).Assembly
+                .GetCustomAttributes<AssemblyMetadataAttribute>()
+                .First(f => f.Key == "TargetFramework")
+                .Value;
             var target = Path.Combine(_solutionRoot.FullName, "src", "Configuration", "Config.UserSecrets", "src", "build", "netstandard2.0", "Microsoft.Extensions.Configuration.UserSecrets.targets");
             Directory.CreateDirectory(Path.Combine(_tempDir, "obj"));
             var libName = "Microsoft.Extensions.Configuration.UserSecrets.dll";
             File.Copy(Path.Combine(AppContext.BaseDirectory, libName), Path.Combine(_tempDir, libName));
-            File.Copy(target, Path.Combine(_tempDir, "obj", "test.csproj.usersecretstest.targets")); // imitates how NuGet will import this target
-            var testProj = Path.Combine(_tempDir, "test.csproj");
+            File.Copy(target, Path.Combine(_tempDir, "obj", $"test{projectExt}.usersecretstest.targets")); // imitates how NuGet will import this target
+            var testProj = Path.Combine(_tempDir, "test" + projectExt);
             // should represent a 'dotnet new' project
             File.WriteAllText(testProj, $@"
 <Project Sdk=""Microsoft.NET.Sdk"">
     <PropertyGroup>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <Version>1.0.0</Version>
+        <InformationalVersion>1.0.0</InformationalVersion>
         <OutputType>Exe</OutputType>
         <UserSecretsId>
             xyz123
         </UserSecretsId>
-        <TargetFramework>netcoreapp2.1</TargetFramework>
+        <TargetFramework>{testTfm}</TargetFramework>
+        <SignAssembly>false</SignAssembly>
     </PropertyGroup>
     <ItemGroup>
+        <Compile Include=""Program.fs"" Condition=""'$(Language)' == 'F#'"" />
+        <PackageReference Remove=""Internal.AspNetCore.Sdk"" />
         <Reference Include=""$(MSBuildThisFileDirectory){libName}"" />
     </ItemGroup>
 </Project>
 ");
             _output.WriteLine($"Tempdir = {_tempDir}");
-            File.WriteAllText(Path.Combine(_tempDir, "Program.cs"), "public class Program { public static void Main(){}}");
-            var assemblyInfoFile = Path.Combine(_tempDir, "obj/Debug/netcoreapp2.1/UserSecretsAssemblyInfo.cs");
+
+            switch (projectExt)
+            {
+                case ".csproj":
+                    File.WriteAllText(Path.Combine(_tempDir, "Program.cs"), "public class Program { public static void Main(){}}");
+                    break;
+                case ".fsproj":
+                    File.WriteAllText(Path.Combine(_tempDir, "Program.fs"), @"
+module SomeNamespace.SubNamespace
+open System
+[<EntryPoint>]
+let main argv =
+    printfn ""Hello World from F#!""
+    0
+");
+                    break;
+            }
+
+            var assemblyInfoFile = Path.Combine(_tempDir, $"obj/Debug/{testTfm}/test.AssemblyInfo" + sourceExt);
 
             AssertDotNet("restore");
 
@@ -75,7 +105,7 @@ namespace Microsoft.Extensions.Configuration.UserSecrets
 
             Assert.True(File.Exists(assemblyInfoFile), $"{assemblyInfoFile} should not exist but does not");
             var contents = File.ReadAllText(assemblyInfoFile);
-            Assert.Contains("[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute(\"xyz123\")]", contents);
+            Assert.Contains("assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute(\"xyz123\")", contents);
             var lastWrite = new FileInfo(assemblyInfoFile).LastWriteTimeUtc;
 
             AssertDotNet("build --configuration Debug");
