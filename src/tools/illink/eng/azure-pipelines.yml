@@ -7,7 +7,7 @@ variables:
   value: /p:ArcadeBuild=true
 - ${{ if eq(variables.officialBuild, 'true') }}:
   - name: _BuildArgs
-    value: ${{ format('{0} /p:OfficialBuildId={1}', variables['_BuildArgs'], variables['Build.BuildNumber']) }}
+    value: ${{ format('{0} /p:OfficialBuildId=$(Build.BuildNumber)', variables['_BuildArgs']) }}
   # Provide HelixApiAccessToken for telemetry
   - group: DotNet-HelixApi-Access
 
