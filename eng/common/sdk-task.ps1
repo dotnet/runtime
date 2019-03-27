@@ -12,7 +12,7 @@ Param(
 
 $ci = $true
 $binaryLog = $true
-$warnAsError = $true
+$warnAsError = $false
 
 . $PSScriptRoot\tools.ps1
 
