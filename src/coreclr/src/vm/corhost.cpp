@@ -460,10 +460,23 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
             arguments->SetAt(i, argument);
         }
 
-        DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
-        if (pReturnValue)
+        if(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_Corhost_Swallow_Uncaught_Exceptions))
         {
-            *pReturnValue = retval;
+            EX_TRY
+                DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
+                if (pReturnValue)
+                {
+                    *pReturnValue = retval;
+                }
+            EX_CATCH_HRESULT (hr)
+        }
+        else
+        {
+            DWORD retval = pAssembly->ExecuteMainMethod(&arguments, TRUE /* waitForOtherThreads */);
+            if (pReturnValue)
+            {
+                *pReturnValue = retval;
+            }
         }
 
         GCPROTECT_END();
