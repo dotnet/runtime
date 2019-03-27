@@ -474,8 +474,4 @@
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' AND '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
   </PropertyGroup>
 
-  <!-- Import the Roslyn Compiler Toolset props -->
-  <Import Project="$(PkgMicrosoft_Net_Compilers)/build/Microsoft.Net.Compilers.props" Condition="'$(MSBuildRuntimeType)' != 'Core'" />
-  <Import Project="$(PkgMicrosoft_NETCore_Compilers)/build/Microsoft.NETCore.Compilers.props" Condition="'$(MSBuildRuntimeType)' == 'Core'" />
-
 </Project>

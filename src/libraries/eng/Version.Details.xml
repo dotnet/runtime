@@ -86,14 +86,6 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>2eb45ff0eed6f86f1071b16b11a447cadeeeec59</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Net.Compilers" Version="3.0.0-beta4-final">
-      <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>ec366687c8caead948e58704ad61ed644eb91b5b</Sha>
-    </Dependency>
-    <Dependency Name="Microsoft.NETCore.Compilers" Version="3.0.0-beta4-final">
-      <Uri>https://github.com/dotnet/roslyn</Uri>
-      <Sha>ec366687c8caead948e58704ad61ed644eb91b5b</Sha>
-    </Dependency>
     <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190314.1">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>4f9d0ecf2b8151859fd2bd0734af32ea59258a3d</Sha>
