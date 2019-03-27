@@ -37,6 +37,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .CaptureStdOut()
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .EnvironmentVariable("DOTNET_ROOT", dotNetRoot)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", dotNetRoot)
                 .Execute();
 
             result.Should().HaveStdErrContaining("Using environment variable");
