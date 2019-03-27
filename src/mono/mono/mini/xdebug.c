@@ -300,7 +300,7 @@ mono_save_xdebug_info (MonoCompile *cfg)
 
 		xdebug_method_count ++;
 
-		dmji = mono_debug_find_method (jinfo_get_method (cfg->jit_info), mono_domain_get ());;
+		dmji = mono_debug_find_method (jinfo_get_method (cfg->jit_info), mono_domain_get ());
 		mono_dwarf_writer_emit_method (xdebug_writer, cfg, jinfo_get_method (cfg->jit_info), NULL, NULL, NULL,
 									   (guint8*)cfg->jit_info->code_start, cfg->jit_info->code_size, cfg->args, cfg->locals, cfg->unwind_ops, dmji);
 		mono_debug_free_method_jit_info (dmji);

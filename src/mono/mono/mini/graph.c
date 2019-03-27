@@ -90,14 +90,14 @@ cfg_emit_one_loop_level (MonoCompile *cfg, FILE *fp, MonoBasicBlock *h)
 		if (bb->region != -1) {
 			switch (bb->region & (MONO_REGION_FINALLY|MONO_REGION_CATCH|MONO_REGION_FAULT|MONO_REGION_FILTER)) {
 			case MONO_REGION_CATCH:
-				fprintf (fp, "BB%d [color=blue];\n", bb->block_num);;
+				fprintf (fp, "BB%d [color=blue];\n", bb->block_num);
 				break;
 			case MONO_REGION_FINALLY:
-				fprintf (fp, "BB%d [color=green];\n", bb->block_num);;
+				fprintf (fp, "BB%d [color=green];\n", bb->block_num);
 				break;
 			case MONO_REGION_FAULT:
 			case MONO_REGION_FILTER:
-				fprintf (fp, "BB%d [color=yellow];\n", bb->block_num);;
+				fprintf (fp, "BB%d [color=yellow];\n", bb->block_num);
 				break;
 			default:
 				break;

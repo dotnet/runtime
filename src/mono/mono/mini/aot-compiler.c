@@ -7854,7 +7854,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (str_begins_with (arg, "msym-dir=")) {
 			mini_debug_options.no_seq_points_compact_data = FALSE;
 			opts->gen_msym_dir = TRUE;
-			opts->gen_msym_dir_path = g_strdup (arg + strlen ("msym_dir="));;
+			opts->gen_msym_dir_path = g_strdup (arg + strlen ("msym_dir="));
 		} else if (str_begins_with (arg, "direct-pinvoke")) {
 			opts->direct_pinvoke = TRUE;
 		} else if (str_begins_with (arg, "direct-icalls")) {
@@ -7928,7 +7928,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 		} else if (!strcmp (arg, "no-opt")) {
 			opts->no_opt = TRUE;
 		} else if (str_begins_with (arg, "clangxx=")) {
-			opts->clangxx = g_strdup (arg + strlen ("clangxx="));;
+			opts->clangxx = g_strdup (arg + strlen ("clangxx="));
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    asmonly\n");

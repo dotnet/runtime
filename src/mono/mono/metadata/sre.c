@@ -318,7 +318,7 @@ method_encode_clauses (MonoImage *image, MonoDynamicImage *assembly, MonoReflect
 	MonoILExceptionInfo *ex_info;
 	MonoILExceptionBlock *ex_block;
 	guint32 finally_start;
-	int i, j, clause_index;;
+	int i, j, clause_index;
 
 	clauses = image_g_new0 (image, MonoExceptionClause, num_clauses);
 

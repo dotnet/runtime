@@ -6169,7 +6169,7 @@ mono_arch_decompose_long_opts (MonoCompile *cfg, MonoInst *long_ins)
 
 		MONO_INST_NEW (cfg, ins, OP_PSHUFLED);
 		ins->dreg = long_ins->dreg;
-		ins->sreg1 = long_ins->dreg;;
+		ins->sreg1 = long_ins->dreg;
 		ins->inst_c0 = 0x44; /*Magic number for swizzling (X,Y,X,Y)*/
 		ins->klass = long_ins->klass;
 		ins->type = STACK_VTYPE;
