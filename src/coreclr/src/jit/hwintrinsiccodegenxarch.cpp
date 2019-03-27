@@ -1433,6 +1433,17 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_SSE_X64_ConvertToInt64:
+        case NI_SSE_X64_ConvertToInt64WithTruncation:
+        {
+            assert(targetType == TYP_LONG);
+            assert(op1 != nullptr);
+            assert(op2 == nullptr);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+            genHWIntrinsic_R_RM(node, ins, EA_8BYTE);
+            break;
+        }
+
         case NI_SSE_X64_ConvertScalarToVector128Single:
         {
             assert(baseType == TYP_LONG);
@@ -1623,8 +1634,9 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_SSE2_ConvertToInt32:
         case NI_SSE2_ConvertToInt32WithTruncation:
         case NI_SSE2_ConvertToUInt32:
-        case NI_SSE2_X64_ConvertToUInt64:
         case NI_SSE2_X64_ConvertToInt64:
+        case NI_SSE2_X64_ConvertToInt64WithTruncation:
+        case NI_SSE2_X64_ConvertToUInt64:
         {
             assert(op2 == nullptr);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
