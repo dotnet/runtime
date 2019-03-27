@@ -5787,7 +5787,8 @@ fi
 AC_SUBST(mono_runtime)
 AC_SUBST(mono_runtime_wrapper)
 
-CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/Microsoft.Net.Compilers.2.8.2/tools/csc.exe
+CSC_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.1.0/csc.exe
+VBCS_LOCATION=`cd $srcdir && pwd`/external/roslyn-binaries/Microsoft.Net.Compilers/3.1.0/VBCSCompiler.exe
 
 if test $csc_compiler = mcs; then
   CSC=$mcs_topdir/class/lib/build/mcs.exe
@@ -5803,6 +5804,7 @@ if test x$host_win32 = xyes; then
     mono_cfg_dir=`cygpath -w -a $mono_cfg_root`\\etc
     CSC=`cygpath -m -a $CSC`
     CSC_LOCATION=`cygpath -m -a $CSC_LOCATION`
+    VBCS_LOCATION=`cygpath -m -a $VBCS_LOCATION`
   else
     mono_cfg_dir=`echo $mono_cfg_root | tr '/' '\\'`\\etc
   fi
@@ -6540,7 +6542,7 @@ fi
 
     echo "STANDALONE_CSC_LOCATION=$CSC_LOCATION" >> $srcdir/$mcsdir/build/config.make
     echo "SERVER_CSC_LOCATION?=$CSC_LOCATION" >> $srcdir/$mcsdir/build/config.make
-    echo "VBCS_LOCATION?=" >> $srcdir/$mcsdir/build/config.make
+    echo "VBCS_LOCATION?=$VBCS_LOCATION" >> $srcdir/$mcsdir/build/config.make
 
     if test $csc_compiler = mcs; then
       echo "MCS_MODE = 1" >> $srcdir/$mcsdir/build/config.make
