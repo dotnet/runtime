@@ -88,3 +88,4 @@ jobs:
         env:
           # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
           MSBUILDENSURESTDOUTFORTASKPROCESSES: 1
+        displayName: Build illink.sln $(_BuildConfig)
