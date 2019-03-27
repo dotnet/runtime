@@ -6,7 +6,7 @@ using System;
 using System.IO;
 using System.Reflection.PortableExecutable;
 
-namespace Microsoft.DotNet.Build.Bundle
+namespace Microsoft.NET.Build.Bundle
 {
     /// <summary>
     /// Bundler: Functionality to embed the managed app and its dependencies

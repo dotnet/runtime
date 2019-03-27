@@ -12,7 +12,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 <Project ToolsVersion="14.0">
 
   <PropertyGroup>
-    <MicrosoftDotnetBundle>$(MSBuildThisFileDirectory)..\tools\Microsoft.DotNet.Build.Bundle.dll</MicrosoftDotnetBundle>
+    <MicrosoftDotnetBundle>$(MSBuildThisFileDirectory)..\tools\Microsoft.NET.Build.Bundle.dll</MicrosoftDotnetBundle>
   </PropertyGroup>
 
 </Project>

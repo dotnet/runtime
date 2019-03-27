@@ -47,9 +47,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
 
             // Bundle to a single-file
             string bundleDll = Path.Combine(sharedTestState.RepoDirectories.Artifacts,
-                                            "Microsoft.DotNet.Build.Bundle",
+                                            "Microsoft.NET.Build.Bundle",
                                             "netcoreapp2.0",
-                                            "Microsoft.DotNet.Build.Bundle.dll");
+                                            "Microsoft.NET.Build.Bundle.dll");
             string[] bundleArgs = { "--source", publishDir,
                                     "--apphost", hostName,
                                     "--output", singleFileDir };
