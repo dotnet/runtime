@@ -97,3 +97,15 @@ xtest-%: prepare check-env
 		$(shell grep -v '^#\|^$$' excludes-$*.rsp) $(FIXTURE)
 
 xtest-all: $(addprefix xtest-, $(TEST_SUITES))
+
+FEED_BASE_URL = https://dotnetfeed.blob.core.windows.net/dotnet-core
+TEST_ASSETS_URL = https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/4.6.0-preview4.19156.10/OSX.x64/netcoreapp/corefx-test-assets.xml
+
+corefx-test-assets.xml:
+	wget $(TEST_ASSETS_URL)
+
+dl-test-assets: corefx-test-assets.xml .stamp-dl-test-assets
+
+.stamp-dl-test-assets:
+	python dl-test-assets.py corefx-test-assets.xml $(FEED_BASE_URL) assets
+	touch $@
