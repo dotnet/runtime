@@ -101,3 +101,4 @@
 -noclass System.Tests.ArgIteratorTests
 -nomethod System.Tests.ActivatorTests.CreateInstance_InvalidType_ThrowsNotSupportedException
 -nomethod System.Tests.ArrayTests.CreateInstance_NotSupportedType_ThrowsNotSupportedException
+-noclass System.Reflection.Tests.PointerTests

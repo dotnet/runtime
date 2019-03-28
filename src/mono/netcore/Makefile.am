@@ -88,14 +88,48 @@ check: $(addprefix run-, $(TEST_SUITES))
 clean:
 	rm -rf sdk shared host dotnet tests LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE)
 
-xtest-%: prepare check-env
-	COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(VERSION)" \
-		$(COREFX_BINDIR)/testhost/netcoreapp-OSX-Debug-x64/shared/Microsoft.NETCore.App/9.9.9/xunit.console.dll \
-		$(COREFX_BINDIR)/$*/$($*_PROFILE)/$*.dll -notrait category=outerloop -notrait category=nonosxtests -notrait category=failing \
-		-notrait category=nonnetcoreapptests -noappdomain -noshadow -parallel all -nunit TestResult-$*-netcore-xunit.xml \
-		$(shell grep -v '^#\|^$$' excludes-$*.rsp) $(FIXTURE)
+# e.g. `make xtest-System.Collections.Tests COREFX_ROOT=/prj/corefx`
+# '-parallel none -verbose' for debug, `-parallel all` to run all tests in parallel
+# we need COREFX_ROOT only for xunit.console.deps.json and CoreFx.Private.TestUtilities.dll
+xtest-%: prepare check-env dl-test-assets
+	ln -sf $(CURDIR)/sdk/$(NETCORESDK_VERSION)/System.Text.Encoding.CodePages.dll assets/extracted/$*/
+	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/xunit.console.deps.json assets/extracted/$*/
+	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/CoreFx.Private.TestUtilities.dll assets/extracted/$*/
+	sed -i -e 's/9.9.9/$(VERSION)/g' assets/extracted/$*/*.runtimeconfig.json
+	cd assets/extracted/$* && \
+	COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet --fx-version "$(VERSION)" xunit.console.dll $*.dll \
+		-notrait category=outerloop -notrait category=nonosxtests -notrait category=failing \
+		-notrait category=nonnetcoreapptests -noappdomain -noshadow -parallel all -verbose \
+		-html ../../../TestResult-$*.html -nunit ../../TestResult-$*-netcore-xunit.xml \
+		$(shell if [ -a $(CURDIR)/excludes-$*.rsp ]; then grep -v '^#\|^$$' $(CURDIR)/excludes-$*.rsp; fi;) \
+		$(FIXTURE) || true
 
-xtest-all: $(addprefix xtest-, $(TEST_SUITES))
+# these tests won't be included in `xtestall` (some of them crash runtime, some hang)
+EXCLUDED_COREFX_TESTS = \
+	Microsoft.CSharp.Tests \
+	Microsoft.XmlSerializer.Generator.Tests \
+	System.ComponentModel.Composition.Tests \
+	System.Diagnostics.StackTrace.Tests \
+	System.Diagnostics.Tracing.Tests \
+	System.Dynamic.Runtime.Tests \
+	System.IO.Ports.Tests \
+	System.Linq.Expressions.Tests \
+	System.Linq.Queryable.Tests \
+	System.Net.Http.Functional.Tests \
+	System.Net.HttpListener.Tests \
+	System.Net.NameResolution.Functional.Tests \
+	System.Net.Sockets.Tests \
+	System.Reflection.Tests \
+	System.Runtime.InteropServices.Tests \
+	System.Runtime.Serialization.Formatters.Tests \
+	System.Runtime.Serialization.Json.Tests \
+	System.Runtime.Serialization.Xml.Tests \
+	System.Threading.Timer.Tests \
+	System.Xml.XmlSerializer.Tests \
+	System.Xml.Xsl.XslCompiledTransformApi.Tests
+
+xtestall: $(foreach workingtest, $(foreach test, $(wildcard assets/extracted/*), \
+		$(filter-out $(EXCLUDED_COREFX_TESTS), $(notdir $(test)))), $(addprefix xtest-, $(workingtest)))
 
 FEED_BASE_URL = https://dotnetfeed.blob.core.windows.net/dotnet-core
 TEST_ASSETS_URL = https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/4.6.0-preview4.19156.10/OSX.x64/netcoreapp/corefx-test-assets.xml
