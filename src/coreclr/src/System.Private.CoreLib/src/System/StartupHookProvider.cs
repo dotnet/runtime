@@ -2,12 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Diagnostics;
 using System.IO;
-using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
 namespace System
@@ -16,6 +13,12 @@ namespace System
     {
         private const string StartupHookTypeName = "StartupHook";
         private const string InitializeMethodName = "Initialize";
+
+        private struct StartupHookNameOrPath
+        {
+            public AssemblyName AssemblyName;
+            public string Path;
+        }
 
         // Parse a string specifying a list of assemblies and types
         // containing a startup hook, and call each hook in turn.
@@ -31,21 +34,29 @@ namespace System
             }
 
             // Parse startup hooks variable
-            string[] startupHooks = startupHooksVariable.Split(Path.PathSeparator);
-            foreach (string startupHook in startupHooks)
+            string[] startupHookParts = startupHooksVariable.Split(Path.PathSeparator);
+            StartupHookNameOrPath[] startupHooks = new StartupHookNameOrPath[startupHookParts.Length];
+            for (int i = 0; i < startupHookParts.Length; i++)
             {
-                if (String.IsNullOrEmpty(startupHook))
+                string startupHookPart = startupHookParts[i];
+                if (string.IsNullOrEmpty(startupHookPart))
                 {
                     throw new ArgumentException(SR.Argument_InvalidStartupHookSyntax);
                 }
-                if (PathInternal.IsPartiallyQualified(startupHook))
+
+                if (Path.IsPathFullyQualified(startupHookPart))
                 {
-                    throw new ArgumentException(SR.Argument_AbsolutePathRequired);
+                    startupHooks[i].Path = startupHookPart;
+                }
+                else
+                {
+                    // This will throw if the string is not a valid assembly name.
+                    startupHooks[i].AssemblyName = new AssemblyName(startupHookPart);
                 }
             }
 
             // Call each hook in turn
-            foreach (string startupHook in startupHooks)
+            foreach (StartupHookNameOrPath startupHook in startupHooks)
             {
                 CallStartupHook(startupHook);
             }
@@ -53,12 +64,22 @@ namespace System
 
         // Load the specified assembly, and call the specified type's
         // "static void Initialize()" method.
-        private static void CallStartupHook(string assemblyPath)
+        private static void CallStartupHook(StartupHookNameOrPath startupHook)
         {
-            Debug.Assert(!String.IsNullOrEmpty(assemblyPath));
-            Debug.Assert(!PathInternal.IsPartiallyQualified(assemblyPath));
+            Debug.Assert(startupHook.Path != null || startupHook.AssemblyName != null);
 
-            Assembly assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(assemblyPath);
+            Assembly assembly;
+            if (startupHook.Path != null)
+            {
+                Debug.Assert(Path.IsPathFullyQualified(startupHook.Path));
+                assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(startupHook.Path);
+            }
+            else
+            {
+                Debug.Assert(startupHook.AssemblyName != null);
+                assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(startupHook.AssemblyName);
+            }
+
             Debug.Assert(assembly != null);
             Type type = assembly.GetType(StartupHookTypeName, throwOnError: true);
 
@@ -85,10 +106,10 @@ namespace System
                 }
                 catch (AmbiguousMatchException)
                 {
-                    // Found multiple
+                    // Found multiple. Will throw below due to initializeMethod being null.
                     Debug.Assert(initializeMethod == null);
-                    wrongSignature = true;
                 }
+
                 if (initializeMethod != null)
                 {
                     // Found one
@@ -109,7 +130,7 @@ namespace System
             {
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidStartupHookSignature,
                                                       StartupHookTypeName + Type.Delimiter + InitializeMethodName,
-                                                      assemblyPath));
+                                                      startupHook.Path ?? startupHook.AssemblyName.ToString()));
             }
 
             Debug.Assert(initializeMethod != null &&
