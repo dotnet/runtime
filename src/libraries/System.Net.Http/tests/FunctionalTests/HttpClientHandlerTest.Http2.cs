@@ -633,6 +633,32 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task CompletedResponse_WindowUpdateFrameReceived_Success()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                // Send empty response.
+                await server.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Send a frame on the now-closed stream.
+                WindowUpdateFrame invalidFrame = new WindowUpdateFrame(1, streamId);
+                await server.WriteFrameAsync(invalidFrame);
+
+                // The client should close the connection.
+                await server.WaitForConnectionShutdownAsync();
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task ResetResponseStream_FrameReceived_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
