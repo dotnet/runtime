@@ -7,4 +7,8 @@
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="VSTest" />
   </Target>
 
+  <Target Name="VSTestIfTestProject">
+    <CallTarget Targets="VSTest" Condition="'$(IsTestProject)' == 'true'" />
+  </Target>
+
 </Project>

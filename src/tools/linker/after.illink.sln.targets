@@ -1,0 +1,6 @@
+<Project>
+  <!-- Workaround for https://github.com/dotnet/corefx/issues/16322 -->
+  <Target Name="VSTest">
+    <MSBuild Projects="@(ProjectReference)" Targets="VSTestIfTestProject" />
+  </Target>
+</Project>
