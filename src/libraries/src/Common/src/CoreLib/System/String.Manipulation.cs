@@ -34,14 +34,7 @@ namespace System
             }
         }
 
-        public static string Concat(object? arg0)
-        {
-            if (arg0 == null)
-            {
-                return string.Empty;
-            }
-            return arg0.ToString();
-        }
+        public static string Concat(object? arg0) => arg0?.ToString() ?? string.Empty;
 
         public static string Concat(object? arg0, object? arg1)
         {
