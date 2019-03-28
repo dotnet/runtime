@@ -96,12 +96,15 @@ namespace System.Runtime.Loader.Tests
             // Create a secondary load context and wireup its resolving event
             SecondaryLoadContext slc = new SecondaryLoadContext();
             slc.Resolving += ResolveAssembly;
-            
+
+            Assert.Contains(slc, AssemblyLoadContext.All);
+
             // Attempt to load the assembly in secondary load context
             var slcLoadedAssembly = slc.LoadFromAssemblyName(assemblyName);
-            
+
             // We should have successfully loaded the assembly in secondary load context.
             Assert.NotNull(slcLoadedAssembly);
+            Assert.Contains(slcLoadedAssembly, slc.Assemblies);
 
             // And make sure the simple name matches
             Assert.Equal(TestAssemblyName, slcLoadedAssembly.GetName().Name);
@@ -118,12 +121,13 @@ namespace System.Runtime.Loader.Tests
             AssemblyLoadContext.Default.Resolving += ResolveNullAssembly;
             AssemblyLoadContext.Default.Resolving += ResolveAssembly;
             AssemblyLoadContext.Default.Resolving += ResolveAssemblyAgain;
-            
+
             // This will invoke the resolution via VM requiring to bind using the TPA binder
             var assemblyExpectedFromLoad = Assembly.Load(assemblyName);
 
             // We should have successfully loaded the assembly in default context.
             Assert.NotNull(assemblyExpectedFromLoad);
+            Assert.Contains(assemblyExpectedFromLoad, AssemblyLoadContext.Default.Assemblies);
 
             // We should have only invoked non-Null returning handler once
             Assert.Equal(1, _numNonNullResolutions);
