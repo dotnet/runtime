@@ -184,20 +184,17 @@ mono_threadpool_enqueue_work_item (MonoDomain *domain, MonoObject *work_item, Mo
 	current_domain = mono_domain_get ();
 	if (current_domain == domain) {
 		mono_runtime_invoke_checked (unsafe_queue_custom_work_item_method, NULL, args, error);
-		return_val_if_nok (error, FALSE);
 	} else {
 		mono_thread_push_appdomain_ref (domain);
 		if (mono_domain_set (domain, FALSE)) {
 			mono_runtime_invoke_checked (unsafe_queue_custom_work_item_method, NULL, args, error);
-			if (!is_ok (error)) {
-				mono_thread_pop_appdomain_ref ();
-				return FALSE;
-			}
 			mono_domain_set (current_domain, TRUE);
+		} else {
+			// mono_domain_set failing still leads to success.
 		}
 		mono_thread_pop_appdomain_ref ();
 	}
-	return TRUE;
+	return is_ok (error);
 }
 
 /* LOCKING: domains_lock must be held. */
