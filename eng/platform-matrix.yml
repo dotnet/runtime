@@ -32,7 +32,8 @@ jobs:
         osIdentifier: Linux
         containerName: ubuntu_1404_arm_cross_build_image
         helixQueues:
-          ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          # Ubuntu.1404.Arm32.Open hardware is not capable of dealing with all PRs
+          ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
             asString: 'Ubuntu.1404.Arm32.Open'
             asArray:
             - Ubuntu.1404.Arm32.Open
