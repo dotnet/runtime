@@ -512,6 +512,7 @@ common_sources = \
 	ee.h \
 	mini-runtime.h
 
+# keep in sync with mcs/class/Mono.Runtime.Tests
 test_sources = 			\
 	basic-calls.cs 		\
 	basic-long.cs 		\
