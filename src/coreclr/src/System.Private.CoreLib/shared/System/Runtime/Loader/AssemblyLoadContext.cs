@@ -52,7 +52,7 @@ namespace System.Runtime.Loader
         {
         }
 
-        public AssemblyLoadContext(string name, bool isCollectible = true) : this(false, isCollectible, name)
+        public AssemblyLoadContext(string name, bool isCollectible = false) : this(false, isCollectible, name)
         {
         }
 
@@ -420,7 +420,7 @@ namespace System.Runtime.Loader
 
     internal sealed class IndividualAssemblyLoadContext : AssemblyLoadContext
     {
-        internal IndividualAssemblyLoadContext(String name) : base(false, false, name)
+        internal IndividualAssemblyLoadContext(string name) : base(false, false, name)
         {
         }
     }
