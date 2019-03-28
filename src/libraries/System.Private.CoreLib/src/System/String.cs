@@ -473,6 +473,13 @@ namespace System
             return true;
         }
 
+        /// <summary>
+        /// Returns a reference to the first element of the String. If the string is null, an access will throw a NullReferenceException.
+        /// </summary>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [NonVersionable]
+        public ref readonly char GetPinnableReference() => ref _firstChar;
+
         internal ref char GetRawStringData() => ref _firstChar;
 
         // Helper for encodings so they can talk to our buffer directly
