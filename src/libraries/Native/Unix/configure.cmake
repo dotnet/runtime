@@ -207,6 +207,17 @@ check_struct_has_member(
 
 check_struct_has_member(
     "struct stat"
+    st_flags
+    "sys/types.h;sys/stat.h"
+    HAVE_STAT_FLAGS)
+
+check_symbol_exists(
+    lchflags
+    "sys/types.h;sys/stat.h"
+    HAVE_LCHFLAGS)
+
+check_struct_has_member(
+    "struct stat"
     st_atimespec
     "sys/types.h;sys/stat.h"
     HAVE_STAT_TIMESPEC)

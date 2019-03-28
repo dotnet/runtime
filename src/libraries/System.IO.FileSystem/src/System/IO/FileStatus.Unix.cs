@@ -84,8 +84,8 @@ namespace System.IO
             if (_isDirectory)
                 attributes |= FileAttributes.Directory;
 
-            // If the filename starts with a period, it's hidden.
-            if (fileName.Length > 0 && fileName[0] == '.')
+            // If the filename starts with a period or has UF_HIDDEN flag set, it's hidden.
+            if (fileName.Length > 0 && (fileName[0] == '.' || (_fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN))
                 attributes |= FileAttributes.Hidden;
 
             return attributes != default ? attributes : FileAttributes.Normal;
@@ -98,10 +98,10 @@ namespace System.IO
             const FileAttributes allValidFlags =
                 FileAttributes.Archive | FileAttributes.Compressed | FileAttributes.Device |
                 FileAttributes.Directory | FileAttributes.Encrypted | FileAttributes.Hidden |
-                FileAttributes.Hidden | FileAttributes.IntegrityStream | FileAttributes.Normal |
-                FileAttributes.NoScrubData | FileAttributes.NotContentIndexed | FileAttributes.Offline |
-                FileAttributes.ReadOnly | FileAttributes.ReparsePoint | FileAttributes.SparseFile |
-                FileAttributes.System | FileAttributes.Temporary;
+                FileAttributes.IntegrityStream | FileAttributes.Normal | FileAttributes.NoScrubData |
+                FileAttributes.NotContentIndexed | FileAttributes.Offline | FileAttributes.ReadOnly |
+                FileAttributes.ReparsePoint | FileAttributes.SparseFile | FileAttributes.System |
+                FileAttributes.Temporary;
             if ((attributes & ~allValidFlags) != 0)
             {
                 // Using constant string for argument to match historical throw
@@ -112,6 +112,26 @@ namespace System.IO
 
             if (!_exists)
                 FileSystemInfo.ThrowNotFound(path);
+
+            if (Interop.Sys.CanSetHiddenFlag)
+            {
+                if ((attributes & FileAttributes.Hidden) != 0)
+                {
+                    if ((_fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == 0)
+                    {
+                        // If Hidden flag is set and cached file status does not have the flag set then set it
+                        Interop.CheckIo(Interop.Sys.LChflags(path, (_fileStatus.UserFlags | (uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
+                    }
+                }
+                else
+                {
+                    if ((_fileStatus.UserFlags & (uint)Interop.Sys.UserFlags.UF_HIDDEN) == (uint)Interop.Sys.UserFlags.UF_HIDDEN)
+                    {
+                        // If Hidden flag is not set and cached file status does have the flag set then remove it
+                        Interop.CheckIo(Interop.Sys.LChflags(path, (_fileStatus.UserFlags & ~(uint)Interop.Sys.UserFlags.UF_HIDDEN)), path, InitiallyDirectory);
+                    }
+                }
+            }
 
             // The only thing we can reasonably change is whether the file object is readonly by changing permissions.
 
