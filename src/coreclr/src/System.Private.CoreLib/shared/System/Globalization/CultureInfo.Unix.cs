@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Globalization
 {
     public partial class CultureInfo : IFormatProvider
@@ -11,7 +12,7 @@ namespace System.Globalization
             if (GlobalizationMode.Invariant)
                 return CultureInfo.InvariantCulture;
 
-            CultureInfo cultureInfo = null;
+            CultureInfo cultureInfo;
             string localeName;
             if (CultureData.GetDefaultLocaleName(out localeName))
             {
