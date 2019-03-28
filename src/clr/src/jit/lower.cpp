@@ -1765,11 +1765,7 @@ void Lowering::CheckVSQuirkStackPaddingNeeded(GenTreeCall* call)
                     if (op1->OperGet() == GT_LCL_VAR_ADDR)
                     {
                         unsigned lclNum = op1->AsLclVarCommon()->GetLclNum();
-                        // TODO-1stClassStructs: This is here to duplicate previous behavior,
-                        // but is not needed because the scenario being quirked did not involve
-                        // a SIMD or enregisterable struct.
-                        // if(comp->lvaTable[lclNum].TypeGet() == TYP_STRUCT)
-                        if (varTypeIsStruct(comp->lvaTable[lclNum].TypeGet()))
+                        if (comp->lvaGetDesc(lclNum)->TypeGet() == TYP_STRUCT)
                         {
                             // First arg is addr of a struct local.
                             paddingNeeded = true;

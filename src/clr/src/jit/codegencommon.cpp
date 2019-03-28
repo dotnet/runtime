@@ -4534,15 +4534,7 @@ void CodeGen::genCheckUseBlockInit()
                 unless they are untracked GC type or structs that contain GC pointers */
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if FEATURE_SIMD
-            // TODO-1stClassStructs
-            // This is here to duplicate previous behavior, where TYP_SIMD8 locals
-            // were not being re-typed correctly.
-            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT) || (varDsc->lvType == TYP_SIMD8)) &&
-#else  // !FEATURE_SIMD
-            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT)) &&
-#endif // !FEATURE_SIMD
-                varDsc->lvOnFrame &&
+            if ((!varDsc->lvTracked || (varDsc->lvType == TYP_STRUCT)) && varDsc->lvOnFrame &&
                 (!varDsc->lvIsTemp || varTypeIsGC(varDsc->TypeGet()) || (varDsc->lvStructGcCount > 0)))
             {
                 varDsc->lvMustInit = true;
