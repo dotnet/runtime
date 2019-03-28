@@ -133,5 +133,49 @@ namespace System.Runtime.Loader.Tests
             Assert.NotNull(context);
             Assert.Same(AssemblyLoadContext.Default, context);
         }
+
+        [Fact]
+        public static void DefaultAssemblyLoadContext_Properties()
+        {
+            AssemblyLoadContext alc = AssemblyLoadContext.Default;
+
+            Assert.False(alc.IsCollectible);
+
+            Assert.Equal("Default", alc.Name);
+            Assert.Contains("\"Default\"", alc.ToString());
+            Assert.Contains("System.Runtime.Loader.DefaultAssemblyLoadContext", alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Contains(Assembly.GetCallingAssembly(), alc.Assemblies);
+        }
+
+        [Fact]
+        public static void PublicConstructor_Default()
+        {
+            AssemblyLoadContext alc = new AssemblyLoadContext("PublicConstructor");
+
+            Assert.False(alc.IsCollectible);
+
+            Assert.Equal("PublicConstructor", alc.Name);
+            Assert.Contains("PublicConstructor", alc.ToString());
+            Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Empty(alc.Assemblies);
+        }
+
+        [Theory]
+        [InlineData("AssemblyLoadContextCollectible", true)]
+        [InlineData("AssemblyLoadContextNonCollectible", false)]
+        public static void PublicConstructor_Theory(string name, bool isCollectible)
+        {
+            AssemblyLoadContext alc = new AssemblyLoadContext(name, isCollectible);
+
+            Assert.Equal(isCollectible, alc.IsCollectible);
+
+            Assert.Equal(name, alc.Name);
+            Assert.Contains(name, alc.ToString());
+            Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
+            Assert.Contains(alc, AssemblyLoadContext.All);
+            Assert.Empty(alc.Assemblies);
+        }
     }
 }
