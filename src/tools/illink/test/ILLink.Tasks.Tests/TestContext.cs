@@ -5,50 +5,55 @@ using Microsoft.DotNet.PlatformAbstractions;
 
 namespace ILLink.Tests
 {
-	public class TestContext
+	public static class TestContext
 	{
 		/// <summary>
 		///   The name of the tasks package to add to the integration
 		///   projects.
 		/// </summary>
-		public string TasksPackageName { get; private set; }
+		public static string TasksPackageName { get; private set; }
 
 		/// <summary>
 		///   The version of the tasks package to add to the
 		///   integration projects.
 		/// </summary>
-		public string TasksPackageVersion { get; private set; }
+		public static string TasksPackageVersion { get; private set; }
 
 		/// <summary>
 		///   The path of the directory from which to get the linker
 		///   package.
 		/// </summary>
-		public string PackageSource { get; private set; }
+		public static string PackageSource { get; private set; }
 
 		/// <summary>
 		///   The path to the dotnet tool to use to run the
 		///   integration tests.
 		/// </summary>
-		public string DotnetToolPath { get; set; }
+		public static string DotnetToolPath { get; set; }
 
 		/// <summary>
 		///   The RID to use when restoring, building, and linking the
 		///   integration test projects.
 		/// </summary>
-		public string RuntimeIdentifier { get; private set; }
+		public static string RuntimeIdentifier { get; private set; }
 
 		/// <summary>
 		///   The configuration to use to build the integration test
 		///   projects.
 		/// </summary>
-		public string Configuration { get; private set; }
+		public static string Configuration { get; private set; }
 
 		/// <summary>
 		///   The root testbin directory. Used to install test
 		///   assets that don't depend on the configuration or
 		///   target framework.
 		/// </summary>
-		public string TestBin { get; private set; }
+		public static string TestBin { get; private set; }
+
+		static TestContext()
+		{
+			SetupDefaultContext();
+		}
 
 		/// <summary>
 		///   This is the context from which tests will be run in the
@@ -58,12 +63,14 @@ namespace ILLink.Tests
 		///   one version of the package is present, and uses it to
 		///   unambiguously determine which pacakge to use in the tests.
 		/// </summary>
-		public static TestContext CreateDefaultContext()
+		public static void SetupDefaultContext()
 		{
-			var packageName = "ILLink.Tasks";
 			// test working directory is test project's <baseoutputpath>/<config>/<tfm>
-			var testBin = "../../";
-			var repoRoot = Path.Combine(testBin, "..", "..", "..");
+			var testBin = Path.Combine(Environment.CurrentDirectory, "..", "..");
+			var repoRoot = Path.GetFullPath(Path.Combine(testBin, "..", "..", ".."));
+
+			// Locate task package
+			var packageName = "ILLink.Tasks";
 			var packageSource = Path.Combine(repoRoot, "src", "ILLink.Tasks", "bin", "nupkgs");
 			var tasksPackages = Directory.GetFiles(packageSource)
 				.Where(p => Path.GetExtension(p) == ".nupkg")
@@ -77,37 +84,36 @@ namespace ILLink.Tests
 			}
 			var tasksPackage = tasksPackages.Single();
 			var version = tasksPackage.Remove(0, packageName.Length + 1);
-			var dotnetDir = Path.Combine(repoRoot, "corebuild", "Tools", "dotnetcli");
-			var dotnetToolNames = Directory.GetFiles(dotnetDir)
+
+			// Locate dotnet host
+			var dotnetDir = Path.Combine(repoRoot, ".dotnet");
+			var dotnetToolName = Directory.GetFiles(dotnetDir)
 				.Select(p => Path.GetFileName(p))
-				.Where(p => p.Contains("dotnet"));
-			var nTools = dotnetToolNames.Count();
-			if (nTools > 1) {
-				throw new Exception($"multiple dotnet tools in {dotnetDir}");
-			} else if (nTools == 0) {
-				throw new Exception($"no dotnet tool found in {dotnetDir}");
-			}
-			var dotnetToolName = dotnetToolNames.Single();
+				.Where(p => p.StartsWith("dotnet"))
+				.Where(p => {
+					var ext = Path.GetExtension(p);
+					return ext == "" || ext == ".exe";
+				})
+				.Single();
 			var dotnetToolPath = Path.Combine(dotnetDir, dotnetToolName);
 
-			var context = new TestContext();
-			context.PackageSource = packageSource;
-			context.TasksPackageName = packageName;
-			context.TasksPackageVersion = version;
-			context.DotnetToolPath = dotnetToolPath;
+			// Initialize static members
+			PackageSource = packageSource;
+			TasksPackageName = packageName;
+			TasksPackageVersion = version;
+			DotnetToolPath = dotnetToolPath;
 			// This sets the RID to the RID of the currently-executing system.
-			context.RuntimeIdentifier = RuntimeEnvironment.GetRuntimeIdentifier();
+			RuntimeIdentifier = RuntimeEnvironment.GetRuntimeIdentifier();
 			// workaround: the osx.10.13-x64 RID doesn't exist yet.
-			// see https://github.com/dotnet/core-setup/issues/3301
-			if (context.RuntimeIdentifier == "osx.10.13-x64")
+			// see https://github.com/NuGet/Home/issues/5862
+			if (RuntimeIdentifier == "osx.10.14-x64")
 			{
-				context.RuntimeIdentifier = "osx.10.12-x64";
+				RuntimeIdentifier = "osx.10.13-x64";
 			}
 			// We want to build and link integration projects in the
 			// release configuration.
-			context.Configuration = "Release";
-			context.TestBin = testBin;
-			return context;
+			Configuration = "Release";
+			TestBin = testBin;
 		}
 	}
 }

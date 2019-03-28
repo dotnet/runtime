@@ -10,123 +10,26 @@ using Xunit.Abstractions;
 
 namespace ILLink.Tests
 {
-	public class IntegrationTestBase
+
+	/// <summary>
+	///   Represents a project. Each fixture contains setup code run
+	///   once before all tests in the same test class. ProjectFixture
+	///   is the base type for different specific project fixtures.
+	/// </summary>
+	public class ProjectFixture
 	{
-		protected readonly ITestOutputHelper output;
+		private FixtureLogger logger;
+		protected CommandHelper CommandHelper;
 
-		protected readonly TestContext context;
-
-		public IntegrationTestBase(ITestOutputHelper output)
+		protected void LogMessage (string message)
 		{
-			this.output = output;
-
-			// This sets up the context with some values specific to
-			// the setup of the linker repository. A different context
-			// should be used in order to run tests in a different
-			// environment.
-			this.context = TestContext.CreateDefaultContext();
+			logger.LogMessage (message);
 		}
 
-		protected int Dotnet(string args, string workingDir, string additionalPath = null)
+		public ProjectFixture (IMessageSink diagnosticMessageSink)
 		{
-			return RunCommand(Path.GetFullPath(context.DotnetToolPath), args,
-				workingDir, additionalPath, out string commandOutput);
-		}
-
-		protected int RunCommand(string command, string args, int timeout = Int32.MaxValue)
-		{
-			return RunCommand(command, args, null, null, out string commandOutput, timeout);
-		}
-
-		protected int RunCommand(string command, string args, string workingDir)
-		{
-			return RunCommand(command, args, workingDir, null, out string commandOutput);
-		}
-
-		protected int RunCommand(string command, string args, string workingDir, string additionalPath,
-			out string commandOutput, int timeout = Int32.MaxValue, string terminatingOutput = null)
-		{
-			return (new CommandRunner(command, output))
-				.WithArguments(args)
-				.WithWorkingDir(workingDir)
-				.WithAdditionalPath(additionalPath)
-				.WithTimeout(timeout)
-				.WithTerminatingOutput(terminatingOutput)
-				.Run(out commandOutput);
-		}
-
-		/// <summary>
-		///   Run the linker on the specified project. This assumes
-		///   that the project already contains a reference to the
-		///   linker task package.
-		///   Optionally takes a list of root descriptor files.
-		///   Returns the path to the built app, either the renamed
-		///   host for self-contained publish, or the dll containing
-		///   the entry point.
-		/// </summary>
-		public string BuildAndLink(string csproj, List<string> rootFiles = null, Dictionary<string, string> extraPublishArgs = null, bool selfContained = false)
-		{
-			string demoRoot = Path.GetDirectoryName(csproj);
-
-			string publishArgs = $"publish -c {context.Configuration} /v:n /p:ShowLinkerSizeComparison=true";
-			if (selfContained) {
-				publishArgs += $" -r {context.RuntimeIdentifier}";
-			}
-			string rootFilesStr;
-			if (rootFiles != null && rootFiles.Any()) {
-				rootFilesStr = String.Join(";", rootFiles);
-				publishArgs += $" /p:LinkerRootDescriptors={rootFilesStr}";
-			}
-			if (extraPublishArgs != null) {
-				foreach (var item in extraPublishArgs) {
-					publishArgs += $" /p:{item.Key}={item.Value}";
-				}
-			}
-			int ret = Dotnet(publishArgs, demoRoot);
-
-			if (ret != 0) {
-				output.WriteLine("publish failed, returning " + ret);
-				Assert.True(false);
-			}
-
-			// detect the target framework for which the app was published
-			string tfmDir = Path.Combine(demoRoot, "bin", context.Configuration);
-			string tfm = Directory.GetDirectories(tfmDir).Select(p => Path.GetFileName(p)).Single();
-			string builtApp = Path.Combine(tfmDir, tfm);
-			if (selfContained) {
-				builtApp = Path.Combine(builtApp, context.RuntimeIdentifier);
-			}
-			builtApp = Path.Combine(builtApp, "publish",
-				Path.GetFileNameWithoutExtension(csproj));
-			if (selfContained) {
-				if (context.RuntimeIdentifier.Contains("win")) {
-					builtApp += ".exe";
-				}
-			} else {
-				builtApp += ".dll";
-			}
-			Assert.True(File.Exists(builtApp));
-			return builtApp;
-		}
-
-		public int RunApp(string target, out string processOutput, int timeout = Int32.MaxValue,
-			string terminatingOutput = null, bool selfContained = false)
-		{
-			Assert.True(File.Exists(target));
-			int ret;
-			if (selfContained) {
-				ret = RunCommand(
-					target, null,
-					Directory.GetParent(target).FullName,
-					null, out processOutput, timeout, terminatingOutput);
-			} else {
-				ret = RunCommand(
-					Path.GetFullPath(context.DotnetToolPath),
-					Path.GetFullPath(target),
-					Directory.GetParent(target).FullName,
-					null, out processOutput, timeout, terminatingOutput);
-			}
-			return ret;
+			logger = new FixtureLogger (diagnosticMessageSink);
+			CommandHelper = new CommandHelper (logger);
 		}
 
 		protected void AddLinkerReference(string csproj)
@@ -137,8 +40,8 @@ namespace ILLink.Tests
 			foreach (var el in xdoc.Root.Elements(ns + "ItemGroup")) {
 				if (el.Elements(ns + "PackageReference").Any()) {
 					el.Add(new XElement(ns+"PackageReference",
-						new XAttribute("Include", context.TasksPackageName),
-						new XAttribute("Version", context.TasksPackageVersion)));
+						new XAttribute("Include", TestContext.TasksPackageName),
+						new XAttribute("Version", TestContext.TasksPackageVersion)));
 					added = true;
 					break;
 				}
@@ -146,8 +49,8 @@ namespace ILLink.Tests
 			if (!added) {
 				xdoc.Root.Add(new XElement(ns + "ItemGroup",
 					new XElement(ns + "PackageReference",
-						new XAttribute("Include", context.TasksPackageName),
-						new XAttribute("Version", context.TasksPackageVersion))));
+						new XAttribute("Include", TestContext.TasksPackageName),
+						new XAttribute("Version", TestContext.TasksPackageVersion))));
 				added= true;
 			}
 
@@ -173,6 +76,101 @@ namespace ILLink.Tests
 			using (var fs = new FileStream(csproj, FileMode.Create)) {
 				xdoc.Save(fs);
 			}
+		}
+
+	}
+
+	/// <summary>
+	///   Contains logic shared by multiple test classes.
+	/// </summary>
+	public class IntegrationTestBase
+	{
+		private readonly TestLogger logger;
+		protected readonly CommandHelper CommandHelper;
+
+		public IntegrationTestBase(ITestOutputHelper output)
+		{
+			logger = new TestLogger(output);
+			CommandHelper = new CommandHelper(logger);
+		}
+
+		private void LogMessage (string message)
+		{
+			logger.LogMessage (message);
+		}
+
+		/// <summary>
+		///   Run the linker on the specified project. This assumes
+		///   that the project already contains a reference to the
+		///   linker task package.
+		///   Optionally takes a list of root descriptor files.
+		///   Returns the path to the built app, either the renamed
+		///   host for self-contained publish, or the dll containing
+		///   the entry point.
+		/// </summary>
+		public string BuildAndLink(string csproj, List<string> rootFiles = null, Dictionary<string, string> extraPublishArgs = null, bool selfContained = false)
+		{
+			string demoRoot = Path.GetDirectoryName(csproj);
+
+			string publishArgs = $"publish -c {TestContext.Configuration} /v:n /p:ShowLinkerSizeComparison=true";
+			if (selfContained) {
+				publishArgs += $" -r {TestContext.RuntimeIdentifier}";
+			}
+			string rootFilesStr;
+			if (rootFiles != null && rootFiles.Any()) {
+				rootFilesStr = String.Join(";", rootFiles);
+				publishArgs += $" /p:LinkerRootDescriptors={rootFilesStr}";
+			}
+			if (extraPublishArgs != null) {
+				foreach (var item in extraPublishArgs) {
+					publishArgs += $" /p:{item.Key}={item.Value}";
+				}
+			}
+			int ret = CommandHelper.Dotnet(publishArgs, demoRoot);
+
+			if (ret != 0) {
+				LogMessage("publish failed, returning " + ret);
+				Assert.True(false);
+			}
+
+			// detect the target framework for which the app was published
+			string tfmDir = Path.Combine(demoRoot, "bin", TestContext.Configuration);
+			string tfm = Directory.GetDirectories(tfmDir).Select(p => Path.GetFileName(p)).Single();
+			string builtApp = Path.Combine(tfmDir, tfm);
+			if (selfContained) {
+				builtApp = Path.Combine(builtApp, TestContext.RuntimeIdentifier);
+			}
+			builtApp = Path.Combine(builtApp, "publish",
+				Path.GetFileNameWithoutExtension(csproj));
+			if (selfContained) {
+				if (TestContext.RuntimeIdentifier.Contains("win")) {
+					builtApp += ".exe";
+				}
+			} else {
+				builtApp += ".dll";
+			}
+			Assert.True(File.Exists(builtApp));
+			return builtApp;
+		}
+
+		public int RunApp(string target, out string processOutput, int timeout = Int32.MaxValue,
+			string terminatingOutput = null, bool selfContained = false)
+		{
+			Assert.True(File.Exists(target));
+			int ret;
+			if (selfContained) {
+				ret = CommandHelper.RunCommand(
+					target, null,
+					Directory.GetParent(target).FullName,
+					null, out processOutput, timeout, terminatingOutput);
+			} else {
+				ret = CommandHelper.RunCommand(
+					Path.GetFullPath(TestContext.DotnetToolPath),
+					Path.GetFullPath(target),
+					Directory.GetParent(target).FullName,
+					null, out processOutput, timeout, terminatingOutput);
+			}
+			return ret;
 		}
 	}
 }

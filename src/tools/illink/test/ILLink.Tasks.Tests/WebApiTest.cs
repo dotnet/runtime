@@ -6,11 +6,11 @@ using Xunit.Abstractions;
 
 namespace ILLink.Tests
 {
-	public class WebApiTest : IntegrationTestBase
+	public class WebApiFixture : ProjectFixture
 	{
-		private string csproj;
+		public string csproj;
 
-		public WebApiTest(ITestOutputHelper output) : base(output) {
+		public WebApiFixture(IMessageSink diagnosticMessageSink) : base(diagnosticMessageSink) {
 			csproj = SetupProject();
 		}
 
@@ -20,7 +20,7 @@ namespace ILLink.Tests
 			string csproj = Path.Combine(projectRoot, $"{projectRoot}.csproj");
 
 			if (File.Exists(csproj)) {
-				output.WriteLine($"using existing project {csproj}");
+				LogMessage($"using existing project {csproj}");
 				return csproj;
 			}
 
@@ -29,9 +29,9 @@ namespace ILLink.Tests
 			}
 
 			Directory.CreateDirectory(projectRoot);
-			int ret = Dotnet("new webapi", projectRoot);
+			int ret = CommandHelper.Dotnet("new webapi", projectRoot);
 			if (ret != 0) {
-				output.WriteLine("dotnet new failed");
+				LogMessage("dotnet new failed");
 				Assert.True(false);
 			}
 
@@ -52,7 +52,7 @@ namespace ILLink.Tests
 
 			var propertygroup = xdoc.Root.Element(ns + "PropertyGroup");
 
-			output.WriteLine("setting PublishWithAspNetCoreTargetManifest=false");
+			LogMessage("setting PublishWithAspNetCoreTargetManifest=false");
 			propertygroup.Add(new XElement(ns + "PublishWithAspNetCoreTargetManifest",
 										   "false"));
 
@@ -60,27 +60,37 @@ namespace ILLink.Tests
 				xdoc.Save(fs);
 			}
 		}
+	}
+
+	public class WebApiTest : IntegrationTestBase, IClassFixture<WebApiFixture>
+	{
+		private WebApiFixture fixture;
+
+		public WebApiTest(WebApiFixture fixture, ITestOutputHelper output) : base(output)
+		{
+			this.fixture = fixture;
+		}
 
 		[Fact]
 		public void RunWebApiStandalone()
 		{
-			string executablePath = BuildAndLink(csproj, selfContained: true);
+			string executablePath = BuildAndLink(fixture.csproj, selfContained: true);
 			CheckOutput(executablePath, selfContained: true);
 		}
 
 		[Fact]
 		public void RunWebApiPortable()
 		{
-			string target = BuildAndLink(csproj, selfContained: false);
+			string target = BuildAndLink(fixture.csproj, selfContained: false);
 			CheckOutput(target, selfContained: false);
 		}
 
 		void CheckOutput(string target, bool selfContained = false)
 		{
-			string terminatingOutput = "Now listening on: http://localhost:5000";
+			string terminatingOutput = "Application started. Press Ctrl+C to shut down.";
 			int ret = RunApp(target, out string commandOutput, 60000, terminatingOutput, selfContained: selfContained);
-			Assert.True(commandOutput.Contains("Application started. Press Ctrl+C to shut down."));
-			Assert.True(commandOutput.Contains(terminatingOutput));
+			Assert.Contains("Now listening on: http://localhost:5000", commandOutput);
+			Assert.Contains(terminatingOutput, commandOutput);
 		}
 	}
 }

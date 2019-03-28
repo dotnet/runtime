@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Linker.Tests.Cases", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Linker.Tests.Cases.Expectations", "test\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj", "{2C26601F-3E2F-45B9-A02F-58EE9296E19E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\ILLink.Tasks.Tests\test.csproj", "{10249F19-1B72-4087-AF7F-C95B7672B204}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -143,6 +145,18 @@ Global
 		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|x64.Build.0 = illink_Release|Any CPU
 		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|x86.ActiveCfg = illink_Release|Any CPU
 		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|x86.Build.0 = illink_Release|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Debug|x64.Build.0 = Debug|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Debug|x86.Build.0 = Debug|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Release|x64.ActiveCfg = Release|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Release|x64.Build.0 = Release|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Release|x86.ActiveCfg = Release|Any CPU
+		{10249F19-1B72-4087-AF7F-C95B7672B204}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -154,5 +168,6 @@ Global
 		{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07} = {A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}
 		{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5} = {A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}
 		{2C26601F-3E2F-45B9-A02F-58EE9296E19E} = {A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}
+		{10249F19-1B72-4087-AF7F-C95B7672B204} = {A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}
 	EndGlobalSection
 EndGlobal

@@ -1,14 +1,54 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Text;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace ILLink.Tests
 {
+
+	public class CommandHelper
+	{
+		private ILogger logger;
+
+		public CommandHelper(ILogger logger)
+		{
+			this.logger = logger;
+		}
+
+		public int Dotnet(string args, string workingDir, string additionalPath = null)
+		{
+			return RunCommand(Path.GetFullPath(TestContext.DotnetToolPath), args,
+				workingDir, additionalPath, out string commandOutput);
+		}
+
+		public int RunCommand(string command, string args, int timeout = Int32.MaxValue)
+		{
+			return RunCommand(command, args, null, null, out string commandOutput, timeout);
+		}
+
+		public int RunCommand(string command, string args, string workingDir)
+		{
+			return RunCommand(command, args, workingDir, null, out string commandOutput);
+		}
+
+		public int RunCommand(string command, string args, string workingDir, string additionalPath,
+			out string commandOutput, int timeout = Int32.MaxValue, string terminatingOutput = null)
+		{
+			return (new CommandRunner(command, logger))
+				.WithArguments(args)
+				.WithWorkingDir(workingDir)
+				.WithAdditionalPath(additionalPath)
+				.WithTimeout(timeout)
+				.WithTerminatingOutput(terminatingOutput)
+				.Run(out commandOutput);
+		}
+	}
+
 	public class CommandRunner
 	{
-		protected readonly ITestOutputHelper outputHelper;
+		private readonly ILogger logger;
 
 		private string command;
 		private string args;
@@ -17,9 +57,14 @@ namespace ILLink.Tests
 		private int timeout = Int32.MaxValue;
 		private string terminatingOutput;
 
-		public CommandRunner(string command, ITestOutputHelper outputHelper) {
+		private void LogMessage (string message)
+		{
+			logger.LogMessage (message);
+		}
+
+		public CommandRunner(string command, ILogger logger) {
 			this.command = command;
-			this.outputHelper = outputHelper;
+			this.logger = logger;
 		}
 
 		public CommandRunner WithArguments(string args) {
@@ -57,8 +102,8 @@ namespace ILLink.Tests
 			if (String.IsNullOrEmpty(command)) {
 				throw new Exception("No command was specified specified.");
 			}
-			if (outputHelper == null) {
-				throw new Exception("No output helper present.");
+			if (logger == null) {
+				throw new Exception("No logger present.");
 			}
 			var psi = new ProcessStartInfo
 			{
@@ -67,15 +112,15 @@ namespace ILLink.Tests
 				RedirectStandardOutput = true,
 				RedirectStandardError = true,
 			};
-			outputHelper.WriteLine($"caller working directory: {Environment.CurrentDirectory}");
+			LogMessage ($"caller working directory: {Environment.CurrentDirectory}");
 			if (!String.IsNullOrEmpty(args)) {
 				psi.Arguments = args;
-				outputHelper.WriteLine($"{command} {args}");
+				LogMessage ($"{command} {args}");
 			} else {
-				outputHelper.WriteLine($"{command}");
+				LogMessage ($"{command}");
 			}
 			if (!String.IsNullOrEmpty(workingDir)) {
-				outputHelper.WriteLine($"working directory: {workingDir}");
+				LogMessage ($"working directory: {workingDir}");
 				psi.WorkingDirectory = workingDir;
 			}
 			if (!String.IsNullOrEmpty(additionalPath)) {
@@ -94,9 +139,9 @@ namespace ILLink.Tests
 			psi.Environment.Remove("CscToolExe");
 			psi.Environment.Remove("MSBUILD_EXE_PATH");
 
-			outputHelper.WriteLine("environment:");
+			LogMessage ("environment:");
 			foreach (var item in psi.Environment) {
-				outputHelper.WriteLine($"\t{item.Key}={item.Value}");
+				LogMessage ($"\t{item.Key}={item.Value}");
 			}
 
 			StringBuilder processOutput = new StringBuilder();
@@ -127,7 +172,7 @@ namespace ILLink.Tests
 			process.BeginOutputReadLine();
 			process.BeginErrorReadLine();
 			if (!process.WaitForExit(timeout)) {
-				outputHelper.WriteLine($"killing process after {timeout} ms");
+				LogMessage ($"killing process after {timeout} ms");
 				process.Kill();
 			}
 			// WaitForExit with timeout doesn't guarantee
@@ -137,8 +182,8 @@ namespace ILLink.Tests
 			process.WaitForExit();
 			string processOutputStr = processOutput.ToString();
 			string processErrorStr = processError.ToString();
-			outputHelper.WriteLine(processOutputStr);
-			outputHelper.WriteLine(processErrorStr);
+			LogMessage(processOutputStr);
+			LogMessage(processErrorStr);
 			commandOutput = processOutputStr;
 			return process.ExitCode;
 		}
