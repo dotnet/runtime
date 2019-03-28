@@ -38,7 +38,8 @@ jobs:
           - group: DotNet-Blob-Feed
           - _TeamName: .NET # required by microbuild install step
           - _SignType: real # used in the arcade templates that install microbuild.
-          - _PublishArgs: /p:DotNetPublishToBlobFeed=true
+          - _DotNetPublishToBlobFeed: true # used by arcade templates that gather build asset manifests
+          - _PublishArgs: /p:DotNetPublishToBlobFeed=$(_DotNetPublishToBlobFeed)
                           /p:DotNetPublishBlobFeedUrl=https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
                           /p:DotNetPublishBlobFeedKey=$(dotnetfeed-storage-access-key-1)
         - DotNetSignType: ${{ format('{0}', variables._SignType) }} # DotNetSignType defaults to real if not specified
