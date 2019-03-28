@@ -614,19 +614,13 @@ mono_debug_count (void)
 MonoMethod*
 mono_icall_get_wrapper_method (MonoJitICallInfo* callinfo)
 {
-	MonoMethod *wrapper;
 	gboolean check_exc = TRUE;
-	char *name;
 
 	if (!strcmp (callinfo->name, "mono_thread_interruption_checkpoint"))
 		/* This icall is used to check for exceptions, so don't check in the wrapper */
 		check_exc = FALSE;
 
-	name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
-	wrapper = mono_marshal_get_icall_wrapper (callinfo->sig, name, callinfo->func, check_exc);
-	g_free (name);
-
-	return wrapper;
+	return mono_marshal_get_icall_wrapper (callinfo, check_exc);
 }
 
 gconstpointer
