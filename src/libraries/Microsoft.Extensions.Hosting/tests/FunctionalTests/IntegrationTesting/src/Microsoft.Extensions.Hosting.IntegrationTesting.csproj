@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description>.NET Core Extensions helpers to deploy applications to for testing.</Description>
+    <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
+    <EnableApiCheck>false</EnableApiCheck>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageTags>testing</PackageTags>
+    <IsTestAssetProject>true</IsTestAssetProject>
+    <!-- This is used as a package by aspnet benchmarking infrastructure. It is meant for internal-use only. -->
+    <IsShippingPackage>false</IsShippingPackage>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="Microsoft.AspNetCore.Testing" />
+    <Reference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <Reference Include="Microsoft.Extensions.FileProviders.Embedded" />
+    <Reference Include="Microsoft.Extensions.Logging" />
+    <Reference Include="Microsoft.Extensions.Logging.Console" />
+    <Reference Include="Microsoft.Extensions.Logging.Testing" />
+    <Reference Include="Serilog.Extensions.Logging" />
+    <Reference Include="Serilog.Sinks.File" />
+  </ItemGroup>
+
+</Project>
