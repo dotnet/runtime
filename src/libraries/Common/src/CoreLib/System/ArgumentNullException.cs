@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -30,19 +31,19 @@ namespace System
             HResult = HResults.E_POINTER;
         }
 
-        public ArgumentNullException(string paramName)
+        public ArgumentNullException(string? paramName)
             : base(SR.ArgumentNull_Generic, paramName)
         {
             HResult = HResults.E_POINTER;
         }
 
-        public ArgumentNullException(string message, Exception innerException)
+        public ArgumentNullException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.E_POINTER;
         }
 
-        public ArgumentNullException(string paramName, string message)
+        public ArgumentNullException(string? paramName, string? message)
             : base(message, paramName)
         {
             HResult = HResults.E_POINTER;
