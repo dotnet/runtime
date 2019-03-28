@@ -38,7 +38,7 @@ namespace System.Tests
             return data;
         }
 
-        private static IEnumerable<object[]> GenerateFillData<TSource, TResult>(IEnumerable<TSource> source, TSource seed, Func<TSource, TResult> transform)
+        public static IEnumerable<object[]> GenerateFillData<TSource, TResult>(IEnumerable<TSource> source, TSource seed, Func<TSource, TResult> transform)
         {
             int count = source.Count();
             TResult repeatedValue = transform(seed);

@@ -274,7 +274,7 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Insert(builder.Length, new ReadOnlySpan<char>(new char[1]))); // New length > builder.MaxCapacity
         }
 
-        private static IEnumerable<object[]> Append_StringBuilder_TestData()
+        public static IEnumerable<object[]> Append_StringBuilder_TestData()
         {
             string mediumString = new string('a', 30);
             string largeString = new string('b', 1000);
@@ -310,7 +310,7 @@ namespace System.Text.Tests
             Assert.Equal(s, s1.Append(s2).ToString());
         }
 
-        private static IEnumerable<object[]> Append_StringBuilder_Substring_TestData()
+        public static IEnumerable<object[]> Append_StringBuilder_Substring_TestData()
         {
             string mediumString = new string('a', 30);
             string largeString = new string('b', 1000);
