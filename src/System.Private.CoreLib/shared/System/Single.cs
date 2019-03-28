@@ -11,6 +11,7 @@
 **
 ===========================================================*/
 
+#nullable enable
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -117,7 +118,7 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type Single, this method throws an ArgumentException.
         //
-        public int CompareTo(object value)
+        public int CompareTo(object? value)
         {
             if (value == null)
             {
@@ -189,7 +190,7 @@ namespace System
             return left >= right;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is float))
             {
@@ -233,22 +234,22 @@ namespace System
             return Number.FormatSingle(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider? provider)
         {
             return Number.FormatSingle(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public string ToString(string format)
+        public string ToString(string? format)
         {
             return Number.FormatSingle(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(string format, IFormatProvider provider)
+        public string ToString(string? format, IFormatProvider? provider)
         {
             return Number.FormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatSingle(m_value, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
@@ -274,26 +275,26 @@ namespace System
             return Number.ParseSingle(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        public static float Parse(string s, IFormatProvider provider)
+        public static float Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseSingle(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static float Parse(string s, NumberStyles style, IFormatProvider provider)
+        public static float Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static float Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider provider = null)
+        public static float Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(string s, out float result)
+        public static bool TryParse(string? s, out float result)
         {
             if (s == null)
             {
@@ -309,7 +310,7 @@ namespace System
             return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out float result)
+        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
 
@@ -322,7 +323,7 @@ namespace System
             return TryParse((ReadOnlySpan<char>)s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out float result)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
@@ -343,77 +344,77 @@ namespace System
         }
 
 
-        bool IConvertible.ToBoolean(IFormatProvider provider)
+        bool IConvertible.ToBoolean(IFormatProvider? provider)
         {
             return Convert.ToBoolean(m_value);
         }
 
-        char IConvertible.ToChar(IFormatProvider provider)
+        char IConvertible.ToChar(IFormatProvider? provider)
         {
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Single", "Char"));
         }
 
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
+        sbyte IConvertible.ToSByte(IFormatProvider? provider)
         {
             return Convert.ToSByte(m_value);
         }
 
-        byte IConvertible.ToByte(IFormatProvider provider)
+        byte IConvertible.ToByte(IFormatProvider? provider)
         {
             return Convert.ToByte(m_value);
         }
 
-        short IConvertible.ToInt16(IFormatProvider provider)
+        short IConvertible.ToInt16(IFormatProvider? provider)
         {
             return Convert.ToInt16(m_value);
         }
 
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
+        ushort IConvertible.ToUInt16(IFormatProvider? provider)
         {
             return Convert.ToUInt16(m_value);
         }
 
-        int IConvertible.ToInt32(IFormatProvider provider)
+        int IConvertible.ToInt32(IFormatProvider? provider)
         {
             return Convert.ToInt32(m_value);
         }
 
-        uint IConvertible.ToUInt32(IFormatProvider provider)
+        uint IConvertible.ToUInt32(IFormatProvider? provider)
         {
             return Convert.ToUInt32(m_value);
         }
 
-        long IConvertible.ToInt64(IFormatProvider provider)
+        long IConvertible.ToInt64(IFormatProvider? provider)
         {
             return Convert.ToInt64(m_value);
         }
 
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
+        ulong IConvertible.ToUInt64(IFormatProvider? provider)
         {
             return Convert.ToUInt64(m_value);
         }
 
-        float IConvertible.ToSingle(IFormatProvider provider)
+        float IConvertible.ToSingle(IFormatProvider? provider)
         {
             return m_value;
         }
 
-        double IConvertible.ToDouble(IFormatProvider provider)
+        double IConvertible.ToDouble(IFormatProvider? provider)
         {
             return Convert.ToDouble(m_value);
         }
 
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider? provider)
         {
             return Convert.ToDecimal(m_value);
         }
 
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
         {
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Single", "DateTime"));
         }
 
-        object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider? provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }
