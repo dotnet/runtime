@@ -7943,15 +7943,15 @@ GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
 
         if (call->gtCallLateArgs)
         {
-            regNumber      thisReg         = REG_ARG_0;
             unsigned       argNum          = 0;
             fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
             GenTree*       result          = thisArgTabEntry->node;
 
-#if !FEATURE_FIXED_OUT_ARGS
-            GenTree* lateArgs = call->gtCallLateArgs;
-            regList  list     = call->regArgList;
-            int      index    = 0;
+#if !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
+            regNumber thisReg  = REG_ARG_0;
+            GenTree*  lateArgs = call->gtCallLateArgs;
+            regList   list     = call->regArgList;
+            int       index    = 0;
             while (lateArgs != NULL)
             {
                 assert(lateArgs->gtOper == GT_LIST);
@@ -7959,16 +7959,13 @@ GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
                 regNumber curArgReg = list[index];
                 if (curArgReg == thisReg)
                 {
-                    if (optAssertionPropagatedCurrentStmt)
-                        result = lateArgs->gtOp.gtOp1;
-
                     assert(result == lateArgs->gtOp.gtOp1);
                 }
 
                 lateArgs = lateArgs->gtOp.gtOp2;
                 index++;
             }
-#endif
+#endif // !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
             return result;
         }
     }
