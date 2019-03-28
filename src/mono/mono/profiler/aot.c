@@ -10,6 +10,7 @@
 
 #include "aot.h"
 
+#include <mono/metadata/object-internals.h>
 #include <mono/metadata/profiler.h>
 #include <mono/metadata/tokentype.h>
 #include <mono/metadata/tabledefs.h>
@@ -19,6 +20,7 @@
 #include <mono/mini/jit.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
+#include <mono/utils/mono-threads.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -34,6 +36,7 @@ struct _MonoProfiler {
 	char *outfile_name;
 	mono_mutex_t mutex;
 	gboolean verbose;
+	int duration;
 };
 
 static MonoProfiler aot_profiler;
@@ -47,7 +50,8 @@ prof_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 		return;
 
 	mono_os_mutex_lock (&prof->mutex);
-	g_ptr_array_add (prof->methods, method);
+	if (prof->methods)
+		g_ptr_array_add (prof->methods, method);
 	mono_os_mutex_unlock (&prof->mutex);
 }
 
@@ -60,6 +64,7 @@ usage (void)
 	mono_profiler_printf ("AOT profiler.");
 	mono_profiler_printf ("Usage: mono --profile=aot[:OPTION1[,OPTION2...]] program.exe\n");
 	mono_profiler_printf ("Options:");
+	mono_profiler_printf ("\tduration=NUM         profile only NUM seconds of runtime and write the data");
 	mono_profiler_printf ("\thelp                 show this usage info");
 	mono_profiler_printf ("\toutput=FILENAME      write the data to file FILENAME");
 	mono_profiler_printf ("\tverbose              print diagnostic info");
@@ -94,6 +99,9 @@ parse_arg (const char *arg)
 
 	if (match_option (arg, "help", NULL)) {
 		usage ();
+	} else if (match_option (arg, "duration", &val)) {
+		char *end;
+		aot_profiler.duration = strtoul (val, &end, 10);
 	} else if (match_option (arg, "output", &val)) {
 		aot_profiler.outfile_name = g_strdup (val);
 	} else if (match_option (arg, "verbose", NULL)) {
@@ -158,6 +166,50 @@ parse_args (const char *desc)
 	g_free (buffer);
 }
 
+static void *
+helper_thread (void *arg)
+{
+	mono_thread_attach (mono_get_root_domain ());
+
+	MonoInternalThread *internal = mono_thread_internal_current ();
+
+	ERROR_DECL (error);
+
+	MonoString *name_str = mono_string_new_checked (mono_get_root_domain (), "AOT Profiler Helper", error);
+	mono_error_assert_ok (error);
+	mono_thread_set_name_internal (internal, name_str, FALSE, FALSE, error);
+	mono_error_assert_ok (error);
+
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+
+	sleep (aot_profiler.duration);
+
+	prof_shutdown (&aot_profiler);
+
+	mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NONE);
+	mono_thread_detach (mono_thread_current ());
+
+	return NULL;
+}
+
+static void
+start_helper_thread (void)
+{
+	MonoNativeThreadId thread_id;
+
+	if (!mono_native_thread_create (&thread_id, helper_thread, NULL)) {
+		mono_profiler_printf_err ("Could not start aot profiler helper thread");
+		exit (1);
+	}
+}
+
+static void
+runtime_initialized (MonoProfiler *profiler)
+{
+	if (profiler->duration >= 0)
+		start_helper_thread ();
+}
+
 void
 mono_profiler_init_aot (const char *desc);
 
@@ -172,6 +224,8 @@ mono_profiler_init_aot (const char *desc)
 		mono_profiler_printf_err ("The AOT profiler is not meant to be run during AOT compilation.");
 		exit (1);
 	}
+
+	aot_profiler.duration = -1;
 
 	parse_args (desc [strlen ("aot")] == ':' ? desc + strlen ("aot") + 1 : "");
 
@@ -199,6 +253,7 @@ mono_profiler_init_aot (const char *desc)
 	mono_os_mutex_init (&aot_profiler.mutex);
 
 	MonoProfilerHandle handle = mono_profiler_create (&aot_profiler);
+	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 	mono_profiler_set_runtime_shutdown_end_callback (handle, prof_shutdown);
 	mono_profiler_set_jit_done_callback (handle, prof_jit_done);
 }
@@ -402,6 +457,13 @@ add_method (MonoProfiler *prof, MonoMethod *m)
 static void
 prof_shutdown (MonoProfiler *prof)
 {
+	mono_os_mutex_lock (&prof->mutex);
+	int already_shutdown = prof->methods == NULL;
+	mono_os_mutex_unlock (&prof->mutex);
+
+	if (already_shutdown)
+		return;
+
 	int mindex;
 	char magic [32];
 
@@ -411,6 +473,7 @@ prof_shutdown (MonoProfiler *prof)
 	emit_int32 (prof, version);
 
 	GHashTable *all_methods = g_hash_table_new (NULL, NULL);
+	mono_os_mutex_lock (&prof->mutex);
 	for (mindex = 0; mindex < prof->methods->len; ++mindex) {
 	    MonoMethod *m = (MonoMethod*)g_ptr_array_index (prof->methods, mindex);
 
@@ -427,9 +490,14 @@ prof_shutdown (MonoProfiler *prof)
 
 	fclose (prof->outfile);
 
+	mono_profiler_printf ("AOT profiler data written to '%s'", prof->outfile_name);
+
 	g_hash_table_destroy (all_methods);
 	g_hash_table_destroy (prof->classes);
 	g_hash_table_destroy (prof->images);
 	g_ptr_array_free (prof->methods, TRUE);
 	g_free (prof->outfile_name);
+
+	prof->methods = NULL;
+	mono_os_mutex_unlock (&prof->mutex);
 }
