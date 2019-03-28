@@ -19,6 +19,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
+#nullable enable
 using System.Collections.Generic;
 using System.Text;
 
@@ -37,7 +38,7 @@ namespace System.Globalization
         UseSpacesInMonthNames = 0x00000004,
         UseHebrewParsing = 0x00000008,
         UseSpacesInDayNames = 0x00000010,   // Has spaces or non-breaking space in the day names.
-        UseDigitPrefixInTokens = 0x00000020,   // Has token starting with numbers.        
+        UseDigitPrefixInTokens = 0x00000020,   // Has token starting with numbers.
     }
 
     internal enum CalendarId : ushort
@@ -47,7 +48,7 @@ namespace System.Globalization
         GREGORIAN_US = 2,     // Gregorian (U.S.) calendar
         JAPAN = 3,     // Japanese Emperor Era calendar
                        /* SSS_WARNINGS_OFF */
-        TAIWAN = 4,     // Taiwan Era calendar /* SSS_WARNINGS_ON */ 
+        TAIWAN = 4,     // Taiwan Era calendar /* SSS_WARNINGS_ON */
         KOREA = 5,     // Korean Tangun Era calendar
         HIJRI = 6,     // Hijri (Arabic Lunar) calendar
         THAI = 7,     // Thai calendar
@@ -126,7 +127,7 @@ namespace System.Globalization
                     Dictionary<string, string> temp = new Dictionary<string, string>();
                     // Add known words into the hash table.
 
-                    // Skip these special symbols.                        
+                    // Skip these special symbols.
                     temp.Add("/", string.Empty);
                     temp.Add("-", string.Empty);
                     temp.Add(".", string.Empty);
@@ -204,14 +205,14 @@ namespace System.Globalization
         // A helper to add the found date word or month postfix into ArrayList for date words.
         //
         // Parameters:
-        //      formatPostfix: What kind of postfix this is.  
+        //      formatPostfix: What kind of postfix this is.
         //          Possible values:
         //              null: This is a regular date word
         //              "MMMM": month postfix
         //      word: The date word or postfix to be added.
         //
         ////////////////////////////////////////////////////////////////////////////
-        internal void AddDateWordOrPostfix(string formatPostfix, string str)
+        internal void AddDateWordOrPostfix(string? formatPostfix, string str)
         {
             if (str.Length > 0)
             {
@@ -269,10 +270,10 @@ namespace System.Globalization
         //          Possible values:
         //              null: This is a regular date word
         //              "MMMM": month postfix
-        //          
+        //
         //
         ////////////////////////////////////////////////////////////////////////////
-        internal int AddDateWords(string pattern, int index, string formatPostfix)
+        internal int AddDateWords(string pattern, int index, string? formatPostfix)
         {
             // Skip any whitespaces so we will start from a letter.
             int newIndex = SkipWhiteSpacesAndNonLetter(pattern, index);
@@ -283,10 +284,10 @@ namespace System.Globalization
             }
             index = newIndex;
 
-            // This is the first char added into dateWord.  
+            // This is the first char added into dateWord.
             // Skip all non-letter character.  We will add the first letter into DateWord.
             StringBuilder dateWord = new StringBuilder();
-            // We assume that date words should start with a letter. 
+            // We assume that date words should start with a letter.
             // Skip anything until we see a letter.
 
             while (index < pattern.Length)
@@ -294,8 +295,8 @@ namespace System.Globalization
                 char ch = pattern[index];
                 if (ch == '\'')
                 {
-                    // We have seen the end of quote.  Add the word if we do not see it before, 
-                    // and break the while loop.                    
+                    // We have seen the end of quote.  Add the word if we do not see it before,
+                    // and break the while loop.
                     AddDateWordOrPostfix(formatPostfix, dateWord.ToString());
                     index++;
                     break;
@@ -367,7 +368,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal void AddIgnorableSymbols(string text)
+        internal void AddIgnorableSymbols(string? text)
         {
             if (m_dateWords == null)
             {
@@ -412,7 +413,7 @@ namespace System.Globalization
         //  "\x0443." in bg-BG: dd.M.yyyy '\x0433.'
         //
         // Example of postfix:
-        //  month postfix: 
+        //  month postfix:
         //      "ta" in fi-FI: d. MMMM'ta 'yyyy
         //  Currently, only month postfix is supported.
         //
@@ -420,7 +421,7 @@ namespace System.Globalization
         //  Always call this with Framework-style pattern, instead of Windows style pattern.
         //  Windows style pattern uses '' for single quote, while .NET uses \'
         //
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         internal void ScanDateWord(string pattern)
         {
             // Check if we have found all of the year/month/day pattern.
@@ -497,7 +498,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal string[] GetDateWordsOfDTFI(DateTimeFormatInfo dtfi)
+        internal string[]? GetDateWordsOfDTFI(DateTimeFormatInfo dtfi)
         {
             // Enumarate all LongDatePatterns, and get the DateWords and scan for month postfix.
             string[] datePatterns = dtfi.GetAllDateTimePatterns('D');
@@ -539,7 +540,7 @@ namespace System.Globalization
                 ScanDateWord(datePatterns[i]);
             }
 
-            string[] result = null;
+            string[]? result = null;
             if (m_dateWords != null && m_dateWords.Count > 0)
             {
                 result = new string[m_dateWords.Count];
@@ -548,16 +549,16 @@ namespace System.Globalization
                     result[i] = m_dateWords[i];
                 }
             }
-            return (result);
+            return result;
         }
 
 
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         //
         // Scan the month names to see if genitive month names are used, and return
         // the format flag.
         //
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         internal static FORMATFLAGS GetFormatFlagGenitiveMonth(string[] monthNames, string[] genitveMonthNames, string[] abbrevMonthNames, string[] genetiveAbbrevMonthNames)
         {
             // If we have different names in regular and genitive month names, use genitive month flag.
@@ -565,11 +566,11 @@ namespace System.Globalization
                 ? FORMATFLAGS.UseGenitiveMonth : 0);
         }
 
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         //
         // Scan the month names to see if spaces are used or start with a digit, and return the format flag
         //
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         internal static FORMATFLAGS GetFormatFlagUseSpaceInMonthNames(string[] monthNames, string[] genitveMonthNames, string[] abbrevMonthNames, string[] genetiveAbbrevMonthNames)
         {
             FORMATFLAGS formatFlags = 0;
@@ -587,11 +588,11 @@ namespace System.Globalization
             return (formatFlags);
         }
 
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         //
         // Scan the day names and set the correct format flag.
         //
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         internal static FORMATFLAGS GetFormatFlagUseSpaceInDayNames(string[] dayNames, string[] abbrevDayNames)
         {
             return ((ArrayElementsHaveSpace(dayNames) ||
@@ -599,11 +600,11 @@ namespace System.Globalization
                     ? FORMATFLAGS.UseSpacesInDayNames : 0);
         }
 
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         //
         // Check the calendar to see if it is HebrewCalendar and set the Hebrew format flag if necessary.
         //
-        ////////////////////////////////////////////////////////////////////////////                
+        ////////////////////////////////////////////////////////////////////////////
         internal static FORMATFLAGS GetFormatFlagUseHebrewCalendar(int calID)
         {
             return (calID == (int)CalendarId.HEBREW ?
@@ -612,9 +613,9 @@ namespace System.Globalization
 
 
         //-----------------------------------------------------------------------------
-        // EqualStringArrays 
-        //      compares two string arrays and return true if all elements of the first  
-        //      array equals to all elmentsof the second array. 
+        // EqualStringArrays
+        //      compares two string arrays and return true if all elements of the first
+        //      array equals to all elmentsof the second array.
         //      otherwise it returns false.
         //-----------------------------------------------------------------------------
 
@@ -632,7 +633,7 @@ namespace System.Globalization
                 return false;
             }
 
-            // Check each string 
+            // Check each string
             for (int i = 0; i < array1.Length; i++)
             {
                 if (array1[i] != array2[i])
@@ -645,7 +646,7 @@ namespace System.Globalization
         }
 
         //-----------------------------------------------------------------------------
-        // ArrayElementsHaveSpace 
+        // ArrayElementsHaveSpace
         //      It checks all input array elements if any of them has space character
         //      returns true if found space character in one of the array elements.
         //      otherwise returns false.
@@ -670,11 +671,11 @@ namespace System.Globalization
         }
 
 
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         //
         // Check if any element of the array start with a digit.
         //
-        ////////////////////////////////////////////////////////////////////////////        
+        ////////////////////////////////////////////////////////////////////////////
         private static bool ArrayElementsBeginWithDigit(string[] array)
         {
             for (int i = 0; i < array.Length; i++)
@@ -711,7 +712,7 @@ namespace System.Globalization
                     if (index == array[i].Length - 4)
                     {
                         // Skip known CJK month suffix.
-                        // Starting with Windows 8, the CJK months for some cultures looks like: "1' \x6708'" 
+                        // Starting with Windows 8, the CJK months for some cultures looks like: "1' \x6708'"
                         // instead of just "1\x6708"
                         if (array[i][index] == '\'' && array[i][index + 1] == ' ' &&
                            array[i][index + 2] == '\x6708' && array[i][index + 3] == '\'')
