@@ -130,16 +130,12 @@ static gboolean ss_enabled;
 
 static gboolean interp_init_done = FALSE;
 
-static char* dump_frame (InterpFrame *inv);
-static MonoArray *get_trace_ips (MonoDomain *domain, InterpFrame *top);
 static void interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClauseArgs *clause_args);
 static InterpMethod* lookup_method_pointer (gpointer addr);
 
 typedef void (*ICallMethod) (InterpFrame *frame);
 
 static MonoNativeTlsKey thread_context_id;
-
-static char* dump_args (InterpFrame *inv);
 
 #define DEBUG_INTERP 0
 #define COUNT_OPS 0
@@ -153,6 +149,7 @@ static int debug_indent_level = 0;
 static int break_on_method = 0;
 static int nested_trace = 0;
 static GList *db_methods = NULL;
+static char* dump_args (InterpFrame *inv);
 
 static void
 output_indent (void)
@@ -914,20 +911,6 @@ interp_throw (ThreadContext *context, MonoException *ex, InterpFrame *frame, gco
 	g_assert (context->has_resume_state);
 }
 
-static void
-fill_in_trace (MonoException *exception, InterpFrame *frame)
-{
-	ERROR_DECL (error);
-	char *stack_trace = dump_frame (frame);
-	MonoDomain *domain = frame->imethod->domain;
-	(exception)->stack_trace = mono_string_new_checked (domain, stack_trace, error);
-	mono_error_cleanup (error); /* FIXME: don't swallow the error */
-	(exception)->trace_ips = get_trace_ips (domain, frame);
-	g_free (stack_trace);
-}
-
-#define FILL_IN_TRACE(exception, frame) fill_in_trace(exception, frame)
-
 #define THROW_EX_GENERAL(exception,ex_ip, rethrow)		\
 	do {							\
 		interp_throw (context, (exception), (frame), (ex_ip), (rethrow)); \
@@ -985,7 +968,6 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, InterpFrame *frame, gboo
 			guint32 len = ao->bounds [i].length;
 			if (safe && (idx < lower || (idx - lower) >= len)) {
 				frame->ex = mono_get_exception_index_out_of_range ();
-				FILL_IN_TRACE (frame->ex, frame);
 				return -1;
 			}
 			pos = (pos * len) + idx - lower;
@@ -994,7 +976,6 @@ ves_array_calculate_index (MonoArray *ao, stackval *sp, InterpFrame *frame, gboo
 		pos = sp [0].data.i;
 		if (safe && pos >= ao->max_length) {
 			frame->ex = mono_get_exception_index_out_of_range ();
-			FILL_IN_TRACE (frame->ex, frame);
 			return -1;
 		}
 	}
@@ -1021,7 +1002,6 @@ ves_array_set (InterpFrame *frame, stackval *sp, MonoMethodSignature *sig)
 		mono_error_cleanup (error);
 		if (!isinst) {
 			frame->ex = mono_get_exception_array_type_mismatch ();
-			FILL_IN_TRACE (frame->ex, frame);
 			return;
 		}
 	}
@@ -1066,7 +1046,6 @@ ves_array_element_address (InterpFrame *frame, MonoClass *required_type, MonoArr
 
 	if (needs_typecheck && !mono_class_is_assignable_from_internal (m_class_get_element_class (mono_object_class ((MonoObject *) ao)), required_type)) {
 		frame->ex = mono_get_exception_array_type_mismatch ();
-		FILL_IN_TRACE (frame->ex, frame);
 		return NULL;
 	}
 	gint32 esize = mono_array_element_size (ac);
@@ -1512,7 +1491,6 @@ ves_imethod (InterpFrame *frame, MonoMethod *method, MonoMethodSignature *sig, s
 		MonoObject *obj = (MonoObject*) sp->data.p;
 		if (!obj) {
 			frame->ex = mono_get_exception_null_reference ();
-			FILL_IN_TRACE (frame->ex, frame);
 			return;
 		}
 		if (*name == 'S' && (strcmp (name, "Set") == 0)) {
@@ -1546,7 +1524,6 @@ dump_stack (stackval *stack, stackval *sp)
 	}
 	return g_string_free (str, FALSE);
 }
-#endif
 
 static void
 dump_stackval (GString *str, stackval *s, MonoType *type)
@@ -1596,7 +1573,6 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 	}
 }
 
-#if DEBUG_INTERP
 static char*
 dump_retval (InterpFrame *inv)
 {
@@ -1608,7 +1584,6 @@ dump_retval (InterpFrame *inv)
 
 	return g_string_free (str, FALSE);
 }
-#endif
 
 static char*
 dump_args (InterpFrame *inv)
@@ -1630,86 +1605,7 @@ dump_args (InterpFrame *inv)
 
 	return g_string_free (str, FALSE);
 }
- 
-static char*
-dump_frame (InterpFrame *inv)
-{
-	GString *str = g_string_new ("");
-	int i;
-	char *args;
-	ERROR_DECL (error);
-
-	for (i = 0; inv; inv = inv->parent) {
-		if (inv->imethod != NULL) {
-			MonoMethod *method = inv->imethod->method;
-
-			int codep = 0;
-			const char * opname = "";
-			char *name;
-			gchar *source = NULL;
-
-			if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) == 0 &&
-				(method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME) == 0) {
-				MonoMethodHeader *hd = mono_method_get_header_checked (method, error);
-				mono_error_cleanup (error); /* FIXME: don't swallow the error */
-
-				if (hd != NULL) {
-					if (inv->ip) {
-						opname = mono_interp_opname [*inv->ip];
-						codep = inv->ip - inv->imethod->code;
-						source = g_strdup_printf ("%s:%d // (TODO: proper stacktrace)", method->name, codep);
-					} else 
-						opname = "";
-
-#if 0
-					MonoDebugSourceLocation *minfo = mono_debug_lookup_method (method);
-					source = mono_debug_method_lookup_location (minfo, codep);
 #endif
-					mono_metadata_free_mh (hd);
-				}
-			}
-			args = dump_args (inv);
-			name = mono_method_full_name (method, TRUE);
-			if (source)
-				g_string_append_printf (str, "#%d: 0x%05x %-10s in %s (%s) at %s\n", i, codep, opname, name, args, source);
-			else
-				g_string_append_printf (str, "#%d: 0x%05x %-10s in %s (%s)\n", i, codep, opname, name, args);
-			g_free (name);
-			g_free (args);
-			g_free (source);
-			++i;
-		}
-	}
-	return g_string_free (str, FALSE);
-}
-
-static MonoArray *
-get_trace_ips (MonoDomain *domain, InterpFrame *top)
-{
-	int i;
-	MonoArray *res;
-	InterpFrame *inv;
-	ERROR_DECL (error);
-
-	for (i = 0, inv = top; inv; inv = inv->parent)
-		if (inv->imethod != NULL)
-			++i;
-
-	res = mono_array_new_checked (domain, mono_defaults.int_class, 3 * i, error);
-	mono_error_cleanup (error); /* FIXME: don't swallow the error */
-
-	for (i = 0, inv = top; inv; inv = inv->parent)
-		if (inv->imethod != NULL) {
-			mono_array_set_fast (res, gpointer, i, inv->imethod);
-			++i;
-			mono_array_set_fast (res, gpointer, i, (gpointer)inv->ip);
-			++i;
-			mono_array_set_fast (res, gpointer, i, NULL);
-			++i;
-		}
-
-	return res;
-}
 
 #define CHECK_ADD_OVERFLOW(a,b) \
 	(gint32)(b) >= 0 ? (gint32)(G_MAXINT32) - (gint32)(b) < (gint32)(a) ? -1 : 0	\
@@ -1959,13 +1855,9 @@ interp_entry (InterpEntryData *data)
 	}
 }
 
-/* MONO_NO_OPTIMIATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
-static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE stackval *
+static stackval *
 do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr)
 {
-	MonoLMFExt ext;
-	INTERP_PUSH_LMF_WITH_CTX (frame, ext, &&exit_icall);
-
 	switch (op) {
 	case MINT_ICALL_V_V: {
 		typedef void (*T)(void);
@@ -2070,6 +1962,18 @@ do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gp
 	/* convert the native representation to the stackval representation */
 	if (sig)
 		stackval_from_data (sig->ret, &sp [-1], (char*) &sp [-1].data.p, sig->pinvoke);
+
+	return sp;
+}
+
+/* MONO_NO_OPTIMIATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
+static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE stackval *
+do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr)
+{
+	MonoLMFExt ext;
+	INTERP_PUSH_LMF_WITH_CTX (frame, ext, &&exit_icall);
+
+	sp = do_icall (frame, sig, op, sp, ptr);
 
 	interp_pop_lmf (&ext);
 
@@ -3213,7 +3117,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			sp--;
 			frame->ip = ip;
 
-			sp = do_icall (frame, csignature, opcode, sp, target_ip);
+			sp = do_icall_wrapper (frame, csignature, opcode, sp, target_ip);
 			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 3;
@@ -5674,7 +5578,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				 * to check the abort threshold. For this to work we use child_frame as a
 				 * dummy frame that is stored in the lmf and serves as the transition frame
 				 */
-				do_icall (&child_frame, NULL, MINT_ICALL_V_P, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception);
+				do_icall_wrapper (&child_frame, NULL, MINT_ICALL_V_P, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception);
 
 				MonoException *abort_exc = (MonoException*)tmp_sp.data.p;
 				if (abort_exc)
@@ -5704,7 +5608,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
 			frame->ip = ip;
-			sp = do_icall (frame, NULL, *ip, sp, imethod->data_items [*(guint16 *)(ip + 1)]);
+			sp = do_icall_wrapper (frame, NULL, *ip, sp, imethod->data_items [*(guint16 *)(ip + 1)]);
 			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 2;
