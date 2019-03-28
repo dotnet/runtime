@@ -272,6 +272,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (category == HW_Category_MemoryStore)
                 {
+                    // The Mask instructions do not currently support containment of the address.
+                    assert(!op2->isContained());
                     if (intrinsicId == NI_AVX_MaskStore || intrinsicId == NI_AVX2_MaskStore)
                     {
                         emit->emitIns_AR_R_R(ins, simdSize, op2Reg, op3Reg, op1Reg, 0);
@@ -1462,6 +1464,8 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_UBYTE);
             assert(op2 == nullptr);
 
+            // These do not support containment.
+            assert(!op1->isContained());
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType);
             op1Reg          = op1->gtRegNum;
             emit->emitIns_AR(ins, emitTypeSize(baseType), op1Reg, 0);
@@ -1680,10 +1684,9 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(op1 != nullptr);
             assert(op2 != nullptr);
 
-            op2Reg          = op2->gtRegNum;
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            op1Reg          = op1->gtRegNum;
-            emit->emitIns_AR_R(ins, emitTypeSize(baseType), op2Reg, op1Reg, 0);
+            instruction     ins   = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+            GenTreeStoreInd store = storeIndirForm(node->TypeGet(), op1, op2);
+            emit->emitInsStoreInd(ins, emitTypeSize(baseType), &store);
             break;
         }
 
@@ -2128,6 +2131,8 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_BMI2_MultiplyNoFlags:
         case NI_BMI2_X64_MultiplyNoFlags:
         {
+            // These do not support containment
+            assert(!op2->isContained());
             int numArgs = HWIntrinsicInfo::lookupNumArgs(node);
             assert(numArgs == 2 || numArgs == 3);
 
@@ -2153,6 +2158,7 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
                 argList                 = argList->Rest();
                 GenTree* op3            = argList->Current();
                 op3Reg                  = op3->gtRegNum;
+                assert(!op3->isContained());
                 assert(op3Reg != op1Reg);
                 assert(op3Reg != targetReg);
                 assert(op3Reg != REG_EDX);
@@ -2172,7 +2178,7 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
             // generate code for MULX
             genHWIntrinsic_R_R_RM(node, ins, attr, targetReg, lowReg, op2);
 
-            // If requires the lower half result, store in the memory opinted by op3
+            // If requires the lower half result, store in the memory pointed to by op3
             if (numArgs == 3)
             {
                 emit->emitIns_AR_R(INS_mov, attr, lowReg, op3Reg, 0);
