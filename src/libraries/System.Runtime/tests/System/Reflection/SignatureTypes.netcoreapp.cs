@@ -25,7 +25,7 @@ namespace System.Reflection.Tests
             }
         }
 
-        private static IEnumerable<object[]> IsSignatureTypeTestData
+        public static IEnumerable<object[]> IsSignatureTypeTestData
         {
             get
             {
