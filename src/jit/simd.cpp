@@ -2967,6 +2967,10 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                     op2 = gtCloneExpr(index);
                 }
 
+                // For the non-constant case, we don't want to CSE the SIMD value, as we will just need to store
+                // it to the stack to do the indexing anyway.
+                op1->gtFlags |= GTF_DONT_CSE;
+
                 GenTree*          lengthNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, vectorLength);
                 GenTreeBoundsChk* simdChk =
                     new (this, GT_SIMD_CHK) GenTreeBoundsChk(GT_SIMD_CHK, TYP_VOID, index, lengthNode, SCK_RNGCHK_FAIL);
