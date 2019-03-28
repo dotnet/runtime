@@ -2475,7 +2475,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         break;
 
                     default:
-                        // Can't optimize.
+                        // Do not support such optimization.
                         break;
                 }
             }
@@ -2484,15 +2484,15 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
         case TYP_REF:
         {
-            if (tree->TypeGet() != TYP_REF) // TODO seandree: what are other cases here?
-            {
-                // Can't optimize.
-                break;
-            }
-
             assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
-
-            conValTree = gtNewIconNode(0, TYP_REF);
+            if (tree->TypeGet() == TYP_REF)
+            {
+                conValTree = gtNewIconNode(0, TYP_REF);
+            }
+            else
+            {
+                // Do not support such optimization (e.g byref(ref(0)).
+            }
         }
         break;
 
@@ -2537,15 +2537,20 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         break;
 
                     default:
-                        // Can't optimize.
+                        // Do not support (e.g. bool(const int)).
                         break;
                 }
             }
         }
         break;
 
+        case TYP_BYREF:
+            // Do not support const byref optimization.
+            break;
+
         default:
-            // Can't optimize.
+            // We do not record constants of other types.
+            unreached();
             break;
     }
 
