@@ -234,6 +234,8 @@ public:
 
 typedef UINT64 EventPipeSessionID;
 
+class EventPipeProviderCallbackDataQueue;
+
 class EventPipe
 {
     // Declare friends.
@@ -272,6 +274,8 @@ public:
     // Create a provider.
     static EventPipeProvider *CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
 
+    static EventPipeProvider *CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
+
     // Get a provider.
     static EventPipeProvider *GetProvider(const SString &providerName);
 
@@ -305,14 +309,15 @@ private:
     // The counterpart to WriteEvent which after the payload is constructed
     static void WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId = NULL, LPCGUID pRelatedActivityId = NULL);
 
-    static void DisableInternal(EventPipeSessionID id);
+    static void DisableInternal(EventPipeSessionID id, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     // Enable the specified EventPipe session.
     static EventPipeSessionID Enable(
         LPCWSTR strOutputPath,
         EventPipeSession *const pSession,
         EventPipeSessionType sessionType,
-        IpcStream *const pStream);
+        IpcStream *const pStream,
+        EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     static void CreateFlushTimerCallback();
 

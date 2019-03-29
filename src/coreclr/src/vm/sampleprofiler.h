@@ -26,7 +26,7 @@ class SampleProfiler
     public:
 
         // Enable profiling.
-        static void Enable();
+        static void Enable(EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
         // Disable profiling.
         static void Disable();
