@@ -18,15 +18,15 @@
 #define __CORHDR_H__
 
 #define FRAMEWORK_REGISTRY_KEY          "Software\\Microsoft\\.NETFramework"
-#define FRAMEWORK_REGISTRY_KEY_W        L"Software\\Microsoft\\.NETFramework"
+#define FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework")
 
 // keys for HKCU
 #ifdef _WIN64    
 #define USER_FRAMEWORK_REGISTRY_KEY             "Software\\Microsoft\\.NETFramework64"
-#define USER_FRAMEWORK_REGISTRY_KEY_W        L"Software\\Microsoft\\.NETFramework64"
+#define USER_FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework64")
 #else
 #define USER_FRAMEWORK_REGISTRY_KEY             "Software\\Microsoft\\.NETFramework"
-#define USER_FRAMEWORK_REGISTRY_KEY_W        L"Software\\Microsoft\\.NETFramework"
+#define USER_FRAMEWORK_REGISTRY_KEY_W        W("Software\\Microsoft\\.NETFramework")
 #endif
 
 
@@ -258,18 +258,18 @@ typedef struct IMAGE_COR20_HEADER
 // The most recent version.
 
 #define COR_CTOR_METHOD_NAME        ".ctor"
-#define COR_CTOR_METHOD_NAME_W      L".ctor"
+#define COR_CTOR_METHOD_NAME_W      W(".ctor")
 #define COR_CCTOR_METHOD_NAME       ".cctor"
-#define COR_CCTOR_METHOD_NAME_W     L".cctor"
+#define COR_CCTOR_METHOD_NAME_W     W(".cctor")
 
 #define COR_ENUM_FIELD_NAME         "value__"
-#define COR_ENUM_FIELD_NAME_W       L"value__"
+#define COR_ENUM_FIELD_NAME_W       W("value__")
 
 // The predefined name for deleting a typeDef,MethodDef, FieldDef, Property and Event
 #define COR_DELETED_NAME_A          "_Deleted"
-#define COR_DELETED_NAME_W          L"_Deleted"
+#define COR_DELETED_NAME_W          W("_Deleted")
 #define COR_VTABLEGAP_NAME_A        "_VtblGap"
-#define COR_VTABLEGAP_NAME_W        L"_VtblGap"
+#define COR_VTABLEGAP_NAME_W        W("_VtblGap")
 
 // We intentionally use strncmp so that we will ignore any suffix
 #define IsDeletedName(strName)      (strncmp(strName, COR_DELETED_NAME_A, COR_DELETED_NAME_LENGTH) == 0)
@@ -1639,74 +1639,74 @@ typedef enum CorAttributeTargets
   #define IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS (IMAGE_CEE_CS_CALLCONV_DEFAULT | IMAGE_CEE_CS_CALLCONV_HASTHIS)
 #endif
 
-#define INTEROP_DISPID_TYPE_W                   L"System.Runtime.InteropServices.DispIdAttribute"
+#define INTEROP_DISPID_TYPE_W                   W("System.Runtime.InteropServices.DispIdAttribute")
 #define INTEROP_DISPID_TYPE                     "System.Runtime.InteropServices.DispIdAttribute"
 #define INTEROP_DISPID_SIG                      {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I4}
 
-#define INTEROP_INTERFACETYPE_TYPE_W            L"System.Runtime.InteropServices.InterfaceTypeAttribute"
+#define INTEROP_INTERFACETYPE_TYPE_W            W("System.Runtime.InteropServices.InterfaceTypeAttribute")
 #define INTEROP_INTERFACETYPE_TYPE              "System.Runtime.InteropServices.InterfaceTypeAttribute"
 #define INTEROP_INTERFACETYPE_SIG               {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I2}
 
-#define INTEROP_CLASSINTERFACE_TYPE_W           L"System.Runtime.InteropServices.ClassInterfaceAttribute"
+#define INTEROP_CLASSINTERFACE_TYPE_W           W("System.Runtime.InteropServices.ClassInterfaceAttribute")
 #define INTEROP_CLASSINTERFACE_TYPE             "System.Runtime.InteropServices.ClassInterfaceAttribute"
 #define INTEROP_CLASSINTERFACE_SIG              {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I2}
 
-#define INTEROP_COMVISIBLE_TYPE_W               L"System.Runtime.InteropServices.ComVisibleAttribute"
+#define INTEROP_COMVISIBLE_TYPE_W               W("System.Runtime.InteropServices.ComVisibleAttribute")
 #define INTEROP_COMVISIBLE_TYPE                 "System.Runtime.InteropServices.ComVisibleAttribute"
 #define INTEROP_COMVISIBLE_SIG                  {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_BOOLEAN}
 
-#define INTEROP_COMREGISTERFUNCTION_TYPE_W      L"System.Runtime.InteropServices.ComRegisterFunctionAttribute"
+#define INTEROP_COMREGISTERFUNCTION_TYPE_W      W("System.Runtime.InteropServices.ComRegisterFunctionAttribute")
 #define INTEROP_COMREGISTERFUNCTION_TYPE        "System.Runtime.InteropServices.ComRegisterFunctionAttribute"
 #define INTEROP_COMREGISTERFUNCTION_SIG         {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_COMUNREGISTERFUNCTION_TYPE_W    L"System.Runtime.InteropServices.ComUnregisterFunctionAttribute"
+#define INTEROP_COMUNREGISTERFUNCTION_TYPE_W    W("System.Runtime.InteropServices.ComUnregisterFunctionAttribute")
 #define INTEROP_COMUNREGISTERFUNCTION_TYPE      "System.Runtime.InteropServices.ComUnregisterFunctionAttribute"
 #define INTEROP_COMUNREGISTERFUNCTION_SIG       {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_IMPORTEDFROMTYPELIB_TYPE_W      L"System.Runtime.InteropServices.ImportedFromTypeLibAttribute"
+#define INTEROP_IMPORTEDFROMTYPELIB_TYPE_W      W("System.Runtime.InteropServices.ImportedFromTypeLibAttribute")
 #define INTEROP_IMPORTEDFROMTYPELIB_TYPE        "System.Runtime.InteropServices.ImportedFromTypeLibAttribute"
 #define INTEROP_IMPORTEDFROMTYPELIB_SIG         {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define INTEROP_PRIMARYINTEROPASSEMBLY_TYPE_W   L"System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute"
+#define INTEROP_PRIMARYINTEROPASSEMBLY_TYPE_W   W("System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute")
 #define INTEROP_PRIMARYINTEROPASSEMBLY_TYPE     "System.Runtime.InteropServices.PrimaryInteropAssemblyAttribute"
 #define INTEROP_PRIMARYINTEROPASSEMBLY_SIG      {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 2, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I4, ELEMENT_TYPE_I4}
 
-#define INTEROP_IDISPATCHIMPL_TYPE_W            L"System.Runtime.InteropServices.IDispatchImplAttribute"
+#define INTEROP_IDISPATCHIMPL_TYPE_W            W("System.Runtime.InteropServices.IDispatchImplAttribute")
 #define INTEROP_IDISPATCHIMPL_TYPE              "System.Runtime.InteropServices.IDispatchImplAttribute"
 #define INTEROP_IDISPATCHIMPL_SIG               {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I2}
 
-#define INTEROP_COMSOURCEINTERFACES_TYPE_W      L"System.Runtime.InteropServices.ComSourceInterfacesAttribute"
+#define INTEROP_COMSOURCEINTERFACES_TYPE_W      W("System.Runtime.InteropServices.ComSourceInterfacesAttribute")
 #define INTEROP_COMSOURCEINTERFACES_TYPE        "System.Runtime.InteropServices.ComSourceInterfacesAttribute"
 #define INTEROP_COMSOURCEINTERFACES_SIG         {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define INTEROP_COMDEFAULTINTERFACE_TYPE_W      L"System.Runtime.InteropServices.ComDefaultInterfaceAttribute"
+#define INTEROP_COMDEFAULTINTERFACE_TYPE_W      W("System.Runtime.InteropServices.ComDefaultInterfaceAttribute")
 #define INTEROP_COMDEFAULTINTERFACE_TYPE        "System.Runtime.InteropServices.ComDefaultInterfaceAttribute"
 
-#define INTEROP_COMCONVERSIONLOSS_TYPE_W        L"System.Runtime.InteropServices.ComConversionLossAttribute"
+#define INTEROP_COMCONVERSIONLOSS_TYPE_W        W("System.Runtime.InteropServices.ComConversionLossAttribute")
 #define INTEROP_COMCONVERSIONLOSS_TYPE          "System.Runtime.InteropServices.ComConversionLossAttribute"
 #define INTEROP_COMCONVERSIONLOSS_SIG           {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_BESTFITMAPPING_TYPE_W           L"System.Runtime.InteropServices.BestFitMappingAttribute"
+#define INTEROP_BESTFITMAPPING_TYPE_W           W("System.Runtime.InteropServices.BestFitMappingAttribute")
 #define INTEROP_BESTFITMAPPING_TYPE             "System.Runtime.InteropServices.BestFitMappingAttribute"
 #define INTEROP_BESTFITMAPPING_SIG              {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 2, ELEMENT_TYPE_VOID, ELEMENT_TYPE_BOOLEAN, ELEMENT_TYPE_BOOLEAN}
 
-#define INTEROP_TYPELIBTYPE_TYPE_W              L"System.Runtime.InteropServices.TypeLibTypeAttribute"
+#define INTEROP_TYPELIBTYPE_TYPE_W              W("System.Runtime.InteropServices.TypeLibTypeAttribute")
 #define INTEROP_TYPELIBTYPE_TYPE                "System.Runtime.InteropServices.TypeLibTypeAttribute"
 #define INTEROP_TYPELIBTYPE_SIG                 {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I2}
 
-#define INTEROP_TYPELIBFUNC_TYPE_W              L"System.Runtime.InteropServices.TypeLibFuncAttribute"
+#define INTEROP_TYPELIBFUNC_TYPE_W              W("System.Runtime.InteropServices.TypeLibFuncAttribute")
 #define INTEROP_TYPELIBFUNC_TYPE                "System.Runtime.InteropServices.TypeLibFuncAttribute"
 #define INTEROP_TYPELIBFUNC_SIG                 {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I2}
 
-#define INTEROP_TYPELIBVAR_TYPE_W               L"System.Runtime.InteropServices.TypeLibVarAttribute"
+#define INTEROP_TYPELIBVAR_TYPE_W               W("System.Runtime.InteropServices.TypeLibVarAttribute")
 #define INTEROP_TYPELIBVAR_TYPE                 "System.Runtime.InteropServices.TypeLibVarAttribute"
 #define INTEROP_TYPELIBVAR_SIG                  {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I2}
 
-#define INTEROP_MARSHALAS_TYPE_W                L"System.Runtime.InteropServices.MarshalAsAttribute"
+#define INTEROP_MARSHALAS_TYPE_W                W("System.Runtime.InteropServices.MarshalAsAttribute")
 #define INTEROP_MARSHALAS_TYPE                  "System.Runtime.InteropServices.MarshalAsAttribute"
 #define INTEROP_MARSHALAS_SIG                   {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I2}
 
-#define INTEROP_COMIMPORT_TYPE_W                L"System.Runtime.InteropServices.ComImportAttribute"
+#define INTEROP_COMIMPORT_TYPE_W                W("System.Runtime.InteropServices.ComImportAttribute")
 #define INTEROP_COMIMPORT_TYPE                  "System.Runtime.InteropServices.ComImportAttribute"
 #define INTEROP_COMIMPORT_SIG                   {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
@@ -1714,112 +1714,112 @@ typedef enum CorAttributeTargets
 #define INTEROP_GUID_TYPE                       "System.Runtime.InteropServices.GuidAttribute"
 #define INTEROP_GUID_SIG                        {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define INTEROP_DEFAULTMEMBER_TYPE_W            L"System.Reflection.DefaultMemberAttribute"
+#define INTEROP_DEFAULTMEMBER_TYPE_W            W("System.Reflection.DefaultMemberAttribute")
 #define INTEROP_DEFAULTMEMBER_TYPE              "System.Reflection.DefaultMemberAttribute"
 #define INTEROP_DEFAULTMEMBER_SIG               {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define INTEROP_COMEMULATE_TYPE_W               L"System.Runtime.InteropServices.ComEmulateAttribute"
+#define INTEROP_COMEMULATE_TYPE_W               W("System.Runtime.InteropServices.ComEmulateAttribute")
 #define INTEROP_COMEMULATE_TYPE                 "System.Runtime.InteropServices.ComEmulateAttribute"
 #define INTEROP_COMEMULATE_SIG                  {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define INTEROP_PRESERVESIG_TYPE_W              L"System.Runtime.InteropServices.PreserveSigAttribure"
+#define INTEROP_PRESERVESIG_TYPE_W              W("System.Runtime.InteropServices.PreserveSigAttribure")
 #define INTEROP_PRESERVESIG_TYPE                "System.Runtime.InteropServices.PreserveSigAttribure"
 #define INTEROP_PRESERVESIG_SIG                 {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_BOOLEAN}
 
-#define INTEROP_IN_TYPE_W                       L"System.Runtime.InteropServices.InAttribute"
+#define INTEROP_IN_TYPE_W                       W("System.Runtime.InteropServices.InAttribute")
 #define INTEROP_IN_TYPE                         "System.Runtime.InteropServices.InAttribute"
 #define INTEROP_IN_SIG                          {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_OUT_TYPE_W                      L"System.Runtime.InteropServices.OutAttribute"
+#define INTEROP_OUT_TYPE_W                      W("System.Runtime.InteropServices.OutAttribute")
 #define INTEROP_OUT_TYPE                        "System.Runtime.InteropServices.OutAttribute"
 #define INTEROP_OUT_SIG                         {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_COMALIASNAME_TYPE_W             L"System.Runtime.InteropServices.ComAliasNameAttribute"
+#define INTEROP_COMALIASNAME_TYPE_W             W("System.Runtime.InteropServices.ComAliasNameAttribute")
 #define INTEROP_COMALIASNAME_TYPE               "System.Runtime.InteropServices.ComAliasNameAttribute"
 #define INTEROP_COMALIASNAME_SIG                {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define INTEROP_PARAMARRAY_TYPE_W               L"System.ParamArrayAttribute"
+#define INTEROP_PARAMARRAY_TYPE_W               W("System.ParamArrayAttribute")
 #define INTEROP_PARAMARRAY_TYPE                 "System.ParamArrayAttribute"
 #define INTEROP_PARAMARRAY_SIG                  {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_LCIDCONVERSION_TYPE_W           L"System.Runtime.InteropServices.LCIDConversionAttribute"
+#define INTEROP_LCIDCONVERSION_TYPE_W           W("System.Runtime.InteropServices.LCIDConversionAttribute")
 #define INTEROP_LCIDCONVERSION_TYPE             "System.Runtime.InteropServices.LCIDConversionAttribute"
 #define INTEROP_LCIDCONVERSION_SIG              {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I4}
 
-#define INTEROP_COMSUBSTITUTABLEINTERFACE_TYPE_W    L"System.Runtime.InteropServices.ComSubstitutableInterfaceAttribute"
+#define INTEROP_COMSUBSTITUTABLEINTERFACE_TYPE_W    W("System.Runtime.InteropServices.ComSubstitutableInterfaceAttribute")
 #define INTEROP_COMSUBSTITUTABLEINTERFACE_TYPE      "System.Runtime.InteropServices.ComSubstitutableInterfaceAttribute"
 #define INTEROP_COMSUBSTITUTABLEINTERFACE_SIG       {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_DECIMALVALUE_TYPE_W             L"System.Runtime.CompilerServices.DecimalConstantAttribute"
+#define INTEROP_DECIMALVALUE_TYPE_W             W("System.Runtime.CompilerServices.DecimalConstantAttribute")
 #define INTEROP_DECIMALVALUE_TYPE               "System.Runtime.CompilerServices.DecimalConstantAttribute"
 #define INTEROP_DECIMALVALUE_SIG                {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 5, ELEMENT_TYPE_VOID, ELEMENT_TYPE_U1, ELEMENT_TYPE_U1, ELEMENT_TYPE_U4, ELEMENT_TYPE_U4, ELEMENT_TYPE_U4}
 
-#define INTEROP_DATETIMEVALUE_TYPE_W            L"System.Runtime.CompilerServices.DateTimeConstantAttribute"
+#define INTEROP_DATETIMEVALUE_TYPE_W            W("System.Runtime.CompilerServices.DateTimeConstantAttribute")
 #define INTEROP_DATETIMEVALUE_TYPE              "System.Runtime.CompilerServices.DateTimeConstantAttribute"
 #define INTEROP_DATETIMEVALUE_SIG               {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I8}
 
-#define INTEROP_IUNKNOWNVALUE_TYPE_W            L"System.Runtime.CompilerServices.IUnknownConstantAttribute"
+#define INTEROP_IUNKNOWNVALUE_TYPE_W            W("System.Runtime.CompilerServices.IUnknownConstantAttribute")
 #define INTEROP_IUNKNOWNVALUE_TYPE               "System.Runtime.CompilerServices.IUnknownConstantAttribute"
 #define INTEROP_IUNKNOWNVALUE_SIG               {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_IDISPATCHVALUE_TYPE_W           L"System.Runtime.CompilerServices.IDispatchConstantAttribute"
+#define INTEROP_IDISPATCHVALUE_TYPE_W           W("System.Runtime.CompilerServices.IDispatchConstantAttribute")
 #define INTEROP_IDISPATCHVALUE_TYPE              "System.Runtime.CompilerServices.IDispatchConstantAttribute"
 #define INTEROP_IDISPATCHVALUE_SIG              {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_AUTOPROXY_TYPE_W                L"System.Runtime.InteropServices.AutomationProxyAttribute"
+#define INTEROP_AUTOPROXY_TYPE_W                W("System.Runtime.InteropServices.AutomationProxyAttribute")
 #define INTEROP_AUTOPROXY_TYPE                  "System.Runtime.InteropServices.AutomationProxyAttribute"
 #define INTEROP_AUTOPROXY_SIG                   {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_BOOLEAN}
 
-#define INTEROP_TYPELIBIMPORTCLASS_TYPE_W       L"System.Runtime.InteropServices.TypeLibImportClassAttribute"
+#define INTEROP_TYPELIBIMPORTCLASS_TYPE_W       W("System.Runtime.InteropServices.TypeLibImportClassAttribute")
 #define INTEROP_TYPELIBIMPORTCLASS_TYPE         "System.Runtime.InteropServices.TypeLibImportClassAttribute"
 
 
-#define INTEROP_TYPELIBVERSION_TYPE_W           L"System.Runtime.InteropServices.TypeLibVersionAttribute"
+#define INTEROP_TYPELIBVERSION_TYPE_W           W("System.Runtime.InteropServices.TypeLibVersionAttribute")
 #define INTEROP_TYPELIBVERSION_TYPE             "System.Runtime.InteropServices.TypeLibVersionAttribute"
 #define INTEROP_TYPELIBVERSION_SIG              {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 2, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I2, ELEMENT_TYPE_I2}
 
-#define INTEROP_COMCOMPATIBLEVERSION_TYPE_W     L"System.Runtime.InteropServices.ComCompatibleVersionAttribute"
+#define INTEROP_COMCOMPATIBLEVERSION_TYPE_W     W("System.Runtime.InteropServices.ComCompatibleVersionAttribute")
 #define INTEROP_COMCOMPATIBLEVERSION_TYPE       "System.Runtime.InteropServices.ComCompatibleVersionAttribute"
 #define INTEROP_COMCOMPATIBLEVERSION_SIG        {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 4, ELEMENT_TYPE_VOID, ELEMENT_TYPE_I2, ELEMENT_TYPE_I2, ELEMENT_TYPE_I2, ELEMENT_TYPE_I2}
 
-#define INTEROP_COMEVENTINTERFACE_TYPE_W        L"System.Runtime.InteropServices.ComEventInterfaceAttribute"
+#define INTEROP_COMEVENTINTERFACE_TYPE_W        W("System.Runtime.InteropServices.ComEventInterfaceAttribute")
 #define INTEROP_COMEVENTINTERFACE_TYPE          "System.Runtime.InteropServices.ComEventInterfaceAttribute"
 
-#define INTEROP_COCLASS_TYPE_W                  L"System.Runtime.InteropServices.CoClassAttribute"
+#define INTEROP_COCLASS_TYPE_W                  W("System.Runtime.InteropServices.CoClassAttribute")
 #define INTEROP_COCLASS_TYPE                    "System.Runtime.InteropServices.CoClassAttribute"
 
-#define INTEROP_SERIALIZABLE_TYPE_W             L"System.SerializableAttribute"
+#define INTEROP_SERIALIZABLE_TYPE_W             W("System.SerializableAttribute")
 #define INTEROP_SERIALIZABLE_TYPE               "System.SerializableAttribute"
 #define INTEROP_SERIALIZABLE_SIG                {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define INTEROP_SETWIN32CONTEXTINIDISPATCHATTRIBUTE_TYPE_W  L"System.Runtime.InteropServices.SetWin32ContextInIDispatchAttribute"
+#define INTEROP_SETWIN32CONTEXTINIDISPATCHATTRIBUTE_TYPE_W  W("System.Runtime.InteropServices.SetWin32ContextInIDispatchAttribute")
 #define INTEROP_SETWIN32CONTEXTINIDISPATCHATTRIBUTE_TYPE     "System.Runtime.InteropServices.SetWin32ContextInIDispatchAttribute"
 #define INTEROP_SETWIN32CONTEXTINIDISPATCHATTRIBUTE_SIG     {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define FORWARD_INTEROP_STUB_METHOD_TYPE_W      L"System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute"
+#define FORWARD_INTEROP_STUB_METHOD_TYPE_W      W("System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute")
 #define FORWARD_INTEROP_STUB_METHOD_TYPE        "System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute"
 
-#define FRIEND_ASSEMBLY_TYPE_W                  L"System.Runtime.CompilerServices.InternalsVisibleToAttribute"
+#define FRIEND_ASSEMBLY_TYPE_W                  W("System.Runtime.CompilerServices.InternalsVisibleToAttribute")
 #define FRIEND_ASSEMBLY_TYPE                     "System.Runtime.CompilerServices.InternalsVisibleToAttribute"
 #define FRIEND_ASSEMBLY_SIG                     {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 2, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING, ELEMENT_TYPE_BOOLEAN}
 
-#define SUBJECT_ASSEMBLY_TYPE_W                 L"System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute"
+#define SUBJECT_ASSEMBLY_TYPE_W                 W("System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute")
 #define SUBJECT_ASSEMBLY_TYPE                    "System.Runtime.CompilerServices.IgnoresAccessChecksToAttribute"
 #define SUBJECT_ASSEMBLY_SIG                    {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 1, ELEMENT_TYPE_VOID, ELEMENT_TYPE_STRING}
 
-#define DISABLED_PRIVATE_REFLECTION_TYPE_W      L"System.Runtime.CompilerServices.DisablePrivateReflectionAttribute"
+#define DISABLED_PRIVATE_REFLECTION_TYPE_W      W("System.Runtime.CompilerServices.DisablePrivateReflectionAttribute")
 #define DISABLED_PRIVATE_REFLECTION_TYPE         "System.Runtime.CompilerServices.DisablePrivateReflectionAttribute"
 #define DISABLED_PRIVATE_REFLECTION_SIG         {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define DEFAULTDOMAIN_STA_TYPE_W                L"System.STAThreadAttribute"
+#define DEFAULTDOMAIN_STA_TYPE_W                W("System.STAThreadAttribute")
 #define DEFAULTDOMAIN_STA_TYPE                   "System.STAThreadAttribute"
 #define DEFAULTDOMAIN_STA_SIG                   {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define DEFAULTDOMAIN_MTA_TYPE_W                L"System.MTAThreadAttribute"
+#define DEFAULTDOMAIN_MTA_TYPE_W                W("System.MTAThreadAttribute")
 #define DEFAULTDOMAIN_MTA_TYPE                   "System.MTAThreadAttribute"
 #define DEFAULTDOMAIN_MTA_SIG                   {IMAGE_CEE_CS_CALLCONV_DEFAULT_HASTHIS, 0, ELEMENT_TYPE_VOID}
 
-#define NONVERSIONABLE_TYPE_W                   L"System.Runtime.Versioning.NonVersionableAttribute"
+#define NONVERSIONABLE_TYPE_W                   W("System.Runtime.Versioning.NonVersionableAttribute")
 #define NONVERSIONABLE_TYPE                      "System.Runtime.Versioning.NonVersionableAttribute"
 
 // Keep in sync with CompilationRelaxations.cs
@@ -1829,12 +1829,12 @@ typedef enum CompilationRelaxationsEnum
         
 } CompilationRelaxationEnum;
 
-#define COMPILATIONRELAXATIONS_TYPE_W           L"System.Runtime.CompilerServices.CompilationRelaxationsAttribute"
+#define COMPILATIONRELAXATIONS_TYPE_W           W("System.Runtime.CompilerServices.CompilationRelaxationsAttribute")
 #define COMPILATIONRELAXATIONS_TYPE             "System.Runtime.CompilerServices.CompilationRelaxationsAttribute"
 
 
 // Keep in sync with RuntimeCompatibilityAttribute.cs
-#define RUNTIMECOMPATIBILITY_TYPE_W             L"System.Runtime.CompilerServices.RuntimeCompatibilityAttribute"
+#define RUNTIMECOMPATIBILITY_TYPE_W             W("System.Runtime.CompilerServices.RuntimeCompatibilityAttribute")
 #define RUNTIMECOMPATIBILITY_TYPE               "System.Runtime.CompilerServices.RuntimeCompatibilityAttribute"
 
 
@@ -1858,16 +1858,16 @@ typedef enum LoadHintEnum
     LoadNever               = 0x0003  // Dependency is never loaded
 } LoadHintEnum;
 
-#define DEFAULTDEPENDENCY_TYPE_W                L"System.Runtime.CompilerServices.DefaultDependencyAttribute"
+#define DEFAULTDEPENDENCY_TYPE_W                W("System.Runtime.CompilerServices.DefaultDependencyAttribute")
 #define DEFAULTDEPENDENCY_TYPE                  "System.Runtime.CompilerServices.DefaultDependencyAttribute"
 
-#define DEPENDENCY_TYPE_W                       L"System.Runtime.CompilerServices.DependencyAttribute"
+#define DEPENDENCY_TYPE_W                       W("System.Runtime.CompilerServices.DependencyAttribute")
 #define DEPENDENCY_TYPE                         "System.Runtime.CompilerServices.DependencyAttribute"
 
-#define TARGET_FRAMEWORK_TYPE_W                 L"System.Runtime.Versioning.TargetFrameworkAttribute"
+#define TARGET_FRAMEWORK_TYPE_W                 W("System.Runtime.Versioning.TargetFrameworkAttribute")
 #define TARGET_FRAMEWORK_TYPE                   "System.Runtime.Versioning.TargetFrameworkAttribute"
 
-#define ASSEMBLY_METADATA_TYPE_W                L"System.Reflection.AssemblyMetadataAttribute"
+#define ASSEMBLY_METADATA_TYPE_W                W("System.Reflection.AssemblyMetadataAttribute")
 #define ASSEMBLY_METADATA_TYPE                  "System.Reflection.AssemblyMetadataAttribute"
 
 
