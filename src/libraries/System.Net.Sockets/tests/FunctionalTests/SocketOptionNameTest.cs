@@ -128,7 +128,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 var cts = new CancellationTokenSource();
-                Assert.True(await Task.WhenAny(receiveTask, Task.Delay(20_000, cts.Token)) == receiveTask, "Waiting for received data timed out");
+                Assert.True(await Task.WhenAny(receiveTask, Task.Delay(30_000, cts.Token)) == receiveTask, "Waiting for received data timed out");
                 cts.Cancel();
 
                 int bytesReceived = await receiveTask;
@@ -245,7 +245,7 @@ namespace System.Net.Sockets.Tests
                 }
 
                 var cts = new CancellationTokenSource();
-                Assert.True(await Task.WhenAny(receiveTask, Task.Delay(20_000, cts.Token)) == receiveTask, "Waiting for received data timed out");
+                Assert.True(await Task.WhenAny(receiveTask, Task.Delay(30_000, cts.Token)) == receiveTask, "Waiting for received data timed out");
                 cts.Cancel();
 
                 int bytesReceived = await receiveTask;

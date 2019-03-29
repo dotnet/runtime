@@ -54,7 +54,7 @@ namespace System.Net.Sockets.Tests
             // TODO #5185: Harden against packet loss
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 5000;
+            const int AckTimeout = 10000;
             const int TestTimeout = 30000;
 
             var left = new Socket(leftAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
@@ -1238,7 +1238,7 @@ namespace System.Net.Sockets.Tests
             // TODO #5185: harden against packet loss
             const int DatagramSize = 256;
             const int DatagramsToSend = 256;
-            const int AckTimeout = 10000;
+            const int AckTimeout = 20000;
             const int TestTimeout = 60000;
 
             using (var left = new UdpClient(new IPEndPoint(leftAddress, 0)))
