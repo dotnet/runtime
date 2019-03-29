@@ -3145,6 +3145,10 @@ public:
     PER_HEAP_ISOLATED
     size_t current_total_committed_gc_own;
 
+    // This is if large pages should be used.
+    PER_HEAP_ISOLATED
+    size_t use_large_pages_p;
+
     PER_HEAP_ISOLATED
     size_t last_gc_index;
 
