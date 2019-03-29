@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using System;
-using System.IO;
 using System.Reflection;
 
 namespace System.Diagnostics
@@ -53,13 +51,8 @@ namespace System.Diagnostics
 
         private void InitMembers()
         {
-            _method = null;
             _nativeOffset = OFFSET_UNKNOWN;
             _ilOffset = OFFSET_UNKNOWN;
-            _fileName = null;
-            _lineNumber = 0;
-            _columnNumber = 0;
-            _isLastFrameFromForeignExceptionStackTrace = false;
         }
 
         /// <summary>
@@ -68,7 +61,7 @@ namespace System.Diagnostics
         public StackFrame()
         {
             InitMembers();
-            BuildStackFrame(0 + StackTrace.METHODS_TO_SKIP, false);
+            BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
         }
 
         /// <summary>
@@ -77,7 +70,7 @@ namespace System.Diagnostics
         public StackFrame(bool needFileInfo)
         {
             InitMembers();
-            BuildStackFrame(0 + StackTrace.METHODS_TO_SKIP, needFileInfo);
+            BuildStackFrame(StackTrace.METHODS_TO_SKIP, needFileInfo);
         }
 
         /// <summary>
@@ -106,10 +99,10 @@ namespace System.Diagnostics
         public StackFrame(string fileName, int lineNumber)
         {
             InitMembers();
+
             BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
             _fileName = fileName;
             _lineNumber = lineNumber;
-            _columnNumber = 0;
         }
 
         /// <summary>
@@ -118,11 +111,8 @@ namespace System.Diagnostics
         /// use the debugger's line mapping logic.
         /// </summary>
         public StackFrame(string fileName, int lineNumber, int colNumber)
+            : this (fileName, lineNumber)
         {
-            InitMembers();
-            BuildStackFrame(StackTrace.METHODS_TO_SKIP, false);
-            _fileName = fileName;
-            _lineNumber = lineNumber;
             _columnNumber = colNumber;
         }
 
@@ -131,45 +121,7 @@ namespace System.Diagnostics
         /// </summary>
         public const int OFFSET_UNKNOWN = -1;
 
-        internal virtual void SetMethodBase(MethodBase mb)
-        {
-            _method = mb;
-        }
-
-        internal virtual void SetOffset(int iOffset)
-        {
-            _nativeOffset = iOffset;
-        }
-
-        internal virtual void SetILOffset(int iOffset)
-        {
-            _ilOffset = iOffset;
-        }
-
-        internal virtual void SetFileName(string strFName)
-        {
-            _fileName = strFName;
-        }
-
-        internal virtual void SetLineNumber(int iLine)
-        {
-            _lineNumber = iLine;
-        }
-
-        internal virtual void SetColumnNumber(int iCol)
-        {
-            _columnNumber = iCol;
-        }
-
-        internal virtual void SetIsLastFrameFromForeignExceptionStackTrace(bool fIsLastFrame)
-        {
-            _isLastFrameFromForeignExceptionStackTrace = fIsLastFrame;
-        }
-
-        internal virtual bool GetIsLastFrameFromForeignExceptionStackTrace()
-        {
-            return _isLastFrameFromForeignExceptionStackTrace;
-        }
+        internal bool IsLastFrameFromForeignExceptionStackTrace => _isLastFrameFromForeignExceptionStackTrace;
 
         /// <summary>
         /// Returns the method the frame is executing
@@ -278,13 +230,7 @@ namespace System.Diagnostics
                     sb.Append(_nativeOffset);
 
                 sb.Append(" in file:line:column ");
-
-                bool useFileName = (_fileName != null);
-
-                if (!useFileName)
-                    sb.Append("<filename unknown>");
-                else
-                    sb.Append(_fileName);
+                sb.Append(_fileName ?? "<filename unknown>");
                 sb.Append(':');
                 sb.Append(_lineNumber);
                 sb.Append(':');
