@@ -336,13 +336,13 @@ public:
     // Check if the OS supports getting current processor number
     static bool CanGetCurrentProcessorNumber();
 
-    // Add ideal processor for the current thread
+    // Set ideal processor for the current thread
     // Parameters:
     //  srcProcNo - processor number the thread currently runs on
     //  dstProcNo - processor number the thread should be migrated to
     // Return:
     //  true if it has succeeded, false if it has failed
-    static bool MigrateThread(uint16_t srcProcNo, uint16_t dstProcNo);
+    static bool SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t dstProcNo);
 
     // Get numeric id of the current thread if possible on the
     // current platform. It is indended for logging purposes only.
