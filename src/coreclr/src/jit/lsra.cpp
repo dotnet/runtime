@@ -1256,6 +1256,15 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
                     compiler->compRegVarName(newRegNum));
             varDsc->lvRegNum = newRegNum;
             count++;
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+            if (bb->bbPrev != nullptr && VarSetOps::IsMember(compiler, bb->bbPrev->bbLiveOut, varIndex))
+            {
+                // varDsc was alive on previous block end ("bb->bbPrev->bbLiveOut"), so it has an open
+                // "VariableLiveRange" which should change to be according "getInVarToRegMap"
+                compiler->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
+            }
+#endif // USING_VARIABLE_LIVE_RANGE
         }
         else if (newRegNum != REG_STK)
         {

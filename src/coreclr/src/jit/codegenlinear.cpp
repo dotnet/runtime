@@ -84,13 +84,15 @@ void CodeGen::genInitializeRegisterState()
 //    iterated.
 void CodeGen::genInitialize()
 {
-#ifdef USING_SCOPE_INFO
     // Initialize the line# tracking logic
     if (compiler->opts.compScopeInfo)
     {
         siInit();
     }
-#endif // USING_SCOPE_INFO
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+    compiler->initializeVariableLiveKeeper();
+#endif //  USING_VARIABLE_LIVE_RANGE
 
     // The current implementation of switch tables requires the first block to have a label so it
     // can generate offsets to the switch label targets.
@@ -355,9 +357,10 @@ void CodeGen::genCodeForBBlist()
         /* Tell everyone which basic block we're working on */
 
         compiler->compCurBB = block;
-#ifdef USING_SCOPE_INFO
+
+        // Needed when jitting debug code
         siBeginBlock(block);
-#endif // USING_SCOPE_INFO
+
         // BBF_INTERNAL blocks don't correspond to any single IL instruction.
         if (compiler->opts.compDbgInfo && (block->bbFlags & BBF_INTERNAL) &&
             !compiler->fgBBisScratch(block)) // If the block is the distinguished first scratch block, then no need to
@@ -510,19 +513,27 @@ void CodeGen::genCodeForBBlist()
         // This can lead to problems when debugging the generated code. To prevent these issues, make sure
         // we've generated code for the last IL offset we saw in the block.
         genEnsureCodeEmitted(currentILOffset);
-#ifdef USING_SCOPE_INFO
+
+        /* Is this the last block, and are there any open scopes left ? */
+
+        bool isLastBlockProcessed = (block->bbNext == nullptr);
+        if (block->isBBCallAlwaysPair())
+        {
+            isLastBlockProcessed = (block->bbNext->bbNext == nullptr);
+        }
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+        if (compiler->opts.compDbgInfo && isLastBlockProcessed)
+        {
+            compiler->getVariableLiveKeeper()->siEndAllVariableLiveRange(compiler->compCurLife);
+        }
+#endif // USING_VARIABLE_LIVE_RANGE
+
         if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
         {
             siEndBlock(block);
 
-            /* Is this the last block, and are there any open scopes left ? */
-
-            bool isLastBlockProcessed = (block->bbNext == nullptr);
-            if (block->isBBCallAlwaysPair())
-            {
-                isLastBlockProcessed = (block->bbNext->bbNext == nullptr);
-            }
-
+#ifdef USING_SCOPE_INFO
             if (isLastBlockProcessed && siOpenScopeList.scNext)
             {
                 /* This assert no longer holds, because we may insert a throw
@@ -534,8 +545,8 @@ void CodeGen::genCodeForBBlist()
 
                 siCloseAllOpenScopes();
             }
-        }
 #endif // USING_SCOPE_INFO
+        }
 
         SubtractStackLevel(savedStkLvl);
 
@@ -720,9 +731,14 @@ void CodeGen::genCodeForBBlist()
                 break;
         }
 
-#ifdef DEBUG
-        compiler->compCurBB = nullptr;
-#endif
+#if defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
+        if (compiler->verbose)
+        {
+            compiler->getVariableLiveKeeper()->dumpBlockVariableLiveRanges(block);
+        }
+#endif // defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
+
+        INDEBUG(compiler->compCurBB = nullptr);
 
     } //------------------ END-FOR each block of the method -------------------
 
@@ -817,6 +833,15 @@ void CodeGen::genSpillVar(GenTree* tree)
     {
         varDsc->lvOtherReg = REG_STK;
     }
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+    if (needsSpill)
+    {
+        // We need this after "lvRegNum" has change because now we are sure that varDsc->lvIsInReg() is false.
+        // "SiVarLoc" constructor uses the "LclVarDsc" of the variable.
+        compiler->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
+    }
+#endif // USING_VARIABLE_LIVE_RANGE
 }
 
 //------------------------------------------------------------------------
@@ -976,6 +1001,18 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             if ((unspillTree->gtFlags & GTF_SPILL) == 0)
             {
                 genUpdateVarReg(varDsc, tree);
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+                // We want "VariableLiveRange" inclusive on the beginbing and exclusive on the ending.
+                // For that we shouldn't report an update of the variable location if is becoming dead
+                // on the same native offset.
+                if ((unspillTree->gtFlags & GTF_VAR_DEATH) == 0)
+                {
+                    // Report the home change for this variable
+                    compiler->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, lcl->gtLclNum);
+                }
+#endif // USING_VARIABLE_LIVE_RANGE
+
 #ifdef DEBUG
                 if (VarSetOps::IsMember(compiler, gcInfo.gcVarPtrSetCur, varDsc->lvVarIndex))
                 {
