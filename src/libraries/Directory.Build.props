@@ -102,10 +102,10 @@
 
   <!-- Common repo directories -->
   <PropertyGroup>
-    <ArtifactsBinDir>$(RepoRoot)artifacts\bin\</ArtifactsBinDir>
+    <ArtifactsBinDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin'))</ArtifactsBinDir>
     
     <!-- Need to try and keep the same logic as the native builds as we need this for packaging -->
-    <NativeBinDir>$(ArtifactsBinDir)native/$(BuildConfiguration)</NativeBinDir>
+    <NativeBinDir>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'native', '$(BuildConfiguration)'))</NativeBinDir>
 
     <!-- Use msbuild path functions as that property is used in bash scripts. -->
     <SourceDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src'))</SourceDir>
@@ -344,8 +344,8 @@
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(ArtifactsBinDir)runtime/$(BuildConfiguration)/</RuntimePath>
     <ShimsTargetRuntimeRoot>$(ArtifactsBinDir)shimsTargetRuntime/</ShimsTargetRuntimeRoot>
-    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$(ArtifactsBinDir)tests/</TestWorkingDir>
-    <TestPath Condition="'$(TestPath)' == ''">$(TestWorkingDir)$(MSBuildProjectName)/$(BuildConfiguration)/</TestPath>
+    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'tests'))</TestWorkingDir>
+    <TestPath Condition="'$(TestPath)' == ''">$([MSBuild]::NormalizeDirectory('$(TestWorkingDir)', '$(MSBuildProjectName)', '$(BuildConfiguration)'))</TestPath>
     <RefRootPath>$(ArtifactsBinDir)ref/</RefRootPath>
     <BuildConfigurationRefPath>$(RefRootPath)$(_bc_TargetGroup)/</BuildConfigurationRefPath>
     <BuildConfigurationRefPath Condition="$(_bc_TargetGroup.EndsWith('aot'))">$(RefRootPath)$(_bc_TargetGroup.TrimEnd('aot'))/</BuildConfigurationRefPath>
@@ -389,9 +389,9 @@
     <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'netfx'">true</BinPlaceNETFXRuntime>
 
     <NETCoreAppTestSharedFxVersion>9.9.9</NETCoreAppTestSharedFxVersion>
-    <TestHostRootPath>$(ArtifactsBinDir)testhost/$(BuildConfiguration)/</TestHostRootPath>
-    <NETCoreAppTestHostFxrPath>$(TestHostRootPath)host/fxr/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestHostFxrPath>
-    <NETCoreAppTestSharedFrameworkPath>$(TestHostRootPath)shared/Microsoft.NETCore.App/$(NETCoreAppTestSharedFxVersion)/</NETCoreAppTestSharedFrameworkPath>
+    <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildConfiguration)'))</TestHostRootPath>
+    <NETCoreAppTestHostFxrPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'host', 'fxr', '$(NETCoreAppTestSharedFxVersion)'))</NETCoreAppTestHostFxrPath>
+    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(NETCoreAppTestSharedFxVersion)'))</NETCoreAppTestSharedFrameworkPath>
     <ILCFXInputFolder>$(TestHostRootPath)ILCInputFolder</ILCFXInputFolder>
     <InternalTestILCFolder>$(TestHostRootPath)TestILC</InternalTestILCFolder>
 

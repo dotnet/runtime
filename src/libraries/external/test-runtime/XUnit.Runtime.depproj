@@ -34,6 +34,7 @@
     <PackageReference Include="xunit" Version="$(XUnitPackageVersion)" />
     <PackageReference Condition="'$(TargetsAot)' == 'true'" Include="xunit.runner.utility" Version="$(XUnitPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetXUnitExtensionsPackage)" Version="$(MicrosoftDotNetXUnitExtensionsPackageVersion)" />
+    <PackageReference Include="$(MicrosoftDotNetRemoteExecutorPackage)" Version="$(MicrosoftDotNetRemoteExecutorPackageVersion)" />
     <PackageReference Include="$(XUnitRunnerConsolePackageName)" Version="$(XUnitPackageVersion)" />
     <PackageReference Condition="'$(TargetsUap)' == 'true'" Include="$(MicrosoftDotNetUapTestToolsPackageName)" Version="$(MicrosoftDotNetUapTestToolsPackageVersion)" />
 
@@ -57,6 +58,7 @@
     <PackageToInclude Include="xunit.extensibility.execution" />
     <PackageToInclude Include="xunit.runner.utility" />
     <PackageToInclude Include="$(MicrosoftDotNetXUnitExtensionsPackage)" />
+    <PackageToInclude Include="$(MicrosoftDotNetRemoteExecutorPackage)" />
     <PackageToInclude Condition="'$(TargetsUap)' != 'true'" Include="$(XUnitRunnerConsolePackageName)" />
     <PackageToInclude Include="Microsoft.DiaSymReader.Native" />
     <PackageToInclude Include="Newtonsoft.Json" />

@@ -70,9 +70,13 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>69f276904fdd6d8f81404b857f295537894b81d3</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.CoreFxTesting" Version="1.0.0-beta.19177.11">
+    <Dependency Name="Microsoft.DotNet.CoreFxTesting" Version="1.0.0-beta.19177.11r">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>69f276904fdd6d8f81404b857f295537894b81d3</Sha>
+    </Dependency>
+    <Dependency Name="Microsoft.DotNet.RemoteExecutor" Version="1.0.0-beta.19177.11">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>0b63a4f88d73757dd3ad8647b468ca19f2b8d411</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Configuration" Version="1.0.0-beta.19177.11">
       <Uri>https://github.com/dotnet/arcade</Uri>
