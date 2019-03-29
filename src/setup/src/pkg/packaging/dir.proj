@@ -22,6 +22,7 @@
       <OutDirs Include="$(SharedHostPublishRoot)" />
       <OutDirs Include="$(HostFxrPublishRoot)" />
       <OutDirs Include="$(SharedFrameworkPublishRoot)" />
+      <OutDirs Include="$(NetHostPublishRoot)" />
     </ItemGroup>
 
     <RemoveDir Directories="@(OutDirs)" />
@@ -54,6 +55,18 @@
     </ItemGroup>
     <Copy Sourcefiles="@(SharedFxFiles)"
           DestinationFolder="$(SharedFrameworkPublishRoot)shared/%(SharedFxFiles.RecursiveDir)" />
+
+    <!-- Copy nethost -->
+    <PropertyGroup>
+      <_NetHostOutputDir>$(BaseOutputPath)$(InstallerSourceOSPlatformConfig)\corehost\</_NetHostOutputDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <NetHostFiles Include="$(_NetHostOutputDir)nethost.h" />
+      <NetHostFiles Include="$(_NetHostOutputDir)$(LibPrefix)nethost$(LibSuffix)" />
+      <NetHostFiles Condition="'$(OSGroup)' == 'Windows_NT'" Include="$(_NetHostOutputDir)nethost.lib" />
+    </ItemGroup>
+    <Copy SourceFiles="@(NetHostFiles)"
+          DestinationFolder="$(NetHostPublishRoot)" />
 
     <!-- Fix file permits -->
     <!-- Reset everything to user readable/writeable and group and world readable. -->
@@ -115,6 +128,11 @@
         OverwriteDestination="true" />
 
     <ZipFileCreateFromDirectory
+        SourceDirectory="$(NetHostPublishRoot)"
+        DestinationArchive="$(AssetOutputPath)$(NetHostCompressedFile)"
+        OverwriteDestination="true" />
+
+    <ZipFileCreateFromDirectory
         SourceDirectory="$(SharedFrameworkPublishRoot)"
         DestinationArchive="$(AssetOutputPath)$(SharedFrameworkCompressedFile)"
         OverwriteDestination="true" />
@@ -136,6 +154,9 @@
     <Exec Command="tar -C $(HostFxrPublishRoot) -czf $(AssetOutputPath)$(HostFxrCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
+    <Exec Command="tar -C $(NetHostPublishRoot) -czf $(AssetOutputPath)$(NetHostCompressedFile) ."
+          IgnoreExitCode="true"
+          IgnoreStandardErrorWarningFormat="true" />
     <Exec Command="tar -C $(SharedFrameworkPublishRoot) -czf $(AssetOutputPath)$(SharedFrameworkCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
@@ -144,6 +165,7 @@
           IgnoreStandardErrorWarningFormat="true" />
     <Error Condition="!Exists('$(AssetOutputPath)$(CombinedCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(CombinedCompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(HostFxrCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(HostFxrCompressedFile)" />
+    <Error Condition="!Exists('$(AssetOutputPath)$(NetHostCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(NetHostCompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(SharedFrameworkCompressedFile)" />
     <Error Condition="!Exists('$(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(AssetOutputPath)$(SharedFrameworkSymbolsCompressedFile)" />
   </Target>
