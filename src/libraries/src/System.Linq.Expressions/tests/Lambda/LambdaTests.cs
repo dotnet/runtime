@@ -731,7 +731,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(84, i());
         }
 
-        private static IEnumerable<object[]> LambdaTypes() =>
+        public static IEnumerable<object[]> LambdaTypes() =>
             from parCount in Enumerable.Range(0, 6)
             from name in new[] {null, "Lambda"}
             from tailCall in new[] {false, true}

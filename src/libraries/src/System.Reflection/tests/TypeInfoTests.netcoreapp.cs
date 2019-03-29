@@ -8,8 +8,8 @@ using Xunit;
 namespace System.Reflection.Tests
 {
     public class TypeInfoNetcoreTests
-    { 
-        private static IEnumerable<object[]> SZArrayOrNotTypes()
+    {
+        public static IEnumerable<object[]> SZArrayOrNotTypes()
         {
             yield return new object[] { typeof(int[]), true };
             yield return new object[] { typeof(string[]), true };

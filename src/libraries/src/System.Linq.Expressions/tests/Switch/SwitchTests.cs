@@ -578,7 +578,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("switchValue", () => Expression.Switch(typeof(int), Expression.Empty(), Expression.Constant(1), default(MethodInfo), Enumerable.Empty<SwitchCase>()));
         }
 
-        private static IEnumerable<object[]> ComparisonsWithInvalidParmeterCounts()
+        public static IEnumerable<object[]> ComparisonsWithInvalidParmeterCounts()
         {
             Func<bool> nullary = () => true;
             yield return new object[] { nullary.GetMethodInfo() };

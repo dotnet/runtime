@@ -382,22 +382,22 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        private static IEnumerable<object[]> GetValidNonceSizes()
+        public static IEnumerable<object[]> GetValidNonceSizes()
         {
             return GetValidSizes(AesGcm.NonceByteSizes);
         }
 
-        private static IEnumerable<object[]> GetInvalidNonceSizes()
+        public static IEnumerable<object[]> GetInvalidNonceSizes()
         {
             return GetInvalidSizes(AesGcm.NonceByteSizes);
         }
 
-        private static IEnumerable<object[]> GetValidTagSizes()
+        public static IEnumerable<object[]> GetValidTagSizes()
         {
             return GetValidSizes(AesGcm.TagByteSizes);
         }
 
-        private static IEnumerable<object[]> GetInvalidTagSizes()
+        public static IEnumerable<object[]> GetInvalidTagSizes()
         {
             return GetInvalidSizes(AesGcm.TagByteSizes);
         }
@@ -408,7 +408,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
         // http://web.archive.org/web/20170811123217/http://csrc.nist.gov/groups/ST/toolkit//BCM/documents/proposedmodes/gcm/gcm-revised-spec.pdf
         private const string NistGcmSpecTestCases = "NIST GCM Spec test cases";
 
-        private static IEnumerable<object[]> GetNistGcmTestCases()
+        public static IEnumerable<object[]> GetNistGcmTestCases()
         {
             foreach (AEADTest test in GetNistTests())
             {

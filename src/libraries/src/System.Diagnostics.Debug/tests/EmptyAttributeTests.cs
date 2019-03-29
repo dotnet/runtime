@@ -9,7 +9,7 @@ namespace System.Diagnostics.Tests
     public class EmptyAttributeTests
     {
         [Fact]
-        void Ctor_Default_DoesNotThrow()
+        public void Ctor_Default_DoesNotThrow()
         {
             new DebuggerStepperBoundaryAttribute();
             new DebuggerHiddenAttribute();

@@ -39,7 +39,7 @@ namespace System.Net.Security.Tests
                 Assert.Null(ret);
         }
 
-        private static IEnumerable<object[]> InvalidClientHelloData()
+        public static IEnumerable<object[]> InvalidClientHelloData()
         {
             int id = 0;
             foreach (byte[] invalidClientHello in InvalidClientHello())
@@ -49,7 +49,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static IEnumerable<object[]> InvalidClientHelloDataTruncatedBytes()
+        public static IEnumerable<object[]> InvalidClientHelloDataTruncatedBytes()
         {
             // converting to base64 first to remove duplicated test cases
             var uniqueInvalidHellos = new HashSet<string>();
