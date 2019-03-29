@@ -96,7 +96,8 @@ public:
   INT_CONFIG(GCHeapAffinitizeMask, "GCHeapAffinitizeMask", 0,                                  \
       "Specifies processor mask for Server GC threads")                                        \
   STRING_CONFIG(GCHeapAffinitizeRanges, "GCHeapAffinitizeRanges",                              \
-      "Specifies list of processors for Server GC threads")                                    \
+      "Specifies list of processors for Server GC threads. The format is a comma separated "   \
+      "list of processor numbers or ranges of processor numbers. Example: 1,3,5,7-9,12")       \
   INT_CONFIG(GCHighMemPercent, "GCHighMemPercent", 0,                                          \
       "The percent for GC to consider as high memory")                                         \
   INT_CONFIG(GCProvModeStress, "GCProvModeStress", 0,                                          \
@@ -154,5 +155,7 @@ enum HeapVerifyFlags {
 static void Initialize();
 
 };
+
+bool ParseGCHeapAffinitySettings(AffinitySet* config_affinity_set);
 
 #endif // __GCCONFIG_H__
