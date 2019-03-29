@@ -1402,7 +1402,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Null(item.Title);
         }
 
-        private class SyndicationItemSubclass : SyndicationItem { }
+        public class SyndicationItemSubclass : SyndicationItem { }
 
         public class SyndicationItemTryParseTrueSubclass : SyndicationItem
         {

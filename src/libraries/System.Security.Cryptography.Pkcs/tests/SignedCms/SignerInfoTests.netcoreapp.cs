@@ -312,7 +312,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             Assert.Equal(expectedToken.HashAlgorithmId.Value, actualToken.HashAlgorithmId.Value);
         }
 
-        private static IEnumerable<object[]> SignedDocumentsWithAttributesTestData()
+        public static IEnumerable<object[]> SignedDocumentsWithAttributesTestData()
         {
             yield return new object[] { SignedDocuments.CounterSignedRsaPkcs1OneSigner };
             yield return new object[] { SignedDocuments.NoSignatureSignedWithAttributesAndCounterSignature };

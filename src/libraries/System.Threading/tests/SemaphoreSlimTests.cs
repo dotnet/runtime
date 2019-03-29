@@ -530,7 +530,7 @@ namespace System.Threading.Tests
         [InlineData(5, 1000, 50, 50, 50, 0, 5, 500)]
         [InlineData(0, 1000, 50, 25, 25, 25, 0, 500)]
         [InlineData(0, 1000, 50, 0, 0, 50, 0, 100)]
-        private static void RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease(int initial, int maximum,
+        public static void RunSemaphoreSlimTest8_ConcWaitAsyncAndRelease(int initial, int maximum,
             int waitThreads, int releaseThreads, int succeededWait, int failedWait, int finalCount, int timeout)
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(initial, maximum);

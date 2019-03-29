@@ -26,7 +26,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new MaxLengthAttribute(16), new string[3, 4]);
         }
 
-        protected static IEnumerable<object[]> ValidValues_ICollection()
+        public static IEnumerable<object[]> ValidValues_ICollection()
         {
             yield return new object[] { new MaxLengthAttribute(-1), new Collection<int>(new int[20]) };
             yield return new object[] { new MaxLengthAttribute(15), new Collection<string>(new string[14]) };
@@ -58,7 +58,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new MaxLengthAttribute(12), new int[4, 4]);
         }
 
-        protected static IEnumerable<object> InvalidValues_ICollection()
+        public static IEnumerable<object> InvalidValues_ICollection()
         {
             yield return new object[] { new MaxLengthAttribute(12), new Collection<byte>(new byte[13]) };
             yield return new object[] { new MaxLengthAttribute(12), new List<byte>(new byte[13]) };

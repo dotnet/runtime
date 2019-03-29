@@ -299,7 +299,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        private static IEnumerable<object[]> PointsTypesLenghtMismatch_TestData()
+        public static IEnumerable<object[]> PointsTypesLenghtMismatch_TestData()
         {
             yield return new object[] { new PointF[1], new byte[2] };
             yield return new object[] { new PointF[2], new byte[1] };
@@ -316,7 +316,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        private static IEnumerable<object[]> NullPointsTypes_TestData()
+        public static IEnumerable<object[]> NullPointsTypes_TestData()
         {
             yield return new object[] { null, new byte[1] };
             yield return new object[] { new PointF[1], null };

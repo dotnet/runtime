@@ -61,12 +61,12 @@ namespace System.Dynamic.Tests
             yield return dyn4;
         }
 
-        private static IEnumerable<object[]> KeyCollections() => TestExpandos().Select(dict => new object[] {dict.Keys});
+        public static IEnumerable<object[]> KeyCollections() => TestExpandos().Select(dict => new object[] {dict.Keys});
 
-        private static IEnumerable<object[]> ValueCollections()
+        public static IEnumerable<object[]> ValueCollections()
             => TestExpandos().Select(dict => new object[] {dict.Values});
 
-        private static IEnumerable<object[]> OneOfEachCollection() =>
+        public static IEnumerable<object[]> OneOfEachCollection() =>
             KeyCollections().Take(1).Concat(ValueCollections().Take(1));
 
         private static void AssertSameCollectionIgnoreOrder<T>(ICollection<T> expected, ICollection<T> actual)

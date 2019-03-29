@@ -953,7 +953,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Empty(document.Workspaces);
         }
 
-        private class ServiceDocumentSubclass : ServiceDocument { }
+        public class ServiceDocumentSubclass : ServiceDocument { }
 
         public class ServieDocumentTryParseTrueSubclass : ServiceDocument
         {

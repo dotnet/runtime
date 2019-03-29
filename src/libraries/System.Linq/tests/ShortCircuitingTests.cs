@@ -76,7 +76,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        void MinNullableDoubleDoesntCheckAll()
+        public void MinNullableDoubleDoesntCheckAll()
         {
             var tracker = new TrackingEnumerable(10);
             var source = tracker.Select(i => (double?)(i == 5 ? double.NaN : (double)i));
@@ -100,7 +100,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        void MinNullableSingleDoesntCheckAll()
+        public void MinNullableSingleDoesntCheckAll()
         {
             var tracker = new TrackingEnumerable(10);
             var source = tracker.Select(i => (float?)(i == 5 ? float.NaN : (float)i));
@@ -112,7 +112,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        void SingleWithPredicateDoesntCheckAll()
+        public void SingleWithPredicateDoesntCheckAll()
         {
             var tracker = new TrackingEnumerable(10);
             var pred = new CountedFunction<int, bool>(i => i > 2);
@@ -125,7 +125,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        void SingleOrDefaultWithPredicateDoesntCheckAll()
+        public void SingleOrDefaultWithPredicateDoesntCheckAll()
         {
             var tracker = new TrackingEnumerable(10);
             var pred = new CountedFunction<int, bool>(i => i > 2);
@@ -138,7 +138,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        void SingleWithPredicateWorksLikeWhereFollowedBySingle()
+        public void SingleWithPredicateWorksLikeWhereFollowedBySingle()
         {
             var tracker0 = new TrackingEnumerable(10);
             var pred0 = new CountedFunction<int, bool>(i => i > 2);
@@ -154,7 +154,7 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        void SingleOrDefaultWithPredicateWorksLikeWhereFollowedBySingleOrDefault()
+        public void SingleOrDefaultWithPredicateWorksLikeWhereFollowedBySingleOrDefault()
         {
             var tracker0 = new TrackingEnumerable(10);
             var pred0 = new CountedFunction<int, bool>(i => i > 2);

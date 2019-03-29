@@ -318,7 +318,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(2, func());
         }
 
-        private static IEnumerable<object[]> ConditionalValues()
+        public static IEnumerable<object[]> ConditionalValues()
         {
             yield return new object[] { true, "yes", "no", "yes" };
             yield return new object[] { false, "yes", "no", "no" };
@@ -326,7 +326,7 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] { false, 42L, 12L, 12L };
         }
 
-        private static IEnumerable<object[]> ConditionalValuesWithTypes()
+        public static IEnumerable<object[]> ConditionalValuesWithTypes()
         {
             ConstantExpression ce = Expression.Constant(98);
             BinaryExpression be = Expression.And(Expression.Constant(2), Expression.Constant(3));

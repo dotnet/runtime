@@ -65,7 +65,7 @@ namespace System.Drawing.Printing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new Margins(left, right, top, bottom));
         }
 
-        private static IEnumerable<object[]> Equals_TestData()
+        public static IEnumerable<object[]> Equals_TestData()
         {
             yield return new object[] { new Margins(), null, false };
             yield return new object[] { new Margins(1, 2, 3, 4), new Margins(1, 2, 3, 4), true };

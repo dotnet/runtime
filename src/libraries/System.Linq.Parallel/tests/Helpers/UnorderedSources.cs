@@ -48,7 +48,7 @@ namespace System.Linq.Parallel.Tests
 
         // Get a set of ranges, of each count in `counts`.
         // The start of each range is determined by passing the count into the `start` predicate.
-        private static IEnumerable<object[]> Ranges(Func<int, int> start, IEnumerable<int> counts)
+        public static IEnumerable<object[]> Ranges(Func<int, int> start, IEnumerable<int> counts)
         {
             foreach (int count in counts)
             {

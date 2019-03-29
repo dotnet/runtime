@@ -78,7 +78,7 @@ namespace System.Threading.Threads.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new Thread(state => { }, -1));
         }
 
-        private static IEnumerable<object[]> ApartmentStateTest_MemberData()
+        public static IEnumerable<object[]> ApartmentStateTest_MemberData()
         {
             yield return
                 new object[]

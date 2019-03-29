@@ -37,6 +37,7 @@ namespace StaticTestGenerator
             string[] probingPaths = new[] { Path.GetDirectoryName(testAssemblyPath), runtimeAssembliesPath, outputPath, AppContext.BaseDirectory };
             AppDomain.CurrentDomain.AssemblyResolve += (object sender, ResolveEventArgs args) =>
             {
+                // Clean up the dll name.
                 string name = args.Name;
                 int comma = name.IndexOf(',');
                 if (comma > 0)
@@ -48,6 +49,7 @@ namespace StaticTestGenerator
                     name += ".dll";
                 }
 
+                // Try to find and load the assembly from each of directory in turn.
                 foreach (string probingPath in probingPaths)
                 {
                     try
@@ -303,8 +305,8 @@ namespace StaticTestGenerator
 
             discoverer.Find(includeSourceInformation: false, sink, TestFrameworkOptions.ForDiscovery(new TestAssemblyConfiguration()
             {
-                DiagnosticMessages = true,
-                InternalDiagnosticMessages = true,
+                DiagnosticMessages = false,
+                InternalDiagnosticMessages = false,
                 PreEnumerateTheories = false,
                 StopOnFail = false
             }));
@@ -319,8 +321,6 @@ namespace StaticTestGenerator
         /// <returns>A dictionary of all tests and their associated test cases.</returns>
         private static Dictionary<IXunitTestCase, List<TestCase>> ComputeTestMethodTestCases(TestDiscoverySink sink)
         {
-            int inlineDatas = 0, methodDatas = 0;
-
             // Create the dictionary containing all tests and associated test cases.
             Dictionary<IXunitTestCase, List<TestCase>> testCases = sink
                 .TestCases
@@ -331,62 +331,108 @@ namespace StaticTestGenerator
                     Type testMethodType = testMethod.ReflectedType;
 
                     var cases = new List<TestCase>();
-
+                    
                     if (testMethod.GetParameters().Length > 0)
                     {
-                        // The test method has arguments, so look for all of the data attributes we can use to invoke the theory.
+                        // The test method has arguments, so look for all of the standard data attributes we can use to invoke the theory.
                         foreach (DataAttribute attr in testMethod.GetCustomAttributes<DataAttribute>(inherit: true))
                         {
-                            // DataAttributes can themselves be marked to be skipped.  Ignore the attribute if it is.
-                            if (!string.IsNullOrWhiteSpace(attr.Skip))
+                            try
                             {
-                                continue;
+                                // DataAttributes can themselves be marked to be skipped.  Ignore the attribute if it is.
+                                if (!string.IsNullOrWhiteSpace(attr.Skip))
+                                {
+                                    continue;
+                                }
+
+                                switch (attr)
+                                {
+                                    case MemberDataAttribute memberData:
+                                        // For a [MemberData(...)], it might point to a method, property, or field; get the right
+                                        // piece of metadata.  Also, for methods, there might be data to pass to the method
+                                        // when invoking it; store that as well.
+                                        Type memberDataType = memberData.MemberType ?? testMethod.DeclaringType;
+
+                                        MethodInfo testDataMethod = memberDataType.GetMethod(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                                        if (testDataMethod != null)
+                                        {
+                                            cases.Add(new TestCase { MemberDataMember = testDataMethod, Values = memberData.Parameters });
+                                            break;
+                                        }
+
+                                        PropertyInfo testDataProperty = memberDataType.GetProperty(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                                        if (testDataProperty != null)
+                                        {
+                                            cases.Add(new TestCase { MemberDataMember = testDataProperty });
+                                            break;
+                                        }
+
+                                        FieldInfo testDataField = memberDataType.GetField(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                                        if (testDataField != null)
+                                        {
+                                            cases.Add(new TestCase { MemberDataMember = testDataField });
+                                            break;
+                                        }
+
+                                        Log($"Error finding {memberData.MemberName} in MemberData on {testMethod.Name}");
+                                        break;
+
+                                    case ClassDataAttribute classData:
+                                        if (classData.Class != null)
+                                        {
+                                            cases.Add(new TestCase { MemberDataMember = classData.Class });
+                                        }
+                                        break;
+
+                                    case InlineDataAttribute inlineData:
+                                        cases.AddRange(from values in attr.GetData(testMethod) select new TestCase { Values = values });
+                                        break;
+                                }
                             }
-
-                            switch (attr)
+                            catch (Exception e)
                             {
-                                case InlineDataAttribute inlineData:
-                                    // For an [InlineData(...)], just add a single test case containing the values.
-                                    cases.Add(new TestCase() { Values = inlineData.GetData(null).First() });
-                                    inlineDatas++;
-                                    break;
+                                Log($"Error processing {attr} on test method {testMethod.Name}: {e.Message}.");
+                            }
+                        }
 
-                                case MemberDataAttribute memberData:
-                                    // For a [MemberData(...)], it might point to a method, property, or field; get the right
-                                    // piece of metadata.  Also, for methods, there might be data to pass to the method
-                                    // when invoking it; store that as well.
-                                    Type memberDataType = memberData.MemberType ?? testMethod.DeclaringType;
+                        // There may also be custom data attributes.  We can't just use their GetData methods, as they
+                        // may return data we can't serialize into the .cs file.  That means we need to be able to serialize
+                        // the construction of the attribute itself into the source file, so that we can effectively treat it
+                        // like we do a member info.  To do that, we enumerate attribute datas.
+                        foreach (CustomAttributeData cad in testMethod.GetCustomAttributesData())
+                        {
+                            try
+                            {
+                                Type attrType = cad.AttributeType;
 
-                                    MethodInfo testDataMethod = memberDataType.GetMethod(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-                                    if (testDataMethod != null)
-                                    {
-                                        methodDatas++;
-                                        cases.Add(new TestCase { MemberDataMember = testDataMethod, Values = memberData.Parameters });
-                                        break;
-                                    }
+                                if (!attrType.IsSubclassOf(typeof(DataAttribute)))
+                                {
+                                    // We only care about DataAttribute-derived types.
+                                    continue;
+                                }
 
-                                    PropertyInfo testDataProperty = memberDataType.GetProperty(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-                                    if (testDataProperty != null)
-                                    {
-                                        methodDatas++;
-                                        cases.Add(new TestCase { MemberDataMember = testDataProperty });
-                                        break;
-                                    }
+                                if (typeof(MemberDataAttribute).IsAssignableFrom(attrType) ||
+                                    typeof(ClassDataAttribute).IsAssignableFrom(attrType) ||
+                                    typeof(InlineDataAttribute).IsAssignableFrom(attrType))
+                                {
+                                    // Already handled these in the previous loop.
+                                    continue;
+                                }
 
-                                    FieldInfo testDataField = memberDataType.GetField(memberData.MemberName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-                                    if (testDataField != null)
-                                    {
-                                        cases.Add(new TestCase { MemberDataMember = testDataField });
-                                        break;
-                                    }
+                                // Skip attributes we can't handle
+                                if (!attrType.IsPublic || !cad.Constructor.IsPublic || !cad.ConstructorArguments.All(c => c.ArgumentType.IsPublic))
+                                {
+                                    Log($"Unsupported custom data attribute {cad.AttributeType} on test method {testMethod.Name}.");
+                                    continue;
+                                }
 
-                                    Log($"Could not find {memberData.MemberName} in MemberData on {testMethod}");
-                                    break;
-
-                                case DataAttribute dataAttribute:
-                                    // Some other DataAttribute we don't understand. Skip it.
-                                    Log($"Unknown data attribute {dataAttribute} on {testMethod}");
-                                    break;
+                                // Store the attribute type and the ctor values for it.
+                                object[] values = (object[])UnwrapCustomAttributeTypedArguments(typeof(object), cad.ConstructorArguments);
+                                cases.Add(new TestCase { MemberDataMember = cad.Constructor, Values = values });
+                            }
+                            catch (Exception e)
+                            {
+                                Log($"Error processing {cad.AttributeType} on test method {testMethod.Name}: {e.Message}.");
                             }
                         }
                     }
@@ -399,8 +445,30 @@ namespace StaticTestGenerator
                     return KeyValuePair.Create(tc, cases);
                 }).ToDictionary(k => k.Key, k => k.Value);
 
-            Log($"Found {inlineDatas} InlineDatas / {methodDatas} MethodDatas across {testCases.Count} test methods.");
             return testCases;
+        }
+
+        private static Array UnwrapCustomAttributeTypedArguments(Type elementType, IList<CustomAttributeTypedArgument> args)
+        {
+            Array result = Array.CreateInstance(elementType, args.Count);
+
+            for (int i = 0; i < args.Count; i++)
+            {
+                CustomAttributeTypedArgument cata = args[i];
+                object newArg = cata.Value is IReadOnlyCollection<CustomAttributeTypedArgument> roc ?
+                    UnwrapCustomAttributeTypedArguments(cata.ArgumentType.GetElementType(), roc.ToArray()) :
+                    cata.Value;
+                try
+                {
+                    result.SetValue(newArg, i);
+                }
+                catch
+                {
+                    throw new Exception($"Couldn't store {newArg} into array {result}");
+                }
+            }
+
+            return result;
         }
 
         /// <summary>Writes the code for invoking the test case into the <see cref="StringBuilder"/>.</summary>
@@ -412,14 +480,36 @@ namespace StaticTestGenerator
         private static void GenerateTestCaseCode(
             StringBuilder sb, string testCaseDisplayName, Type testMethodType, MethodInfo testMethod, TestCase testCase)
         {
-            // Get the parameters for the test method.
-            ParameterInfo[] parameters = testMethod.GetParameters();
-
             // Writes out ".MethodName(arg1, arg2, ...)" when all arguments are statically available.
             // The arguments are written as literals.
-            void WriteMethodNameAndArgumentsStatic(object[]? arguments)
+            void WriteArgumentListStatic(object[]? arguments, ParameterInfo[] parameters)
             {
-                sb.Append("." + testMethod.Name + "(");
+                // Handle optional arguments by populating the input array with the defaults
+                // whereever they exist and didn't already contain a value.  Also handle
+                // a null input as meaning a null argument as input to a parameter.
+                if (arguments == null)
+                {
+                    if (parameters.Length > 0)
+                    {
+                        arguments = new object[parameters.Length];
+                    }
+                }
+                else if (arguments.Length < parameters.Length)
+                {
+                    var newArguments = new object[parameters.Length];
+                    Array.Copy(arguments, 0, newArguments, 0, arguments.Length);
+                    for (int i = arguments.Length; i < parameters.Length; i++)
+                    {
+                        if (parameters[i].HasDefaultValue)
+                        {
+                            newArguments[i] = parameters[i].DefaultValue;
+                        }
+                    }
+                    arguments = newArguments;
+                }
+
+                // Write out the argument list
+                sb.Append("(");
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     if (i != 0)
@@ -434,9 +524,9 @@ namespace StaticTestGenerator
 
             // Writes out ".MethodName(Cast<T0>(args[0]), Cast<T1>(args[1]), ...)" when all arguments are only
             // known at execution time from invoking a theory member data.
-            void WriteMethodNameAndArgumentsDynamic(string argumentsName)
+            void WriteArgumentListDynamic(string argumentsName, ParameterInfo[] parameters)
             {
-                sb.Append("." + testMethod.Name + "(");
+                sb.Append("(");
                 for (int i = 0; i < parameters.Length; i++)
                 {
                     if (i != 0)
@@ -466,66 +556,67 @@ namespace StaticTestGenerator
                             return string.Empty;
 
                         case 1:
-                            if (parameters[0].GetType() == typeof(ITestOutputHelper))
-                            {
-                                return typeof(TestOutputHelper).FullName;
-                            }
-
-                            return $"new {GetTypeName(parameters[0].GetType())}()";
+                            string typeName = parameters[0].ParameterType.Name == "ITestOutputHelper" ?
+                                "DefaultTestOutputHelper" :
+                                GetTypeName(parameters[0].ParameterType);
+                            return $"new {typeName}()";
                     }
                 }
 
-                Log($"ERROR: Unexpected constructor found.");
+                Log($"Error processing ctors for {testMethod.Name}.");
                 return string.Empty;
             }
 
             // Write out the method call to invoke the test case with all arguments known at compile time.
-            void WriteInvocationStatic(object[]? arguments)
+            void WriteInvocationStatic(object[]? arguments, ParameterInfo[] parameters)
             {
                 if (testMethod.IsStatic)
                 {
-                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => {GetTypeName(testMethodType)}");
-                    WriteMethodNameAndArgumentsStatic(arguments);
-                    sb.AppendLine(", ref succeeded, ref failed);");
+                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => {GetTypeName(testMethodType)}.{testMethod.Name}");
+                    WriteArgumentListStatic(arguments, parameters);
+                    sb.AppendLine(");");
                 }
                 else if (testMethodType.GetInterface("IDisposable") != null)
                 {
                     sb.AppendLine($"using (var inst = new {GetTypeName(testMethodType)}({GetConstructorArgs()}))");
-                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => inst");
-                    WriteMethodNameAndArgumentsStatic(arguments);
-                    sb.AppendLine(", ref succeeded, ref failed);");
+                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => inst.{testMethod.Name}");
+                    WriteArgumentListStatic(arguments, parameters);
+                    sb.AppendLine(");");
                 }
                 else
                 {
-                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => new {GetTypeName(testMethodType)}({GetConstructorArgs()})");
-                    WriteMethodNameAndArgumentsStatic(arguments);
-                    sb.AppendLine(", ref succeeded, ref failed);");
+                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => new {GetTypeName(testMethodType)}({GetConstructorArgs()}).{testMethod.Name}");
+                    WriteArgumentListStatic(arguments, parameters);
+                    sb.AppendLine(");");
                 }
             }
 
             // Write out the method call to invoke the test case with all arguments known at run time.
-            void WriteInvocationDynamic(string argumentsName)
+            void WriteInvocationDynamic(string argumentsName, ParameterInfo[] parameters)
             {
                 if (testMethod.IsStatic)
                 {
-                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => {GetTypeName(testMethodType)}");
-                    WriteMethodNameAndArgumentsDynamic(argumentsName);
-                    sb.AppendLine(", ref succeeded, ref failed);");
+                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => {GetTypeName(testMethodType)}.{testMethod.Name}");
+                    WriteArgumentListDynamic(argumentsName, parameters);
+                    sb.AppendLine(");");
                 }
                 else if (testMethodType.GetInterface("IDisposable") != null)
                 {
                     sb.AppendLine($"using (var inst = new {GetTypeName(testMethodType)}({GetConstructorArgs()}))");
-                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => inst");
-                    WriteMethodNameAndArgumentsDynamic(argumentsName);
-                    sb.AppendLine(", ref succeeded, ref failed);");
+                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => inst.{testMethod.Name}");
+                    WriteArgumentListDynamic(argumentsName, parameters);
+                    sb.AppendLine(");");
                 }
                 else
                 {
-                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => new {GetTypeName(testMethodType)}({GetConstructorArgs()})");
-                    WriteMethodNameAndArgumentsDynamic(argumentsName);
-                    sb.AppendLine(", ref succeeded, ref failed);");
+                    sb.Append($"Execute(\"{testCaseDisplayName}\", () => new {GetTypeName(testMethodType)}({GetConstructorArgs()}).{testMethod.Name}");
+                    WriteArgumentListDynamic(argumentsName, parameters);
+                    sb.AppendLine(");");
                 }
             }
+
+            // Get the parameters for the test method.
+            ParameterInfo[] parameters = testMethod.GetParameters();
 
             // Write out the invocation, with input coming from a theory data attribute if relevant.
             switch (testCase.MemberDataMember)
@@ -549,26 +640,40 @@ namespace StaticTestGenerator
                         memberDataArgs = argsSb.ToString();
                     }
                     sb.AppendLine($"foreach (object[] row in {GetTypeName(mi.ReflectedType)}.{mi.Name}({memberDataArgs}))");
-                    WriteInvocationDynamic("row");
+                    WriteInvocationDynamic("row", parameters);
                     break;
 
                 case PropertyInfo pi:
                     // This is a theory with data coming from a MemberData property.
                     sb.AppendLine($"foreach (object[] row in {GetTypeName(pi.ReflectedType)}.{pi.Name})");
-                    WriteInvocationDynamic("row");
+                    WriteInvocationDynamic("row", parameters);
                     break;
 
                 case FieldInfo fi:
                     // This is a theory with data coming from a MemberData field.
                     sb.AppendLine($"foreach (object[] row in {GetTypeName(fi.ReflectedType)}.{fi.Name})");
-                    WriteInvocationDynamic("row");
+                    WriteInvocationDynamic("row", parameters);
+                    break;
+
+                case Type ti:
+                    // This is a theory with data coming from a ClassData data attribute.
+                    sb.AppendLine($"foreach (object[] row in ((IEnumerable<object[]>)new {GetTypeName(ti)}())");
+                    WriteInvocationDynamic("row", parameters);
+                    break;
+
+                case ConstructorInfo ci:
+                    // This is a theory with data coming from a custom data attribute.
+                    sb.AppendLine($"foreach (object[] row in new {GetTypeName(ci.DeclaringType)}");
+                    WriteArgumentListStatic(testCase.Values, ci.GetParameters());
+                    sb.Append(".GetData(null))"); // TODO: Generate code to construct a method info to pass in instead of null?
+                    WriteInvocationDynamic("row", parameters);
                     break;
 
                 default:
                     // This is either a method with no arguments, or it's a theory with theory data
                     // coming from an InlineData or some other means where we know all of the values
                     // at compile time.
-                    WriteInvocationStatic(testCase.Values);
+                    WriteInvocationStatic(testCase.Values, parameters);
                     break;
             }
         }
@@ -577,7 +682,7 @@ namespace StaticTestGenerator
         /// <param name="literal">The literal to encode.</param>
         /// <param name="expectedType">The type that's expected at the usage location.</param>
         /// <returns>A string representing the encoded literal.</returns>
-        private static string EncodeLiteral(object? literal, Type expectedType)
+        private static string EncodeLiteral(object? literal, Type? expectedType)
         {
             if (literal == null)
             {
@@ -680,6 +785,10 @@ namespace StaticTestGenerator
                             {
                                 sb.Append("\\\\");
                             }
+                            else if (c == '"')
+                            {
+                                sb.Append("\\\"");
+                            }
                             else if (c >= 32 && c < 127)
                             {
                                 sb.Append(c);
@@ -693,7 +802,7 @@ namespace StaticTestGenerator
                         result = sb.ToString();
                         break;
                     default:
-                        Log($"Unhandled value: {literal} ({literal?.GetType()})");
+                        Log($"Error encoding literal {literal} ({literal?.GetType()})");
                         return string.Empty;
                 }
             }
@@ -755,26 +864,54 @@ namespace StaticTestGenerator
                 return GetTypeName(type.GetElementType()) + "*";
             }
 
-            string name =
-                type.IsNested ? GetTypeName(type.DeclaringType) + "." + type.Name :
-                !string.IsNullOrEmpty(type.Namespace) ? type.Namespace + "." + type.Name :
-                type.Name;
+            Type[] genericArgs = type.GetGenericArguments();
+            Type[] parentGenericArgs = type.DeclaringType?.GetGenericArguments() ?? Type.EmptyTypes;
+            string? name = null;
+
+            if (type.IsNested)
+            {
+                if (type.DeclaringType.IsGenericType &&
+                    !type.DeclaringType.IsConstructedGenericType &&
+                    type.IsConstructedGenericType)
+                {
+                    name = GetTypeName(type.DeclaringType.MakeGenericType(genericArgs.Take(parentGenericArgs.Length).ToArray()));
+                }
+                else
+                {
+                    name = GetTypeName(type.DeclaringType);
+                }
+
+                name += "." + type.Name;
+            }
+            else if (!string.IsNullOrEmpty(type.Namespace))
+            {
+                name = type.Namespace + "." + type.Name;
+            }
+            else
+            {
+                name = type.Name;
+            }
 
             if (!type.IsGenericType)
             {
                 return name;
             }
 
-            name = name.Substring(0, name.IndexOf("`"));
+            int backtickPos = name.IndexOf("`");
+            if (backtickPos == -1)
+            {
+                return name;
+            }
 
-            Type[] genericArgs = type.GetGenericArguments();
+            name = name.Substring(0, backtickPos);
+
             if (type.IsNested && type.DeclaringType.IsGenericType)
             {
-                genericArgs = genericArgs.Skip(type.DeclaringType.GetGenericArguments().Length).ToArray();
+                genericArgs = genericArgs.Skip(parentGenericArgs.Length).ToArray();
             }
 
             return
-                name + 
+                name +
                 "<" +
                 (type.IsConstructedGenericType ? string.Join(", ", genericArgs.Select(g => GetTypeName(g))) : new string(',', genericArgs.Length - 1)) +
                 ">";
@@ -813,16 +950,15 @@ namespace StaticTestGenerator
                         return true;
 
                     case 1:
-                        // If the test class takes an ITestOutputHelper, we can manufacture
-                        // a TestOutputHelper.
-                        if (parameters[0].GetType() == typeof(ITestOutputHelper))
+                        // If the test class takes an ITestOutputHelper, we can manufacture a TestOutputHelper.
+                        if (parameters[0].ParameterType == typeof(ITestOutputHelper))
                         {
                             return true;
                         }
 
                         // If the test class takes a type that has a public ctor we can
                         // use to create it, then we're also fine.
-                        Type ctorArgType = parameters[0].GetType();
+                        Type ctorArgType = parameters[0].ParameterType;
                         if (IsPublic(ctorArgType) && ctorArgType.GetConstructor(Type.EmptyTypes) != null)
                         {
                             return true;
@@ -845,13 +981,22 @@ namespace StaticTestGenerator
             Console.Write(DateTime.Now + " | ");
             Console.ResetColor();
 
-            const string ToHighlight = "Unsupported";
-            if (message.StartsWith(ToHighlight))
+            const string ErrorStart = "Error";
+            const string WarningStart = "Unsupported";
+
+            if (message.StartsWith(ErrorStart))
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write(ErrorStart);
+                Console.ResetColor();
+                message = message.Substring(ErrorStart.Length);
+            }
+            else if (message.StartsWith(WarningStart))
             {
                 Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.Write(ToHighlight);
+                Console.Write(WarningStart);
                 Console.ResetColor();
-                message = message.Substring(ToHighlight.Length);
+                message = message.Substring(WarningStart.Length);
             }
 
             Console.WriteLine(message);
@@ -884,43 +1029,46 @@ namespace StaticTestGenerator
 @"using System;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
+using Xunit.Abstractions;
 
 public static class Test
 {
-    public static void Main()
+    private static bool s_verbose;
+    private static int s_succeeded, s_failed;
+
+    public static void Main(string[] args)
     {
-        int succeeded = 0, failed = 0;
+        if (args[0] == ""-v"") s_verbose = true;
 
 ";
+
         /// <summary>The code to write out to the output file after all of the test cases.</summary>
         private const string CodeTemplateEnd =
 @"
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Yellow;
-        int total = succeeded + failed;
+        int total = s_succeeded + s_failed;
         Console.WriteLine($""Total : {total}"");
         if (total > 0)
         {
-            Console.WriteLine($""Passed: {succeeded} ({(succeeded * 100.0 / total).ToString(""N"")}%)"");
-            Console.WriteLine($""Failed: {failed} ({(failed * 100.0 / total).ToString(""N"")}%)"");
+            Console.WriteLine($""Passed: {s_succeeded} ({(s_succeeded * 100.0 / total).ToString(""N"")}%)"");
+            Console.WriteLine($""Failed: {s_failed} ({(s_failed * 100.0 / total).ToString(""N"")}%)"");
         }
         Console.ResetColor();
     }
 
-    private static void Execute(string name, Action action, ref int succeeded, ref int failed)
+    private static void Execute(string name, Action action)
     {
+        if (s_verbose) Console.WriteLine(name);
         try
         {
             action();
-            succeeded++;
+            s_succeeded++;
         }
-        catch (SkipTestException)
+        catch (SkipTestException) { }
+        catch (Exception e)
         {
-            // Test is being skipped.
-        }
-        catch (Exception e) when (!(e is TypeLoadException))
-        {
-            failed++;
+            s_failed++;
             Console.ForegroundColor = ConsoleColor.Red;
             Console.Error.WriteLine(name + "" [FAIL]"");
             Console.ResetColor();
@@ -928,20 +1076,18 @@ public static class Test
         }
     }
 
-    private static void Execute(string name, Func<Task> action, ref int succeeded, ref int failed)
+    private static void Execute(string name, Func<Task> action)
     {
+        if (s_verbose) Console.WriteLine(name);
         try
         {
             action().GetAwaiter().GetResult();
-            succeeded++;
+            s_succeeded++;
         }
-        catch (SkipTestException)
+        catch (SkipTestException) { }
+        catch (Exception e)
         {
-            // Test is being skipped.
-        }
-        catch (Exception e) when (!(e is TypeLoadException))
-        {
-            failed++;
+            s_failed++;
             Console.ForegroundColor = ConsoleColor.Red;
             Console.Error.WriteLine(name + "" [FAIL]"");
             Console.ResetColor();
@@ -953,6 +1099,19 @@ public static class Test
         obj is null ? default :
         obj is T t ? t :
         (T)Convert.ChangeType(obj, typeof(T));
+
+    private sealed class DefaultTestOutputHelper : ITestOutputHelper
+    {
+        public void WriteLine(string message)
+        {
+            if (s_verbose) Console.WriteLine(""TestOutputHelper: "" + message);
+        }
+
+        public void WriteLine(string format, params object[] args)
+        {
+            if (s_verbose) Console.WriteLine(""TestOutputHelper: "" + string.Format(format, args));
+        }
+    }
 }
 ";
 
@@ -969,6 +1128,7 @@ public static class Test
   <ItemGroup>
     <Reference Include=""xunit.core""><HintPath>#HelperAssemblyLocation#xunit.core.dll</HintPath></Reference>
     <Reference Include=""xunit.assert""><HintPath>#HelperAssemblyLocation#xunit.assert.dll</HintPath></Reference>
+    <Reference Include=""xunit.abstractions""><HintPath>#HelperAssemblyLocation#xunit.abstractions.dll</HintPath></Reference>
     <Reference Include=""CoreFx.Private.TestUtilities""><HintPath>#HelperAssemblyLocation#CoreFx.Private.TestUtilities.dll</HintPath></Reference>
     <Reference Include=""System.Runtime.CompilerServices.Unsafe""><HintPath>#HelperAssemblyLocation#System.Runtime.CompilerServices.Unsafe.dll</HintPath></Reference>
     <Reference Include=""Microsoft.DotNet.XUnitExtensions""><HintPath>#HelperAssemblyLocation#Microsoft.DotNet.XUnitExtensions.dll</HintPath></Reference>
