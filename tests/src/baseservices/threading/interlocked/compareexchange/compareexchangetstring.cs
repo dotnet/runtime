@@ -95,8 +95,9 @@ public class ThreadSafe
             initialValue = Val;
             newValue = initialValue + addend;
         } 
-        while (initialValue != Interlocked.CompareExchange<string>(
+        while ((object)initialValue != Interlocked.CompareExchange<string>(
             ref Val, newValue, initialValue));
+
         return newValue;
     }	
 }

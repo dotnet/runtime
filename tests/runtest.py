@@ -141,7 +141,6 @@ parser.add_argument("-test_native_bin_location", dest="test_native_bin_location"
 ################################################################################
 
 g_verbose = False
-gc_stress_c = False
 gc_stress = False
 coredump_pattern = ""
 file_name_cache = defaultdict(lambda: None)
@@ -451,7 +450,6 @@ def create_and_use_test_env(_os, env, func):
         on windows, until xunit is used on unix there is no managed code run
         in runtest.sh.
     """
-    global gc_stress_c
     global gc_stress
 
     ret_code = 0
@@ -507,9 +505,6 @@ def create_and_use_test_env(_os, env, func):
                 else:
                     command = "export"
 
-                if key.lower() == "complus_gcstress" and "c" in value.lower():
-                    gc_stress_c = True
-
                 if key.lower() == "complus_gcstress":
                     gc_stress = True
 
@@ -560,7 +555,6 @@ def get_environment(test_env=None):
         On Windows, os.environ keys (the environment variable names) are all upper case,
         and map lookup is case-insensitive on the key.
     """
-    global gc_stress_c
     global gc_stress
 
     complus_vars = defaultdict(lambda: "")
@@ -600,9 +594,6 @@ def get_environment(test_env=None):
 
         if "complus_gcstress" in complus_vars:
             gc_stress = True
-
-        if "c" in complus_vars["COMPlus_GCStress"].lower():
-            gc_stress_c = True
 
     return complus_vars
 
@@ -1407,41 +1398,6 @@ def setup_tools(host_os, coreclr_repo_location):
         setup = True
 
     return setup
-
-def setup_coredis_tools(coreclr_repo_location, host_os, arch, core_root):
-    """ Setup CoreDisTools if needed
-
-    Args:
-        coreclr_repo_location(str)  : coreclr repo location
-        host_os(str)                : os
-        arch(str)                   : arch
-        core_root(str)              : core_root
-    """
-
-    if host_os.lower() == "osx":
-        print("GCStress C is not supported on your platform.")
-        sys.exit(1)
-
-    unsupported_arches = ["arm", "arm64"]
-
-    if arch in unsupported_arches:
-        # Nothing to do; CoreDisTools unneeded.
-        return
-
-    command = None
-    test_location = os.path.join(coreclr_repo_location, "tests")
-    if host_os == "Windows_NT":
-        command = [os.path.join(test_location, "setup-stress-dependencies.cmd"), "/arch", arch, "/outputdir", core_root]
-    else:
-        command = [os.path.join(test_location, "setup-stress-dependencies.sh"), "--outputDir=%s" % core_root]
-
-    sys.stdout.flush() # flush output before creating sub-process
-    proc = subprocess.Popen(command)
-    proc.communicate()
-
-    if proc.returncode != 0:
-        print("Failed to set up stress dependencies.")
-        sys.exit(1)
 
 def precompile_core_root(test_location,
                          host_os,
@@ -2352,11 +2308,7 @@ def do_setup(host_os,
 
     if unprocessed_args.precompile_core_root:
         precompile_core_root(test_location, host_os, arch, core_root, use_jit_disasm=args.jitdisasm, altjit_name=unprocessed_args.crossgen_altjit)
-
-    # If COMPlus_GCStress is set then we need to setup cordistools
-    if gc_stress_c:
-        setup_coredis_tools(coreclr_repo_location, host_os, arch, core_root)
-    
+  
     build_info = None
     is_same_os = None
     is_same_arch = None
