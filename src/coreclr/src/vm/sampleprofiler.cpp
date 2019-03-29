@@ -36,7 +36,7 @@ HINSTANCE SampleProfiler::s_hMultimediaLib = NULL;
 typedef MMRESULT (WINAPI *TimePeriodFnPtr) (UINT uPeriod);
 #endif //FEATURE_PAL
 
-void SampleProfiler::Enable()
+void SampleProfiler::Enable(EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
 {
     CONTRACTL
     {
@@ -53,7 +53,7 @@ void SampleProfiler::Enable()
 
     if(s_pEventPipeProvider == NULL)
     {
-        s_pEventPipeProvider = EventPipe::CreateProvider(SL(s_providerName));
+        s_pEventPipeProvider = EventPipe::CreateProvider(SL(s_providerName), nullptr, nullptr, pEventPipeProviderCallbackDataQueue);
         s_pThreadTimeEvent = s_pEventPipeProvider->AddEvent(
             0, /* eventID */
             0, /* keywords */

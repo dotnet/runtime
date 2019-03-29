@@ -78,13 +78,16 @@ private:
 
     // Set the provider configuration (enable and disable sets of events).
     // This is called by EventPipeConfiguration.
-    void SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel, LPCWSTR pFilterData);
+    EventPipeProviderCallbackData SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel, LPCWSTR pFilterData);
 
     // Refresh the runtime state of all events.
     void RefreshAllEvents();
 
+    // Prepare the data required for invoking callback
+    EventPipeProviderCallbackData PrepareCallbackData(LPCWSTR pFilterData);
+
     // Invoke the provider callback.
-    void InvokeCallback(LPCWSTR pFilterData);
+    static void InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData);
 
     // Specifies whether or not the provider was deleted, but that deletion
     // was deferred until after tracing is stopped.

@@ -11,6 +11,47 @@
 
 #ifdef FEATURE_PERFTRACING
 
+EventPipeProviderCallbackDataQueue::EventPipeProviderCallbackDataQueue()
+{
+    this->front = this->back = NULL;
+}
+
+void EventPipeProviderCallbackDataQueue::Enqueue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData)
+{
+    EventPipeProviderCallbackDataNode* newNode = new EventPipeProviderCallbackDataNode(); // throws
+    newNode->prev = NULL;
+    newNode->value = new EventPipeProviderCallbackData(); // throws
+    *(newNode->value) = *pEventPipeProviderCallbackData;
+    if (this->back == NULL)
+    {
+        this->front = this->back = newNode;
+    }
+    else
+    {
+        this->back->prev = newNode;
+        this->back = newNode;
+    }
+}
+
+bool EventPipeProviderCallbackDataQueue::TryDequeue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData)
+{
+    if (this->front == nullptr)
+    {
+        return false;
+    }
+
+    EventPipeProviderCallbackDataNode* oldNode = this->front;
+    this->front = this->front->prev;
+    if (this->front == nullptr)
+    {
+        this->back = nullptr;
+    }
+    
+    *pEventPipeProviderCallbackData = *(oldNode->value);
+    delete oldNode;
+    return true;
+}
+
 EventPipeProvider::EventPipeProvider(EventPipeConfiguration *pConfig, const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
 {
     CONTRACTL
@@ -111,7 +152,7 @@ bool EventPipeProvider::EventEnabled(INT64 keywords, EventPipeEventLevel eventLe
         ((eventLevel == EventPipeEventLevel::LogAlways) || (m_providerLevel >= eventLevel)));
 }
 
-void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel, LPCWSTR pFilterData)
+EventPipeProviderCallbackData EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel, LPCWSTR pFilterData)
 {
     CONTRACTL
     {
@@ -127,7 +168,7 @@ void EventPipeProvider::SetConfiguration(bool providerEnabled, INT64 keywords, E
     m_providerLevel = providerLevel;
 
     RefreshAllEvents();
-    InvokeCallback(pFilterData);
+    return PrepareCallbackData(pFilterData);
 }
 
 EventPipeEvent* EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata, unsigned int metadataLength)
@@ -173,17 +214,23 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
     event.RefreshState();
 }
 
-void EventPipeProvider::InvokeCallback(LPCWSTR pFilterData)
+/* static */ void EventPipeProvider::InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
+        PRECONDITION(!EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
+    LPCWSTR pFilterData = eventPipeProviderCallbackData.pFilterData;
+    EventPipeCallback pCallbackFunction = eventPipeProviderCallbackData.pCallbackFunction;
+    bool enabled = eventPipeProviderCallbackData.enabled;
+    INT64 keywords = eventPipeProviderCallbackData.keywords;
+    EventPipeEventLevel providerLevel = eventPipeProviderCallbackData.providerLevel;
+    void* pCallbackData = eventPipeProviderCallbackData.pCallbackData;
 
     bool isEventFilterDescriptorInitialized = false;
     EventFilterDescriptor eventFilterDescriptor{};
@@ -211,19 +258,40 @@ void EventPipeProvider::InvokeCallback(LPCWSTR pFilterData)
         isEventFilterDescriptorInitialized = true;
     }
 
-    if(m_pCallbackFunction != NULL && !g_fEEShutDown)
+    if(pCallbackFunction != NULL && !g_fEEShutDown)
     {
-        (*m_pCallbackFunction)(
+        (*pCallbackFunction)(
             NULL, /* providerId */
-            m_enabled,
-            (UCHAR) m_providerLevel,
-            m_keywords,
+            enabled,
+            (UCHAR) providerLevel,
+            keywords,
             0 /* matchAllKeywords */,
             isEventFilterDescriptorInitialized ? &eventFilterDescriptor : NULL,
-            m_pCallbackData /* CallbackContext */);
+            pCallbackData /* CallbackContext */);
     }
 
     buffer.Destroy();
+}
+
+EventPipeProviderCallbackData EventPipeProvider::PrepareCallbackData(LPCWSTR pFilterData)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
+    }
+    CONTRACTL_END;
+
+    EventPipeProviderCallbackData result;
+    result.pFilterData = pFilterData;
+    result.pCallbackFunction = m_pCallbackFunction;
+    result.enabled = m_enabled;
+    result.providerLevel = m_providerLevel;
+    result.keywords = m_keywords;
+    result.pCallbackData = m_pCallbackData;
+    return result;
 }
 
 bool EventPipeProvider::GetDeleteDeferred() const
