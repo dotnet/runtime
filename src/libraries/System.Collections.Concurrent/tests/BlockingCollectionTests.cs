@@ -296,7 +296,7 @@ namespace System.Collections.Concurrent.Tests
         /// <param name="numOfElementsPerThread">Number of elements to Add/Take per thread.</param>
         [Theory]
         [InlineData(8, 1024)]
-        private static void TestConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
+        public static void TestConcurrentAddTake(int numOfThreads, int numOfElementsPerThread)
         {
             //If numOfThreads is not an even number, make it even.
             if ((numOfThreads % 2) != 0)

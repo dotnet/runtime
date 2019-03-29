@@ -35,33 +35,33 @@ namespace System.Linq.Expressions.Tests
                    select new[] { x, y };
         }
 
-        protected static IEnumerable<object[]> ComparableReferenceTypesData()
+        public static IEnumerable<object[]> ComparableReferenceTypesData()
         {
             return ComparableReferenceTypes().Select(i => new object[] { i });
         }
 
-        protected static IEnumerable<object[]> LeftValueType()
+        public static IEnumerable<object[]> LeftValueType()
         {
             return from x in ReferenceObjects()
                    from y in ValueTypeObjects()
                    select new[] { y, x };
         }
 
-        protected static IEnumerable<object[]> RightValueType()
+        public static IEnumerable<object[]> RightValueType()
         {
             return from x in ReferenceObjects()
                    from y in ValueTypeObjects()
                    select new[] { x, y };
         }
 
-        protected static IEnumerable<object[]> BothValueType()
+        public static IEnumerable<object[]> BothValueType()
         {
             return from x in ValueTypeObjects()
                    from y in ValueTypeObjects()
                    select new[] { x, y };
         }
 
-        protected static IEnumerable<object[]> UnassignablePairs()
+        public static IEnumerable<object[]> UnassignablePairs()
         {
             return from x in ReferenceObjects()
                    from y in ReferenceObjects()
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Tests
                    select new[] { x, y };
         }
 
-        protected static IEnumerable<object> ReferenceObjects()
+        public static IEnumerable<object> ReferenceObjects()
         {
             yield return new object();
             yield return "";
@@ -78,7 +78,7 @@ namespace System.Linq.Expressions.Tests
             yield return new Uri("http://example.net/");
         }
 
-        protected static IEnumerable<IComparable> ComparableValues()
+        public static IEnumerable<IComparable> ComparableValues()
         {
             yield return 1;
             yield return DateTime.MinValue;
@@ -86,26 +86,26 @@ namespace System.Linq.Expressions.Tests
                 yield return value;
         }
 
-        protected static IEnumerable<IComparable> ComparableReferenceTypes()
+        public static IEnumerable<IComparable> ComparableReferenceTypes()
         {
             yield return "abc";
             yield return "";
             yield return "Hello";
         }
 
-        protected static IEnumerable<object> ValueTypeObjects()
+        public static IEnumerable<object> ValueTypeObjects()
         {
             yield return 0;
             yield return 0m;
             yield return DateTime.MinValue;
         }
 
-        protected static IEnumerable<object[]> ReferenceTypesData()
+        public static IEnumerable<object[]> ReferenceTypesData()
         {
             return ReferenceTypes().Select(i => new object[] { i });
         }
 
-        protected static IEnumerable<Type> ReferenceTypes()
+        public static IEnumerable<Type> ReferenceTypes()
         {
             yield return typeof(object);
             yield return typeof(string);

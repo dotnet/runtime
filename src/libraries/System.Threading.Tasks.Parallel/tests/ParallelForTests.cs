@@ -1316,7 +1316,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        private static IEnumerable<object[]> CancelForEachTest_MemberData()
+        public static IEnumerable<object[]> CancelForEachTest_MemberData()
         {
             var array = new int[CancelForTestLoopIterations];
             yield return new object[] { array };

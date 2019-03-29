@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentNullException>("initializers", () => Expression.ListInit(validNew, null, default(IEnumerable<Expression>)));
         }
 
-        private static IEnumerable<object[]> ZeroInitializerInits()
+        public static IEnumerable<object[]> ZeroInitializerInits()
         {
             NewExpression validNew = Expression.New(typeof(List<int>));
             yield return new object[] {Expression.ListInit(validNew, new Expression[0])};

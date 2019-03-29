@@ -81,7 +81,7 @@ namespace System.ComponentModel.Tests
             Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
         }
 
-        private static IEnumerable<object[]> DefaultProperties_TestData()
+        public static IEnumerable<object[]> DefaultProperties_TestData()
         {
             yield return Attribute(() => CategoryAttribute.Appearance, "Appearance");
             yield return Attribute(() => CategoryAttribute.Asynchronous, "Asynchronous");

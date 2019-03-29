@@ -44,14 +44,14 @@ namespace System.Linq.Expressions.Tests
 
         #endregion
 
-        private static IEnumerable<object[]> Truthinesses()
+        public static IEnumerable<object[]> Truthinesses()
         {
             yield return new object[] {new Truthiness(true), true};
             yield return new object[] {new Truthiness(false), false};
         }
 
         [Theory, PerCompilationType(nameof(Truthinesses))]
-        private static void VerifyMakeUnaryExplicitMethodIsTrueBool(Truthiness argument, bool expected, bool useInterpreter)
+        public static void VerifyMakeUnaryExplicitMethodIsTrueBool(Truthiness argument, bool expected, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(
@@ -62,7 +62,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, PerCompilationType(nameof(Truthinesses))]
-        private static void VerifyMakeUnaryDeduceMethodIsTrueBool(Truthiness argument, bool expected, bool useInterpreter)
+        public static void VerifyMakeUnaryDeduceMethodIsTrueBool(Truthiness argument, bool expected, bool useInterpreter)
         {
             Expression<Func<bool>> e =
                 Expression.Lambda<Func<bool>>(

@@ -99,7 +99,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         /// Second: String Array with blob serialized in [netcoreapp, netfx]
         /// To update hashes execute UpdateBlobs test -- only update the blobs whenever needed, randomly updating it could lead to test failures.
         /// </summary>
-        private static IEnumerable<object[]> SerializableObjects()
+        public static IEnumerable<object[]> SerializableObjects()
         {
             // Primitive types
             yield return new object[] { byte.MinValue, new TypeSerializableValue[] { new TypeSerializableValue("AAEAAAD/////AQAAAAAAAAAEAQAAAAtTeXN0ZW0uQnl0ZQEAAAAHbV92YWx1ZQACAAs=", TargetFrameworkMoniker.netcoreapp20), new TypeSerializableValue("AAEAAAD/////AQAAAAAAAAAEAQAAAAtTeXN0ZW0uQnl0ZQEAAAAHbV92YWx1ZQACAAs=", TargetFrameworkMoniker.netfx461) } };

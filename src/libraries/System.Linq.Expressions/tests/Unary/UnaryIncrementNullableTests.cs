@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        private static IEnumerable<object[]> IncrementableWhenNullableValues()
+        public static IEnumerable<object[]> IncrementableWhenNullableValues()
         {
             yield return new object[] { new IncrementableWhenNullable(0), new IncrementableWhenNullable(1) };
             yield return new object[] { new IncrementableWhenNullable(-1), null };

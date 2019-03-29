@@ -269,7 +269,7 @@ namespace System.Linq.Expressions.Tests
             public override string ToString() => ""; // Called internal to test framework and default would throw.
         }
 
-        private static IEnumerable<object[]> BogusBindings()
+        public static IEnumerable<object[]> BogusBindings()
         {
             MemberInfo member = typeof(PropertyAndFields).GetMember(nameof(PropertyAndFields.StaticReadonlyStringField))[0];
             foreach (MemberBindingType type in new[] {MemberBindingType.Assignment, MemberBindingType.ListBinding, MemberBindingType.MemberBinding, (MemberBindingType)(-1)})

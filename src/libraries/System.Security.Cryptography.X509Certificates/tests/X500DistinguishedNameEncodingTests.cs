@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [MemberData(nameof(SeparatorFlagCombinations))]
-        private static void VerifySeparatorProcessing(X500DistinguishedNameFlags flags)
+        public static void VerifySeparatorProcessing(X500DistinguishedNameFlags flags)
         {
             const string input = "CN=a, O=b; OU=c\r L=d\n S=e";
 
