@@ -3,25 +3,25 @@
   <ProductDependencies>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19170.2">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19179.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f70fa34786cff993625a4548ae0125335eabe82e</Sha>
+      <Sha>ef139c7533e2e33c5e0946b80cb1aa95d84da868</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="2.0.0-beta.19170.2">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="2.0.0-beta.19179.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>f70fa34786cff993625a4548ae0125335eabe82e</Sha>
+      <Sha>ef139c7533e2e33c5e0946b80cb1aa95d84da868</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview4.19164.7">
+    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview4.19178.1">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>d6a30736858f91b297fdd3ed4e3d1dfde67bdbdb</Sha>
+      <Sha>82dc96bfbf1d55716e4e0b516bea115644e32cd1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview4.19164.7">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview4.19178.1">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>d6a30736858f91b297fdd3ed4e3d1dfde67bdbdb</Sha>
+      <Sha>82dc96bfbf1d55716e4e0b516bea115644e32cd1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App" Version="3.0.0-preview4-27521-01">
+    <Dependency Name="Microsoft.NETCore.App" Version="3.0.0-preview4-27528-14">
       <Uri>https://github.com/dotnet/core-setup</Uri>
-      <Sha>18780678da576d8c629066f50af30159a8859b2f</Sha>
+      <Sha>6f7780eef92af15d41c55aca5e7e7edd02ad08fd</Sha>
     </Dependency>
     <Dependency Name="optimization.IBC.CoreCLR" Version="99.99.99-master-20190313.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>

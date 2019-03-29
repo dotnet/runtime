@@ -2481,7 +2481,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 unsigned initCount    = argCount - 1;
                 unsigned elementCount = getSIMDVectorLength(size, baseType);
                 noway_assert(initCount == elementCount);
-                GenTree* nextArg = op2;
 
                 // Build a GT_LIST with the N values.
                 // We must maintain left-to-right order of the args, but we will pop
@@ -2490,7 +2489,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 GenTree* list              = nullptr;
                 GenTree* firstArg          = nullptr;
                 GenTree* prevArg           = nullptr;
-                int      offset            = 0;
                 bool     areArgsContiguous = true;
                 for (unsigned i = 0; i < initCount; i++)
                 {
@@ -2651,7 +2649,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             assert(op2->TypeGet() == TYP_REF);
             GenTree* arrayRefForArgChk = op2;
             GenTree* argRngChk         = nullptr;
-            GenTree* asg               = nullptr;
             if ((arrayRefForArgChk->gtFlags & GTF_SIDE_EFFECT) != 0)
             {
                 op2 = fgInsertCommaFormTemp(&arrayRefForArgChk);
@@ -2756,7 +2753,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
             //    op2 - VSmall
             //    op1 - byref of VLarge
             assert(baseType == TYP_FLOAT);
-            unsigned elementByteCount = 4;
 
             GenTree* op4 = nullptr;
             if (argCount == 4)
@@ -2966,6 +2962,10 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                 {
                     op2 = gtCloneExpr(index);
                 }
+
+                // For the non-constant case, we don't want to CSE the SIMD value, as we will just need to store
+                // it to the stack to do the indexing anyway.
+                op1->gtFlags |= GTF_DONT_CSE;
 
                 GenTree*          lengthNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, vectorLength);
                 GenTreeBoundsChk* simdChk =
