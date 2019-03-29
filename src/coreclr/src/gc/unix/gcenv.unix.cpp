@@ -379,7 +379,7 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 //  flags     - flags to control special settings like write watching
 // Return:
 //  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
+static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, uint32_t hugePagesFlag = 0)
 {
     assert(!(flags & VirtualReserveFlags::WriteWatch) && "WriteWatch not supported on Unix");
     if (alignment == 0)
@@ -388,7 +388,7 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
     }
 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
-    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
+    void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, MAP_ANON | MAP_PRIVATE | hugePagesFlag, -1, 0);
 
     if (pRetVal != NULL)
     {
@@ -413,6 +413,18 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
     return pRetVal;
 }
 
+// Reserve virtual memory range.
+// Parameters:
+//  size      - size of the virtual memory range
+//  alignment - requested memory alignment, 0 means no specific alignment requested
+//  flags     - flags to control special settings like write watching
+// Return:
+//  Starting virtual address of the reserved range
+void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
+{
+    return VirtualReserveInner(size, alignment, flags);
+}
+
 // Release virtual memory range previously reserved using VirtualReserve
 // Parameters:
 //  address - starting virtual address
@@ -424,6 +436,28 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
     int ret = munmap(address, size);
 
     return (ret == 0);
+}
+
+// Commit virtual memory range.
+// Parameters:
+//  size      - size of the virtual memory range
+// Return:
+//  Starting virtual address of the committed range
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+{
+#if HAVE_MAP_HUGETLB
+    uint32_t largePagesFlag = MAP_HUGETLB;
+#else
+    uint32_t largePagesFlag = 0;
+#endif
+
+    void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
+    if (VirtualCommit(pRetVal, size, NUMA_NODE_UNDEFINED))
+    {
+        return pRetVal;
+    }
+
+    return nullptr;
 }
 
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
