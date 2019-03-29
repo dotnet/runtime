@@ -74,6 +74,15 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/keyword/TwoKeywords/TwoKeywords/*">
             <Issue>23224, often fails with timeout in release</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi2/**">
+            <Issue>23534</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Bmi2.X64/**">
+            <Issue>23534</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Regression/GitHub_21899/**">
+            <Issue>23534</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets -->
