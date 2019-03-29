@@ -215,7 +215,7 @@ flowList* Compiler::BlockPredsWithEH(BasicBlock* blk)
 //------------------------------------------------------------------------
 // dspBlockILRange(): Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???" for BAD_IL_OFFSET.
 //
-void BasicBlock::dspBlockILRange()
+void BasicBlock::dspBlockILRange() const
 {
     if (bbCodeOffs != BAD_IL_OFFSET)
     {
