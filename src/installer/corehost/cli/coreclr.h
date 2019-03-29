@@ -29,7 +29,7 @@ public:
     using domain_id_t = std::uint32_t;
 
     coreclr_t(host_handle_t host_handle, domain_id_t domain_id);
-    ~coreclr_t();
+    ~coreclr_t() = default;
 
     pal::hresult_t execute_assembly(
         int argc,

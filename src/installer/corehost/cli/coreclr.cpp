@@ -74,14 +74,6 @@ namespace
 
         return true;
     }
-    
-    void coreclr_unload()
-    {
-        assert(g_coreclr != nullptr && coreclr_initialize != nullptr);
-
-        // [TODO] Unloading coreclr is not presently supported
-        // pal::unload_library(g_coreclr);
-    }
 }
 
 pal::hresult_t coreclr_t::create(
@@ -124,12 +116,6 @@ coreclr_t::coreclr_t(host_handle_t host_handle, domain_id_t domain_id)
     , _host_handle{ host_handle }
     , _domain_id{ domain_id }
 {
-}
-
-coreclr_t::~coreclr_t()
-{
-    (void)shutdown(nullptr);
-    coreclr_unload();
 }
 
 pal::hresult_t coreclr_t::execute_assembly(
