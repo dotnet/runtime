@@ -6,11 +6,12 @@ using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class TypeConverterTests : RemoteExecutorTestBase
+    public class TypeConverterTests
     {
         public static TypeConverter s_converter = new TypeConverter();
         public static ITypeDescriptorContext s_context = new MyTypeDescriptorContext();
@@ -106,7 +107,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
 
@@ -131,7 +132,7 @@ namespace System.ComponentModel.Tests
                     s_context, CultureInfo.InvariantCulture, new FormattableClass(), typeof(string)) as string;
                 Assert.NotNull(s);
                 Assert.Equal(FormattableClass.Token, s);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

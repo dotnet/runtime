@@ -28,8 +28,6 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-
-using Xunit;
 using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
@@ -38,10 +36,12 @@ using System.Data.SqlTypes;
 using System.Globalization;
 using System.Text;
 using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
 
 namespace System.Data.Tests
 {
-    public class DataSetTest : RemoteExecutorTestBase
+    public class DataSetTest
     {
         public DataSetTest()
         {
@@ -509,7 +509,7 @@ namespace System.Data.Tests
         [Fact]
         public void WriteXmlSchema()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
 
@@ -594,7 +594,7 @@ namespace System.Data.Tests
 
                 Assert.Equal("</xs:schema>", TextString);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
 
         }
@@ -1565,7 +1565,7 @@ namespace System.Data.Tests
         [Fact]
         public void WriteXmlModeSchema1()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
                 string SerializedDataTable =
@@ -1602,7 +1602,7 @@ namespace System.Data.Tests
                 string result = w.ToString();
                 Assert.Equal(expected.Replace("\r", ""), result.Replace("\r", ""));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

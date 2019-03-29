@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -48,7 +49,7 @@ namespace System.IO.Tests
         [Fact]
         public void GetTempPath_SetEnvVar_Unix()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 foreach (string[] tempPath in GetTempPath_SetEnvVar_Data())
                 {

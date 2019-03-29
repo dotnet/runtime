@@ -6,17 +6,17 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Linq;
-
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-    public class EtwTests : RemoteExecutorTestBase
+    public class EtwTests
     {
         [Fact]
         public static void TestEtw()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var eventSourceName = PlatformDetection.IsFullFramework ? "System.Threading.Tasks.TplEventSource" : "System.Threading.Tasks.Parallel.EventSource";
                 using (var listener = new TestEventListener(eventSourceName, EventLevel.Verbose))

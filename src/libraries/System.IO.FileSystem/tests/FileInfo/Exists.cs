@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -137,11 +138,11 @@ namespace System.IO.Tests
             string path = GetTestFilePath();
             using (FileStream stream = new FileStream(path, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.None))
             {
-                RemoteInvoke((p) =>
+                RemoteExecutor.Invoke((p) =>
                 {
                     FileInfo info = new FileInfo(p);
                     Assert.True(info.Exists);
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }, path).Dispose();
             }
         }
@@ -157,11 +158,11 @@ namespace System.IO.Tests
             {
                 stream.Lock(0, 10);
 
-                RemoteInvoke((p) =>
+                RemoteExecutor.Invoke((p) =>
                 {
                     FileInfo info = new FileInfo(p);
                     Assert.True(info.Exists);
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }, path).Dispose();
 
                 stream.Unlock(0, 10);

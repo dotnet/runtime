@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
@@ -189,7 +190,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void ParseDotSeparatorExtremaInCommaSeparatorCultures(Type type, string min, string max)
         {
-            RemoteInvoke((t, m1, m2) =>
+            RemoteExecutor.Invoke((t, m1, m2) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -207,7 +208,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void ParseDotSeparatorInvariantExtremaInCommaSeparatorCultures(Type type, string min, string max)
         {
-            RemoteInvoke((t, m1, m2) =>
+            RemoteExecutor.Invoke((t, m1, m2) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -232,7 +233,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void ParseCommaSeparatorExtremaInCommaSeparatorCultures(Type type, string min, string max)
         {
-            RemoteInvoke((t, m1, m2) =>
+            RemoteExecutor.Invoke((t, m1, m2) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -250,7 +251,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void ParseCommaSeparatorInvariantExtremaInCommaSeparatorCultures(Type type, string min, string max)
         {
-            RemoteInvoke((t, m1, m2) =>
+            RemoteExecutor.Invoke((t, m1, m2) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -267,7 +268,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndValues(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -285,7 +286,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndValuesInvariantParse(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -310,7 +311,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndValuesInvariantConvert(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -335,7 +336,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndValuesInvariantBoth(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -542,7 +543,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndInvalidValues(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -560,7 +561,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndInvalidValuesInvariantParse(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -585,7 +586,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndInvalidValuesInvariantConvert(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -610,7 +611,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void DotDecimalExtremaAndInvalidValuesInvariantBoth(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -637,7 +638,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndValues(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -655,7 +656,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndValuesInvariantParse(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -680,7 +681,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndValuesInvariantConvert(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -705,7 +706,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndValuesInvariantBoth(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -732,7 +733,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndInvalidValues(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -750,7 +751,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndInvalidValuesInvariantParse(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -775,7 +776,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndInvalidValuesInvariantConvert(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 
@@ -800,7 +801,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "2648 not fixed on NetFX")]
         public static void CommaDecimalExtremaAndInvalidValuesInvariantBoth(Type type, string min, string max, string value)
         {
-            RemoteInvoke((t, m1, m2, v) =>
+            RemoteExecutor.Invoke((t, m1, m2, v) =>
             {
                 Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfoByIetfLanguageTag("en-US");
 

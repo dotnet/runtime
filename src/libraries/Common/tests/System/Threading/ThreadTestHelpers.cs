@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Threading.Tests
@@ -16,7 +17,7 @@ namespace System.Threading.Tests
         // Wait longer for a thread to time out, so that an unexpected timeout in the thread is more likely to expire first and
         // provide a better stack trace for the failure
         public const int UnexpectedThreadTimeoutMilliseconds =
-            UnexpectedTimeoutMilliseconds + RemoteExecutorTestBase.FailWaitTimeoutMilliseconds;
+            UnexpectedTimeoutMilliseconds + RemoteExecutor.FailWaitTimeoutMilliseconds;
 
         public static Thread CreateGuardedThread(out Action waitForThread, Action start)
         {

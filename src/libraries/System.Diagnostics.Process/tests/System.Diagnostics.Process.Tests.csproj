@@ -3,6 +3,7 @@
     <ProjectGuid>{E1114510-844C-4BB2-BBAD-8595BD16E24B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TargetsWindows</DefineConstants>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -41,12 +42,6 @@
     <Compile Include="ProcessStartInfoTests.netcoreapp.cs" />
     <Compile Include="ProcessStreamReadTests.netcoreapp.cs" />
     <Compile Include="ProcessTests.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
-      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>RemoteExecutorConsoleApp</Name>
-    </ProjectReference>
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">

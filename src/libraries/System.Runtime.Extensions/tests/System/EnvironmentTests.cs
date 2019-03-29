@@ -11,12 +11,13 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Xunit;
 
 namespace System.Tests
 {
-    public class EnvironmentTests : RemoteExecutorTestBase
+    public class EnvironmentTests : FileCleanupTestBase
     {
         [Fact]
         public void CurrentDirectory_Null_Path_Throws_ArgumentNullException()
@@ -39,7 +40,7 @@ namespace System.Tests
         [Fact]
         public void CurrentDirectory_SetToValidOtherDirectory()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Environment.CurrentDirectory = TestDirectory;
                 Assert.Equal(Directory.GetCurrentDirectory(), Environment.CurrentDirectory);
@@ -52,7 +53,7 @@ namespace System.Tests
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -197,20 +198,20 @@ namespace System.Tests
         [ActiveIssue("21404", TargetFrameworkMonikers.Uap)]
         public void FailFast_ExpectFailureExitCode()
         {
-            using (RemoteInvokeHandle handle = RemoteInvoke(() => { Environment.FailFast("message"); return SuccessExitCode; }))
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => { Environment.FailFast("message"); return RemoteExecutor.SuccessExitCode; }))
             {
                 Process p = handle.Process;
                 handle.Process = null;
                 p.WaitForExit();
-                Assert.NotEqual(SuccessExitCode, p.ExitCode);
+                Assert.NotEqual(RemoteExecutor.SuccessExitCode, p.ExitCode);
             }
 
-            using (RemoteInvokeHandle handle = RemoteInvoke(() => { Environment.FailFast("message", new Exception("uh oh")); return SuccessExitCode; }))
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => { Environment.FailFast("message", new Exception("uh oh")); return RemoteExecutor.SuccessExitCode; }))
             {
                 Process p = handle.Process;
                 handle.Process = null;
                 p.WaitForExit();
-                Assert.NotEqual(SuccessExitCode, p.ExitCode);
+                Assert.NotEqual(RemoteExecutor.SuccessExitCode, p.ExitCode);
             }
         }
 
@@ -224,8 +225,8 @@ namespace System.Tests
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
 
-            using (RemoteInvokeHandle handle = RemoteInvoke(
-                () => { Environment.FailFast("message", new ArgumentException("bad arg")); return SuccessExitCode; },
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(
+                () => { Environment.FailFast("message", new ArgumentException("bad arg")); return RemoteExecutor.SuccessExitCode; },
                 new RemoteInvokeOptions { StartInfo = psi }))
             {
                 Process p = handle.Process;
@@ -249,8 +250,8 @@ namespace System.Tests
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
 
-            using (RemoteInvokeHandle handle = RemoteInvoke(
-                () => { Environment.FailFast("message", new StackOverflowException("SO exception")); return SuccessExitCode; },
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(
+                () => { Environment.FailFast("message", new StackOverflowException("SO exception")); return RemoteExecutor.SuccessExitCode; },
                 new RemoteInvokeOptions { StartInfo = psi }))
             {
                 Process p = handle.Process;
@@ -274,8 +275,8 @@ namespace System.Tests
             psi.RedirectStandardError = true;
             psi.RedirectStandardOutput = true;
 
-            using (RemoteInvokeHandle handle = RemoteInvoke(
-                () => { Environment.FailFast("message", new ArgumentException("first exception", new NullReferenceException("inner exception"))); return SuccessExitCode; },
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(
+                () => { Environment.FailFast("message", new ArgumentException("first exception", new NullReferenceException("inner exception"))); return RemoteExecutor.SuccessExitCode; },
                 new RemoteInvokeOptions { StartInfo = psi }))
             {
                 Process p = handle.Process;

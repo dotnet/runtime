@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -170,7 +171,7 @@ namespace System.Diagnostics.Tests
                 Console.WriteLine(2);
                 await pipeWrite.WriteAsync(new byte[1], 0, 1);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }
         }
 
@@ -292,7 +293,7 @@ namespace System.Diagnostics.Tests
                 Console.WriteLine(8);
                 Console.WriteLine(9);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }
         }
 

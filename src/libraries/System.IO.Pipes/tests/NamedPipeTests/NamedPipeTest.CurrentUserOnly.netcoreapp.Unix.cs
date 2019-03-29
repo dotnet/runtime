@@ -5,15 +5,16 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using Xunit;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
     /// <summary>
     /// Negative tests for PipeOptions.CurrentUserOnly in Unix.
     /// </summary>
-    public class NamedPipeTest_CurrentUserOnly_Unix : RemoteExecutorTestBase
+    public class NamedPipeTest_CurrentUserOnly_Unix
     {
         [Theory]
         [OuterLoop("Needs sudo access")]
@@ -33,7 +34,7 @@ namespace System.IO.Pipes.Tests
             {
                 Task serverTask = server.WaitForConnectionAsync(CancellationToken.None);
 
-                using (RemoteInvoke(
+                using (RemoteExecutor.Invoke(
                     new Func<string, string, int>(ConnectClientFromRemoteInvoker),
                     pipeName,
                     clientPipeOptions == PipeOptions.CurrentUserOnly ? "true" : "false",
@@ -59,7 +60,7 @@ namespace System.IO.Pipes.Tests
                     client.Connect();
             }
 
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }
     }
 }

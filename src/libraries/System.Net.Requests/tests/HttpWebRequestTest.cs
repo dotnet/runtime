@@ -14,7 +14,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -22,7 +22,7 @@ namespace System.Net.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public partial class HttpWebRequestTest : RemoteExecutorTestBase
+    public partial class HttpWebRequestTest
     {
         private const string RequestBody = "This is data to POST.";
         private readonly byte[] _requestBodyBytes = Encoding.UTF8.GetBytes(RequestBody);
@@ -691,7 +691,7 @@ namespace System.Net.Tests
         [Fact]
         public void DefaultMaximumResponseHeadersLength_SetAndGetLength_ValuesMatch()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 int defaultMaximumResponseHeadersLength = HttpWebRequest.DefaultMaximumResponseHeadersLength;
                 const int NewDefaultMaximumResponseHeadersLength = 255;
@@ -706,14 +706,14 @@ namespace System.Net.Tests
                     HttpWebRequest.DefaultMaximumResponseHeadersLength = defaultMaximumResponseHeadersLength;
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void DefaultMaximumErrorResponseLength_SetAndGetLength_ValuesMatch()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 int defaultMaximumErrorsResponseLength = HttpWebRequest.DefaultMaximumErrorResponseLength;
                 const int NewDefaultMaximumErrorsResponseLength = 255;
@@ -728,14 +728,14 @@ namespace System.Net.Tests
                     HttpWebRequest.DefaultMaximumErrorResponseLength = defaultMaximumErrorsResponseLength;
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void DefaultCachePolicy_SetAndGetPolicyReload_ValuesMatch()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 RequestCachePolicy requestCachePolicy = HttpWebRequest.DefaultCachePolicy;
 
@@ -750,7 +750,7 @@ namespace System.Net.Tests
                     HttpWebRequest.DefaultCachePolicy = requestCachePolicy;
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -1336,7 +1336,7 @@ namespace System.Net.Tests
                 proxyTask = proxyServer.AcceptConnectionPerformAuthenticationAndCloseAsync("Proxy-Authenticate: Basic realm=\"NetCore\"\r\n");
                 psi.Environment.Add("http_proxy", $"http://{proxyUri.Host}:{proxyUri.Port}");
 
-                RemoteInvoke(async (user, pw) =>
+                RemoteExecutor.Invoke(async (user, pw) =>
                 {
                     WebRequest.DefaultWebProxy.Credentials = new NetworkCredential(user, pw);
                     HttpWebRequest request = HttpWebRequest.CreateHttp(Configuration.Http.RemoteEchoServer);
@@ -1346,7 +1346,7 @@ namespace System.Net.Tests
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
 
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }, cred.UserName, cred.Password, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
 
                 await proxyTask;

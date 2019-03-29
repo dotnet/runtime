@@ -4,17 +4,18 @@
 
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
-    public partial class NonStandardConfigurationTests : RemoteExecutorTestBase
+    public partial class NonStandardConfigurationTests
     {
         [PlatformSpecific(TestPlatforms.AnyUnix)] // Uses P/Invokes
         [Fact]
         public void NonBlockingStdout_AllDataReceived()
         {
-            RemoteInvokeHandle remote = RemoteInvoke(() =>
+            RemoteInvokeHandle remote = RemoteExecutor.Invoke(() =>
             {
                 char[] data = Enumerable.Repeat('a', 1024).ToArray();
 
@@ -26,7 +27,7 @@ namespace System.Tests
                     Console.Write(data);
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardOutput = true } });
 
             using (remote)

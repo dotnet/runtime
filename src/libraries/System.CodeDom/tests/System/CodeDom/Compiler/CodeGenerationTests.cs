@@ -8,11 +8,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.CodeDom.Compiler.Tests
 {
-    public abstract class CodeGenerationTests : RemoteExecutorTestBase
+    public abstract class CodeGenerationTests
     {
         [Fact]
         public void Roundtrip_Extension()

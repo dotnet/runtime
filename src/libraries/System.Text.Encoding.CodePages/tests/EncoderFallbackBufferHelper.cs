@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.Tests
@@ -70,12 +71,12 @@ namespace System.Text.Tests
         public override int MaxCharCount => 2;
     }
 
-    public class EncoderFallbackBufferHelperTest : RemoteExecutorTestBase
+    public class EncoderFallbackBufferHelperTest
     {
         [Fact]
         public void Test_EncoderFallbackBufferHelper_ValidateFallbackForDataRoundTrips()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 // Add the code page provider.
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);

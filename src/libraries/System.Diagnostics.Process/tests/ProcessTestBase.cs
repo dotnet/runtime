@@ -7,11 +7,12 @@ using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    public partial class ProcessTestBase : RemoteExecutorTestBase
+    public partial class ProcessTestBase : FileCleanupTestBase
     {
         protected const int WaitInMS = 30 * 1000;
         protected Process _process;
@@ -50,7 +51,7 @@ namespace System.Diagnostics.Tests
         protected Process CreateProcess(Func<int> method = null)
         {
             Process p = null;
-            using (RemoteInvokeHandle handle = RemoteInvoke(method ?? (() => SuccessExitCode), new RemoteInvokeOptions { Start = false }))
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(method ?? (() => RemoteExecutor.SuccessExitCode), new RemoteInvokeOptions { Start = false }))
             {
                 p = handle.Process;
                 handle.Process = null;
@@ -62,7 +63,7 @@ namespace System.Diagnostics.Tests
         protected Process CreateProcess(Func<string, int> method, string arg, bool autoDispose = true)
         {
             Process p = null;
-            using (RemoteInvokeHandle handle = RemoteInvoke(method, arg, new RemoteInvokeOptions { Start = false }))
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(method, arg, new RemoteInvokeOptions { Start = false }))
             {
                 p = handle.Process;
                 handle.Process = null;
@@ -76,7 +77,7 @@ namespace System.Diagnostics.Tests
         protected Process CreateProcess(Func<string, Task<int>> method, string arg)
         {
             Process p = null;
-            using (RemoteInvokeHandle handle = RemoteInvoke(method, arg, new RemoteInvokeOptions { Start = false }))
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(method, arg, new RemoteInvokeOptions { Start = false }))
             {
                 p = handle.Process;
                 handle.Process = null;

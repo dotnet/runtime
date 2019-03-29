@@ -33,7 +33,7 @@ using Xunit;
 
 namespace System.Drawing.Tests
 {
-    public class BitmapTests : RemoteExecutorTestBase
+    public class BitmapTests : FileCleanupTestBase
     {
         public static IEnumerable<object[]> Ctor_FilePath_TestData()
         {

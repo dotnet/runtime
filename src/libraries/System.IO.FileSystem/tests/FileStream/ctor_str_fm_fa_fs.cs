@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -61,7 +62,7 @@ namespace System.IO.Tests
         [Fact]
         public void FileShareOpen_Inheritable()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 int i = 0;
                 foreach (FileAccess access in new[] { FileAccess.ReadWrite, FileAccess.Write, FileAccess.Read })
@@ -73,7 +74,7 @@ namespace System.IO.Tests
                         CreateFileStream(fileName, FileMode.Open, access, share | FileShare.Inheritable).Dispose();
                     }
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

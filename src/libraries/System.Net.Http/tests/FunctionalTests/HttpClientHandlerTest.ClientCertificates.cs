@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -129,7 +130,7 @@ namespace System.Net.Http.Functional.Tests
             // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
             // the same process as the other tests. Each test needs to be isolated to its own process.
             // See dicussion: https://github.com/dotnet/corefx/issues/21945
-            RemoteInvoke(async (certIndexString, expectedStatusCodeString, useSocketsHttpHandlerString) =>
+            RemoteExecutor.Invoke(async (certIndexString, expectedStatusCodeString, useSocketsHttpHandlerString) =>
             {
                 X509Certificate2 clientCert = null;
 
@@ -174,7 +175,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(clientCert, receivedCert);
                     }
 
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }
             }, certIndex.ToString(), expectedStatusCode.ToString(), UseSocketsHttpHandler.ToString()).Dispose();
         }

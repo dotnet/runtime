@@ -5,6 +5,7 @@
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ComponentModel.Tests
@@ -62,7 +63,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertTo_WithContext()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
                 DateTimeFormatInfo formatInfo = (DateTimeFormatInfo)CultureInfo.CurrentCulture.GetFormat(typeof(DateTimeFormatInfo));
                 string formatWithTime = formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern;
@@ -98,7 +99,7 @@ namespace System.ComponentModel.Tests
                 Assert.Equal(testDateAndTime, describedInstanceNoCulture);
                 Assert.Equal(testDateAndTime, describedInstanceCulture); 
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
     }

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Diagnostics.TraceSourceTests
 {
-    public partial class DefaultTraceListenerClassTests : RemoteExecutorTestBase
+    public partial class DefaultTraceListenerClassTests : FileCleanupTestBase
     {
         private class TestDefaultTraceListener : DefaultTraceListener
         {

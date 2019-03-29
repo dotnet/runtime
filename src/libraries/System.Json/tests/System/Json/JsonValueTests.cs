@@ -5,13 +5,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Globalization;
-using Xunit;
 using System.Collections;
 using System.Collections.Generic;
+using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
 
 namespace System.Json.Tests
 {
-    public class JsonValueTests : RemoteExecutorTestBase
+    public class JsonValueTests
     {
         [Fact]
         public void JsonValue_Load_LoadWithTrailingCommaInDictionary()
@@ -273,7 +274,7 @@ namespace System.Json.Tests
         [InlineData("0.000000000000000000000000000011", 1.1E-29)]
         public void JsonValue_Parse_Double(string json, double expected)
         {
-            RemoteInvoke((jsonInner, expectedInner) =>
+            RemoteExecutor.Invoke((jsonInner, expectedInner) =>
             {
                 foreach (string culture in new[] { "en", "fr", "de" })
                 {
@@ -319,7 +320,7 @@ namespace System.Json.Tests
         [InlineData(1.123456789e-28)] // Values around the smallest positive decimal value
         public void JsonValue_Parse_Double_ViaJsonPrimitive(double number)
         {
-            RemoteInvoke(numberText =>
+            RemoteExecutor.Invoke(numberText =>
             {
                 double numberInner = double.Parse(numberText, CultureInfo.InvariantCulture);
                 foreach (string culture in new[] { "en", "fr", "de" })

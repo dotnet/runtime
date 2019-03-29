@@ -11,8 +11,6 @@ namespace System.Diagnostics.Tests
 {
     partial class ProcessTestBase
     {
-        protected static readonly string RunnerName = HostRunner;
-
         protected Process CreateProcessLong()
         {
             return CreateSleepProcess(RemotelyInvokable.WaitInMS);

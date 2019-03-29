@@ -4,11 +4,12 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
-    public partial class FormattableStringTests : RemoteExecutorTestBase
+    public partial class FormattableStringTests
     {
         [Fact]
         public static void Invariant_Null_ThrowsArgumentNullException()
@@ -19,7 +20,7 @@ namespace System.Tests
         [Fact]
         public static void Invariant_DutchCulture_FormatsDoubleBasedOnInvariantCulture()
         {
-            RemoteInvoke(
+            RemoteExecutor.Invoke(
                 () =>
                 {
                     CultureInfo.CurrentCulture = new CultureInfo("nl"); // would be 123,456 in Dutch
@@ -28,7 +29,7 @@ namespace System.Tests
                     string actual = FormattableString.Invariant($"Invariant culture is used {d}");
                     Assert.Equal(expected, actual);
 
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }).Dispose();
         }
 
@@ -44,7 +45,7 @@ namespace System.Tests
         [Fact]
         public static void IFormattableToString_UsesSuppliedFormatProvider()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("nl"); // would be 123,456 in Dutch
                 double d = 123.456;
@@ -52,7 +53,7 @@ namespace System.Tests
                 string actual = ((IFormattable)((FormattableString)$"Invariant culture is used {d}")).ToString(null, CultureInfo.InvariantCulture);
                 Assert.Equal(expected, actual);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

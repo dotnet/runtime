@@ -5,12 +5,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
     [ActiveIssue("https://github.com/dotnet/corefx/issues/21413", TargetFrameworkMonikers.Uap)]
-    public class GetCommandLineArgs : RemoteExecutorTestBase
+    public class GetCommandLineArgs
     {
         public static IEnumerable<object[]> GetCommandLineArgs_TestData()
         {
@@ -29,15 +30,15 @@ namespace System.Tests
             switch (args.Length)
             {
                 case 1:
-                    RemoteInvoke((arg) => CheckCommandLineArgs(new string[] { arg }), args[0]).Dispose();
+                    RemoteExecutor.Invoke((arg) => CheckCommandLineArgs(new string[] { arg }), args[0]).Dispose();
                     break;
 
                 case 2:
-                    RemoteInvoke((arg1, arg2) => CheckCommandLineArgs(new string[] { arg1, arg2 }), args[0], args[1]).Dispose();
+                    RemoteExecutor.Invoke((arg1, arg2) => CheckCommandLineArgs(new string[] { arg1, arg2 }), args[0], args[1]).Dispose();
                     break;
 
                 case 3:
-                    RemoteInvoke((arg1, arg2, arg3) => CheckCommandLineArgs(new string[] { arg1, arg2, arg3 }), args[0], args[1], args[2]).Dispose();
+                    RemoteExecutor.Invoke((arg1, arg2, arg3) => CheckCommandLineArgs(new string[] { arg1, arg2, arg3 }), args[0], args[1], args[2]).Dispose();
                     break;
 
                 default:
@@ -52,7 +53,7 @@ namespace System.Tests
             string[] cmdLineArgs = Environment.GetCommandLineArgs();
 
             Assert.InRange(cmdLineArgs.Length, 5, int.MaxValue); /*AppName, AssemblyName, TypeName, MethodName, ExceptionFile */
-            Assert.Contains(TestConsoleApp, cmdLineArgs[0]); /*The host returns the fullName*/
+            Assert.Contains(RemoteExecutor.Path, cmdLineArgs[0]); /*The host returns the fullName*/
 
             Type t = typeof(GetCommandLineArgs);
             MethodInfo mi = t.GetMethod("CheckCommandLineArgs");
@@ -69,7 +70,7 @@ namespace System.Tests
                 Assert.Equal(args[i], cmdLineArgs[i + 5]);
             }
 
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }
     }
 }

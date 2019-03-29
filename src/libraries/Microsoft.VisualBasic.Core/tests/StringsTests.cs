@@ -7,11 +7,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using Microsoft.VisualBasic.CompilerServices.Tests;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace Microsoft.VisualBasic.Tests
 {
-    public class StringsTests : RemoteExecutorTestBase
+    public class StringsTests
     {
         static StringsTests()
         {
@@ -78,7 +79,7 @@ namespace Microsoft.VisualBasic.Tests
         [InlineData(256)]
         public void Chr_CharCodeOutOfRange_ThrowsNotSupportedException(int charCode)
         {
-            RemoteInvoke(charCodeInner =>
+            RemoteExecutor.Invoke(charCodeInner =>
             {
                 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
                 CultureInfo.CurrentCulture = new CultureInfo("en-US"); // Strings.Chr doesn't fail on these inputs for all code pages, e.g. 949

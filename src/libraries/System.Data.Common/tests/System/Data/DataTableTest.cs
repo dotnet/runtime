@@ -36,11 +36,12 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Runtime.Serialization.Formatters.Tests;
 using System.Text.RegularExpressions;
 using System.Xml;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Data.Tests
 {
-    public class DataTableTest : RemoteExecutorTestBase
+    public class DataTableTest
     {
         public DataTableTest()
         {
@@ -865,7 +866,7 @@ Assert.False(true);
         [Fact]
         public void PropertyExceptions()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 DataSet set = new DataSet();
                 DataTable table = new DataTable();
@@ -915,7 +916,7 @@ Assert.False(true);
 
                 Assert.Throws<DataException>(() => table.Prefix = "Prefix#1");
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -3332,7 +3333,7 @@ Assert.False(true);
         [Fact]
         public void WriteXmlSchema()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-GB");
 
@@ -3411,7 +3412,7 @@ Assert.False(true);
 
                 Assert.Equal("</xs:schema>", TextString);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -4044,8 +4045,7 @@ Assert.False(true);
 
     [Serializable]
 
-    public class AppDomainsAndFormatInfo : RemoteExecutorTestBase
-    {
+    public class AppDomainsAndFormatInfo    {
         public void Remote()
         {
             int n = (int)Convert.ChangeType("5", typeof(int));
@@ -4081,7 +4081,7 @@ Assert.False(true);
         [Fact]
         public void Bug82109()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 DataTable tbl = new DataTable();
                 tbl.Columns.Add("data", typeof(DateTime));
@@ -4098,7 +4098,7 @@ Assert.False(true);
                 CultureInfo.CurrentCulture = new CultureInfo("fr-FR");
                 Select(tbl);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

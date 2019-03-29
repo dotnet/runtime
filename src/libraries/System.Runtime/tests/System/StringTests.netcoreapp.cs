@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
@@ -279,24 +280,24 @@ namespace System.Tests
         public static void Contains_StringComparison_TurkishI()
         {
             string str = "\u0069\u0130";
-            RemoteInvoke((source) =>
+            RemoteExecutor.Invoke((source) =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
 
                 Assert.True(source.Contains("\u0069\u0069", StringComparison.CurrentCultureIgnoreCase));
                 Assert.True(source.AsSpan().Contains("\u0069\u0069", StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, str).Dispose();
 
-            RemoteInvoke((source) =>
+            RemoteExecutor.Invoke((source) =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
                 Assert.False(source.Contains("\u0069\u0069", StringComparison.CurrentCultureIgnoreCase));
                 Assert.False(source.AsSpan().Contains("\u0069\u0069", StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, str).Dispose();
         }
 
@@ -665,7 +666,7 @@ namespace System.Tests
         {
             string src = "\u0069\u0130";
 
-            RemoteInvoke((source) =>
+            RemoteExecutor.Invoke((source) =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
 
@@ -676,10 +677,10 @@ namespace System.Tests
                 Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCulture));
                 Assert.Equal("aa", source.Replace("\u0130", "a", StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, src).Dispose();
 
-            RemoteInvoke((source) =>
+            RemoteExecutor.Invoke((source) =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
@@ -690,7 +691,7 @@ namespace System.Tests
                 Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCulture));
                 Assert.Equal("\u0069a", source.Replace("\u0130", "a", StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, src).Dispose();
         }
 
@@ -894,7 +895,7 @@ namespace System.Tests
         [Fact]
         public static void IndexOf_TurkishI_TurkishCulture_Char()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
 
@@ -923,14 +924,14 @@ namespace System.Tests
                 Assert.Equal(10, span.IndexOf(new char[] { value }, StringComparison.Ordinal));
                 Assert.Equal(10, span.IndexOf(new char[] { value }, StringComparison.OrdinalIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_TurkishI_InvariantCulture_Char()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -945,14 +946,14 @@ namespace System.Tests
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_TurkishI_EnglishUSCulture_Char()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
@@ -967,14 +968,14 @@ namespace System.Tests
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_EquivalentDiacritics_EnglishUSCulture_Char()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string s = "Exhibit a\u0300\u00C0";
                 char value = '\u00C0';
@@ -986,14 +987,14 @@ namespace System.Tests
                 Assert.Equal(10, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(10, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_EquivalentDiacritics_InvariantCulture_Char()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string s = "Exhibit a\u0300\u00C0";
                 char value = '\u00C0';
@@ -1003,14 +1004,14 @@ namespace System.Tests
                 Assert.Equal(10, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(8, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_CyrillicE_EnglishUSCulture_Char()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string s = "Foo\u0400Bar";
                 char value = '\u0400';
@@ -1022,14 +1023,14 @@ namespace System.Tests
                 Assert.Equal(3, s.IndexOf(value, StringComparison.Ordinal));
                 Assert.Equal(3, s.IndexOf(value, StringComparison.OrdinalIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_CyrillicE_InvariantCulture_Char()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string s = "Foo\u0400Bar";
                 char value = '\u0400';
@@ -1039,7 +1040,7 @@ namespace System.Tests
                 Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCulture));
                 Assert.Equal(3, s.IndexOf(value, StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

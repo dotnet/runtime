@@ -9,11 +9,12 @@ using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.Remoting;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
-    public partial class ActivatorTests : RemoteExecutorTestBase
+    public partial class ActivatorTests
     {
         [Fact]
         public void CreateInstance_NonPublicValueTypeWithPrivateDefaultConstructor_Success()
@@ -257,7 +258,7 @@ namespace System.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Assembly.LoadFile is not supported in AppX.")]
         public static void CreateInstanceAssemblyResolve()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.AssemblyResolve += (object sender, ResolveEventArgs args) => Assembly.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "TestLoadAssembly.dll"));
                 ObjectHandle oh = Activator.CreateInstance(",,,,", "PublicClassSample");

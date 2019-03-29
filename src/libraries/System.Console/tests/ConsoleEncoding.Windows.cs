@@ -5,6 +5,7 @@
 using System;
 using System.Text;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 public partial class ConsoleEncoding
@@ -13,14 +14,14 @@ public partial class ConsoleEncoding
     [PlatformSpecific(TestPlatforms.Windows)]
     public void InputEncoding_SetDefaultEncoding_Success()
     {
-        RemoteInvoke(() =>
+        RemoteExecutor.Invoke(() =>
         {
             Encoding encoding = Encoding.GetEncoding(0);
             Console.InputEncoding = encoding;
             Assert.Equal(encoding, Console.InputEncoding);
             Assert.Equal((uint)encoding.CodePage, GetConsoleCP());
 
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -28,7 +29,7 @@ public partial class ConsoleEncoding
     [PlatformSpecific(TestPlatforms.Windows)]
     public void InputEncoding_SetUnicodeEncoding_SilentlyIgnoredInternally()
     {
-        RemoteInvoke(() =>
+        RemoteExecutor.Invoke(() =>
         {
             Encoding unicodeEncoding = Encoding.Unicode;
             Encoding oldEncoding = Console.InputEncoding;
@@ -38,7 +39,7 @@ public partial class ConsoleEncoding
             Assert.Equal(unicodeEncoding, Console.InputEncoding);
             Assert.Equal((uint)oldEncoding.CodePage, GetConsoleCP());
 
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -46,14 +47,14 @@ public partial class ConsoleEncoding
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetDefaultEncoding_Success()
     {
-        RemoteInvoke(() =>
+        RemoteExecutor.Invoke(() =>
         {
             Encoding encoding = Encoding.GetEncoding(0);
             Console.OutputEncoding = encoding;
             Assert.Equal(encoding, Console.OutputEncoding);
             Assert.Equal((uint)encoding.CodePage, GetConsoleOutputCP());
 
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -61,7 +62,7 @@ public partial class ConsoleEncoding
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetUnicodeEncoding_SilentlyIgnoredInternally()
     {
-        RemoteInvoke(() =>
+        RemoteExecutor.Invoke(() =>
         {
             Encoding unicodeEncoding = Encoding.Unicode;
             Encoding oldEncoding = Console.OutputEncoding;
@@ -71,7 +72,7 @@ public partial class ConsoleEncoding
 
             Assert.Equal((uint)oldEncoding.CodePage, GetConsoleOutputCP());
 
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 

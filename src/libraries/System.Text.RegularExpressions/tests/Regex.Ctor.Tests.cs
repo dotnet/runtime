@@ -6,11 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexConstructorTests : RemoteExecutorTestBase
+    public class RegexConstructorTests
     {
         public static IEnumerable<object[]> Ctor_TestData()
         {
@@ -79,24 +80,24 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void StaticCtor_InvalidTimeoutObject_ExceptionThrown()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, true);
                 Assert.Throws<TypeInitializationException>(() => Regex.InfiniteMatchTimeout);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void StaticCtor_InvalidTimeoutRange_ExceptionThrown()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.Zero);
                 Assert.Throws<TypeInitializationException>(() => Regex.InfiniteMatchTimeout);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
     }

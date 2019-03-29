@@ -3,22 +3,23 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Tests
 {
-    public class TlsSystemDefault : RemoteExecutorTestBase
+    public class TlsSystemDefault
     {
         [Fact]
         public void ServicePointManager_SecurityProtocolDefault_Ok()
         {
-            RemoteInvoke(() => Assert.Equal(SecurityProtocolType.SystemDefault, ServicePointManager.SecurityProtocol)).Dispose();
+            RemoteExecutor.Invoke(() => Assert.Equal(SecurityProtocolType.SystemDefault, ServicePointManager.SecurityProtocol)).Dispose();
         }
 
         [Fact]
         public void ServicePointManager_CheckAllowedProtocols_SystemDefault_Allowed()
         {
-            RemoteInvoke(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault).Dispose();
+            RemoteExecutor.Invoke(() => ServicePointManager.SecurityProtocol = SecurityProtocolType.SystemDefault).Dispose();
         }
     }
 }

@@ -4,11 +4,12 @@
 
 using System.Diagnostics;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    public class AnonymousPipeTest_CrossProcess : RemoteExecutorTestBase
+    public class AnonymousPipeTest_CrossProcess
     {
         [Fact]
         public void PingPong()
@@ -17,7 +18,7 @@ namespace System.IO.Pipes.Tests
             // Then spawn another process to communicate with.
             using (var outbound = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable))
             using (var inbound = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable))
-            using (var remote = RemoteInvoke(new Func<string, string, int>(ChildFunc), outbound.GetClientHandleAsString(), inbound.GetClientHandleAsString()))
+            using (var remote = RemoteExecutor.Invoke(new Func<string, string, int>(ChildFunc), outbound.GetClientHandleAsString(), inbound.GetClientHandleAsString()))
             {
                 // Close our local copies of the handles now that we've passed them of to the other process
                 outbound.DisposeLocalCopyOfClientHandle();
@@ -45,7 +46,7 @@ namespace System.IO.Pipes.Tests
                         outbound.WriteByte((byte)b);
                     }
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }
         }
 
@@ -53,7 +54,7 @@ namespace System.IO.Pipes.Tests
         public void ServerClosesPipe_ClientReceivesEof()
         {
             using (var pipe = new AnonymousPipeServerStream(PipeDirection.Out, HandleInheritability.Inheritable))
-            using (var remote = RemoteInvoke(new Func<string, int>(ChildFunc), pipe.GetClientHandleAsString()))
+            using (var remote = RemoteExecutor.Invoke(new Func<string, int>(ChildFunc), pipe.GetClientHandleAsString()))
             {
                 pipe.DisposeLocalCopyOfClientHandle();
                 pipe.Write(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
@@ -73,7 +74,7 @@ namespace System.IO.Pipes.Tests
                     }
                     Assert.Equal(-1, pipe.ReadByte());
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }
         }
 
@@ -81,7 +82,7 @@ namespace System.IO.Pipes.Tests
         public void ClientClosesPipe_ServerReceivesEof()
         {
             using (var pipe = new AnonymousPipeServerStream(PipeDirection.In, HandleInheritability.Inheritable))
-            using (var remote = RemoteInvoke(new Func<string, int>(ChildFunc), pipe.GetClientHandleAsString(), new RemoteInvokeOptions { CheckExitCode = false }))
+            using (var remote = RemoteExecutor.Invoke(new Func<string, int>(ChildFunc), pipe.GetClientHandleAsString(), new RemoteInvokeOptions { CheckExitCode = false }))
             {
                 pipe.DisposeLocalCopyOfClientHandle();
 
@@ -101,7 +102,7 @@ namespace System.IO.Pipes.Tests
                     pipe.Write(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
                 }
                 Thread.CurrentThread.Join();
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }
         }
     }

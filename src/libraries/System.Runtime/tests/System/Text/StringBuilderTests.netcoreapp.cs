@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Text.Tests
 {
-    public partial class StringBuilderTests : RemoteExecutorTestBase
+    public partial class StringBuilderTests
     {
         [Fact]
         public static void AppendJoin_NullValues_ThrowsArgumentNullException()

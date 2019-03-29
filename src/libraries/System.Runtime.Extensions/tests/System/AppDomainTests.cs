@@ -9,11 +9,12 @@ using System.Net.Http;
 using System.Reflection;
 using System.Resources;
 using System.Runtime.ExceptionServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
-    public partial class AppDomainTests : RemoteExecutorTestBase
+    public partial class AppDomainTests : FileCleanupTestBase
     {
         [Fact]
         public void CurrentDomain_Not_Null()
@@ -42,7 +43,7 @@ namespace System.Tests
         [Fact]
         public void TargetFrameworkTest()
         {
-            string targetFrameworkName = "DUMMY-TFA";
+            string targetFrameworkName = ".NETStandard,Version=v2.0";
             if (PlatformDetection.IsInAppContainer)
             {
                 targetFrameworkName = ".NETCore,Version=v5.0";
@@ -52,7 +53,7 @@ namespace System.Tests
                 targetFrameworkName = ".NETCoreApp,Version=v2.0";
             }
             
-            RemoteInvoke((_targetFrameworkName) => {
+            RemoteExecutor.Invoke((_targetFrameworkName) => {
                 Assert.Contains(_targetFrameworkName, AppContext.TargetFrameworkName);
             }, targetFrameworkName).Dispose();
         }
@@ -60,17 +61,17 @@ namespace System.Tests
         [Fact]
         public void UnhandledException_Add_Remove()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
                 AppDomain.CurrentDomain.UnhandledException -= new UnhandledExceptionEventHandler(MyHandler);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void UnhandledException_NotCalled_When_Handled()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(NotExpectedToBeCalledHandler);
                 try
                 {
@@ -80,7 +81,7 @@ namespace System.Tests
                 {
                 }
                 AppDomain.CurrentDomain.UnhandledException -= new UnhandledExceptionEventHandler(NotExpectedToBeCalledHandler);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -92,12 +93,12 @@ namespace System.Tests
             System.IO.File.Delete("success.txt");
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.CheckExitCode = false;
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
                 throw new Exception("****This Unhandled Exception is Expected****");
 #pragma warning disable 0162
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
 #pragma warning restore 0162
             }, options).Dispose();
 
@@ -138,9 +139,9 @@ namespace System.Tests
         public void Id()
         {
             // if running directly on some platforms Xunit may be Id = 1
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 Assert.Equal(1, AppDomain.CurrentDomain.Id);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }        
 
@@ -159,20 +160,20 @@ namespace System.Tests
         [Fact]
         public void FirstChanceException_Add_Remove()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 EventHandler<FirstChanceExceptionEventArgs> handler = (sender, e) =>
                 {
                 };
                 AppDomain.CurrentDomain.FirstChanceException += handler;
                 AppDomain.CurrentDomain.FirstChanceException -= handler;
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void FirstChanceException_Called()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 bool flag = false;
                 EventHandler<FirstChanceExceptionEventArgs> handler = (sender, e) =>
                 {
@@ -192,7 +193,7 @@ namespace System.Tests
                 }
                 AppDomain.CurrentDomain.FirstChanceException -= handler;
                 Assert.True(flag, "FirstChanceHandler not called");
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -205,13 +206,13 @@ namespace System.Tests
         [Fact]
         public void ProcessExit_Add_Remove()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 EventHandler handler = (sender, e) =>
                 {
                 };
                 AppDomain.CurrentDomain.ProcessExit += handler;
                 AppDomain.CurrentDomain.ProcessExit -= handler;
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -220,7 +221,7 @@ namespace System.Tests
         public void ProcessExit_Called()
         {
             string path = GetTestFilePath();
-            RemoteInvoke((pathToFile) =>
+            RemoteExecutor.Invoke((pathToFile) =>
             {
                 EventHandler handler = (sender, e) =>
                 {
@@ -228,7 +229,7 @@ namespace System.Tests
                 };
 
                 AppDomain.CurrentDomain.ProcessExit += handler;
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, path).Dispose();
 
             Assert.True(File.Exists(path));
@@ -263,7 +264,7 @@ namespace System.Tests
         [ActiveIssue(21680, TargetFrameworkMonikers.UapAot)]
         public void ExecuteAssemblyByName()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 string name = "TestApp";
                 var assembly = Assembly.Load(name);
                 Assert.Equal(5, AppDomain.CurrentDomain.ExecuteAssemblyByName(assembly.FullName));
@@ -272,7 +273,7 @@ namespace System.Tests
                 AssemblyName assemblyName = assembly.GetName();
                 assemblyName.CodeBase = null;
                 Assert.Equal(105, AppDomain.CurrentDomain.ExecuteAssemblyByName(assemblyName, new string[3] { "50", "25", "25" }));
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -300,20 +301,20 @@ namespace System.Tests
         [Fact]
         public void GetData_SetData()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AssertExtensions.Throws<ArgumentNullException>("name", () => { AppDomain.CurrentDomain.SetData(null, null); });
                 AppDomain.CurrentDomain.SetData("", null);
                 Assert.Null(AppDomain.CurrentDomain.GetData(""));
                 AppDomain.CurrentDomain.SetData("randomkey", 4);
                 Assert.Equal(4, AppDomain.CurrentDomain.GetData("randomkey"));
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void SetData_SameKeyMultipleTimes_ReplacesOldValue()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 string key = Guid.NewGuid().ToString("N");
                 for (int i = 0; i < 3; i++)
                 {
@@ -321,7 +322,7 @@ namespace System.Tests
                     Assert.Equal(i.ToString(), AppDomain.CurrentDomain.GetData(key));
                 }
                 AppDomain.CurrentDomain.SetData(key, null);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -338,10 +339,10 @@ namespace System.Tests
         public void IsDefaultAppDomain()
         {
             // Xunit may be default app domain if run directly
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Assert.True(AppDomain.CurrentDomain.IsDefaultAppDomain());
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -355,7 +356,7 @@ namespace System.Tests
         public void toString()
         {
             // Workaround issue: UWP culture is process wide
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
 
@@ -374,10 +375,10 @@ namespace System.Tests
         [Fact]
         public void Unload()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AssertExtensions.Throws<ArgumentNullException>("domain", () => { AppDomain.Unload(null); });
                 Assert.Throws<CannotUnloadAppDomainException>(() => { AppDomain.Unload(AppDomain.CurrentDomain); });
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -408,7 +409,7 @@ namespace System.Tests
         [Fact]
         public void MonitoringIsEnabled()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 Assert.False(AppDomain.MonitoringIsEnabled);
                 Assert.Throws<ArgumentException>(() => { AppDomain.MonitoringIsEnabled = false; });
 
@@ -421,7 +422,7 @@ namespace System.Tests
                 {
                     Assert.Throws<PlatformNotSupportedException>(() => { AppDomain.MonitoringIsEnabled = true; });
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -470,54 +471,54 @@ namespace System.Tests
         [Fact]
         public void AppendPrivatePath()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AppDomain.CurrentDomain.AppendPrivatePath("test");
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void ClearPrivatePath()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AppDomain.CurrentDomain.ClearPrivatePath();
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void ClearShadowCopyPath()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AppDomain.CurrentDomain.ClearShadowCopyPath();
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void SetCachePath()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AppDomain.CurrentDomain.SetCachePath("test");
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void SetShadowCopyFiles()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AppDomain.CurrentDomain.SetShadowCopyFiles();
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void SetShadowCopyPath()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 AppDomain.CurrentDomain.SetShadowCopyPath("test");
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -527,7 +528,7 @@ namespace System.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void GetAssemblies()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
                 Assert.NotNull(assemblies);
                 Assert.True(assemblies.Length > 0, "There must be assemblies already loaded in the process");
@@ -558,7 +559,7 @@ namespace System.Tests
                     }
                 }
                 Assert.True(ctr > 0, "Assembly.LoadFile should cause file to be loaded again");
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -567,7 +568,7 @@ namespace System.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void AssemblyLoad()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 bool AssemblyLoadFlag = false;
                 AssemblyLoadEventHandler handler = (sender, args) =>
                 {
@@ -588,7 +589,7 @@ namespace System.Tests
                     AppDomain.CurrentDomain.AssemblyLoad -= handler;
                 }
                 Assert.True(AssemblyLoadFlag);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -598,7 +599,7 @@ namespace System.Tests
         {
             CopyTestAssemblies();
 
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 ResolveEventHandler handler = (sender, e) =>
                 {
                     return Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTestApp.dll"));
@@ -608,7 +609,7 @@ namespace System.Tests
 
                 Type t = Type.GetType("AssemblyResolveTestApp.Class1, AssemblyResolveTestApp", true);
                 Assert.NotNull(t);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -618,7 +619,7 @@ namespace System.Tests
         {
             CopyTestAssemblies();
 
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 Assembly a = Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.exe"));
 
                 ResolveEventHandler handler = (sender, e) =>
@@ -632,14 +633,14 @@ namespace System.Tests
                 MethodInfo myMethodInfo = ptype.GetMethod("foo");
                 object ret = myMethodInfo.Invoke(null, null);
                 Assert.NotNull(ret);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void AssemblyResolve_IsNotCalledForCoreLibResources()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 bool assemblyResolveHandlerCalled = false;
                 AppDomain.CurrentDomain.AssemblyResolve +=
@@ -666,7 +667,7 @@ namespace System.Tests
                     CultureInfo.CurrentUICulture = previousUICulture;
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -674,7 +675,7 @@ namespace System.Tests
         [ActiveIssue(21680, TargetFrameworkMonikers.UapAot)]
         public void TypeResolve()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 Assert.Throws<TypeLoadException>(() => Type.GetType("Program", true));
 
                 ResolveEventHandler handler = (sender, args) =>
@@ -694,7 +695,7 @@ namespace System.Tests
                     AppDomain.CurrentDomain.TypeResolve -= handler;
                 }
                 Assert.NotNull(t);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -703,7 +704,7 @@ namespace System.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "In UWP the resources always exist in the resources.pri file even if the assembly is not loaded")]
         public void ResourceResolve()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 ResourceManager res = new ResourceManager(typeof(FxResources.TestApp.SR));
                 Assert.Throws<MissingManifestResourceException>(() => res.GetString("Message"));
 
@@ -724,19 +725,19 @@ namespace System.Tests
                     AppDomain.CurrentDomain.ResourceResolve -= handler;
                 }
                 Assert.Equal(s, "Happy Halloween");
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]       
         public void SetThreadPrincipal()
         {
-            RemoteInvoke(() => {
+            RemoteExecutor.Invoke(() => {
                 Assert.Throws<ArgumentNullException>(() => { AppDomain.CurrentDomain.SetThreadPrincipal(null); });
                 var identity = new System.Security.Principal.GenericIdentity("NewUser");
                 var principal = new System.Security.Principal.GenericPrincipal(identity, null);
                 AppDomain.CurrentDomain.SetThreadPrincipal(principal);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

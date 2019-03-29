@@ -7,11 +7,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
-    public partial class DecimalTests : RemoteExecutorTestBase
+    public partial class DecimalTests
     {
         [Fact]
         public static void MaxValue()
@@ -1240,7 +1241,7 @@ namespace System.Tests
         [Fact]
         public static void Test_ToString()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -1248,7 +1249,7 @@ namespace System.Tests
                 {
                     ToString((decimal)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

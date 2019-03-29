@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{92A9467A-9F7E-4294-A7D5-7B59F2E54ABE}</ProjectGuid>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netstandard-Debug;netstandard-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -14,11 +15,5 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="ConsoleTraceListenerTests.cs" />
     <Compile Include="XmlWriterTraceListenerTests.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
-      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>RemoteExecutorConsoleApp</Name>
-    </ProjectReference>
   </ItemGroup>
 </Project>

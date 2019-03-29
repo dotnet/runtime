@@ -7,7 +7,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class PathTestsBase : RemoteExecutorTestBase
+    public partial class PathTestsBase
     {
         protected static string Sep = Path.DirectorySeparatorChar.ToString();
         protected static string AltSep = Path.AltDirectorySeparatorChar.ToString();

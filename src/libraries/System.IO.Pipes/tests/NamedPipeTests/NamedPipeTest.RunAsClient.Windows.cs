@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    public partial class NamedPipeTest_RunAsClient : RemoteExecutorTestBase
+    public partial class NamedPipeTest_RunAsClient
     {
         [Theory]
         [InlineData(TokenImpersonationLevel.None)]

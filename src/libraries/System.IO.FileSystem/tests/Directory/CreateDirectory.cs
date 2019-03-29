@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -27,7 +28,7 @@ namespace System.IO.Tests
         public void FileNameIsToString_NotFullPath()
         {
             // We're checking that we're maintaining the original path
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Environment.CurrentDirectory = TestDirectory;
                 string subdir = Path.GetRandomFileName();
