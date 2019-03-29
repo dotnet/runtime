@@ -24,9 +24,8 @@ namespace System.Globalization
 
         public StringInfo(string value)
         {
+            _str = null!;
             this.String = value;
-            // TODO-NULLABLE: compiler doesn't see this field being initialized through property
-            _str = _str!;
         }
 
         public override bool Equals(object? value)
