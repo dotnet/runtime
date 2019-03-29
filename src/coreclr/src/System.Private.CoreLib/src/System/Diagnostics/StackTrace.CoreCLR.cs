@@ -74,24 +74,7 @@ namespace System.Diagnostics
 
                 for (int i = 0; i < _numOfFrames; i++)
                 {
-                    bool fDummy1 = true;
-                    bool fDummy2 = true;
-                    StackFrame sfTemp = new StackFrame(fDummy1, fDummy2);
-
-                    sfTemp.SetMethodBase(StackF.GetMethodBase(i));
-                    sfTemp.SetOffset(StackF.GetOffset(i));
-                    sfTemp.SetILOffset(StackF.GetILOffset(i));
-
-                    sfTemp.SetIsLastFrameFromForeignExceptionStackTrace(StackF.IsLastFrameFromForeignExceptionStackTrace(i));
-
-                    if (fNeedFileInfo)
-                    {
-                        sfTemp.SetFileName(StackF.GetFilename(i));
-                        sfTemp.SetLineNumber(StackF.GetLineNumber(i));
-                        sfTemp.SetColumnNumber(StackF.GetColumnNumber(i));
-                    }
-
-                    _stackFrames[i] = sfTemp;
+                    _stackFrames[i] = new StackFrame(StackF, i, fNeedFileInfo);
                 }
 
                 // CalculateFramesToSkip skips all frames in the System.Diagnostics namespace,
