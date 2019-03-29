@@ -13540,7 +13540,7 @@ try_again:
                         uint16_t src_proc_no = heap_select::find_proc_no_from_heap_no(org_hp->heap_number);
                         uint16_t dst_proc_no = heap_select::find_proc_no_from_heap_no(max_hp->heap_number);
 
-                        if (!GCToOSInterface::MigrateThread(src_proc_no, dst_proc_no))
+                        if (!GCToOSInterface::SetCurrentThreadIdealAffinity(src_proc_no, dst_proc_no))
                         {
                             dprintf (3, ("Failed to set the ideal processor for heap %d.",
                                         org_hp->heap_number));
@@ -34086,66 +34086,9 @@ HRESULT GCHeap::Initialize()
 
 #ifdef MULTIPLE_HEAPS
     AffinitySet config_affinity_set;
-
-    // Get the affinity set configured by the user
-    uintptr_t heap_affinity_mask = GCConfig::GetGCHeapAffinitizeMask();
-    if (heap_affinity_mask != 0)
+    if (!ParseGCHeapAffinitySettings(&config_affinity_set))
     {
-        for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
-        {
-            if (heap_affinity_mask & ((uintptr_t)1 << i))
-            {
-                config_affinity_set.Add(i);
-            }
-        }
-    }
-    else
-    {
-        GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
-        const char* cpu_index_ranges = cpu_index_ranges_holder.Get();
-
-        // The cpu index ranges is a comma separated list of indices or ranges of indices (e.g. 1-5).
-        // Example 1,3,5,7-9,12
-
-        if (cpu_index_ranges != NULL)
-        {
-            char* number_end;
-
-            do
-            {
-                size_t start_index = strtoul(cpu_index_ranges, &number_end, 10);
-
-                if (number_end == cpu_index_ranges)
-                {
-                    // No number found, invalid format
-                    break;
-                }
-
-                size_t end_index = start_index;
-
-                if (*number_end == '-')
-                {
-                    char* range_end_start = number_end + 1;
-                    end_index = strtoul(range_end_start, &number_end, 10);
-                    if (number_end == range_end_start)
-                    {
-                        // No number found, invalid format
-                        break;
-                    }
-                }
-
-                if ((start_index < MAX_SUPPORTED_CPUS) && end_index < (MAX_SUPPORTED_CPUS))
-                {
-                    for (size_t i = start_index; i <= end_index; i++)
-                    {
-                        config_affinity_set.Add(i);
-                    }
-                }
-
-                cpu_index_ranges = number_end + 1;
-            }
-            while (*number_end == ',');
-        }
+        return CLR_E_GC_BAD_AFFINITY_CONFIG;
     }
 
     AffinitySet* process_affinity_set = GCToOSInterface::GetCurrentProcessAffinitySet();
@@ -34164,7 +34107,7 @@ HRESULT GCHeap::Initialize()
 
     if (process_affinity_set->IsEmpty())
     {
-        return CLR_E_GC_BAD_AFFINITY_CONFIG;
+        return CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT;
     }
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
