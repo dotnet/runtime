@@ -99,6 +99,21 @@ jobs:
     parameters:
       jobTemplate: build-job.yml
       buildConfig: debug
+      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-ci') }}:
+        platforms:
+        - Windows_NT_x64
+        - Windows_NT_x86
+      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop') }}:
+        platforms:
+        - Linux_arm
+        - Linux_arm64
+        - Linux_musl_arm64
+        - Linux_musl_x64
+        - Linux_rhel6_x64
+        - Linux_x64
+        - OSX_x64
+        - Windows_NT_arm
+        - Windows_NT_arm64
 
 #
 # Checked build
@@ -115,6 +130,21 @@ jobs:
         - Linux_x64
         - Windows_NT_x64
         - Windows_NT_x86
+      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-ci') }}:
+        platforms:
+        - Linux_arm
+        - Linux_arm64
+        - Linux_musl_arm64
+        - Linux_musl_x64
+        - Linux_x64
+        - OSX_x64
+        - Windows_NT_arm
+        - Windows_NT_arm64
+        - Windows_NT_x64
+        - Windows_NT_x86
+      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop') }}:
+        platforms:
+        - Linux_rhel6_x64
 
 #
 # Release build (Pull request)
@@ -124,6 +154,21 @@ jobs:
     parameters:
       jobTemplate: build-job.yml
       buildConfig: release
+      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-ci') }}:
+        platforms:
+        - Linux_arm64
+        - Linux_musl_x64
+        - Linux_rhel6_x64
+        - Windows_NT_arm
+        - Windows_NT_arm64
+        - Windows_NT_x64
+      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop') }}:
+        platforms:
+        - Linux_arm
+        - Linux_musl_arm64
+        - Linux_x64
+        - OSX_x64
+        - Windows_NT_x86
 
 #
 # Release build (Official build)
