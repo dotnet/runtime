@@ -170,7 +170,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("v1", () => nullVersion <= nonNullVersion);
         }
 
-        private static IEnumerable<object[]> Equals_TestData()
+        public static IEnumerable<object[]> Equals_TestData()
         {
             yield return new object[] { new Version(2, 3), new Version(2, 3), true };
             yield return new object[] { new Version(2, 3), new Version(2, 4), false };
@@ -210,7 +210,7 @@ namespace System.Tests
             }
         }
 
-        private static IEnumerable<object[]> Parse_Valid_TestData()
+        public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             yield return new object[] { "1.2", new Version(1, 2) };
             yield return new object[] { "1.2.3", new Version(1, 2, 3) };
@@ -230,7 +230,7 @@ namespace System.Tests
             Assert.Equal(expected, version);
         }
 
-        private static IEnumerable<object[]> Parse_Invalid_TestData()
+        public static IEnumerable<object[]> Parse_Invalid_TestData()
         {
             yield return new object[] { null, typeof(ArgumentNullException) }; // Input is null
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Drawing.Imaging.Tests
@@ -316,10 +317,13 @@ namespace System.Drawing.Imaging.Tests
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(-1)]
         [InlineData(int.MinValue)]
+        // This test may depend on amount of RAM and system configuration and load.
         public void Ctor_Encoder_NegativeNumberOfValues_Type_Value_OutOfMemoryException(int numberOfValues)
         {
-            if (numberOfValues == -1 && PlatformDetection.IsUbuntu1710OrHigher) // [ActiveIssue(24274)]
-                return;
+            if (PlatformDetection.Is32BitProcess)
+            {
+                throw new SkipTestException("backwards compatibility on 32 bit platforms may not throw");
+            }
 
             IntPtr anyValue = IntPtr.Zero;
             EncoderParameterValueType anyTypw = EncoderParameterValueType.ValueTypeAscii;

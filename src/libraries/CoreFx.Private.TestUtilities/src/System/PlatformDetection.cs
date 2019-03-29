@@ -40,6 +40,7 @@ namespace System
         public static bool IsNotArmNorArm64Process => !IsArmOrArm64Process;
         public static bool IsArgIteratorSupported => IsWindows && IsNotArmProcess;
         public static bool IsArgIteratorNotSupported => !IsArgIteratorSupported;
+        public static bool Is32BitProcess => IntPtr.Size == 4;
 
         public static bool IsNotInAppContainer => !IsInAppContainer;
         public static bool IsWinRTSupported => IsWindows && !IsWindows7;

@@ -461,19 +461,19 @@ namespace System.Tests
 
         private delegate void NullableDelegate(int? s);
 
-        private enum ShortEnum : short
+        public enum ShortEnum : short
         {
             One = 1,
             Seven = 7,
         }
 
-        private enum IntEnum : int
+        public enum IntEnum : int
         {
             One = 1,
             Seven = 7,
         }
 
-        private enum U4 : uint
+        public enum U4 : uint
         {
             One = 1,
             Seven = 7,

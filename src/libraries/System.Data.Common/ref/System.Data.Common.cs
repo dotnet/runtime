@@ -183,6 +183,40 @@ namespace System.Data
         public void Remove(string name) { }
         public void RemoveAt(int index) { }
     }
+    public static partial class DataReaderExtensions
+    {
+        public static bool GetBoolean(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static byte GetByte(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static long GetBytes(this System.Data.Common.DbDataReader reader, string name, long dataOffset, byte[] buffer, int bufferOffset, int length) { throw null; }
+        public static char GetChar(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static long GetChars(this System.Data.Common.DbDataReader reader, string name, long dataOffset, char[] buffer, int bufferOffset, int length) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public static System.Data.Common.DbDataReader GetData(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static string GetDataTypeName(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static System.DateTime GetDateTime(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static decimal GetDecimal(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static double GetDouble(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static System.Type GetFieldType(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static T GetFieldValue<T>(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static System.Threading.Tasks.Task<T> GetFieldValueAsync<T>(
+            this System.Data.Common.DbDataReader reader, string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static float GetFloat(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static System.Guid GetGuid(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static short GetInt16(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static int GetInt32(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static long GetInt64(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public static System.Type GetProviderSpecificFieldType(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public static object GetProviderSpecificValue(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static System.IO.Stream GetStream(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static string GetString(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static System.IO.TextReader GetTextReader(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static object GetValue(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static bool IsDBNull(this System.Data.Common.DbDataReader reader, string name) { throw null; }
+        public static System.Threading.Tasks.Task<bool> IsDBNullAsync(
+            this System.Data.Common.DbDataReader reader, string name, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
     public partial class DataException : System.SystemException
     {
         public DataException() { }

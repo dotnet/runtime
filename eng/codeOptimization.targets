@@ -1,18 +1,19 @@
 <Project>
 
-  <PropertyGroup Condition="'$(ApplyPartialNgenOptimization)' == ''">
-     <ApplyPartialNgenOptimization Condition="'$(IsReferenceAssembly)' == 'true'">false</ApplyPartialNgenOptimization>
-     <ApplyPartialNgenOptimization Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' OR '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</ApplyPartialNgenOptimization>
+  <PropertyGroup Condition="'$(IsEligibleForNgenOptimization)' == ''">
+     <IsEligibleForNgenOptimization>true</IsEligibleForNgenOptimization>
+     <IsEligibleForNgenOptimization Condition="'$(IsReferenceAssembly)' == 'true'">false</IsEligibleForNgenOptimization>
+     <IsEligibleForNgenOptimization Condition="'$(GeneratePlatformNotSupportedAssembly)' == 'true' OR '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">false</IsEligibleForNgenOptimization>
   </PropertyGroup>
 
-  <Target Name="SetApplyPartialNgenOptimization"
-          Condition="'$(ApplyPartialNgenOptimization)' == ''"
+  <Target Name="SetApplyNgenOptimization"
+          Condition="'$(IsEligibleForNgenOptimization)' == 'true'"
           BeforeTargets="CoreCompile">
     <ItemGroup>
       <_optimizationDataAssembly Include="$(IbcOptimizationDataDir)**\$(TargetFileName)" />
     </ItemGroup>
     <PropertyGroup>
-      <ApplyPartialNgenOptimization Condition="'@(_optimizationDataAssembly)' != ''">true</ApplyPartialNgenOptimization>
+      <ApplyNgenOptimization Condition="'@(_optimizationDataAssembly)' != ''">full</ApplyNgenOptimization>
     </PropertyGroup>
   </Target>
 
