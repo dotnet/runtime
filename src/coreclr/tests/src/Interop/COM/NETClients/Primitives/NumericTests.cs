@@ -38,6 +38,7 @@ namespace NetClient
             this.Marshal_Float(a / 100f, b / 100f);
             this.Marshal_Double(a / 100.0, b / 100.0);
             this.Marshal_ManyInts();
+            this.Marshal_Struct_Return();
         }
 
         static private bool EqualByBound(float expected, float actual)
@@ -199,6 +200,40 @@ namespace NetClient
             expected = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12;
             Console.WriteLine($"{expected.GetType().Name} 12 test invariant: 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12 = {expected}");
             Assert.IsTrue(expected == this.server.Add_ManyInts12(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12));
+        }
+
+        private void Marshal_Struct_Return()
+        {
+            Console.WriteLine("Struct return from member function marshalling with struct > 4 bytes");
+            {
+                var width = 1.0f;
+                var height = 2.0f;
+                Server.Contract.SizeF result = this.server.MakeSize(width, height);
+                
+                Assert.AreEqual(width, result.width);
+                Assert.AreEqual(height, result.height);
+            }
+            Console.WriteLine("Struct return from member function marshalling with struct <= 4 bytes");
+            {
+                byte width = 1;
+                byte height = 2;
+                Server.Contract.Size result = this.server.MakeSizeSmall(width, height);
+                
+                Assert.AreEqual(width, result.width);
+                Assert.AreEqual(height, result.height);
+            }
+            Console.WriteLine("Struct return from member function marshalling with struct > 8 bytes");
+            {
+                var x = 1.0f;
+                var y = 2.0f;
+                var z = 3.0f;
+                var w = 4.0f;
+                Server.Contract.HFA_4 result = this.server.MakeHFA(x, y ,z, w);
+                Assert.AreEqual(x, result.x);
+                Assert.AreEqual(y, result.y);
+                Assert.AreEqual(z, result.z);
+                Assert.AreEqual(w, result.w);
+            }
         }
     }
 }
