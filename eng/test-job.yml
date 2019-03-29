@@ -169,9 +169,12 @@ jobs:
         ${{ if eq(parameters.testGroup, 'outerloop') }}:
           timeoutPerTestCollectionInMinutes: 60
           timeoutPerTestInMinutes: 10
-        ${{ if in(parameters.testGroup, 'outerloop-jitminopts-jitstress1-jitstress2', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
+        ${{ if in(parameters.testGroup, 'outerloop-jitminopts-jitstress1-jitstress2', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs') }}:
           timeoutPerTestCollectionInMinutes: 120
           timeoutPerTestInMinutes: 30
+        ${{ if in(parameters.testGroup, 'outerloop-gcstress0x3-gcstress0xc') }}:
+          timeoutPerTestCollectionInMinutes: 240
+          timeoutPerTestInMinutes: 60
 
         runCrossGen: ${{ parameters.readyToRun }}
 
