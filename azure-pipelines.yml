@@ -99,79 +99,74 @@ jobs:
     parameters:
       jobTemplate: build-job.yml
       buildConfig: debug
-      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-ci') }}:
-        platforms:
-        - Windows_NT_x64
-        - Windows_NT_x86
+      platforms:
+      - Windows_NT_x64
+      - Windows_NT_x86
 
 #
 # Debug builds - PullRequest & coreclr-outerloop
 #
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-outerloop')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: build-job.yml
       buildConfig: debug
-      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop') }}:
-        platforms:
-        - Linux_arm
-        - Linux_arm64
-        - Linux_musl_arm64
-        - Linux_musl_x64
-        - Linux_rhel6_x64
-        - Linux_x64
-        - OSX_x64
-        - Windows_NT_arm
-        - Windows_NT_arm64
+      platforms:
+      - Linux_arm
+      - Linux_arm64
+      - Linux_musl_arm64
+      - Linux_musl_x64
+      - Linux_rhel6_x64
+      - Linux_x64
+      - OSX_x64
+      - Windows_NT_arm
+      - Windows_NT_arm64
 
 #
 # Checked builds - coreclr-ci / innerloop
 #
-- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: build-job.yml
       buildConfig: checked
-      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-ci') }}:
-        platforms:
-        - Linux_arm
-        - Linux_arm64
-        - Linux_musl_arm64
-        - Linux_musl_x64
-        - Linux_x64
-        - OSX_x64
-        - Windows_NT_arm
-        - Windows_NT_arm64
-        - Windows_NT_x64
-        - Windows_NT_x86
+      platforms:
+      - Linux_arm
+      - Linux_arm64
+      - Linux_musl_arm64
+      - Linux_musl_x64
+      - Linux_x64
+      - OSX_x64
+      - Windows_NT_arm
+      - Windows_NT_arm64
+      - Windows_NT_x64
+      - Windows_NT_x86
 
 #
 # Checked builds - coreclr-outerloop
 #
-- ${{ if eq(variables['System.TeamProject'], 'public') }}:
-  - template: eng/platform-matrix.yml
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.DefinitionName'], 'coreclr-outerloop')) }}: 
+ - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: build-job.yml
       buildConfig: checked
-      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop') }}:
-        platforms:
-        - Linux_rhel6_x64
+      platforms:
+      - Linux_rhel6_x64
 
 #
 # Checked builds - gcstress
 #
-- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc') }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: build-job.yml
       buildConfig: checked
-      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc') }}:
-        platforms:
-        - Linux_arm
-        - Linux_arm64
-        - Linux_x64
-        - Windows_NT_x64
-        - Windows_NT_x86
+      platforms:
+      - Linux_arm
+      - Linux_arm64
+      - Linux_x64
+      - Windows_NT_x64
+      - Windows_NT_x86
 
 #
 # Release builds - PullRequest & coreclr-ci / innerloop
@@ -181,30 +176,28 @@ jobs:
     parameters:
       jobTemplate: build-job.yml
       buildConfig: release
-      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-ci') }}:
-        platforms:
-        - Linux_arm64
-        - Linux_musl_x64
-        - Linux_rhel6_x64
-        - Windows_NT_arm
-        - Windows_NT_arm64
-        - Windows_NT_x64
+      platforms:
+      - Linux_arm64
+      - Linux_musl_x64
+      - Linux_rhel6_x64
+      - Windows_NT_arm
+      - Windows_NT_arm64
+      - Windows_NT_x64
 
 #
 # Release builds - PullRequest & coreclr-outerloop
 #
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-outerloop') }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: build-job.yml
       buildConfig: release
-      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop') }}:
-        platforms:
-        - Linux_arm
-        - Linux_musl_arm64
-        - Linux_x64
-        - OSX_x64
-        - Windows_NT_x86
+      platforms:
+      - Linux_arm
+      - Linux_musl_arm64
+      - Linux_x64
+      - OSX_x64
+      - Windows_NT_x86
 
 #
 # Release builds (Official build) - non-PullRequest
