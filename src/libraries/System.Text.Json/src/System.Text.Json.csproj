@@ -108,6 +108,7 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Decimal.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Double.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Float.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.FormattedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Guid.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Helpers.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Literal.cs" />
@@ -120,6 +121,7 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Decimal.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Double.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Float.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.FormattedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Guid.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Helpers.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Literal.cs" />

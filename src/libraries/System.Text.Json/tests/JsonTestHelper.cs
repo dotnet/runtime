@@ -9,6 +9,7 @@ using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Text.Json.Tests
 {
@@ -578,23 +579,61 @@ namespace System.Text.Json.Tests
             }
         }
 
-        public delegate void AssertThrowsActionUt8fJsonReader(Utf8JsonReader json);
+        public delegate void AssertThrowsActionUtf8JsonReader(Utf8JsonReader json);
 
         // Cannot use standard Assert.Throws() when testing Utf8JsonReader - ref structs and closures don't get along.
-        public static void AssertThrows<E>(Utf8JsonReader json, AssertThrowsActionUt8fJsonReader action) where E : Exception
+        public static void AssertThrows<E>(Utf8JsonReader json, AssertThrowsActionUtf8JsonReader action) where E : Exception
         {
+            Exception ex;
+
             try
             {
                 action(json);
-                Assert.False(true, "Expected exception: " + typeof(E).GetType());
+                ex = null;
             }
-            catch (E ex)
+            catch (Exception e)
             {
-                Assert.IsType<E>(ex);
+                ex = e;
             }
-            catch (Exception wrongException)
+
+            if (ex == null)
             {
-                Assert.False(true, "Wrong exception thrown: Expected " + typeof(E).GetType() + ": Actual: " + wrongException.GetType());
+                throw new ThrowsException(typeof(E));
+            }
+
+            if (ex.GetType() != typeof(E))
+            {
+                throw new ThrowsException(typeof(E), ex);
+            }
+        }
+
+        public delegate void AssertThrowsActionUtf8JsonWriter(ref Utf8JsonWriter writer);
+
+        public static void AssertThrows<E>(
+            ref Utf8JsonWriter writer,
+            AssertThrowsActionUtf8JsonWriter action)
+            where E : Exception
+        {
+            Exception ex;
+
+            try
+            {
+                action(ref writer);
+                ex = null;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            if (ex == null)
+            {
+                throw new ThrowsException(typeof(E));
+            }
+
+            if (ex.GetType() != typeof(E))
+            {
+                throw new ThrowsException(typeof(E), ex);
             }
         }
     }
