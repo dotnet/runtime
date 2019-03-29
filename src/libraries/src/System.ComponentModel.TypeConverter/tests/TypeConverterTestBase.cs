@@ -9,11 +9,12 @@ using System.Linq;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public abstract class TypeConverterTestBase : RemoteExecutorTestBase
+    public abstract class TypeConverterTestBase
     {
         public abstract TypeConverter Converter { get; }
         public virtual IEnumerable<ConvertTest> ConvertToTestData() => Enumerable.Empty<ConvertTest>();
@@ -46,7 +47,7 @@ namespace System.ComponentModel.Tests
                 }
                 else
                 {
-                    RemoteInvoke((typeName, testString) =>
+                    RemoteExecutor.Invoke((typeName, testString) =>
                     {
                         // Deserialize the current test.
                         TypeConverterTestBase testBase = (TypeConverterTestBase)Activator.CreateInstance(Type.GetType(typeName));
@@ -65,7 +66,7 @@ namespace System.ComponentModel.Tests
                             Assert.Throws<NotSupportedException>(() => testBase.Converter.ConvertTo(test.Context, test.Culture, test.Source, test.DestinationType));
                         }
 
-                        return SuccessExitCode;
+                        return RemoteExecutor.SuccessExitCode;
                     }, this.GetType().AssemblyQualifiedName, convertTest.GetSerializedString()).Dispose();
                 }
             });
@@ -103,7 +104,7 @@ namespace System.ComponentModel.Tests
                 }
                 else
                 {
-                    RemoteInvoke((typeName, testString) =>
+                    RemoteExecutor.Invoke((typeName, testString) =>
                     {
                         // Deserialize the current test.
                         TypeConverterTestBase testBase = (TypeConverterTestBase)Activator.CreateInstance(Type.GetType(typeName));
@@ -125,7 +126,7 @@ namespace System.ComponentModel.Tests
                             AssertExtensions.Throws(test.NetCoreExceptionType, test.NetFrameworkExceptionType, () => testBase.Converter.ConvertFrom(test.Context, test.Culture, test.Source));
                         }
 
-                        return SuccessExitCode;
+                        return RemoteExecutor.SuccessExitCode;
                     }, this.GetType().AssemblyQualifiedName, convertTest.GetSerializedString()).Dispose();
                 }
             });

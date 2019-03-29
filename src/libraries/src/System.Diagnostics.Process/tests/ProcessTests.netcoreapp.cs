@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -352,7 +353,7 @@ namespace System.Diagnostics.Tests
                 Thread.Sleep(Timeout.Infinite);
 
                 // never reaches here -- but necessary to satisfy method's signature
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }
 
             void SendMessage(string message, string handleAsString)

@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.TextWriterTraceListenerTests
 {
-    public class ConsoleTraceListenerTests : RemoteExecutorTestBase
+    public class ConsoleTraceListenerTests
     {
         [Fact]
         public static void DefaultCtorPropertiesCheck()
@@ -42,7 +43,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         [InlineData(true)]
         public static void WriteExpectedOutput(bool value)
         {
-            RemoteInvoke((_value) =>
+            RemoteExecutor.Invoke((_value) =>
             {
                 string message = "Write this message please";
                 bool setErrorStream = bool.Parse(_value);
@@ -62,7 +63,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
                     }
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, value.ToString()).Dispose();
         }
 
@@ -71,7 +72,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         [InlineData(true)]
         public static void WriteLineExpectedOutput(bool value)
         {
-            RemoteInvoke((_value) =>
+            RemoteExecutor.Invoke((_value) =>
             {
                 string message = "A new message to the listener";
                 bool setErrorStream = bool.Parse(_value);
@@ -89,7 +90,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
                     }
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, value.ToString()).Dispose();
         }
     }

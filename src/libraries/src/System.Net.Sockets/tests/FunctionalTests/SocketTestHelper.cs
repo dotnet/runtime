@@ -279,7 +279,7 @@ namespace System.Net.Sockets.Tests
     // MemberDatas that are generally useful
     //
 
-    public abstract class MemberDatas : RemoteExecutorTestBase
+    public abstract class MemberDatas
     {
         public static readonly object[][] Loopbacks = new[]
         {

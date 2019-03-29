@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -40,7 +41,7 @@ namespace System.IO.Tests
         [Fact]
         public void NameReturnsUnknownForHandle()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
 

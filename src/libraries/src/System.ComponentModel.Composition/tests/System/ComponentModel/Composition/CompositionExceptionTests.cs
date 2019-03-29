@@ -12,12 +12,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.UnitTesting;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ComponentModel.Composition
 {
     [Serializable]
-    public class CompositionExceptionTests : RemoteExecutorTestBase
+    public class CompositionExceptionTests
     {
         [Fact]
         public void Constructor1_ShouldSetMessagePropertyToDefault()
@@ -369,7 +370,7 @@ namespace System.ComponentModel.Composition
         [Fact]
         public void Message_ShouldFormatCountOfRootCausesUsingTheCurrentCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 IEnumerable<CultureInfo> cultures = Expectations.GetCulturesForFormatting();
                 foreach (CultureInfo culture in cultures)
@@ -386,7 +387,7 @@ namespace System.ComponentModel.Composition
                         AssertMessage(exception, 1, culture);
                     }
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

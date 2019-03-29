@@ -3,12 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Tests
 {
-    public class GlobalProxySelectionTest : RemoteExecutorTestBase
+    public class GlobalProxySelectionTest
     {
         private class MyWebProxy : IWebProxy
         {
@@ -41,7 +41,7 @@ namespace System.Net.Tests
         [Fact]
         public void Select_Success()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var myProxy = new MyWebProxy();
 
@@ -88,7 +88,7 @@ namespace System.Net.Tests
                 Assert.True(GlobalProxySelection.Select.IsBypassed(null)); // This is true for EmptyWebProxy, but not for most proxies
 #pragma warning restore 0618
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

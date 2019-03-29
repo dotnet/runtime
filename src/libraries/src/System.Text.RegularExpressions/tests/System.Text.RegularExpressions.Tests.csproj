@@ -1,13 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{94B106C2-D574-4392-80AB-3EE308A078DF}</ProjectGuid>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
-    <!-- Temporary property to diagnose hanging test
-    <XunitShowProgress>true</XunitShowProgress>
-    <XunitMaxThreads>1</XunitMaxThreads>
-    -->
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CaptureCollectionTests.cs" />
@@ -30,9 +27,6 @@
     <Compile Include="..\src\System\Text\RegularExpressions\RegexParseError.cs">
       <Link>System\Text\RegularExpressions\RegexParseError.cs</Link>
     </Compile>
-    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
-      <Name>RemoteExecutorConsoleApp</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />

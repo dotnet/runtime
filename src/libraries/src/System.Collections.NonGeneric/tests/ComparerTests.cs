@@ -5,11 +5,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Collections.Tests
 {
-    public class ComparerTests : RemoteExecutorTestBase
+    public class ComparerTests
     {
         [Theory]
         [InlineData("b", "a", 1)]
@@ -38,7 +39,7 @@ namespace System.Collections.Tests
         [Fact]
         public void DefaultInvariant_Compare()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var cultureNames = new string[]
 {
@@ -73,7 +74,7 @@ namespace System.Collections.Tests
                     Assert.Equal(1, comp.Compare(string1[0], string2[0]));
                     Assert.Equal(-1, comp.Compare(string1[1], string2[1]));
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

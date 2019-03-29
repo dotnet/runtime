@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class ConverterTestBase : RemoteExecutorTestBase
+    public class ConverterTestBase
     {
         public static void CanConvertTo_WithContext(object[,] data, TypeConverter converter)
         {

@@ -32,11 +32,12 @@ using System.Xml;
 using System.Xml.Serialization;
 using System.Text;
 using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Data.Tests.SqlTypes
 {
-    public class SqlStringTest : RemoteExecutorTestBase
+    public class SqlStringTest
     {
         private SqlString _test1;
         private SqlString _test2;
@@ -172,7 +173,7 @@ namespace System.Data.Tests.SqlTypes
         [Fact]
         public void Properties()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-AU");
                 var one = new SqlString("First TestString");
@@ -196,7 +197,7 @@ namespace System.Data.Tests.SqlTypes
                 // Value
                 Assert.Equal("First TestString", one.Value);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

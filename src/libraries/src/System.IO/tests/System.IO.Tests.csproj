@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <RootNamespace>System.IO</RootNamespace>
-    <AssemblyName>System.IO.Tests</AssemblyName>
     <ProjectGuid>{492EC54D-D2C4-4B3F-AC1F-646B3F7EBB02}</ProjectGuid>
+    <RootNamespace>System.IO</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinaryReader\BinaryReaderTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
@@ -75,12 +75,6 @@
     <Compile Include="TextWriter\CharArrayTextWriter.cs" />
     <Compile Include="TextWriter\TextWriterTests.cs" />
     <Compile Include="TextWriter\TextWriterTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
-      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>RemoteExecutorConsoleApp</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

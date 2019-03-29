@@ -16,9 +16,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-
 using Microsoft.DotNet.XUnitExtensions;
-
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -593,7 +592,7 @@ namespace System.Net.Http.Functional.Tests
             // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
             // the same process as the other tests. Each test needs to be isolated to its own process.
             // See dicussion: https://github.com/dotnet/corefx/issues/21945
-            RemoteInvoke(async useSocketsHttpHandlerString =>
+            RemoteExecutor.Invoke(async useSocketsHttpHandlerString =>
             {
                 using (var client = CreateHttpClient(useSocketsHttpHandlerString))
                 {
@@ -603,7 +602,7 @@ namespace System.Net.Http.Functional.Tests
                         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
                     }
 
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }
             }, UseSocketsHttpHandler.ToString()).Dispose();
         }

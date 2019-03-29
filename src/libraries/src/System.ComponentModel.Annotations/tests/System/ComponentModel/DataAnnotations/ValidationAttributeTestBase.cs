@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.ComponentModel.DataAnnotations.Tests
 {
-    public abstract class ValidationAttributeTestBase : RemoteExecutorTestBase
+    public abstract class ValidationAttributeTestBase
     {
         protected abstract IEnumerable<TestCase> ValidValues();
         protected abstract IEnumerable<TestCase> InvalidValues();

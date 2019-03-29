@@ -7,11 +7,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class MutexTests : RemoteExecutorTestBase
+    public class MutexTests : FileCleanupTestBase
     {
         [Fact]
         public void Ctor_ConstructWaitRelease()
@@ -246,11 +247,11 @@ namespace System.Threading.Tests
 
                         IncrementValueInFileNTimes(mutex, f, 10);
                     }
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 };
 
                 using (var mutex = new Mutex(false, mutexName))
-                using (var remote = RemoteInvoke(otherProcess, mutexName, fileName))
+                using (var remote = RemoteExecutor.Invoke(otherProcess, mutexName, fileName))
                 {
                     SpinWait.SpinUntil(() => File.Exists(fileName), ThreadTestHelpers.UnexpectedTimeoutMilliseconds);
 

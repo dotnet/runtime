@@ -6,12 +6,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
-
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Http.Tests
 {
-    public class CacheControlHeaderValueTest : RemoteExecutorTestBase
+    public class CacheControlHeaderValueTest
     {
         [Fact]
         public void Properties_SetAndGetAllProperties_SetValueReturnedInGetter()
@@ -139,7 +139,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void ToString_NegativeValues_UsesMinusSignRegardlessOfCurrentCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var cacheControl = new CacheControlHeaderValue()
                 {

@@ -14,11 +14,12 @@ using System.ComponentModel.Design.Serialization;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class CultureInfoConverterTest : RemoteExecutorTestBase
+    public class CultureInfoConverterTest
     {
         private CultureInfoConverter converter => new CultureInfoConverter();
 
@@ -150,7 +151,7 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void ConvertFrom_Value_Null()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
 

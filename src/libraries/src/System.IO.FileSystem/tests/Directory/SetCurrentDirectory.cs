@@ -4,11 +4,12 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
 {
-    public sealed class Directory_SetCurrentDirectory : RemoteExecutorTestBase
+    public sealed class Directory_SetCurrentDirectory : FileCleanupTestBase
     {
         [Fact]
         public void Null_Path_Throws_ArgumentNullException()
@@ -31,7 +32,7 @@ namespace System.IO.Tests
         [Fact]
         public void SetToValidOtherDirectory()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Directory.SetCurrentDirectory(TestDirectory);
                 // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
@@ -41,7 +42,7 @@ namespace System.IO.Tests
                 {
                     Assert.Equal(TestDirectory, Directory.GetCurrentDirectory());
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -50,7 +51,7 @@ namespace System.IO.Tests
             [ConditionalFact(nameof(CanCreateSymbolicLinks))]
             public void SetToPathContainingSymLink()
             {
-                RemoteInvoke(() =>
+                RemoteExecutor.Invoke(() =>
                 {
                     var path = GetTestFilePath();
                     var linkPath = GetTestFilePath();
@@ -78,7 +79,7 @@ namespace System.IO.Tests
                     {
                         Assert.Equal(path, Directory.GetCurrentDirectory());
                     }
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }).Dispose();
             }
         }

@@ -15,6 +15,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -1116,7 +1117,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public void ConnectionsPooledThenDisposed_NoUnobservedTaskExceptions(bool secure)
         {
-            RemoteInvoke(async secureString =>
+            RemoteExecutor.Invoke(async secureString =>
             {
                 var releaseServer = new TaskCompletionSource<bool>();
                 await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -1150,7 +1151,7 @@ namespace System.Net.Http.Functional.Tests
                     await releaseServer.Task;
                 }),
                 new LoopbackServer.Options { UseSsl = bool.Parse(secureString) });
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, secure.ToString()).Dispose();
         }
 
@@ -1583,21 +1584,21 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("", true)]
         public void HttpClientHandler_SettingEnvironmentVariableChangesDefault(string envVarValue, bool expectedUseSocketsHandler)
         {
-            RemoteInvoke((innerEnvVarValue, innerExpectedUseSocketsHandler) =>
+            RemoteExecutor.Invoke((innerEnvVarValue, innerExpectedUseSocketsHandler) =>
             {
                 Environment.SetEnvironmentVariable(EnvironmentVariableSettingName, innerEnvVarValue);
                 using (var handler = new HttpClientHandler())
                 {
                     Assert.Equal(bool.Parse(innerExpectedUseSocketsHandler), IsSocketsHttpHandler(handler));
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, envVarValue, expectedUseSocketsHandler.ToString()).Dispose();
         }
 
         [Fact]
         public void HttpClientHandler_SettingAppContextChangesDefault()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 AppContext.SetSwitch(AppContextSettingName, isEnabled: true);
                 using (var handler = new HttpClientHandler())
@@ -1611,14 +1612,14 @@ namespace System.Net.Http.Functional.Tests
                     Assert.False(IsSocketsHttpHandler(handler));
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void HttpClientHandler_AppContextOverridesEnvironmentVariable()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Environment.SetEnvironmentVariable(EnvironmentVariableSettingName, "true");
                 using (var handler = new HttpClientHandler())
@@ -1639,7 +1640,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(IsSocketsHttpHandler(handler));
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
     }

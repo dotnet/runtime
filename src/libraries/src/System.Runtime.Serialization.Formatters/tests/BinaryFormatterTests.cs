@@ -14,11 +14,12 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
-    public partial class BinaryFormatterTests : RemoteExecutorTestBase
+    public partial class BinaryFormatterTests : FileCleanupTestBase
     {
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
@@ -504,7 +505,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
 
             // In another process, deserialize from that file and serialize to another
-            RemoteInvoke((remoteInput, remoteOutput) =>
+            RemoteExecutor.Invoke((remoteInput, remoteOutput) =>
             {
                 Assert.False(File.Exists(remoteOutput));
                 using (FileStream input = File.OpenRead(remoteInput))
@@ -512,7 +513,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 {
                     var b = new BinaryFormatter();
                     b.Serialize(output, b.Deserialize(input));
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }
             }, outputPath, inputPath).Dispose();
 

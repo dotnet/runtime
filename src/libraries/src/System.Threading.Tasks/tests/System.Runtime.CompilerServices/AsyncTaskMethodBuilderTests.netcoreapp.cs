@@ -7,17 +7,18 @@ using System.Diagnostics.Tracing;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Threading.Tasks.Tests
 {
-    public partial class AsyncTaskMethodBuilderTests : RemoteExecutorTestBase
+    public partial class AsyncTaskMethodBuilderTests
     {
         [OuterLoop]
         [Fact]
         public static void DroppedIncompleteStateMachine_RaisesIncompleteAsyncMethodEvent()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var listener = new TestEventListener("System.Threading.Tasks.TplEventSource", EventLevel.Verbose))
                 {
@@ -45,7 +46,7 @@ namespace System.Threading.Tasks.Tests
                     Assert.Contains("stored data", description);
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

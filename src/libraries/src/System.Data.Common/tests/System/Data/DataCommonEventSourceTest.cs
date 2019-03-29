@@ -5,17 +5,18 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Data.Tests
 {
-    public class DataCommonEventSourceTest : RemoteExecutorTestBase
+    public class DataCommonEventSourceTest
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InvokeCodeThatShouldFirEvents_EnsureEventsFired()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var listener = new TestEventListener("System.Data.DataCommonEventSource", EventLevel.Verbose))
                 {

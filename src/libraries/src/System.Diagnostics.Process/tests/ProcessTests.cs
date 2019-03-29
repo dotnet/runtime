@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 using Xunit.Sdk;
@@ -255,7 +256,7 @@ namespace System.Diagnostics.Tests
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["PATH"] = path;
             options.StartInfo.WorkingDirectory = wd;
-            RemoteInvoke(pathDirectory =>
+            RemoteExecutor.Invoke(pathDirectory =>
             {
                 // Create two identically named scripts, one in the working directory and one on PATH.
                 const int workingDirReturnValue = 1;
@@ -280,7 +281,7 @@ namespace System.Diagnostics.Tests
                     Assert.Equal(pathDirReturnValue, process.ExitCode);
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, path, options).Dispose();
         }
 
@@ -314,7 +315,7 @@ namespace System.Diagnostics.Tests
                 Process p = CreateProcessPortable(RemotelyInvokable.Dummy);
                 p.Start();
                 Assert.True(p.WaitForExit(WaitInMS));
-                Assert.Equal(SuccessExitCode, p.ExitCode);
+                Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
             }
 
             {
@@ -375,7 +376,7 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                IEnumerable<int> testProcessIds = Process.GetProcessesByName(HostRunnerName).Select(p => p.Id);
+                IEnumerable<int> testProcessIds = Process.GetProcessesByName(RemoteExecutor.HostRunnerName).Select(p => p.Id);
                 Assert.Contains(_process.Id, testProcessIds);
             }
         }
@@ -450,9 +451,9 @@ namespace System.Diagnostics.Tests
                 (s) => s;
 
             Assert.True(p.Modules.Count > 0);
-            Assert.Equal(normalize(HostRunnerName), normalize(p.MainModule.ModuleName));
-            Assert.EndsWith(normalize(HostRunnerName), normalize(p.MainModule.FileName));
-            Assert.Equal(normalize(string.Format("System.Diagnostics.ProcessModule ({0})", HostRunnerName)), normalize(p.MainModule.ToString()));
+            Assert.Equal(normalize(RemoteExecutor.HostRunnerName), normalize(p.MainModule.ModuleName));
+            Assert.EndsWith(normalize(RemoteExecutor.HostRunnerName), normalize(p.MainModule.FileName));
+            Assert.Equal(normalize(string.Format("System.Diagnostics.ProcessModule ({0})", RemoteExecutor.HostRunnerName)), normalize(p.MainModule.ToString()));
         }
 
         [Fact]
@@ -927,8 +928,7 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            string expected = PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative ? TestConsoleApp : HostRunner;
-            Assert.Equal(Path.GetFileNameWithoutExtension(expected), Path.GetFileNameWithoutExtension(_process.ProcessName), StringComparer.OrdinalIgnoreCase);
+            Assert.Equal(Path.GetFileNameWithoutExtension(RemoteExecutor.HostRunner), Path.GetFileNameWithoutExtension(_process.ProcessName), StringComparer.OrdinalIgnoreCase);
         }
 
         [Fact]
@@ -952,7 +952,7 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         public void Handle_CreateEvent_BlocksUntilProcessCompleted(bool useSafeHandle)
         {
-            using (RemoteInvokeHandle h = RemoteInvoke(() => Console.ReadLine(), new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardInput = true } }))
+            using (RemoteInvokeHandle h = RemoteExecutor.Invoke(() => Console.ReadLine(), new RemoteInvokeOptions { StartInfo = new ProcessStartInfo() { RedirectStandardInput = true } }))
             using (var mre = new ManualResetEvent(false))
             {
                 mre.SetSafeWaitHandle(new SafeWaitHandle(useSafeHandle ? h.Process.SafeHandle.DangerousGetHandle() : h.Process.Handle, ownsHandle: false));
@@ -961,7 +961,7 @@ namespace System.Diagnostics.Tests
 
                 h.Process.StandardInput.WriteLine(); // allow child to complete
 
-                Assert.True(mre.WaitOne(FailWaitTimeoutMilliseconds), "Event should have been set.");
+                Assert.True(mre.WaitOne(RemoteExecutor.FailWaitTimeoutMilliseconds), "Event should have been set.");
             }
         }
 
@@ -1232,7 +1232,7 @@ namespace System.Diagnostics.Tests
             process.Start();
 
             // Processes are not hosted by dotnet in the full .NET Framework.
-            string expectedFileName = PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative ? TestConsoleApp : RunnerName;
+            string expectedFileName = (PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative) ? RemoteExecutor.HostRunner : RemoteExecutor.HostRunner;
             Assert.Equal(expectedFileName, process.StartInfo.FileName);
 
             process.Kill();
@@ -1267,8 +1267,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void StartInfo_SetGet_ReturnsExpected()
         {
-            var process = new Process() { StartInfo = new ProcessStartInfo(TestConsoleApp) };
-            Assert.Equal(TestConsoleApp, process.StartInfo.FileName);
+            var process = new Process() { StartInfo = new ProcessStartInfo(RemoteExecutor.HostRunner) };
+            Assert.Equal(RemoteExecutor.HostRunner, process.StartInfo.FileName);
         }
 
         [Fact]
@@ -1323,7 +1323,7 @@ namespace System.Diagnostics.Tests
                 StartInfo = new ProcessStartInfo { RedirectStandardOutput = true }
             };
 
-            using (RemoteInvokeHandle handle = RemoteInvokeRaw((Func<string, string, string, int>)RemotelyInvokable.ConcatThreeArguments, inputArguments, options))
+            using (RemoteInvokeHandle handle = RemoteExecutor.InvokeRaw((Func<string, string, string, int>)RemotelyInvokable.ConcatThreeArguments, inputArguments, options))
             {
                 Assert.Equal(expectedArgv, handle.Process.StandardOutput.ReadToEnd());
             }
@@ -1428,7 +1428,7 @@ namespace System.Diagnostics.Tests
             using (Process process = CreateProcess(() =>
             {
                 Console.WriteLine("hello world");
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }))
             {
                 process.StartInfo.RedirectStandardOutput = true;
@@ -1477,7 +1477,7 @@ namespace System.Diagnostics.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void HandleCountChanges()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Process p = Process.GetCurrentProcess();
                 int handleCount = p.HandleCount;
@@ -1493,7 +1493,7 @@ namespace System.Diagnostics.Tests
                 p.Refresh();
                 int thirdHandleCount = p.HandleCount;
                 Assert.True(thirdHandleCount < handleCount);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

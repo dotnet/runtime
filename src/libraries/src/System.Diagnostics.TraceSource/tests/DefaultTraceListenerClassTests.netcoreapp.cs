@@ -6,16 +6,17 @@ using System.IO;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.TraceSourceTests
 {
-    public partial class DefaultTraceListenerClassTests : RemoteExecutorTestBase
+    public partial class DefaultTraceListenerClassTests
     {
         [Fact]
         public void EntryAssemblyName_Default_IncludedInTrace()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var listener = new TestDefaultTraceListener();
                 Trace.Listeners.Add(listener);
@@ -27,7 +28,7 @@ namespace System.Diagnostics.TraceSourceTests
         [Fact]
         public void EntryAssemblyName_Null_NotIncludedInTrace()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 MakeAssemblyGetEntryAssemblyReturnNull();
 

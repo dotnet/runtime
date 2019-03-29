@@ -29,11 +29,12 @@ using System.IO;
 using System.Diagnostics;
 using System.Globalization;
 using System.Xml;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Data.Tests
 {
-    public class DataSetReadXmlSchemaTest : RemoteExecutorTestBase
+    public class DataSetReadXmlSchemaTest
     {
         private DataSet CreateTestSet()
         {
@@ -296,7 +297,7 @@ namespace System.Data.Tests
         [Fact]
         public void LocaleOnRootWithoutIsDataSet()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("fi-FI");
                 string xs = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:msdata='urn:schemas-microsoft-com:xml-msdata'>
@@ -320,7 +321,7 @@ namespace System.Data.Tests
                 DataSetAssertion.AssertDataColumn("col1", dt.Columns[0], "Attr", true, false, 0, 1, "Attr", MappingType.Attribute, typeof(long), DBNull.Value, string.Empty, -1, string.Empty, 0, string.Empty, false, false);
                 DataSetAssertion.AssertDataColumn("col2", dt.Columns[1], "Child", false, false, 0, 1, "Child", MappingType.Element, typeof(string), DBNull.Value, string.Empty, -1, string.Empty, 1, string.Empty, false, false);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

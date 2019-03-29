@@ -4,11 +4,12 @@
 
 using System.Diagnostics;
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
-    public class Environment_Exit : RemoteExecutorTestBase
+    public class Environment_Exit
     {
         public static object[][] ExitCodeValues = new object[][]
         {
@@ -24,7 +25,7 @@ namespace System.Tests
         [MemberData(nameof(ExitCodeValues))]
         public static void CheckExitCode(int expectedExitCode)
         {
-            RemoteInvoke(s => int.Parse(s), expectedExitCode.ToString(), new RemoteInvokeOptions { ExpectedExitCode = expectedExitCode }).Dispose();
+            RemoteExecutor.Invoke(s => int.Parse(s), expectedExitCode.ToString(), new RemoteInvokeOptions { ExpectedExitCode = expectedExitCode }).Dispose();
         }
 
         [Theory]
@@ -55,7 +56,7 @@ namespace System.Tests
             }
             else
             {
-                psi.FileName = HostRunner;
+                psi.FileName = RemoteExecutor.HostRunner;
                 psi.Arguments = $"{AppName} {expectedExitCode} {mode}";
             }
 

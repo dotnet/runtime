@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Net.Test.Common;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpClientHandlerTestBase : RemoteExecutorTestBase
+    public abstract class HttpClientHandlerTestBase : FileCleanupTestBase
     {
         protected virtual bool UseSocketsHttpHandler => true;
         protected virtual bool UseHttp2LoopbackServer => false;

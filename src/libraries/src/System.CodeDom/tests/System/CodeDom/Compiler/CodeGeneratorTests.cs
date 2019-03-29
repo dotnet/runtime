@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.CodeDom.Compiler.Tests
 {
-    public class CodeGeneratorTests : RemoteExecutorTestBase
+    public class CodeGeneratorTests
     {
         public class Generator : CodeGenerator
         {

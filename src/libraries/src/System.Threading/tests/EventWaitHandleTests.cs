@@ -3,11 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class EventWaitHandleTests : RemoteExecutorTestBase
+    public class EventWaitHandleTests
     {
         [Theory]
         [InlineData(false, EventResetMode.AutoReset)]
@@ -195,12 +196,12 @@ namespace System.Threading.Tests
             // Create the two events and the other process with which to synchronize
             using (var inbound = new EventWaitHandle(true, mode, inboundName))
             using (var outbound = new EventWaitHandle(false, mode, outboundName))
-            using (var remote = RemoteInvoke(PingPong_OtherProcess, mode.ToString(), outboundName, inboundName))
+            using (var remote = RemoteExecutor.Invoke(PingPong_OtherProcess, mode.ToString(), outboundName, inboundName))
             {
                 // Repeatedly wait for one event and then set the other
                 for (int i = 0; i < 10; i++)
                 {
-                    Assert.True(inbound.WaitOne(FailWaitTimeoutMilliseconds));
+                    Assert.True(inbound.WaitOne(RemoteExecutor.FailWaitTimeoutMilliseconds));
                     if (mode == EventResetMode.ManualReset)
                     {
                         inbound.Reset();
@@ -221,7 +222,7 @@ namespace System.Threading.Tests
                 // Repeatedly wait for one event and then set the other
                 for (int i = 0; i < 10; i++)
                 {
-                    Assert.True(inbound.WaitOne(FailWaitTimeoutMilliseconds));
+                    Assert.True(inbound.WaitOne(RemoteExecutor.FailWaitTimeoutMilliseconds));
                     if (mode == EventResetMode.ManualReset)
                     {
                         inbound.Reset();
@@ -230,7 +231,7 @@ namespace System.Threading.Tests
                 }
             }
 
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }
 
         public static TheoryData<string> GetValidNames()

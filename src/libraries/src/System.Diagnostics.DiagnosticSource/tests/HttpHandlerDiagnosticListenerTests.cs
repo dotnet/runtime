@@ -17,7 +17,7 @@ namespace System.Diagnostics.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class HttpHandlerDiagnosticListenerTests : RemoteExecutorTestBase
+    public class HttpHandlerDiagnosticListenerTests
     {
         /// <summary>
         /// A simple test to make sure the Http Diagnostic Source is added into the list of DiagnosticListeners.

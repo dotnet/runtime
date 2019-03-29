@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 public class Outside
@@ -286,8 +287,7 @@ namespace System.Tests
         }
     }
 
-    public class TypeTestsExtended : RemoteExecutorTestBase
-    {
+    public class TypeTestsExtended    {
         public class ContextBoundClass : ContextBoundObject
         {
             public string Value = "The Value property.";
@@ -307,7 +307,7 @@ namespace System.Tests
         public void GetTypeByName()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
                {
                    string test1 = testtype;
                    Type t1 = Type.GetType(test1,
@@ -325,7 +325,7 @@ namespace System.Tests
                    Assert.NotNull(t2);
                    Assert.Equal(t1, t2);
 
-                   return SuccessExitCode;
+                   return RemoteExecutor.SuccessExitCode;
                }, options).Dispose();
         }
 
@@ -335,12 +335,12 @@ namespace System.Tests
         [InlineData("")]
         public void GetTypeByName_NoSuchType_ThrowsTypeLoadException(string typeName)
         {
-            RemoteInvoke(marshalledTypeName =>
+            RemoteExecutor.Invoke(marshalledTypeName =>
             {
                 Assert.Throws<TypeLoadException>(() => Type.GetType(marshalledTypeName, assemblyloader, typeloader, true));
                 Assert.Null(Type.GetType(marshalledTypeName, assemblyloader, typeloader, false));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, typeName).Dispose();
         }
 
@@ -349,7 +349,7 @@ namespace System.Tests
         public void GetTypeByNameCaseSensitiveTypeloadFailure()
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
                {
                    //Type load failure due to case sensitive search of type Ptogram
                    string test3 = "System.Collections.Generic.Dictionary`2[[Program, TestLoadAssembly], [program, TestLoadAssembly]]";
@@ -371,7 +371,7 @@ namespace System.Tests
 
                    Assert.Null(t2);
 
-                   return SuccessExitCode;
+                   return RemoteExecutor.SuccessExitCode;
                }, options).Dispose();
         }
 

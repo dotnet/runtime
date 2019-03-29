@@ -7,11 +7,12 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    public class NamedPipeTest_RunAsClient : RemoteExecutorTestBase
+    public class NamedPipeTest_RunAsClient
     {
         [DllImport("libc", SetLastError = true)]
         internal static extern unsafe int seteuid(uint euid);
@@ -31,7 +32,7 @@ namespace System.IO.Pipes.Tests
         {
             string pipeName = Path.GetRandomFileName();
             uint pairID = (uint)(Math.Abs(new Random(5125123).Next()));
-            RemoteInvoke(new Func<string, string, int>(ServerConnectAsId), pipeName, pairID.ToString()).Dispose();
+            RemoteExecutor.Invoke(new Func<string, string, int>(ServerConnectAsId), pipeName, pairID.ToString()).Dispose();
         }
 
         private static int ServerConnectAsId(string pipeName, string pairIDString)
@@ -39,7 +40,7 @@ namespace System.IO.Pipes.Tests
             uint pairID = uint.Parse(pairIDString);
             Assert.NotEqual(-1, seteuid(pairID));
             using (var outbound = new NamedPipeServerStream(pipeName, PipeDirection.Out))
-            using (var handle = RemoteInvoke(new Func<string, string, int>(ClientConnectAsID), pipeName, pairIDString))
+            using (var handle = RemoteExecutor.Invoke(new Func<string, string, int>(ClientConnectAsID), pipeName, pairIDString))
             {
                 // Connect as the unpriveleged user, but RunAsClient as the superuser
                 outbound.WaitForConnection();
@@ -54,7 +55,7 @@ namespace System.IO.Pipes.Tests
                 Assert.True(ran, "Expected delegate to have been invoked");
                 Assert.Equal(pairID, ranAs);
             }
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }
 
         private static int ClientConnectAsID(string pipeName, string pairIDString)
@@ -65,7 +66,7 @@ namespace System.IO.Pipes.Tests
                 Assert.NotEqual(-1, seteuid(pairID));
                 inbound.Connect();
             }
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }
     }
 }

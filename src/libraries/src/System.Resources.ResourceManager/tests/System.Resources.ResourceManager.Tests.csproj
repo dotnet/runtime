@@ -2,9 +2,10 @@
   <PropertyGroup>
     <ProjectGuid>{1D51A16C-B6D8-4E8F-98DE-21AD9A7062A1}</ProjectGuid>
     <RootNamespace>System.Resources.Tests</RootNamespace>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
-    <TestRuntime>true</TestRuntime>
     <BinPlaceSatelliteAssemblies>true</BinPlaceSatelliteAssemblies>
+    <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="MissingManifestResourceExceptionTests.cs" />
@@ -45,12 +46,6 @@
     <SupplementalTestData Include="Resources\TestResx.netstandard17.resources" />
     <SupplementalTestData Include="Resources\bitmap.bmp" />
     <SupplementalTestData Include="Resources\icon.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
-      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>RemoteExecutorConsoleApp</Name>
-    </ProjectReference>
   </ItemGroup>
   <!--
     MSBuild on .NET Core doesn't support non-string resources. See https://github.com/Microsoft/msbuild/issues/2221
