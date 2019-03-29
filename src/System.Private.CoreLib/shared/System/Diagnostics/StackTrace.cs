@@ -320,8 +320,8 @@ namespace System.Diagnostics
                         }
                     }
 
-                    if (sf.GetIsLastFrameFromForeignExceptionStackTrace() &&
-                        !isAsync) // Skip EDI boundary for async
+                    // Skip EDI boundary for async
+                    if (sf.IsLastFrameFromForeignExceptionStackTrace && !isAsync)
                     {
                         sb.Append(Environment.NewLine);
                         sb.Append(SR.Exception_EndStackTraceFromPreviousThrow);
