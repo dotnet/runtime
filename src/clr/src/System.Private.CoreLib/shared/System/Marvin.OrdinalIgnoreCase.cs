@@ -81,8 +81,8 @@ namespace System
             Debug.Assert(charsWritten == count); // invariant case conversion should involve simple folding; preserve code unit count
 
             // Slice the array to the size returned by ToUpperInvariant.
-            // Multiplication below may overflow, that's fine since it's going to an unsigned integer.
-            int hash = ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(scratch)), charsWritten * 2, p0, p1);
+            // Multiplication below will not overflow since going from positive Int32 to UInt32.
+            int hash = ComputeHash32(ref Unsafe.As<char, byte>(ref MemoryMarshal.GetReference(scratch)), (uint)charsWritten * 2, p0, p1);
 
             // Return the borrowed array if necessary.
             if (borrowedArr != null)

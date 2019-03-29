@@ -399,6 +399,8 @@ namespace System.Runtime.CompilerServices
         /// <typeparam name="TStateMachine">Specifies the type of the state machine.</typeparam>
         /// <param name="awaiter">The awaiter.</param>
         /// <param name="stateMachine">The state machine.</param>
+        // AggressiveOptimization to workaround boxing allocations in Tier0 until: https://github.com/dotnet/coreclr/issues/14474
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(
             ref TAwaiter awaiter, ref TStateMachine stateMachine)
             where TAwaiter : ICriticalNotifyCompletion
