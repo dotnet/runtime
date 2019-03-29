@@ -496,8 +496,6 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     noway_assert(jumpCnt >= 2);
 
     // Spill the argument to the switch node into a local so that it can be used later.
-    unsigned blockWeight = originalSwitchBB->getBBWeight(comp);
-
     LIR::Use use(switchBBRange, &(node->gtOp.gtOp1), node);
     ReplaceWithLclVar(use);
 
@@ -508,9 +506,8 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     assert(node->gtOper == GT_SWITCH);
     GenTree* temp = node->gtOp.gtOp1;
     assert(temp->gtOper == GT_LCL_VAR);
-    unsigned   tempLclNum  = temp->gtLclVarCommon.gtLclNum;
-    LclVarDsc* tempVarDsc  = comp->lvaTable + tempLclNum;
-    var_types  tempLclType = temp->TypeGet();
+    unsigned  tempLclNum  = temp->gtLclVarCommon.gtLclNum;
+    var_types tempLclType = temp->TypeGet();
 
     BasicBlock* defaultBB   = jumpTab[jumpCnt - 1];
     BasicBlock* followingBB = originalSwitchBB->bbNext;
@@ -2040,8 +2037,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
                 // This should not be a GT_PHI_ARG.
                 assert(treeNode->OperGet() != GT_PHI_ARG);
 
-                GenTreeLclVarCommon* lcl    = treeNode->AsLclVarCommon();
-                LclVarDsc*           lclVar = &comp->lvaTable[lcl->gtLclNum];
+                GenTreeLclVarCommon* lcl = treeNode->AsLclVarCommon();
 
                 // Fast tail calling criteria permits passing of structs of size 1, 2, 4 and 8 as args.
                 // It is possible that the callerArgLclNum corresponds to such a struct whose stack slot
@@ -2562,11 +2558,11 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 
 #if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
     GenTree*       op1      = cmp->gtGetOp1();
-    var_types      op1Type  = op1->TypeGet();
     GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
     ssize_t        op2Value = op2->IconValue();
 
 #ifdef _TARGET_XARCH_
+    var_types op1Type = op1->TypeGet();
     if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genSmallTypeCanRepresentValue(op1Type, op2Value))
     {
         //
@@ -3837,7 +3833,6 @@ GenTree* Lowering::LowerNonvirtPinvokeCall(GenTreeCall* call)
     // platform. They may be changed in the future such that they preserve all register values.
 
     GenTree* result = nullptr;
-    void*    addr   = nullptr;
 
     // assert we have seen one of these
     noway_assert(comp->info.compCallUnmanaged != 0);
@@ -4189,8 +4184,6 @@ bool Lowering::AreSourcesPossiblyModifiedLocals(GenTree* addr, GenTree* base, Ge
 {
     assert(addr != nullptr);
 
-    unsigned markCount = 0;
-
     SideEffectSet baseSideEffects;
     if (base != nullptr)
     {
@@ -4338,8 +4331,6 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
         return addr;
     }
 
-    GenTree* arrLength = nullptr;
-
     JITDUMP("Addressing mode:\n");
     JITDUMP("  Base\n    ");
     DISPNODE(base);
@@ -4399,8 +4390,6 @@ GenTree* Lowering::TryCreateAddrMode(LIR::Use&& use, bool isIndir)
 //
 GenTree* Lowering::LowerAdd(GenTree* node)
 {
-    GenTree* next = node->gtNext;
-
 #ifndef _TARGET_ARMARCH_
     if (varTypeIsIntegralOrI(node))
     {
@@ -4455,7 +4444,6 @@ bool Lowering::LowerUnsignedDivOrMod(GenTreeOp* divMod)
     assert(divMod->OperGet() != GT_UMOD);
 #endif // _TARGET_ARM64_
 
-    GenTree* next     = divMod->gtNext;
     GenTree* dividend = divMod->gtGetOp1();
     GenTree* divisor  = divMod->gtGetOp2();
 
@@ -4829,9 +4817,6 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 
     // We need to use the dividend node multiple times so its value needs to be
     // computed once and stored in a temp variable.
-
-    unsigned curBBWeight = comp->compCurBB->getBBWeight(comp);
-
     LIR::Use opDividend(BlockRange(), &divMod->gtOp.gtOp1, divMod);
     dividend = ReplaceWithLclVar(opDividend);
 
@@ -4908,10 +4893,7 @@ GenTree* Lowering::LowerConstIntDivOrMod(GenTree* node)
 GenTree* Lowering::LowerSignedDivOrMod(GenTree* node)
 {
     assert((node->OperGet() == GT_DIV) || (node->OperGet() == GT_MOD));
-    GenTree* next     = node->gtNext;
-    GenTree* divMod   = node;
-    GenTree* dividend = divMod->gtGetOp1();
-    GenTree* divisor  = divMod->gtGetOp2();
+    GenTree* next = node->gtNext;
 
     if (varTypeIsIntegral(node->TypeGet()))
     {
@@ -5068,9 +5050,8 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 GenTree* Lowering::LowerArrElem(GenTree* node)
 {
     // This will assert if we don't have an ArrElem node
-    GenTreeArrElem*     arrElem     = node->AsArrElem();
-    const unsigned char rank        = arrElem->gtArrElem.gtArrRank;
-    const unsigned      blockWeight = m_block->getBBWeight(comp);
+    GenTreeArrElem*     arrElem = node->AsArrElem();
+    const unsigned char rank    = arrElem->gtArrElem.gtArrRank;
 
     JITDUMP("Lowering ArrElem\n");
     JITDUMP("============\n");
@@ -5088,8 +5069,6 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
     GenTree* arrObjNode = arrElem->gtArrObj;
     assert(arrObjNode->IsLocal());
-
-    LclVarDsc* const varDsc = &comp->lvaTable[arrElem->gtArrObj->AsLclVarCommon()->gtLclNum];
 
     GenTree* insertionPoint = arrElem;
 
