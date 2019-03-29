@@ -106,13 +106,11 @@ xtest-%: prepare check-env dl-test-assets
 
 # these tests won't be included in `xtestall` (some of them crash runtime, some hang)
 EXCLUDED_COREFX_TESTS = \
-	System.Diagnostics.StackTrace.Tests \
 	System.Diagnostics.Tracing.Tests \
 	System.Net.Http.Functional.Tests \
 	System.Net.HttpListener.Tests \
 	System.Net.NameResolution.Functional.Tests \
-	System.Net.Sockets.Tests \
-	System.Threading.Timer.Tests
+	System.Net.Sockets.Tests
 
 xtestall: $(foreach workingtest, $(foreach test, $(wildcard assets/extracted/*), \
 		$(filter-out $(EXCLUDED_COREFX_TESTS), $(notdir $(test)))), $(addprefix xtest-, $(workingtest)))

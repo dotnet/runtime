@@ -1775,6 +1775,8 @@ ves_icall_get_frame_info (gint32 skip, MonoBoolean need_file_info,
 
 	MONO_ARCH_CONTEXT_DEF;
 
+	g_assert (skip >= 0);
+
 	if (mono_llvm_only) {
 		GSList *l, *ips;
 		MonoDomain *frame_domain;
