@@ -68,7 +68,11 @@ mono_mlist_alloc_checked (MonoObject *data, MonoError *error)
 	error_init (error);
 	MonoMList* res;
 	if (!monolist_item_vtable) {
+#ifdef ENABLE_NETCORE
+		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "Mono", "MonoListItem");
+#else
 		MonoClass *klass = mono_class_load_from_name (mono_defaults.corlib, "System", "MonoListItem");
+#endif
 		monolist_item_vtable = mono_class_vtable_checked (mono_get_root_domain (), klass, error);
 		mono_error_assert_ok  (error);
 	}

@@ -5239,6 +5239,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 		return 0;
 	}
 
+	if (!m_class_is_runtime_type (MONO_HANDLE_GET_CLASS (ref_type))) {
+		mono_error_set_argument (error, "type", "");
+		return 0;
+	}
+
 	char *fname = mono_string_handle_to_utf8 (field_name, error);
 	return_val_if_nok (error, 0);
 
@@ -5369,6 +5374,11 @@ ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src,
 {
 	MONO_CHECK_ARG_NULL (src,);
 	MONO_CHECK_ARG_NULL_HANDLE (type,);
+
+	if (!m_class_is_runtime_type (MONO_HANDLE_GET_CLASS (type))) {
+		mono_error_set_argument (error, "type", "");
+		return;
+	}
 
 	MonoClass *klass = mono_class_from_mono_type_handle (type);
 	if (!mono_class_init_checked (klass, error))

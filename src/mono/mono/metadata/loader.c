@@ -1845,7 +1845,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		MonoClass *handle_class;
 
 		result = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context, error);
-		mono_error_assert_ok (error);
+		return_val_if_nok (error, NULL);
 
 		// This checks the memberref type as well
 		if (result && handle_class != mono_defaults.methodhandle_class) {

@@ -1,0 +1,5 @@
+-nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.NewArrayBounds*
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableFloatToULongTest
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedFloatToNullableULongTest
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedFloatToULongTest
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableFloatToNullableULongTest

@@ -168,4 +168,10 @@ m_class_get_nullable_elem_class (MonoClass *klass)
 	return m_class_get_cast_class (klass);
 }
 
+static inline gboolean
+m_class_is_runtime_type (MonoClass *klass)
+{
+	return klass == mono_defaults.runtimetype_class;
+}
+
 #endif

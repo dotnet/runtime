@@ -2355,7 +2355,6 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionField *field, 
 
 	g_assert (field);
 	g_assert (obj);
-	g_assert (value);
 
 	f = field->field;
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (f->parent))) {
@@ -2364,10 +2363,12 @@ ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionField *field, 
 			valueHandle = MONO_HANDLE_NEW (MonoObject, value);
 		goto_if_nok (error, leave);
 		ves_icall_RuntimeFieldInfo_SetValueInternal (fieldHandle, objHandle, valueHandle, error);
-	} else if (MONO_TYPE_IS_REFERENCE (f->type))
+	} else if (MONO_TYPE_IS_REFERENCE (f->type)) {
 		mono_copy_value (f->type, (guint8*)obj->value + f->offset - sizeof (MonoObject), value, FALSE);
-	else
+	} else {
+		g_assert (value);
 		mono_copy_value (f->type, (guint8*)obj->value + f->offset - sizeof (MonoObject), mono_object_unbox_internal (value), FALSE);
+	}
 
 leave:
 	ICALL_RETURN ();
@@ -3770,7 +3771,8 @@ write_enum_value (void *mem, int type, guint64 value)
 {
 	switch (type) {
 	case MONO_TYPE_U1:
-	case MONO_TYPE_I1: {
+	case MONO_TYPE_I1:
+	case MONO_TYPE_BOOLEAN: {
 		guint8 *p = (guint8*)mem;
 		*p = value;
 		break;

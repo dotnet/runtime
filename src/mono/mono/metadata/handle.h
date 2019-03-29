@@ -460,6 +460,8 @@ This is why we evaluate index and value before any call to MONO_HANDLE_RAW or ot
 		MONO_HANDLE_SUPPRESS (mono_gc_wbarrier_generic_store_internal (mono_handle_unsafe_field_addr (__obj, __field), MONO_HANDLE_RAW (__value))); \
 	} while (0)
 
+#define MONO_HANDLE_GET_CLASS(handle) (MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoObject, (handle)), vtable)->klass)
+
 /* Baked typed handles we all want */
 TYPED_HANDLE_DECL (MonoString);
 TYPED_HANDLE_DECL (MonoArray);
