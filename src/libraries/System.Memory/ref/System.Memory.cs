@@ -160,6 +160,7 @@ namespace System.Buffers
         public ReadOnlySequence(T[] array, int start, int length) { throw null; }
         public System.SequencePosition End { get { throw null; } }
         public System.ReadOnlyMemory<T> First { get { throw null; } }
+        public System.ReadOnlySpan<T> FirstSpan { get { throw null; } }
         public bool IsEmpty { get { throw null; } }
         public bool IsSingleSegment { get { throw null; } }
         public long Length { get { throw null; } }
