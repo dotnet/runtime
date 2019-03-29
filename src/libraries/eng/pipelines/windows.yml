@@ -96,12 +96,6 @@ jobs:
               _framework: uap
               _helixQueues: $(uapNetfxQueues)
 
-            UAP_arm_Release:
-              _BuildConfig: Release
-              _architecture: arm
-              _framework: uap
-              _helixQueues: $(windowsArmQueue)
-
             UAPAOT_x86_Release:
               _BuildConfig: Release
               _architecture: x86
@@ -222,6 +216,11 @@ jobs:
                 _BuildConfig: Release
                 _architecture: arm
                 _framework: netcoreapp
+
+              UAP_arm_Release:
+                _BuildConfig: Release
+                _architecture: arm
+                _framework: uap
 
               UAPAOT_arm_Release:
                 _BuildConfig: Release

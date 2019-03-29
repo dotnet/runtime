@@ -558,8 +558,7 @@ namespace System.Net.Http
                 Http2Stream http2Stream = GetStream(frameHeader.StreamId);
                 if (http2Stream == null)
                 {
-                    // Don't wait for completion, which could happen asynchronously.
-                    Task ignored = SendRstStreamAsync(frameHeader.StreamId, Http2ProtocolErrorCode.StreamClosed);
+                    // Ignore invalid stream ID, as per RFC
                     return;
                 }
 

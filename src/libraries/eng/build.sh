@@ -79,7 +79,8 @@ while [[ $# > 0 ]]; do
       shift 2
       ;;
      -configuration|-c)
-      arguments="$arguments /p:ConfigurationGroup=$2 -configuration $2"
+      val="$(tr '[:lower:]' '[:upper:]' <<< ${2:0:1})${2:1}"
+      arguments="$arguments /p:ConfigurationGroup=$val -configuration $val"
       shift 2
       ;;
      -framework|-f)

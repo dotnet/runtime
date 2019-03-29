@@ -225,7 +225,7 @@ namespace System.Text.Json.Serialization
             }
 
             // A Type is considered a value if it implements IConvertible.
-            if (typeof(IConvertible).IsAssignableFrom(type))
+            if (typeof(IConvertible).IsAssignableFrom(type) || type == typeof(DateTimeOffset))
             {
                 return ClassType.Value;
             }

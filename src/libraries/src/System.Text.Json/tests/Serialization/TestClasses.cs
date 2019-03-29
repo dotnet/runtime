@@ -37,6 +37,7 @@ namespace System.Text.Json.Serialization.Tests
         public float MySingle { get; set; }
         public double MyDouble { get; set; }
         public DateTime MyDateTime { get; set; }
+        public DateTimeOffset MyDateTimeOffset { get; set; }
         public SampleEnum MyEnum { get; set; }
         public short[] MyInt16Array { get; set; }
         public int[] MyInt32Array { get; set; }
@@ -54,6 +55,7 @@ namespace System.Text.Json.Serialization.Tests
         public float[] MySingleArray { get; set; }
         public double[] MyDoubleArray { get; set; }
         public DateTime[] MyDateTimeArray { get; set; }
+        public DateTimeOffset[] MyDateTimeOffsetArray { get; set; }
         public SampleEnum[] MyEnumArray { get; set; }
 
         public static readonly string s_json =
@@ -74,6 +76,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDouble"" : 2.2," +
                 @"""MyDecimal"" : 3.3," +
                 @"""MyDateTime"" : ""2019-01-30T12:01:02.0000000Z""," +
+                @"""MyDateTimeOffset"" : ""2019-01-30T12:01:02.0000000+01:00""," +
                 @"""MyEnum"" : 2," + // int by default
                 @"""MyInt16Array"" : [1]," +
                 @"""MyInt32Array"" : [2]," +
@@ -91,6 +94,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDoubleArray"" : [2.2]," +
                 @"""MyDecimalArray"" : [3.3]," +
                 @"""MyDateTimeArray"" : [""2019-01-30T12:01:02.0000000Z""]," +
+                @"""MyDateTimeOffsetArray"" : [""2019-01-30T12:01:02.0000000+01:00""]," +
                 @"""MyEnumArray"" : [2]" + // int by default
                 @"}";
 
@@ -114,6 +118,7 @@ namespace System.Text.Json.Serialization.Tests
             MyDouble = 2.2d;
             MyDecimal = 3.3m;
             MyDateTime = new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc);
+            MyDateTimeOffset = new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0));
             MyEnum = SampleEnum.Two;
 
             MyInt16Array = new short[] { 1 };
@@ -132,6 +137,7 @@ namespace System.Text.Json.Serialization.Tests
             MyDoubleArray = new double[] { 2.2d };
             MyDecimalArray = new decimal[] { 3.3m };
             MyDateTimeArray = new DateTime[] { new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc) };
+            MyDateTimeOffsetArray = new DateTimeOffset[] { new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)) };
             MyEnumArray = new SampleEnum[] { SampleEnum.Two };
         }
 
@@ -153,6 +159,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1.1f, MySingle);
             Assert.Equal(2.2d, MyDouble);
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTime);
+            Assert.Equal(new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)), MyDateTimeOffset);
             Assert.Equal(SampleEnum.Two, MyEnum);
 
             Assert.Equal((short)1, MyInt16Array[0]);
@@ -171,6 +178,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1.1f, MySingleArray[0]);
             Assert.Equal(2.2d, MyDoubleArray[0]);
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTimeArray[0]);
+            Assert.Equal(new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)), MyDateTimeOffsetArray[0]);
             Assert.Equal(SampleEnum.Two, MyEnumArray[0]);
         }
     }
@@ -192,6 +200,7 @@ namespace System.Text.Json.Serialization.Tests
         public float? MySingle { get; set; }
         public double? MyDouble { get; set; }
         public DateTime? MyDateTime { get; set; }
+        public DateTimeOffset? MyDateTimeOffset { get; set; }
         public SampleEnum? MyEnum { get; set; }
     }
 
@@ -218,6 +227,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Null(MySingle);
             Assert.Null(MyDouble);
             Assert.Null(MyDateTime);
+            Assert.Null(MyDateTimeOffset);
             Assert.Null(MyEnum);
         }
         public static readonly string s_json =
@@ -237,6 +247,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDouble"" : null," +
                 @"""MyDecimal"" : null," +
                 @"""MyDateTime"" : null," +
+                @"""MyDateTimeOffset"" : null," +
                 @"""MyEnum"" : null" +
                 @"}";
 
@@ -262,6 +273,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDouble"" : 2.2," +
                 @"""MyDecimal"" : 3.3," +
                 @"""MyDateTime"" : ""2019-01-30T12:01:02.0000000Z""," +
+                @"""MyDateTimeOffset"" : ""2019-01-30T12:01:02.0000000+01:00""," +
                 @"""MyEnum"" : 2" + // int by default
                 @"}";
 
@@ -284,6 +296,7 @@ namespace System.Text.Json.Serialization.Tests
             MyDouble = 2.2d;
             MyDecimal = 3.3m;
             MyDateTime = new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc);
+            MyDateTimeOffset = new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0));
             MyEnum = SampleEnum.Two;
         }
 
@@ -304,6 +317,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(MySingle, 1.1f);
             Assert.Equal(MyDouble, 2.2d);
             Assert.Equal(MyDateTime, new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc));
+            Assert.Equal(MyDateTimeOffset, new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)));
             Assert.Equal(MyEnum, SampleEnum.Two);
         }
     }

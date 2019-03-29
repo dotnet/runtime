@@ -166,6 +166,12 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
     dst->BirthTime = 0;
     dst->BirthTimeNsec = 0;
 #endif
+
+#if defined(HAVE_STAT_FLAGS) && defined(UF_HIDDEN)
+    dst->UserFlags = ((src->st_flags & UF_HIDDEN) == UF_HIDDEN) ? PAL_UF_HIDDEN : 0;
+#else
+    dst->UserFlags = 0;
+#endif
 }
 
 int32_t SystemNative_Stat(const char* path, FileStatus* output)
@@ -1385,4 +1391,26 @@ int32_t SystemNative_LockFileRegion(intptr_t fd, int64_t offset, int64_t length,
     int32_t ret;
     while ((ret = fcntl (ToFileDescriptor(fd), F_SETLK, &lockArgs)) < 0 && errno == EINTR);
     return ret;
+}
+
+int32_t SystemNative_LChflags(const char* path, uint32_t flags)
+{
+#if HAVE_LCHFLAGS
+    int32_t result;
+    while ((result = lchflags(path, flags)) < 0 && errno == EINTR);
+    return result;
+#else
+    (void)path, (void)flags;
+    errno = ENOTSUP;
+    return -1;
+#endif
+}
+
+int32_t SystemNative_LChflagsCanSetHiddenFlag(void)
+{
+#if defined(UF_HIDDEN) && defined(HAVE_STAT_FLAGS) && defined(HAVE_LCHFLAGS)
+    return true;
+#else
+    return false;
+#endif
 }
