@@ -181,7 +181,7 @@ namespace System
             // TODO_UTF8STRING: Consider whether this should use a different seed than String.GetHashCode.
 
             ulong seed = Marvin.DefaultSeed;
-            return Marvin.ComputeHash32(ref DangerousGetMutableReference(), _length /* in bytes */, (uint)seed, (uint)(seed >> 32));
+            return Marvin.ComputeHash32(ref DangerousGetMutableReference(), (uint)_length /* in bytes */, (uint)seed, (uint)(seed >> 32));
         }
 
         /// <summary>
