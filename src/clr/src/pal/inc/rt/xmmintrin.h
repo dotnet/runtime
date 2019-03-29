@@ -27,12 +27,12 @@
 *===-----------------------------------------------------------------------===
 */
 
-#ifdef __clang__
+#ifdef __GNUC__
 
 typedef float __m128 __attribute__((__vector_size__(16)));
 
 /* Define the default attributes for the functions in this file. */
-#define __DEFAULT_FN_ATTRS __attribute__((__always_inline__, __nodebug__))
+#define __DEFAULT_FN_ATTRS __attribute__((__always_inline__, NODEBUG_ATTRIBUTE))
 
 /// \brief Loads a 128-bit floating-point vector of [4 x float] from an aligned
 ///    memory location.
@@ -113,4 +113,4 @@ _mm_store_ps(float *__p, __m128 __a)
     *(__m128*)__p = __a;
 }
 
-#endif // __clang__
+#endif // __GNUC__
