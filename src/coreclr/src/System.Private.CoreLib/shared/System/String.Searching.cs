@@ -19,7 +19,7 @@ namespace System
             return SpanHelpers.IndexOf(
                 ref _firstChar,
                 Length,
-                ref value._firstChar,
+                ref value!._firstChar,      // TODO-NULLABLE: Compiler Bug?
                 value.Length) >= 0;
         }
 

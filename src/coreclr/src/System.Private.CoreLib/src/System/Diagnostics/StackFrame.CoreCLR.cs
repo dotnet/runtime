@@ -3,23 +3,27 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text;
-using System;
-using System.IO;
-using System.Reflection;
 
 namespace System.Diagnostics
 {
-    /// <summary>
-    /// There is no good reason for the methods of this class to be virtual.
-    /// </summary>
     public partial class StackFrame
     {
         /// <summary>
         /// Called from the class "StackTrace"
         /// </summary>
-        internal StackFrame(bool DummyFlag1, bool DummyFlag2)
+        internal StackFrame(StackFrameHelper stackFrameHelper, int skipFrames, bool needFileInfo)
         {
-            InitMembers();
+            _method = stackFrameHelper.GetMethodBase(skipFrames);
+            _nativeOffset = stackFrameHelper.GetOffset(skipFrames);
+            _ilOffset = stackFrameHelper.GetILOffset(skipFrames);
+            _isLastFrameFromForeignExceptionStackTrace = stackFrameHelper.IsLastFrameFromForeignExceptionStackTrace(skipFrames);
+
+            if (needFileInfo)
+            {
+                _fileName = stackFrameHelper.GetFilename(skipFrames);
+                _lineNumber = stackFrameHelper.GetLineNumber(skipFrames);
+                _columnNumber = stackFrameHelper.GetColumnNumber(skipFrames);
+            }
         }
 
         private void BuildStackFrame(int skipFrames, bool needFileInfo)

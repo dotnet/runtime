@@ -618,21 +618,8 @@ inline void Compiler::impAppendStmt(GenTree* stmt, unsigned chkLevel)
                     // Since we don't know what it assigns to, we need to spill global refs.
                     spillGlobEffects = true;
                 }
-                else if (!expr->OperIsBlkOp())
+                else if ((lhs->gtFlags & GTF_GLOB_REF) != 0)
                 {
-                    // If we are assigning to a global ref, we have to spill global refs on stack
-                    if ((lhs->gtFlags & GTF_GLOB_REF) != 0)
-                    {
-                        spillGlobEffects = true;
-                    }
-                }
-                else if ((lhs->OperIsBlk() && !lhs->AsBlk()->HasGCPtr()) ||
-                         ((lhs->OperGet() == GT_LCL_VAR) &&
-                          (lvaTable[lhs->AsLclVarCommon()->gtLclNum].lvStructGcCount == 0)))
-                {
-                    // TODO-1stClassStructs: Previously, spillGlobEffects was set to true for
-                    // GT_INITBLK and GT_COPYBLK, but this is overly conservative, and should be
-                    // revisited. (Note that it was NOT set to true for GT_COPYOBJ.)
                     spillGlobEffects = true;
                 }
             }
@@ -1389,8 +1376,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     }
     if (dest == nullptr)
     {
-        // TODO-1stClassStructs: We shouldn't really need a block node as the destination
-        // if this is a known struct type.
         if (asgType == TYP_STRUCT)
         {
             dest = gtNewObjNode(structHnd, destAddr);
@@ -1400,10 +1385,6 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             // of a block assignment.
             dest->gtFlags &= ~GTF_GLOB_REF;
             dest->gtFlags |= (destAddr->gtFlags & GTF_GLOB_REF);
-        }
-        else if (varTypeIsStruct(asgType))
-        {
-            dest = new (this, GT_BLK) GenTreeBlk(GT_BLK, asgType, destAddr, genTypeSize(asgType));
         }
         else
         {
@@ -14527,9 +14508,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         assert(!"Unexpected fieldAccessor");
                 }
 
-                // Create the member assignment, unless we have a struct.
-                // TODO-1stClassStructs: This could be limited to TYP_STRUCT, to avoid extra copies.
-                bool deferStructAssign = varTypeIsStruct(lclTyp);
+                // Create the member assignment, unless we have a TYP_STRUCT.
+                bool deferStructAssign = (lclTyp == TYP_STRUCT);
 
                 if (!deferStructAssign)
                 {
@@ -16220,10 +16200,6 @@ GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HAND
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for small struct return."));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
     GenTree* ret = gtNewLclvNode(tmpNum, lvaTable[tmpNum].lvType);
-
-    // TODO-1stClassStructs: Handle constant propagation and CSE-ing of small struct returns.
-    ret->gtFlags |= GTF_DONT_CSE;
-
     return ret;
 }
 
