@@ -4712,22 +4712,28 @@ struct GenTreeObj : public GenTreeBlk
         }
     }
 
+    void Init()
+    {
+        // By default, an OBJ is assumed to be a global reference, unless it is local.
+        GenTreeLclVarCommon* lcl = Addr()->IsLocalAddrExpr();
+        if ((lcl == nullptr) || ((lcl->gtFlags & GTF_GLOB_EFFECT) != 0))
+        {
+            gtFlags |= GTF_GLOB_REF;
+        }
+        noway_assert(gtClass != NO_CLASS_HANDLE);
+        _gtGcPtrCount = UINT32_MAX;
+    }
+
     GenTreeObj(var_types type, GenTree* addr, CORINFO_CLASS_HANDLE cls, unsigned size)
         : GenTreeBlk(GT_OBJ, type, addr, size), gtClass(cls)
     {
-        // By default, an OBJ is assumed to be a global reference.
-        gtFlags |= GTF_GLOB_REF;
-        noway_assert(cls != NO_CLASS_HANDLE);
-        _gtGcPtrCount = UINT32_MAX;
+        Init();
     }
 
     GenTreeObj(var_types type, GenTree* addr, GenTree* data, CORINFO_CLASS_HANDLE cls, unsigned size)
         : GenTreeBlk(GT_STORE_OBJ, type, addr, data, size), gtClass(cls)
     {
-        // By default, an OBJ is assumed to be a global reference.
-        gtFlags |= GTF_GLOB_REF;
-        noway_assert(cls != NO_CLASS_HANDLE);
-        _gtGcPtrCount = UINT32_MAX;
+        Init();
     }
 
 #if DEBUGGABLE_GENTREE
