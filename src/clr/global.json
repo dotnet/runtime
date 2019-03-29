@@ -7,7 +7,7 @@
     "python": "2.7.15"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.19177.11",
-    "Microsoft.DotNet.Helix.Sdk": "2.0.0-beta.19177.11"
+    "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.19179.1",
+    "Microsoft.DotNet.Helix.Sdk": "2.0.0-beta.19179.1"
   }
 }
