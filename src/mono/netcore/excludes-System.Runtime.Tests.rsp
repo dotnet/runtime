@@ -102,3 +102,6 @@
 -nomethod System.Tests.ActivatorTests.CreateInstance_InvalidType_ThrowsNotSupportedException
 -nomethod System.Tests.ArrayTests.CreateInstance_NotSupportedType_ThrowsNotSupportedException
 -noclass System.Reflection.Tests.PointerTests
+
+# causes 'error: Return type can't be a byref type Parameter name: returnType':
+-nomethod System.Tests.Types.VoidTests.IsByRef_Get_ReturnsExpected
