@@ -15,7 +15,7 @@ public:
     Rationalizer(Compiler* comp);
 
 #ifdef DEBUG
-    static void ValidateStatement(GenTree* tree, BasicBlock* block);
+    static void ValidateStatement(GenTreeStmt* stmt, BasicBlock* block);
 
     // general purpose sanity checking of de facto standard GenTree
     void SanityCheck();

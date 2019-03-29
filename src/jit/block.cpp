@@ -631,9 +631,9 @@ bool BasicBlock::CloneBlockState(
     to->bbTgtStkDepth = from->bbTgtStkDepth;
 #endif // DEBUG
 
-    for (GenTree* fromStmt = from->bbTreeList; fromStmt != nullptr; fromStmt = fromStmt->gtNext)
+    for (GenTreeStmt* fromStmt = from->firstStmt(); fromStmt != nullptr; fromStmt = fromStmt->getNextStmt())
     {
-        auto newExpr = compiler->gtCloneExpr(fromStmt->gtStmt.gtStmtExpr, 0, varNum, varVal);
+        auto newExpr = compiler->gtCloneExpr(fromStmt->gtStmtExpr, 0, varNum, varVal);
         if (!newExpr)
         {
             // gtCloneExpr doesn't handle all opcodes, so may fail to clone a statement.
@@ -809,37 +809,37 @@ bool BasicBlock::isEmpty()
 
 GenTreeStmt* BasicBlock::FirstNonPhiDef()
 {
-    GenTree* stmt = bbTreeList;
+    GenTreeStmt* stmt = firstStmt();
     if (stmt == nullptr)
     {
         return nullptr;
     }
-    GenTree* tree = stmt->gtStmt.gtStmtExpr;
+    GenTree* tree = stmt->gtStmtExpr;
     while ((tree->OperGet() == GT_ASG && tree->gtOp.gtOp2->OperGet() == GT_PHI) ||
            (tree->OperGet() == GT_STORE_LCL_VAR && tree->gtOp.gtOp1->OperGet() == GT_PHI))
     {
-        stmt = stmt->gtNext;
+        stmt = stmt->getNextStmt();
         if (stmt == nullptr)
         {
             return nullptr;
         }
-        tree = stmt->gtStmt.gtStmtExpr;
+        tree = stmt->gtStmtExpr;
     }
-    return stmt->AsStmt();
+    return stmt;
 }
 
-GenTree* BasicBlock::FirstNonPhiDefOrCatchArgAsg()
+GenTreeStmt* BasicBlock::FirstNonPhiDefOrCatchArgAsg()
 {
-    GenTree* stmt = FirstNonPhiDef();
+    GenTreeStmt* stmt = FirstNonPhiDef();
     if (stmt == nullptr)
     {
         return nullptr;
     }
-    GenTree* tree = stmt->gtStmt.gtStmtExpr;
+    GenTree* tree = stmt->gtStmtExpr;
     if ((tree->OperGet() == GT_ASG && tree->gtOp.gtOp2->OperGet() == GT_CATCH_ARG) ||
         (tree->OperGet() == GT_STORE_LCL_VAR && tree->gtOp.gtOp1->OperGet() == GT_CATCH_ARG))
     {
-        stmt = stmt->gtNext;
+        stmt = stmt->getNextStmt();
     }
     return stmt;
 }
