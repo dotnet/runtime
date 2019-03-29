@@ -64,57 +64,58 @@ size_t index_of_non_numeric(const pal::string_t& str, unsigned i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 pal::string_t get_dotnet_root_env_var_name();
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
+void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg);
 
 // Helper class to make it easy to propagate error writer to the hostpolicy
 class propagate_error_writer_t
 {
 public:
-	typedef trace::error_writer_fn(*set_error_writer_fn)(trace::error_writer_fn error_writer);
+    typedef trace::error_writer_fn(*set_error_writer_fn)(trace::error_writer_fn error_writer);
 
 private:
-	set_error_writer_fn m_set_error_writer;
-	bool m_error_writer_set;
+    set_error_writer_fn m_set_error_writer;
+    bool m_error_writer_set;
 
 public:
-	propagate_error_writer_t(set_error_writer_fn set_error_writer)
-	{
-		m_set_error_writer = set_error_writer;
-		m_error_writer_set = false;
+    propagate_error_writer_t(set_error_writer_fn set_error_writer)
+    {
+        m_set_error_writer = set_error_writer;
+        m_error_writer_set = false;
 
-		trace::error_writer_fn error_writer = trace::get_error_writer();
-		if (error_writer != nullptr && m_set_error_writer != nullptr)
-		{
-			m_set_error_writer(error_writer);
-			m_error_writer_set = true;
-		}
-	}
+        trace::error_writer_fn error_writer = trace::get_error_writer();
+        if (error_writer != nullptr && m_set_error_writer != nullptr)
+        {
+            m_set_error_writer(error_writer);
+            m_error_writer_set = true;
+        }
+    }
 
-	~propagate_error_writer_t()
-	{
-		if (m_error_writer_set && m_set_error_writer != nullptr)
-		{
-			m_set_error_writer(nullptr);
-			m_error_writer_set = false;
-		}
-	}
+    ~propagate_error_writer_t()
+    {
+        if (m_error_writer_set && m_set_error_writer != nullptr)
+        {
+            m_set_error_writer(nullptr);
+            m_error_writer_set = false;
+        }
+    }
 };
 
 // Helper class to make it easy to change the error writer within a specific scope only.
 class error_writer_scope_t
 {
 private:
-	trace::error_writer_fn m_old_error_writer;
+    trace::error_writer_fn m_old_error_writer;
 
 public:
-	error_writer_scope_t(trace::error_writer_fn new_error_writer)
-	{
-		m_old_error_writer = trace::set_error_writer(new_error_writer);
-	}
+    error_writer_scope_t(trace::error_writer_fn new_error_writer)
+    {
+        m_old_error_writer = trace::set_error_writer(new_error_writer);
+    }
 
-	~error_writer_scope_t()
-	{
-		trace::set_error_writer(m_old_error_writer);
-	}
+    ~error_writer_scope_t()
+    {
+        trace::set_error_writer(m_old_error_writer);
+    }
 };
 
 #endif

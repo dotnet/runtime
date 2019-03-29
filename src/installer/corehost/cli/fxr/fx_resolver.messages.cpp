@@ -2,20 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include <cassert>
+#include "fx_resolver.h"
 #include "framework_info.h"
-#include "fx_definition.h"
-#include "fx_muxer.h"
-#include "fx_reference.h"
-#include "fx_ver.h"
-#include "pal.h"
-#include "trace.h"
 
 /**
 * When the framework is referenced more than once in a non-compatible way, display detailed error message
 *   about available frameworks and installation of new framework.
 */
-void fx_muxer_t::display_incompatible_framework_error(
+void fx_resolver_t::display_incompatible_framework_error(
     const pal::string_t& higher,
     const fx_reference_t& lower)
 {
@@ -30,7 +24,7 @@ void fx_muxer_t::display_incompatible_framework_error(
         higher.c_str());
 }
 
-void fx_muxer_t::display_compatible_framework_trace(
+void fx_resolver_t::display_compatible_framework_trace(
     const pal::string_t& higher,
     const fx_reference_t& lower)
 {
@@ -48,7 +42,7 @@ void fx_muxer_t::display_compatible_framework_trace(
     }
 }
 
-void fx_muxer_t::display_retry_framework_trace(
+void fx_resolver_t::display_retry_framework_trace(
     const fx_reference_t& fx_existing,
     const fx_reference_t& fx_new)
 {
@@ -66,10 +60,9 @@ void fx_muxer_t::display_retry_framework_trace(
     }
 }
 
-void fx_muxer_t::display_summary_of_frameworks(
+void fx_resolver_t::display_summary_of_frameworks(
     const fx_definition_vector_t& fx_definitions,
-    const fx_name_to_fx_reference_map_t& newest_references
-)
+    const fx_name_to_fx_reference_map_t& newest_references)
 {
     if (trace::is_enabled())
     {
@@ -100,4 +93,58 @@ void fx_muxer_t::display_summary_of_frameworks(
             }
         }
     }
+}
+
+/**
+* When the framework is not found, display detailed error message
+*   about available frameworks and installation of new framework.
+*/
+void fx_resolver_t::display_missing_framework_error(
+    const pal::string_t& fx_name,
+    const pal::string_t& fx_version,
+    const pal::string_t& fx_dir,
+    const pal::string_t& dotnet_root)
+{
+    std::vector<framework_info> framework_infos;
+    pal::string_t fx_ver_dirs;
+    if (fx_dir.length())
+    {
+        fx_ver_dirs = fx_dir;
+        framework_info::get_all_framework_infos(get_directory(fx_dir), fx_name, &framework_infos);
+    }
+    else
+    {
+        fx_ver_dirs = dotnet_root;
+    }
+
+    framework_info::get_all_framework_infos(dotnet_root, fx_name, &framework_infos);
+
+    // Display the error message about missing FX.
+    if (fx_version.length())
+    {
+        trace::error(_X("The specified framework '%s', version '%s' was not found."), fx_name.c_str(), fx_version.c_str());
+    }
+    else
+    {
+        trace::error(_X("The specified framework '%s' was not found."), fx_name.c_str());
+    }
+
+    if (framework_infos.size())
+    {
+        trace::error(_X("  - The following frameworks were found:"));
+        for (const framework_info& info : framework_infos)
+        {
+            trace::error(_X("      %s at [%s]"), info.version.as_str().c_str(), info.path.c_str());
+        }
+    }
+    else
+    {
+        trace::error(_X("  - No frameworks were found."));
+    }
+
+    trace::error(_X(""));
+    trace::error(_X("You can resolve the problem by installing the specified framework and/or SDK."));
+    trace::error(_X(""));
+    trace::error(_X("The .NET Core frameworks can be found at:"));
+    trace::error(_X("  - %s"), DOTNET_CORE_DOWNLOAD_URL);
 }
