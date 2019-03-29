@@ -2237,8 +2237,14 @@
 
 <HRESULT NumericValue="0x8013200A">
 	<SymbolicName>CLR_E_GC_BAD_AFFINITY_CONFIG</SymbolicName>
-	<Message>"GC affinity mask or set doesn't contain any CPUs the current process is affinitized to."</Message>
+	<Message>"GCHeapAffinitizeMask or GCHeapAffinitizeRanges didn't specify any CPUs the current process is affinitized to."</Message>
 	<Comment>During a GC initialization, the affinity mask specified via GCHeapAffinitizeMask or GCHeapAffinitizeRanges didn't contain any CPUs the current process is affinitized to.</Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x8013200B">
+	<SymbolicName>CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT</SymbolicName>
+	<Message>"GCHeapAffinitizeRanges configuration string has invalid format."</Message>
+	<Comment>During a GC initialization, the GCHeapAffinitizeRanges config couldn't be parsed due to its invalid format.</Comment>
 </HRESULT>
 
 <HRESULT NumericValue="E_ACCESSDENIED">
