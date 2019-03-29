@@ -1076,7 +1076,7 @@ struct BasicBlock : private LIR::Range
     // Returns the first statement in the statement list of "this" that is
     // not an SSA definition (a lcl = phi(...) assignment).
     GenTreeStmt* FirstNonPhiDef();
-    GenTree*     FirstNonPhiDefOrCatchArgAsg();
+    GenTreeStmt* FirstNonPhiDefOrCatchArgAsg();
 
     BasicBlock() : bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
     {
