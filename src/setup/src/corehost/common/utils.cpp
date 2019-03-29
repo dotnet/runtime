@@ -430,3 +430,18 @@ pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal:
     deps_file.append(_X(".deps.json"));
     return deps_file;
 }
+
+void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg)
+{
+    auto json_path = path;
+    auto json_name = name + _X(".runtimeconfig.json");
+    append_path(&json_path, json_name.c_str());
+    cfg->assign(json_path);
+
+    auto dev_json_path = path;
+    auto dev_json_name = name + _X(".runtimeconfig.dev.json");
+    append_path(&dev_json_path, dev_json_name.c_str());
+    dev_cfg->assign(dev_json_path);
+
+    trace::verbose(_X("Runtime config is cfg=%s dev=%s"), json_path.c_str(), dev_json_path.c_str());
+}

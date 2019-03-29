@@ -13,8 +13,6 @@ struct host_startup_info_t;
 #include "host_startup_info.h"
 #include "error_codes.h"
 
-const int Max_Framework_Resolve_Retries = 100;
-
 enum class coreclr_delegate_type
 {
     invalid,
@@ -97,53 +95,5 @@ private:
         const pal::string_t& specified_deps_file,
         const std::vector<pal::string_t>& probe_realpaths,
         pal::string_t* impl_dir);
-    static fx_ver_t resolve_framework_version(
-        const std::vector<fx_ver_t>& version_list,
-        const pal::string_t& fx_ver,
-        const fx_ver_t& specified,
-        bool patch_roll_fwd,
-        roll_fwd_on_no_candidate_fx_option roll_fwd_on_no_candidate_fx);
-    static StatusCode read_framework(
-        const host_startup_info_t& host_info,
-        const fx_reference_t& override_settings,
-        const runtime_config_t& config,
-        fx_name_to_fx_reference_map_t& newest_references,
-        fx_name_to_fx_reference_map_t& oldest_references,
-        fx_definition_vector_t& fx_definitions);
-    static StatusCode resolve_frameworks_for_app(
-        const host_startup_info_t& host_info,
-        const fx_reference_t& override_settings,
-        const runtime_config_t& app_config,
-        fx_definition_vector_t& fx_definitions);
-    static fx_definition_t* resolve_fx(
-        const fx_reference_t& config,
-        const pal::string_t& oldest_requested_version,
-        const pal::string_t& dotnet_dir);
     static void muxer_usage(bool is_sdk_present);
-    static StatusCode soft_roll_forward_helper(
-        const fx_reference_t& newer,
-        const fx_reference_t& older,
-        bool older_is_hard_roll_forward,
-        fx_name_to_fx_reference_map_t& newest_references);
-    static StatusCode soft_roll_forward(
-        const fx_reference_t existing_ref,
-        bool current_is_hard_roll_forward,
-        fx_name_to_fx_reference_map_t& newest_references);
-    static void display_missing_framework_error(
-        const pal::string_t& fx_name,
-        const pal::string_t& fx_version,
-        const pal::string_t& fx_dir,
-        const pal::string_t& dotnet_root);
-    static void display_incompatible_framework_error(
-        const pal::string_t& higher,
-        const fx_reference_t& lower);
-    static void display_compatible_framework_trace(
-        const pal::string_t& higher,
-        const fx_reference_t& lower);
-    static void display_retry_framework_trace(
-        const fx_reference_t& fx_existing,
-        const fx_reference_t& fx_new);
-    static void display_summary_of_frameworks(
-        const fx_definition_vector_t& fx_definitions,
-        const fx_name_to_fx_reference_map_t& newest_references);
 };

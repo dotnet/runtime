@@ -27,7 +27,8 @@ set(SOURCES
     ./hostfxr.cpp
     ./fx_ver.cpp
     ./fx_muxer.cpp
-    ./fx_muxer.messages.cpp
+	./fx_resolver.cpp
+    ./fx_resolver.messages.cpp
     ./framework_info.cpp
     ./sdk_info.cpp
     ./sdk_resolver.cpp
@@ -45,6 +46,7 @@ set(HEADERS
     ./corehost_init.h
     ./fx_ver.h
     ./fx_muxer.h
+    ./fx_resolver.h
     ./framework_info.h
     ./sdk_info.h
     ./sdk_resolver.h
