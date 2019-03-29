@@ -5,11 +5,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class RegionInfoPropertyTests : RemoteExecutorTestBase
+    public class RegionInfoPropertyTests
     {
         [Theory]
         [InlineData("US", "US", "US")]
@@ -53,7 +54,7 @@ namespace System.Globalization.Tests
         [Fact]
         public void CurrentRegion()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
@@ -61,7 +62,7 @@ namespace System.Globalization.Tests
                 Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
                 Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -69,12 +70,12 @@ namespace System.Globalization.Tests
         [InlineData("en-US", "United States")]
         public void DisplayName(string name, string expected)
         {
-            RemoteInvoke((string _name, string _expected) =>
+            RemoteExecutor.Invoke((string _name, string _expected) =>
             {
                 CultureInfo.CurrentUICulture = new CultureInfo(_name);
                 Assert.Equal(_expected, new RegionInfo(_name).DisplayName);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, name, expected).Dispose();
         }
 

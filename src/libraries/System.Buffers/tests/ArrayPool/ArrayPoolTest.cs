@@ -5,10 +5,11 @@
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 
 namespace System.Buffers.ArrayPool.Tests
 {
-    public abstract class ArrayPoolTest : RemoteExecutorTestBase
+    public abstract class ArrayPoolTest
     {
         protected const string TrimSwitchName = "DOTNET_SYSTEM_BUFFERS_ARRAYPOOL_TRIMSHARED";
 
@@ -41,12 +42,12 @@ namespace System.Buffers.ArrayPool.Tests
             options.StartInfo.UseShellExecute = false;
             options.StartInfo.EnvironmentVariables.Add(TrimSwitchName, trim.ToString());
 
-            RemoteInvoke(action).Dispose();
+            RemoteExecutor.Invoke(action).Dispose();
         }
 
-        protected static void RemoteInvokeWithTrimming(Func<string, int> method, bool trim = false, int timeout = FailWaitTimeoutMilliseconds)
+        protected static void RemoteInvokeWithTrimming(Func<string, int> method, bool trim = false, int timeout = RemoteExecutor.FailWaitTimeoutMilliseconds)
         {
-            RemoteInvokeOptions options = new RemoteInvokeOptions
+            var options = new RemoteInvokeOptions
             {
                 TimeOut = timeout
             };
@@ -54,7 +55,7 @@ namespace System.Buffers.ArrayPool.Tests
             options.StartInfo.UseShellExecute = false;
             options.StartInfo.EnvironmentVariables.Add(TrimSwitchName, trim.ToString());
 
-            RemoteInvoke(method, trim.ToString(), options).Dispose();
+            RemoteExecutor.Invoke(method, trim.ToString(), options).Dispose();
         }
     }
 }

@@ -6,11 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexMatchTests : RemoteExecutorTestBase
+    public class RegexMatchTests
     {
         public static IEnumerable<object[]> Match_Basic_TestData()
         {
@@ -368,7 +369,7 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void Match_Timeout_Throws()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 const string Pattern = @"^([0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*@(([0-9a-zA-Z])+([-\w]*[0-9a-zA-Z])*\.)+[a-zA-Z]{2,9})$";
                 string input = new string('a', 50) + "@a.a";
@@ -376,7 +377,7 @@ namespace System.Text.RegularExpressions.Tests
                 AppDomain.CurrentDomain.SetData(RegexHelpers.DefaultMatchTimeout_ConfigKeyName, TimeSpan.FromMilliseconds(100));
                 Assert.Throws<RegexMatchTimeoutException>(() => new Regex(Pattern).Match(input));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -763,20 +764,20 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void Match_SpecialUnicodeCharacters_enUS()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
                 Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
                 Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void Match_SpecialUnicodeCharacters_Invariant()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                 Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
@@ -784,7 +785,7 @@ namespace System.Text.RegularExpressions.Tests
                 Match("\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
                 Match("\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -792,7 +793,7 @@ namespace System.Text.RegularExpressions.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework needs fix for #26484")]
         public void Match_ExcessPrefix()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 // Should not throw out of memory
                 Assert.False(Regex.IsMatch("a", @"a{2147483647,}"));

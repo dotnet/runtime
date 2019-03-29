@@ -5,16 +5,17 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Linq.Parallel.Tests
 {
-    public class EtwTests : RemoteExecutorTestBase
+    public class EtwTests
     {
         [Fact]
         public static void TestEtw()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var listener = new TestEventListener(new Guid("159eeeec-4a14-4418-a8fe-faabcd987887"), EventLevel.Verbose))
                 {

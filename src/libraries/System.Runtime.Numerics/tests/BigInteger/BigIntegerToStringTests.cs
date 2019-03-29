@@ -5,11 +5,12 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public partial class ToStringTest : RemoteExecutorTestBase
+    public partial class ToStringTest
     {
         private static bool s_noZeroOut = true;
 
@@ -188,7 +189,7 @@ namespace System.Numerics.Tests
         [Fact]
         public static void RunRegionSpecificStandardFormatToStringTests()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo[] cultures = new CultureInfo[] { new CultureInfo("en-US"), new CultureInfo("en-GB"), new CultureInfo("fr-CA"),
                                                              new CultureInfo("ar-SA"), new CultureInfo("de-DE"), new CultureInfo("he-IL"),

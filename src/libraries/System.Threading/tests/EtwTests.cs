@@ -4,16 +4,17 @@
 
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Threading.Tests
 {
-    public class EtwTests : RemoteExecutorTestBase
+    public class EtwTests
     {
         [Fact]
         public void TestEtw()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var listener = new TestEventListener("System.Threading.SynchronizationEventSource", EventLevel.Verbose))
                 {

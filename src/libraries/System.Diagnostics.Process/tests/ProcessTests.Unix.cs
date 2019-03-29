@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Security;
 using Xunit;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 
 namespace System.Diagnostics.Tests
@@ -173,7 +174,7 @@ namespace System.Diagnostics.Tests
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["PATH"] = path;
-            RemoteInvoke(fileToOpen =>
+            RemoteExecutor.Invoke(fileToOpen =>
             {
                 using (var px = Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = fileToOpen }))
                 {
@@ -244,7 +245,7 @@ namespace System.Diagnostics.Tests
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.EnvironmentVariables["PATH"] = path;
-            RemoteInvoke((argVerb, argValid) =>
+            RemoteExecutor.Invoke((argVerb, argValid) =>
             {
                 if (argVerb == "<null>")
                 {
@@ -519,7 +520,7 @@ namespace System.Diagnostics.Tests
                 Assert.Subset(expectedGroups, GetGroups());
             }
 
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }
 
         [Fact]
@@ -538,7 +539,7 @@ namespace System.Diagnostics.Tests
             // Start as username
             var invokeOptions = new RemoteInvokeOptions();
             invokeOptions.StartInfo.UserName = userName;
-            using (RemoteInvokeHandle handle = RemoteInvoke(CheckUserAndGroupIds, userId, userGroupId, userGroupIds, checkGroupsExact.ToString(),
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(CheckUserAndGroupIds, userId, userGroupId, userGroupIds, checkGroupsExact.ToString(),
                                                             invokeOptions))
             { }
         }
@@ -580,15 +581,15 @@ namespace System.Diagnostics.Tests
                 // Start as username
                 var invokeOptions = new RemoteInvokeOptions();
                 invokeOptions.StartInfo.UserName = username;
-                using (RemoteInvokeHandle handle = RemoteInvoke(CheckUserAndGroupIds, userId, userGroupId, userGroupIds, checkGroupsExact.ToString(), invokeOptions))
+                using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(CheckUserAndGroupIds, userId, userGroupId, userGroupIds, checkGroupsExact.ToString(), invokeOptions))
                 { }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             };
 
             // Start as root
             string userName = GetCurrentRealUserName();
-            using (RemoteInvokeHandle handle = RemoteInvoke(runsAsRoot, userName, useRootGroups.ToString(),
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(runsAsRoot, userName, useRootGroups.ToString(),
                                                             new RemoteInvokeOptions { RunAsSudo = true }))
             { }
         }
@@ -816,9 +817,9 @@ namespace System.Diagnostics.Tests
             {
                 // Create a process that isn't a direct child.
                 int nonChildPid = -1;
-                RemoteInvokeHandle createNonChildProcess = RemoteInvoke(arg =>
+                RemoteInvokeHandle createNonChildProcess = RemoteExecutor.Invoke(arg =>
                 {
-                    RemoteInvokeHandle nonChildProcess = RemoteInvoke(
+                    RemoteInvokeHandle nonChildProcess = RemoteExecutor.Invoke(
                         // Process that lives as long as the test process.
                         testProcessPid => Process.GetProcessById(int.Parse(testProcessPid)).WaitForExit(), arg,
                         // Don't pass our standard out to the sleepProcess or the ReadToEnd below won't return.
@@ -866,7 +867,7 @@ namespace System.Diagnostics.Tests
             {
                 RunAsSudo = true
             };
-            using (RemoteInvokeHandle handle = RemoteInvoke(testMethod, arg, options))
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(testMethod, arg, options))
             { }
         }
 

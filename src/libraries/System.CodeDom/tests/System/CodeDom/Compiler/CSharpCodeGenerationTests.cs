@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.CSharp;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.CodeDom.Compiler.Tests
@@ -615,7 +616,7 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void MetadataAttributes()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
 
@@ -1452,7 +1453,7 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void RegionsSnippetsAndLinePragmas()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
 
@@ -2574,7 +2575,7 @@ namespace System.CodeDom.Compiler.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ProviderSupports()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
 

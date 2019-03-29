@@ -30,11 +30,12 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Drawing.Tests
 {
-    public class IconTests : RemoteExecutorTestBase
+    public class IconTests
     {
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData("48x48_multiple_entries_4bit.ico")]
@@ -619,11 +620,11 @@ namespace System.Drawing.Tests
 
             if (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || isEnabled)
             {
-                RemoteInvoke(() =>
+                RemoteExecutor.Invoke(() =>
                 {
                     AppContext.SetSwitch(DontSupportPngFramesInIcons, false);
                     VerifyPng();
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }).Dispose();
             }
             else
@@ -646,11 +647,11 @@ namespace System.Drawing.Tests
 
             if (!AppContext.TryGetSwitch(DontSupportPngFramesInIcons, out bool isEnabled) || !isEnabled)
             {
-                RemoteInvoke(() =>
+                RemoteExecutor.Invoke(() =>
                 {
                     AppContext.SetSwitch(DontSupportPngFramesInIcons, true);
                     VerifyPngNotSupported();
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }).Dispose();
             }
             else

@@ -5,11 +5,12 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.CodeDom.Compiler.Tests
 {
-    public class ExecutorTests : RemoteExecutorTestBase
+    public class ExecutorTests : FileCleanupTestBase
     {
         private static readonly string s_cmd = PlatformDetection.IsWindows ? "ipconfig" : "printenv"; // arbitrary commands to validate output
 
@@ -36,7 +37,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void ExecWait_OutputCaptured()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var tfc = new TempFileCollection(TestDirectory))
                 {
@@ -51,7 +52,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void ExecWaitWithCapture_NullNames_OutputCaptured()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var tfc = new TempFileCollection())
                 {
@@ -76,7 +77,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void ExecWaitWithCapture_SpecifiedNames_OutputCaptured()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var tfc = new TempFileCollection())
                 {
@@ -96,7 +97,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void ExecWaitWithCapture_CurrentDirectorySpecified_OutputIncludesSpecifiedDirectory()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var tfc = new TempFileCollection(TestDirectory))
                 {
@@ -113,7 +114,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void ExecWaitWithCapture_OutputIncludesCurrentDirectory()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var tfc = new TempFileCollection(TestDirectory))
                 {

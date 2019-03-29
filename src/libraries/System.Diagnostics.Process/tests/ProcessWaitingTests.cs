@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -160,7 +161,7 @@ namespace System.Diagnostics.Tests
                 Process peer = Process.GetProcessById(int.Parse(peerId));
                 Console.WriteLine("Signal");
                 Assert.True(peer.WaitForExit(WaitInMS));
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, child1.Id.ToString());
             child2.StartInfo.RedirectStandardOutput = true;
             child2.Start();
@@ -172,7 +173,7 @@ namespace System.Diagnostics.Tests
             Assert.True(child1.WaitForExit(WaitInMS));
             Assert.True(child2.WaitForExit(WaitInMS));
 
-            Assert.Equal(SuccessExitCode, child2.ExitCode);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, child2.ExitCode);
         }
 
         [Fact]
@@ -231,7 +232,7 @@ namespace System.Diagnostics.Tests
                 {
                     Process child2 = CreateProcess(() =>
                     {
-                        Process child3 = CreateProcess(() => SuccessExitCode);
+                        Process child3 = CreateProcess(() => RemoteExecutor.SuccessExitCode);
                         child3.Start();
                         Assert.True(child3.WaitForExit(WaitInMS));
                         return child3.ExitCode;
@@ -246,7 +247,7 @@ namespace System.Diagnostics.Tests
             });
             root.Start();
             Assert.True(root.WaitForExit(WaitInMS));
-            Assert.Equal(SuccessExitCode, root.ExitCode);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, root.ExitCode);
         }
 
         [Fact]
@@ -255,7 +256,7 @@ namespace System.Diagnostics.Tests
             Process child = CreateProcessPortable(RemotelyInvokable.SelfTerminate);
             child.Start();
             Assert.True(child.WaitForExit(WaitInMS));
-            Assert.NotEqual(SuccessExitCode, child.ExitCode);
+            Assert.NotEqual(RemoteExecutor.SuccessExitCode, child.ExitCode);
         }
 
         [Fact]

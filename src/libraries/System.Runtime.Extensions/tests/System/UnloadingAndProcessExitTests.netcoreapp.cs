@@ -5,11 +5,12 @@
 using System.Diagnostics;
 using System.IO;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
-    public class UnloadingAndProcessExitTests : RemoteExecutorTestBase
+    public class UnloadingAndProcessExitTests : FileCleanupTestBase
     {
         [ActiveIssue("https://github.com/dotnet/corefx/issues/23307", TargetFrameworkMonikers.Uap)]
         [Fact]
@@ -31,10 +32,10 @@ namespace System.Tests
                 System.Runtime.Loader.AssemblyLoadContext.Default.Unloading += acl => OnUnloading(1);
                 File.AppendAllText(f, "h");
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             };
 
-            using (var remote = RemoteInvoke(otherProcess, fileName))
+            using (var remote = RemoteExecutor.Invoke(otherProcess, fileName))
             {
             }
 

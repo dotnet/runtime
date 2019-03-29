@@ -11,7 +11,7 @@ namespace System.Drawing.Tests
 {
     public class bitmap_173x183_indexed_8bit { }
 
-    public class ToolboxBitmapAttributeTests : RemoteExecutorTestBase
+    public class ToolboxBitmapAttributeTests
     {
         private static Size DefaultSize = new Size(16, 16);
         private void AssertDefaultSize(Image image)

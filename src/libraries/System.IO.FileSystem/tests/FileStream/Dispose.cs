@@ -6,6 +6,7 @@ using Microsoft.Win32.SafeHandles;
 using System;
 using System.Diagnostics;
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -68,7 +69,7 @@ namespace System.IO.Tests
         [Fact]
         public void Dispose_CallsVirtualDisposeTrueArg_ThrowsDuringFlushWriteBuffer_DisposeThrows()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string fileName = GetTestFilePath();
                 using (FileStream fscreate = new FileStream(fileName, FileMode.Create))
@@ -107,7 +108,7 @@ namespace System.IO.Tests
                     }
                     Assert.False(writeDisposeInvoked, "Expected finalizer to have been suppressed");
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -115,7 +116,7 @@ namespace System.IO.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Missing fix for https://github.com/dotnet/coreclr/pull/16250")]
         public void NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string fileName = GetTestFilePath();
                 using (FileStream fscreate = new FileStream(fileName, FileMode.Create))
@@ -146,7 +147,7 @@ namespace System.IO.Tests
                     }
                     Assert.True(writeDisposeInvoked, "Expected finalizer to be invoked but not throw exception");
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

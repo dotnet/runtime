@@ -12,13 +12,14 @@ using System.Security.Claims;
 using System.Security.Principal;
 using System.Threading.Tasks;
 using System.Threading.Tests;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Threading.Threads.Tests
 {
-    public class DummyClass : RemoteExecutorTestBase
+    public class DummyClass
     {
-        public static string HostRunnerTest = HostRunner;
+        public static string HostRunnerTest = RemoteExecutor.HostRunner;
     }
 
     public static partial class ThreadTests
@@ -194,7 +195,7 @@ namespace System.Threading.Threads.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Windows()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                 Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
@@ -208,7 +209,7 @@ namespace System.Threading.Threads.Tests
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public static void ApartmentState_NoAttributePresent_STA_Windows_Desktop()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
                 Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
@@ -220,7 +221,7 @@ namespace System.Threading.Threads.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)] 
         public static void ApartmentState_NoAttributePresent_DefaultState_Unix()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Assert.Equal(ApartmentState.Unknown, Thread.CurrentThread.GetApartmentState());
                 Assert.Throws<PlatformNotSupportedException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.MTA));
@@ -231,7 +232,7 @@ namespace System.Threading.Threads.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
         public static void ApartmentState_NoAttributePresent_DefaultState_Nano()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());                
@@ -242,7 +243,7 @@ namespace System.Threading.Threads.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)] 
         public static void ApartmentState_NoAttributePresent_STA_Unix()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Assert.Throws<PlatformNotSupportedException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
             }).Dispose();
@@ -506,7 +507,7 @@ namespace System.Threading.Threads.Tests
         {
             // We run test on remote process because we need to set same principal policy
             // On netfx default principal policy is PrincipalPolicy.UnauthenticatedPrincipal
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.NoPrincipal);
 
@@ -1141,7 +1142,7 @@ namespace System.Threading.Threads.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "SetPrincipal doesn't work on UAP.")]
         public static void WindowsPrincipalPolicyTest_Windows()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
                 Assert.Equal(Environment.UserDomainName + @"\" + Environment.UserName, Thread.CurrentPrincipal.Identity.Name);
@@ -1152,7 +1153,7 @@ namespace System.Threading.Threads.Tests
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public static void WindowsPrincipalPolicyTest_Unix()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.WindowsPrincipal);
                 Assert.Throws<PlatformNotSupportedException>(() => Thread.CurrentPrincipal);
@@ -1162,7 +1163,7 @@ namespace System.Threading.Threads.Tests
         [Fact]
         public static void UnauthenticatedPrincipalTest()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.SetPrincipalPolicy(PrincipalPolicy.UnauthenticatedPrincipal);
                 Assert.Equal(string.Empty, Thread.CurrentPrincipal.Identity.Name);
@@ -1173,7 +1174,7 @@ namespace System.Threading.Threads.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Default principal policy on .NET Framework is Unauthenticated Principal")]
         public static void DefaultPrincipalPolicyTest()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Assert.Null(Thread.CurrentPrincipal);
             }).Dispose();
@@ -1183,7 +1184,7 @@ namespace System.Threading.Threads.Tests
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Default principal policy on .NET Core is No Principal")]
         public static void DefaultPrincipalPolicyTest_Desktop()
         {
-            DummyClass.RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Assert.Equal(string.Empty, Thread.CurrentPrincipal.Identity.Name);
             }).Dispose();

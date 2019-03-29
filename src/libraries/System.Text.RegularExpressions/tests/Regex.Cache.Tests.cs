@@ -6,11 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexCacheTests : RemoteExecutorTestBase
+    public class RegexCacheTests
     {
         [Theory]
         [InlineData(0)]
@@ -40,13 +41,13 @@ namespace System.Text.RegularExpressions.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "reflection blocked")]
         public void Ctor_Cache_Second_drops_first()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Regex.CacheSize = 1;
                 Assert.True(Regex.IsMatch("1", "1"));
                 Assert.True(Regex.IsMatch("2", "2")); // previous removed from cache
                 Assert.True(GetCachedItemsNum() == 1);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -54,7 +55,7 @@ namespace System.Text.RegularExpressions.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "reflection blocked")]
         public void Ctor_Cache_Shrink_cache()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Regex.CacheSize = 2;
                 Assert.True(Regex.IsMatch("1", "1"));
@@ -64,7 +65,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.True(GetCachedItemsNum() == 1);
                 Regex.CacheSize = 0; // clear
                 Assert.True(GetCachedItemsNum() == 0);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -72,7 +73,7 @@ namespace System.Text.RegularExpressions.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "reflection blocked")]
         public void Ctor_Cache_Promote_entries()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Regex.CacheSize = 3;
                 Assert.True(Regex.IsMatch("1", "1"));
@@ -83,7 +84,7 @@ namespace System.Text.RegularExpressions.Tests
                 Assert.True(GetCachedItemsNum() == 3);
                 Regex.CacheSize = 1;  // only 1 stays
                 Assert.True(GetCachedItemsNum() == 1);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -91,7 +92,7 @@ namespace System.Text.RegularExpressions.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "reflection blocked")]
         public void Ctor_Cache_Uses_culture_and_options()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 Regex.CacheSize = 0;
                 Regex.CacheSize = 3;
@@ -102,7 +103,7 @@ namespace System.Text.RegularExpressions.Tests
                 CultureInfo.CurrentCulture = CultureInfo.CurrentCulture.Equals(CultureInfo.GetCultureInfo("de-DE")) ? CultureInfo.InvariantCulture : CultureInfo.GetCultureInfo("de-DE");
                 Assert.True(Regex.IsMatch("1", "1", RegexOptions.Multiline));
                 Assert.True(GetCachedItemsNum() == 3);
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -112,7 +113,7 @@ namespace System.Text.RegularExpressions.Tests
         public void Ctor_Cache_Uses_dictionary_linked_list_switch_does_not_throw()
         {
             // assume the limit is less than the cache size so we cross it two times:
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 int original = Regex.CacheSize;
                 Regex.CacheSize = 0;
@@ -140,7 +141,7 @@ namespace System.Text.RegularExpressions.Tests
                         Assert.True(GetCachedItemsNum() == Regex.CacheSize);
                     }
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

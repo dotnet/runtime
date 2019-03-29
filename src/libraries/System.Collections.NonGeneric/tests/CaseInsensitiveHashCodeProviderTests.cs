@@ -4,13 +4,14 @@
 
 using System.Globalization;
 using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 #pragma warning disable 618 // obsolete types
 
 namespace System.Collections.Tests
 {
-    public class CaseInsensitiveHashCodeProviderTests : RemoteExecutorTestBase
+    public class CaseInsensitiveHashCodeProviderTests
     {
         [Theory]
         [InlineData("hello", "HELLO", true)]
@@ -38,7 +39,7 @@ namespace System.Collections.Tests
         [InlineData(5, 10, false)]
         public void Ctor_Empty_ChangeCurrentCulture_GetHashCodeCompare(object a, object b, bool expected)
         {
-            RemoteInvoke((ra, rb, rexpected) =>
+            RemoteExecutor.Invoke((ra, rb, rexpected) =>
             {
                 var cultureNames = new string[]
                 {
@@ -69,7 +70,7 @@ namespace System.Collections.Tests
                     Assert.Equal(provider.GetHashCode(rb), provider.GetHashCode(rb));
                     Assert.Equal(expectedResult, provider.GetHashCode(ra) == provider.GetHashCode(rb));
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, a.ToString(), b.ToString(), expected.ToString()).Dispose();
         }
 
@@ -178,7 +179,7 @@ namespace System.Collections.Tests
         {
             // Turkish has lower-case and upper-case version of the dotted "i", so the upper case of "i" (U+0069) isn't "I" (U+0049)
             // but rather "İ" (U+0130)
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
                 Assert.False(CaseInsensitiveHashCodeProvider.Default.GetHashCode("file") == CaseInsensitiveHashCodeProvider.Default.GetHashCode("FILE"));
@@ -186,7 +187,7 @@ namespace System.Collections.Tests
 
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
                 Assert.True(CaseInsensitiveHashCodeProvider.Default.GetHashCode("file") == CaseInsensitiveHashCodeProvider.Default.GetHashCode("FILE"));
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
     }

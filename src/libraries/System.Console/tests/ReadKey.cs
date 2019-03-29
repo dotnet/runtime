@@ -4,9 +4,10 @@
 
 using System;
 using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
-public class ReadKey : RemoteExecutorTestBase
+public class ReadKey
 {
     [Fact]
     public static void KeyAvailable()
@@ -59,6 +60,6 @@ public class ReadKey : RemoteExecutorTestBase
             options.StartInfo = psi;
         }
 
-        RemoteInvoke(func, options).Dispose();
+        RemoteExecutor.Invoke(func, options).Dispose();
     }
 }

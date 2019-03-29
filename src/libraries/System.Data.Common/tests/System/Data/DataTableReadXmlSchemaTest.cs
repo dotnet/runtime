@@ -29,11 +29,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Data.Tests
 {
-    public class DataTableReadXmlSchemaTest : RemoteExecutorTestBase
+    public class DataTableReadXmlSchemaTest
     {
         private DataSet CreateTestSet()
         {
@@ -429,7 +430,7 @@ namespace System.Data.Tests
         [Fact]
         public void XsdSchemaSerializationIgnoresLocale()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var serializer = new BinaryFormatter();
                 var table = new DataTable();
@@ -492,7 +493,7 @@ namespace System.Data.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does not yet have the fix for this bug")]
         public void XsdSchemaDeserializationIgnoresLocale()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var serializer = new BinaryFormatter();
 

@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
 using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
 
 namespace System.IO.Tests
 {
-    public partial class StringWriterTests : RemoteExecutorTestBase
+    public partial class StringWriterTests
     {
         static int[] iArrInvalidValues = new int[] { -1, -2, -100, -1000, -10000, -100000, -1000000, -10000000, -100000000, -1000000000, int.MinValue, short.MinValue };
         static int[] iArrLargeValues = new int[] { int.MaxValue, int.MaxValue - 1, int.MaxValue / 2, int.MaxValue / 10, int.MaxValue / 100 };
@@ -293,7 +294,7 @@ namespace System.IO.Tests
         [Fact]
         public static void TestWriteMisc()
         {
-            RemoteInvoke(() => 
+            RemoteExecutor.Invoke(() => 
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
                 var sw = new StringWriter();
@@ -323,7 +324,7 @@ namespace System.IO.Tests
         [Fact]
         public static void TestWriteLineMisc()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US"); // floating-point formatting comparison depends on culture
                 var sw = new StringWriter();

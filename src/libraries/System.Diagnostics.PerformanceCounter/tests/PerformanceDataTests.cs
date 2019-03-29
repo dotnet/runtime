@@ -4,12 +4,13 @@
 
 using System.Diagnostics.PerformanceData;
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Diagnostics.Tests
 {
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // In appcontainer, cannot write to perf counters
-    public class PerformanceDataTests : RemoteExecutorTestBase, IClassFixture<PerformanceDataTestsFixture>
+    public class PerformanceDataTests : IClassFixture<PerformanceDataTestsFixture>
     {
         PerformanceDataTestsFixture _fixture = null;
 
@@ -29,7 +30,7 @@ namespace System.Diagnostics.Tests
         {
             // We run test in isolated process to avoid interferences on internal performance counter shared state with other tests.
             // These interferences could lead to fail also after retries
-            RemoteInvoke((string providerId, string typingCounterSetId) =>
+            RemoteExecutor.Invoke((string providerId, string typingCounterSetId) =>
             {
                 // Create the 'Typing' counter set.
                 using (CounterSet typingCounterSet = new CounterSet(Guid.Parse(providerId), Guid.Parse(typingCounterSetId), CounterSetInstanceType.Single))

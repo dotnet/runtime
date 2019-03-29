@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
@@ -78,7 +79,7 @@ namespace System.Net.Http.Functional.Tests
             File.WriteAllText(sslCertFile, "");
             psi.Environment.Add("SSL_CERT_FILE", sslCertFile);
 
-            RemoteInvoke(async useSocketsHttpHandlerString =>
+            RemoteExecutor.Invoke(async useSocketsHttpHandlerString =>
             {
                 const string Url = "https://www.microsoft.com";
 
@@ -86,7 +87,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
     }

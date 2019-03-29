@@ -4,11 +4,12 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    public class EncodingGetEncodingTest : RemoteExecutorTestBase
+    public class EncodingGetEncodingTest
     {
         [Fact]
         public void GetEncoding_String_Invalid()
@@ -101,7 +102,7 @@ namespace System.Text.Tests
         public void GetEncoding_EncodingName()
         {
             // Workaround issue: UWP culture is process wide
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentUICulture = CultureInfo.InvariantCulture;
 

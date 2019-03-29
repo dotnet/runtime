@@ -6,11 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Tests;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Text.Tests
 {
-    public partial class StringBuilderTests : RemoteExecutorTestBase
+    public partial class StringBuilderTests
     {
         private static readonly string s_chunkSplitSource = new string('a', 30);
         private static readonly string s_noCapacityParamName = PlatformDetection.IsFullFramework ? "requiredLength" : "valueCount";
@@ -258,7 +259,7 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Append_Decimal()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -266,7 +267,7 @@ namespace System.Text.Tests
                 {
                     Append_Decimal((string)testdata[0], (double)testdata[1], (string)testdata[2]);
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -295,14 +296,14 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Append_Double()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                 foreach (var testdata in Append_Double_TestData())
                 {
                     Append_Double((string)testdata[0], (double)testdata[1], (string)testdata[2]);
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -434,14 +435,14 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Append_Float()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                 foreach (var testdata in Append_Float_TestData())
                 {
                     Append_Float((string)testdata[0], (float)testdata[1], (string)testdata[2]);
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -1261,14 +1262,14 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Insert_Float()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                 foreach (var testdata in Insert_Float_TestData())
                 {
                     Insert_Float((string)testdata[0], (int)testdata[1], (float)testdata[2], (string)testdata[3]);
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -1390,14 +1391,14 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Insert_Double()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                 foreach (var testdata in Insert_Double_TestData())
                 {
                     Insert_Double((string)testdata[0], (int)testdata[1], (double)testdata[2], (string)testdata[3]);
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -1429,14 +1430,14 @@ namespace System.Text.Tests
         [Fact]
         public static void Test_Insert_Decimal()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                 foreach (var testdata in Test_Insert_Decimal_TestData())
                 {
                     Insert_Decimal((string)testdata[0], (int)testdata[1], (double)testdata[2], (string)testdata[3]);
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -333,7 +334,7 @@ namespace System.IO.Tests
         #endregion
     }
 
-    public sealed class Directory_GetEntries_CurrentDirectory : RemoteExecutorTestBase
+    public sealed class Directory_GetEntries_CurrentDirectory : FileCleanupTestBase
     {
         [Fact]
         public void CurrentDirectory()
@@ -342,7 +343,7 @@ namespace System.IO.Tests
             Directory.CreateDirectory(testDir);
             File.WriteAllText(Path.Combine(testDir, GetTestFileName()), "cat");
             Directory.CreateDirectory(Path.Combine(testDir, GetTestFileName()));
-            RemoteInvoke((testDirectory) =>
+            RemoteExecutor.Invoke((testDirectory) =>
             {
                 Directory.SetCurrentDirectory(testDirectory);
 
@@ -376,7 +377,7 @@ namespace System.IO.Tests
                 Assert.NotEmpty(Directory.EnumerateFiles(Directory.GetCurrentDirectory(), "*", SearchOption.AllDirectories));
                 Assert.NotEmpty(Directory.EnumerateFiles(Directory.GetCurrentDirectory(), "*", SearchOption.TopDirectoryOnly));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, testDir).Dispose();
         }
     }

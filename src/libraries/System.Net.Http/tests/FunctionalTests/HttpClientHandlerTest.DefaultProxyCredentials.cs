@@ -8,6 +8,7 @@ using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
@@ -102,7 +103,7 @@ namespace System.Net.Http.Functional.Tests
                     psi.Environment.Add("http_proxy", $"http://{proxyUri.Host}:{proxyUri.Port}");
                 }
 
-                RemoteInvoke(async (useProxyString, useSocketsHttpHandlerString) =>
+                RemoteExecutor.Invoke(async (useProxyString, useSocketsHttpHandlerString) =>
                 {
                     using (HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString))
                     using (var client = new HttpClient(handler))
@@ -115,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
                         // Correctness of user and password is done in server part.
                         Assert.True(response.StatusCode ==  HttpStatusCode.OK);
                     }
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }, useProxy.ToString(), UseSocketsHttpHandler.ToString(), new RemoteInvokeOptions { StartInfo = psi }).Dispose();
                 if (useProxy)
                 {

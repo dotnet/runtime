@@ -6,10 +6,11 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
-using Xunit;
+using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
+using Xunit;
 
-public class WindowAndCursorProps : RemoteExecutorTestBase
+public class WindowAndCursorProps
 {
     [Fact]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
@@ -213,10 +214,10 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
     public static void Title_SetUnix_Success()
     {
-        RemoteInvoke(() =>
+        RemoteExecutor.Invoke(() =>
         {
             Console.Title = "Title set by unit test";
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }).Dispose();
     }
 
@@ -253,7 +254,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
     public static void Title_Set_Windows(int lengthOfTitle)
     {
         // Try to set the title to some other value.
-        RemoteInvoke(lengthOfTitleString =>
+        RemoteExecutor.Invoke(lengthOfTitleString =>
         {
             string newTitle = new string('a', int.Parse(lengthOfTitleString));
             Console.Title = newTitle;
@@ -267,7 +268,7 @@ public class WindowAndCursorProps : RemoteExecutorTestBase
             {
                 Assert.Equal(newTitle, Console.Title);
             }
-            return SuccessExitCode;
+            return RemoteExecutor.SuccessExitCode;
         }, lengthOfTitle.ToString()).Dispose();
     }
 

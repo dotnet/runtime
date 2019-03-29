@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.IO.Tests
@@ -72,7 +73,7 @@ namespace System.IO.Tests
         [Fact]
         public void GetTempPath_SetEnvVar()
         {
-            RemoteInvoke(() => 
+            RemoteExecutor.Invoke(() => 
             {
                 foreach (string[] tempPath in GetTempPath_SetEnvVar_Data())
                 {

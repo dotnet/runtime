@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{1C397868-9644-48CB-94BF-35805C4AE024}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
     <CoverageSupported>false</CoverageSupported>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NonMsdtcPromoterTests.cs" />
@@ -16,10 +17,6 @@
     <Compile Include="HelperFunctions.cs" />
     <Compile Include="TestEnlistments.cs" />
     <Compile Include="TransactionTracingEventListener.cs" />
-    <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
-      <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
-      <Name>RemoteExecutorConsoleApp</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

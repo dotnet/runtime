@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
-using Microsoft.Win32.SafeHandles;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
@@ -11,11 +9,14 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using Xunit;
 using System.Text;
 using System.ComponentModel;
 using System.Security;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System.Diagnostics.Tests
 {
@@ -208,13 +209,13 @@ namespace System.Diagnostics.Tests
                 if (Environment.GetEnvironmentVariable(name) != "child-process-value") 
                     return 1;
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             });
             p.StartInfo.Environment.Add(name, "child-process-value");
             p.Start();
 
             Assert.True(p.WaitForExit(WaitInMS));
-            Assert.Equal(SuccessExitCode, p.ExitCode);
+            Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
         }
 
         [Fact]
@@ -231,7 +232,7 @@ namespace System.Diagnostics.Tests
                 Process p = CreateProcess(() =>
                 {
                     Console.Write(string.Join(ItemSeparator, Environment.GetEnvironmentVariables().Cast<DictionaryEntry>().Select(e => Convert.ToBase64String(Encoding.UTF8.GetBytes(e.Key + "=" + e.Value)))));
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 });
                 p.StartInfo.StandardOutputEncoding = Encoding.UTF8;
                 p.StartInfo.RedirectStandardOutput = true;
@@ -378,7 +379,11 @@ namespace System.Diagnostics.Tests
             string workingDirectory = string.IsNullOrEmpty(Environment.SystemDirectory) ? TestDirectory : Environment.SystemDirectory ;
             Assert.NotEqual(workingDirectory, Directory.GetCurrentDirectory());
             var psi = new ProcessStartInfo { WorkingDirectory = workingDirectory };
-            RemoteInvoke(wd => { Assert.Equal(wd, Directory.GetCurrentDirectory()); return SuccessExitCode; }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
+            RemoteExecutor.Invoke(wd =>
+            {
+                Assert.Equal(wd, Directory.GetCurrentDirectory());
+                return RemoteExecutor.SuccessExitCode;
+            }, workingDirectory, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
         [ActiveIssue(12696)]

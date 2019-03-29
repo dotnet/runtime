@@ -9,11 +9,12 @@
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
-    public class X509StoreTests : RemoteExecutorTestBase
+    public class X509StoreTests : FileCleanupTestBase
     {
         [Fact]
         public static void OpenMyStore()
@@ -561,7 +562,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             var psi = new ProcessStartInfo();
             psi.Environment.Add("SSL_CERT_DIR", sslCertDir);
             psi.Environment.Add("SSL_CERT_FILE", "/nonexisting");
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var store = new X509Store(StoreName.Root, StoreLocation.LocalMachine))
                 {
@@ -570,7 +571,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // Check nr of certificates in store.
                     Assert.Equal(2, store.Certificates.Count);
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 

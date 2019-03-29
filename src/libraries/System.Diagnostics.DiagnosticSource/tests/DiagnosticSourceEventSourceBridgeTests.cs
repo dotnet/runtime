@@ -3,18 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Xunit;
 using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
+using Xunit;
 
 namespace System.Diagnostics.Tests
 {
     //Complex types are not supported on EventSource for .NET 4.5
-    public class DiagnosticSourceEventSourceBridgeTests : RemoteExecutorTestBase
+    public class DiagnosticSourceEventSourceBridgeTests
     {
         // To avoid interactions between tests when they are run in parallel, we run all these tests in their 
-        // own sub-process using RemoteInvoke()  However this makes it very inconvinient to debug the test.   
+        // own sub-process using RemoteExecutor.Invoke()  However this makes it very inconvinient to debug the test.   
         // By seting this #if to true you stub out RemoteInvoke and the code will run in-proc which is useful 
         // in debugging.
 #if false    
@@ -24,7 +25,7 @@ namespace System.Diagnostics.Tests
             {
             }
         }
-        static IDisposable RemoteInvoke(Action a)
+        static IDisposable RemoteExecutor.Invoke(Action a)
         {
             a();
             return new NullDispose();
@@ -37,7 +38,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestSpecificEvents()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 using (var diagnosticSourceListener = new DiagnosticListener("TestSpecificEventsSource"))
@@ -122,7 +123,7 @@ namespace System.Diagnostics.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "This is linux specific test")]
         public void LinuxNewLineConventions()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 using (var diagnosticSourceListener = new DiagnosticListener("LinuxNewLineConventionsSource"))
@@ -181,7 +182,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestWildCardSourceName()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 using (var diagnosticSourceListener1 = new DiagnosticListener("TestWildCardSourceName1"))
@@ -245,7 +246,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestWildCardEventName()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 using (var diagnosticSourceListener = new DiagnosticListener("TestWildCardEventNameSource"))
@@ -332,7 +333,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestNulls()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 using (var diagnosticSourceListener = new DiagnosticListener("TestNullsTestSource"))
@@ -413,7 +414,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestNoImplicitTransforms()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 using (var diagnosticSourceListener = new DiagnosticListener("TestNoImplicitTransformsSource"))
@@ -446,7 +447,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestBadProperties()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 using (var diagnosticSourceListener = new DiagnosticListener("TestBadPropertiesSource"))
@@ -478,7 +479,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestMessages()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 using (var diagnosticSourceListener = new DiagnosticListener("TestMessagesSource"))
@@ -511,7 +512,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestActivities()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 using (var diagnosticSourceListener = new DiagnosticListener("TestActivitiesSource"))
@@ -584,7 +585,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void TestShortcutKeywords()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (var eventSourceListener = new TestDiagnosticSourceEventListener())
                 // These are look-alikes for the real ones.  
@@ -707,7 +708,7 @@ namespace System.Diagnostics.Tests
         public void Stress_WriteConcurrently_DoesntCrash()
         {
             const int StressTimeSeconds = 4;
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 using (new TurnOnAllEventListener())
                 using (var source = new DiagnosticListener("testlistener"))

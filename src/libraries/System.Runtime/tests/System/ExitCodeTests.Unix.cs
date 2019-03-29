@@ -4,11 +4,12 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
-    public class ExitCodeTests : RemoteExecutorTestBase
+    public class ExitCodeTests
     {
         private const int SIGTERM = 15;
 
@@ -40,7 +41,7 @@ namespace System.Tests
 
             RemoteInvokeOptions options = new RemoteInvokeOptions();
             options.StartInfo.RedirectStandardOutput = true;
-            using (RemoteInvokeHandle remoteExecution = RemoteInvoke(action, exitCodeOnSigterm?.ToString() ?? string.Empty, options))
+            using (RemoteInvokeHandle remoteExecution = RemoteExecutor.Invoke(action, exitCodeOnSigterm?.ToString() ?? string.Empty, options))
             {
                 Process process = remoteExecution.Process;
 
@@ -53,7 +54,7 @@ namespace System.Tests
                 Assert.Equal(0, rv);
 
                 // Process exits in a timely manner
-                bool exited = process.WaitForExit(FailWaitTimeoutMilliseconds);
+                bool exited = process.WaitForExit(RemoteExecutor.FailWaitTimeoutMilliseconds);
                 Assert.True(exited);
 
                 // Check exit code

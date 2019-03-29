@@ -8,11 +8,12 @@ using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Runtime.ExceptionServices.Tests
 {
-    public class HandleProcessCorruptedStateExceptionsTests : RemoteExecutorTestBase
+    public class HandleProcessCorruptedStateExceptionsTests
     {
         [DllImport("kernel32.dll")]
         static extern void RaiseException(uint dwExceptionCode, uint dwExceptionFlags, uint nNumberOfArguments, IntPtr lpArguments);
@@ -43,14 +44,14 @@ namespace System.Runtime.ExceptionServices.Tests
             // We expect the launched process to crash; don't let it write the resulting AV message to the console.
             var psi = new ProcessStartInfo() { RedirectStandardError = true, RedirectStandardOutput = true };
 
-            using (RemoteInvokeHandle handle = RemoteInvoke(() => { CauseAVInNative(); return SuccessExitCode; }, new RemoteInvokeOptions { CheckExitCode = false, StartInfo = psi }))
+            using (RemoteInvokeHandle handle = RemoteExecutor.Invoke(() => { CauseAVInNative(); return RemoteExecutor.SuccessExitCode; }, new RemoteInvokeOptions { CheckExitCode = false, StartInfo = psi }))
             {
                 Process p = handle.Process;
                 p.WaitForExit();
                 if (PlatformDetection.IsFullFramework)
-                    Assert.Equal(SuccessExitCode, p.ExitCode);
+                    Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
                 else
-                    Assert.NotEqual(SuccessExitCode, p.ExitCode);
+                    Assert.NotEqual(RemoteExecutor.SuccessExitCode, p.ExitCode);
             }
         }
     }

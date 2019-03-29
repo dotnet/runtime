@@ -8,9 +8,10 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
-public class RedirectedStream : RemoteExecutorTestBase
+public class RedirectedStream
 {
     [Fact] // the CI system redirects stdout, so we can only really test the redirected behavior.
     public static void InputRedirect()
@@ -58,6 +59,6 @@ public class RedirectedStream : RemoteExecutorTestBase
             options.StartInfo = psi;
         }
 
-        RemoteInvoke(func, options).Dispose();
+        RemoteExecutor.Invoke(func, options).Dispose();
     }
 }

@@ -7,11 +7,12 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Collections.Tests
 {
-    public class SortedListTests : RemoteExecutorTestBase
+    public class SortedListTests
     {
         [Fact]
         public void Ctor_Empty()
@@ -1339,7 +1340,7 @@ namespace System.Collections.Tests
         [Fact]
         public void Item_Get_DifferentCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var sortList = new SortedList();
 
@@ -1381,7 +1382,7 @@ namespace System.Collections.Tests
                 {
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 

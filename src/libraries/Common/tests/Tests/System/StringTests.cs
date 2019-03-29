@@ -11,12 +11,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
     //When add new tests make sure to add checks for both string and span APIs where relevant.
-    public partial class StringTests : RemoteExecutorTestBase
+    public partial class StringTests
     {
         private const string SoftHyphen = "\u00AD";
         private static readonly char[] s_whiteSpaceCharacters = { '\u0009', '\u000a', '\u000b', '\u000c', '\u000d', '\u0020', '\u0085', '\u00a0', '\u1680' };
@@ -2549,7 +2550,7 @@ namespace System.Tests
         [MemberData(nameof(Equals_EncyclopaediaData))]
         public void Equals_Encyclopaedia_ReturnsExpected(StringComparison comparison, bool expected)
         {
-            RemoteInvoke((comparisonString, expectedString) =>
+            RemoteExecutor.Invoke((comparisonString, expectedString) =>
             {
                 string source = "encyclop\u00e6dia";
                 string target = "encyclopaedia";
@@ -2560,7 +2561,7 @@ namespace System.Tests
 
                 Assert.Equal(bool.Parse(expectedString), source.AsSpan().Equals(target.AsSpan(), comparisonType));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, comparison.ToString(), expected.ToString()).Dispose();
         }
 
@@ -2867,7 +2868,7 @@ namespace System.Tests
         [Fact]
         public static void IndexOf_TurkishI_TurkishCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
 
@@ -2896,14 +2897,14 @@ namespace System.Tests
                 Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_TurkishI_InvariantCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -2925,14 +2926,14 @@ namespace System.Tests
                 Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
                 Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_TurkishI_EnglishUSCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
@@ -2955,14 +2956,14 @@ namespace System.Tests
                 Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
                 Assert.Equal(10, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_HungarianDoubleCompression_HungarianCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string source = "dzsdzs";
                 string target = "ddzs";
@@ -2990,14 +2991,14 @@ namespace System.Tests
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.OrdinalIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_HungarianDoubleCompression_InvariantCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string source = "dzsdzs";
                 string target = "ddzs";
@@ -3011,14 +3012,14 @@ namespace System.Tests
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCulture));
                 Assert.Equal(-1, span.IndexOf(target.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_EquivalentDiacritics_EnglishUSCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string s = "Exhibit a\u0300\u00C0";
                 string value = "\u00C0";
@@ -3048,14 +3049,14 @@ namespace System.Tests
                 Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_EquivalentDiacritics_InvariantCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string s = "Exhibit a\u0300\u00C0";
                 string value = "\u00C0";
@@ -3077,14 +3078,14 @@ namespace System.Tests
                 Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
                 Assert.Equal(8, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_CyrillicE_EnglishUSCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string s = "Foo\u0400Bar";
                 string value = "\u0400";
@@ -3114,14 +3115,14 @@ namespace System.Tests
                 Assert.Equal(-1, span.IndexOf(value.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void IndexOf_CyrillicE_InvariantCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 string s = "Foo\u0400Bar";
                 string value = "\u0400";
@@ -3143,7 +3144,7 @@ namespace System.Tests
                 Assert.Equal(-1, span.IndexOf(value.AsSpan(), StringComparison.CurrentCulture));
                 Assert.Equal(4, span.IndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -4058,7 +4059,7 @@ namespace System.Tests
         [Fact]
         public static void LastIndexOf_TurkishI_TurkishCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
 
@@ -4087,14 +4088,14 @@ namespace System.Tests
                 Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.Ordinal));
                 Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.OrdinalIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void LastIndexOf_TurkishI_InvariantCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -4115,14 +4116,14 @@ namespace System.Tests
                 Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
                 Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public static void LastIndexOf_TurkishI_EnglishUSCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
@@ -4143,7 +4144,7 @@ namespace System.Tests
                 Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCulture));
                 Assert.Equal(10, span.LastIndexOf(value.AsSpan(), StringComparison.CurrentCultureIgnoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -5097,13 +5098,13 @@ namespace System.Tests
         [Fact]
         public static void Test_ToLower_Culture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 foreach (var testdata in ToLower_Culture_TestData())
                 {
                     ToLower_Culture((string)testdata[0], (string)testdata[1], (CultureInfo)testdata[2]);
                 }
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -5691,7 +5692,7 @@ namespace System.Tests
         [MemberData(nameof(ToUpper_TurkishI_TurkishCulture_MemberData))]
         public static void ToUpper_TurkishI_TurkishCulture(string s, string expected)
         {
-            RemoteInvoke((str, expectedString) =>
+            RemoteExecutor.Invoke((str, expectedString) =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
 
@@ -5701,7 +5702,7 @@ namespace System.Tests
                 Assert.Equal(str.Length, str.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
                 Assert.Equal(expectedString, destination.ToString());
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, s.ToString(), expected.ToString()).Dispose();
         }
 
@@ -5715,7 +5716,7 @@ namespace System.Tests
         [MemberData(nameof(ToUpper_TurkishI_EnglishUSCulture_MemberData))]
         public static void ToUpper_TurkishI_EnglishUSCulture(string s, string expected)
         {
-            RemoteInvoke((str, expectedString) =>
+            RemoteExecutor.Invoke((str, expectedString) =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
@@ -5725,7 +5726,7 @@ namespace System.Tests
                 Assert.Equal(str.Length, str.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
                 Assert.Equal(expectedString, destination.ToString());
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, s.ToString(), expected.ToString()).Dispose();
         }
 
@@ -5739,7 +5740,7 @@ namespace System.Tests
         [MemberData(nameof(ToUpper_TurkishI_InvariantCulture_MemberData))]
         public static void ToUpper_TurkishI_InvariantCulture(string s, string expected)
         {
-            RemoteInvoke((str, expectedString) =>
+            RemoteExecutor.Invoke((str, expectedString) =>
             {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
 
@@ -5749,7 +5750,7 @@ namespace System.Tests
                 Assert.Equal(str.Length, str.AsSpan().ToUpper(destination, CultureInfo.CurrentCulture));
                 Assert.Equal(expectedString, destination.ToString());
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, s.ToString(), expected.ToString()).Dispose();
         }
 
@@ -6821,7 +6822,7 @@ namespace System.Tests
         public static void CompareTest(string aS1, string aS2, string aCultureName, bool aIgnoreCase, int aExpected)
         {
             const string nullPlaceholder = "<null>";
-            RemoteInvoke((string s1, string s2, string cultureName, string bIgnoreCase, string iExpected) => {
+            RemoteExecutor.Invoke((string s1, string s2, string cultureName, string bIgnoreCase, string iExpected) => {
                 if (s1 == nullPlaceholder)
                     s1 = null;
 
@@ -6845,7 +6846,7 @@ namespace System.Tests
                 CultureInfo.CurrentCulture = ci;
                 Assert.Equal(expected, String.Compare(s1, 0, s2, 0, s1 == null ? 0 : s1.Length, ignoreCase));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, aS1 ?? nullPlaceholder, aS2 ?? nullPlaceholder, aCultureName, aIgnoreCase.ToString(), aExpected.ToString()).Dispose();
         }
 

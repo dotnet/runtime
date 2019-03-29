@@ -3,14 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
-using System.Diagnostics;
 
 namespace System.Net.Http.Tests
 {
-    public class HttpEnvironmentProxyTest : RemoteExecutorTestBase
+    public class HttpEnvironmentProxyTest
     {
         private readonly ITestOutputHelper _output;
         private static readonly Uri fooHttp = new Uri("http://foo.com");
@@ -38,7 +39,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void HttpProxy_EnvironmentProxy_Loaded()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
 
                 IWebProxy p;
@@ -97,7 +98,7 @@ namespace System.Net.Http.Tests
                 u = p.GetProxy(fooHttps);
                 Assert.True(u != null && u.Host == "1.1.1.5" && u.Port == 3005);
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
@@ -116,7 +117,7 @@ namespace System.Net.Http.Tests
         [InlineData("http://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         public void HttpProxy_Uri_Parsing(string _input, string _host, string _port, string _user , string _password)
         {
-            RemoteInvoke((input, host, port, user, password) =>
+            RemoteExecutor.Invoke((input, host, port, user, password) =>
             {
                 // Remote exec does not allow to pass null at this moment.
                 if (user == "null")
@@ -147,14 +148,14 @@ namespace System.Net.Http.Tests
                     Assert.Equal(password, nc.Password);
                 }
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }, _input, _host, _port, _user ?? "null" , _password ?? "null").Dispose();
         }
 
         [Fact]
         public void HttpProxy_CredentialParsing_Basic()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 IWebProxy p;
 
@@ -181,14 +182,14 @@ namespace System.Net.Http.Tests
                 Assert.Null(p.Credentials.GetCredential(fooHttp, "Basic"));
                 Assert.Null(p.Credentials.GetCredential(null, null));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
         public void HttpProxy_Exceptions_Match()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 IWebProxy p;
 
@@ -203,7 +204,7 @@ namespace System.Net.Http.Tests
                 Assert.False(p.IsBypassed(new Uri("http://1test.com")));
                 Assert.True(p.IsBypassed(new Uri("http://www.test.com")));
 
-                return SuccessExitCode;
+                return RemoteExecutor.SuccessExitCode;
            }).Dispose();
         }
     }

@@ -4,11 +4,12 @@
 
 using System.Diagnostics;
 using System.Globalization;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Tests
 {
-    public partial class FormattableStringTests : RemoteExecutorTestBase
+    public partial class FormattableStringTests
     {
         [Fact]
         public static void CurrentCulture_ImplicityAndExplicitMethodsReturnSameString()
@@ -28,18 +29,17 @@ namespace System.Tests
         [Fact]
         public static void CurrentCulture_DutchCulture_FormatsDoubleBasedOnCurrentCulture()
         {
-            RemoteInvoke(
-                () =>
-                {
-                    var dutchCulture = new CultureInfo("nl");
-                    CultureInfo.CurrentCulture = dutchCulture;
-                    double d = 123.456;
-                    string expected = string.Format(dutchCulture, "Dutch decimal separator is comma {0}", d);
-                    string actual = FormattableString.CurrentCulture($"Dutch decimal separator is comma {d}");
-                    Assert.Equal(expected, actual);
+            RemoteExecutor.Invoke(() =>
+            {
+                var dutchCulture = new CultureInfo("nl");
+                CultureInfo.CurrentCulture = dutchCulture;
+                double d = 123.456;
+                string expected = string.Format(dutchCulture, "Dutch decimal separator is comma {0}", d);
+                string actual = FormattableString.CurrentCulture($"Dutch decimal separator is comma {d}");
+                Assert.Equal(expected, actual);
 
-                    return SuccessExitCode;
-                }).Dispose();
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
         }
     }
 }
