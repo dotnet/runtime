@@ -26,6 +26,36 @@ enum class EventPipeEventLevel
     Verbose
 };
 
+struct EventPipeProviderCallbackData
+{
+    LPCWSTR pFilterData;
+    EventPipeCallback pCallbackFunction;
+    bool enabled;
+    INT64 keywords;
+    EventPipeEventLevel providerLevel;
+    void* pCallbackData;
+};
+
+struct EventPipeProviderCallbackDataNode
+{
+    EventPipeProviderCallbackData* value;
+    EventPipeProviderCallbackDataNode* prev;
+};
+
+class EventPipeProviderCallbackDataQueue
+{
+public:
+    EventPipeProviderCallbackDataQueue();
+
+    void Enqueue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData);
+
+    bool TryDequeue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData);
+
+private:
+    EventPipeProviderCallbackDataNode* front;
+    EventPipeProviderCallbackDataNode* back;
+};
+
 class EventPipeConfiguration
 {
 public:
@@ -36,13 +66,13 @@ public:
     void Initialize();
 
     // Create a new provider.
-    EventPipeProvider *CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData);
+    EventPipeProvider *CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     // Delete a provider.
     void DeleteProvider(EventPipeProvider *pProvider);
 
     // Register a provider.
-    bool RegisterProvider(EventPipeProvider &provider);
+    bool RegisterProvider(EventPipeProvider &provider, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     // Unregister a provider.
     bool UnregisterProvider(EventPipeProvider &provider);
@@ -64,10 +94,10 @@ public:
     size_t GetCircularBufferSize() const;
 
     // Enable a session in the event pipe.
-    void Enable(EventPipeSession *pSession);
+    void Enable(EventPipeSession *pSession, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     // Disable a session in the event pipe.
-    void Disable(EventPipeSession *pSession);
+    void Disable(EventPipeSession *pSession, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     // Get the status of the event pipe.
     bool Enabled() const;
@@ -76,7 +106,7 @@ public:
     bool RundownEnabled() const;
 
     // Enable rundown using the specified configuration.
-    void EnableRundown(EventPipeSession *pSession);
+    void EnableRundown(EventPipeSession *pSession, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
     // Get the event used to write metadata to the event stream.
     EventPipeEventInstance *BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance, unsigned int metdataId);
