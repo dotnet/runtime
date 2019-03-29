@@ -10,7 +10,7 @@ namespace System.Tests
 {
     public partial class TimeSpanTests
     {
-        private static IEnumerable<object[]> MultiplicationTestData()
+        public static IEnumerable<object[]> MultiplicationTestData()
         {
             yield return new object[] {new TimeSpan(2, 30, 0), 2.0, new TimeSpan(5, 0, 0)};
             yield return new object[] {new TimeSpan(14, 2, 30, 0), 192.0, TimeSpan.FromDays(2708)};
@@ -24,7 +24,7 @@ namespace System.Tests
 
         // ParseDifferentLengthFractionWithLeadingZerosData mainly testing the behavior we have fixed in net core
         // which is the way we normalize the parsed fraction and possibly rounding it.
-        private static IEnumerable<object[]> ParseDifferentLengthFractionWithLeadingZerosData()
+        public static IEnumerable<object[]> ParseDifferentLengthFractionWithLeadingZerosData()
         {
             yield return new object[] {"00:00:00.00000001",   new TimeSpan(0)};
             yield return new object[] {"00:00:00.00000005",   new TimeSpan(1)};

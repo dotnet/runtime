@@ -393,7 +393,7 @@ namespace System.Tests
             Assert.Equal(0x7F800000u, SingleToUInt32Bits(float.PositiveInfinity));
         }
 
-        private static IEnumerable<object[]> ToString_TestData()
+        public static IEnumerable<object[]> ToString_TestData()
         {
             yield return new object[] { -4567.0f, "G", null, "-4567" };
             yield return new object[] { -4567.89101f, "G", null, "-4567.891" };

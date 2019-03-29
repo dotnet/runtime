@@ -22,6 +22,7 @@ namespace System.Memory.Tests
             Assert.True(buffer.IsSingleSegment);
             Assert.Equal(0, buffer.Length);
             Assert.True(buffer.First.IsEmpty);
+            Assert.True(buffer.FirstSpan.IsEmpty);
             Assert.Equal($"System.Buffers.ReadOnlySequence<{typeof(byte).Name}>[0]", buffer.ToString());
         }
 
