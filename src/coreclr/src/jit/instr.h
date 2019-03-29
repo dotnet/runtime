@@ -296,7 +296,8 @@ enum InstructionSet
 {
     InstructionSet_ILLEGAL = 0,
 #ifdef _TARGET_XARCH_
-    InstructionSet_Base,
+    InstructionSet_Vector128,
+    InstructionSet_Vector256,
     // Start linear order SIMD instruction sets
     // These ISAs have strictly generation to generation order.
     InstructionSet_SSE,
@@ -326,6 +327,8 @@ enum InstructionSet
 #elif defined(_TARGET_ARM_)
     InstructionSet_NEON,
 #elif defined(_TARGET_ARM64_)
+    InstructionSet_Vector64,
+    InstructionSet_Vector128,
     InstructionSet_Base,      // Base instructions available on all Arm64 platforms
     InstructionSet_Aes,       // ID_AA64ISAR0_EL1.AES is 1 or better
     InstructionSet_Atomics,   // ID_AA64ISAR0_EL1.Atomic is 2 or better
