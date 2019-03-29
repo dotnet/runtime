@@ -2270,7 +2270,9 @@ void Compiler::compSetProcessor()
 #ifdef FEATURE_CORECLR
     if (JitConfig.EnableHWIntrinsic())
     {
-        opts.setSupportedISA(InstructionSet_Base);
+        // Dummy ISAs for simplifying the JIT code
+        opts.setSupportedISA(InstructionSet_Vector128);
+        opts.setSupportedISA(InstructionSet_Vector256);
 
         if (JitConfig.EnableSSE())
         {
@@ -2419,6 +2421,9 @@ void Compiler::compSetProcessor()
 #if defined(_TARGET_ARM64_)
     // There is no JitFlag for Base instructions handle manually
     opts.setSupportedISA(InstructionSet_Base);
+    // Dummy ISAs for simplifying the JIT code
+    opts.setSupportedISA(InstructionSet_Vector64);
+    opts.setSupportedISA(InstructionSet_Vector128);
 #define HARDWARE_INTRINSIC_CLASS(flag, jit_config, isa)                                                                \
     if (jitFlags.IsSet(JitFlags::flag) && JitConfig.jit_config())                                                      \
         opts.setSupportedISA(InstructionSet_##isa);
