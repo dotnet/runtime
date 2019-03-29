@@ -170,9 +170,9 @@ jobs:
         variables:
           - _outerloop: false
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            - allConfigurationsQueues: Windows.10.Amd64.ClientRS4.Open
+            - allConfigurationsQueues: Windows.10.Amd64.ClientRS5.Open
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - allConfigurationsQueues: Windows.10.Amd64.ClientRS4
+            - allConfigurationsQueues: Windows.10.Amd64.ClientRS5
 
         customBuildSteps:
           - script: build.cmd
