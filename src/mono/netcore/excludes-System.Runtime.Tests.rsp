@@ -51,17 +51,12 @@
 -nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter*
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter*
 -nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
--nomethod System.Tests.CreateDelegateTests.CreateDelegate2_Target_GenericTypeParameter
 -nomethod System.Tests.MulticastDelegateTests.Equals
 -nomethod System.Tests.MulticastDelegateTests.Combine
 -nomethod System.Tests.MulticastDelegateTests.Remove
 
--nomethod System.Tests.ExceptionTests.Ctor_Empty
--nomethod System.Tests.ExceptionTests.Ctor_String
--nomethod System.Tests.ExceptionTests.Ctor_String_Exception
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineSameMethod
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineOtherMethod
--nomethod System.Tests.ExceptionDerivedTests.Exception_SerializeObjectState
 
 -nomethod *Copy_PointerArrayToNonPointerArray_ThrowsArrayTypeMismatchException
 -nomethod *ActivatorTests.CreateInstance_PrimitiveWidening_ThrowsInvalidCastException
