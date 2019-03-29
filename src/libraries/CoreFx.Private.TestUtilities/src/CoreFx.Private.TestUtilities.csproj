@@ -22,14 +22,9 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="System\AdminHelpers.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
-    <Compile Include="System\Diagnostics\RemoteExecutorTestBase.cs" />
     <Compile Include="System\Net\PlatformDetection.Networking.cs" />
     <Compile Include="System\PlatformApis.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="System\TestEnvironment.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'netcoreapp2.0'" Include="System\Diagnostics\RemoteExecutorTestBase.netcore.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\Diagnostics\RemoteExecutorTestBase.netfx.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.uap.cs" />
-    <Compile Condition="'$(TargetsAOT)'=='true'" Include="System\Diagnostics\RemoteExecutorTestBase.aot.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\PlatformDetection.NetFx.cs" />
     <Compile Condition="'$(TargetGroup)' != 'netfx' AND '$(TargetsWindows)' == 'true'" Include="System\PlatformDetection.NonNetFx.Windows.cs" />
     <Compile Include="System\PlatformDetection.cs" />
