@@ -1,0 +1,10 @@
+﻿<Project DefaultTargets="Build">
+  <PropertyGroup>
+    <BuildConfigurations>
+      netcoreapp-Windows_NT;
+      netcoreappaot-Windows_NT;
+      netcoreapp-Unix;
+      netcoreappaot-WebAssembly;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

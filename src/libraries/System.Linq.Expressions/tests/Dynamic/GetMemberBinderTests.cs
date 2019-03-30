@@ -40,7 +40,7 @@ namespace System.Dynamic.Tests
             "horrid name with" + (char)0xD800 + "a half surrogate", "new", "break"
         };
 
-        private static IEnumerable<object[]> NamesAndBools() => Names.Select((n, i) => new object[] {n, i % 2 == 0});
+        public static IEnumerable<object[]> NamesAndBools() => Names.Select((n, i) => new object[] {n, i % 2 == 0});
 
         [Fact]
         public void InvokeInstanceProperty()

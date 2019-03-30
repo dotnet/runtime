@@ -42,15 +42,51 @@ namespace System.Reflection.Tests
                 Assembly asm = Assembly.LoadFrom(asmPath);
 
                 Assert.NotNull(asm);
-                
+
                 Assert.False(asm.IsCollectible);
+
+                AssemblyLoadContext alc = AssemblyLoadContext.GetLoadContext(asm);
+                Assert.False(alc.IsCollectible);
+                Assert.Equal(AssemblyLoadContext.Default, alc);
+                Assert.Equal("Default", alc.Name);
+                Assert.Contains("\"Default\"", alc.ToString());
+                Assert.Contains("System.Runtime.Loader.DefaultAssemblyLoadContext", alc.ToString());
+                Assert.Contains(alc, AssemblyLoadContext.All);
+#if CoreCLR_23583
+                Assert.Contains(asm, alc.Assemblies);
+#endif
 
                 return SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
-        public void Assembly_IsCollectibleTrue_WhenUsingAssemblyLoadContext()
+        public void Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext()
+        {
+            RemoteInvoke(() => {
+                AssemblyLoadContext alc = new AssemblyLoadContext("Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext");
+
+                Assembly asm = alc.LoadFromAssemblyPath(asmPath);
+
+                Assert.NotNull(asm);
+
+                Assert.False(asm.IsCollectible);
+                Assert.False(alc.IsCollectible);
+
+                Assert.Equal("Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext", alc.Name);
+                Assert.Contains("Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext", alc.ToString());
+                Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
+                Assert.Contains(alc, AssemblyLoadContext.All);
+#if CoreCLR_23583
+                Assert.Contains(asm, alc.Assemblies);
+#endif
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public void Assembly_IsCollectibleTrue_WhenUsingTestAssemblyLoadContext()
         {
             RemoteInvoke(() => {
                 AssemblyLoadContext alc = new TestAssemblyLoadContext();
@@ -58,8 +94,17 @@ namespace System.Reflection.Tests
                 Assembly asm = alc.LoadFromAssemblyPath(asmPath);
 
                 Assert.NotNull(asm);
-                
+
                 Assert.True(asm.IsCollectible);
+                Assert.True(alc.IsCollectible);
+
+                Assert.Null(alc.Name);
+                Assert.Contains("\"\"", alc.ToString());
+                Assert.Contains("System.Reflection.Tests.TestAssemblyLoadContext", alc.ToString());
+                Assert.Contains(alc, AssemblyLoadContext.All);
+#if CoreCLR_23583
+                Assert.Contains(asm, alc.Assemblies);
+#endif
 
                 return SuccessExitCode;
             }).Dispose();

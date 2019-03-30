@@ -95,7 +95,7 @@ namespace System.Tests
             }
         }
 
-        private static IEnumerable<object[]> TestData_AttributeExists()
+        public static IEnumerable<object[]> TestData_AttributeExists()
         {
             yield return new object[] { typeof(TestTypeWithAttributes), typeof(SerializableAttribute), new SerializableAttribute() };
             yield return new object[] { typeof(ITestComInterface), typeof(ComImportAttribute), new ComImportAttribute() };
@@ -121,7 +121,7 @@ namespace System.Tests
             yield return new object[] { testMethod, typeof(PreserveSigAttribute), new PreserveSigAttribute() };
         }
 
-        private static IEnumerable<object[]> TestData_AttributeDoesNotExist()
+        public static IEnumerable<object[]> TestData_AttributeDoesNotExist()
         {
             yield return new object[] { typeof(TestTypeWithoutAttributes), typeof(SerializableAttribute), null };
 

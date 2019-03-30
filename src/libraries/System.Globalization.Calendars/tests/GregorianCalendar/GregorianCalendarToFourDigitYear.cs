@@ -41,7 +41,7 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(ToFourDigitYear_TestData))]
-        private void ToFourDigitYear(GregorianCalendarTypes calendarType, int year)
+        public void ToFourDigitYear(GregorianCalendarTypes calendarType, int year)
         {
             Calendar calendar = new GregorianCalendar(calendarType);
             int expected = GetExpectedFourDigitYear(calendar, year);

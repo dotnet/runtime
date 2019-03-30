@@ -278,7 +278,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Equal(ip.GetHashCode(), clonedIp.GetHashCode());
         }
 
-        private static IEnumerable<object[]> GetValidIPAddresses()
+        public static IEnumerable<object[]> GetValidIPAddresses()
         {
             return IPAddressParsing.ValidIpv4Addresses
                 .Concat(IPAddressParsing.ValidIpv6Addresses)

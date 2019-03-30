@@ -135,7 +135,7 @@ namespace System.Net.Primitives.Functional.Tests
             Assert.Throws<ArgumentNullException>(() => cc.GetCookieHeader(null));
         }
 
-        private static IEnumerable<object[]> SetCookiesInvalidData()
+        public static IEnumerable<object[]> SetCookiesInvalidData()
         {
             yield return new object[] { u5, "=value" }; // No name
             yield return new object[] { u5, "$=value" }; // Invalid name

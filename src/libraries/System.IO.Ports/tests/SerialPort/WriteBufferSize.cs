@@ -18,7 +18,7 @@ namespace System.IO.Ports.Tests
         #region Test Cases
 
         [ConditionalFact(nameof(HasOneSerialPort))]
-        private void WriteBufferSize_Default()
+        public void WriteBufferSize_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {

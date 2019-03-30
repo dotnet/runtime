@@ -82,8 +82,9 @@ jobs:
           - group: DotNet-Blob-Feed
 
         - ${{ if eq(job.submitToHelix, 'true') }}:
-          - group: DotNet-HelixApi-Access
           - _archiveTestsParameter: /p:ArchiveTests=Tests
+          - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+            - group: DotNet-HelixApi-Access
 
         - _args: -restore -build -configuration $(_BuildConfig) -ci -buildtests -arch $(_architecture) -framework $(_framework) $(_archiveTestsParameter)
         - _commonArguments: $(_args)

@@ -395,7 +395,7 @@ namespace System.Tests
             Assert.Equal(0x7FF00000_00000000u, DoubleToUInt64Bits(double.PositiveInfinity));
         }
 
-        private static IEnumerable<object[]> ToString_TestData()
+        public static IEnumerable<object[]> ToString_TestData()
         {
             yield return new object[] { -4567.0, "G", null, "-4567" };
             yield return new object[] { -4567.89101, "G", null, "-4567.89101" };

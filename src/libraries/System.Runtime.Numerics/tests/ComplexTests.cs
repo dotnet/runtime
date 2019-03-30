@@ -1338,7 +1338,7 @@ namespace System.Numerics.Tests
         [MemberData(nameof(Boundaries_2_TestData))]
         [MemberData(nameof(Primitives_2_TestData))]
         [MemberData(nameof(Invalid_2_TestData))]
-        private static void Pow(double real, double imaginary)
+        public static void Pow(double real, double imaginary)
         {
             Pow_Complex_Double(real, imaginary);
             Pow_Complex_Complex(real, imaginary);

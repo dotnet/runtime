@@ -17,6 +17,8 @@
 #cmakedefine01 HAVE_STAT_TIMESPEC
 #cmakedefine01 HAVE_STAT_TIM
 #cmakedefine01 HAVE_STAT_NSEC
+#cmakedefine01 HAVE_STAT_FLAGS
+#cmakedefine01 HAVE_LCHFLAGS
 #cmakedefine01 HAVE_GNU_STRERROR_R
 #cmakedefine01 HAVE_READDIR_R
 #cmakedefine01 HAVE_DIRENT_NAME_LEN

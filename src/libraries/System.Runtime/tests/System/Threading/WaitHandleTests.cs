@@ -251,7 +251,7 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(SignalAndWait_MemberData))]
-        private static void SignalAndWait(
+        public static void SignalAndWait(
             WaitHandle toSignal,
             AutoResetEvent toWaitOn,
             Func<WaitHandle, WaitHandle, bool> callSignalAndWait,

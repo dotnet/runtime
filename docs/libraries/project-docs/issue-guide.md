@@ -129,7 +129,7 @@ Feel free to use other labels if it helps your triage efforts (e.g. **needs more
 #### Motivation for triage rules
 
 1. Each issue has exactly one **area-\*** label
-    * Motivation: Issues with multiple areas have loose responbility (everyone blames the other side) and issues are double counted in reports.
+    * Motivation: Issues with multiple areas have loose responsibility (everyone blames the other side) and issues are double counted in reports.
 1. Issue has no **Assignee**, unless someone is working on the issue at the moment
     * Motivation: Observation is that contributors are less likely to grab assigned issues, no matter what the repo rules say.
 1. Use **up-for-grabs** as much as possible, ideally with a quick note about next steps / complexity of the issue

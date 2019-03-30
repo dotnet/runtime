@@ -24,7 +24,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new MinLengthAttribute(16), new string[16]);
         }
 
-        protected static IEnumerable<object[]> ValidValues_ICollection()
+        public static IEnumerable<object[]> ValidValues_ICollection()
         {
             yield return new object[] { new MinLengthAttribute(0), new Collection<int>(new int[0]) };
             yield return new object[] { new MinLengthAttribute(12), new Collection<int>(new int[14]) };
@@ -56,7 +56,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             yield return new TestCase(new MinLengthAttribute(12), new int[3, 3]);
         }
 
-        protected static IEnumerable<object[]> InvalidValues_ICollection()
+        public static IEnumerable<object[]> InvalidValues_ICollection()
         {
             yield return new object[] { new MinLengthAttribute(15), new Collection<byte>(new byte[14]) };
             yield return new object[] { new MinLengthAttribute(15), new List<byte>(new byte[14]) };

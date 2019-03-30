@@ -87,7 +87,7 @@ namespace Generic.Dictionary
 
     // We use a custom type instead of string because string use optimized comparer https://github.com/dotnet/coreclr/blob/master/src/System.Private.CoreLib/shared/System/Collections/Generic/Dictionary.cs#L79
     // We want to test case with _comparer = null
-    class DummyRefType
+    public class DummyRefType
     {
         public int Value { get; set; }
         public override bool Equals(object obj)
@@ -101,7 +101,7 @@ namespace Generic.Dictionary
         }
     }
 
-    class CustomEqualityComparerDummyRefType : EqualityComparer<DummyRefType>
+    public class CustomEqualityComparerDummyRefType : EqualityComparer<DummyRefType>
     {
         public override bool Equals(DummyRefType x, DummyRefType y)
         {
@@ -114,7 +114,7 @@ namespace Generic.Dictionary
         }
     }
 
-    class CustomEqualityComparerInt32ValueType : EqualityComparer<int>
+    public class CustomEqualityComparerInt32ValueType : EqualityComparer<int>
     {
         public override bool Equals(int x, int y)
         {

@@ -23,7 +23,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(PaddingMode.ANSIX923, 1, "46785BDE46622B92FF7C8EBB91508A", "DB5B7829CCE732BFE609140CF45A8843" )]
         [InlineData(PaddingMode.ANSIX923, 13, "E505A2", "43B27D41A9FDE73CA5DB22C0FDA76CB1")]
         [InlineData(PaddingMode.ANSIX923, 16, "", "A3D32A3A9DCA71B6F961F5A8ED7E414F")]
-        private static void ValidatePaddingMode_NonISO10126(PaddingMode paddingMode, int expectedPaddingSize, string plainTextStr, string expectedCipherStr)
+        public static void ValidatePaddingMode_NonISO10126(PaddingMode paddingMode, int expectedPaddingSize, string plainTextStr, string expectedCipherStr)
         {
             Assert.True(paddingMode != PaddingMode.ISO10126, "This tests only non-ISO10126 padding");
 
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(1, "46785BDE46622B92FF7C8EBB91508A")]
         [InlineData(13, "E505A2")]
         [InlineData(16, "")]
-        private static void ValidatePaddingMode_ISO10126(int expectedPaddingSize, string plainTextStr)
+        public static void ValidatePaddingMode_ISO10126(int expectedPaddingSize, string plainTextStr)
         {
             byte[] key = "1ed2f625c187b993256a8b3ccf9dcbfa5b44b4795c731012f70e4e64732efd5d".HexToByteArray();
             byte[] iv = "47d1e060ba3c8643f9f8b65feeda4b30".HexToByteArray();

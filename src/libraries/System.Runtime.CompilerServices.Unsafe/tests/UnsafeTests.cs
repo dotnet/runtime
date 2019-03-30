@@ -129,29 +129,22 @@ namespace System.Runtime.CompilerServices
             Assert.Equal(10, value);
         }
 
-        [Theory]
-        [MemberData(nameof(SizeOfData))]
-        public static unsafe void SizeOf<T>(int expected, T valueUnused)
+        [Fact]
+        public static unsafe void SizeOf()
         {
-            // valueUnused is only present to enable Xunit to call the correct generic overload.
-            Assert.Equal(expected, Unsafe.SizeOf<T>());
-        }
-
-        public static IEnumerable<object[]> SizeOfData()
-        {
-            yield return new object[] { 1, new sbyte() };
-            yield return new object[] { 1, new byte() };
-            yield return new object[] { 2, new short() };
-            yield return new object[] { 2, new ushort() };
-            yield return new object[] { 4, new int() };
-            yield return new object[] { 4, new uint() };
-            yield return new object[] { 8, new long() };
-            yield return new object[] { 8, new ulong() };
-            yield return new object[] { 4, new float() };
-            yield return new object[] { 8, new double() };
-            yield return new object[] { 4, new Byte4() };
-            yield return new object[] { 8, new Byte4Short2() };
-            yield return new object[] { 512, new Byte512() };
+            Assert.Equal(1, Unsafe.SizeOf<sbyte>());
+            Assert.Equal(1, Unsafe.SizeOf<byte>());
+            Assert.Equal(2, Unsafe.SizeOf<short>());
+            Assert.Equal(2, Unsafe.SizeOf<ushort>());
+            Assert.Equal(4, Unsafe.SizeOf<int>());
+            Assert.Equal(4, Unsafe.SizeOf<uint>());
+            Assert.Equal(8, Unsafe.SizeOf<long>());
+            Assert.Equal(8, Unsafe.SizeOf<ulong>());
+            Assert.Equal(4, Unsafe.SizeOf<float>());
+            Assert.Equal(8, Unsafe.SizeOf<double>());
+            Assert.Equal(4, Unsafe.SizeOf<Byte4>());
+            Assert.Equal(8, Unsafe.SizeOf<Byte4Short2>());
+            Assert.Equal(512, Unsafe.SizeOf<Byte512>());
         }
 
         [Theory]

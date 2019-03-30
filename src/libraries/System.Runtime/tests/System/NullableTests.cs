@@ -154,6 +154,6 @@ namespace System.Tests
             public override int GetHashCode() => Value++.GetHashCode();
         }
 
-        private class G<T> { }
+        public class G<T> { }
     }
 }

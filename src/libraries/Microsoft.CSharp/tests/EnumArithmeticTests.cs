@@ -21,20 +21,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         private static readonly ByteEnum[] ByteEnumValues = {ByteEnum.A, ByteEnum.B, ByteEnum.C,};
         private static readonly byte[] ByteValues = {0, 1, 2, byte.MaxValue};
 
-        private static IEnumerable<object[]> ByteEnumValueArguments() => ByteEnumValues.Select(i => new object[] {i});
+        public static IEnumerable<object[]> ByteEnumValueArguments() => ByteEnumValues.Select(i => new object[] {i});
 
-        private static IEnumerable<object[]> ByteEnumAdditions()
+        public static IEnumerable<object[]> ByteEnumAdditions()
             => ByteEnumValues.SelectMany(en => ByteValues, (en, ad) => new object[] {en, ad, unchecked(en + ad)});
 
-        private static IEnumerable<object[]> CheckedByteEnumAdditions()
+        public static IEnumerable<object[]> CheckedByteEnumAdditions()
             => ByteEnumValues.SelectMany(
                 en => ByteValues, (en, ad) => new object[] {en, ad, unchecked(en + ad), (int)en + ad > byte.MaxValue});
 
-        private static IEnumerable<object[]> ByteEnumSubtractions()
+        public static IEnumerable<object[]> ByteEnumSubtractions()
             => ByteEnumValues.SelectMany(
                 en => ByteValues, (en, ad) => new object[] {en, ad, unchecked(en - ad), unchecked(ad - en)});
 
-        private static IEnumerable<object[]> ByteEnumSelfSubtraction()
+        public static IEnumerable<object[]> ByteEnumSelfSubtraction()
             => ByteEnumValues.SelectMany(x => ByteEnumValues, (x, y) => new object[] {x, y, unchecked(x - y), unchecked (x - y) > (byte)x});
 
         public enum SByteEnum : sbyte
@@ -47,20 +47,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         private static readonly SByteEnum[] SByteEnumValues = {SByteEnum.A, SByteEnum.B, SByteEnum.C,};
         private static readonly sbyte[] SByteValues = {0, 1, 2, sbyte.MinValue, sbyte.MaxValue};
 
-        private static IEnumerable<object[]> SByteEnumValueArguments() => SByteEnumValues.Select(i => new object[] { i });
+        public static IEnumerable<object[]> SByteEnumValueArguments() => SByteEnumValues.Select(i => new object[] { i });
 
-        private static IEnumerable<object[]> SByteEnumAdditions()
+        public static IEnumerable<object[]> SByteEnumAdditions()
             => SByteEnumValues.SelectMany(en => SByteValues, (en, ad) => new object[] {en, ad, unchecked(en + ad)});
 
-        private static IEnumerable<object[]> CheckedSByteEnumAdditions()
+        public static IEnumerable<object[]> CheckedSByteEnumAdditions()
             => SByteEnumValues.SelectMany(
                 en => SByteValues, (en, ad) => new object[] {en, ad, unchecked(en + ad), (int)en + ad > sbyte.MaxValue});
 
-        private static IEnumerable<object[]> SByteEnumSubtractions()
+        public static IEnumerable<object[]> SByteEnumSubtractions()
             => SByteEnumValues.SelectMany(
                 en => SByteValues, (en, ad) => new object[] {en, ad, unchecked(en - ad), unchecked(ad - en)});
 
-        private static IEnumerable<object[]> SByteEnumSelfSubtraction()
+        public static IEnumerable<object[]> SByteEnumSelfSubtraction()
             => SByteEnumValues.SelectMany(x => SByteEnumValues, (x, y) => new object[] { x, y, unchecked(x - y), unchecked(x - y) > (byte)x });
 
         public enum Int16Enum : short
@@ -73,20 +73,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         private static readonly Int16Enum[] Int16EnumValues = {Int16Enum.A, Int16Enum.B, Int16Enum.C,};
         private static readonly short[] Int16Values = {0, 1, 2, short.MinValue, short.MaxValue};
 
-        private static IEnumerable<object[]> Int16EnumValueArguments() => Int16EnumValues.Select(i => new object[] { i });
+        public static IEnumerable<object[]> Int16EnumValueArguments() => Int16EnumValues.Select(i => new object[] { i });
 
-        private static IEnumerable<object[]> Int16EnumAdditions()
+        public static IEnumerable<object[]> Int16EnumAdditions()
             => Int16EnumValues.SelectMany(en => Int16Values, (en, ad) => new object[] {en, ad, unchecked(en + ad)});
 
-        private static IEnumerable<object[]> CheckedInt16EnumAdditions()
+        public static IEnumerable<object[]> CheckedInt16EnumAdditions()
             => Int16EnumValues.SelectMany(
                 en => Int16Values, (en, ad) => new object[] {en, ad, unchecked(en + ad), (int)en + ad > short.MaxValue});
 
-        private static IEnumerable<object[]> Int16EnumSubtractions()
+        public static IEnumerable<object[]> Int16EnumSubtractions()
             => Int16EnumValues.SelectMany(
                 en => Int16Values, (en, ad) => new object[] {en, ad, unchecked(en - ad), unchecked(ad - en)});
 
-        private static IEnumerable<object[]> Int16EnumSelfSubtraction()
+        public static IEnumerable<object[]> Int16EnumSelfSubtraction()
             => Int16EnumValues.SelectMany(x => Int16EnumValues, (x, y) => new object[] { x, y, unchecked(x - y), unchecked(x - y) > (byte)x });
 
         public enum UInt16Enum : ushort
@@ -99,20 +99,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         private static readonly UInt16Enum[] UInt16EnumValues = {UInt16Enum.A, UInt16Enum.B, UInt16Enum.C,};
         private static readonly ushort[] UInt16Values = {0, 1, 2, ushort.MaxValue};
 
-        private static IEnumerable<object[]> UInt16EnumValueArguments() => UInt16EnumValues.Select(i => new object[] { i });
+        public static IEnumerable<object[]> UInt16EnumValueArguments() => UInt16EnumValues.Select(i => new object[] { i });
 
-        private static IEnumerable<object[]> UInt16EnumAdditions()
+        public static IEnumerable<object[]> UInt16EnumAdditions()
             => UInt16EnumValues.SelectMany(en => UInt16Values, (en, ad) => new object[] {en, ad, unchecked(en + ad)});
 
-        private static IEnumerable<object[]> CheckedUInt16EnumAdditions()
+        public static IEnumerable<object[]> CheckedUInt16EnumAdditions()
             => UInt16EnumValues.SelectMany(
                 en => UInt16Values, (en, ad) => new object[] {en, ad, unchecked(en + ad), (int)en + ad > ushort.MaxValue});
 
-        private static IEnumerable<object[]> UInt16EnumSubtractions()
+        public static IEnumerable<object[]> UInt16EnumSubtractions()
             => UInt16EnumValues.SelectMany(
                 en => UInt16Values, (en, ad) => new object[] {en, ad, unchecked(en - ad), unchecked(ad - en)});
 
-        private static IEnumerable<object[]> UInt16EnumSelfSubtraction()
+        public static IEnumerable<object[]> UInt16EnumSelfSubtraction()
             => UInt16EnumValues.SelectMany(x => UInt16EnumValues, (x, y) => new object[] { x, y, unchecked(x - y), unchecked(x - y) > (byte)x });
 
         public enum Int32Enum
@@ -125,20 +125,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         private static readonly Int32Enum[] Int32EnumValues = {Int32Enum.A, Int32Enum.B, Int32Enum.C,};
         private static readonly int[] Int32Values = {0, 1, 2, int.MinValue, int.MaxValue};
 
-        private static IEnumerable<object[]> Int32EnumValueArguments() => Int32EnumValues.Select(i => new object[] { i });
+        public static IEnumerable<object[]> Int32EnumValueArguments() => Int32EnumValues.Select(i => new object[] { i });
 
-        private static IEnumerable<object[]> Int32EnumAdditions()
+        public static IEnumerable<object[]> Int32EnumAdditions()
             => Int32EnumValues.SelectMany(en => Int32Values, (en, ad) => new object[] {en, ad, unchecked(en + ad)});
 
-        private static IEnumerable<object[]> CheckedInt32EnumAdditions()
+        public static IEnumerable<object[]> CheckedInt32EnumAdditions()
             => Int32EnumValues.SelectMany(
                 en => Int32Values, (en, ad) => new object[] {en, ad, unchecked(en + ad), (long)en + ad > int.MaxValue});
 
-        private static IEnumerable<object[]> Int32EnumSubtractions()
+        public static IEnumerable<object[]> Int32EnumSubtractions()
             => Int32EnumValues.SelectMany(
                 en => Int32Values, (en, ad) => new object[] {en, ad, unchecked(en - ad), unchecked(ad - en)});
 
-        private static IEnumerable<object[]> Int32EnumSelfSubtraction()
+        public static IEnumerable<object[]> Int32EnumSelfSubtraction()
             => Int32EnumValues.SelectMany(x => Int32EnumValues, (x, y) => new object[] { x, y, unchecked(x - y), unchecked(x - y) > (byte)x });
 
         public enum UInt32Enum : uint
@@ -151,20 +151,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         private static readonly UInt32Enum[] UInt32EnumValues = {UInt32Enum.A, UInt32Enum.B, UInt32Enum.C,};
         private static readonly uint[] UInt32Values = {0, 1, 2, uint.MaxValue};
 
-        private static IEnumerable<object[]> UInt32EnumValueArguments() => UInt32EnumValues.Select(i => new object[] { i });
+        public static IEnumerable<object[]> UInt32EnumValueArguments() => UInt32EnumValues.Select(i => new object[] { i });
 
-        private static IEnumerable<object[]> UInt32EnumAdditions()
+        public static IEnumerable<object[]> UInt32EnumAdditions()
             => UInt32EnumValues.SelectMany(en => UInt32Values, (en, ad) => new object[] {en, ad, unchecked(en + ad)});
 
-        private static IEnumerable<object[]> CheckedUInt32EnumAdditions()
+        public static IEnumerable<object[]> CheckedUInt32EnumAdditions()
             => UInt32EnumValues.SelectMany(
                 en => UInt32Values, (en, ad) => new object[] {en, ad, unchecked(en + ad), (ulong)en + ad > uint.MaxValue});
 
-        private static IEnumerable<object[]> UInt32EnumSubtractions()
+        public static IEnumerable<object[]> UInt32EnumSubtractions()
             => UInt32EnumValues.SelectMany(
                 en => UInt32Values, (en, ad) => new object[] {en, ad, unchecked(en - ad), unchecked(ad - en)});
 
-        private static IEnumerable<object[]> UInt32EnumSelfSubtraction()
+        public static IEnumerable<object[]> UInt32EnumSelfSubtraction()
             => UInt32EnumValues.SelectMany(x => UInt32EnumValues, (x, y) => new object[] { x, y, unchecked(x - y), unchecked(x - y) > (byte)x });
 
         public enum Int64Enum : long
@@ -177,20 +177,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         private static readonly Int64Enum[] Int64EnumValues = {Int64Enum.A, Int64Enum.B, Int64Enum.C,};
         private static readonly long[] Int64Values = {0, 1, 2, long.MinValue, long.MaxValue};
 
-        private static IEnumerable<object[]> Int64EnumValueArguments() => Int64EnumValues.Select(i => new object[] { i });
+        public static IEnumerable<object[]> Int64EnumValueArguments() => Int64EnumValues.Select(i => new object[] { i });
 
-        private static IEnumerable<object[]> Int64EnumAdditions()
+        public static IEnumerable<object[]> Int64EnumAdditions()
             => Int64EnumValues.SelectMany(en => Int64Values, (en, ad) => new object[] {en, ad, unchecked(en + ad)});
 
-        private static IEnumerable<object[]> CheckedInt64EnumAdditions()
+        public static IEnumerable<object[]> CheckedInt64EnumAdditions()
             => Int64EnumValues.SelectMany(
                 en => Int64Values, (en, ad) => new object[] {en, ad, unchecked(en + ad), unchecked((long)en + ad < ad)});
 
-        private static IEnumerable<object[]> Int64EnumSubtractions()
+        public static IEnumerable<object[]> Int64EnumSubtractions()
             => Int64EnumValues.SelectMany(
                 en => Int64Values, (en, ad) => new object[] {en, ad, unchecked(en - ad), unchecked(ad - en)});
 
-        private static IEnumerable<object[]> Int64EnumSelfSubtraction()
+        public static IEnumerable<object[]> Int64EnumSelfSubtraction()
             => Int64EnumValues.SelectMany(x => Int64EnumValues, (x, y) => new object[] { x, y, unchecked(x - y), unchecked(x - y) > (byte)x });
 
         public enum UInt64Enum : ulong
@@ -203,20 +203,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         private static readonly UInt64Enum[] UInt64EnumValues = {UInt64Enum.A, UInt64Enum.B, UInt64Enum.C,};
         private static readonly ulong[] UInt64Values = {0, 1, 2, ulong.MaxValue};
 
-        private static IEnumerable<object[]> UInt64EnumValueArguments() => UInt64EnumValues.Select(i => new object[] { i });
+        public static IEnumerable<object[]> UInt64EnumValueArguments() => UInt64EnumValues.Select(i => new object[] { i });
 
-        private static IEnumerable<object[]> UInt64EnumAdditions()
+        public static IEnumerable<object[]> UInt64EnumAdditions()
             => UInt64EnumValues.SelectMany(en => UInt64Values, (en, ad) => new object[] {en, ad, unchecked(en + ad)});
 
-        private static IEnumerable<object[]> CheckedUInt64EnumAdditions()
+        public static IEnumerable<object[]> CheckedUInt64EnumAdditions()
             => UInt64EnumValues.SelectMany(
                 en => UInt64Values, (en, ad) => new object[] {en, ad, unchecked(en + ad), unchecked((ulong)en + ad < ad)});
 
-        private static IEnumerable<object[]> UInt64EnumSubtractions()
+        public static IEnumerable<object[]> UInt64EnumSubtractions()
             => UInt64EnumValues.SelectMany(
                 en => UInt64Values, (en, ad) => new object[] {en, ad, unchecked(en - ad), unchecked(ad - en)});
 
-        private static IEnumerable<object[]> UInt64EnumSelfSubtraction()
+        public static IEnumerable<object[]> UInt64EnumSelfSubtraction()
             => UInt64EnumValues.SelectMany(x => UInt64EnumValues, (x, y) => new object[] { x, y, unchecked(x - y), unchecked(x - y) > (byte)x });
 
         [Theory]
