@@ -251,7 +251,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Throws<InvalidOperationException>(() => withAssignment(variable, value));
         }
 
-        private static IEnumerable<object[]> AssignmentMethods()
+        public static IEnumerable<object[]> AssignmentMethods()
         {
             MethodInfo[] expressionMethods = typeof(Expression).GetMethods().Where(mi => mi.GetParameters().Length == 2).ToArray();
             foreach (Tuple<string, string> names in AssignAndEquivalentMethodNames(true))
@@ -260,7 +260,7 @@ namespace System.Linq.Expressions.Tests
                 yield return new object[] { expressionMethods.First(mi => mi.Name == names.Item2), typeof(double) };
         }
 
-        private static IEnumerable<object[]> AssignmentMethodsWithoutTypes()
+        public static IEnumerable<object[]> AssignmentMethodsWithoutTypes()
         {
             MethodInfo[] expressionMethods = typeof(Expression).GetMethods().Where(mi => mi.GetParameters().Length == 2).ToArray();
             return AssignAndEquivalentMethodNames(true).Concat(AssignAndEquivalentMethodNames(false))
@@ -269,7 +269,7 @@ namespace System.Linq.Expressions.Tests
                 .Select(i => new object[] { expressionMethods.First(mi => mi.Name == i) });
         }
 
-        private static IEnumerable<object[]> AssignAndEquivalentMethods()
+        public static IEnumerable<object[]> AssignAndEquivalentMethods()
         {
             MethodInfo[] expressionMethods = typeof(Expression).GetMethods().Where(mi => mi.GetParameters().Length == 2).ToArray();
             foreach (Tuple<string, string> names in AssignAndEquivalentMethodNames(true))
@@ -286,7 +286,7 @@ namespace System.Linq.Expressions.Tests
                 };
         }
 
-        private static IEnumerable<Tuple<string, string>> AssignAndEquivalentMethodNames(bool integral)
+        public static IEnumerable<Tuple<string, string>> AssignAndEquivalentMethodNames(bool integral)
         {
             yield return Tuple.Create("Add", "AddAssign");
             yield return Tuple.Create("AddChecked", "AddAssignChecked");
@@ -316,7 +316,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal($"(a {symbol} b)", e.ToString());
         }
 
-        private static IEnumerable<object[]> ToStringData()
+        public static IEnumerable<object[]> ToStringData()
         {
             return ToStringDataImpl().Select(t => new object[] { t.Item1, t.Item2, t.Item3 });
         }

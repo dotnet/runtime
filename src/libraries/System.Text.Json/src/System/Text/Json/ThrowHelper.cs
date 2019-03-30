@@ -237,11 +237,17 @@ namespace System.Text.Json
 
         private static bool IsPrintable(byte value) => value >= 0x20 && value < 0x7F;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static string GetPrintableString(byte value)
+        {
+            return IsPrintable(value) ? ((char)value).ToString() : $"0x{value:X2}";
+        }
+
         // This function will convert an ExceptionResource enum value to the resource string.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetResourceString(ref Utf8JsonReader json, ExceptionResource resource, byte nextByte, string characters)
         {
-            string character = IsPrintable(nextByte) ? ((char)nextByte).ToString() : $"0x{nextByte:X2}";
+            string character = GetPrintableString(nextByte);
 
             string message = "";
             switch (resource)

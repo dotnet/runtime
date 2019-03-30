@@ -301,7 +301,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [TypeConverter("typeName")]
-        private class ClassWithMetadata
+        public class ClassWithMetadata
         {
             [ReadOnly(true)]
             [DisplayName("First name")]
@@ -311,7 +311,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [MetadataType(typeof(ClassWithMetadata))]
-        private class ClassWithMetadataOnAnotherClass
+        public class ClassWithMetadataOnAnotherClass
         {
             public string FirstName { get; set; }
 
@@ -320,25 +320,25 @@ namespace System.ComponentModel.DataAnnotations.Tests
         }
 
         [MetadataType(typeof(ClassWithMetadata))]
-        private class ClassWithInvalidMetadata
+        public class ClassWithInvalidMetadata
         {
             public string FirstName { get; set; }
         }
 
         [TypeConverter("typeName")]
         [MetadataType(typeof(ClassWithSelfAssociatedMetadata))]
-        private class ClassWithSelfAssociatedMetadata
+        public class ClassWithSelfAssociatedMetadata
         {
             [DisplayName("Last name")]
             public string LastName { get; set; }
         }
 
-        private class EmptyClass
+        public class EmptyClass
         {
         }
 
         [EditorBrowsable(EditorBrowsableState.Always)]
-        private class ClassWithAttributes
+        public class ClassWithAttributes
         {
         }
     }

@@ -10,12 +10,15 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Ping class not supported on UWP. See dotnet/corefx #19583")]
     public class PingTest
     {
+        public readonly ITestOutputHelper _output;
+
         private class FinalizingPing : Ping
         {
             public static volatile bool WasFinalized;
@@ -36,7 +39,12 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        private static void PingResultValidator(PingReply pingReply, IPAddress localIpAddress)
+        public PingTest(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        private void PingResultValidator(PingReply pingReply, IPAddress localIpAddress)
         {
             if (pingReply.Status == IPStatus.TimedOut)
             {
@@ -47,6 +55,16 @@ namespace System.Net.NetworkInformation.Tests
             }
 
             Assert.Equal(IPStatus.Success, pingReply.Status);
+            if (!pingReply.Address.Equals(localIpAddress))
+            {
+                // Test is going to fail. Collect some more info.
+                _output.WriteLine($"Reply address {pingReply.Address} is not expected {localIpAddress}");
+                IPHostEntry hostEntry = Dns.GetHostEntry(TestSettings.LocalHost);
+                foreach (IPAddress address in hostEntry.AddressList)
+                {
+                    _output.WriteLine($"Local address {address}");
+                }
+            }
             Assert.True(pingReply.Address.Equals(localIpAddress));
         }
 
@@ -599,7 +617,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        public static async Task SendPings_ReuseInstance_Hostname()
+        public async Task SendPings_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
 
@@ -614,7 +632,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        public static async Task Sends_ReuseInstance_Hostname()
+        public async Task Sends_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
 
@@ -629,7 +647,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        public static async Task SendAsyncs_ReuseInstance_Hostname()
+        public async Task SendAsyncs_ReuseInstance_Hostname()
         {
             IPAddress localIpAddress = await TestSettings.GetLocalIPAddressAsync();
 

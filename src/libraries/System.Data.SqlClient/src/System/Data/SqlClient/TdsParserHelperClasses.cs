@@ -6,6 +6,7 @@
 
 //------------------------------------------------------------------------------
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data.Common;
@@ -13,6 +14,7 @@ using System.Data.SqlTypes;
 using System.Diagnostics;
 using System.Security;
 using System.Text;
+using System.Threading;
 using Microsoft.SqlServer.Server;
 
 namespace System.Data.SqlClient
@@ -77,7 +79,7 @@ namespace System.Data.SqlClient
         internal byte[] accessToken;
     }
 
-    sealed internal class SqlCollation
+    internal sealed class SqlCollation
     {
         // First 20 bits of info field represent the lcid, bits 21-25 are compare options
         private const uint IgnoreCase = 1 << 20; // bit 21 - IgnoreCase
@@ -232,7 +234,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class SqlEnvChange
+    internal sealed class SqlEnvChange
     {
         internal byte type;
         internal byte oldLength;
@@ -240,16 +242,164 @@ namespace System.Data.SqlClient
         internal int length;
         internal string newValue;
         internal string oldValue;
+        /// <summary>
+        /// contains binary data, before using this field check newBinRented to see if you can take the field array or whether you should allocate and copy
+        /// </summary>
         internal byte[] newBinValue;
+        /// <summary>
+        /// contains binary data, before using this field check newBinRented to see if you can take the field array or whether you should allocate and copy
+        /// </summary>
         internal byte[] oldBinValue;
         internal long newLongValue;
         internal long oldLongValue;
         internal SqlCollation newCollation;
         internal SqlCollation oldCollation;
         internal RoutingInfo newRoutingInfo;
+        internal bool newBinRented;
+        internal bool oldBinRented;
+
+        internal SqlEnvChange Next;
+
+        internal void Clear()
+        {
+            type = 0;
+            oldLength = 0;
+            newLength = 0;
+            length = 0;
+            newValue = null;
+            oldValue = null;
+            if (newBinValue != null)
+            {
+                Array.Clear(newBinValue, 0, newBinValue.Length);
+                if (newBinRented)
+                {
+                    ArrayPool<byte>.Shared.Return(newBinValue);
+                }
+
+                newBinValue = null;
+            }
+            if (oldBinValue != null)
+            {
+                Array.Clear(oldBinValue, 0, oldBinValue.Length);
+                if (oldBinRented)
+                {
+                    ArrayPool<byte>.Shared.Return(oldBinValue);
+                }
+                oldBinValue = null;
+            }
+            newBinRented = false;
+            oldBinRented = false;
+            newLongValue = 0;
+            oldLongValue = 0;
+            newCollation = null;
+            oldCollation = null;
+            newRoutingInfo = null;
+            Next = null;
+        }
     }
 
-    sealed internal class SqlLogin
+    internal static class SqlEnvChangePool
+    {
+        private static int _count;
+        private static int _capacity;
+        private static SqlEnvChange[] _items;
+#if DEBUG
+        private static string[] _stacks;
+#endif 
+
+        static SqlEnvChangePool()
+        {
+            _capacity = 10;
+            _items = new SqlEnvChange[_capacity];
+            _count = 1;
+#if DEBUG
+            _stacks = new string[_capacity];
+#endif 
+        }
+
+        internal static SqlEnvChange Allocate()
+        {
+            SqlEnvChange retval = null;
+            lock (_items)
+            {
+                while (_count > 0 && retval is null)
+                {
+                    int count = _count; // copy the count we think we have
+                    int newCount = count - 1; // work out the new value we want
+                                              // exchange _count for newCount only if _count is the same as our cached copy
+                    if (count == Interlocked.CompareExchange(ref _count, newCount, count))
+                    {
+                        // count is now the previous value, we're the only thread that has it, so count-1 is safe to access
+                        Interlocked.Exchange(ref retval, _items[count - 1]);
+                    }
+                    else
+                    {
+                        // otherwise the count wasn't what we expected, spin the while and try again.
+                    }
+                }
+            }
+            if (retval is null)
+            {
+                retval = new SqlEnvChange();
+            }
+            return retval;
+        }
+
+        internal static void Release(SqlEnvChange item, [Runtime.CompilerServices.CallerMemberName] string caller = null)
+        {
+            if (item is null)
+            {
+                Debug.Fail("attenpting to release null packet");
+                return;
+            }
+            item.Clear();
+            {
+#if DEBUG
+                if (_count > 0)
+                {
+                    for (int index = 0; index < _count; index += 1)
+                    {
+                        if (object.ReferenceEquals(item, _items[index]))
+                        {
+                            Debug.Assert(false,$"releasing an item which already exists in the pool, count={_count}, index={index}, caller={caller}, released at={_stacks[index]}");
+                        }
+                    }
+                }
+#endif
+                int tries = 0;
+
+                while (!(item is null) && tries < 3 && _count < _capacity)
+                {
+                    int count = _count;
+                    int newCount = count + 1;
+                    if (count == Interlocked.CompareExchange(ref _count, newCount, count))
+                    {
+                        _items[count] = item;
+#if DEBUG
+                        _stacks[count] = caller;
+#endif
+                        item = null;
+                    }
+                    else
+                    {
+                        tries += 1;
+                    }
+                }
+            }
+        }
+
+        internal static int Count => _count;
+
+        internal static int Capacity => _capacity;
+
+        internal static void Clear()
+        {
+            Array.Clear(_items, 0, _capacity);
+            _count = 0;
+        }
+    }
+
+    internal sealed class SqlLogin
     {
         internal int timeout;                                                       // login timeout
         internal bool userInstance = false;                                   // user instance
@@ -270,7 +420,7 @@ namespace System.Data.SqlClient
         internal SecureString newSecurePassword;
     }
 
-    sealed internal class SqlLoginAck
+    internal sealed class SqlLoginAck
     {
         internal byte majorVersion;
         internal byte minorVersion;
@@ -278,7 +428,7 @@ namespace System.Data.SqlClient
         internal uint tdsVersion;
     }
 
-    sealed internal class _SqlMetaData : SqlMetaDataPriv
+    internal sealed class _SqlMetaData : SqlMetaDataPriv
     {
         [Flags]
         private enum _SqlMetadataFlags : int
@@ -425,7 +575,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class _SqlMetaDataSet
+    internal sealed class _SqlMetaDataSet
     {
         internal ushort id;             // for altrow-columns only
         internal int[] indexMap;
@@ -491,7 +641,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class _SqlMetaDataSetCollection
+    internal sealed class _SqlMetaDataSetCollection
     {
         private readonly List<_SqlMetaDataSet> _altMetaDataSetArray;
         internal _SqlMetaDataSet metaDataSet;
@@ -615,7 +765,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class SqlMetaDataXmlSchemaCollection
+    internal sealed class SqlMetaDataXmlSchemaCollection
     {
         internal string Database;
         internal string OwningSchema;
@@ -632,7 +782,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class SqlMetaDataUdt
+    internal sealed class SqlMetaDataUdt
     {
         internal Type Type;
         internal string DatabaseName;
@@ -653,7 +803,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class _SqlRPC
+    internal sealed class _SqlRPC
     {
         internal string rpcName;
         internal ushort ProcID;       // Used instead of name
@@ -686,7 +836,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    sealed internal class SqlReturnValue : SqlMetaDataPriv
+    internal sealed class SqlReturnValue : SqlMetaDataPriv
     {
         internal string parameter;
         internal readonly SqlBuffer value;

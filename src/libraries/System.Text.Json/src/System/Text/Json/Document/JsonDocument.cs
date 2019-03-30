@@ -519,6 +519,300 @@ namespace System.Text.Json
             return JsonReaderHelper.TranscodeHelper(segment.Span);
         }
 
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
+        internal void WriteElementTo(
+            int index,
+            ref Utf8JsonWriter writer,
+            ReadOnlySpan<char> propertyName)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            switch (row.TokenType)
+            {
+                case JsonTokenType.StartObject:
+                    writer.WriteStartObject(propertyName);
+                    WriteComplexElement(index, ref writer);
+                    return;
+                case JsonTokenType.StartArray:
+                    writer.WriteStartArray(propertyName);
+                    WriteComplexElement(index, ref writer);
+                    return;
+                case JsonTokenType.String:
+                    WriteString(propertyName, row, ref writer);
+                    return;
+                case JsonTokenType.True:
+                    writer.WriteBoolean(propertyName, value: true);
+                    return;
+                case JsonTokenType.False:
+                    writer.WriteBoolean(propertyName, value: false);
+                    return;
+                case JsonTokenType.Null:
+                    writer.WriteNull(propertyName);
+                    return;
+                case JsonTokenType.Number:
+                    writer.WriteNumber(
+                        propertyName,
+                        _utf8Json.Slice(row.Location, row.SizeOrLength).Span);
+                    return;
+            }
+
+            Debug.Fail($"Unexpected encounter with JsonTokenType {row.TokenType}");
+        }
+
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
+        internal void WriteElementTo(
+            int index,
+            ref Utf8JsonWriter writer,
+            ReadOnlySpan<byte> propertyName)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            switch (row.TokenType)
+            {
+                case JsonTokenType.StartObject:
+                    writer.WriteStartObject(propertyName);
+                    WriteComplexElement(index, ref writer);
+                    return;
+                case JsonTokenType.StartArray:
+                    writer.WriteStartArray(propertyName);
+                    WriteComplexElement(index, ref writer);
+                    return;
+                case JsonTokenType.String:
+                    WriteString(propertyName, row, ref writer);
+                    return;
+                case JsonTokenType.True:
+                    writer.WriteBoolean(propertyName, value: true);
+                    return;
+                case JsonTokenType.False:
+                    writer.WriteBoolean(propertyName, value: false);
+                    return;
+                case JsonTokenType.Null:
+                    writer.WriteNull(propertyName);
+                    return;
+                case JsonTokenType.Number:
+                    writer.WriteNumber(
+                        propertyName,
+                        _utf8Json.Slice(row.Location, row.SizeOrLength).Span);
+                    return;
+            }
+
+            Debug.Fail($"Unexpected encounter with JsonTokenType {row.TokenType}");
+        }
+
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
+        internal void WriteElementTo(
+            int index,
+            ref Utf8JsonWriter writer)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            switch (row.TokenType)
+            {
+                case JsonTokenType.StartObject:
+                    writer.WriteStartObject();
+                    WriteComplexElement(index, ref writer);
+                    return;
+                case JsonTokenType.StartArray:
+                    writer.WriteStartArray();
+                    WriteComplexElement(index, ref writer);
+                    return;
+                case JsonTokenType.String:
+                    WriteString(row, ref writer);
+                    return;
+                case JsonTokenType.Number:
+                    writer.WriteNumberValue(_utf8Json.Slice(row.Location, row.SizeOrLength).Span);
+                    return;
+                case JsonTokenType.True:
+                    writer.WriteBooleanValue(value: true);
+                    return;
+                case JsonTokenType.False:
+                    writer.WriteBooleanValue(value: false);
+                    return;
+                case JsonTokenType.Null:
+                    writer.WriteNullValue();
+                    return;
+            }
+
+            Debug.Fail($"Unexpected encounter with JsonTokenType {row.TokenType}");
+        }
+
+        private void WriteComplexElement(int index, ref Utf8JsonWriter writer)
+        {
+            int endIndex = GetEndIndex(index, true);
+
+            for (int i = index + DbRow.Size; i < endIndex; i += DbRow.Size)
+            {
+                DbRow row = _parsedData.Get(i);
+
+                // All of the types which don't need the value span
+                switch (row.TokenType)
+                {
+                    case JsonTokenType.String:
+                        WriteString(row, ref writer);
+                        continue;
+                    case JsonTokenType.Number:
+                        writer.WriteNumberValue(_utf8Json.Slice(row.Location, row.SizeOrLength).Span);
+                        continue;
+                    case JsonTokenType.True:
+                        writer.WriteBooleanValue(value: true);
+                        continue;
+                    case JsonTokenType.False:
+                        writer.WriteBooleanValue(value: false);
+                        continue;
+                    case JsonTokenType.Null:
+                        writer.WriteNullValue();
+                        continue;
+                    case JsonTokenType.StartObject:
+                        writer.WriteStartObject();
+                        continue;
+                    case JsonTokenType.EndObject:
+                        writer.WriteEndObject();
+                        continue;
+                    case JsonTokenType.StartArray:
+                        writer.WriteStartArray();
+                        continue;
+                    case JsonTokenType.EndArray:
+                        writer.WriteEndArray();
+                        continue;
+                    case JsonTokenType.PropertyName:
+                    {
+                        DbRow propertyValue = _parsedData.Get(i + DbRow.Size);
+
+                        ReadOnlySpan<byte> propertyName =
+                            _utf8Json.Slice(row.Location, row.SizeOrLength).Span;
+
+                        // "Move" to the value.
+                        i += DbRow.Size;
+
+                        switch (propertyValue.TokenType)
+                        {
+                            case JsonTokenType.String:
+                                WriteString(propertyName, propertyValue, ref writer);
+                                continue;
+                            case JsonTokenType.Number:
+                                writer.WriteNumber(
+                                    propertyName,
+                                    _utf8Json.Slice(propertyValue.Location, propertyValue.SizeOrLength).Span);
+                                    continue;
+                            case JsonTokenType.True:
+                                writer.WriteBoolean(propertyName, value: true);
+                                continue;
+                            case JsonTokenType.False:
+                                writer.WriteBoolean(propertyName, value: false);
+                                continue;
+                            case JsonTokenType.Null:
+                                writer.WriteNull(propertyName);
+                                continue;
+                            case JsonTokenType.StartObject:
+                                writer.WriteStartObject(propertyName);
+                                continue;
+                            case JsonTokenType.StartArray:
+                                writer.WriteStartArray(propertyName);
+                                continue;
+                        }
+
+                        Debug.Fail($"Unexpected encounter with JsonTokenType {row.TokenType}");
+                        break;
+                    }
+                }
+
+                Debug.Fail($"Unexpected encounter with JsonTokenType {row.TokenType}");
+            }
+        }
+
+        private ReadOnlySpan<byte> UnescapeString(in DbRow row, out ArraySegment<byte> rented)
+        {
+            Debug.Assert(row.TokenType == JsonTokenType.String);
+            int loc = row.Location;
+            int length = row.SizeOrLength;
+            ReadOnlySpan<byte> text = _utf8Json.Slice(loc, length).Span;
+
+            if (!row.HasComplexChildren)
+            {
+                rented = default;
+                return text;
+            }
+
+            int idx = text.IndexOf(JsonConstants.BackSlash);
+            Debug.Assert(idx >= 0);
+
+            byte[] rent = ArrayPool<byte>.Shared.Rent(length);
+            text.Slice(0, idx).CopyTo(rent);
+
+            JsonReaderHelper.Unescape(text, rent, idx, out int written);
+            rented = new ArraySegment<byte>(rent, 0, written);
+            return rented.AsSpan();
+        }
+
+        private static void ClearAndReturn(ArraySegment<byte> rented)
+        {
+            if (rented.Array != null)
+            {
+                rented.AsSpan().Clear();
+                ArrayPool<byte>.Shared.Return(rented.Array);
+            }
+        }
+
+        private void WriteString(ReadOnlySpan<byte> propertyName, in DbRow row, ref Utf8JsonWriter writer)
+        {
+            ArraySegment<byte> rented = default;
+
+            try
+            {
+                writer.WriteString(
+                    propertyName,
+                    UnescapeString(row, out rented));
+            }
+            finally
+            {
+                ClearAndReturn(rented);
+            }
+        }
+
+        private void WriteString(ReadOnlySpan<char> propertyName, in DbRow row, ref Utf8JsonWriter writer)
+        {
+            ArraySegment<byte> rented = default;
+
+            try
+            {
+                writer.WriteString(
+                    propertyName,
+                    UnescapeString(row, out rented));
+            }
+            finally
+            {
+                ClearAndReturn(rented);
+
+            }
+        }
+
+        private void WriteString(in DbRow row, ref Utf8JsonWriter writer)
+        {
+            ArraySegment<byte> rented = default;
+
+            try
+            {
+                writer.WriteStringValue(UnescapeString(row, out rented));
+            }
+            finally
+            {
+                ClearAndReturn(rented);
+
+            }
+        }
+
         private static void Parse(
             ReadOnlySpan<byte> utf8JsonSpan,
             Utf8JsonReader reader,

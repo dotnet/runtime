@@ -31,4 +31,13 @@
     <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9\il" />
     <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9" />
   </ItemGroup>
+
+  <!--
+    The Utf8String package is experimental. We don't want tests to inadvertently take a dependency on this
+    feature unless they explicitly opt in to it. (Source projects explicitly reference their dependencies,
+    so they can't inadvertently take a dependency on it.)
+  -->
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' AND '$(IncludeUtf8StringAsmRef)' != 'true'">
+    <DefaultReferenceExclusions Include="System.Utf8String.Experimental" />
+  </ItemGroup>
 </Project>

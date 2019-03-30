@@ -106,7 +106,7 @@ namespace System.Tests
         [InlineData(true, "true")]
         [InlineData(false, 0)]
         [InlineData(false, "false")]
-        private void CompareTo_ObjectNotBool_ThrowsArgumentException(bool b, object obj)
+        public void CompareTo_ObjectNotBool_ThrowsArgumentException(bool b, object obj)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => b.CompareTo(obj));
         }

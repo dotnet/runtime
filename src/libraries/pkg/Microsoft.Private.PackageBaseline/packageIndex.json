@@ -3936,6 +3936,12 @@
         "netcoreapp3.0": "4.0.0.0"
       }
     },
+    "System.Runtime.Intrinsics.Experimental": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
+      }
+    },
     "System.Runtime.Loader": {
       "StableVersions": [
         "4.0.0",
@@ -5305,6 +5311,12 @@
         "netcoreapp2.0": "4.0.0.0",
         "netcoreapp2.1": "4.0.1.0",
         "uap10.0.16299": "4.0.1.0"
+      }
+    },
+    "System.Utf8String.Experimental": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
       }
     },
     "System.ValueTuple": {

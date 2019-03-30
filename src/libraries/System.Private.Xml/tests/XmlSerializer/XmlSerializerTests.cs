@@ -1075,7 +1075,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
-    static void Xml_TypeWithTypesHavingCustomFormatter()
+    public static void Xml_TypeWithTypesHavingCustomFormatter()
     {
         var str = "The quick brown fox jumps over the lazy dog.";
         var value = new TypeWithTypesHavingCustomFormatter()

@@ -16,7 +16,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             return ((size - keySizes.MinSize) % keySizes.SkipSize) == 0;
         }
 
-        protected static IEnumerable<object[]> GetValidSizes(KeySizes validSizes, int minValue = 0, int maxValue = 17)
+        public static IEnumerable<object[]> GetValidSizes(KeySizes validSizes, int minValue = 0, int maxValue = 17)
         {
             for (int i = minValue; i <= maxValue; i++)
             {
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        protected static IEnumerable<object[]> GetInvalidSizes(KeySizes validSizes, int minValue = 0, int maxValue = 17)
+        public static IEnumerable<object[]> GetInvalidSizes(KeySizes validSizes, int minValue = 0, int maxValue = 17)
         {
             for (int i = minValue; i <= maxValue; i++)
             {

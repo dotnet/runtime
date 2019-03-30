@@ -188,7 +188,7 @@ namespace System.Threading.ThreadPools.Tests
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Triggers an assertion failure.")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ThreadPool.SetMinThreads and SetMaxThreads are not supported on UapAot.")]
-        private static void SetMinThreadsTo0Test()
+        public static void SetMinThreadsTo0Test()
         {
             int minw, minc, maxw, maxc;
             ThreadPool.GetMinThreads(out minw, out minc);

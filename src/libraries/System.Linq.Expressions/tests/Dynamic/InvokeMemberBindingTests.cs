@@ -47,7 +47,7 @@ namespace System.Dynamic.Tests
             public new string Method(int x, int y) => "Hiding";
         }
 
-        private static IEnumerable<object[]> ObjectArguments()
+        public static IEnumerable<object[]> ObjectArguments()
         {
             yield return new object[] {0};
             yield return new object[] {""};

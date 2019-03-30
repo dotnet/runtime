@@ -8,7 +8,7 @@ using System.IO;
 using System.Reflection;
 using Xunit;
 
-internal class Outside
+public class Outside
 {
     public class Inside
     {
@@ -20,7 +20,7 @@ internal class Outside
     public void TwoGenericMethod<T, U>() { }
 }
 
-internal class Outside<T>
+public class Outside<T>
 {
     public class Inside<U>
     {
