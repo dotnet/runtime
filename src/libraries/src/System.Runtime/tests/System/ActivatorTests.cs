@@ -522,7 +522,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInvokingStaticConstructorsSupported))]
-        static void TestingBindingFlags()
+        public static void TestingBindingFlags()
         {
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateCtor), BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.CurrentCulture));
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateCtor), BindingFlags.Public | BindingFlags.Instance, null, new object[] { 1, 2, 3 }, CultureInfo.CurrentCulture));
@@ -553,7 +553,7 @@ namespace System.Tests
         }
 
         [Fact]
-        static void TestingBindingFlagsInstanceOnly()
+        public static void TestingBindingFlagsInstanceOnly()
         {
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(HasPublicCtor), default(BindingFlags), null, null, null));
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(HasPublicCtor), BindingFlags.NonPublic | BindingFlags.Instance, null, null, null));
@@ -575,7 +575,7 @@ namespace System.Tests
         }
 
         [Fact]
-        static void TestingBindingFlags1()
+        public static void TestingBindingFlags1()
         {
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateCtor), BindingFlags.Public | BindingFlags.Instance, null, null, CultureInfo.CurrentCulture, null));
             Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateCtor), BindingFlags.Public | BindingFlags.Instance, null, new object[] { 1, 2, 3 }, CultureInfo.CurrentCulture, null));
@@ -586,7 +586,7 @@ namespace System.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        static void TestingActivationAttributes()
+        public static void TestingActivationAttributes()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Activator.CreateInstance(typeof(ClassWithIsTestedAttribute), null, new object[] { new object() }));
             Assert.Throws<PlatformNotSupportedException>(() => Activator.CreateInstance(typeof(ClassWithIsTestedAttribute), null, new object[] { new IsTestedAttribute(true) }));
@@ -599,7 +599,7 @@ namespace System.Tests
         }
 
         [Fact]
-        static void TestingActivationAttributes1()
+        public static void TestingActivationAttributes1()
         {
             Activator.CreateInstance(typeof(ClassWithIsTestedAttribute), null, null);
             Activator.CreateInstance(typeof(ClassWithIsTestedAttribute), null, new object[] { });

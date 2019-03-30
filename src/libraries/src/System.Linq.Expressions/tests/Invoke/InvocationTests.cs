@@ -210,7 +210,7 @@ namespace System.Linq.Expressions.Tests
             Assert.NotSame(invoke, invoke.Update(adder, new[] { lhs, Expression.Constant(2) }));
         }
 
-        private static IEnumerable<object[]> InvocationExpressions()
+        public static IEnumerable<object[]> InvocationExpressions()
         {
             for (int i = 0; i <= 6; ++i)
             {

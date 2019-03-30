@@ -2,104 +2,141 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Threading
 {
-    internal partial class TimerQueue
+    //
+    // Unix-specific implementation of Timer
+    //
+    internal partial class TimerQueue : IThreadPoolWorkItem
     {
+        private static List<TimerQueue> s_scheduledTimers;
+        private static List<TimerQueue> s_scheduledTimersToFire;
+
         /// <summary>
         /// This event is used by the timer thread to wait for timer expiration. It is also
         /// used to notify the timer thread that a new timer has been set.
         /// </summary>
-        private AutoResetEvent _timerEvent;
+        private static readonly AutoResetEvent s_timerEvent = new AutoResetEvent(false);
 
-        /// <summary>
-        /// This field stores the value of next timer that the timer thread should install.
-        /// </summary>
-        private volatile int _nextTimerDuration;
+        private bool _isScheduled;
+        private int _scheduledDueTimeMs;
 
         private TimerQueue(int id)
         {
         }
 
+        private static List<TimerQueue> InitializeScheduledTimerManager_Locked()
+        {
+            Debug.Assert(s_scheduledTimers == null);
+
+            var timers = new List<TimerQueue>(Instances.Length);
+            if (s_scheduledTimersToFire == null)
+            {
+                s_scheduledTimersToFire = new List<TimerQueue>(Instances.Length);
+            }
+
+            Thread timerThread = new Thread(TimerThread);
+            timerThread.IsBackground = true;
+            timerThread.Start();
+
+            // Do this after creating the thread in case thread creation fails so that it will try again next time
+            s_scheduledTimers = timers;
+            return timers;
+        }
+
         private bool SetTimer(uint actualDuration)
         {
-            // Note: AutoResetEvent.WaitOne takes an Int32 value as a timeout.
-            // The TimerQueue code ensures that timer duration is not greater than max Int32 value
-            Debug.Assert(actualDuration <= (uint)int.MaxValue);
-            _nextTimerDuration = (int)actualDuration;
-
-            // If this is the first time the timer is set then we need to create a thread that
-            // will manage and respond to timer requests. Otherwise, simply signal the timer thread
-            // to notify it that the timer duration has changed.
-            if (_timerEvent == null)
+            Debug.Assert((int)actualDuration >= 0);
+            int dueTimeMs = TickCount + (int)actualDuration;
+            AutoResetEvent timerEvent = s_timerEvent;
+            lock (timerEvent)
             {
-                _timerEvent = new AutoResetEvent(false);
-                Thread thread = new Thread(TimerThread);
-                thread.IsBackground = true; // Keep this thread from blocking process shutdown
-                thread.Start();
-            }
-            else
-            {
-                _timerEvent.Set();
+                if (!_isScheduled)
+                {
+                    List<TimerQueue> timers = s_scheduledTimers;
+                    if (timers == null)
+                    {
+                        timers = InitializeScheduledTimerManager_Locked();
+                    }
+
+                    timers.Add(this);
+                    _isScheduled = true;
+                }
+
+                _scheduledDueTimeMs = dueTimeMs;
             }
 
+            timerEvent.Set();
             return true;
         }
 
-
         /// <summary>
         /// This method is executed on a dedicated a timer thread. Its purpose is
-        /// to handle timer request and notify the TimerQueue when a timer expires.
+        /// to handle timer requests and notify the TimerQueue when a timer expires.
         /// </summary>
-        private void TimerThread()
+        private static void TimerThread()
         {
-            // Get wait time for the next timer
-            int currentTimerInterval = Interlocked.Exchange(ref _nextTimerDuration, Timeout.Infinite);
+            AutoResetEvent timerEvent = s_timerEvent;
+            List<TimerQueue> timersToFire = s_scheduledTimersToFire;
+            List<TimerQueue> timers;
+            lock (timerEvent)
+            {
+                timers = s_scheduledTimers;
+            }
 
+            int shortestWaitDurationMs = Timeout.Infinite;
             while (true)
             {
-                // Wait for the current timer to expire.
-                // We will be woken up because either 1) the wait times out, which will indicate that
-                // the current timer has expired and/or 2) the TimerQueue installs a new (earlier) timer.
-                int startWait = TickCount;
-                bool timerHasExpired = !_timerEvent.WaitOne(currentTimerInterval);
-                uint elapsedTime = (uint)(TickCount - startWait);
+                timerEvent.WaitOne(shortestWaitDurationMs);
 
-                // The timer event can be set after this thread reads the new timer interval but before it enters
-                // the wait state. This can cause a spurious wake up. In addition, expiration of current timer can
-                // happen almost at the same time as this thread is signaled to install a new timer. To handle
-                // these cases, we need to update the current interval based on the elapsed time.
-                if (currentTimerInterval != Timeout.Infinite)
+                int currentTimeMs = TickCount;
+                shortestWaitDurationMs = int.MaxValue;
+                lock (timerEvent)
                 {
-                    if (elapsedTime >= currentTimerInterval)
+                    for (int i = timers.Count - 1; i >= 0; --i)
                     {
-                        timerHasExpired = true;
-                    }
-                    else
-                    {
-                        currentTimerInterval -= (int)elapsedTime;
+                        TimerQueue timer = timers[i];
+                        int waitDurationMs = timer._scheduledDueTimeMs - currentTimeMs;
+                        if (waitDurationMs <= 0)
+                        {
+                            timer._isScheduled = false;
+                            timersToFire.Add(timer);
+
+                            int lastIndex = timers.Count - 1;
+                            if (i != lastIndex)
+                            {
+                                timers[i] = timers[lastIndex];
+                            }
+                            timers.RemoveAt(lastIndex);
+                            continue;
+                        }
+
+                        if (waitDurationMs < shortestWaitDurationMs)
+                        {
+                            shortestWaitDurationMs = waitDurationMs;
+                        }
                     }
                 }
 
-                // Check whether TimerQueue needs to process expired timers.
-                if (timerHasExpired)
+                if (timersToFire.Count > 0)
                 {
-                    FireNextTimers();
-
-                    // When FireNextTimers() installs a new timer, it also sets the timer event.
-                    // Reset the event so the timer thread is not woken up right away unnecessary.
-                    _timerEvent.Reset();
-                    currentTimerInterval = Timeout.Infinite;
+                    foreach (TimerQueue timerToFire in timersToFire)
+                    {
+                        ThreadPool.UnsafeQueueUserWorkItemInternal(timerToFire, preferLocal: false);
+                    }
+                    timersToFire.Clear();
                 }
 
-                int nextTimerInterval = Interlocked.Exchange(ref _nextTimerDuration, Timeout.Infinite);
-                if (nextTimerInterval != Timeout.Infinite)
+                if (shortestWaitDurationMs == int.MaxValue)
                 {
-                    currentTimerInterval = nextTimerInterval;
+                    shortestWaitDurationMs = Timeout.Infinite;
                 }
             }
         }
+
+        void IThreadPoolWorkItem.Execute() => FireNextTimers();
     }
 }

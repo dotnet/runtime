@@ -167,7 +167,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
             Assert.Equal("Error Message from ErrorMessageResources.InternalErrorMessageTestProperty", validationResult.ErrorMessage);
         }
 
-        protected class TestCase
+        public class TestCase
         {
             public ValidationAttribute Attribute { get; }
             public object Value { get; }

@@ -24,39 +24,39 @@ namespace System.IO.Ports.Tests
         #region Test Cases
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void ASCIIEncoding()
+        public void ASCIIEncoding()
         {
             VerifyRead(new ASCIIEncoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void UTF8Encoding()
+        public void UTF8Encoding()
         {
             VerifyRead(new UTF8Encoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void UTF32Encoding()
+        public void UTF32Encoding()
         {
             VerifyRead(new UTF32Encoding());
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void SerialPort_ReadBufferedData()
+        public void SerialPort_ReadBufferedData()
         {
             int numberOfBytesToRead = 32;
             VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.Buffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void SerialPort_IterativeReadBufferedData()
+        public void SerialPort_IterativeReadBufferedData()
         {
             int numberOfBytesToRead = 32;
             VerifyRead(Encoding.ASCII, numberOfBytesToRead, ReadDataFromEnum.Buffered);
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void SerialPort_ReadBufferedAndNonBufferedData()
+        public void SerialPort_ReadBufferedAndNonBufferedData()
         {
             int numberOfBytesToRead = 64;
 
@@ -64,7 +64,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void SerialPort_IterativeReadBufferedAndNonBufferedData()
+        public void SerialPort_IterativeReadBufferedAndNonBufferedData()
         {
             int numberOfBytesToRead = 3;
 
@@ -72,7 +72,7 @@ namespace System.IO.Ports.Tests
         }
 
         [ConditionalFact(nameof(HasLoopbackOrNullModem))]
-        private void GreedyRead()
+        public void GreedyRead()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))

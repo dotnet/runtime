@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        void Target_SetNull_ThrowsArgumentNullException()
+        public void Target_SetNull_ThrowsArgumentNullException()
         {
             var attribute = new DebuggerDisplayAttribute("Value");
             AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Target = null);

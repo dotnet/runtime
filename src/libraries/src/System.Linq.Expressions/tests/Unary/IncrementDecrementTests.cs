@@ -40,7 +40,7 @@ namespace System.Linq.Expressions.Tests
 
         public static int DoublyDecrementInt32(int operand) => unchecked(operand - 2);
 
-        protected static IEnumerable<object[]> NonArithmeticObjects(bool includeReferenceTypes)
+        public static IEnumerable<object[]> NonArithmeticObjects(bool includeReferenceTypes)
         {
             if (includeReferenceTypes)
             {
@@ -51,7 +51,7 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] {ExpressionType.Decrement};
         }
 
-        protected static IEnumerable<object[]> IncrementableValues(bool includeNulls)
+        public static IEnumerable<object[]> IncrementableValues(bool includeNulls)
         {
             yield return new object[] {new Incrementable(0), new Incrementable(1)};
             yield return new object[] {new Incrementable(-1), new Incrementable(0)};
@@ -64,7 +64,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        protected static IEnumerable<object[]> DoublyIncrementedIncrementableValues(bool includeNulls)
+        public static IEnumerable<object[]> DoublyIncrementedIncrementableValues(bool includeNulls)
         {
             yield return new object[] {new Incrementable(0), new Incrementable(2)};
             yield return new object[] {new Incrementable(-1), new Incrementable(1)};
@@ -77,7 +77,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        protected static IEnumerable<object[]> DoublyIncrementedInt32s(bool includeNulls)
+        public static IEnumerable<object[]> DoublyIncrementedInt32s(bool includeNulls)
         {
             yield return new object[] {0, 2};
             yield return new object[] {-1, 1};
@@ -90,7 +90,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        protected static IEnumerable<object[]> DecrementableValues(bool includeNulls)
+        public static IEnumerable<object[]> DecrementableValues(bool includeNulls)
         {
             yield return new object[] {new Decrementable(0), new Decrementable(-1)};
             yield return new object[] {new Decrementable(1), new Decrementable(0)};
@@ -103,7 +103,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        protected static IEnumerable<object[]> DoublyDecrementedDecrementableValues(bool includeNulls)
+        public static IEnumerable<object[]> DoublyDecrementedDecrementableValues(bool includeNulls)
         {
             yield return new object[] {new Decrementable(0), new Decrementable(-2)};
             yield return new object[] {new Decrementable(1), new Decrementable(-1)};
@@ -116,7 +116,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        protected static IEnumerable<object[]> DoublyDecrementedInt32s(bool includeNulls)
+        public static IEnumerable<object[]> DoublyDecrementedInt32s(bool includeNulls)
         {
             yield return new object[] {0, -2};
             yield return new object[] {1, -1};

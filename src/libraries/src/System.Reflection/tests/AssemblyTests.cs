@@ -318,6 +318,15 @@ namespace System.Reflection.Tests
             else
             {
                 Assert.NotEqual(currentAssembly, loadedAssembly1);
+
+#if netcoreapp
+                System.Runtime.Loader.AssemblyLoadContext alc = System.Runtime.Loader.AssemblyLoadContext.GetLoadContext(loadedAssembly1);
+                string expectedName = string.Format("Assembly.LoadFile({0})", fullRuntimeTestsPath);
+                Assert.Equal(expectedName, alc.Name);
+                Assert.Contains(fullRuntimeTestsPath, alc.Name);
+                Assert.Contains(expectedName, alc.ToString());
+                Assert.Contains("System.Runtime.Loader.IndividualAssemblyLoadContext", alc.ToString());
+#endif
             }
 
             string dir = Path.GetDirectoryName(fullRuntimeTestsPath);

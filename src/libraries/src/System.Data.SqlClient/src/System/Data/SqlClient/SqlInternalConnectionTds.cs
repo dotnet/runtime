@@ -1812,7 +1812,18 @@ namespace System.Data.SqlClient
                     break;
 
                 case TdsEnums.ENV_PROMOTETRANSACTION:
-                    PromotedDTCToken = rec.newBinValue;
+                    byte[] dtcToken = null; 
+                    if (rec.newBinRented)
+                    {
+                        dtcToken = new byte[rec.newLength];
+                        Buffer.BlockCopy(rec.newBinValue, 0, dtcToken, 0, dtcToken.Length);
+                    }
+                    else
+                    {
+                        dtcToken = rec.newBinValue;
+                        rec.newBinValue = null;
+                    }
+                    PromotedDTCToken = dtcToken;
                     break;
 
                 case TdsEnums.ENV_TRANSACTIONENDED:
