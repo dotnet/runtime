@@ -156,13 +156,12 @@ jobs:
             asArray:
             - Ubuntu.1804.Amd64.Open
           ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            asString: 'Debian.9.Amd64.Open,Ubuntu.1604.Amd64.Open,Ubuntu.1804.Amd64.Open,Centos.7.Amd64.Open,Fedora.28.Amd64.Open,RedHat.7.Amd64.Open'
+            asString: 'Debian.9.Amd64.Open,Ubuntu.1604.Amd64.Open,Ubuntu.1804.Amd64.Open,Centos.7.Amd64.Open,RedHat.7.Amd64.Open'
             asArray:
             - Debian.9.Amd64.Open
             - Ubuntu.1604.Amd64.Open
             - Ubuntu.1804.Amd64.Open
             - Centos.7.Amd64.Open
-            - Fedora.28.Amd64.Open
             - RedHat.7.Amd64.Open
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
             asString: 'Debian.9.Amd64,Ubuntu.1604.Amd64,Ubuntu.1804.Amd64,Centos.7.Amd64,Fedora.28.Amd64,RedHat.7.Amd64'
