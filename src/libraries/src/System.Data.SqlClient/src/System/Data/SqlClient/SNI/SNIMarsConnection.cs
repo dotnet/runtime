@@ -202,7 +202,7 @@ namespace System.Data.SqlClient.SNI
 
                         _currentHeader.Read(_headerBytes);
                         _dataBytesLeft = (int)_currentHeader.length;
-                        _currentPacket = new SNIPacket((int)_currentHeader.length);
+                        _currentPacket = new SNIPacket(headerSize: 0, dataSize: (int)_currentHeader.length);
                     }
 
                     currentHeader = _currentHeader;

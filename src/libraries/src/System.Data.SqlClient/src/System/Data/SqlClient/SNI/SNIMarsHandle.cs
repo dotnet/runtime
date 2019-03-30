@@ -37,7 +37,7 @@ namespace System.Data.SqlClient.SNI
 
         public override uint Status => _status;
 
-        public override bool SMUXEnabled => true;
+        public override int ReserveHeaderSize => SNISMUXHeader.HEADER_LENGTH;
 
         /// <summary>
         /// Dispose object
@@ -77,11 +77,12 @@ namespace System.Data.SqlClient.SNI
         /// <param name="flags">SMUX header flags</param>
         private void SendControlPacket(SNISMUXFlags flags)
         {
-            SNIPacket packet = new SNIPacket(0,reserveMuxHeader:true);
+            SNIPacket packet = new SNIPacket(headerSize: SNISMUXHeader.HEADER_LENGTH, dataSize: 0);
             lock (this)
             {
                 SetupSMUXHeader(0, flags);
-                packet.SetHeader(_currentHeader);
+                _currentHeader.Write(packet.GetHeaderBuffer(SNISMUXHeader.HEADER_LENGTH));
+                packet.SetHeaderActive();
             }
             _connection.Send(packet);
         }
@@ -105,10 +106,11 @@ namespace System.Data.SqlClient.SNI
         /// <returns>The packet with the SMUx header set.</returns>
         private SNIPacket SetPacketSMUXHeader(SNIPacket packet)
         {
-            Debug.Assert(packet.MuxHeaderReserved, "attempting to mux packet without mux reservation");
+            Debug.Assert(packet.ReservedHeaderSize == SNISMUXHeader.HEADER_LENGTH, "mars handle attempting to mux packet without mux reservation");
 
             SetupSMUXHeader(packet.Length, SNISMUXFlags.SMUX_DATA);
-            packet.SetHeader(_currentHeader);
+            _currentHeader.Write(packet.GetHeaderBuffer(SNISMUXHeader.HEADER_LENGTH));
+            packet.SetHeaderActive();
             return packet;
         }
 
@@ -119,7 +121,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         public override uint Send(SNIPacket packet)
         {
-            Debug.Assert(packet.MuxHeaderReserved, "attempting to send muxed packet without mux reservation in Send");
+            Debug.Assert(packet.ReservedHeaderSize == SNISMUXHeader.HEADER_LENGTH, "mars handle attempting to send muxed packet without mux reservation in Send");
 
             while (true)
             {
@@ -155,7 +157,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         private uint InternalSendAsync(SNIPacket packet, SNIAsyncCallback callback)
         {
-            Debug.Assert(packet.MuxHeaderReserved, "attempting to send muxed packet without mux reservation in InternalSendAsync");
+            Debug.Assert(packet.ReservedHeaderSize == SNISMUXHeader.HEADER_LENGTH, "mars handle attempting to send muxed packet without mux reservation in InternalSendAsync");
             lock (this)
             {
                 if (_sequenceNumber >= _sendHighwater)
@@ -164,7 +166,7 @@ namespace System.Data.SqlClient.SNI
                 }
 
                 SNIPacket muxedPacket = SetPacketSMUXHeader(packet);
-                muxedPacket.SetCompletionCallback(callback??HandleSendComplete);
+                muxedPacket.SetCompletionCallback(callback ?? HandleSendComplete);
                 return _connection.SendAsync(muxedPacket, callback);
             }
         }
