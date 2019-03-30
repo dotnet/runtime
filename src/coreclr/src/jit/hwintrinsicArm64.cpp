@@ -157,6 +157,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
         case InstructionSet_Simd:
         case InstructionSet_Sha1:
         case InstructionSet_Sha256:
+        case InstructionSet_Vector64:
+        case InstructionSet_Vector128:
             return true;
 
         default:
@@ -185,6 +187,8 @@ bool HWIntrinsicInfo::isScalarIsa(InstructionSet isa)
         case InstructionSet_Simd:
         case InstructionSet_Sha1:
         case InstructionSet_Sha256:
+        case InstructionSet_Vector64:
+        case InstructionSet_Vector128:
             return false;
 
         default:
