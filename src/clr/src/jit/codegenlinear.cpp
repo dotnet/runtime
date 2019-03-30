@@ -91,7 +91,7 @@ void CodeGen::genInitialize()
     }
 
 #ifdef USING_VARIABLE_LIVE_RANGE
-    compiler->initializeVariableLiveKeeper();
+    initializeVariableLiveKeeper();
 #endif //  USING_VARIABLE_LIVE_RANGE
 
     // The current implementation of switch tables requires the first block to have a label so it
@@ -525,7 +525,7 @@ void CodeGen::genCodeForBBlist()
 #ifdef USING_VARIABLE_LIVE_RANGE
         if (compiler->opts.compDbgInfo && isLastBlockProcessed)
         {
-            compiler->getVariableLiveKeeper()->siEndAllVariableLiveRange(compiler->compCurLife);
+            varLiveKeeper->siEndAllVariableLiveRange(compiler->compCurLife);
         }
 #endif // USING_VARIABLE_LIVE_RANGE
 
@@ -734,7 +734,7 @@ void CodeGen::genCodeForBBlist()
 #if defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
         if (compiler->verbose)
         {
-            compiler->getVariableLiveKeeper()->dumpBlockVariableLiveRanges(block);
+            varLiveKeeper->dumpBlockVariableLiveRanges(block);
         }
 #endif // defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
 
@@ -839,7 +839,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     {
         // We need this after "lvRegNum" has change because now we are sure that varDsc->lvIsInReg() is false.
         // "SiVarLoc" constructor uses the "LclVarDsc" of the variable.
-        compiler->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
+        varLiveKeeper->siUpdateVariableLiveRange(varDsc, varNum);
     }
 #endif // USING_VARIABLE_LIVE_RANGE
 }
@@ -1009,7 +1009,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 if ((unspillTree->gtFlags & GTF_VAR_DEATH) == 0)
                 {
                     // Report the home change for this variable
-                    compiler->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, lcl->gtLclNum);
+                    varLiveKeeper->siUpdateVariableLiveRange(varDsc, lcl->gtLclNum);
                 }
 #endif // USING_VARIABLE_LIVE_RANGE
 
