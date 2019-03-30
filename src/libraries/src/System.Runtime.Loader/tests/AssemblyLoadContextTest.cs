@@ -145,7 +145,9 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains("\"Default\"", alc.ToString());
             Assert.Contains("System.Runtime.Loader.DefaultAssemblyLoadContext", alc.ToString());
             Assert.Contains(alc, AssemblyLoadContext.All);
+#if CoreCLR_23583
             Assert.Contains(Assembly.GetCallingAssembly(), alc.Assemblies);
+#endif
         }
 
         [Fact]
@@ -159,7 +161,9 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains("PublicConstructor", alc.ToString());
             Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
             Assert.Contains(alc, AssemblyLoadContext.All);
+#if CoreCLR_23583
             Assert.Empty(alc.Assemblies);
+#endif
         }
 
         [Theory]
@@ -175,7 +179,9 @@ namespace System.Runtime.Loader.Tests
             Assert.Contains(name, alc.ToString());
             Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
             Assert.Contains(alc, AssemblyLoadContext.All);
+#if CoreCLR_23583
             Assert.Empty(alc.Assemblies);
+#endif
         }
     }
 }
