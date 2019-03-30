@@ -17,8 +17,6 @@ namespace System.Data.SqlClient.SNI
 
         public TdsParserStateObjectManaged(TdsParser parser) : base(parser) { }
 
-
-
         internal TdsParserStateObjectManaged(TdsParser parser, TdsParserStateObject physicalConnection, bool async) :
             base(parser, physicalConnection, async)
         { }
@@ -172,8 +170,8 @@ namespace System.Data.SqlClient.SNI
 
         internal override PacketHandle GetResetWritePacket(int dataSize)
         {
-            var packet = new SNIPacket(dataSize, _sessionHandle.SMUXEnabled);
-            Debug.Assert(packet.MuxHeaderReserved == _sessionHandle.SMUXEnabled, "failed to reserve mux header");
+            var packet = new SNIPacket(headerSize: _sessionHandle.ReserveHeaderSize, dataSize: dataSize);
+            Debug.Assert(packet.ReservedHeaderSize == _sessionHandle.ReserveHeaderSize, "failed to reserve header");
             return PacketHandle.FromManagedPacket(packet);
         }
 
@@ -205,7 +203,7 @@ namespace System.Data.SqlClient.SNI
 
         internal override uint GenerateSspiClientContext(byte[] receivedBuff, uint receivedLength, ref byte[] sendBuff, ref uint sendLength, byte[] _sniSpnBuffer)
         {
-            if (_sspiClientContextStatus==null)
+            if (_sspiClientContextStatus == null)
             {
                 _sspiClientContextStatus = new SspiClientContextStatus();
             }

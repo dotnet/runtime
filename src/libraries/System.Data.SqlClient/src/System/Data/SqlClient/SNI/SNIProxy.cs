@@ -220,8 +220,6 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error status</returns>
         public uint WritePacket(SNIHandle handle, SNIPacket packet, bool sync)
         {
-            Debug.Assert(handle is SNIMarsHandle || !packet.MuxHeaderReserved, $"handle type and mux reservation do no match, handle={handle.GetType().Name}, packet.MuxHeaderReserved={packet.MuxHeaderReserved}");
-
             uint result;
             if (sync)
             {
