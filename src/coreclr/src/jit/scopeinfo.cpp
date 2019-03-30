@@ -1109,7 +1109,7 @@ void CodeGen::siOpenScopesForNonTrackedVars(const BasicBlock* block, unsigned in
                 siNewScope(varScope->vsdLVnum, varScope->vsdVarNum);
 #endif // USING_SCOPE_INFO
 #ifdef USING_VARIABLE_LIVE_RANGE
-                compiler->getVariableLiveKeeper()->siStartVariableLiveRange(lclVarDsc, varScope->vsdVarNum);
+                varLiveKeeper->siStartVariableLiveRange(lclVarDsc, varScope->vsdVarNum);
 #endif // USING_VARIABLE_LIVE_RANGE
 
 #if defined(DEBUG) && defined(USING_SCOPE_INFO)
@@ -1638,7 +1638,7 @@ void CodeGen::psiBegProlog()
 
 #ifdef USING_VARIABLE_LIVE_RANGE
         // Start a VariableLiveRange for this LclVarDsc on the built location
-        compiler->getVariableLiveKeeper()->psiStartVariableLiveRange(varLocation, varScope->vsdVarNum);
+        varLiveKeeper->psiStartVariableLiveRange(varLocation, varScope->vsdVarNum);
 #endif // USING_VARIABLE_LIVE_RANGE
     }
 }
@@ -1661,7 +1661,7 @@ void CodeGen::psiEndProlog()
 #endif
 
 #ifdef USING_VARIABLE_LIVE_RANGE
-    compiler->getVariableLiveKeeper()->psiClosePrologVariableRanges();
+    varLiveKeeper->psiClosePrologVariableRanges();
 #endif // USING_VARIABLE_LIVE_RANGE
 }
 
