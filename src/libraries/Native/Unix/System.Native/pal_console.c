@@ -17,6 +17,8 @@
 #include <termios.h>
 #include <unistd.h>
 #include <poll.h>
+#include <pthread.h>
+#include <signal.h>
 
 int32_t SystemNative_GetWindowSize(WinSize* windowSize)
 {
@@ -44,7 +46,7 @@ int32_t SystemNative_IsATty(intptr_t fd)
 
 static char* g_keypadXmit = NULL; // string used to enable application mode, from terminfo
 
-static void WriteKeypadXmit() // used in a signal handler, must be signal-safe
+static void WriteKeypadXmit()
 {
     // If a terminfo "application mode" keypad_xmit string has been supplied,
     // write it out to the terminal to enter the mode.
@@ -71,92 +73,205 @@ void SystemNative_SetKeypadXmit(const char* terminfoString)
     WriteKeypadXmit();
 }
 
-static bool g_readInProgress = false;   // tracks whether a read is currently in progress, such that attributes have been changed
-static bool g_signalForBreak = true;    // tracks whether the terminal should send signals for breaks, such that attributes have been changed
-static bool g_haveInitTermios = false;  // whether g_initTermios has been initialized
-static struct termios g_initTermios;    // the initial attributes captured when Console was initialized
-static struct termios g_preReadTermios; // the original attributes captured before a read; valid if g_readInProgress is true
-static struct termios g_currTermios;    // the current attributes set during a read; valid if g_readInProgress is true
+static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER; // prevents races when initializing and changing the terminal.
 
-void UninitializeConsole()
+static bool g_signalForBreak = true;          // tracks whether the terminal should send signals for breaks, such that attributes have been changed
+
+static bool g_haveInitTermios = false;        // tracks whether g_initTermios has been initialized
+static struct termios g_initTermios;          // the initial attributes captured
+
+static bool g_hasCurrentTermios = false;      // tracks whether g_currentTermios is valid
+static struct termios g_currentTermios;       // the latest attributes set
+
+// The terminal can be used by the .NET application via the Console class.
+// It may also be used by child processes that are started via the Process class.
+// The terminal needs to be configured differently depending on the user.
+// ConfigureTerminalForXXX are called to change the configuration.
+// When it is ambiguous whether we should configure for Console/a child Process,
+// we prefer configuring for the Console.
+static bool g_reading = false;                // tracks whether the application is performing a Console.Read operation
+static bool g_childUsesTerminal = false;      // tracks whether a child process is using the terminal
+static bool g_terminalUninitialized = false;  // tracks whether the application is terminating
+
+static bool g_noTty = false;                  // cache we are not a tty
+
+static volatile bool g_receivedSigTtou = false;
+
+static void ttou_handler(int signo)
 {
-    // pal_signal.cpp calls this on SIGQUIT/SIGINT.
-    // This can happen when SystemNative_InitializeConsole was not called.
+    (void)signo;
+    g_receivedSigTtou = true;
+}
 
-    // Put the attributes back to what they were when the console was initially initialized.
-    // We only do so, however, if we have explicitly modified the termios; doing so always
-    // can result in problems if the app is in the background, as then attempting to call
-    // tcsetattr on STDIN_FILENO will suspend the app and prevent its shutdown. We also don't
-    // want to, for example, just compare g_currTermios with g_initTermios, as we'd then be
-    // factoring in changes made by other apps or by user code.
-    if (g_haveInitTermios &&                     // we successfully initialized the console
-        (g_readInProgress || !g_signalForBreak)) // we modified attributes
+static void InstallTTOUHandler(void (*handler)(int), int flags)
+{
+    struct sigaction action;
+    memset(&action, 0, sizeof(action));
+    action.sa_handler = handler;
+    action.sa_flags = flags;
+    int rvSigaction = sigaction(SIGTTOU, &action, NULL);
+    assert(rvSigaction == 0);
+    (void)rvSigaction;
+}
+
+static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
+{
+    if (g_terminalUninitialized)
     {
-        tcsetattr(STDIN_FILENO, TCSANOW, &g_initTermios);
-        // ignore any failure
+        // The application is exiting, we mustn't change terminal settings.
+        return true;
+    }
+
+    if (!blockIfBackground)
+    {
+        // When the process is running in background, changing terminal settings
+        // will stop it (default SIGTTOU action).
+        // We change SIGTTOU's disposition to get EINTR instead.
+        // This thread may be used to run a signal handler, which may write to
+        // stdout. We set SA_RESETHAND to avoid that handler's write loops infinitly
+        // on EINTR when the process is running in background and the terminal
+        // configured with TOSTOP.
+        InstallTTOUHandler(ttou_handler, (int)SA_RESETHAND);
+
+        g_receivedSigTtou = false;
+    }
+
+    bool rv = tcsetattr(STDIN_FILENO, TCSANOW, termios) >= 0;
+
+    if (!blockIfBackground)
+    {
+        if (!rv && errno == EINTR && g_receivedSigTtou)
+        {
+            // Operation failed because we are background
+            // pretend it went fine.
+            rv = true;
+        }
+
+        // Restore default SIGTTOU handler.
+        InstallTTOUHandler(SIG_DFL, 0);
+    }
+
+    // On success, update the cached value.
+    if (rv)
+    {
+        g_hasCurrentTermios = true;
+        g_currentTermios = *termios;
+    }
+
+    return rv;
+}
+
+static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground)
+{
+    if (g_noTty)
+    {
+        errno = ENOTTY;
+        return false;
+    }
+
+    g_childUsesTerminal = forChild;
+
+    assert(g_haveInitTermios);
+    struct termios termios = g_initTermios;
+
+    if (signalForBreak)
+        termios.c_lflag |= (uint32_t)ISIG;
+    else
+        termios.c_lflag &= (uint32_t)(~ISIG);
+
+    if (!forChild)
+    {
+        termios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
+        termios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
+    }
+
+    termios.c_cc[VMIN] = minChars;
+    termios.c_cc[VTIME] = decisecondsTimeout;
+
+    // Check if the settings have changed.
+    if (g_hasCurrentTermios)
+    {
+        if (g_currentTermios.c_lflag == termios.c_lflag &&
+            g_currentTermios.c_iflag == termios.c_iflag &&
+            g_currentTermios.c_cc[VMIN] == termios.c_cc[VMIN] &&
+            g_currentTermios.c_cc[VMIN] == termios.c_cc[VMIN])
+        {
+            return true;
+        }
+    }
+
+    return TcSetAttr(&termios, blockIfBackground);
+}
+
+void UninitializeTerminal()
+{
+    assert(g_haveInitTermios);
+
+    // This method is called on SIGQUIT/SIGINT from the signal dispatching thread
+    // and on atexit.
+
+    if (pthread_mutex_lock(&g_lock) == 0)
+    {
+        if (!g_terminalUninitialized)
+        {
+            TcSetAttr(&g_initTermios, /* blockIfBackground */ false);
+
+            g_terminalUninitialized = true;
+        }
+
+        pthread_mutex_unlock(&g_lock);
     }
 }
 
-static void IncorporateBreak(struct termios *termios, int32_t signalForBreak)
-{
-    assert(termios != NULL);
-    assert(signalForBreak == 0 || signalForBreak == 1);
-
-    if (signalForBreak)
-        termios->c_lflag |= (uint32_t)ISIG;
-    else
-        termios->c_lflag &= (uint32_t)(~ISIG);
-}
-
-// In order to support Console.ReadKey(intercept: true), we need to disable echo and canonical mode.
-// We have two main choices: do so for the entire app, or do so only while in the Console.ReadKey(true).
-// The former has a huge downside: the terminal is in a non-echo state, so anything else that runs
-// in the same terminal won't echo even if it expects to, e.g. using Process.Start to launch an interactive,
-// program, or P/Invoking to a native library that reads from stdin rather than using Console.  The second
-// also has a downside, in that any typing which occurs prior to invoking Console.ReadKey(true) will
-// be visible even though it wasn't supposed to be.  The downsides of the former approach are so large
-// and the cons of the latter minimal and constrained to the one API that we've chosen the second approach.
-// Thus, InitializeConsoleBeforeRead is called to set up the state of the console, then a read is done,
-// and then UninitializeConsoleAfterRead is called.
 void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout)
 {
-    struct termios newTermios;
-    if (tcgetattr(STDIN_FILENO, &newTermios) >= 0)
+    if (pthread_mutex_lock(&g_lock) == 0)
     {
-        if (!g_readInProgress)
-        {
-            // Store the original settings, but only if we didn't already.  This function
-            // may be called when the process is resumed after being suspended, and if
-            // that happens during a read, we'll call this function to reset the attrs.
-            g_preReadTermios = newTermios;
-        }
+        g_reading = true;
 
-        newTermios.c_iflag &= (uint32_t)(~(IXON | IXOFF));
-        newTermios.c_lflag &= (uint32_t)(~(ECHO | ICANON | IEXTEN));
-        newTermios.c_cc[VMIN] = minChars;
-        newTermios.c_cc[VTIME] = decisecondsTimeout;
-        IncorporateBreak(&newTermios, g_signalForBreak);
+        ConfigureTerminal(g_signalForBreak, /* forChild */ false, minChars, decisecondsTimeout, /* blockIfBackground */ true);
 
-        if (tcsetattr(STDIN_FILENO, TCSANOW, &newTermios) >= 0)
-        {
-            g_currTermios = newTermios;
-            g_readInProgress = true;
-        }
+        pthread_mutex_unlock(&g_lock);
     }
 }
 
 void SystemNative_UninitializeConsoleAfterRead()
 {
-    if (g_readInProgress)
+    if (pthread_mutex_lock(&g_lock) == 0)
     {
-        g_readInProgress = false;
+        g_reading = false;
 
-        int tmpErrno = errno; // preserve any errors from before uninitializing
-        IncorporateBreak(&g_preReadTermios, g_signalForBreak);
-        int ret = tcsetattr(STDIN_FILENO, TCSANOW, &g_preReadTermios);
-        assert(ret >= 0); // shouldn't fail, but if it does we don't want to fail in release
-        (void)ret;
-        errno = tmpErrno;
+        pthread_mutex_unlock(&g_lock);
+    }
+}
+
+void SystemNative_ConfigureTerminalForChildProcess(int32_t childUsesTerminal)
+{
+    assert(childUsesTerminal == 0 || childUsesTerminal == 1);
+
+    if (pthread_mutex_lock(&g_lock) == 0)
+    {
+        // If the application is performing a read, assume the child process won't use the terminal.
+        if (g_reading)
+        {
+            return;
+        }
+
+        // If no more children are using the terminal, invalidate our cached termios.
+        if (!childUsesTerminal)
+        {
+            g_hasCurrentTermios = false;
+        }
+
+        ConfigureTerminal(g_signalForBreak, /* forChild */ childUsesTerminal, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ false);
+
+        // Redo "Application mode" when there are no more children using the terminal.
+        if (!childUsesTerminal)
+        {
+            WriteKeypadXmit();
+        }
+
+        pthread_mutex_unlock(&g_lock);
     }
 }
 
@@ -289,57 +404,84 @@ int32_t SystemNative_SetSignalForBreak(int32_t signalForBreak)
 {
     assert(signalForBreak == 0 || signalForBreak == 1);
 
-    struct termios current;
-    if (tcgetattr(STDIN_FILENO, &current) >= 0)
+    int rv = 0;
+
+    if (pthread_mutex_lock(&g_lock) == 0)
     {
-        IncorporateBreak(&current, signalForBreak);
-        if (tcsetattr(STDIN_FILENO, TCSANOW, &current) >= 0)
+        if (ConfigureTerminal(signalForBreak, /* forChild */ false, /* minChars */ 1, /* decisecondsTimeout */ 0, /* blockIfBackground */ true))
         {
             g_signalForBreak = signalForBreak;
-            return 1;
+            rv = 1;
         }
+
+        pthread_mutex_unlock(&g_lock);
     }
 
-    return 0;
+    return rv;
 }
 
-void ReinitializeConsole()
+void ReinitializeTerminal()
 {
-    // pal_signal.cpp calls this on SIGCONT/SIGCHLD.
-    // This can happen when SystemNative_InitializeConsole was not called.
-    // This gets called on a signal handler, we may only use async-signal-safe functions.
+    // Restores the state of the terminal after being suspended.
+    // pal_signal.cpp calls this on SIGCONT from the signal handling thread.
 
-    // If the process was suspended while reading, we need to
-    // re-initialize the console for the read, as the attributes
-    // previously set were likely overwritten.
-    if (g_readInProgress)
+    if (pthread_mutex_lock(&g_lock) == 0)
     {
-        IncorporateBreak(&g_currTermios, g_signalForBreak);
-        tcsetattr(STDIN_FILENO, TCSANOW, &g_currTermios);
-    }
+        if (!g_childUsesTerminal)
+        {
+            if (g_hasCurrentTermios)
+            {
+                TcSetAttr(&g_currentTermios, /* blockIfBackground */ false);
+            }
 
-    // "Application mode" will also have been reset and needs to be redone.
-    WriteKeypadXmit();
+            WriteKeypadXmit();
+        }
+
+        pthread_mutex_unlock(&g_lock);
+    }
 }
 
-int32_t SystemNative_InitializeConsole()
+static bool InitializeTerminalCore()
 {
-    if (!InitializeSignalHandling())
+    g_haveInitTermios = tcgetattr(STDIN_FILENO, &g_initTermios) >= 0;
+
+    if (!g_haveInitTermios && errno == ENOTTY)
     {
-        return 0;
+        g_noTty = true;
     }
 
-    if (tcgetattr(STDIN_FILENO, &g_initTermios) >= 0)
+    if (g_haveInitTermios)
     {
-        g_haveInitTermios = true;
-        g_signalForBreak = (g_initTermios.c_lflag & ISIG) != 0;
+        g_hasCurrentTermios = true;
+        g_currentTermios = g_initTermios;
+        g_signalForBreak = g_initTermios.c_lflag & (uint32_t)ISIG;
+
+        atexit(UninitializeTerminal);
     }
     else
     {
-        g_haveInitTermios = false;
         g_signalForBreak = true;
     }
-    atexit(UninitializeConsole);
 
-    return 1;
+    return g_haveInitTermios || g_noTty;
+}
+
+int32_t SystemNative_InitializeTerminalAndSignalHandling()
+{
+    static int32_t initialized = 0;
+
+    // Both the Process and Console class call this method for initialization.
+    if (pthread_mutex_lock(&g_lock) == 0)
+    {
+        if (initialized == 0)
+        {
+            if (InitializeTerminalCore())
+            {
+                initialized = InitializeSignalHandlingCore();
+            }
+        }
+        pthread_mutex_unlock(&g_lock);
+    }
+
+    return initialized;
 }
