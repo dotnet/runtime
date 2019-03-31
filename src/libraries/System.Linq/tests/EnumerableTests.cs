@@ -282,7 +282,8 @@ namespace System.Linq.Tests
                 e => e.Concat(Array.Empty<T>()),
                 e => ForceNotCollection(e),
                 e => e.Concat(ForceNotCollection(Array.Empty<T>())),
-                e => e.Where(i => true)
+                e => e.Where(i => true),
+                e => ForceNotCollection(e).Skip(0)
             };
         }
 
