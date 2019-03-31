@@ -87,8 +87,7 @@ namespace System.IO
             Debug.Assert(_tmpKeys.Count == 0);
             string readLineStr = null;
 
-            // Disable echo and buffering.  These will be disabled for the duration of the line read.
-            Interop.Sys.InitializeConsoleBeforeRead(); 
+            Interop.Sys.InitializeConsoleBeforeRead();
             try
             {
                 // Read key-by-key until we've read a line.

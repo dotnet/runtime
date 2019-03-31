@@ -8,11 +8,11 @@
 #include "pal_types.h"
 
 /**
- * Initializes the signal handling for use by System.Console and System.Process.
+ * Initializes the signal handling, called by InitializeTerminalAndSignalHandling.
  *
  * Returns 1 on success; otherwise returns 0 and sets errno.
  */
-uint32_t InitializeSignalHandling(void);
+int32_t InitializeSignalHandlingCore(void);
 
 /**
  * Hooks up the specified callback for notifications when SIGINT or SIGQUIT is received.
@@ -41,12 +41,9 @@ typedef void (*SigChldCallback)(int reapAll);
 /**
  * Hooks up the specified callback for notifications when SIGCHLD is received.
  *
- * Not thread safe.  Caller must provide its owns synchronization to ensure RegisterForSigChld
- * is not called concurrently with itself.
- *
  * Should only be called when a callback is not currently registered.
  */
-DLLEXPORT uint32_t SystemNative_RegisterForSigChld(SigChldCallback callback);
+DLLEXPORT void SystemNative_RegisterForSigChld(SigChldCallback callback);
 
 /**
  * Remove our handler and reissue the signal to be picked up by the previously registered handler.
