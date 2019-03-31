@@ -103,6 +103,29 @@ namespace System.Text.Json.Tests
             Json400KB,
         }
 
+        public enum ParseReaderScenario
+        {
+            NotStarted,
+            StartAtFirstToken,
+            StartAtNestedValue,
+            StartAtPropertyName,
+        }
+
+        public static IEnumerable<object[]> ParseReaderSuccessfulCases { get; } = BuildParseReaderSuccessfulCases().ToList();
+
+        private static IEnumerable<object[]> BuildParseReaderSuccessfulCases()
+        {
+            var scenarios = (ParseReaderScenario[])Enum.GetValues(typeof(ParseReaderScenario));
+
+            foreach (int segmentCount in new[] { 0, 1, 2, 15, 125 })
+            {
+                foreach (ParseReaderScenario scenario in scenarios)
+                {
+                    yield return new object[] { scenario, segmentCount };
+                }
+            }
+        }
+
         private static string ReadHelloWorld(JToken obj)
         {
             string message = (string)obj["message"];
@@ -1632,6 +1655,24 @@ namespace System.Text.Json.Tests
                 "readerOptions",
                 () => JsonDocument.Parse(stream, options));
 
+            AssertExtensions.Throws<ArgumentException>(
+                "reader",
+                () =>
+                {
+                    JsonReaderState state = new JsonReaderState(options);
+                    Utf8JsonReader reader = new Utf8JsonReader(utf8, isFinalBlock: false, state);
+                    JsonDocument.ParseValue(ref reader);
+                });
+
+            AssertExtensions.Throws<ArgumentException>(
+                "reader",
+                () =>
+                {
+                    JsonReaderState state = new JsonReaderState(options);
+                    Utf8JsonReader reader = new Utf8JsonReader(utf8, isFinalBlock: false, state);
+                    JsonDocument.TryParseValue(ref reader, out _);
+                });
+
             stream.Seek(0, SeekOrigin.Begin);
             return AssertExtensions.ThrowsAsync<ArgumentException>(
                 "readerOptions",
@@ -2252,6 +2293,502 @@ namespace System.Text.Json.Tests
         }
 
         [Fact]
+        public static void ParseDefaultReader()
+        {
+            Assert.Throws<JsonReaderException>(() =>
+            {
+                Utf8JsonReader reader = default;
+                JsonDocument.ParseValue(ref reader);
+            });
+
+            {
+                Utf8JsonReader reader = default;
+                Assert.False(JsonDocument.TryParseValue(ref reader, out JsonDocument document));
+                Assert.Null(document);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseReaderSuccessfulCases))]
+        public static void ParseReaderAtNumber(ParseReaderScenario scenario, int segmentCount)
+        {
+            ParseReaderInScenario(
+                scenario,
+                "963258741012365478965412325874125896325874123654789",
+                JsonTokenType.Number,
+                segmentCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseReaderSuccessfulCases))]
+        public static void ParseReaderAtString(ParseReaderScenario scenario, int segmentCount)
+        {
+            ParseReaderInScenario(
+                scenario,
+                "\"Now is the time for all good men to come to the aid of their country\"",
+                JsonTokenType.String,
+                segmentCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseReaderSuccessfulCases))]
+        public static void ParseReaderAtObject(ParseReaderScenario scenario, int segmentCount)
+        {
+            ParseReaderInScenario(
+                scenario,
+                "{ \"hello\": 3, \"world\": false }",
+                JsonTokenType.StartObject,
+                segmentCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseReaderSuccessfulCases))]
+        public static void ParseReaderAtArray(ParseReaderScenario scenario, int segmentCount)
+        {
+            ParseReaderInScenario(
+                scenario,
+                "[ { \"hello\": 3, \"world\": false }, 5, 2, 1, \"hello\", null, false, true ]",
+                JsonTokenType.StartArray,
+                segmentCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseReaderSuccessfulCases))]
+        public static void ParseReaderAtTrue(ParseReaderScenario scenario, int segmentCount)
+        {
+            ParseReaderInScenario(scenario, "true", JsonTokenType.True, segmentCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseReaderSuccessfulCases))]
+        public static void ParseReaderAtFalse(ParseReaderScenario scenario, int segmentCount)
+        {
+            ParseReaderInScenario(scenario, "false", JsonTokenType.False, segmentCount);
+        }
+
+        [Theory]
+        [MemberData(nameof(ParseReaderSuccessfulCases))]
+        public static void ParseReaderAtNull(ParseReaderScenario scenario, int segmentCount)
+        {
+            ParseReaderInScenario(scenario, "null", JsonTokenType.Null, segmentCount);
+        }
+
+        private static void ParseReaderInScenario(
+            ParseReaderScenario scenario,
+            string valueJson,
+            JsonTokenType tokenType,
+            int segmentCount)
+        {
+            switch (scenario)
+            {
+                case ParseReaderScenario.NotStarted:
+                case ParseReaderScenario.StartAtFirstToken:
+                    ParseReaderAtStart(
+                        scenario == ParseReaderScenario.StartAtFirstToken,
+                        valueJson,
+                        tokenType,
+                        segmentCount);
+                    break;
+                case ParseReaderScenario.StartAtNestedValue:
+                    ParseReaderAtNestedValue(valueJson, tokenType, segmentCount);
+                    break;
+                case ParseReaderScenario.StartAtPropertyName:
+                    ParseReaderAtPropertyName(valueJson, tokenType, segmentCount);
+                    break;
+            }
+        }
+
+        private static void ParseReaderAtStart(
+            bool readFirst,
+            string valueJson,
+            JsonTokenType tokenType,
+            int segmentCount)
+        {
+            string json = $"      {valueJson}   5";
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            JsonReaderState state = default;
+
+            BuildSegmentedReader(out Utf8JsonReader reader, utf8, segmentCount, state);
+
+            if (readFirst)
+            {
+                Assert.True(reader.Read(), "Move to first token");
+            }
+
+            using (JsonDocument document = JsonDocument.ParseValue(ref reader))
+            {
+                Assert.Equal(valueJson, document.RootElement.GetRawText());
+            }
+
+            Exception ex;
+            long position = reader.BytesConsumed;
+
+            try
+            {
+                reader.Read();
+                ex = null;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsType<JsonReaderException>(ex);
+
+            BuildSegmentedReader(out reader, utf8.AsMemory((int)position), 0, state, true);
+
+            Assert.True(reader.Read(), "Read trailing number");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+        }
+
+        private static void ParseReaderAtNestedValue(
+            string valueJson,
+            JsonTokenType tokenType,
+            int segmentCount)
+        {
+            // Open-ended value (missing final ])
+            string json = $"[ 0, 1, 2, 3, 4, {valueJson}     , 6, 7, 8, 9 ";
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            JsonReaderState state = default;
+
+            BuildSegmentedReader(out Utf8JsonReader reader, utf8, segmentCount, state);
+
+            Assert.True(reader.Read(), "Read [");
+            Assert.Equal(JsonTokenType.StartArray, reader.TokenType);
+            Assert.True(reader.Read(), "Read 0");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 1");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 2");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 3");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 4");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+
+            Assert.True(reader.Read(), "Read desired value");
+            Assert.Equal(tokenType, reader.TokenType);
+            long currentPosition = reader.BytesConsumed;
+
+            using (JsonDocument document = JsonDocument.ParseValue(ref reader))
+            {
+                Assert.Equal(valueJson, document.RootElement.GetRawText());
+            }
+
+            switch (tokenType)
+            {
+                case JsonTokenType.StartArray:
+                    Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+                    Assert.InRange(reader.BytesConsumed, currentPosition + 1, long.MaxValue);
+                    break;
+                case JsonTokenType.StartObject:
+                    Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
+                    Assert.InRange(reader.BytesConsumed, currentPosition + 1, long.MaxValue);
+                    break;
+                default:
+                    Assert.Equal(tokenType, reader.TokenType);
+                    Assert.Equal(currentPosition, reader.BytesConsumed);
+                    break;
+            }
+
+            Assert.True(reader.Read(), "Read 6");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 7");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 8");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 9");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+
+            Assert.False(reader.Read());
+        }
+
+        private static void ParseReaderAtPropertyName(
+            string valueJson,
+            JsonTokenType tokenType,
+            int segmentCount)
+        {
+            // Open-ended value
+            string json = $"{{ \"this\": [ {{ \"is\": {{ \"the\": {{ \"target\": {valueJson}    , \"capiche\" : [ 6, 7, 8, 9 ] ";
+            byte[] utf8 = Encoding.UTF8.GetBytes(json);
+            JsonReaderState state = default;
+
+            BuildSegmentedReader(out Utf8JsonReader reader, utf8, segmentCount, state);
+
+            Assert.True(reader.Read(), "Read root object start");
+            Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"this\" property name");
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"this\" StartArray");
+            Assert.Equal(JsonTokenType.StartArray, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"this\" StartObject");
+            Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"is\" property name");
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"is\" StartObject");
+            Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"the\" property name");
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"the\" StartObject");
+            Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"target\" property name");
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+
+            long currentPosition = reader.BytesConsumed;
+
+            using (JsonDocument document = JsonDocument.ParseValue(ref reader))
+            {
+                Assert.Equal(valueJson, document.RootElement.GetRawText());
+            }
+
+            // The reader will have moved.
+            Assert.InRange(reader.BytesConsumed, currentPosition + 1, long.MaxValue);
+
+            switch (tokenType)
+            {
+                case JsonTokenType.StartArray:
+                    Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+                    break;
+                case JsonTokenType.StartObject:
+                    Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
+                    break;
+                default:
+                    Assert.Equal(tokenType, reader.TokenType);
+                    break;
+            }
+
+            Assert.True(reader.Read(), "Read \"capiche\" property name");
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"capiche\" StartArray");
+            Assert.Equal(JsonTokenType.StartArray, reader.TokenType);
+            Assert.True(reader.Read(), "Read 6");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 7");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 8");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read 9");
+            Assert.Equal(JsonTokenType.Number, reader.TokenType);
+            Assert.True(reader.Read(), "Read \"capiche\" EndArray");
+            Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+            Assert.False(reader.Read());
+        }
+
+        [Theory]
+        [InlineData(JsonTokenType.EndObject)]
+        [InlineData(JsonTokenType.EndArray)]
+        public static void ParseReaderAtInvalidStart(JsonTokenType tokenType)
+        {
+            string jsonString;
+
+            switch (tokenType)
+            {
+                case JsonTokenType.EndObject:
+                    jsonString = "[ { } ]";
+                    break;
+                case JsonTokenType.EndArray:
+                    jsonString = "[ [ ] ]";
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(tokenType));
+            }
+
+            byte[] jsonUtf8 = Encoding.UTF8.GetBytes(jsonString);
+            JsonReaderState state = default;
+
+            Utf8JsonReader reader = new Utf8JsonReader(
+                jsonUtf8,
+                isFinalBlock: false,
+                state);
+
+            Assert.True(reader.Read(), "Move to first [");
+            Assert.True(reader.Read(), "Move to internal start");
+            Assert.True(reader.Read(), "Move to internal end");
+
+            Exception ex;
+
+            long initialPosition = reader.BytesConsumed;
+
+            try
+            {
+                using (JsonDocument.ParseValue(ref reader))
+                {
+                }
+
+                ex = null;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsType<JsonReaderException>(ex);
+
+            Assert.Equal(initialPosition, reader.BytesConsumed);
+
+            Assert.False(JsonDocument.TryParseValue(ref reader, out JsonDocument doc));
+            Assert.Null(doc);
+            Assert.Equal(initialPosition, reader.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(15)]
+        public static void ParseReaderThrowsWhileReading(int segmentCount)
+        {
+            const string jsonString = "[ { \"this\": { \"is\": [ invalid ] } } ]";
+            byte[] utf8Json = Encoding.UTF8.GetBytes(jsonString);
+            JsonReaderState state = default;
+
+            BuildSegmentedReader(out Utf8JsonReader reader, utf8Json, segmentCount, state);
+
+            Assert.True(reader.Read(), "Read StartArray");
+            Assert.True(reader.Read(), "Read StartObject");
+            Assert.True(reader.Read(), "Read \"this\" PropertyName");
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            long startPosition = reader.BytesConsumed;
+
+            Exception ex;
+
+            try
+            {
+                using (JsonDocument.ParseValue(ref reader))
+                {
+                }
+
+                ex = null;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsType<JsonReaderException>(ex);
+
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.Equal(startPosition, reader.BytesConsumed);
+
+            JsonDocument doc = null;
+
+            try
+            {
+                JsonDocument.TryParseValue(ref reader, out doc);
+                ex = null;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsType<JsonReaderException>(ex);
+            Assert.Null(doc);
+
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.Equal(startPosition, reader.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(15)]
+        public static void ParseReaderTerminatesWhileReading(int segmentCount)
+        {
+            const string jsonString = "[ { \"this\": { \"is\": [ ";
+            byte[] utf8Json = Encoding.UTF8.GetBytes(jsonString);
+            JsonReaderState state = default;
+
+            BuildSegmentedReader(out Utf8JsonReader reader, utf8Json, segmentCount, state);
+
+            Assert.True(reader.Read(), "Read StartArray");
+            Assert.True(reader.Read(), "Read StartObject");
+            Assert.True(reader.Read(), "Read \"this\" PropertyName");
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            long startPosition = reader.BytesConsumed;
+
+            Exception ex;
+
+            try
+            {
+                using (JsonDocument.ParseValue(ref reader))
+                {
+                }
+
+                ex = null;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsType<JsonReaderException>(ex);
+
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.Equal(startPosition, reader.BytesConsumed);
+
+            Assert.False(JsonDocument.TryParseValue(ref reader, out JsonDocument doc));
+            Assert.Null(doc);
+
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.Equal(startPosition, reader.BytesConsumed);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(15)]
+        public static void ParseReaderTerminatesAfterPropertyName(int segmentCount)
+        {
+            const string jsonString = "[ { \"this\": ";
+            byte[] utf8Json = Encoding.UTF8.GetBytes(jsonString);
+            JsonReaderState state = default;
+
+            BuildSegmentedReader(out Utf8JsonReader reader, utf8Json, segmentCount, state);
+
+            Assert.True(reader.Read(), "Read StartArray");
+            Assert.True(reader.Read(), "Read StartObject");
+            Assert.True(reader.Read(), "Read \"this\" PropertyName");
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            long startPosition = reader.BytesConsumed;
+
+            Exception ex;
+
+            try
+            {
+                using (JsonDocument.ParseValue(ref reader))
+                {
+                }
+
+                ex = null;
+            }
+            catch (Exception e)
+            {
+                ex = e;
+            }
+
+            Assert.NotNull(ex);
+            Assert.IsType<JsonReaderException>(ex);
+
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.Equal(startPosition, reader.BytesConsumed);
+
+            Assert.False(JsonDocument.TryParseValue(ref reader, out JsonDocument doc));
+            Assert.Null(doc);
+
+            Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+            Assert.Equal(startPosition, reader.BytesConsumed);
+        }
+
+        [Fact]
         public static void EnsureResizeSucceeds()
         {
             // This test increases coverage, so it's based on a lot of implementation detail,
@@ -2311,6 +2848,37 @@ namespace System.Text.Json.Tests
                     Assert.Equal(i, int.Parse(root[i].GetString()));
                 }
             }
+        }
+
+        private static void BuildSegmentedReader(
+            out Utf8JsonReader reader,
+            ReadOnlyMemory<byte> data,
+            int segmentCount,
+            in JsonReaderState state,
+            bool isFinalBlock=false)
+        {
+            if (segmentCount == 0)
+            {
+                reader = new Utf8JsonReader(
+                    data.Span,
+                    isFinalBlock,
+                    state);
+            }
+            else if (segmentCount == 1)
+            {
+                reader = new Utf8JsonReader(
+                    new ReadOnlySequence<byte>(data),
+                    isFinalBlock,
+                    state);
+            }
+            else
+            {
+                reader = new Utf8JsonReader(
+                    JsonTestHelper.SegmentInto(data, segmentCount),
+                    isFinalBlock,
+                    state);
+            }
+
         }
 
         private static string GetExpectedConcat(TestCaseType testCaseType, string jsonString)
