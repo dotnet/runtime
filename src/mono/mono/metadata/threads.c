@@ -2534,6 +2534,12 @@ ves_icall_System_Threading_Interlocked_Read_Long (gint64 *location)
 }
 
 void
+ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide (void)
+{
+	mono_memory_barrier_process_wide ();
+}
+
+void
 ves_icall_System_Threading_Thread_MemoryBarrier (void)
 {
 	mono_memory_barrier ();

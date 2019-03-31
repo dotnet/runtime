@@ -564,4 +564,10 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 #endif
 }
 
+void
+mono_memory_barrier_process_wide (void)
+{
+	FlushProcessWriteBuffers ();
+}
+
 #endif

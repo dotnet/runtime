@@ -1064,7 +1064,8 @@ ICALL(ILOCK_18, "Exchange(object&,object)", ves_icall_System_Threading_Interlock
 NOHANDLES(ICALL(ILOCK_19, "Exchange(single&,single)", ves_icall_System_Threading_Interlocked_Exchange_Single))
 NOHANDLES(ICALL(ILOCK_20, "Increment(int&)", ves_icall_System_Threading_Interlocked_Increment_Int))
 NOHANDLES(ICALL(ILOCK_21, "Increment(long&)", ves_icall_System_Threading_Interlocked_Increment_Long))
-NOHANDLES(ICALL(ILOCK_22, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long))
+NOHANDLES(ICALL(ILOCK_22, "MemoryBarrierProcessWide", ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide))
+NOHANDLES(ICALL(ILOCK_23, "Read(long&)", ves_icall_System_Threading_Interlocked_Read_Long))
 
 #ifndef ENABLE_NETCORE
 ICALL_TYPE(ITHREAD, "System.Threading.InternalThread", ITHREAD_1)

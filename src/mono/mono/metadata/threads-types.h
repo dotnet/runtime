@@ -216,6 +216,9 @@ ICALL_EXPORT
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location);
 
 ICALL_EXPORT
+void ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide (void);
+
+ICALL_EXPORT
 gint8 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr);
 
 ICALL_EXPORT
