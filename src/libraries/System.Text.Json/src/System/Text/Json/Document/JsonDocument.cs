@@ -980,13 +980,15 @@ namespace System.Text.Json
             }
         }
 
-        private static void CheckSupportedOptions(JsonReaderOptions readerOptions)
+        private static void CheckSupportedOptions(
+            JsonReaderOptions readerOptions,
+            string paramName = null)
         {
             if (readerOptions.CommentHandling == JsonCommentHandling.Allow)
             {
                 throw new ArgumentException(
                     SR.JsonDocumentDoesNotSupportComments,
-                    nameof(readerOptions));
+                    paramName ?? nameof(readerOptions));
             }
         }
     }
