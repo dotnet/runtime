@@ -10,14 +10,21 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Represents a strongly-typed property that is a <see cref="Nullable{T}"/>.
     /// </summary>
-    internal sealed class JsonPropertyInfoNullable<TClass, TProperty> : JsonPropertyInfo<TClass, TProperty?, TProperty>
+    internal sealed class JsonPropertyInfoNullable<TClass, TProperty> 
+        : JsonPropertyInfoCommon<TClass, TProperty?, TProperty>
         where TProperty : struct
     {
         // should this be cached somewhere else so that it's not populated per TClass as well as TProperty?
         private static readonly Type s_underlyingType = typeof(TProperty);
 
-        internal JsonPropertyInfoNullable(Type classType, Type propertyType, PropertyInfo propertyInfo, Type elementType, JsonSerializerOptions options) :
-            base(classType, propertyType, propertyInfo, elementType, options)
+        internal JsonPropertyInfoNullable(
+            Type parentClassType,
+            Type declaredPropertyType,
+            Type runtimePropertyType,
+            PropertyInfo propertyInfo,
+            Type elementType,
+            JsonSerializerOptions options) :
+            base(parentClassType, declaredPropertyType, runtimePropertyType, propertyInfo, elementType, options)
         {
         }
 
@@ -48,7 +55,7 @@ namespace System.Text.Json.Serialization
                     }
                 }
 
-                ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(PropertyType, reader, state);
+                ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state);
             }
         }
 
@@ -63,7 +70,7 @@ namespace System.Text.Json.Serialization
                 }
             }
 
-            ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(PropertyType, reader, state);
+            ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state);
         }
 
         // todo: have the caller check if current.Enumerator != null and call WriteEnumerable of the underlying property directly to avoid an extra virtual call.
