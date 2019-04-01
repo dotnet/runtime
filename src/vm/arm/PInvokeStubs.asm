@@ -16,7 +16,13 @@
 
     IMPORT VarargPInvokeStubWorker
     IMPORT GenericPInvokeCalliStubWorker
+    IMPORT JIT_PInvokeEndRarePath
 
+    IMPORT s_gsCookie
+    IMPORT g_TrapReturningThreads
+
+    SETALIAS InlinedCallFrame_vftable, ??_7InlinedCallFrame@@6B@
+    IMPORT $InlinedCallFrame_vftable
 
 ; ------------------------------------------------------------------
 ; Macro to generate PInvoke Stubs.
@@ -105,7 +111,91 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
         MEND
 
 
+
     TEXTAREA
+; ------------------------------------------------------------------
+; JIT_PInvokeBegin helper
+;
+; in:
+; r0 = InlinedCallFrame*: pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+;                         before actual InlinedCallFrame data)
+; 
+        LEAF_ENTRY JIT_PInvokeBegin
+
+            ldr     r1, =s_gsCookie
+            ldr     r1, [r1]
+            str     r1, [r0]
+            add     r0, r0, SIZEOF__GSCookie
+                        
+            ;; r0 = pFrame
+            
+            ;; set first slot to the value of InlinedCallFrame::`vftable' (checked by runtime code)
+            ldr     r1, =$InlinedCallFrame_vftable
+            str     r1, [r0]
+
+            mov     r1, 0
+            str     r1, [r0, #InlinedCallFrame__m_Datum]
+        
+            str     sp, [r0, #InlinedCallFrame__m_pCallSiteSP]
+            str     r11, [r0, #InlinedCallFrame__m_pCalleeSavedFP]
+            str     lr, [r0, #InlinedCallFrame__m_pCallerReturnAddress]
+
+            ;; r1 = GetThread(), TRASHES r2
+            INLINE_GETTHREAD r1, r2
+
+            ;; pFrame->m_Next = pThread->m_pFrame;
+            ldr     r2, [r1, #Thread_m_pFrame]
+            str     r2, [r0, #Frame__m_Next]
+
+            ;; pThread->m_pFrame = pFrame;
+            str     r0, [r1, #Thread_m_pFrame]
+
+            ;; pThread->m_fPreemptiveGCDisabled = 0
+            mov     r2, 0
+            str     r2, [r1, #Thread_m_fPreemptiveGCDisabled]
+
+            bx      lr
+            
+        LEAF_END
+
+; ------------------------------------------------------------------
+; JIT_PInvokeEnd helper
+;
+; in:
+; r0 = InlinedCallFrame*
+; 
+        LEAF_ENTRY JIT_PInvokeEnd
+
+            add     r0, r0, SIZEOF__GSCookie
+
+            ;; r1 = GetThread(), TRASHES r2
+            INLINE_GETTHREAD r1, r2
+
+            ;; r0 = pFrame
+            ;; r1 = pThread
+            
+            ;; pThread->m_fPreemptiveGCDisabled = 1
+            mov     r2, 1
+            str     r2, [r1, #Thread_m_fPreemptiveGCDisabled]
+
+            ;; Check return trap
+            ldr     r2, =g_TrapReturningThreads
+            ldr     r2, [r2]
+            cbnz    r2, RarePath
+
+            ;; pThread->m_pFrame = pFrame->m_Next
+            ldr     r2, [r0, #Frame__m_Next]
+            str     r2, [r1, #Thread_m_pFrame]
+
+            bx      lr
+
+RarePath
+            b       JIT_PInvokeEndRarePath
+        
+        LEAF_END
+        
+        INLINE_GETTHREAD_CONSTANT_POOL
+
 ; ------------------------------------------------------------------
 ; VarargPInvokeStub & VarargPInvokeGenILStub
 ; There is a separate stub when the method has a hidden return buffer arg.
