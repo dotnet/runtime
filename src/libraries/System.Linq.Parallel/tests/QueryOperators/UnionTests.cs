@@ -24,7 +24,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        private static IEnumerable<object[]> UnionUnorderedData(int[] counts)
+        public static IEnumerable<object[]> UnionUnorderedData(int[] counts)
         {
             foreach (object[] parms in UnorderedSources.BinaryRanges(counts, (l, r) => l, counts))
             {

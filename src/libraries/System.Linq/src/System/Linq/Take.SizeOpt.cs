@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Linq
 {
@@ -10,14 +11,16 @@ namespace System.Linq
     {
         private static IEnumerable<TSource> TakeIterator<TSource>(IEnumerable<TSource> source, int count)
         {
-            if (count > 0)
+            Debug.Assert(count > 0);
+
+            foreach (TSource element in source)
             {
-                foreach (TSource element in source)
-                {
-                    yield return element;
-                    if (--count == 0) break;
-                }
+                yield return element;
+                if (--count == 0) break;
             }
         }
+
+        private static IEnumerable<TSource> TakeLastEnumerableFactory<TSource>(IEnumerable<TSource> source, int count) =>
+            TakeLastIterator<TSource>(source, count);
     }
 }

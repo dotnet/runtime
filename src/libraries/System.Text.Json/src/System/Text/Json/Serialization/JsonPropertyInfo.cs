@@ -30,34 +30,51 @@ namespace System.Text.Json.Serialization
         // Constructor used for internal identifiers
         internal JsonPropertyInfo() { }
 
-        internal JsonPropertyInfo(Type parentClassType, Type propertyType, PropertyInfo propertyInfo, Type elementType, JsonSerializerOptions options)
-        { 
+        internal JsonPropertyInfo(
+            Type parentClassType,
+            Type declaredPropertyType,
+            Type runtimePropertyType,
+            PropertyInfo propertyInfo,
+            Type elementType,
+            JsonSerializerOptions options)
+        {
             ParentClassType = parentClassType;
-            PropertyType = propertyType;
+            DeclaredPropertyType = declaredPropertyType;
+            RuntimePropertyType = runtimePropertyType;
             PropertyInfo = propertyInfo;
-            ClassType = JsonClassInfo.GetClassType(propertyType);
+            ClassType = JsonClassInfo.GetClassType(runtimePropertyType);
             if (elementType != null)
             {
                 ElementClassInfo = options.GetOrAddClass(elementType);
             }
 
-            IsNullableType = propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
-            CanBeNull = IsNullableType || !propertyType.IsValueType;
+            IsNullableType = runtimePropertyType.IsGenericType && runtimePropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
+            CanBeNull = IsNullableType || !runtimePropertyType.IsValueType;
         }
 
-        internal JsonEnumerableConverter EnumerableConverter { get; private set; }
-
-        public PropertyInfo PropertyInfo { get; private set; }
-
-        internal Type PropertyType { get; private set; }
-
-        internal Type ParentClassType { get; private set; }
-
+        internal bool CanBeNull { get; private set; }
         internal JsonClassInfo ElementClassInfo { get; private set; }
+        internal JsonEnumerableConverter EnumerableConverter { get; private set; }
 
         internal bool IsNullableType { get; private set; }
 
-        internal bool CanBeNull { get; private set; }
+        public PropertyInfo PropertyInfo { get; private set; }
+
+        internal Type ParentClassType { get; private set; }
+
+        internal Type DeclaredPropertyType { get; private set; }
+
+        internal Type RuntimePropertyType { get; private set; }
+
+        internal virtual void GetPolicies(JsonSerializerOptions options)
+        {
+            if (RuntimePropertyType.IsArray)
+            {
+                EnumerableConverter = s_jsonEnumerableConverter;
+            }
+        }
+
+        internal abstract object GetValueAsObject(object obj, JsonSerializerOptions options);
 
         internal bool IgnoreNullPropertyValueOnRead(JsonSerializerOptions options)
         {
@@ -69,23 +86,13 @@ namespace System.Text.Json.Serialization
             return options.IgnoreNullPropertyValueOnWrite;
         }
 
-        internal abstract object GetValueAsObject(object obj, JsonSerializerOptions options);
-        internal abstract void SetValueAsObject(object obj, object value, JsonSerializerOptions options);
-
         internal abstract void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
 
         internal abstract void ReadEnumerable(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
+        internal abstract void SetValueAsObject(object obj, object value, JsonSerializerOptions options);
 
         internal abstract void Write(JsonSerializerOptions options, ref WriteStackFrame current, ref Utf8JsonWriter writer);
 
         internal abstract void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, ref Utf8JsonWriter writer);
-
-        internal virtual void GetPolicies(JsonSerializerOptions options)
-        {
-            if (PropertyType.IsArray)
-            {
-                EnumerableConverter = s_jsonEnumerableConverter;
-            }
-        }
     }
 }

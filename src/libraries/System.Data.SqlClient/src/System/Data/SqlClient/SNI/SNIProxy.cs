@@ -18,7 +18,7 @@ namespace System.Data.SqlClient.SNI
     /// <summary>
     /// Managed SNI proxy implementation. Contains many SNI entry points used by SqlClient.
     /// </summary>
-    internal class SNIProxy
+    internal partial class SNIProxy
     {
         private const int DefaultSqlServerPort = 1433;
         private const int DefaultSqlServerDacPort = 1434;
@@ -342,7 +342,7 @@ namespace System.Data.SqlClient.SNI
                 // If the DNS lookup failed, then resort to using the user provided hostname to construct the SPN.
                 fullyQualifiedDomainName = hostEntry?.HostName ?? hostNameOrAddress;
             }
-            string serverSpn = SqlServerSpnHeader + "/" + fullyQualifiedDomainName;
+            string serverSpn = SqlServerSpnHeader + SpnServiceHostSeparator + fullyQualifiedDomainName;
             if (!string.IsNullOrWhiteSpace(portOrInstanceName))
             {
                 serverSpn += ":" + portOrInstanceName;

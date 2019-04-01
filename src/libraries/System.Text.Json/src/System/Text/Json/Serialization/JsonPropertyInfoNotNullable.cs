@@ -10,13 +10,21 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Represents a strongly-typed property that is not a <see cref="Nullable{T}"/>.
     /// </summary>
-    internal sealed class JsonPropertyInfoNotNullable<TClass, TProperty> : JsonPropertyInfo<TClass, TProperty, TProperty>
+    internal sealed class JsonPropertyInfoNotNullable<TClass, TDeclaredProperty, TRuntimeProperty> :
+        JsonPropertyInfoCommon<TClass, TDeclaredProperty, TRuntimeProperty>
+        where TRuntimeProperty : TDeclaredProperty
     {
         // Constructor used for internal identifiers
         internal JsonPropertyInfoNotNullable() { }
 
-        internal JsonPropertyInfoNotNullable(Type classType, Type propertyType, PropertyInfo propertyInfo, Type elementType, JsonSerializerOptions options) :
-            base(classType, propertyType, propertyInfo, elementType, options)
+        internal JsonPropertyInfoNotNullable(
+            Type parentClassType,
+            Type declaredPropertyType,
+            Type runtimePropertyType,
+            PropertyInfo propertyInfo,
+            Type elementType,
+            JsonSerializerOptions options) :
+            base(parentClassType, declaredPropertyType, runtimePropertyType, propertyInfo, elementType, options)
         {
         }
 
@@ -32,7 +40,7 @@ namespace System.Text.Json.Serialization
             {
                 if (ValueConverter != null)
                 {
-                    if (ValueConverter.TryRead(PropertyType, ref reader, out TProperty value))
+                    if (ValueConverter.TryRead(RuntimePropertyType, ref reader, out TRuntimeProperty value))
                     {
                         if (state.Current.ReturnValue == null)
                         {
@@ -50,7 +58,7 @@ namespace System.Text.Json.Serialization
                     }
                 }
 
-                ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(PropertyType, reader, state);
+                ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state);
             }
         }
 
@@ -58,14 +66,14 @@ namespace System.Text.Json.Serialization
         {
             if (ValueConverter != null)
             {
-                if (ValueConverter.TryRead(PropertyType, ref reader, out TProperty value))
+                if (ValueConverter.TryRead(RuntimePropertyType, ref reader, out TRuntimeProperty value))
                 {
                     ReadStackFrame.SetReturnValue(value, options, ref state.Current);
                     return;
                 }
             }
 
-            ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(PropertyType, reader, state);
+            ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state);
         }
 
         // todo: have the caller check if current.Enumerator != null and call WriteEnumerable of the underlying property directly to avoid an extra virtual call.
@@ -79,14 +87,14 @@ namespace System.Text.Json.Serialization
             }
             else if (HasGetter)
             {
-                TProperty value;
+                TRuntimeProperty value;
                 if (_isPropertyPolicy)
                 {
-                    value = (TProperty)current.CurrentValue;
+                    value = (TRuntimeProperty)current.CurrentValue;
                 }
                 else
                 {
-                    value = Get((TClass)current.CurrentValue);
+                    value = (TRuntimeProperty)Get((TClass)current.CurrentValue);
                 }
 
                 if (value == null)
@@ -119,7 +127,7 @@ namespace System.Text.Json.Serialization
             if (ValueConverter != null)
             {
                 Debug.Assert(current.Enumerator != null);
-                TProperty value = (TProperty)current.Enumerator.Current;
+                TRuntimeProperty value = (TRuntimeProperty)current.Enumerator.Current;
                 if (value == null)
                 {
                     writer.WriteNullValue();

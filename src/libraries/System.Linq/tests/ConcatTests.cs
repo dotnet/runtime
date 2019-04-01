@@ -443,7 +443,7 @@ namespace System.Linq.Tests
             }
         }
 
-        private static IEnumerable<object[]> GetToArrayDataSources()
+        public static IEnumerable<object[]> GetToArrayDataSources()
         {
             // Marker at the end
             yield return new object[]

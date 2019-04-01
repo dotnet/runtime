@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization
@@ -11,32 +12,7 @@ namespace System.Text.Json.Serialization
     {
         private void AddProperty(Type propertyType, PropertyInfo propertyInfo, Type classType, JsonSerializerOptions options)
         {
-            Type collectionElementType = null;
-            ClassType propertyClassType = GetClassType(propertyType);
-            if (propertyClassType == ClassType.Enumerable)
-            {
-                collectionElementType = GetElementType(propertyType);
-                // todo: if collectionElementType is object, create loosely-typed collection (JsonArray).
-            }
-
-            // Create the JsonPropertyInfo<TType, TProperty>
-            Type genericPropertyType;
-            if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                Type underlyingPropertyType = Nullable.GetUnderlyingType(propertyType);
-                genericPropertyType = typeof(JsonPropertyInfoNullable<,>).MakeGenericType(classType, underlyingPropertyType);
-            }
-            else
-            {
-                genericPropertyType = typeof(JsonPropertyInfoNotNullable<,>).MakeGenericType(classType, propertyType);
-            }
-            
-            JsonPropertyInfo jsonInfo = (JsonPropertyInfo)Activator.CreateInstance(
-                genericPropertyType,
-                BindingFlags.Instance | BindingFlags.NonPublic,
-                binder: null,
-                new object[] { classType, propertyType, propertyInfo, collectionElementType, options },
-                culture: null);
+            JsonPropertyInfo jsonInfo = CreateProperty(propertyType, propertyType, propertyInfo, classType, options);
 
             if (propertyInfo != null)
             {
@@ -63,7 +39,8 @@ namespace System.Text.Json.Serialization
                     tempArray.CopyTo(jsonInfo._escapedName, 0);
 
                     // We clear the array because it is "user data" (although a property name).
-                    ArrayPool<byte>.Shared.Return(tempArray, clearArray: true);
+                    new Span<byte>(tempArray, 0, written).Clear();
+                    ArrayPool<byte>.Shared.Return(tempArray);
                 }
 
                 _property_refs.Add(new PropertyRef(GetKey(propertyNameBytes), jsonInfo));
@@ -73,6 +50,53 @@ namespace System.Text.Json.Serialization
                 // A single property or an IEnumerable
                 _property_refs.Add(new PropertyRef(0, jsonInfo));
             }
+        }
+
+        internal JsonPropertyInfo CreateProperty(Type declaredPropertyType, Type runtimePropertyType, PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
+        {
+            Type collectionElementType = null;
+            ClassType propertyClassType = GetClassType(runtimePropertyType);
+            if (propertyClassType == ClassType.Enumerable)
+            {
+                collectionElementType = GetElementType(runtimePropertyType);
+                // todo: if collectionElementType is object, create loosely-typed collection (JsonArray).
+            }
+
+            // Create the JsonPropertyInfo<TType, TProperty>
+            Type propertyInfoClassType;
+            if (runtimePropertyType.IsGenericType && runtimePropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                Type underlyingPropertyType = Nullable.GetUnderlyingType(runtimePropertyType);
+                propertyInfoClassType = typeof(JsonPropertyInfoNullable<,>).MakeGenericType(parentClassType, underlyingPropertyType);
+            }
+            else
+            {
+                // For now we only support polymorphism with base type == typeof(object).
+                Debug.Assert(declaredPropertyType == runtimePropertyType || declaredPropertyType == typeof(object));
+                propertyInfoClassType = typeof(JsonPropertyInfoNotNullable<,,>).MakeGenericType(parentClassType, declaredPropertyType, runtimePropertyType);
+            }
+
+            JsonPropertyInfo jsonInfo = (JsonPropertyInfo)Activator.CreateInstance(
+                propertyInfoClassType,
+                BindingFlags.Instance | BindingFlags.NonPublic,
+                binder: null,
+                new object[] { parentClassType, declaredPropertyType, runtimePropertyType, propertyInfo, collectionElementType, options },
+                culture: null);
+
+            return jsonInfo;
+        }
+
+        internal JsonPropertyInfo CreatePolymorphicProperty(JsonPropertyInfo property, Type runtimePropertyType, JsonSerializerOptions options)
+        {
+            // For now we only support typeof(object) for polymorphism.
+            Debug.Assert(property?.DeclaredPropertyType == typeof(object));
+            Debug.Assert(runtimePropertyType != typeof(object));
+
+            JsonPropertyInfo runtimeProperty = CreateProperty(property.DeclaredPropertyType, runtimePropertyType, property?.PropertyInfo, Type, options);
+            runtimeProperty._name = property._name;
+            runtimeProperty._escapedName = property._escapedName;
+
+            return runtimeProperty;
         }
     }
 }

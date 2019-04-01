@@ -73,9 +73,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Throws<MemberAccessException>(() => FormatterServices.GetSafeUninitializedObject(type));
         }
 
-        private abstract class AbstractClass { }
-        private static class StaticClass { }
-        private interface Interface { }
+        public abstract class AbstractClass { }
+        public static class StaticClass { }
+        public interface Interface { }
 
         public static IEnumerable<object[]> GetUninitializedObject_OpenGenericClass_TestData()
         {

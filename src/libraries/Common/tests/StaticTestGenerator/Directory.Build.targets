@@ -1,0 +1,2 @@
+<!-- Standalone project. Avoid being tied to the build infrastructure in the repo. -->
+<Project/>

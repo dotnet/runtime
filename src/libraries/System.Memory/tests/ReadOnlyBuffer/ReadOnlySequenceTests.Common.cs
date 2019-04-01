@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.MemoryTests;
 using System.Text;
 using Xunit;
 
@@ -109,7 +110,23 @@ namespace System.Memory.Tests
         #region First
 
         [Fact]
-        public void CanGetFirst()
+        public void AsArray_CanGetFirst()
+        {
+            var memory = new ReadOnlyMemory<T>(new T[5]);
+            VerifyCanGetFirst(new ReadOnlySequence<T>(memory), expectedSize: 5);
+        }
+
+        [Fact]
+        public void AsMemoryManager_CanGetFirst()
+        {
+            MemoryManager<T> manager = new CustomMemoryForTest<T>(new T[5]);
+            ReadOnlyMemory<T> memoryFromManager = ((ReadOnlyMemory<T>)manager.Memory);
+
+            VerifyCanGetFirst(new ReadOnlySequence<T>(memoryFromManager), expectedSize: 5);
+        }
+
+        [Fact]
+        public void AsMultiSegment_CanGetFirst()
         {
             var bufferSegment1 = new BufferSegment<T>(new T[100]);
             BufferSegment<T> bufferSegment2 = bufferSegment1.Append(new T[100]);
@@ -117,26 +134,33 @@ namespace System.Memory.Tests
             BufferSegment<T> bufferSegment4 = bufferSegment3.Append(new T[200]);
 
             var buffer = new ReadOnlySequence<T>(bufferSegment1, 0, bufferSegment4, 200);
-
+            // Verify first 3 segments
             Assert.Equal(500, buffer.Length);
             int length = 500;
-
             for (int s = 0; s < 3; s++)
             {
                 for (int i = 100; i > 0; i--)
                 {
                     Assert.Equal(i, buffer.First.Length);
+                    Assert.Equal(i, buffer.FirstSpan.Length);
                     buffer = buffer.Slice(1);
                     length--;
                     Assert.Equal(length, buffer.Length);
                 }
             }
+            // Verify last segment
+            VerifyCanGetFirst(buffer, expectedSize: 200);
+        }
+        
+        protected void VerifyCanGetFirst(ReadOnlySequence<T> buffer, int expectedSize)
+        {
+            Assert.Equal(expectedSize, buffer.Length);
+            int length = expectedSize;
 
-            Assert.Equal(200, buffer.Length);
-
-            for (int i = 200; i > 0; i--)
+            for (int i = length; i > 0; i--)
             {
                 Assert.Equal(i, buffer.First.Length);
+                Assert.Equal(i, buffer.FirstSpan.Length);
                 buffer = buffer.Slice(1);
                 length--;
                 Assert.Equal(length, buffer.Length);
@@ -144,6 +168,7 @@ namespace System.Memory.Tests
 
             Assert.Equal(0, buffer.Length);
             Assert.Equal(0, buffer.First.Length);
+            Assert.Equal(0, buffer.FirstSpan.Length);
         }
 
         #endregion

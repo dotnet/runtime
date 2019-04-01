@@ -80,5 +80,13 @@ namespace System.Memory.Tests
             Assert.Equal("Hello", new string(helloBytes));
             Assert.Equal(" World", new string(worldBytes));
         }
+
+        [Fact]
+        public void AsString_CanGetFirst()
+        {
+            const string SampleString = "12345";
+            var buffer = new ReadOnlySequence<char>(SampleString.AsMemory());
+            VerifyCanGetFirst(buffer, expectedSize: 5);
+        }
     }
 }

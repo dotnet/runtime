@@ -22,9 +22,10 @@ namespace System.Buffers.Tests
         [Fact]
         public void WritingToMultiSegmentBuffer()
         {
-            IBufferWriter<byte> bufferWriter = new TestBufferWriterMultiSegment();
+            var bufferWriter = new TestBufferWriterMultiSegment();
             bufferWriter.Write(Encoding.UTF8.GetBytes("Hello"));
             bufferWriter.Write(Encoding.UTF8.GetBytes(" World!"));
+            Assert.Equal(12, bufferWriter.Comitted.Count);
             Assert.Equal("Hello World!", bufferWriter.ToString());
         }
 
@@ -38,7 +39,7 @@ namespace System.Buffers.Tests
                 _written += bytes;
             }
 
-            public Memory<byte> GetMemory(int sizeHint  = 0) => _buffer.AsMemory().Slice(_written);
+            public Memory<byte> GetMemory(int sizeHint = 0) => _buffer.AsMemory().Slice(_written);
 
             public Span<byte> GetSpan(int sizeHint) => _buffer.AsSpan().Slice(_written);
 
@@ -53,6 +54,8 @@ namespace System.Buffers.Tests
             private byte[] _current = new byte[0];
             private List<byte[]> _commited = new List<byte[]>();
 
+            public List<byte[]> Comitted => _commited;
+
             public void Advance(int bytes)
             {
                 if (bytes == 0)
@@ -61,13 +64,13 @@ namespace System.Buffers.Tests
                 _current = new byte[0];
             }
 
-            public Memory<byte> GetMemory(int sizeHint  = 0)
+            public Memory<byte> GetMemory(int sizeHint = 0)
             {
-                if (sizeHint  == 0)
-                    sizeHint  = _current.Length + 1;
-                if (sizeHint  < _current.Length)
+                if (sizeHint == 0)
+                    sizeHint = _current.Length + 1;
+                if (sizeHint < _current.Length)
                     throw new InvalidOperationException();
-                var newBuffer = new byte[sizeHint ];
+                var newBuffer = new byte[sizeHint];
                 _current.CopyTo(newBuffer.AsSpan());
                 _current = newBuffer;
                 return _current;
@@ -95,5 +98,5 @@ namespace System.Buffers.Tests
                 return builder.ToString();
             }
         }
-    }  
+    }
 }

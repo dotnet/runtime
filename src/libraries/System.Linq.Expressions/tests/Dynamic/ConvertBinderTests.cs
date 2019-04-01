@@ -31,13 +31,12 @@ namespace System.Dynamic.Tests
 
         private static Type[] SomeTypes = { typeof(ConvertBinderTests), typeof(ConvertBinder), typeof(string), typeof(int), typeof(void) };
 
-        private static IEnumerable<object[]> Int32Args() => SomeInt32.Select(i => new object[] {i});
+        public static IEnumerable<object[]> Int32Args() => SomeInt32.Select(i => new object[] {i});
 
-        private static IEnumerable<object[]> Int64Arges() => SomeInt64.Select(i => new object[] {i});
+        public static IEnumerable<object[]> Int64Arges() => SomeInt64.Select(i => new object[] {i});
 
-        private static IEnumerable<object[]> TypesAndBools() =>
+        public static IEnumerable<object[]> TypesAndBools() =>
             SomeTypes.SelectMany(t => new[] {false, true}, (t, b) => new object[] {t, b});
-
 
         [Theory, MemberData(nameof(Int32Args))]
         public void ConvertImplicit(int x)

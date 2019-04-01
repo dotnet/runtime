@@ -259,8 +259,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.GetWindowWidth.cs">
       <Link>Common\Interop\Unix\Interop.GetWindowWidth.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.InitializeConsole.cs">
-      <Link>Common\Interop\Unix\Interop.InitializeConsole.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.InitializeTerminalAndSignalHandling.cs">
+      <Link>Common\Interop\Unix\Interop.InitializeTerminalAndSignalHandling.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.ReadStdinUnbuffered.cs">
       <Link>Common\Interop\Unix\Interop.ReadStdinUnbuffered.cs</Link>

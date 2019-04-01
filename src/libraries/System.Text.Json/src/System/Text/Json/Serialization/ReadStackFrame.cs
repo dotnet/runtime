@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization
                 return JsonClassInfo.ElementClassInfo.Type;
             }
 
-            return JsonPropertyInfo.PropertyType;
+            return JsonPropertyInfo.RuntimePropertyType;
         }
 
         internal static object CreateEnumerableValue(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
@@ -87,7 +87,7 @@ namespace System.Text.Json.Serialization
                 return null;
             }
 
-            Type propType = state.Current.JsonPropertyInfo.PropertyType;
+            Type propType = state.Current.JsonPropertyInfo.RuntimePropertyType;
             if (typeof(IList).IsAssignableFrom(propType))
             {
                 // If IList, add the members as we create them.

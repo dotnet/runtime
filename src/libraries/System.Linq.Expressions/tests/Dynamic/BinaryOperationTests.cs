@@ -28,15 +28,15 @@ namespace System.Dynamic.Tests
 
         private static readonly int[] SomeInt32 = {0, 1, 2, -1, int.MinValue, int.MaxValue, int.MaxValue - 1};
 
-        private static IEnumerable<object[]> CrossJoinInt32()
+        public static IEnumerable<object[]> CrossJoinInt32()
             => from i in SomeInt32 from j in SomeInt32 select new object[] {i, j};
 
         private static readonly double[] SomeDouble = {0.0, 1.0, 2.0, -1.0, double.PositiveInfinity, double.NaN};
 
-        private static IEnumerable<object[]> CrossJoinDouble()
+        public static IEnumerable<object[]> CrossJoinDouble()
             => from i in SomeDouble from j in SomeDouble select new object[] {i, j};
 
-        private static IEnumerable<object[]> BinaryExpressionTypes()
+        public static IEnumerable<object[]> BinaryExpressionTypes()
         {
             yield return new object[] {ExpressionType.Add};
             yield return new object[] {ExpressionType.And};
@@ -69,7 +69,7 @@ namespace System.Dynamic.Tests
             yield return new object[] {ExpressionType.SubtractAssign};
         }
 
-        private static IEnumerable<object[]> NonBinaryExpressionTypes()
+        public static IEnumerable<object[]> NonBinaryExpressionTypes()
         {
             yield return new object[] {ExpressionType.AddChecked};
             yield return new object[] {ExpressionType.AndAlso};

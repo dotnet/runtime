@@ -38,12 +38,12 @@ namespace System.ComponentModel.Tests
             Assert.Null(new DefaultValueAttribute(typeof(int), "caughtException").Value);
         }
 
-        class CustomType
+        public class CustomType
         {
             public int Value { get; set; }
         }
 
-        class CustomConverter : TypeConverter
+        public class CustomConverter : TypeConverter
         {
             public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
             {
@@ -51,7 +51,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        class CustomType2
+        public class CustomType2
         {
             public int Value { get; set; }
         }

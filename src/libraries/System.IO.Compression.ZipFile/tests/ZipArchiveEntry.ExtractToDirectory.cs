@@ -13,7 +13,7 @@ namespace System.IO.Compression.Tests
 {
     public class ZipArchiveEntry_ExtractToDirectory : ZipFileTestBase
     {
-        private static IEnumerable<object[]> TestData()
+        public static IEnumerable<object[]> TestData()
         {
             yield return new string[] { "AbsoluteNoRelative.zip", "System.IO.IOException" };
             yield return new string[] { "AbsoluteWithRelativeOut.zip", "System.IO.IOException" };

@@ -21,7 +21,7 @@ namespace System.IO.Ports.Tests
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [OuterLoop] // Occasionally flaky on UAP: https://github.com/dotnet/corefx/issues/32077
-        private void OpenEveryPortName()
+        public void OpenEveryPortName()
         {
             foreach (string portName in SerialPort.GetPortNames())
             {
@@ -42,7 +42,7 @@ namespace System.IO.Ports.Tests
         /// (On Windows, the latter uses a different technique to SerialPort to find ports).
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        private void AllHelperPortsAreInGetPortNames()
+        public void AllHelperPortsAreInGetPortNames()
         {
             if (PlatformDetection.IsWindows && PlatformDetection.IsArmOrArm64Process)
             {
@@ -63,7 +63,7 @@ namespace System.IO.Ports.Tests
         /// This catches regressions in the test helpers, eg GH #18928 / #20668
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        private void AllGetPortNamesAreInHelperPorts()
+        public void AllGetPortNamesAreInHelperPorts()
         {
             string[] helperPortNames = PortHelper.GetPorts();
             foreach (string serialPortName in SerialPort.GetPortNames())
