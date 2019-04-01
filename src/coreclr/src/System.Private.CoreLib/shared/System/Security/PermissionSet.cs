@@ -18,7 +18,7 @@ namespace System.Security
         public virtual int Count { get { return 0; } }
         public virtual bool IsReadOnly { get { return false; } }
         public virtual bool IsSynchronized { get { return false; } }
-        public virtual object SyncRoot { get { return null; } }
+        public virtual object SyncRoot { get { return this; } }
         public IPermission AddPermission(IPermission perm) { return AddPermissionImpl(perm); }
         protected virtual IPermission AddPermissionImpl(IPermission perm) { return default(IPermission); }
         public void Assert() { }
