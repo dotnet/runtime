@@ -208,13 +208,13 @@ struct LcMdArrayOptInfo : public LcOptInfo
  */
 struct LcJaggedArrayOptInfo : public LcOptInfo
 {
-    unsigned dim;      // "dim" represents upto what level of the rank this optimization applies to.
-                       //    For example, a[i][j][k] could be the jagged array but if "dim" is 2,
-                       //    then this node is treated as though it were a[i][j]
-    ArrIndex arrIndex; // ArrIndex representation of the array.
-    GenTree* stmt;     // "stmt" where the optimization opportunity occurs.
+    unsigned dim;          // "dim" represents upto what level of the rank this optimization applies to.
+                           //    For example, a[i][j][k] could be the jagged array but if "dim" is 2,
+                           //    then this node is treated as though it were a[i][j]
+    ArrIndex     arrIndex; // ArrIndex representation of the array.
+    GenTreeStmt* stmt;     // "stmt" where the optimization opportunity occurs.
 
-    LcJaggedArrayOptInfo(ArrIndex& arrIndex, unsigned dim, GenTree* stmt)
+    LcJaggedArrayOptInfo(ArrIndex& arrIndex, unsigned dim, GenTreeStmt* stmt)
         : LcOptInfo(this, LcJaggedArray), dim(dim), arrIndex(arrIndex), stmt(stmt)
     {
     }
