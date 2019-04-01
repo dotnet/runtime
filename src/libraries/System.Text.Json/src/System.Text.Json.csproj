@@ -68,9 +68,9 @@
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.AddProperty.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonEnumerableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfo.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoCommon.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoNotNullable.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoNullable.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonPropertyInfoOfTClassTPropertyTUnderlying.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleArray.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Stream.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleValue.cs" />
