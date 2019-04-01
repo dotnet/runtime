@@ -169,9 +169,9 @@ jobs:
         timeoutInMinutes: 120
 
 #
-# Checked test builds - PullRequest
-# The test jobs that can be triggered by a PR, manually from ADO and that are scheduled
+# Checked test builds
 #
+# The test jobs that can be triggered by a PR, manually from ADO and that are scheduled
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'Manual', 'Schedule')) }}:
   - template: eng/platform-matrix.yml
     parameters:
