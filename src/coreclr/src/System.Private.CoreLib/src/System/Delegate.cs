@@ -574,9 +574,9 @@ namespace System
         }
 
         // V1 API.
-        public static Delegate? CreateDelegate(Type type, MethodInfo method)
+        public static Delegate CreateDelegate(Type type, MethodInfo method)
         {
-            return CreateDelegate(type, method, true);
+            return CreateDelegate(type, method, throwOnBindFailure: true)!; // Cannot return null because it would have thrown
         }
 
         internal static Delegate? CreateDelegateInternal(RuntimeType rtType, RuntimeMethodInfo rtMethod, object? firstArgument, DelegateBindingFlags flags)
