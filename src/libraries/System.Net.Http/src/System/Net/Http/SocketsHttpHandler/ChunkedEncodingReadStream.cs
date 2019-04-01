@@ -315,7 +315,7 @@ namespace System.Net.Http
                                 {
                                     // Make sure that we don't inadvertently consume trailing headers
                                     // while draining a connection that's being returned back to the pool.
-                                    HttpConnection.ParseHeaderNameValue(currentLine, _response, isFromTrailer : true);
+                                    HttpConnection.ParseHeaderNameValue(_connection, currentLine, _response, isFromTrailer : true);
                                 }
                             }
 

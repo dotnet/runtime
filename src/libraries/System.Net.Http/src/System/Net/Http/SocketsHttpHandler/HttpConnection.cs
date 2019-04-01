@@ -618,7 +618,7 @@ namespace System.Net.Http
                     {
                         break;
                     }
-                    ParseHeaderNameValue(line, response);
+                    ParseHeaderNameValue(this, line, response);
                 }
 
                 // Determine whether we need to force close the connection when the request/response has completed.
@@ -891,10 +891,10 @@ namespace System.Net.Http
 
         // TODO: Remove this overload once https://github.com/dotnet/csharplang/issues/1331 is addressed
         // and the compiler doesn't prevent using spans in async methods.
-        private static void ParseHeaderNameValue(ArraySegment<byte> line, HttpResponseMessage response) =>
-            ParseHeaderNameValue((Span<byte>)line, response, isFromTrailer:false);
+        private static void ParseHeaderNameValue(HttpConnection connection, ArraySegment<byte> line, HttpResponseMessage response) =>
+            ParseHeaderNameValue(connection, (Span<byte>)line, response, isFromTrailer:false);
 
-        private static void ParseHeaderNameValue(ReadOnlySpan<byte> line, HttpResponseMessage response, bool isFromTrailer)
+        private static void ParseHeaderNameValue(HttpConnection connection, ReadOnlySpan<byte> line, HttpResponseMessage response, bool isFromTrailer)
         {
             Debug.Assert(line.Length > 0);
 
@@ -925,6 +925,7 @@ namespace System.Net.Http
             {
                 // Disallowed trailer fields.
                 // A recipient MUST ignore fields that are forbidden to be sent in a trailer.
+                if (NetEventSource.IsEnabled) connection.Trace($"Stripping forbidden {descriptor.Name} from trailer headers.");
                 return;
             }
 
