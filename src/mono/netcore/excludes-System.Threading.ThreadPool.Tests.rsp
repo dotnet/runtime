@@ -1,0 +1,4 @@
+# Tests for ThreadPool.SetMaxThreads(-1, -1) == true, which only happens to work on CoreCLR because
+# the managed SetMaxThreadsNative prototype uses "int"s while the unmanaged code uses "DWORD"s and
+# thus it interprets it as large positive numbers.
+-nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest
