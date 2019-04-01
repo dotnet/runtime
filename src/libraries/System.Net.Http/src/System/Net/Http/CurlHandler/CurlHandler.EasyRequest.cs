@@ -263,22 +263,37 @@ namespace System.Net.Http
                 Uri requestUri = _requestMessage.RequestUri;
 
                 long scopeId;
+                string url;
+
+                EventSourceTrace("Url: {0}", requestUri);
+                SetCurlOption(CURLoption.CURLOPT_PROTOCOLS, (long)(CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS));
+
                 if (IsLinkLocal(requestUri, out scopeId))
                 {
                     // Uri.AbsoluteUri doesn't include the ScopeId/ZoneID, so if it is link-local,
                     // we separately pass the scope to libcurl.
                     EventSourceTrace("ScopeId: {0}", scopeId);
-                    SetCurlOption(CURLoption.CURLOPT_ADDRESS_SCOPE, scopeId);
+                    try
+                    {
+                        SetCurlOption(CURLoption.CURLOPT_ADDRESS_SCOPE, scopeId);
+                    }
+                    catch (CurlException)
+                    {
+                        // libCurl has a bug regarding long scope-ids:
+                        //     https://github.com/curl/curl/issues/3713
+                        // Workaround the problem by percent-encoding the scope separator ('%')
+                        url = new UriBuilder(requestUri) { Host = requestUri.IdnHost}.ToString().Replace("%", "%25");
+                        SetCurlOption(CURLoption.CURLOPT_URL, url);
+                        return;
+                    }
                 }
 
-                EventSourceTrace("Url: {0}", requestUri);
                 string idnHost = requestUri.IdnHost;
-                string url = requestUri.Host == idnHost ? 
-                                requestUri.AbsoluteUri : 
-                                new UriBuilder(requestUri) { Host = idnHost }.Uri.AbsoluteUri;
+                url = requestUri.Host == idnHost ?
+                         requestUri.AbsoluteUri : 
+                         new UriBuilder(requestUri) { Host = idnHost }.Uri.AbsoluteUri;
 
                 SetCurlOption(CURLoption.CURLOPT_URL, url);
-                SetCurlOption(CURLoption.CURLOPT_PROTOCOLS, (long)(CurlProtocols.CURLPROTO_HTTP | CurlProtocols.CURLPROTO_HTTPS));
             }
 
             private static bool IsLinkLocal(Uri url, out long scopeId)
