@@ -1,0 +1,2 @@
+# Mono allows large arrays (int.MaxValue elements)
+-nomethod System.IO.Tests.MemoryStream_ConstructorTests.MemoryStream_Ctor_InvalidCapacities
