@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -41,7 +42,7 @@ namespace System
         /// a specified error message.
         /// </summary>
         /// <param name="message">The error message that explains the reason for the exception.</param>
-        public AggregateException(string message)
+        public AggregateException(string? message)
             : base(message)
         {
             m_innerExceptions = new ReadOnlyCollection<Exception>(Array.Empty<Exception>());
@@ -55,7 +56,7 @@ namespace System
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
         /// <exception cref="T:System.ArgumentNullException">The <paramref name="innerException"/> argument
         /// is null.</exception>
-        public AggregateException(string message, Exception innerException)
+        public AggregateException(string? message, Exception innerException)
             : base(message, innerException)
         {
             if (innerException == null)
@@ -104,10 +105,10 @@ namespace System
         /// is null.</exception>
         /// <exception cref="T:System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(string message, IEnumerable<Exception> innerExceptions)
+        public AggregateException(string? message, IEnumerable<Exception> innerExceptions)
             // If it's already an IList, pass that along (a defensive copy will be made in the delegated ctor).  If it's null, just pass along
             // null typed correctly.  Otherwise, create an IList from the enumerable and pass that along. 
-            : this(message, innerExceptions as IList<Exception> ?? (innerExceptions == null ? (List<Exception>)null : new List<Exception>(innerExceptions)))
+            : this(message, innerExceptions as IList<Exception> ?? (innerExceptions == null ? (List<Exception>)null! : new List<Exception>(innerExceptions)))
         {
         }
 
@@ -121,7 +122,7 @@ namespace System
         /// is null.</exception>
         /// <exception cref="T:System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        public AggregateException(string message, params Exception[] innerExceptions) :
+        public AggregateException(string? message, params Exception[] innerExceptions) :
             this(message, (IList<Exception>)innerExceptions)
         {
         }
@@ -135,7 +136,7 @@ namespace System
         /// is null.</exception>
         /// <exception cref="T:System.ArgumentException">An element of <paramref name="innerExceptions"/> is
         /// null.</exception>
-        private AggregateException(string message, IList<Exception> innerExceptions)
+        private AggregateException(string? message, IList<Exception> innerExceptions)
             : base(message, innerExceptions != null && innerExceptions.Count > 0 ? innerExceptions[0] : null)
         {
             if (innerExceptions == null)
@@ -195,7 +196,7 @@ namespace System
             // null typed correctly.  Otherwise, create an IList from the enumerable and pass that along. 
             : this(message, innerExceptionInfos as IList<ExceptionDispatchInfo> ??
                                 (innerExceptionInfos == null ?
-                                    (List<ExceptionDispatchInfo>)null :
+                                    (List<ExceptionDispatchInfo>)null! :
                                     new List<ExceptionDispatchInfo>(innerExceptionInfos)))
         {
         }
@@ -257,7 +258,7 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            Exception[] innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[];
+            Exception[]? innerExceptions = info.GetValue("InnerExceptions", typeof(Exception[])) as Exception[];
             if (innerExceptions == null)
             {
                 throw new SerializationException(SR.AggregateException_DeserializationFailure);
@@ -292,14 +293,14 @@ namespace System
             // Returns the first inner AggregateException that contains more or less than one inner exception
 
             // Recursively traverse the inner exceptions as long as the inner exception of type AggregateException and has only one inner exception
-            Exception back = this;
-            AggregateException backAsAggregate = this;
+            Exception? back = this;
+            AggregateException? backAsAggregate = this;
             while (backAsAggregate != null && backAsAggregate.InnerExceptions.Count == 1)
             {
-                back = back.InnerException;
+                back = back!.InnerException;
                 backAsAggregate = back as AggregateException;
             }
-            return back;
+            return back!;
         }
 
         /// <summary>
@@ -338,7 +339,7 @@ namespace System
                 throw new ArgumentNullException(nameof(predicate));
             }
 
-            List<Exception> unhandledExceptions = null;
+            List<Exception>? unhandledExceptions = null;
             for (int i = 0; i < m_innerExceptions.Count; i++)
             {
                 // If the exception was not handled, lazily allocate a list of unhandled
