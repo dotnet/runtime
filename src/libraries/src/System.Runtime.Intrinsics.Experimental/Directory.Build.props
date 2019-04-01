@@ -1,0 +1,9 @@
+﻿<Project>
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <!-- DO NOT ship this as stable. It contains preview-only APIs that will be stable in a future version. -->
+    <BlockStable>true</BlockStable>
+    <StrongNameKeyId>Open</StrongNameKeyId>
+  </PropertyGroup>
+</Project>

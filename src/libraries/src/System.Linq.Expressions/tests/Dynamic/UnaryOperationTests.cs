@@ -27,15 +27,15 @@ namespace System.Dynamic.Tests
 
         private static readonly int[] SomeInt32 = { 0, 1, 2, -1, int.MinValue, int.MaxValue, int.MaxValue - 1 };
 
-        private static IEnumerable<object[]> Int32Args() => SomeInt32.Select(i => new object[] {i});
+        public static IEnumerable<object[]> Int32Args() => SomeInt32.Select(i => new object[] {i});
 
-        private static IEnumerable<object[]> BooleanArgs()
+        public static IEnumerable<object[]> BooleanArgs()
         {
             yield return new object[] {false};
             yield return new object[] {true};
         }
 
-        private static IEnumerable<object[]> UnaryExpressionTypes()
+        public static IEnumerable<object[]> UnaryExpressionTypes()
         {
             yield return new object[] {ExpressionType.Decrement};
             yield return new object[] {ExpressionType.Extension};
@@ -48,7 +48,7 @@ namespace System.Dynamic.Tests
             yield return new object[] {ExpressionType.UnaryPlus};
         }
 
-        private static IEnumerable<object[]> NonUnaryExpressionTypes()
+        public static IEnumerable<object[]> NonUnaryExpressionTypes()
         {
             yield return new object[] {ExpressionType.Add};
             yield return new object[] {ExpressionType.AddAssign};

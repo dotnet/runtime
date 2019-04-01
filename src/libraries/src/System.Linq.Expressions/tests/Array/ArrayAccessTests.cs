@@ -10,7 +10,7 @@ namespace System.Linq.Expressions.Tests
 {
     public static class ArrayAccessTests
     {
-        private static IEnumerable<object[]> Ranks() => Enumerable.Range(1, 5).Select(i => new object[] {i});
+        public static IEnumerable<object[]> Ranks() => Enumerable.Range(1, 5).Select(i => new object[] {i});
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [ClassData(typeof(CompilationTypes))]

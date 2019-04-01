@@ -7689,10 +7689,12 @@ namespace System.Text
         public int Utf8SequenceLength { get { throw null; } }
         public int Value { get { throw null; } }
         public int CompareTo(System.Text.Rune other) { throw null; }
-        public static System.Buffers.OperationStatus DecodeUtf16(System.ReadOnlySpan<char> utf16Source, out System.Text.Rune result, out int charsConsumed) { throw null; }
-        public static System.Buffers.OperationStatus DecodeUtf16FromEnd(System.ReadOnlySpan<char> utf16Source, out System.Text.Rune result, out int charsConsumed) { throw null; }
-        public static System.Buffers.OperationStatus DecodeUtf8(System.ReadOnlySpan<byte> utf8Source, out System.Text.Rune result, out int bytesConsumed) { throw null; }
-        public static System.Buffers.OperationStatus DecodeUtf8FromEnd(System.ReadOnlySpan<byte> utf8Source, out System.Text.Rune result, out int bytesConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeFromUtf16(System.ReadOnlySpan<char> source, out System.Text.Rune result, out int charsConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeFromUtf8(System.ReadOnlySpan<byte> source, out System.Text.Rune result, out int bytesConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeLastFromUtf16(System.ReadOnlySpan<char> source, out System.Text.Rune result, out int charsConsumed) { throw null; }
+        public static System.Buffers.OperationStatus DecodeLastFromUtf8(System.ReadOnlySpan<byte> source, out System.Text.Rune value, out int bytesConsumed) { throw null; }
+        public int EncodeToUtf16(System.Span<char> destination) { throw null; }
+        public int EncodeToUtf8(System.Span<byte> destination) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Text.Rune other) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -7733,8 +7735,8 @@ namespace System.Text
         public static bool TryCreate(int value, out System.Text.Rune result) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryCreate(uint value, out System.Text.Rune result) { throw null; }
-        public bool TryEncode(System.Span<char> destination, out int charsWritten) { throw null; }
-        public bool TryEncodeToUtf8Bytes(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        public bool TryEncodeToUtf16(System.Span<char> destination, out int charsWritten) { throw null; }
+        public bool TryEncodeToUtf8(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public static bool TryGetRuneAt(string input, int index, out System.Text.Rune value) { throw null; }
     }
     public sealed partial class StringBuilder : System.Runtime.Serialization.ISerializable

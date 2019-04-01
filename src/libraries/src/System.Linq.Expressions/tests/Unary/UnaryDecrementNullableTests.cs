@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        private static IEnumerable<object[]> DecrementableWhenNullableValues()
+        public static IEnumerable<object[]> DecrementableWhenNullableValues()
         {
             yield return new object[] { new DecrementableWhenNullable(0), new DecrementableWhenNullable(-1) };
             yield return new object[] { new DecrementableWhenNullable(1), null };

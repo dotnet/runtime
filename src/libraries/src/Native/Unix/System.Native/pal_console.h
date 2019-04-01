@@ -58,11 +58,11 @@ DLLEXPORT int32_t SystemNative_GetWindowSize(WinSize* windowsSize);
 DLLEXPORT int32_t SystemNative_IsATty(intptr_t fd);
 
 /**
- * Initializes the console for use by System.Console.
+ * Initializes signal handling and terminal for use by System.Console and System.Diagnostics.Process.
  *
  * Returns 1 on success; otherwise returns 0 and sets errno.
  */
-DLLEXPORT int32_t SystemNative_InitializeConsole(void);
+DLLEXPORT int32_t SystemNative_InitializeTerminalAndSignalHandling(void);
 
 /**
  * Stores the string that can be written to stdout to transition
@@ -90,14 +90,19 @@ DLLEXPORT void SystemNative_GetControlCharacters(
 DLLEXPORT int32_t SystemNative_StdinReady(void);
 
 /**
- * Initializes the terminal in preparation for a read operation.
+ * Configures the terminal for System.Console Read.
  */
 DLLEXPORT void SystemNative_InitializeConsoleBeforeRead(uint8_t minChars, uint8_t decisecondsTimeout);
 
 /**
- * Restores the terminal's attributes to what they were before InitializeConsoleBeforeRead was called.
+ * Configures the terminal after System.Console Read.
  */
 DLLEXPORT void SystemNative_UninitializeConsoleAfterRead(void);
+
+/**
+ * Configures the terminal for child processes.
+ */
+DLLEXPORT void SystemNative_ConfigureTerminalForChildProcess(int32_t enable);
 
 /**
  * Reads the number of bytes specified into the provided buffer from stdin.
@@ -129,9 +134,9 @@ typedef void (*CtrlCallback)(CtrlCode signalCode);
 /**
  * Called by pal_signal.cpp to reinitialize the console on SIGCONT/SIGCHLD.
  */
-void ReinitializeConsole(void);
+void ReinitializeTerminal(void);
 
 /**
  * Called by pal_signal.cpp to uninitialize the console on SIGINT/SIGQUIT.
  */
-void UninitializeConsole(void);
+void UninitializeTerminal(void);

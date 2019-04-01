@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization
             else if (state.Current.JsonPropertyInfo != null)
             {
                 // Nested object
-                Type objType = state.Current.JsonPropertyInfo.PropertyType;
+                Type objType = state.Current.JsonPropertyInfo.RuntimePropertyType;
                 state.Push();
                 state.Current.JsonClassInfo = options.GetOrAddClass(objType);
             }

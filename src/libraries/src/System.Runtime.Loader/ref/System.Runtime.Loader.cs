@@ -21,18 +21,22 @@ namespace System.Runtime.Loader
         public string ResolveAssemblyToPath(System.Reflection.AssemblyName assemblyName) { throw null; }
         public string ResolveUnmanagedDllToPath(string unmanagedDllName) { throw null; }
     }
-    public abstract partial class AssemblyLoadContext
+    public partial class AssemblyLoadContext
     {
         protected AssemblyLoadContext() { }
         protected AssemblyLoadContext(bool isCollectible) { }
+        public AssemblyLoadContext(string name, bool isCollectible = false) { }
+        public static System.Collections.Generic.IEnumerable<AssemblyLoadContext> All  { get { throw null; } }
+        public System.Collections.Generic.IEnumerable<System.Reflection.Assembly> Assemblies  { get { throw null; } }
         public static System.Runtime.Loader.AssemblyLoadContext Default { get { throw null; } }
         public bool IsCollectible { get { throw null; } }
+        public string Name { get { throw null; } }
         public event System.Func<System.Runtime.Loader.AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly> Resolving { add { } remove { } }
         public event System.Func<System.Reflection.Assembly, string, System.IntPtr> ResolvingUnmanagedDll { add { } remove { } }
         public event System.Action<System.Runtime.Loader.AssemblyLoadContext> Unloading { add { } remove { } }
         public static System.Reflection.AssemblyName GetAssemblyName(string assemblyPath) { throw null; }
         public static System.Runtime.Loader.AssemblyLoadContext GetLoadContext(System.Reflection.Assembly assembly) { throw null; }
-        protected abstract System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyName);
+        protected virtual System.Reflection.Assembly Load(System.Reflection.AssemblyName assemblyName) { throw null; }
         public System.Reflection.Assembly LoadFromAssemblyName(System.Reflection.AssemblyName assemblyName) { throw null; }
         public System.Reflection.Assembly LoadFromAssemblyPath(string assemblyPath) { throw null; }
         public System.Reflection.Assembly LoadFromNativeImagePath(string nativeImagePath, string assemblyPath) { throw null; }

@@ -96,12 +96,6 @@ jobs:
               _framework: uap
               _helixQueues: $(uapNetfxQueues)
 
-            UAP_arm_Release:
-              _BuildConfig: Release
-              _architecture: arm
-              _framework: uap
-              _helixQueues: $(windowsArmQueue)
-
             UAPAOT_x86_Release:
               _BuildConfig: Release
               _architecture: x86
@@ -176,9 +170,9 @@ jobs:
         variables:
           - _outerloop: false
           - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            - allConfigurationsQueues: Windows.10.Amd64.ClientRS4.Open
+            - allConfigurationsQueues: Windows.10.Amd64.ClientRS5.Open
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-            - allConfigurationsQueues: Windows.10.Amd64.ClientRS4
+            - allConfigurationsQueues: Windows.10.Amd64.ClientRS5
 
         customBuildSteps:
           - script: build.cmd
@@ -222,6 +216,11 @@ jobs:
                 _BuildConfig: Release
                 _architecture: arm
                 _framework: netcoreapp
+
+              UAP_arm_Release:
+                _BuildConfig: Release
+                _architecture: arm
+                _framework: uap
 
               UAPAOT_arm_Release:
                 _BuildConfig: Release

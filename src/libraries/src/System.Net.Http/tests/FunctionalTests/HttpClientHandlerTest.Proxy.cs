@@ -284,13 +284,13 @@ namespace System.Net.Http.Functional.Tests
 
         }
 
-        private static IEnumerable<object[]> BypassedProxies()
+        public static IEnumerable<object[]> BypassedProxies()
         {
             yield return new object[] { null };
             yield return new object[] { new UseSpecifiedUriWebProxy(new Uri($"http://{Guid.NewGuid().ToString().Substring(0, 15)}:12345"), bypass: true) };
         }
 
-        private static IEnumerable<object[]> CredentialsForProxy()
+        public static IEnumerable<object[]> CredentialsForProxy()
         {
             yield return new object[] { null, false };
             foreach (bool wrapCredsInCache in new[] { true, false })

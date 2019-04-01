@@ -105,7 +105,7 @@ namespace System.IO
             Assert.False(rcr.TryGetNextValue("Any", out unused));
         }
 
-        private static IEnumerable<object[]> BasicTestData()
+        public static IEnumerable<object[]> BasicTestData()
         {
             yield return new[] { BasicData };
             yield return new[] { BasicDataWithTabs };
@@ -121,7 +121,7 @@ namespace System.IO
             $"intKey\t\t{int.MaxValue}{Environment.NewLine}" +
             $"longKey\t\t{long.MaxValue}{Environment.NewLine}";
 
-        private static IEnumerable<object[]> NewlineTestData()
+        public static IEnumerable<object[]> NewlineTestData()
         {
             yield return new[] { ConfigData };
             yield return new[] { ConfigDataExtraNewlines };

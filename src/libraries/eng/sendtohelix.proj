@@ -10,7 +10,7 @@
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
     <HelixBuild Condition="'$(HelixBuild)' == ''">default</HelixBuild>
 
-    <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">600</TimeoutInSeconds>
+    <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">900</TimeoutInSeconds>
     <_timeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</_timeoutSpan>
     
     <!-- We need to enable xunit reporter so that it parses test results

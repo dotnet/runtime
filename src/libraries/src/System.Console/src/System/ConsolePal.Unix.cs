@@ -922,9 +922,7 @@ namespace System
             {
                 if (!s_initialized)
                 {
-                    // Ensure the console is configured appropriately.  This will start
-                    // signal handlers, etc.
-                    if (!Interop.Sys.InitializeConsole())
+                    if (!Interop.Sys.InitializeTerminalAndSignalHandling())
                     {
                         throw new Win32Exception();
                     }

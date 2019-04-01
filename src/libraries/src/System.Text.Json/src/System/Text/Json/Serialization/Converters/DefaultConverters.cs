@@ -53,6 +53,12 @@ namespace System.Text.Json.Serialization.Converters
                 case TypeCode.String:
                     return new JsonValueConverterString();
             }
+
+            if (type == typeof(DateTimeOffset))
+            {
+                return new JsonValueConverterDateTimeOffset();
+            }
+
             return null;
         }
     }

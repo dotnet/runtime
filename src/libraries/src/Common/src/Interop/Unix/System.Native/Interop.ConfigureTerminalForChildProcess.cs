@@ -2,16 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_InitializeConsole", SetLastError = true)]
-        internal static extern bool InitializeConsole();
-
-        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetKeypadXmit")]
-        internal static extern void SetKeypadXmit(string terminfoString);
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ConfigureTerminalForChildProcess")]
+        internal static extern unsafe void ConfigureTerminalForChildProcess(bool childUsesTerminal);
     }
 }

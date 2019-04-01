@@ -70,7 +70,7 @@ namespace System.Net.Security.Tests
             await ServerAsyncSslHelper(SslProtocolSupport.SupportedSslProtocols, serverProtocol);
         }
 
-        private static IEnumerable<object[]> ProtocolMismatchData()
+        public static IEnumerable<object[]> ProtocolMismatchData()
         {
 #pragma warning disable 0618
             yield return new object[] { SslProtocols.Ssl2, SslProtocols.Ssl3, typeof(Exception) };

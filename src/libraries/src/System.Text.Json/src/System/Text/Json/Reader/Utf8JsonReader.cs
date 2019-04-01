@@ -48,6 +48,10 @@ namespace System.Text.Json
 
         private bool IsLastSpan => _isFinalBlock && (!_isMultiSegment || _isLastSegment);
 
+        internal ReadOnlySequence<byte> OriginalSequence => _sequence;
+
+        internal ReadOnlySpan<byte> OriginalSpan => _sequence.IsEmpty ? _buffer : default;
+
         /// <summary>
         /// Gets the value of the last processed token as a ReadOnlySpan&lt;byte&gt; slice
         /// of the input payload. If the JSON is provided within a ReadOnlySequence&lt;byte&gt;

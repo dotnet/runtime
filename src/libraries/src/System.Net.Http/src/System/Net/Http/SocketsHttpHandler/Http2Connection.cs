@@ -286,6 +286,8 @@ namespace System.Net.Http
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.StreamClosed);
             }
 
+            http2Stream.OnResponseHeadersStart();
+
             _hpackDecoder.Decode(
                 GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
                 s_http2StreamOnResponseHeader,
@@ -558,8 +560,7 @@ namespace System.Net.Http
                 Http2Stream http2Stream = GetStream(frameHeader.StreamId);
                 if (http2Stream == null)
                 {
-                    // Don't wait for completion, which could happen asynchronously.
-                    Task ignored = SendRstStreamAsync(frameHeader.StreamId, Http2ProtocolErrorCode.StreamClosed);
+                    // Ignore invalid stream ID, as per RFC
                     return;
                 }
 

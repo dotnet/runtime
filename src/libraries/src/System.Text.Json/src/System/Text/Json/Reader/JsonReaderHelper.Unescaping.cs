@@ -279,8 +279,7 @@ namespace System.Text.Json
 
 #if BUILDING_INBOX_LIBRARY
                         var rune = new Rune(scalar);
-                        result = rune.TryEncodeToUtf8Bytes(destination.Slice(written), out int bytesWritten);
-                        Debug.Assert(result);
+                        int bytesWritten = rune.EncodeToUtf8(destination.Slice(written));
 #else
                         EncodeToUtf8Bytes((uint)scalar, destination.Slice(written), out int bytesWritten);
 #endif

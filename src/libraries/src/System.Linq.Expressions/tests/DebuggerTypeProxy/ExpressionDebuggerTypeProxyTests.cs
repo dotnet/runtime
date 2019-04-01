@@ -169,7 +169,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        private static IEnumerable<object[]> OnePerType()
+        public static IEnumerable<object[]> OnePerType()
         {
             HashSet<Type> seenTypes = new HashSet<Type>();
             foreach (var candidate in
@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        private static IEnumerable<object[]> BinaryExpressionProxy()
+        public static IEnumerable<object[]> BinaryExpressionProxy()
         {
             yield return new object[] {Expression.Assign(Expression.Variable(typeof(int)), Expression.Constant(-1))};
             yield return new object[] {Expression.Equal(Expression.Constant(false), Expression.Constant(true))};
@@ -213,7 +213,7 @@ namespace System.Linq.Expressions.Tests
             yield return new object[] {Expression.Assign(Expression.Parameter(typeof(int)), Expression.Constant(2))};
         }
 
-        private static IEnumerable<object[]> BlockExpressionProxy()
+        public static IEnumerable<object[]> BlockExpressionProxy()
         {
             for (int paramCount = 0; paramCount != 4; ++paramCount)
             {
@@ -227,7 +227,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        private static IEnumerable<object[]> CatchBlockProxy()
+        public static IEnumerable<object[]> CatchBlockProxy()
         {
             yield return new object[] {Expression.Catch(typeof(InvalidFilterCriteriaException), Expression.Empty())};
             yield return
@@ -245,7 +245,7 @@ namespace System.Linq.Expressions.Tests
                 };
         }
 
-        private static IEnumerable<object[]> ConditionalExpressionProxy()
+        public static IEnumerable<object[]> ConditionalExpressionProxy()
         {
             yield return new object[] {Expression.IfThen(Expression.Constant(false), Expression.Constant(1))};
             yield return
@@ -262,26 +262,26 @@ namespace System.Linq.Expressions.Tests
                 };
         }
 
-        private static IEnumerable<object[]> ConstantExpressionProxy()
+        public static IEnumerable<object[]> ConstantExpressionProxy()
         {
             yield return new object[] {Expression.Constant(DateTime.UtcNow)};
             yield return new object[] {Expression.Constant(null)};
             yield return new object[] {Expression.Constant(null, typeof(int?))};
         }
 
-        private static IEnumerable<object[]> DebugInfoExpressionProxy()
+        public static IEnumerable<object[]> DebugInfoExpressionProxy()
         {
             yield return new object[] {Expression.ClearDebugInfo(Expression.SymbolDocument(""))};
             yield return new object[] {Expression.DebugInfo(Expression.SymbolDocument(""), 1, 2, 3, 4)};
         }
 
-        private static IEnumerable<object[]> DefaultExpressionProxy()
+        public static IEnumerable<object[]> DefaultExpressionProxy()
         {
             yield return new object[] {Expression.Empty()};
             yield return new object[] {Expression.Default(typeof(int))};
         }
 
-        private static IEnumerable<object[]> GotoExpressionProxy()
+        public static IEnumerable<object[]> GotoExpressionProxy()
         {
             yield return new object[] {Expression.Continue(Expression.Label(typeof(void)))};
             yield return new object[] {Expression.Break(Expression.Label(typeof(void)), typeof(void))};
@@ -290,7 +290,7 @@ namespace System.Linq.Expressions.Tests
                 {Expression.Return(Expression.Label(typeof(object)), Expression.Constant(""), typeof(object))};
         }
 
-        private static IEnumerable<object[]> IndexExpressionProxy()
+        public static IEnumerable<object[]> IndexExpressionProxy()
         {
             yield return
                 new object[] {Expression.ArrayAccess(Expression.Constant(new[] {1, 2, 3}), Expression.Constant(2))};
@@ -302,7 +302,7 @@ namespace System.Linq.Expressions.Tests
                 };
         }
 
-        private static IEnumerable<object[]> InvocationExpressionProxy()
+        public static IEnumerable<object[]> InvocationExpressionProxy()
         {
             Func<int, int, int> addFunc = (x, y) => x + y;
             yield return
@@ -320,26 +320,26 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        private static IEnumerable<object[]> LabelExpressionProxy()
+        public static IEnumerable<object[]> LabelExpressionProxy()
         {
             yield return new object[] {Expression.Label(Expression.Label(typeof(void)))};
             yield return new object[] {Expression.Label(Expression.Label(typeof(string)), Expression.Constant("!"))};
         }
 
-        private static IEnumerable<object[]> LambdaExpressionProxy()
+        public static IEnumerable<object[]> LambdaExpressionProxy()
         {
             Expression<Func<int, int, int>> add = (x, y) => x + y;
             yield return new object[] {add};
             yield return new object[] {Expression.Lambda(Expression.Empty())};
         }
 
-        private static IEnumerable<object[]> ListInitExpressionProxy()
+        public static IEnumerable<object[]> ListInitExpressionProxy()
         {
             Expression<Func<List<int>>> exp = () => new List<int> {1, 2, 3};
             yield return new object[] {exp.Body};
         }
 
-        private static IEnumerable<object[]> LoopExpressionProxy()
+        public static IEnumerable<object[]> LoopExpressionProxy()
         {
             yield return new object[] {Expression.Loop(Expression.Empty())};
             yield return new object[] {Expression.Loop(Expression.Empty(), Expression.Label(typeof(void)))};
@@ -348,13 +348,13 @@ namespace System.Linq.Expressions.Tests
                 {Expression.Loop(Expression.Empty(), Expression.Label(typeof(void)), Expression.Label(typeof(void)))};
         }
 
-        private static IEnumerable<object[]> MemberExpressionProxy()
+        public static IEnumerable<object[]> MemberExpressionProxy()
         {
             yield return new object[] {Expression.Field(null, typeof(ExpressionDebuggerTypeProxyTests), nameof(DebugViewProperty))};
             yield return new object[] {Expression.Property(Expression.Constant(""), "Length")};
         }
 
-        private static IEnumerable<object[]> MemberInitExpressionProxy()
+        public static IEnumerable<object[]> MemberInitExpressionProxy()
         {
             yield return
                 new object[]
@@ -367,14 +367,14 @@ namespace System.Linq.Expressions.Tests
                 };
         }
 
-        private static IEnumerable<object[]> MethodCallExpressionProxy()
+        public static IEnumerable<object[]> MethodCallExpressionProxy()
         {
             yield return new object[] {Expression.Call(Expression.Constant(1), "ToString", new Type[0])};
             Expression<Func<bool>> exp = () => 1.Equals(2);
             yield return new object[] {exp.Body};
         }
 
-        private static IEnumerable<object[]> NewArrayExpressionProxy()
+        public static IEnumerable<object[]> NewArrayExpressionProxy()
         {
             yield return
                 new object[] {Expression.NewArrayBounds(typeof(int), Expression.Constant(2), Expression.Constant(2))};
@@ -383,7 +383,7 @@ namespace System.Linq.Expressions.Tests
                 {Expression.NewArrayInit(typeof(string), Expression.Constant("A"), Expression.Constant("B"))};
         }
 
-        private static IEnumerable<object[]> NewExpressionProxy()
+        public static IEnumerable<object[]> NewExpressionProxy()
         {
             yield return new object[] {Expression.New(typeof(object))};
             yield return
@@ -395,25 +395,25 @@ namespace System.Linq.Expressions.Tests
                 };
         }
 
-        private static IEnumerable<object[]> ParameterExpressionProxy()
+        public static IEnumerable<object[]> ParameterExpressionProxy()
         {
             yield return new object[] {Expression.Variable(typeof(int))};
             yield return new object[] {Expression.Parameter(typeof(Expression))};
             yield return new object[] {Expression.Parameter(typeof(int).MakeByRefType())};
         }
 
-        private static IEnumerable<object[]> RuntimeVariablesExpressionProxy()
+        public static IEnumerable<object[]> RuntimeVariablesExpressionProxy()
         {
             yield return new object[] {Expression.RuntimeVariables(Expression.Variable(typeof(int)))};
             yield return new object[] {Expression.RuntimeVariables()};
         }
 
-        private static IEnumerable<object[]> SwitchCaseExpressionProxy()
+        public static IEnumerable<object[]> SwitchCaseExpressionProxy()
         {
             yield return new object[] {Expression.SwitchCase(Expression.Empty(), Expression.Constant(0))};
         }
 
-        private static IEnumerable<object[]> SwitchExpressionProxy()
+        public static IEnumerable<object[]> SwitchExpressionProxy()
         {
             yield return new object[] {Expression.Switch(Expression.Constant(2))};
             yield return
@@ -425,7 +425,7 @@ namespace System.Linq.Expressions.Tests
                 };
         }
 
-        private static IEnumerable<object[]> TryExpressionProxy()
+        public static IEnumerable<object[]> TryExpressionProxy()
         {
             yield return new object[] {Expression.TryFault(Expression.Empty(), Expression.Empty())};
             yield return new object[] {Expression.TryFinally(Expression.Empty(), Expression.Empty())};
@@ -444,13 +444,13 @@ namespace System.Linq.Expressions.Tests
                 };
         }
 
-        private static IEnumerable<object[]> TypeBinaryExpressionProxy()
+        public static IEnumerable<object[]> TypeBinaryExpressionProxy()
         {
             yield return new object[] {Expression.TypeIs(Expression.Constant(2), typeof(string))};
             yield return new object[] {Expression.TypeAs(Expression.Constant("", typeof(object)), typeof(string))};
         }
 
-        private static IEnumerable<object[]> UnaryExpressionProxy()
+        public static IEnumerable<object[]> UnaryExpressionProxy()
         {
             yield return new object[] {Expression.Not(Expression.Constant(true))};
             yield return new object[] {Expression.Increment(Expression.Variable(typeof(int)))};

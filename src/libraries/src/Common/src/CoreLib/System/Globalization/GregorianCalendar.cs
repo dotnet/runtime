@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Globalization
 {
     /// <remarks>
@@ -267,7 +268,7 @@ namespace System.Globalization
 
         public override int GetEra(DateTime time) => ADEra;
 
-        public override int[] Eras => new int[] { ADEra };
+        public override int[]? Eras => new int[] { ADEra };
 
         /// <summary>
         /// Returns the month part of the specified DateTime.

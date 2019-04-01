@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization
                 return;
             }
 
-            Type arrayType = state.Current.JsonPropertyInfo.PropertyType;
+            Type arrayType = state.Current.JsonPropertyInfo.RuntimePropertyType;
             if (!typeof(IEnumerable).IsAssignableFrom(arrayType) || (arrayType.IsArray && arrayType.GetArrayRank() > 1))
             {
                 ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(arrayType, reader, state);
@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization
                 if (state.Current.EnumerableCreated)
                 {
                     // A nested json array so push a new stack frame.
-                    Type elementType = state.Current.JsonClassInfo.ElementClassInfo.GetPolicyProperty().PropertyType;
+                    Type elementType = state.Current.JsonClassInfo.ElementClassInfo.GetPolicyProperty().RuntimePropertyType;
 
                     state.Push();
 

@@ -83,7 +83,7 @@ namespace MonoTests.System.Runtime.Caching
         }
 
         [Fact]
-        private static void Constructor_MissingFiles_Handler()
+        public static void Constructor_MissingFiles_Handler()
         {
             HostFileChangeMonitor monitor;
             string missingFile = Path.GetFullPath(Path.Combine(Guid.NewGuid().ToString("N"), "file", "path"));

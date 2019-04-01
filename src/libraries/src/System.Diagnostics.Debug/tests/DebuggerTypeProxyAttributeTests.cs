@@ -31,7 +31,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        void Ctor_NullType_ThrowsArgumentNullException()
+        public void Ctor_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("type", () => new DebuggerTypeProxyAttribute((Type)null));
         }
@@ -46,7 +46,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        void Target_SetNull_ThrowsArgumentNullException()
+        public void Target_SetNull_ThrowsArgumentNullException()
         {
             var attribute = new DebuggerTypeProxyAttribute("TypeName");
             AssertExtensions.Throws<ArgumentNullException>("value", () => attribute.Target = null);
