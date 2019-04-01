@@ -101,10 +101,17 @@ test_mono_string_CFLAGS = $(test-cflags) -DMAIN=test_mono_string_main
 test_mono_string_LDADD = $(test_ldadd) $(mini_libs) $(sgen_libs) libtestlib_la-test-mono-string.lo
 test_mono_string_LDFLAGS = $(test_ldflags)
 
+test_path_SOURCES = test-path.c
+test_path_CFLAGS = $(test-cflags)
+test_path_LDADD = $(test_ldadd) $(mini_libs) $(sgen_libs)
+test_path_LDFLAGS = $(test_ldflags)
+
 check_PROGRAMS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable test-mono-handle	\
+		 test-path \
 		 test-mono-callspec test-mono-string
 
 TESTS = test-sgen-qsort test-memfuncs test-mono-linked-list-set test-conc-hashtable test-mono-handle \
+	test-path \
 	test-mono-callspec test-mono-string
 
 AM_TESTS_ENVIRONMENT = export MONO_PATH=$(mcs_topdir)/class/lib/build;
