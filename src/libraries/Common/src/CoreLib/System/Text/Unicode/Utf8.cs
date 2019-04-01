@@ -106,8 +106,8 @@ namespace System.Text.Unicode
             numCharsRead = originalSourceLength - source.Length;
             numBytesWritten = originalDestinationLength - destination.Length;
 
-            Debug.Assert(numCharsRead < originalSourceLength || status != OperationStatus.Done,
-                "Cannot report OperationStatus.Done if we haven't consumed the entire input buffer.");
+            Debug.Assert((status == OperationStatus.Done) == (numCharsRead == originalSourceLength),
+                "Should report OperationStatus.Done if and only if we've consumed the entire input buffer.");
 
             return status;
         }
@@ -189,8 +189,8 @@ namespace System.Text.Unicode
             numBytesRead = originalSourceLength - source.Length;
             numCharsWritten = originalDestinationLength - destination.Length;
 
-            Debug.Assert(numBytesRead < originalSourceLength || status != OperationStatus.Done,
-                "Cannot report OperationStatus.Done if we haven't consumed the entire input buffer.");
+            Debug.Assert((status == OperationStatus.Done) == (numBytesRead == originalSourceLength),
+                    "Should report OperationStatus.Done if and only if we've consumed the entire input buffer.");
 
             return status;
         }
