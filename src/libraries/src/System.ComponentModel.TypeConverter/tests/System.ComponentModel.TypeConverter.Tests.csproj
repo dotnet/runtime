@@ -118,6 +118,7 @@
     <Compile Include="TimeSpanConverterTests.cs" />
     <Compile Include="TypeConverterAttributeTests.cs" />
     <Compile Include="TypeConverterTests.cs" />
+    <Compile Include="TypeConverterTestBase.cs" />
     <Compile Include="TypeDescriptionProviderAttributeTests.cs" />
     <Compile Include="TypeDescriptorTests.cs" />
     <Compile Include="TypeDescriptorTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
