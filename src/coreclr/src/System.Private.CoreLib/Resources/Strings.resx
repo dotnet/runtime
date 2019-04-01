@@ -2944,9 +2944,6 @@
   <data name="NotSupported_DelegateMarshalToWrongDomain" xml:space="preserve">
     <value>Delegates cannot be marshaled from native code into a domain other than their home domain.</value>
   </data>
-  <data name="NotSupported_DelegateSerHolderSerial" xml:space="preserve">
-    <value>DelegateSerializationHolder objects are designed to represent a delegate during serialization and are not serializable themselves.</value>
-  </data>
   <data name="NotSupported_DynamicAssembly" xml:space="preserve">
     <value>The invoked member is not supported in a dynamic assembly.</value>
   </data>
