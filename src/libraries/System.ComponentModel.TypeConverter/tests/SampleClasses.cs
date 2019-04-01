@@ -6,6 +6,7 @@ using System.Collections;
 
 namespace System.ComponentModel.Tests
 {
+    [Serializable]
     public class MyTypeDescriptorContext : ITypeDescriptorContext
     {
         public IContainer Container => null;
@@ -59,6 +60,7 @@ namespace System.ComponentModel.Tests
         public const string Token = "Formatted class.";
     }
 
+    [Serializable]
     public class Collection1 : ICollection
     {
         public void CopyTo(Array array, int index)

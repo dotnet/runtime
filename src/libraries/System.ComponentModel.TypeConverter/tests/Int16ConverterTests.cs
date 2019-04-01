@@ -2,44 +2,37 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Globalization;
-using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class Int16ConverterTests : ConverterTestBase
+    public class Int16ConverterTests : TypeConverterTestBase
     {
-        private static TypeConverter s_converter = new Int16Converter();
+        public override TypeConverter Converter => new Int16Converter();
 
-        [Fact]
-        public static void ConvertFrom_WithContext()
+        public override IEnumerable<ConvertTest> ConvertToTestData()
         {
-            ConvertFrom_WithContext(new object[3, 3]
-                {
-                    { "-1  ", (short)(-1), null },
-                    { "#2", (short)2, null },
-                    { "+7", (short)7, CultureInfo.InvariantCulture }
-                },
-                Int16ConverterTests.s_converter);
+            yield return ConvertTest.Valid((short)-1, "-1");
+            yield return ConvertTest.Valid((short)2, (short)2, CultureInfo.InvariantCulture);
+            yield return ConvertTest.Valid((short)3, (float)3.0);
         }
 
-        [Fact]
-        public static void ConvertFrom_WithContext_Negative()
+        public override IEnumerable<ConvertTest> ConvertFromTestData()
         {
-           AssertExtensions.Throws<ArgumentException, Exception>(
-               () => Int16ConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, "8.0"));
-        }
+            yield return ConvertTest.Valid("1", (short)1);
+            yield return ConvertTest.Valid("-1  ", (short)-1);
+            yield return ConvertTest.Valid("#2", (short)2);
+            yield return ConvertTest.Valid("+7", (short)7);
 
-        [Fact]
-        public static void ConvertTo_WithContext()
-        {
-            ConvertTo_WithContext(new object[3, 3]
-                {
-                    { (short)(-1), "-1", null },
-                    { (short)2, (short)2, CultureInfo.InvariantCulture },
-                    { (short)3, (float)3.0, null }
-                },
-                Int16ConverterTests.s_converter);
+            yield return ConvertTest.Throws<ArgumentException, Exception>("8.0");
+            yield return ConvertTest.Throws<ArgumentException, Exception>("");
+            yield return ConvertTest.Throws<ArgumentException, Exception>("bad");
+
+            yield return ConvertTest.Throws<ArgumentException, Exception>("32768");
+            yield return ConvertTest.Throws<ArgumentException, Exception>("-32769");
+
+            yield return ConvertTest.CantConvert(new object());
         }
     }
 }
