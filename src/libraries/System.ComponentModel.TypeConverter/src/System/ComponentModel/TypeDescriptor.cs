@@ -1555,6 +1555,11 @@ namespace System.ComponentModel
             {
                 Type type = instance.GetType();
 
+                if (type.IsCOMObject)
+                {
+                    type = ComObjectType;
+                }
+
                 if (createDelegator)
                 {
                     node = new TypeDescriptionNode(new DelegatingTypeDescriptionProvider(type));
@@ -2889,8 +2894,29 @@ namespace System.ComponentModel
             }
         }
 
+        [TypeDescriptionProvider(typeof(ComNativeDescriptorProxy))]
         private sealed class TypeDescriptorComObject
         {
+        }
+
+        // This class is being used to aid in diagnosability. The alternative to having this proxy would be
+        // to set the fully qualified type name in the TypeDescriptionProvider attribute. The issue with the
+        // string method is the failure is silent during type load making diagnosing the issue difficult.
+        private sealed class ComNativeDescriptorProxy : TypeDescriptionProvider
+        {
+            private readonly TypeDescriptionProvider _comNativeDescriptor;
+
+            public ComNativeDescriptorProxy()
+            {
+                Assembly assembly = Assembly.Load("System.Windows.Forms");
+                Type realComNativeDescriptor = assembly.GetType("System.Windows.Forms.ComponentModel.Com2Interop.ComNativeDescriptor", throwOnError: true);
+                _comNativeDescriptor = (TypeDescriptionProvider)Activator.CreateInstance(realComNativeDescriptor);
+            }
+
+            public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+            {
+                return _comNativeDescriptor.GetTypeDescriptor(objectType, instance);
+            }
         }
 
         /// <summary>
