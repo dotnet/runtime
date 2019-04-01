@@ -10159,6 +10159,54 @@ static BOOL ComputeIsLayoutFixedInCurrentVersionBubble(MethodTable * pMT)
     return TRUE;
 }
 
+static BOOL ComputeIsLayoutInCurrentVersionBubble(MethodTable* pMT)
+{
+    if (pMT->IsTruePrimitive() || pMT->IsEnum())
+        return TRUE;
+
+    if (!pMT->GetModule()->IsInCurrentVersionBubble())
+        return FALSE;
+
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc *pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        MethodTable * pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+        if (!pFieldMT->IsLayoutInCurrentVersionBubble())
+            return FALSE;
+    }
+
+    if (!pMT->IsValueType())
+    {
+        pMT = pMT->GetParentMethodTable();
+
+        while ((pMT != g_pObjectClass) && (pMT != NULL))
+        {
+            if (!pMT->IsLayoutInCurrentVersionBubble())
+                return FALSE;
+
+            pMT = pMT->GetParentMethodTable();
+        }
+    }
+
+    return TRUE;
+}
+
+BOOL MethodTable::IsLayoutInCurrentVersionBubble()
+{
+    STANDARD_VM_CONTRACT;
+
+    const MethodTableWriteableData * pWriteableData = GetWriteableData();
+    if (!(pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed))
+    {
+        MethodTableWriteableData * pWriteableDataForWrite = GetWriteableDataForWrite();
+        if (ComputeIsLayoutInCurrentVersionBubble(this))
+            *EnsureWritablePages(&pWriteableDataForWrite->m_dwFlags) |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubble;
+        *EnsureWritablePages(&pWriteableDataForWrite->m_dwFlags) |= MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed;
+    }
+
+    return (pWriteableData->m_dwFlags & MethodTableWriteableData::enum_flag_NGEN_IsLayoutInCurrentVersionBubble) != 0;
+}
+
 //
 // Is field layout in this type fixed within the current version bubble?
 // This check does not take the inheritance chain into account.
