@@ -32,6 +32,11 @@ namespace Mono.Linker.Tests.Cases.LinkXml {
 			private void NotPreservedMethod ()
 			{
 			}
+
+			[Kept]
+			private void PreservedMethod5<T>(T arg)
+			{
+			}
 		}
 	}
 }
