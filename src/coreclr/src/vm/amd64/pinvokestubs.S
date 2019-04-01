@@ -127,3 +127,27 @@ NESTED_ENTRY VarargPInvokeGenILStub, _TEXT, NoHandler
         jmp             C_FUNC(VarargPInvokeStubHelper)
 
 NESTED_END VarargPInvokeGenILStub, _TEXT
+
+//
+// IN:
+// InlinedCallFrame (rcx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+//                          before actual InlinedCallFrame data)
+//
+//
+LEAF_ENTRY JIT_PInvokeBegin, _TEXT
+        // Not yet supported
+        int 3
+        ret
+LEAF_END JIT_PInvokeBegin, _TEXT
+
+//
+// IN:
+// InlinedCallFrame (rcx) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+//                          before actual InlinedCallFrame data)
+//
+//
+LEAF_ENTRY JIT_PInvokeEnd, _TEXT
+        // Not yet supported
+        int 3
+        ret
+LEAF_END JIT_PInvokeEnd, _TEXT
