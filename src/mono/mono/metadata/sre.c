@@ -1931,13 +1931,16 @@ ctor_builder_to_signature_raw (MonoImage *image, MonoReflectionCtorBuilder* ctor
  * LOCKING: Assumes the loader lock is held.
  */
 static MonoMethodSignature*
-method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilderHandle method, MonoError *error) {
+method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilderHandle method, MonoError *error)
+{
 	MonoMethodSignature *sig;
 
 	error_init (error);
 	MonoArrayHandle params = MONO_HANDLE_NEW_GET(MonoArray, method, parameters);
 	MonoArrayHandle required_modifiers = MONO_HANDLE_NEW_GET(MonoArray, method, param_modreq);
 	MonoArrayHandle optional_modifiers = MONO_HANDLE_NEW_GET(MonoArray, method, param_modopt);
+	MonoArrayHandle ret_req_modifiers = MONO_HANDLE_NEW_GET (MonoArray, method, return_modreq);
+	MonoArrayHandle ret_opt_modifiers = MONO_HANDLE_NEW_GET (MonoArray, method, return_modopt);
 
 	sig = parameters_to_signature (image, params, required_modifiers, optional_modifiers, error);
 	return_val_if_nok (error, NULL);
@@ -1946,6 +1949,7 @@ method_builder_to_signature (MonoImage *image, MonoReflectionMethodBuilderHandle
 	rtype = MONO_HANDLE_CAST (MonoReflectionType, MONO_HANDLE_NEW_GET (MonoObject, method, rtype));
 	if (!MONO_HANDLE_IS_NULL (rtype)) {
 		sig->ret = mono_reflection_type_handle_mono_type (rtype, error);
+		sig->ret = add_custom_modifiers_to_type (sig->ret, ret_req_modifiers, ret_opt_modifiers, image, error);
 		if (!is_ok (error)) {
 			image_g_free (image, sig);
 			return NULL;
