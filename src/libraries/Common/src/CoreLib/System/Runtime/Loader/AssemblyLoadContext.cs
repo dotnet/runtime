@@ -30,7 +30,6 @@ namespace System.Runtime.Loader
 
         private static readonly Dictionary<long, WeakReference<AssemblyLoadContext>> s_allContexts = new Dictionary<long, WeakReference<AssemblyLoadContext>>();
         private static long s_nextId;
-        private static bool s_isProcessExiting;
 
         // Indicates the state of this ALC (Alive or in Unloading state)
         private InternalState _state;
@@ -74,19 +73,14 @@ namespace System.Runtime.Loader
                 GC.SuppressFinalize(this);
             }
 
+            // If this is a collectible ALC, we are creating a weak handle tracking resurrection otherwise we use a strong handle
+            var thisHandle = GCHandle.Alloc(this, IsCollectible ? GCHandleType.WeakTrackResurrection : GCHandleType.Normal);
+            var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
+            _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
+
             // Add this instance to the list of alive ALC
             lock (s_allContexts)
             {
-                if (s_isProcessExiting)
-                {
-                    throw new InvalidOperationException(SR.AssemblyLoadContext_Constructor_CannotInstantiateWhileUnloading);
-                }
-
-                // If this is a collectible ALC, we are creating a weak handle tracking resurrection otherwise we use a strong handle
-                var thisHandle = GCHandle.Alloc(this, IsCollectible ? GCHandleType.WeakTrackResurrection : GCHandleType.Normal);
-                var thisHandlePtr = GCHandle.ToIntPtr(thisHandle);
-                _nativeAssemblyLoadContext = InitializeAssemblyLoadContext(thisHandlePtr, representsTPALoadContext, isCollectible);
-
                 _id = s_nextId++;
                 s_allContexts.Add(_id, new WeakReference<AssemblyLoadContext>(this, true));
             }
@@ -385,7 +379,6 @@ namespace System.Runtime.Loader
         {
             lock (s_allContexts)
             {
-                s_isProcessExiting = true;
                 foreach (var alcAlive in s_allContexts)
                 {
                     if (alcAlive.Value.TryGetTarget(out AssemblyLoadContext alc))
@@ -393,7 +386,6 @@ namespace System.Runtime.Loader
                         alc.RaiseUnloadEvent();
                     }
                 }
-                s_allContexts.Clear();
             }
         }        
 
