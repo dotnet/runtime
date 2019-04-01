@@ -3,17 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 #include <mutex>
-#include "pal.h"
+#include <pal.h>
 #include "args.h"
-#include "trace.h"
+#include <trace.h>
 #include "deps_resolver.h"
-#include "fx_muxer.h"
-#include "utils.h"
+#include <fx_muxer.h>
+#include <utils.h>
 #include "coreclr.h"
-#include "cpprest/json.h"
-#include "error_codes.h"
+#include <cpprest/json.h>
+#include <error_codes.h>
 #include "breadcrumbs.h"
-#include "host_startup_info.h"
+#include <host_startup_info.h>
 
 namespace
 {

@@ -4,11 +4,14 @@
 
 #include <cassert>
 #include <mutex>
-#include "args.h"
-#include "cpprest/json.h"
+#include <error_codes.h>
+#include <pal.h>
+#include <trace.h>
+#include <utils.h>
+
+#include <cpprest/json.h>
 #include "corehost_init.h"
 #include "deps_format.h"
-#include "error_codes.h"
 #include "framework_info.h"
 #include "fx_definition.h"
 #include "fx_muxer.h"
@@ -16,12 +19,9 @@
 #include "fx_resolver.h"
 #include "fx_ver.h"
 #include "host_startup_info.h"
-#include "pal.h"
 #include "runtime_config.h"
 #include "sdk_info.h"
 #include "sdk_resolver.h"
-#include "trace.h"
-#include "utils.h"
 
 using corehost_load_fn = int(*) (const host_interface_t* init);
 using corehost_main_fn = int(*) (const int argc, const pal::char_t* argv[]);
@@ -1197,7 +1197,7 @@ int fx_muxer_t::handle_cli(
     int new_argoff;
     pal::string_t app_candidate;
     opt_map_t opts;
-    
+
     int result = parse_args(host_info, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &new_argoff, app_candidate, opts); // arg offset 1 for dotnet
     if (!result)
     {
