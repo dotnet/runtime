@@ -209,7 +209,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        private static IEnumerable<object[]> HostNameData()
+        public static IEnumerable<object[]> HostNameData()
         {
             yield return new object[] { "a" };
             yield return new object[] { "test" };

@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\Directory.Build.props" />
+  <PropertyGroup>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <!-- System.Memory uses the Open key, so we will also. -->
+    <StrongNameKeyId>Open</StrongNameKeyId>
+    <!-- This is a preview package. Do not ship as stable. -->
+    <BlockStable>true</BlockStable>
+  </PropertyGroup>
+</Project>

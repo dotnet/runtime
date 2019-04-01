@@ -364,13 +364,13 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        private class TestAttribute1 : Attribute { }
-        private class TestAttribute2 : Attribute { }
-        private class TestAttribute3 : Attribute { }
-        private class TestAttribute4 : Attribute { }
-        private class TestAttribute5a : Attribute { }
-        private class TestAttribute5b : TestAttribute5a { }
-        private class TestAttribute6 : Attribute { }
+        public class TestAttribute1 : Attribute { }
+        public class TestAttribute2 : Attribute { }
+        public class TestAttribute3 : Attribute { }
+        public class TestAttribute4 : Attribute { }
+        public class TestAttribute5a : Attribute { }
+        public class TestAttribute5b : TestAttribute5a { }
+        public class TestAttribute6 : Attribute { }
 
         private class TestAttributeWithDefaultFieldButNotDefault : Attribute
         {

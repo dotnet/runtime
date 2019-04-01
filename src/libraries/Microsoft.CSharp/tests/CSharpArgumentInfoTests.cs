@@ -21,7 +21,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             "horrid name with" + (char)0xD800 + "a half surrogate", "new", "break", null
         };
 
-        private static IEnumerable<object[]> FlagsAndNames() =>
+        public static IEnumerable<object[]> FlagsAndNames() =>
             AllPossibleFlags.Select((f, i) => new object[] {f, Names[i % Names.Length]});
 
         [Theory, MemberData(nameof(FlagsAndNames))]

@@ -40,7 +40,7 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        private static IEnumerable<object[]> DefaultProperties_TestData()
+        public static IEnumerable<object[]> DefaultProperties_TestData()
         {
             yield return new object[] { LocalizableAttribute.Yes, true };
             yield return new object[] { LocalizableAttribute.Default, false };

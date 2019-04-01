@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,6 +16,13 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandlerTest_TrailingHeaders_Test : HttpClientHandlerTestBase
     {
+        private static byte[] s_dataBytes = Encoding.ASCII.GetBytes("data");
+        private static IList<HttpHeaderData> s_trailingHeaders = new HttpHeaderData[] {
+            new HttpHeaderData("MyCoolTrailerHeader", "amazingtrailer"), new HttpHeaderData("Hello", "World") };
+
+        private static Frame MakeDataFrame(int streamId, byte[] data, bool endStream = false) =>
+            new DataFrame(data, (endStream ? FrameFlags.EndStream : FrameFlags.None), 0, streamId);
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -216,6 +224,149 @@ namespace System.Net.Http.Functional.Tests
                     }
                 }
             });
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsync_NoTrailingHeaders_EmptyCollection()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(CreateHttpClientHandler(useSocketsHttpHandler: true, useHttp2LoopbackServer: true)))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                // Response header.
+                await server.SendDefaultResponseHeadersAsync(streamId);
+
+                // Response data.
+                await server.WriteFrameAsync(MakeDataFrame(streamId, s_dataBytes, endStream: true));
+
+                // Server doesn't send trailing header frame.
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.NotNull(response.TrailingHeaders);
+                Assert.Equal(0, response.TrailingHeaders.Count());
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsync_MissingTrailer_TrailingHeadersAccepted()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(CreateHttpClientHandler(useSocketsHttpHandler: true, useHttp2LoopbackServer: true)))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                // Response header.
+                await server.SendDefaultResponseHeadersAsync(streamId);
+
+                // Response data, missing Trailers.
+                await server.WriteFrameAsync(MakeDataFrame(streamId, s_dataBytes));
+
+                // Additional trailing header frame.
+                await server.SendResponseHeadersAsync(streamId, isTrailingHeader:true, headers: s_trailingHeaders, endStream : true);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
+                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsync_TrailerHeaders_TrailingPseudoHeadersThrow()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(CreateHttpClientHandler(useSocketsHttpHandler: true, useHttp2LoopbackServer: true)))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                // Response header.
+                await server.SendDefaultResponseHeadersAsync(streamId);
+                await server.WriteFrameAsync(MakeDataFrame(streamId, s_dataBytes));
+                // Additional trailing header frame with pseudo-headers again..
+                await server.SendResponseHeadersAsync(streamId, isTrailingHeader:false, headers: s_trailingHeaders, endStream : true);
+
+                await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsyncResponseHeadersReadOption_TrailingHeaders_Available()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(CreateHttpClientHandler(useSocketsHttpHandler: true, useHttp2LoopbackServer: true)))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address, HttpCompletionOption.ResponseHeadersRead);
+
+                await server.EstablishConnectionAsync();
+
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                // Response header.
+                await server.SendDefaultResponseHeadersAsync(streamId);
+
+                // Response data, missing Trailers.
+                await server.WriteFrameAsync(MakeDataFrame(streamId, s_dataBytes));
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Pending read on the response content.
+                Assert.Empty(response.TrailingHeaders);
+
+                Stream stream = await response.Content.ReadAsStreamAsync();
+                Byte[] data = new Byte[100];
+                await stream.ReadAsync(data, 0, data.Length);
+
+                // Intermediate test - haven't reached stream EOF yet.
+                Assert.Empty(response.TrailingHeaders);
+
+                // Finish data stream and write out trailing headers.
+                await server.WriteFrameAsync(MakeDataFrame(streamId, s_dataBytes));
+                await server.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader:true, headers: s_trailingHeaders);
+
+                // Read data until EOF is reached
+                while (stream.Read(data, 0, data.Length) != 0);
+
+                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
+                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsync_TrailerHeaders_TrailingHeaderNoBody()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(CreateHttpClientHandler(useSocketsHttpHandler: true, useHttp2LoopbackServer: true)))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address, HttpCompletionOption.ResponseHeadersRead);
+
+                await server.EstablishConnectionAsync();
+
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                // Response header.
+                await server.SendDefaultResponseHeadersAsync(streamId);
+                await server.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader:true, headers: s_trailingHeaders);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
+                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
+            }
         }
     }
 }

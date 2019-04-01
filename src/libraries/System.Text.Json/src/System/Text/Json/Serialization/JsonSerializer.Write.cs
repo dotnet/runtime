@@ -29,6 +29,10 @@ namespace System.Text.Json.Serialization
             return isFinalBlock;
         }
 
+        // There are three conditions to consider for an object (primitive value, enumerable or object) being processed here:
+        // 1) The object type was specified as the root-level return type to a Parse\Read method.
+        // 2) The object is property on a parent object.
+        // 3) The object is an element in an enumerable.
         private static bool Write(
             ref Utf8JsonWriter writer,
             int flushThreshold,
@@ -64,6 +68,6 @@ namespace System.Text.Json.Serialization
             } while (continueWriting);
 
             return true;
-        }        
+        }
     }
 }

@@ -113,7 +113,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        private static IEnumerable<object[]> InternationalHostNames()
+        public static IEnumerable<object[]> InternationalHostNames()
         {
             // Latin-1 supplement
             yield return new object[] { "\u00E1.com" };

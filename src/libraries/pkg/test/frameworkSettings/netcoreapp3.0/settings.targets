@@ -11,4 +11,12 @@
   <ItemGroup Condition="'$(RuntimeIdentifier)' != '' AND !$(RuntimeIdentifier.StartsWith('win'))">
     <IgnoredTypes Include="System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- https://github.com/dotnet/corefx/issues/36483 -->
+    <IgnoredTypes Include="System.Runtime.Intrinsics.Arm.Arm64.Aes" />
+    <IgnoredTypes Include="System.Runtime.Intrinsics.Arm.Arm64.Base" />
+    <IgnoredTypes Include="System.Runtime.Intrinsics.Arm.Arm64.Sha1" />
+    <IgnoredTypes Include="System.Runtime.Intrinsics.Arm.Arm64.Sha256" />
+    <IgnoredTypes Include="System.Runtime.Intrinsics.Arm.Arm64.Simd" />
+  </ItemGroup>
 </Project>

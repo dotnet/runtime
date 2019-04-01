@@ -1525,6 +1525,13 @@
     ]
   },
   {
+    "Name": "System.Runtime.Intrinsics.Experimental",
+    "Description": "Provides APIs for accessing processor specific instructions.",
+    "CommonTypes": [
+        "System.Runtime.Intrinsics.Arm.Arm64"
+    ]
+  },
+  {
     "Name": "System.Runtime.Handles",
     "Description": "Provides base classes, including System.Runtime.InteropServices.CriticalHandle and System.Runtime.InteropServices.SafeHandle, for types that represent operating system handles.",
     "CommonTypes": [
@@ -2129,6 +2136,14 @@
     "CommonTypes": [
       "System.Transactions.Transaction",
       "System.Transactions.TransactionScope"
+    ]
+  },
+  {
+    "Name": "System.Utf8String.Experimental",
+    "Description": "Provides types for representation of UTF-8 string data.",
+    "CommonTypes": [
+        "System.Char8",
+        "System.Utf8String"
     ]
   },
   {

@@ -563,7 +563,7 @@ namespace System.Tests
             Assert.Equal(dateTimeOffset.DateTime.TimeOfDay, dateTimeOffset.TimeOfDay);
         }
 
-        private static IEnumerable<object[]> UnixTime_TestData()
+        public static IEnumerable<object[]> UnixTime_TestData()
         {
             yield return new object[] { TestTime.FromMilliseconds(DateTimeOffset.MinValue, -62135596800000) };
             yield return new object[] { TestTime.FromMilliseconds(DateTimeOffset.MaxValue, 253402300799999) };

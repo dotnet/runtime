@@ -155,6 +155,84 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private ReadOnlySpan<T> GetFirstSpan()
+        {
+            object startObject = _startObject;
+
+            if (startObject == null)
+                return default;
+
+            int startIndex = _startInteger;
+            int endIndex = _endInteger;
+
+            bool isMultiSegment = startObject != _endObject;
+
+            // The highest bit of startIndex and endIndex are used to infer the sequence type
+            // The code below is structured this way for performance reasons and is equivalent to the following:
+            // SequenceType type = GetSequenceType();
+            // if (type == SequenceType.MultiSegment) { ... }
+            // else if (type == SequenceType.Array) { ... }
+            // else if (type == SequenceType.String){ ... }
+            // else if (type == SequenceType.MemoryManager) { ... }
+
+            // Highest bit of startIndex: A = startIndex >> 31
+            // Highest bit of endIndex: B = endIndex >> 31
+
+            // A == 0 && B == 0 means SequenceType.MultiSegment
+            // Equivalent to startIndex >= 0 && endIndex >= 0
+            if ((startIndex | endIndex) >= 0)
+            {
+                ReadOnlySpan<T> span = ((ReadOnlySequenceSegment<T>)startObject).Memory.Span;
+                if (isMultiSegment)
+                {
+                    return span.Slice(startIndex);
+                }
+                return span.Slice(startIndex, endIndex - startIndex);
+            }
+            else
+            {
+                return GetFirstSpanSlow(startObject, isMultiSegment);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private ReadOnlySpan<T> GetFirstSpanSlow(object startObject, bool isMultiSegment)
+        {
+            if (isMultiSegment)
+                ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
+
+            int startIndex = _startInteger;
+            int endIndex = _endInteger;
+
+            Debug.Assert(startIndex < 0 || endIndex < 0);
+
+            // A == 0 && B == 1 means SequenceType.Array
+            if (startIndex >= 0)
+            {
+                Debug.Assert(endIndex < 0);
+                ReadOnlySpan<T> span = (T[])startObject;
+                return span.Slice(startIndex, (endIndex & ReadOnlySequence.IndexBitMask) - startIndex);
+            }
+            else
+            {
+                // The type == char check here is redundant. However, we still have it to allow
+                // the JIT to see when that the code is unreachable and eliminate it.
+                // A == 1 && B == 1 means SequenceType.String
+                if (typeof(T) == typeof(char) && endIndex < 0)
+                {
+                    var memory = (ReadOnlyMemory<T>)(object)((string)startObject).AsMemory();
+                    // No need to remove the FlagBitMask since (endIndex - startIndex) == (endIndex & ReadOnlySequence.IndexBitMask) - (startIndex & ReadOnlySequence.IndexBitMask)
+                    return memory.Span.Slice(startIndex & ReadOnlySequence.IndexBitMask, endIndex - startIndex);
+                }
+                else // endIndex >= 0, A == 1 && B == 0 means SequenceType.MemoryManager
+                {
+                    startIndex &= ReadOnlySequence.IndexBitMask;
+                    return ((MemoryManager<T>)startObject).Memory.Span.Slice(startIndex, endIndex - startIndex);
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal SequencePosition Seek(long offset, ExceptionArgument exceptionArgument = ExceptionArgument.offset)
         {
             object startObject = _startObject;

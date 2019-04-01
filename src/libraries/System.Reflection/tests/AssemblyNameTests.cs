@@ -424,7 +424,7 @@ namespace System.Reflection.Tests
 
         private static readonly string VersionUnspecifiedStr = ushort.MaxValue.ToString(NumberFormatInfo.InvariantInfo);
 
-        private static IEnumerable<object[]> Constructor_String_InvalidVersionTest_MemberData()
+        public static IEnumerable<object[]> Constructor_String_InvalidVersionTest_MemberData()
         {
             // No components
             yield return new object[] { "" };
@@ -482,7 +482,7 @@ namespace System.Reflection.Tests
             }
         }
 
-        private static IEnumerable<object[]> Constructor_String_VersionTest_MemberData()
+        public static IEnumerable<object[]> Constructor_String_VersionTest_MemberData()
         {
             // No build
             var expectedVersion = new Version(1, 1);

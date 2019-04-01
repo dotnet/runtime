@@ -870,7 +870,7 @@ namespace System.Linq.Expressions.Tests
             Assert.False(e.MoveNext());
         }
 
-        private static IEnumerable<object[]> InitialCollections() =>
+        public static IEnumerable<object[]> InitialCollections() =>
             new IEnumerable<int>[]
             {
                 new int[0],
@@ -895,9 +895,9 @@ namespace System.Linq.Expressions.Tests
                 Enumerable.Range(1, 5),
             }.Select(x => new object[] { x });
 
-        private static IEnumerable<object[]> Lengths() => Enumerable.Range(0, 10).Select(i => new object[] { i });
+        public static IEnumerable<object[]> Lengths() => Enumerable.Range(0, 10).Select(i => new object[] { i });
 
-        private static IEnumerable<object[]> Versioning() =>
+        public static IEnumerable<object[]> Versioning() =>
             new Action<ReadOnlyCollectionBuilder<int>>[]
             {
                 e => e.Add(1),

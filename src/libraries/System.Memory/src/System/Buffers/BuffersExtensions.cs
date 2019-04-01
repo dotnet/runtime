@@ -138,7 +138,7 @@ namespace System.Buffers
                 input = input.Slice(writeSize);
                 if (input.Length > 0)
                 {
-                    destination = writer.GetSpan(input.Length);
+                    destination = writer.GetSpan();
                     continue;
                 }
 

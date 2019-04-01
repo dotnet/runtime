@@ -2134,7 +2134,7 @@ namespace System.Reflection.Metadata.Tests
         ///     Native Type (offset to #blob)
         /// </summary>
         [Fact]
-        private void ValidateFieldMarshal()
+        public void ValidateFieldMarshal()
         {
             var comParents = new int[]
             {

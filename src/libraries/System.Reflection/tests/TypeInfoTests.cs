@@ -151,7 +151,7 @@ namespace System.Reflection.Tests
         [InlineData(typeof(MultipleNestedClass), nameof(MultipleNestedClass.Nest1), true)]
         [InlineData(typeof(MultipleNestedClass.Nest1), nameof(MultipleNestedClass.Nest1.Nest2), true)]
         [InlineData(typeof(MultipleNestedClass.Nest1.Nest2), nameof(MultipleNestedClass.Nest1.Nest2.Nest3), true)]
-        private void DeclaredNestedTypes(Type type, string name, bool exists)
+        public void DeclaredNestedTypes(Type type, string name, bool exists)
         {
             IEnumerable<string> nestedTypes = type.GetTypeInfo().DeclaredNestedTypes.Select(nestedType => nestedType.Name);
 

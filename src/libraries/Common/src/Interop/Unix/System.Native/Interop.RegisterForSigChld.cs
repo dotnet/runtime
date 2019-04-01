@@ -11,6 +11,6 @@ internal partial class Interop
         internal delegate void SigChldCallback(bool reapAll);
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_RegisterForSigChld")]
-        internal static extern bool RegisterForSigChld(SigChldCallback handler);
+        internal static extern void RegisterForSigChld(SigChldCallback handler);
     }
 }

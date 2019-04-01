@@ -5614,7 +5614,7 @@ namespace System.Tests
             }
         }
 
-        private static IEnumerable<object[]> ToUpper_Culture_TestData()
+        public static IEnumerable<object[]> ToUpper_Culture_TestData()
         {
             yield return new object[] { "h\u0069 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
             yield return new object[] { "h\u0130 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };

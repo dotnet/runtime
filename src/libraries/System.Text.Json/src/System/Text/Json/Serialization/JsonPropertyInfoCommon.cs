@@ -12,32 +12,38 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Represents a strongly-typed property to prevent boxing and to create a direct delegate to the getter\setter.
     /// </summary>
-    internal abstract class JsonPropertyInfo<TClass, TProperty, TUnderlying> : JsonPropertyInfo
+    internal abstract class JsonPropertyInfoCommon<TClass, TDeclaredProperty, TRuntimeProperty> : JsonPropertyInfo
     {
         internal bool _isPropertyPolicy;
-        internal Func<TClass, TProperty> Get { get; private set; }
-        internal Action<TClass, TProperty> Set { get; private set; }
+        internal Func<TClass, TDeclaredProperty> Get { get; private set; }
+        internal Action<TClass, TDeclaredProperty> Set { get; private set; }
 
-        public JsonValueConverter<TUnderlying> ValueConverter { get; internal set; }
+        public JsonValueConverter<TRuntimeProperty> ValueConverter { get; internal set; }
 
         // Constructor used for internal identifiers
-        internal JsonPropertyInfo() { }
+        internal JsonPropertyInfoCommon() { }
 
-        internal JsonPropertyInfo(Type classType, Type propertyType, PropertyInfo propertyInfo, Type elementType, JsonSerializerOptions options) :
-            base(classType, propertyType, propertyInfo, elementType, options)
+        internal JsonPropertyInfoCommon(
+            Type parentClassType,
+            Type declaredPropertyType,
+            Type runtimePropertyType,
+            PropertyInfo propertyInfo,
+            Type elementType,
+            JsonSerializerOptions options) :
+            base(parentClassType, declaredPropertyType, runtimePropertyType, propertyInfo, elementType, options)
         {
             if (propertyInfo != null)
             {
                 if (propertyInfo.GetMethod?.IsPublic == true)
                 {
                     HasGetter = true;
-                    Get = (Func<TClass, TProperty>)Delegate.CreateDelegate(typeof(Func<TClass, TProperty>), propertyInfo.GetGetMethod());
+                    Get = (Func<TClass, TDeclaredProperty>)Delegate.CreateDelegate(typeof(Func<TClass, TDeclaredProperty>), propertyInfo.GetGetMethod());
                 }
 
                 if (propertyInfo.SetMethod?.IsPublic == true)
                 {
                     HasSetter = true;
-                    Set = (Action<TClass, TProperty>)Delegate.CreateDelegate(typeof(Action<TClass, TProperty>), propertyInfo.GetSetMethod());
+                    Set = (Action<TClass, TDeclaredProperty>)Delegate.CreateDelegate(typeof(Action<TClass, TDeclaredProperty>), propertyInfo.GetSetMethod());
                 }
             }
             else
@@ -52,8 +58,7 @@ namespace System.Text.Json.Serialization
 
         internal override void GetPolicies(JsonSerializerOptions options)
         {
-            ValueConverter = DefaultConverters<TUnderlying>.s_converter;
-
+            ValueConverter = DefaultConverters<TRuntimeProperty>.s_converter;
             base.GetPolicies(options);
         }
 
@@ -71,11 +76,11 @@ namespace System.Text.Json.Serialization
         internal override void SetValueAsObject(object obj, object value, JsonSerializerOptions options)
         {
             Debug.Assert(Set != null);
-            TProperty typedValue = (TProperty)value;
+            TDeclaredProperty typedValue = (TDeclaredProperty)value;
 
             if (typedValue != null || !IgnoreNullPropertyValueOnWrite(options))
             {
-                Set((TClass)obj, (TProperty)value);
+                Set((TClass)obj, (TDeclaredProperty)value);
             }
         }
     }

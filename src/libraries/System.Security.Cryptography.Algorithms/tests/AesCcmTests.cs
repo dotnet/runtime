@@ -385,22 +385,22 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        private static IEnumerable<object[]> GetValidNonceSizes()
+        public static IEnumerable<object[]> GetValidNonceSizes()
         {
             return GetValidSizes(AesCcm.NonceByteSizes);
         }
 
-        private static IEnumerable<object[]> GetInvalidNonceSizes()
+        public static IEnumerable<object[]> GetInvalidNonceSizes()
         {
             return GetInvalidSizes(AesCcm.NonceByteSizes);
         }
 
-        private static IEnumerable<object[]> GetValidTagSizes()
+        public static IEnumerable<object[]> GetValidTagSizes()
         {
             return GetValidSizes(AesCcm.TagByteSizes);
         }
 
-        private static IEnumerable<object[]> GetInvalidTagSizes()
+        public static IEnumerable<object[]> GetInvalidTagSizes()
         {
             return GetInvalidSizes(AesCcm.TagByteSizes);
         }
