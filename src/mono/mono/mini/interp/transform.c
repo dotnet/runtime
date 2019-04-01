@@ -1196,7 +1196,31 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			td->ip += 5;
 			return TRUE;
 		}
+	} else if (in_corlib && !strcmp (klass_name_space, "Internal.Runtime.CompilerServices") && !strcmp (klass_name, "Unsafe")) {
+#ifdef ENABLE_NETCORE
+		if (!strcmp (tm, "AddByteOffset"))
+			*op = MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET;
+		else if (!strcmp (tm, "ByteOffset"))
+			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
+		else if (!strcmp (tm, "As"))
+			*op = MINT_NOP;
+		else if (!strcmp (tm, "SizeOf")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType *t = ctx->method_inst->type_argv [0];
+			int align;
+			int esize = mono_type_size (t, &align);
+			interp_add_ins (td, MINT_LDC_I4);
+			WRITE32_INS (td->last_ins, 0, &esize);
+			PUSH_SIMPLE_TYPE (td, STACK_TYPE_I4);
+			td->ip += 5;
+			return TRUE;
+		}
+#endif
 	}
+
 	return FALSE;
 }
 

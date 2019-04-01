@@ -667,3 +667,5 @@ OPDEF(MINT_PROF_ENTER, "prof_enter", 1, MintOpNoArgs)
 
 OPDEF(MINT_INTRINS_BYREFERENCE_CTOR, "intrins_byreference_ctor", 2, MintOpClassToken)
 OPDEF(MINT_INTRINS_BYREFERENCE_GET_VALUE, "intrins_byreference_get_value", 1, MintOpNoArgs)
+OPDEF(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET, "intrins_unsafe_add_byte_offset", 1, MintOpNoArgs)
+OPDEF(MINT_INTRINS_UNSAFE_BYTE_OFFSET, "intrins_unsafe_byte_offset", 1, MintOpNoArgs)
