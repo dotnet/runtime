@@ -10,3 +10,4 @@ packs/
 .stamp-dl-test-assets
 assets/
 corefx-test-assets.xml
+Makefile
