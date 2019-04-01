@@ -30,10 +30,6 @@ static inline void mono_memory_write_barrier (void)
 {
 }
 
-static inline void mono_memory_barrier_process_wide (void)
-{
-}
-
 #elif _MSC_VER
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -65,8 +61,6 @@ static inline void mono_memory_write_barrier (void)
 	_WriteBarrier ();
 	MemoryBarrier ();
 }
-
-void mono_memory_barrier_process_wide (void);
 #elif defined(USE_GCC_ATOMIC_OPS)
 static inline void mono_memory_barrier (void)
 {
@@ -82,10 +76,10 @@ static inline void mono_memory_write_barrier (void)
 {
 	mono_memory_barrier ();
 }
-
-void mono_memory_barrier_process_wide (void);
 #else
 #error "Don't know how to do memory barriers!"
 #endif
+
+void mono_memory_barrier_process_wide (void);
 
 #endif	/* _MONO_UTILS_MONO_MEMBAR_H_ */

@@ -187,4 +187,9 @@ mono_background_exec (void)
 	g_slist_free (j);
 }
 
+void
+mono_memory_barrier_process_wide (void)
+{
+}
+
 #endif
