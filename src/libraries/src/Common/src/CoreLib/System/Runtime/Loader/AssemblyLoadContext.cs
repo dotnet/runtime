@@ -106,36 +106,34 @@ namespace System.Runtime.Loader
             }
         }
 
+        private void RaiseUnloadEvent()
+        {
+            // Ensure that we raise the Unload event only once
+            Interlocked.Exchange(ref Unloading, null)?.Invoke(this);
+        }
+
         private void InitiateUnload()
         {
-            var unloading = Unloading;
-            Unloading = null;
-            unloading?.Invoke(this);
+            RaiseUnloadEvent();
 
             // When in Unloading state, we are not supposed to be called on the finalizer
             // as the native side is holding a strong reference after calling Unload
             lock (_unloadLock)
             {
-                if (!s_isProcessExiting)
-                {
-                    Debug.Assert(_state == InternalState.Alive);
+                Debug.Assert(_state == InternalState.Alive);
 
-                    var thisStrongHandle = GCHandle.Alloc(this, GCHandleType.Normal);
-                    var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
-                    // The underlying code will transform the original weak handle
-                    // created by InitializeLoadContext to a strong handle
-                    PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr);
-                }
+                var thisStrongHandle = GCHandle.Alloc(this, GCHandleType.Normal);
+                var thisStrongHandlePtr = GCHandle.ToIntPtr(thisStrongHandle);
+                // The underlying code will transform the original weak handle
+                // created by InitializeLoadContext to a strong handle
+                PrepareForAssemblyLoadContextRelease(_nativeAssemblyLoadContext, thisStrongHandlePtr);
 
                 _state = InternalState.Unloading;
             }
 
-            if (!s_isProcessExiting)
+            lock (s_allContexts)
             {
-                lock (s_allContexts)
-                {
-                    s_allContexts.Remove(_id);
-                }
+                s_allContexts.Remove(_id);
             }
         }
 
@@ -390,10 +388,9 @@ namespace System.Runtime.Loader
                 s_isProcessExiting = true;
                 foreach (var alcAlive in s_allContexts)
                 {
-                    if (alcAlive.Value.TryGetTarget(out AssemblyLoadContext alc) && alc.IsCollectible)
+                    if (alcAlive.Value.TryGetTarget(out AssemblyLoadContext alc))
                     {
-                        // Should we use a try/catch?
-                        alc.InitiateUnload();
+                        alc.RaiseUnloadEvent();
                     }
                 }
                 s_allContexts.Clear();
