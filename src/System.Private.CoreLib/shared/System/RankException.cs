@@ -12,6 +12,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -26,13 +27,13 @@ namespace System
             HResult = HResults.COR_E_RANK;
         }
 
-        public RankException(string message)
+        public RankException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_RANK;
         }
 
-        public RankException(string message, Exception innerException)
+        public RankException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_RANK;
