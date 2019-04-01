@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 #include <thread>
-#include "pal.h"
-#include "utils.h"
-#include "trace.h"
+#include <pal.h>
+#include <utils.h>
+#include <trace.h>
 #include "breadcrumbs.h"
 
 breadcrumb_writer_t::breadcrumb_writer_t(bool enabled, const std::unordered_set<pal::string_t> &files)

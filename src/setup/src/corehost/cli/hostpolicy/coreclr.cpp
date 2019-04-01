@@ -5,8 +5,8 @@
 #include <cassert>
 
 #include "coreclr.h"
-#include "utils.h"
-#include "error_codes.h"
+#include <utils.h>
+#include <error_codes.h>
 
 // Prototype of the coreclr_initialize function from coreclr.dll
 using coreclr_initialize_fn = pal::hresult_t(STDMETHODCALLTYPE *)(

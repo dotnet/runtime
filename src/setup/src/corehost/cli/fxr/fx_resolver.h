@@ -67,4 +67,4 @@ private:
     fx_name_to_fx_reference_map_t m_oldest_references;
 };
 
-#endif __FX_RESOLVER_H__
+#endif // __FX_RESOLVER_H__

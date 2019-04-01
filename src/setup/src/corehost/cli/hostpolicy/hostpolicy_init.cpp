@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "hostpolicy_init.h"
-#include "trace.h"
+#include <trace.h>
 
 void make_palstr_arr(int argc, const pal::char_t** argv, std::vector<pal::string_t>* out)
 {

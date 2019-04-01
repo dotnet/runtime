@@ -3,8 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "args.h"
-#include "utils.h"
-#include "coreclr.h"
+#include <utils.h>
 
 arguments_t::arguments_t()
     : managed_application(_X(""))
