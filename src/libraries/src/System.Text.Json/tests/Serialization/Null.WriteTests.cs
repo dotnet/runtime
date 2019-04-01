@@ -26,5 +26,26 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.ToString(input, options);
             Assert.Equal(@"{}", json);
         }
+
+        [Fact]
+        public static void NullReferences()
+        {
+            var obj = new ObjectWithObjectProperties();
+            obj.Address = null;
+            obj.Array = null;
+            obj.List = null;
+            obj.NullableInt = null;
+            obj.NullableIntArray = null;
+
+            string json = JsonSerializer.ToString(obj);
+            Assert.Equal(ObjectWithObjectProperties.ExpectedJsonAllNulls, json);
+        }
+
+        [Fact]
+        public static void NullArrayElement()
+        {
+            string json = JsonSerializer.ToString(new ObjectWithObjectProperties[]{ null });
+            Assert.Equal("[null]", json);
+        }
     }
 }
