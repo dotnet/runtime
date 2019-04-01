@@ -1073,10 +1073,8 @@ namespace System.Net.Http
             private static ulong CurlSendCallback(IntPtr buffer, ulong size, ulong nitems, IntPtr context)
             {
                 int length = checked((int)(size * nitems));
-                Debug.Assert(length <= MaxRequestBufferSize, $"length {length} should not be larger than RequestBufferSize {MaxRequestBufferSize}");
 
-                EasyRequest easy;
-                if (TryGetEasyRequestFromGCHandle(context, out easy))
+                if (TryGetEasyRequestFromGCHandle(context, out EasyRequest easy))
                 {
                     CurlHandler.EventSourceTrace("Size: {0}", length, easy: easy);
 
