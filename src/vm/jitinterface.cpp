@@ -4629,8 +4629,10 @@ TypeCompareState CEEInfo::compareTypesForCast(
     // In R2R it is a breaking change for a previously positive
     // cast to become negative, but not for a previously negative
     // cast to become positive. So in R2R a negative result is
-    // always reported back as May.
-    if (IsReadyToRunCompilation() && (result == TypeCompareState::MustNot))
+    // always reported back as May, except for CoreLib version bubble.
+    if (IsReadyToRunCompilation() && (result == TypeCompareState::MustNot)
+        && !GetAppDomain()->ToCompilationDomain()->GetTargetModule()->IsSystem()
+        && !IsLargeVersionBubbleEnabled())
     {
         result = TypeCompareState::May;
     }
