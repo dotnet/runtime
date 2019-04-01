@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -16,13 +17,13 @@ namespace System
             HResult = HResults.COR_E_TYPELOAD;
         }
 
-        public TypeLoadException(string message)
+        public TypeLoadException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_TYPELOAD;
         }
 
-        public TypeLoadException(string message, Exception inner)
+        public TypeLoadException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_TYPELOAD;
@@ -33,7 +34,7 @@ namespace System
             get
             {
                 SetMessageField();
-                return _message;
+                return _message!;
             }
         }
 
@@ -59,9 +60,9 @@ namespace System
         // If ClassName != null, GetMessage will construct on the fly using it
         // and ResourceId (mscorrc.dll). This allows customization of the
         // class name format depending on the language environment.
-        private string _className;
-        private string _assemblyName;
-        private readonly string _messageArg;
+        private string? _className;
+        private string? _assemblyName;
+        private readonly string? _messageArg;
         private readonly int _resourceId;
     }
 }

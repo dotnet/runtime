@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -25,13 +26,13 @@ namespace System
             HResult = HResults.COR_E_TIMEOUT;
         }
 
-        public TimeoutException(string message)
+        public TimeoutException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_TIMEOUT;
         }
 
-        public TimeoutException(string message, Exception innerException)
+        public TimeoutException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_TIMEOUT;

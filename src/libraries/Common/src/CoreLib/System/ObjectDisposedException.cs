@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -15,7 +16,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ObjectDisposedException : InvalidOperationException
     {
-        private string _objectName;
+        private string? _objectName;
 
         // This constructor should only be called by the EE (COMPlusThrow)
         private ObjectDisposedException() :
@@ -23,18 +24,18 @@ namespace System
         {
         }
 
-        public ObjectDisposedException(string objectName) :
+        public ObjectDisposedException(string? objectName) :
             this(objectName, SR.ObjectDisposed_Generic)
         {
         }
 
-        public ObjectDisposedException(string objectName, string message) : base(message)
+        public ObjectDisposedException(string? objectName, string? message) : base(message)
         {
             HResult = HResults.COR_E_OBJECTDISPOSED;
             _objectName = objectName;
         }
 
-        public ObjectDisposedException(string message, Exception innerException)
+        public ObjectDisposedException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_OBJECTDISPOSED;
@@ -60,7 +61,7 @@ namespace System
             get
             {
                 string name = ObjectName;
-                if (name == null || name.Length == 0)
+                if (string.IsNullOrEmpty(name))
                     return base.Message;
 
                 string objectDisposed = SR.Format(SR.ObjectDisposed_ObjectName_Name, name);
@@ -68,16 +69,6 @@ namespace System
             }
         }
 
-        public string ObjectName
-        {
-            get
-            {
-                if (_objectName == null)
-                {
-                    return string.Empty;
-                }
-                return _objectName;
-            }
-        }
+        public string ObjectName => _objectName ?? string.Empty;
     }
 }

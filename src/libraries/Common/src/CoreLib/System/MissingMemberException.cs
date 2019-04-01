@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -16,19 +17,19 @@ namespace System
             HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
-        public MissingMemberException(string message)
+        public MissingMemberException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
-        public MissingMemberException(string message, Exception inner)
+        public MissingMemberException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_MISSINGMEMBER;
         }
 
-        public MissingMemberException(string className, string memberName)
+        public MissingMemberException(string? className, string? memberName)
         {
             ClassName = className;
             MemberName = memberName;
@@ -69,8 +70,8 @@ namespace System
         // If ClassName != null, GetMessage will construct on the fly using it
         // and the other variables. This allows customization of the
         // format depending on the language environment.
-        protected string ClassName;
-        protected string MemberName;
-        protected byte[] Signature;
+        protected string? ClassName;
+        protected string? MemberName;
+        protected byte[]? Signature;
     }
 }
