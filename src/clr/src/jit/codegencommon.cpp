@@ -694,6 +694,11 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             VarSetOps::RemoveElemD(this, codeGen->gcInfo.gcVarPtrSetCur, deadVarIndex);
             JITDUMP("\t\t\t\t\t\t\tV%02u becoming dead\n", varNum);
         }
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+        VariableLiveKeeper* varLiveKeeper = getVariableLiveKeeper();
+        varLiveKeeper->siEndVariableLiveRange(varNum);
+#endif // USING_VARIABLE_LIVE_RANGE
     }
 
     VarSetOps::Iter bornIter(this, bornSet);
@@ -731,7 +736,13 @@ void Compiler::compChangeLife(VARSET_VALARG_TP newLife)
             VarSetOps::AddElemD(this, codeGen->gcInfo.gcVarPtrSetCur, bornVarIndex);
             JITDUMP("\t\t\t\t\t\t\tV%02u becoming live\n", varNum);
         }
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+        VariableLiveKeeper* varLiveKeeper = getVariableLiveKeeper();
+        varLiveKeeper->siStartVariableLiveRange(varDsc, varNum);
+#endif // USING_VARIABLE_LIVE_RANGE
     }
+
 #ifdef USING_SCOPE_INFO
     codeGen->siUpdate();
 #endif // USING_SCOPE_INFO
@@ -2283,6 +2294,13 @@ void CodeGen::genGenerateCode(void** codePtr, ULONG* nativeSizeOfCode)
     /* Finalize the Local Var info in terms of generated code */
 
     genSetScopeInfo();
+
+#if defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
+    if (compiler->verbose)
+    {
+        compiler->getVariableLiveKeeper()->dumpLvaVariableLiveRanges();
+    }
+#endif // defined(USING_VARIABLE_LIVE_RANGE) && defined(DEBUG)
 
 #ifdef LATE_DISASM
     unsigned finalHotCodeSize;
@@ -7631,13 +7649,12 @@ void CodeGen::genFnProlog()
         printf("\n__prolog:\n");
     }
 #endif
-#ifdef USING_SCOPE_INFO
+
     if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
     {
         // Create new scopes for the method-parameters for the prolog-block.
         psiBegProlog();
     }
-#endif // USING_SCOPE_INFO
 
 #ifdef DEBUG
 
@@ -8284,12 +8301,11 @@ void CodeGen::genFnProlog()
         genPrologPadForReJit();
         getEmitter()->emitMarkPrologEnd();
     }
-#ifdef USING_SCOPE_INFO
     if (compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0))
     {
         psiEndProlog();
     }
-#endif // USING_SCOPE_INFO
+
     if (hasGCRef)
     {
         getEmitter()->emitSetFrameRangeGCRs(GCrefLo, GCrefHi);
@@ -10478,7 +10494,22 @@ void CodeGen::genSetScopeInfo()
     }
 #endif
 
-    if (compiler->info.compVarScopesCount == 0)
+    unsigned varsLocationsCount = 0;
+
+#ifdef USING_SCOPE_INFO
+    if (compiler->info.compVarScopesCount > 0)
+    {
+        varsLocationsCount = siScopeCnt + psiScopeCnt;
+    }
+#else // USING_SCOPE_INFO
+
+#ifdef USING_VARIABLE_LIVE_RANGE
+    varsLocationsCount = (unsigned int)compiler->getVariableLiveKeeper()->getLiveRangesCount();
+#endif // USING_VARIABLE_LIVE_RANGE
+
+#endif // USING_SCOPE_INFO
+
+    if (varsLocationsCount == 0)
     {
         compiler->eeSetLVcount(0);
         compiler->eeSetLVdone();
@@ -10487,22 +10518,27 @@ void CodeGen::genSetScopeInfo()
 
     noway_assert(compiler->opts.compScopeInfo && (compiler->info.compVarScopesCount > 0));
 
-    unsigned varsHomeCount = 0;
-#ifdef USING_SCOPE_INFO
-    varsHomeCount = siScopeCnt + psiScopeCnt;
-#endif // USING_SCOPE_INFO
-    compiler->eeSetLVcount(varsHomeCount);
+    compiler->eeSetLVcount(varsLocationsCount);
 
 #ifdef DEBUG
-    genTrnslLocalVarCount = varsHomeCount;
-    if (varsHomeCount)
+    genTrnslLocalVarCount = varsLocationsCount;
+    if (varsLocationsCount)
     {
-        genTrnslLocalVarInfo = new (compiler, CMK_DebugOnly) TrnslLocalVarInfo[varsHomeCount];
+        genTrnslLocalVarInfo = new (compiler, CMK_DebugOnly) TrnslLocalVarInfo[varsLocationsCount];
     }
 #endif
 
 #ifdef USING_SCOPE_INFO
     genSetScopeInfoUsingsiScope();
+#else // USING_SCOPE_INFO
+#ifdef USING_VARIABLE_LIVE_RANGE
+    // We can have one of both flags defined, both, or none. Specially if we need to compare both
+    // both results. But we cannot report both to the debugger, since there would be overlapping
+    // intervals, and may not indicate the same variable location.
+
+    genSetScopeInfoUsingVariableRanges();
+
+#endif // USING_VARIABLE_LIVE_RANGE
 #endif // USING_SCOPE_INFO
 
     compiler->eeSetLVdone();
@@ -10579,6 +10615,53 @@ void CodeGen::genSetScopeInfoUsingsiScope()
 }
 #endif // USING_SCOPE_INFO
 
+#ifdef USING_VARIABLE_LIVE_RANGE
+//------------------------------------------------------------------------
+// genSetScopeInfoUsingVariableRanges: Call "genSetScopeInfo" with the
+//  "VariableLiveRanges" created for the arguments, special arguments and
+//  IL local variables.
+//
+// Notes:
+//  This function is called from "genSetScopeInfo" once the code is generated
+//  and we want to send debug info to the debugger.
+//
+void CodeGen::genSetScopeInfoUsingVariableRanges()
+{
+    VariableLiveKeeper* varLiveKeeper  = compiler->getVariableLiveKeeper();
+    unsigned int        liveRangeIndex = 0;
+
+    for (unsigned int varNum = 0; varNum < compiler->info.compLocalsCount; varNum++)
+    {
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+
+        if (compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
+        {
+            VariableLiveKeeper::LiveRangeList* liveRanges = varLiveKeeper->getLiveRangesForVar(varNum);
+
+            for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
+            {
+                UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(getEmitter());
+                UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(getEmitter());
+
+                if (varDsc->lvIsParam && (startOffs == endOffs))
+                {
+                    // If the length is zero, it means that the prolog is empty. In that case,
+                    // CodeGen::genSetScopeInfo will report the liveness of all arguments
+                    // as spanning the first instruction in the method, so that they can
+                    // at least be inspected on entry to the method.
+                    endOffs++;
+                }
+
+                genSetScopeInfo(liveRangeIndex, startOffs, endOffs - startOffs, varNum,
+                                varNum /* I dont know what is the which in eeGetLvInfo */, true,
+                                &liveRange.m_VarLocation);
+                liveRangeIndex++;
+            }
+        }
+    }
+}
+#endif // USING_VARIABLE_LIVE_RANGE
+
 //------------------------------------------------------------------------
 // genSetScopeInfo: Record scope information for debug info
 //
@@ -10612,7 +10695,6 @@ void CodeGen::genSetScopeInfo(unsigned       which,
     // so we don't need this code.
 
     // Is this a varargs function?
-
     if (compiler->info.compIsVarArgs && varNum != compiler->lvaVarargsHandleArg &&
         varNum < compiler->info.compArgsCount && !compiler->lvaTable[varNum].lvIsRegArg)
     {
@@ -10673,7 +10755,7 @@ void CodeGen::genSetScopeInfo(unsigned       which,
 
 #endif // DEBUG
 
-    compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, LVnum, name, avail, varLoc);
+    compiler->eeSetLVinfo(which, startOffs, length, ilVarNum, *varLoc);
 }
 
 /*****************************************************************************/
@@ -10728,7 +10810,7 @@ const char* CodeGen::siStackVarName(size_t offs, size_t size, unsigned reg, unsi
 
     for (unsigned i = 0; i < genTrnslLocalVarCount; i++)
     {
-        if ((genTrnslLocalVarInfo[i].tlviVarLoc.vlIsOnStk((regNumber)reg, stkOffs)) &&
+        if ((genTrnslLocalVarInfo[i].tlviVarLoc.vlIsOnStack((regNumber)reg, stkOffs)) &&
             (genTrnslLocalVarInfo[i].tlviAvailable == true) && (genTrnslLocalVarInfo[i].tlviStartPC <= offs + size) &&
             (genTrnslLocalVarInfo[i].tlviStartPC + genTrnslLocalVarInfo[i].tlviLength > offs))
         {
@@ -11243,13 +11325,13 @@ void CodeGen::genIPmappingGen()
         //block has an IL offset and appears in eeBoundaries.
         for (BasicBlock * block = compiler->fgFirstBB; block != nullptr; block = block->bbNext)
         {
-            if ((block->bbRefs > 1) && (block->bbTreeList != nullptr))
+            GenTreeStmt* stmt = block->firstStmt();
+            if ((block->bbRefs > 1) && (stmt != nullptr))
             {
-                noway_assert(block->bbTreeList->gtOper == GT_STMT);
                 bool found = false;
-                if (block->bbTreeList->gtStmt.gtStmtILoffsx != BAD_IL_OFFSET)
+                if (stmt->gtStmtILoffsx != BAD_IL_OFFSET)
                 {
-                    IL_OFFSET ilOffs = jitGetILoffs(block->bbTreeList->gtStmt.gtStmtILoffsx);
+                    IL_OFFSET ilOffs = jitGetILoffs(stmt->gtStmtILoffsx);
                     for (unsigned i = 0; i < eeBoundariesCount; ++i)
                     {
                         if (eeBoundaries[i].ilOffset == ilOffs)
