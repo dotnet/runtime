@@ -286,6 +286,8 @@ namespace System.Net.Http
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.StreamClosed);
             }
 
+            http2Stream.OnResponseHeadersStart();
+
             _hpackDecoder.Decode(
                 GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
                 s_http2StreamOnResponseHeader,
