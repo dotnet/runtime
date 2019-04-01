@@ -146,7 +146,7 @@ namespace System.Text.Json.Tests
         {
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            var output = new FixedSizedBufferWriter(28);
+            var output = new FixedSizedBufferWriter(20);
 
             var jsonUtf8 = new Utf8JsonWriter(output, state);
 
@@ -159,14 +159,14 @@ namespace System.Text.Json.Tests
             }
             catch (ArgumentException) { }
 
-            output = new FixedSizedBufferWriter(29);
+            output = new FixedSizedBufferWriter(21);
             jsonUtf8 = new Utf8JsonWriter(output, state);
             jsonUtf8.WriteStringValue(date);
             jsonUtf8.Flush();
             string actualStr = Encoding.UTF8.GetString(output.Formatted);
 
-            Assert.Equal(29, output.Formatted.Length);
-            Assert.Equal($"\"{date.ToString("O")}\"", actualStr);
+            Assert.Equal(21, output.Formatted.Length);
+            Assert.Equal($"\"{date.ToString("yyyy-MM-ddTHH:mm:ss")}\"", actualStr);
         }
 
         [Theory]
@@ -178,7 +178,7 @@ namespace System.Text.Json.Tests
         {
             var state = new JsonWriterState(options: new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation });
 
-            var output = new FixedSizedBufferWriter(34);
+            var output = new FixedSizedBufferWriter(26);
 
             var jsonUtf8 = new Utf8JsonWriter(output, state);
 
@@ -191,14 +191,14 @@ namespace System.Text.Json.Tests
             }
             catch (ArgumentException) { }
 
-            output = new FixedSizedBufferWriter(35);
+            output = new FixedSizedBufferWriter(27);
             jsonUtf8 = new Utf8JsonWriter(output, state);
             jsonUtf8.WriteStringValue(date);
             jsonUtf8.Flush();
             string actualStr = Encoding.UTF8.GetString(output.Formatted);
 
-            Assert.Equal(35, output.Formatted.Length);
-            Assert.Equal($"\"{date.ToString("O")}\"", actualStr);
+            Assert.Equal(27, output.Formatted.Length);
+            Assert.Equal($"\"{date.ToString("yyyy-MM-ddTHH:mm:ssK")}\"", actualStr);
         }
 
         [Theory]
@@ -3464,7 +3464,6 @@ namespace System.Text.Json.Tests
             {
                 Formatting = prettyPrint ? Formatting.Indented : Formatting.None,
                 StringEscapeHandling = StringEscapeHandling.EscapeHtml,
-                DateFormatString = "yyyy-MM-ddTHH:mm:ss.fffffff"
             };
 
             json.WriteStartObject();
@@ -3497,7 +3496,6 @@ namespace System.Text.Json.Tests
             {
                 Formatting = prettyPrint ? Formatting.Indented : Formatting.None,
                 StringEscapeHandling = StringEscapeHandling.EscapeHtml,
-                DateFormatString = "yyyy-MM-ddTHH:mm:ss.fffffffzzz"
             };
 
             json.WriteStartObject();

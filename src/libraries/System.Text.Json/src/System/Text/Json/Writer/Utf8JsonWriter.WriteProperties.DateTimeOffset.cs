@@ -271,12 +271,20 @@ namespace System.Text.Json
 
         private void FormatLoop(DateTimeOffset value, ref int idx)
         {
-            if (!Utf8Formatter.TryFormat(value, _buffer.Slice(idx), out int bytesWritten, s_dateTimeStandardFormat))
+            Span<byte> tempSpan = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
+
+            bool result = Utf8Formatter.TryFormat(value, tempSpan, out int bytesWritten, s_dateTimeStandardFormat);
+            Debug.Assert(result);
+
+            JsonWriterHelper.TrimDateTimeOffset(tempSpan.Slice(0, bytesWritten), out bytesWritten);
+
+            if (_buffer.Length - idx < bytesWritten)
             {
-                AdvanceAndGrow(ref idx, JsonConstants.MaximumFormatDateTimeOffsetLength);
-                bool result = Utf8Formatter.TryFormat(value, _buffer, out bytesWritten, s_dateTimeStandardFormat);
-                Debug.Assert(result);
+                AdvanceAndGrow(ref idx, bytesWritten);
             }
+
+            tempSpan.Slice(0, bytesWritten).CopyTo(_buffer.Slice(idx));
+
             idx += bytesWritten;
         }
     }
