@@ -5693,6 +5693,122 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 }
 
 //------------------------------------------------------------------------
+// impBoxPatternMatch: match and import common box idioms
+//
+// Arguments:
+//   pResolvedToken - resolved token from the box operation
+//   codeAddr - position in IL stream after the box instruction
+//   codeEndp - end of IL stream
+//
+// Return Value:
+//   Number of IL bytes matched and imported, -1 otherwise
+//
+
+int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken, const BYTE* codeAddr, const BYTE* codeEndp)
+{
+    if (codeAddr >= codeEndp)
+    {
+        return -1;
+    }
+
+    switch (codeAddr[0])
+    {
+        case CEE_UNBOX_ANY:
+            // box + unbox.any
+            if (codeAddr + 1 + sizeof(mdToken) <= codeEndp)
+            {
+                CORINFO_RESOLVED_TOKEN unboxResolvedToken;
+
+                impResolveToken(codeAddr + 1, &unboxResolvedToken, CORINFO_TOKENKIND_Class);
+
+                // See if the resolved tokens describe types that are equal.
+                const TypeCompareState compare =
+                    info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, pResolvedToken->hClass);
+
+                // If so, box/unbox.any is a nop.
+                if (compare == TypeCompareState::Must)
+                {
+                    JITDUMP("\n Importing BOX; UNBOX.ANY as NOP\n");
+                    // Skip the next unbox.any instruction
+                    return 1 + sizeof(mdToken);
+                }
+            }
+            break;
+
+        case CEE_BRTRUE:
+        case CEE_BRTRUE_S:
+        case CEE_BRFALSE:
+        case CEE_BRFALSE_S:
+            // box + br_true/false
+            if ((codeAddr + ((codeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
+            {
+                if (!(impStackTop().val->gtFlags & GTF_SIDE_EFFECT))
+                {
+                    CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+                    if (boxHelper == CORINFO_HELP_BOX)
+                    {
+                        JITDUMP("\n Importing BOX; BR_TRUE/FALSE as constant\n");
+                        impPopStack();
+
+                        impPushOnStack(gtNewIconNode(1), typeInfo(TI_INT));
+                        return 0;
+                    }
+                }
+            }
+            break;
+
+        case CEE_ISINST:
+            // box + isinst + br_true/false
+            if (codeAddr + 1 + sizeof(mdToken) + 1 <= codeEndp)
+            {
+                const BYTE* nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
+
+                switch (nextCodeAddr[0])
+                {
+                    case CEE_BRTRUE:
+                    case CEE_BRTRUE_S:
+                    case CEE_BRFALSE:
+                    case CEE_BRFALSE_S:
+                        if ((nextCodeAddr + ((nextCodeAddr[0] >= CEE_BRFALSE) ? 5 : 2)) <= codeEndp)
+                        {
+                            if (!(impStackTop().val->gtFlags & GTF_SIDE_EFFECT))
+                            {
+                                CorInfoHelpFunc boxHelper = info.compCompHnd->getBoxHelper(pResolvedToken->hClass);
+                                if (boxHelper == CORINFO_HELP_BOX)
+                                {
+                                    CORINFO_RESOLVED_TOKEN isInstResolvedToken;
+
+                                    impResolveToken(codeAddr + 1, &isInstResolvedToken, CORINFO_TOKENKIND_Casting);
+
+                                    TypeCompareState castResult =
+                                        info.compCompHnd->compareTypesForCast(pResolvedToken->hClass,
+                                                                              isInstResolvedToken.hClass);
+                                    if (castResult != TypeCompareState::May)
+                                    {
+                                        JITDUMP("\n Importing BOX; ISINST; BR_TRUE/FALSE as constant\n");
+                                        impPopStack();
+
+                                        impPushOnStack(gtNewIconNode((castResult == TypeCompareState::Must) ? 1 : 0),
+                                                       typeInfo(TI_INT));
+
+                                        // Skip the next isinst instruction
+                                        return 1 + sizeof(mdToken);
+                                    }
+                                }
+                            }
+                        }
+                }
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    return -1;
+}
+
+//------------------------------------------------------------------------
 // impImportAndPushBox: build and import a value-type box
 //
 // Arguments:
@@ -15163,25 +15279,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     break;
                 }
 
-                // Look ahead for unbox.any
-                if (codeAddr + (sz + 1 + sizeof(mdToken)) <= codeEndp && codeAddr[sz] == CEE_UNBOX_ANY)
+                // Look ahead for box idioms
+                int matched = impBoxPatternMatch(&resolvedToken, codeAddr + sz, codeEndp);
+                if (matched >= 0)
                 {
-                    CORINFO_RESOLVED_TOKEN unboxResolvedToken;
-
-                    impResolveToken(codeAddr + (sz + 1), &unboxResolvedToken, CORINFO_TOKENKIND_Class);
-
-                    // See if the resolved tokens describe types that are equal.
-                    const TypeCompareState compare =
-                        info.compCompHnd->compareTypesForEquality(unboxResolvedToken.hClass, resolvedToken.hClass);
-
-                    // If so, box/unbox.any is a nop.
-                    if (compare == TypeCompareState::Must)
-                    {
-                        JITDUMP("\n Importing BOX; UNBOX.ANY as NOP\n");
-                        // Skip the next unbox.any instruction
-                        sz += sizeof(mdToken) + 1;
-                        break;
-                    }
+                    // Skip the matched IL instructions
+                    sz += matched;
+                    break;
                 }
 
                 impImportAndPushBox(&resolvedToken);
