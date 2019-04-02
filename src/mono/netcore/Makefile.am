@@ -56,7 +56,7 @@ xtest-%: prepare check-env dl-test-assets
 	echo -n "***************** $* *********************"
 	ln -sf $(CURDIR)/sdk/$(NETCORESDK_VERSION)/System.Text.Encoding.CodePages.dll assets/extracted/$*/
 	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/xunit.console.deps.json assets/extracted/$*/
-	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/{CoreFx.Private.TestUtilities.dll,Microsoft.DotNet.PlatformAbstractions.dll} assets/extracted/$*/
+	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/CoreFx.Private.TestUtilities.dll assets/extracted/$*/
 	sed -i -e 's/9.9.9/$(VERSION)/g' assets/extracted/$*/*.runtimeconfig.json
 	cd assets/extracted/$* && \
 	COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet --fx-version "$(VERSION)" xunit.console.dll $*.dll \
@@ -89,10 +89,9 @@ xtestpass: $(foreach workingtest, $(foreach test, $(wildcard assets/extracted/*)
 		$(filter $(PASSING_COREFX_TESTS), $(notdir $(test)))), $(addprefix xtest-, $(workingtest)))
 
 FEED_BASE_URL = https://dotnetfeed.blob.core.windows.net/dotnet-core
-TEST_ASSETS_URL = https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/4.6.0-preview4.19156.10/OSX.x64/netcoreapp/corefx-test-assets.xml
-
+TEST_ASSETS_URL = https://dotnetfeed.blob.core.windows.net/dotnet-core/corefx-tests/4.6.0-preview4.19201.9/OSX.x64/netcoreapp/corefx-test-assets.xml
 corefx-test-assets.xml:
-	wget $(TEST_ASSETS_URL)
+	curl $(TEST_ASSETS_URL) --output corefx-test-assets.xml
 
 dl-test-assets: corefx-test-assets.xml .stamp-dl-test-assets
 

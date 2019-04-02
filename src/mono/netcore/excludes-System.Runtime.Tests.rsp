@@ -74,3 +74,6 @@
 
 # causes 'error: Return type can't be a byref type Parameter name: returnType':
 -nomethod System.Tests.Types.VoidTests.IsByRef_Get_ReturnsExpected
+
+# FEATURE_UTF8STRING
+-noclass System.Text.Unicode.Tests.Utf8Tests
