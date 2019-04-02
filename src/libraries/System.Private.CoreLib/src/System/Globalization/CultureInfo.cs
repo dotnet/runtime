@@ -175,13 +175,14 @@ namespace System.Globalization
             }
 
             // Get our data providing record
-            _cultureData = CultureData.GetCultureData(name, useUserOverride);
+            CultureData? cultureData = CultureData.GetCultureData(name, useUserOverride);
 
-            if (_cultureData == null)
+            if (cultureData == null)
             {
                 throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
             }
 
+            _cultureData = cultureData;
             _name = _cultureData.CultureName;
             _isInherited = GetType() != typeof(CultureInfo);
         }
@@ -253,11 +254,13 @@ namespace System.Globalization
                 throw new ArgumentNullException(nameof(cultureName), SR.ArgumentNull_String);
             }
 
-            _cultureData = CultureData.GetCultureData(cultureName, false);
-            if (_cultureData == null)
+            CultureData? cultureData = CultureData.GetCultureData(cultureName, false);
+            if (cultureData == null)
             {
                 throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
             }
+
+            _cultureData = cultureData;
 
             _name = _cultureData.CultureName;
 

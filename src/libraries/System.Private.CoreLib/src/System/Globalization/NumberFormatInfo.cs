@@ -164,7 +164,7 @@ namespace System.Globalization
             _hasInvariantNumberSigns = _positiveSign == "+" && _negativeSign == "-";
         }
 
-        internal NumberFormatInfo(CultureData cultureData)
+        internal NumberFormatInfo(CultureData? cultureData)
         {
             if (cultureData != null)
             {
