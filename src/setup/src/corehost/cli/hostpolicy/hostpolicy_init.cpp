@@ -14,15 +14,6 @@ void make_palstr_arr(int argc, const pal::char_t** argv, std::vector<pal::string
     }
 }
 
-void make_clrstr_arr(int argc, const pal::char_t** argv, std::vector<std::vector<char>>* out)
-{
-    out->resize(argc);
-    for (int i = 0; i < argc; ++i)
-    {
-        pal::pal_clrstring(pal::string_t(argv[i]), &(*out)[i]);
-    }
-}
-
 bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
 {
     // Check if there are any breaking changes.
@@ -41,8 +32,8 @@ bool hostpolicy_init_t::init(host_interface_t* input, hostpolicy_init_t* init)
 
     if (input->version_lo >= offsetof(host_interface_t, host_mode) + sizeof(input->host_mode))
     {
-        make_clrstr_arr(input->config_keys.len, input->config_keys.arr, &init->cfg_keys);
-        make_clrstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
+        make_palstr_arr(input->config_keys.len, input->config_keys.arr, &init->cfg_keys);
+        make_palstr_arr(input->config_values.len, input->config_values.arr, &init->cfg_values);
 
         init->deps_file = input->deps_file;
         init->is_framework_dependent = input->is_framework_dependent;

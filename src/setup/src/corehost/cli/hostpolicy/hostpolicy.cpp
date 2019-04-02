@@ -118,11 +118,6 @@ namespace
                 trace::warning(_X("Could not resolve symlink to CLRJit path '%s'"), probe_paths.clrjit.c_str());
             }
 
-            pal::pal_clrstring(probe_paths.tpa, &_tpa_paths_cstr);
-            pal::pal_clrstring(_resolver.get_app_dir(), &_app_base_cstr);
-            pal::pal_clrstring(probe_paths.native, &_native_dirs_cstr);
-            pal::pal_clrstring(probe_paths.resources, &_resources_dirs_cstr);
-
             const fx_definition_vector_t &fx_definitions = _resolver.get_fx_definitions();
 
             pal::string_t fx_deps_str;
@@ -131,7 +126,6 @@ namespace
                 // Use the root fx to define FX_DEPS_FILE
                 fx_deps_str = get_root_framework(fx_definitions).get_deps_file();
             }
-            pal::pal_clrstring(fx_deps_str, &_fx_deps);
 
             fx_definition_vector_t::iterator fx_begin;
             fx_definition_vector_t::iterator fx_end;
@@ -148,33 +142,29 @@ namespace
                 ++fx_curr;
             }
 
-            pal::pal_clrstring(app_context_deps_str, &_app_context_deps);
-            pal::pal_clrstring(_resolver.get_lookup_probe_directories(), &_probe_directories);
-
+            pal::string_t clr_library_version;
             if (_resolver.is_framework_dependent())
             {
-                pal::pal_clrstring(get_root_framework(fx_definitions).get_found_version(), &_clr_library_version);
+                clr_library_version = get_root_framework(fx_definitions).get_found_version();
             }
             else
             {
-                pal::pal_clrstring(_resolver.get_coreclr_library_version(), &_clr_library_version);
+                clr_library_version = _resolver.get_coreclr_library_version();
             }
 
-            properties.add(common_property::TrustedPlatformAssemblies, _tpa_paths_cstr.data());
-            properties.add(common_property::NativeDllSearchDirectories, _native_dirs_cstr.data());
-            properties.add(common_property::PlatformResourceRoots, _resources_dirs_cstr.data());
-            properties.add(common_property::AppDomainCompatSwitch, "UseLatestBehaviorWhenTFMNotSpecified");
-            properties.add(common_property::AppContextBaseDirectory, _app_base_cstr.data());
-            properties.add(common_property::AppContextDepsFiles, _app_context_deps.data());
-            properties.add(common_property::FxDepsFile, _fx_deps.data());
-            properties.add(common_property::ProbingDirectories, _probe_directories.data());
-            properties.add(common_property::FxProductVersion, _clr_library_version.data());
+            pal::string_t app_base = _resolver.get_app_dir();
+            properties.add(common_property::TrustedPlatformAssemblies, probe_paths.tpa.c_str());
+            properties.add(common_property::NativeDllSearchDirectories, probe_paths.native.c_str());
+            properties.add(common_property::PlatformResourceRoots, probe_paths.resources.c_str());
+            properties.add(common_property::AppDomainCompatSwitch, _X("UseLatestBehaviorWhenTFMNotSpecified"));
+            properties.add(common_property::AppContextBaseDirectory, app_base.c_str());
+            properties.add(common_property::AppContextDepsFiles, app_context_deps_str.c_str());
+            properties.add(common_property::FxDepsFile, fx_deps_str.c_str());
+            properties.add(common_property::ProbingDirectories, _resolver.get_lookup_probe_directories().c_str());
+            properties.add(common_property::FxProductVersion, clr_library_version.c_str());
 
             if (!clrjit_path.empty())
-            {
-                pal::pal_clrstring(clrjit_path, &_clrjit_path_cstr);
-                properties.add(common_property::JitPath, _clrjit_path_cstr.data());
-            }
+                properties.add(common_property::JitPath, clrjit_path.c_str());
 
             bool set_app_paths = false;
 
@@ -182,12 +172,12 @@ namespace
             for (int i = 0; i < _hostpolicy_init.cfg_keys.size(); ++i)
             {
                 // Provide opt-in compatible behavior by using the switch to set APP_PATHS
-                if (pal::cstrcasecmp(_hostpolicy_init.cfg_keys[i].data(), "Microsoft.NETCore.DotNetHostPolicy.SetAppPaths") == 0)
+                if (pal::strcasecmp(_hostpolicy_init.cfg_keys[i].c_str(), _X("Microsoft.NETCore.DotNetHostPolicy.SetAppPaths")) == 0)
                 {
-                    set_app_paths = (pal::cstrcasecmp(_hostpolicy_init.cfg_values[i].data(), "true") == 0);
+                    set_app_paths = (pal::strcasecmp(_hostpolicy_init.cfg_values[i].data(), _X("true")) == 0);
                 }
 
-                properties.add(_hostpolicy_init.cfg_keys[i].data(), _hostpolicy_init.cfg_values[i].data());
+                properties.add(_hostpolicy_init.cfg_keys[i].c_str(), _hostpolicy_init.cfg_values[i].c_str());
             }
 
             // App paths and App NI paths.
@@ -195,17 +185,14 @@ namespace
             // and that could indicate the app paths shouldn't be set.
             if (set_app_paths)
             {
-                properties.add(common_property::AppPaths, _app_base_cstr.data());
-                properties.add(common_property::AppNIPaths, _app_base_cstr.data());
+                properties.add(common_property::AppPaths, app_base.c_str());
+                properties.add(common_property::AppNIPaths, app_base.c_str());
             }
 
             // Startup hooks
             pal::string_t startup_hooks;
             if (pal::getenv(_X("DOTNET_STARTUP_HOOKS"), &startup_hooks))
-            {
-                pal::pal_clrstring(startup_hooks, &_startup_hooks_cstr);
-                properties.add(common_property::StartUpHooks, _startup_hooks_cstr.data());
-            }
+                properties.add(common_property::StartUpHooks, startup_hooks.c_str());
 
             return StatusCode::Success;
         }
@@ -221,18 +208,6 @@ namespace
         deps_resolver_t _resolver;
         const bool _breadcrumbs_enabled;
         std::unordered_set<pal::string_t> _breadcrumbs;
-
-        // Note: these variables' lifetime should be longer than a call to coreclr_initialize.
-        std::vector<char> _tpa_paths_cstr;
-        std::vector<char> _app_base_cstr;
-        std::vector<char> _native_dirs_cstr;
-        std::vector<char> _resources_dirs_cstr;
-        std::vector<char> _fx_deps;
-        std::vector<char> _app_context_deps;
-        std::vector<char> _clrjit_path_cstr;
-        std::vector<char> _probe_directories;
-        std::vector<char> _clr_library_version;
-        std::vector<char> _startup_hooks_cstr;
     };
 }
 
@@ -324,7 +299,7 @@ int run_as_app(
     // Check for host command(s)
     if (pal::strcasecmp(hostpolicy_init.host_command.c_str(), _X("get-native-search-directories")) == 0)
     {
-        const char *value;
+        const pal::char_t *value;
         if (!properties.try_get(common_property::NativeDllSearchDirectories, &value))
         {
             trace::error(_X("get-native-search-directories failed to find NATIVE_DLL_SEARCH_DIRECTORIES property"));
@@ -332,7 +307,7 @@ int run_as_app(
         }
 
         assert(out_host_command_result != nullptr);
-        pal::clr_palstring(value, out_host_command_result);
+        out_host_command_result->assign(value);
         return StatusCode::Success;
     }
 
@@ -475,7 +450,7 @@ SHARED_API int corehost_load(host_interface_t* init)
     return StatusCode::Success;
 }
 
-int corehost_main_init(
+int corehost_init(
     hostpolicy_init_t &hostpolicy_init,
     const int argc,
     const pal::char_t* argv[],
@@ -499,13 +474,6 @@ int corehost_main_init(
         }
     }
 
-    // Take care of arguments
-    if (!hostpolicy_init.host_info.is_valid())
-    {
-        // For backwards compat (older hostfxr), default the host_info
-        hostpolicy_init.host_info.parse(argc, argv);
-    }
-
     if (!parse_arguments(hostpolicy_init, argc, argv, args))
     {
         return StatusCode::LibHostInvalidArgs;
@@ -513,6 +481,23 @@ int corehost_main_init(
 
     args.trace();
     return StatusCode::Success;
+}
+
+int corehost_main_init(
+    hostpolicy_init_t &hostpolicy_init,
+    const int argc,
+    const pal::char_t* argv[],
+    const pal::string_t& location,
+    arguments_t& args)
+{
+    // Take care of arguments
+    if (!hostpolicy_init.host_info.is_valid())
+    {
+        // For backwards compat (older hostfxr), default the host_info
+        hostpolicy_init.host_info.parse(argc, argv);
+    }
+
+    return corehost_init(hostpolicy_init, argc, argv, location, args);
 }
 
 SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
@@ -569,28 +554,10 @@ SHARED_API int corehost_main_with_output_buffer(const int argc, const pal::char_
 
 int corehost_libhost_init(hostpolicy_init_t &hostpolicy_init, const pal::string_t& location, arguments_t& args)
 {
-    if (trace::is_enabled())
-    {
-        trace_hostpolicy_entrypoint_invocation(location);
-        trace::info(_X("}"));
-
-        trace::info(_X("Deps file: %s"), hostpolicy_init.deps_file.c_str());
-        for (const auto& probe : hostpolicy_init.probe_paths)
-        {
-            trace::info(_X("Additional probe dir: %s"), probe.c_str());
-        }
-    }
-
     // Host info should always be valid in the delegate scenario
     assert(hostpolicy_init.host_info.is_valid());
 
-    if (!parse_arguments(hostpolicy_init, 0, nullptr, args))
-    {
-        return StatusCode::LibHostInvalidArgs;
-    }
-
-    args.trace();
-    return StatusCode::Success;
+    return corehost_init(hostpolicy_init, 0, nullptr, location, args);
 }
 
 SHARED_API int corehost_get_coreclr_delegate(coreclr_delegate_type type, void** delegate)
