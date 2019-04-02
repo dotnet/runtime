@@ -14,6 +14,16 @@ namespace System
         private const string StartupHookTypeName = "StartupHook";
         private const string InitializeMethodName = "Initialize";
 
+        private static readonly char[] s_disallowedSimpleAssemblyNameChars = new char[]
+        {
+            Path.DirectorySeparatorChar,
+            Path.AltDirectorySeparatorChar,
+            ' ',
+            ','
+        };
+
+        private const string DisallowedSimpleAssemblyNameSuffix = ".dll";
+
         private struct StartupHookNameOrPath
         {
             public AssemblyName AssemblyName;
@@ -50,8 +60,31 @@ namespace System
                 }
                 else
                 {
-                    // This will throw if the string is not a valid assembly name.
-                    startupHooks[i].AssemblyName = new AssemblyName(startupHookPart);
+                    // The intent here is to only support simple assembly names, but AssemblyName .ctor accepts
+                    // lot of other forms (fully qualified assembly name, strings which look like relative paths and so on).
+                    // So add a check on top which will disallow any directory separator, space or comma in the assembly name.
+                    for (int j = 0; j < s_disallowedSimpleAssemblyNameChars.Length; j++)
+                    {
+                        if (startupHookPart.Contains(s_disallowedSimpleAssemblyNameChars[j]))
+                        {
+                            throw new ArgumentException(SR.Format(SR.Argument_InvalidStartupHookSimpleAssemblyName, startupHookPart));
+                        }
+                    }
+
+                    if (startupHookPart.EndsWith(DisallowedSimpleAssemblyNameSuffix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new ArgumentException(SR.Format(SR.Argument_InvalidStartupHookSimpleAssemblyName, startupHookPart));
+                    }
+
+                    try
+                    {
+                        // This will throw if the string is not a valid assembly name.
+                        startupHooks[i].AssemblyName = new AssemblyName(startupHookPart);
+                    }
+                    catch (Exception assemblyNameException)
+                    {
+                        throw new ArgumentException(SR.Format(SR.Argument_InvalidStartupHookSimpleAssemblyName, startupHookPart), assemblyNameException);
+                    }
                 }
             }
 
@@ -69,15 +102,24 @@ namespace System
             Debug.Assert(startupHook.Path != null || startupHook.AssemblyName != null);
 
             Assembly assembly;
-            if (startupHook.Path != null)
+            try
             {
-                Debug.Assert(Path.IsPathFullyQualified(startupHook.Path));
-                assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(startupHook.Path);
+                if (startupHook.Path != null)
+                {
+                    Debug.Assert(Path.IsPathFullyQualified(startupHook.Path));
+                    assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(startupHook.Path);
+                }
+                else
+                {
+                    Debug.Assert(startupHook.AssemblyName != null);
+                    assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(startupHook.AssemblyName);
+                }
             }
-            else
+            catch (Exception assemblyLoadException)
             {
-                Debug.Assert(startupHook.AssemblyName != null);
-                assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(startupHook.AssemblyName);
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_StartupHookAssemblyLoadFailed, startupHook.Path ?? startupHook.AssemblyName.ToString()),
+                    assemblyLoadException);
             }
 
             Debug.Assert(assembly != null);
