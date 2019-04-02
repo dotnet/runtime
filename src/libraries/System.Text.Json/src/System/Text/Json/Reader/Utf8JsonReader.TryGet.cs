@@ -469,8 +469,46 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
-            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            ReadOnlySpan<byte> span = stackalloc byte[0];
+
+            if (HasValueSequence)
+            {
+                long sequenceLength = ValueSequence.Length;
+
+                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(sequenceLength))
+                {
+                    value = default;
+                    return false;
+                }
+
+                Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
+                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
+
+                ValueSequence.CopyTo(stackSpan);
+                span = stackSpan;
+            }
+            else
+            {
+                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
+                {
+                    value = default;
+                    return false;
+                }
+
+                span = ValueSpan;
+            }
+
+            if (_stringHasEscaping)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTime(span, out value);
+            }
+
+            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+
+            value = default;
+            return (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
+                && JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed)
+                && span.Length == bytesConsumed;
         }
 
         /// <summary>
@@ -490,8 +528,46 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
-            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            ReadOnlySpan<byte> span = stackalloc byte[0];
+
+            if (HasValueSequence)
+            {
+                long sequenceLength = ValueSequence.Length;
+
+                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(sequenceLength))
+                {
+                    value = default;
+                    return false;
+                }
+
+                Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedDateTimeOffsetParseLength);
+                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
+
+                ValueSequence.CopyTo(stackSpan);
+                span = stackSpan;
+            }
+            else
+            {
+                if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(ValueSpan.Length))
+                {
+                    value = default;
+                    return false;
+                }
+
+                span = ValueSpan;
+            }
+
+            if (_stringHasEscaping)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTimeOffset(span, out value);
+            }
+
+            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+
+            value = default;
+            return (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
+                && JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed)
+                && span.Length == bytesConsumed;
         }
 
         /// <summary>
@@ -512,8 +588,7 @@ namespace System.Text.Json
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
             }
 
-            ReadOnlySpan<byte> span = ValueSpan;
-            Span<byte> stackSpan;
+            ReadOnlySpan<byte> span = stackalloc byte[0];
 
             if (HasValueSequence)
             {
@@ -524,20 +599,21 @@ namespace System.Text.Json
                     return false;
                 }
 
-                // Cannot create a span directly since it gets passed to instance methods on a ref struct.
-                unsafe
-                {
-                    byte* ptr = stackalloc byte[(int)sequenceLength];
-                    stackSpan = new Span<byte>(ptr, (int)sequenceLength);
-                }
+                Debug.Assert(sequenceLength <= JsonConstants.MaximumEscapedGuidLength);
+                Span<byte> stackSpan = stackalloc byte[(int)sequenceLength];
+
                 ValueSequence.CopyTo(stackSpan);
                 span = stackSpan;
             }
-
-            if (span.Length > JsonConstants.MaximumEscapedGuidLength)
+            else
             {
-                value = default;
-                return false;
+                if (ValueSpan.Length > JsonConstants.MaximumEscapedGuidLength)
+                {
+                    value = default;
+                    return false;
+                }
+
+                span = ValueSpan;
             }
 
             if (_stringHasEscaping)
@@ -547,13 +623,8 @@ namespace System.Text.Json
 
             Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
 
-            if (span.Length != JsonConstants.MaximumFormatGuidLength)
-            {
-                value = default;
-                return false;
-            }
-
-            return Utf8Parser.TryParse(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            value = default;
+            return (span.Length == JsonConstants.MaximumFormatGuidLength) && Utf8Parser.TryParse(span, out value, out _, 'D');
         }
     }
 }
