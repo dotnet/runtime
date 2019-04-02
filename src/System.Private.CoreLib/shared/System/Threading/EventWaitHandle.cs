@@ -45,7 +45,7 @@ namespace System.Threading
             }
         }
 
-        public static bool TryOpenExisting(string name, out EventWaitHandle? result) // TODO-NULLABLE: Try pattern with non-null result when true
+        public static bool TryOpenExisting(string name, out EventWaitHandle? result) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
             return OpenExistingWorker(name, out result) == OpenExistingResult.Success;
         }
