@@ -520,7 +520,7 @@ namespace System.Globalization
             return UmAlQuraEra;
         }
 
-        public override int[]? Eras => new int[] { UmAlQuraEra };
+        public override int[] Eras => new int[] { UmAlQuraEra };
 
         public override int GetMonth(DateTime time)
         {

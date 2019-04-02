@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -14,7 +15,7 @@ namespace System.Globalization
         {
             if (GlobalizationMode.Invariant)
             {
-                // In Invariant mode we assume all characters are normalized. 
+                // In Invariant mode we assume all characters are normalized.
                 // This is because we don't support any linguistic operation on the strings
                 return true;
             }
@@ -22,7 +23,7 @@ namespace System.Globalization
             Debug.Assert(strInput != null);
 
             // The only way to know if IsNormalizedString failed is through checking the Win32 last error
-            // IsNormalizedString pinvoke has SetLastError attribute property which will set the last error 
+            // IsNormalizedString pinvoke has SetLastError attribute property which will set the last error
             // to 0 (ERROR_SUCCESS) before executing the calls.
             bool result = Interop.Normaliz.IsNormalizedString((int)normalizationForm, strInput, strInput.Length);
 
@@ -34,9 +35,9 @@ namespace System.Globalization
 
                 case Interop.Errors.ERROR_INVALID_PARAMETER:
                 case Interop.Errors.ERROR_NO_UNICODE_TRANSLATION:
-                    if (normalizationForm != NormalizationForm.FormC && 
-                        normalizationForm != NormalizationForm.FormD && 
-                        normalizationForm != NormalizationForm.FormKC && 
+                    if (normalizationForm != NormalizationForm.FormC &&
+                        normalizationForm != NormalizationForm.FormD &&
+                        normalizationForm != NormalizationForm.FormKC &&
                         normalizationForm != NormalizationForm.FormKD)
                     {
                         throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
@@ -58,7 +59,7 @@ namespace System.Globalization
         {
             if (GlobalizationMode.Invariant)
             {
-                // In Invariant mode we assume all characters are normalized. 
+                // In Invariant mode we assume all characters are normalized.
                 // This is because we don't support any linguistic operation on the strings
                 return strInput;
             }
@@ -66,7 +67,7 @@ namespace System.Globalization
             Debug.Assert(strInput != null);
 
             // we depend on Win32 last error when calling NormalizeString
-            // NormalizeString pinvoke has SetLastError attribute property which will set the last error 
+            // NormalizeString pinvoke has SetLastError attribute property which will set the last error
             // to 0 (ERROR_SUCCESS) before executing the calls.
 
             // Guess our buffer size first
@@ -78,9 +79,9 @@ namespace System.Globalization
             {
                 if (lastError == Interop.Errors.ERROR_INVALID_PARAMETER)
                 {
-                    if (normalizationForm != NormalizationForm.FormC && 
-                        normalizationForm != NormalizationForm.FormD && 
-                        normalizationForm != NormalizationForm.FormKC && 
+                    if (normalizationForm != NormalizationForm.FormC &&
+                        normalizationForm != NormalizationForm.FormD &&
+                        normalizationForm != NormalizationForm.FormKC &&
                         normalizationForm != NormalizationForm.FormKD)
                     {
                         throw new ArgumentException(SR.Argument_InvalidNormalizationForm, nameof(normalizationForm));
@@ -103,14 +104,14 @@ namespace System.Globalization
             if (iLength == 0) return string.Empty;
 
             // Someplace to stick our buffer
-            char[] cBuffer = null;
+            char[] cBuffer;
 
             for (;;)
             {
                 // (re)allocation buffer and normalize string
                 cBuffer = new char[iLength];
 
-                // NormalizeString pinvoke has SetLastError attribute property which will set the last error 
+                // NormalizeString pinvoke has SetLastError attribute property which will set the last error
                 // to 0 (ERROR_SUCCESS) before executing the calls.
                 iLength = Interop.Normaliz.NormalizeString((int)normalizationForm, strInput, strInput.Length, cBuffer, cBuffer.Length);
                 lastError = Marshal.GetLastWin32Error();

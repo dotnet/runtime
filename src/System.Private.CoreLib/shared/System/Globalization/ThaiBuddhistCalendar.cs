@@ -125,7 +125,7 @@ namespace System.Globalization
             return _helper.ToDateTime(year, month, day, hour, minute, second, millisecond, era);
         }
 
-        public override int[]? Eras => _helper.Eras;
+        public override int[] Eras => _helper.Eras;
 
         private const int DefaultTwoDigitYearMax = 2572;
 
