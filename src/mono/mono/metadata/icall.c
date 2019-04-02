@@ -8526,9 +8526,13 @@ ves_icall_System_IO_LogcatTextWriter_Log (const char *appname, gint32 level, con
 static MonoIcallTableCallbacks icall_table;
 static mono_mutex_t icall_mutex;
 static GHashTable *icall_hash = NULL;
-static GHashTable *icall_hash_foreign = NULL;
 static GHashTable *jit_icall_hash_name = NULL;
 static GHashTable *jit_icall_hash_addr = NULL;
+
+typedef struct _MonoIcallHashTableValue {
+	gconstpointer method;
+	guint32 flags;
+} MonoIcallHashTableValue;
 
 void
 mono_install_icall_table_callbacks (MonoIcallTableCallbacks *cb)
@@ -8543,8 +8547,7 @@ mono_icall_init (void)
 #ifndef DISABLE_ICALL_TABLES
 	mono_icall_table_init ();
 #endif
-	icall_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
-	icall_hash_foreign = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+	icall_hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
 	mono_os_mutex_init (&icall_mutex);
 }
 
@@ -8564,10 +8567,24 @@ void
 mono_icall_cleanup (void)
 {
 	g_hash_table_destroy (icall_hash);
-	g_hash_table_destroy (icall_hash_foreign);
 	g_hash_table_destroy (jit_icall_hash_name);
 	g_hash_table_destroy (jit_icall_hash_addr);
 	mono_os_mutex_destroy (&icall_mutex);
+}
+
+static void
+add_internal_call_with_flags (const char *name, gconstpointer method, guint32 flags)
+{
+	char *key = g_strdup (name);
+	MonoIcallHashTableValue *value = g_new (MonoIcallHashTableValue, 1);
+	if (key && value) {
+		value->method = method;
+		value->flags = flags;
+
+		mono_icall_lock ();
+		g_hash_table_insert (icall_hash, key, (gpointer)value);
+		mono_icall_unlock ();
+	}
 }
 
 /**
@@ -8659,11 +8676,7 @@ mono_dangerous_add_raw_internal_call (const char *name, gconstpointer method)
 void
 mono_add_internal_call_with_flags (const char *name, gconstpointer method, gboolean cooperative)
 {
-	mono_icall_lock ();
-
-	g_hash_table_insert (cooperative ? icall_hash : icall_hash_foreign , g_strdup (name), (gpointer) method);
-
-	mono_icall_unlock ();
+	add_internal_call_with_flags (name, method, cooperative ? MONO_ICALL_FLAGS_COOPERATIVE : MONO_ICALL_FLAGS_FOREIGN);
 }
 
 void
@@ -8699,30 +8712,15 @@ no_icall_table (void)
 	g_assert_not_reached ();
 }
 
-/**
- * mono_lookup_internal_call_full:
- * \param method the method to look up
- * \param uses_handles out argument if method needs handles around managed objects.
- * \returns a pointer to the icall code for the given method.  If
- * \p uses_handles is not NULL, it will be set to TRUE if the method
- * needs managed objects wrapped using the infrastructure in handle.h
- *
- * If the method is not found, warns and returns NULL.
- */
-gpointer
-mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mono_bool *uses_handles, mono_bool *foreign)
+gconstpointer
+mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_missing, guint32 *flags)
 {
 	char *sigstart;
 	char *tmpsig;
 	char mname [2048];
 	char *classname;
 	int typelen = 0, mlen, siglen;
-	gpointer res;
-
-	if (uses_handles)
-		*uses_handles = FALSE;
-	if (foreign)
-		*foreign = FALSE;
+	gconstpointer res;
 
 	g_assert (method != NULL);
 
@@ -8772,22 +8770,18 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mo
 
 	/* mono_marshal_get_native_wrapper () depends on this */
 	if (method->klass == mono_defaults.string_class && !strcmp (method->name, ".ctor"))
-		return (gpointer)ves_icall_System_String_ctor_RedirectToCreateString;
+		return (gconstpointer)ves_icall_System_String_ctor_RedirectToCreateString;
 
 	mono_icall_lock ();
 
 	res = g_hash_table_lookup (icall_hash, mname);
 	if (res) {
-		g_free (classname);
+		MonoIcallHashTableValue *value = (MonoIcallHashTableValue *)res;
+		if (flags)
+			*flags = value->flags;
+		res = value->method;
 		mono_icall_unlock ();
-		return res;
-	}
-	res = g_hash_table_lookup (icall_hash_foreign, mname);
-	if (res) {
-		if (foreign)
-			*foreign = TRUE;
 		g_free (classname);
-		mono_icall_unlock ();
 		return res;
 	}
 
@@ -8795,16 +8789,12 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mo
 	*sigstart = 0;
 	res = g_hash_table_lookup (icall_hash, mname);
 	if (res) {
-		g_free (classname);
+		MonoIcallHashTableValue *value = (MonoIcallHashTableValue *)res;
+		if (flags)
+			*flags = value->flags;
+		res = value->method;
 		mono_icall_unlock ();
-		return res;
-	}
-	res = g_hash_table_lookup (icall_hash_foreign, mname);
-	if (res) {
-		if (foreign)
-			*foreign = TRUE;
 		g_free (classname);
-		mono_icall_unlock ();
 		return res;
 	}
 
@@ -8812,12 +8802,14 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mo
 		mono_icall_unlock ();
 		g_free (classname);
 		/* Fail only when the result is actually used */
-		return (gpointer)no_icall_table;
+		return (gconstpointer)no_icall_table;
 	} else {
-		res = icall_table.lookup (method, classname, sigstart - mlen, sigstart, uses_handles);
-		g_free (classname);
-
+		gboolean uses_handles = FALSE;
+		res = icall_table.lookup (method, classname, sigstart - mlen, sigstart, &uses_handles);
+		if (res && flags && uses_handles)
+			*flags = *flags | MONO_ICALL_FLAGS_USES_HANDLES;
 		mono_icall_unlock ();
+		g_free (classname);
 
 		if (res)
 			return res;
@@ -8837,12 +8829,40 @@ mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mo
 }
 
 /**
+ * mono_lookup_internal_call_full:
+ * \param method the method to look up
+ * \param uses_handles out argument if method needs handles around managed objects.
+ * \returns a pointer to the icall code for the given method.  If
+ * \p uses_handles is not NULL, it will be set to TRUE if the method
+ * needs managed objects wrapped using the infrastructure in handle.h
+ *
+ * If the method is not found, warns and returns NULL.
+ */
+gconstpointer
+mono_lookup_internal_call_full (MonoMethod *method, gboolean warn_on_missing, mono_bool *uses_handles, mono_bool *foreign)
+{
+	if (uses_handles)
+		*uses_handles = FALSE;
+	if (foreign)
+		*foreign = FALSE;
+
+	guint32 flags = MONO_ICALL_FLAGS_NONE;
+	gconstpointer addr = mono_lookup_internal_call_full_with_flags (method, warn_on_missing, &flags);
+
+	if (uses_handles && (flags & MONO_ICALL_FLAGS_USES_HANDLES))
+		*uses_handles = TRUE;
+	if (foreign && (flags & MONO_ICALL_FLAGS_FOREIGN))
+		*foreign = TRUE;
+	return addr;
+}
+
+/**
  * mono_lookup_internal_call:
  */
 gpointer
 mono_lookup_internal_call (MonoMethod *method)
 {
-	return mono_lookup_internal_call_full (method, TRUE, NULL, NULL);
+	return (gpointer)mono_lookup_internal_call_full (method, TRUE, NULL, NULL);
 }
 
 /*
@@ -8857,7 +8877,7 @@ mono_lookup_icall_symbol (MonoMethod *m)
 		return NULL;
 
 	gpointer func;
-	func = mono_lookup_internal_call_full (m, FALSE, NULL, NULL);
+	func = (gpointer)mono_lookup_internal_call_full (m, FALSE, NULL, NULL);
 	if (!func)
 		return NULL;
 	return icall_table.lookup_icall_symbol (func);
