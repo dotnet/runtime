@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Globalization
@@ -15,13 +16,13 @@ namespace System.Globalization
     public class RegionInfo
     {
         // Name of this region (ie: es-US): serialized, the field used for deserialization
-        private string _name;
+        private string _name = null!;
 
         // The CultureData instance that we are going to read data from.
         private readonly CultureData _cultureData;
 
         // The RegionInfo for our current region
-        internal static volatile RegionInfo s_currentRegionInfo;
+        internal static volatile RegionInfo? s_currentRegionInfo;
 
         public RegionInfo(string name)
         {
@@ -37,11 +38,8 @@ namespace System.Globalization
             }
 
             // For CoreCLR we only want the region names that are full culture names
-            _cultureData = CultureData.GetCultureDataForRegion(name, true);
-            if (_cultureData == null)
-            {
+            _cultureData = CultureData.GetCultureDataForRegion(name, true) ??
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidCultureName, name), nameof(name));
-            }
 
             // Not supposed to be neutral
             if (_cultureData.IsNeutralCulture)
@@ -102,7 +100,7 @@ namespace System.Globalization
         {
             get
             {
-                RegionInfo temp = s_currentRegionInfo;
+                RegionInfo? temp = s_currentRegionInfo;
                 if (temp == null)
                 {
                     temp = new RegionInfo(CultureInfo.CurrentCulture._cultureData);
@@ -194,7 +192,7 @@ namespace System.Globalization
         /// RegionInfos are considered equal if and only if they have the same name
         /// (ie: en-US)
         /// </summary>
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             return value is RegionInfo otherRegion
                 && Name.Equals(otherRegion.Name);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Threading;
 
@@ -19,9 +20,9 @@ namespace System.Globalization
                                    // be affected by the DateTime.MinValue;
         internal int maxEraYear;   // Max year value in this era. (== the year length of the era + 1)
 
-        internal string eraName;    // The era name
-        internal string abbrevEraName;  // Abbreviated Era Name
-        internal string englishEraName; // English era name
+        internal string? eraName;    // The era name
+        internal string? abbrevEraName;  // Abbreviated Era Name
+        internal string? englishEraName; // English era name
 
         internal EraInfo(int era, int startYear, int startMonth, int startDay, int yearOffset, int minEraYear, int maxEraYear)
         {
@@ -111,7 +112,7 @@ namespace System.Globalization
         internal Calendar m_Cal;
 
         internal EraInfo[] m_EraInfo;
-        internal int[] m_eras = null;
+        internal int[]? m_eras = null;
 
 
         // Construct an instance of gregorian calendar.
@@ -668,4 +669,3 @@ namespace System.Globalization
         }
     }
 }
-
