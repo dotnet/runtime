@@ -399,8 +399,8 @@ namespace System.Threading
                     // Both contexts have change notifications, check previousExecutionCtx first
                     foreach (IAsyncLocal local in previousChangeNotifications)
                     {
-                        previousExecutionCtx.m_localValues.TryGetValue(local, out object previousValue);
-                        nextExecutionCtx.m_localValues.TryGetValue(local, out object currentValue);
+                        previousExecutionCtx.m_localValues.TryGetValue(local, out object? previousValue);
+                        nextExecutionCtx.m_localValues.TryGetValue(local, out object? currentValue);
 
                         if (previousValue != currentValue)
                         {
@@ -415,9 +415,9 @@ namespace System.Threading
                         {
                             // If the local has a value in the previous context, we already fired the event 
                             // for that local in the code above.
-                            if (!previousExecutionCtx.m_localValues.TryGetValue(local, out object previousValue))
+                            if (!previousExecutionCtx.m_localValues.TryGetValue(local, out object? previousValue))
                             {
-                                nextExecutionCtx.m_localValues.TryGetValue(local, out object currentValue);
+                                nextExecutionCtx.m_localValues.TryGetValue(local, out object? currentValue);
                                 if (previousValue != currentValue)
                                 {
                                     local.OnValueChanged(previousValue, currentValue, contextChanged: true);
@@ -433,7 +433,7 @@ namespace System.Threading
                     // No current values, so just check previous against null
                     foreach (IAsyncLocal local in previousChangeNotifications)
                     {
-                        previousExecutionCtx.m_localValues.TryGetValue(local, out object previousValue);
+                        previousExecutionCtx.m_localValues.TryGetValue(local, out object? previousValue);
                         if (previousValue != null)
                         {
                             local.OnValueChanged(previousValue, null, contextChanged: true);
@@ -447,7 +447,7 @@ namespace System.Threading
                     // No previous values, so just check current against null
                     foreach (IAsyncLocal local in nextChangeNotifications!) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34665
                     {
-                        nextExecutionCtx.m_localValues.TryGetValue(local, out object currentValue);
+                        nextExecutionCtx.m_localValues.TryGetValue(local, out object? currentValue);
                         if (currentValue != null)
                         {
                             local.OnValueChanged(null, currentValue, contextChanged: true);
@@ -479,11 +479,11 @@ namespace System.Threading
 
             Debug.Assert(!current.IsDefault);
             Debug.Assert(current.m_localValues != null, "Only the default context should have null, and we shouldn't be here on the default context");
-            current.m_localValues.TryGetValue(local, out object value);
+            current.m_localValues.TryGetValue(local, out object? value);
             return value;
         }
 
-        internal static void SetLocalValue(IAsyncLocal local, object newValue, bool needChangeNotifications)
+        internal static void SetLocalValue(IAsyncLocal local, object? newValue, bool needChangeNotifications)
         {
             ExecutionContext current = Thread.CurrentThread._executionContext;
 
