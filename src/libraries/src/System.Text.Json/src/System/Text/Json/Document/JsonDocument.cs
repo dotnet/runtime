@@ -465,15 +465,24 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (JsonHelpers.TryParseAsISO(segment, out DateTime tmp, out int bytesConsumed) &&
-                segment.Length == bytesConsumed)
+            if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(segment.Length))
             {
-                value = tmp;
-                return true;
+                value = default;
+                return false;
             }
 
+            // Segment needs to be unescaped
+            if (row.HasComplexChildren)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTime(segment, out value);
+            }
+
+            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+
             value = default;
-            return false;
+            return (segment.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
+                && JsonHelpers.TryParseAsISO(segment, out value, out int bytesConsumed)
+                && segment.Length == bytesConsumed;
         }
 
         /// <summary>
@@ -490,15 +499,56 @@ namespace System.Text.Json
             ReadOnlySpan<byte> data = _utf8Json.Span;
             ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
 
-            if (JsonHelpers.TryParseAsISO(segment, out DateTimeOffset tmp, out int bytesConsumed) &&
-                segment.Length == bytesConsumed)
+            if (!JsonReaderHelper.IsValidDateTimeOffsetParseLength(segment.Length))
             {
-                value = tmp;
-                return true;
+                value = default;
+                return false;
             }
 
+            // Segment needs to be unescaped
+            if (row.HasComplexChildren)
+            {
+                return JsonReaderHelper.TryGetEscapedDateTimeOffset(segment, out value);
+            }
+
+            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+
             value = default;
-            return false;
+            return (segment.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
+                && JsonHelpers.TryParseAsISO(segment, out value, out int bytesConsumed)
+                && segment.Length == bytesConsumed;
+        }
+
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
+        internal bool TryGetValue(int index, out Guid value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.String, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            if (segment.Length > JsonConstants.MaximumEscapedGuidLength)
+            {
+                value = default;
+                return false;
+            }
+
+            // Segment needs to be unescaped
+            if (row.HasComplexChildren)
+            {
+                return JsonReaderHelper.TryGetEscapedGuid(segment, out value);
+            }
+
+            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+
+            value = default;
+            return (segment.Length == JsonConstants.MaximumFormatGuidLength) && Utf8Parser.TryParse(segment, out value, out _, 'D');
         }
 
         /// <summary>

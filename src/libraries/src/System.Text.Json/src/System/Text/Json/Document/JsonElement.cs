@@ -774,6 +774,9 @@ namespace System.Text.Json
         /// <exception cref="InvalidOperationException">
         ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
         /// </exception>
+        /// <exception cref="FormatException">
+        ///   The value cannot be represented as a <see cref="DateTime"/>.
+        /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
@@ -822,6 +825,9 @@ namespace System.Text.Json
         /// <exception cref="InvalidOperationException">
         ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
         /// </exception>
+        /// <exception cref="FormatException">
+        ///   The value cannot be represented as a <see cref="DateTimeOffset"/>.
+        /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
@@ -829,6 +835,57 @@ namespace System.Text.Json
         public DateTimeOffset GetDateTimeOffset()
         {
             if (TryGetDateTimeOffset(out DateTimeOffset value))
+            {
+                return value;
+            }
+
+            throw new FormatException();
+        }
+
+        /// <summary>
+        ///   Attempts to represent the current JSON string as a <see cref="Guid"/>.
+        /// </summary>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///   This method does not create a Guid representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the string can be represented as a <see cref="Guid"/>,
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public bool TryGetGuid(out Guid value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, out value);
+        }
+
+        /// <summary>
+        ///   Gets the value of the element as a <see cref="Guid"/>.
+        /// </summary>
+        /// <remarks>
+        ///   This method does not create a Guid representation of values other than JSON strings.
+        /// </remarks>
+        /// <returns>The value of the element as a <see cref="Guid"/>.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   The value cannot be represented as a <see cref="Guid"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        /// <seealso cref="ToString"/>
+        public Guid GetGuid()
+        {
+            if (TryGetGuid(out Guid value))
             {
                 return value;
             }

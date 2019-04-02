@@ -41,6 +41,7 @@ namespace System.Text.Json
         public System.DateTimeOffset GetDateTimeOffset() { throw null; }
         public decimal GetDecimal() { throw null; }
         public double GetDouble() { throw null; }
+        public System.Guid GetGuid() { throw null; }
         public int GetInt32() { throw null; }
         public long GetInt64() { throw null; }
         public System.Text.Json.JsonElement GetProperty(System.ReadOnlySpan<byte> utf8PropertyName) { throw null; }
@@ -58,6 +59,7 @@ namespace System.Text.Json
         public bool TryGetDateTimeOffset(out System.DateTimeOffset value) { throw null; }
         public bool TryGetDecimal(out decimal value) { throw null; }
         public bool TryGetDouble(out double value) { throw null; }
+        public bool TryGetGuid(out System.Guid value) { throw null; }
         public bool TryGetInt32(out int value) { throw null; }
         public bool TryGetInt64(out long value) { throw null; }
         public bool TryGetProperty(System.ReadOnlySpan<byte> utf8PropertyName, out System.Text.Json.JsonElement value) { throw null; }
