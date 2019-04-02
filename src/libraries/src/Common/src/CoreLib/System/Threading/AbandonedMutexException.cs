@@ -7,9 +7,7 @@
 // AbandonedMutexs indicate serious error in user code or machine state.
 ////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Threading;
-using System.Runtime.InteropServices;
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Threading
@@ -19,7 +17,7 @@ namespace System.Threading
     public class AbandonedMutexException : SystemException
     {
         private int _mutexIndex = -1;
-        private Mutex _mutex = null;
+        private Mutex? _mutex = null;
 
         public AbandonedMutexException()
             : base(SR.Threading_AbandonedMutexException)
@@ -27,33 +25,33 @@ namespace System.Threading
             HResult = HResults.COR_E_ABANDONEDMUTEX;
         }
 
-        public AbandonedMutexException(string message)
+        public AbandonedMutexException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_ABANDONEDMUTEX;
         }
 
-        public AbandonedMutexException(string message, Exception inner)
+        public AbandonedMutexException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_ABANDONEDMUTEX;
         }
 
-        public AbandonedMutexException(int location, WaitHandle handle)
+        public AbandonedMutexException(int location, WaitHandle? handle)
             : base(SR.Threading_AbandonedMutexException)
         {
             HResult = HResults.COR_E_ABANDONEDMUTEX;
             SetupException(location, handle);
         }
 
-        public AbandonedMutexException(string message, int location, WaitHandle handle)
+        public AbandonedMutexException(string? message, int location, WaitHandle? handle)
             : base(message)
         {
             HResult = HResults.COR_E_ABANDONEDMUTEX;
             SetupException(location, handle);
         }
 
-        public AbandonedMutexException(string message, Exception inner, int location, WaitHandle handle)
+        public AbandonedMutexException(string? message, Exception? inner, int location, WaitHandle? handle)
             : base(message, inner)
         {
             HResult = HResults.COR_E_ABANDONEDMUTEX;
@@ -65,14 +63,13 @@ namespace System.Threading
         {
         }
 
-        private void SetupException(int location, WaitHandle handle)
+        private void SetupException(int location, WaitHandle? handle)
         {
             _mutexIndex = location;
-            if (handle != null)
-                _mutex = handle as Mutex;
+            _mutex = handle as Mutex;
         }
 
-        public Mutex Mutex => _mutex;
+        public Mutex? Mutex => _mutex;
         public int MutexIndex => _mutexIndex;
     }
 }
