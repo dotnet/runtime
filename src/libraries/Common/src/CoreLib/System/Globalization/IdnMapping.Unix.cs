@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Globalization
@@ -122,7 +123,7 @@ namespace System.Globalization
         /// is enabled.
         ///
         /// To match Windows behavior, we walk the string ourselves looking for these
-        /// bad characters so we can continue to throw ArgumentException in these cases. 
+        /// bad characters so we can continue to throw ArgumentException in these cases.
         /// </summary>
         private static unsafe void CheckInvalidIdnCharacters(char* s, int count, uint flags, string paramName)
         {

@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
+using System.Diagnostics;
+
 namespace System.Globalization
 {
     public partial class CultureInfo : IFormatProvider
@@ -13,9 +15,10 @@ namespace System.Globalization
                 return CultureInfo.InvariantCulture;
 
             CultureInfo cultureInfo;
-            string localeName;
+            string? localeName;
             if (CultureData.GetDefaultLocaleName(out localeName))
             {
+                Debug.Assert(localeName != null);
                 cultureInfo = GetCultureByName(localeName);
             }
             else

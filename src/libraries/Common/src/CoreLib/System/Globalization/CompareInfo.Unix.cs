@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -15,7 +16,7 @@ namespace System.Globalization
     public partial class CompareInfo
     {
         [NonSerialized]
-        private Interop.Globalization.SafeSortHandle _sortHandle;
+        private Interop.Globalization.SafeSortHandle _sortHandle = null!;
 
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
@@ -164,8 +165,8 @@ namespace System.Globalization
                 return -1;
             }
 
-            // startIndex is the index into source where we start search backwards from. 
-            // leftStartIndex is the index into source of the start of the string that is 
+            // startIndex is the index into source where we start search backwards from.
+            // leftStartIndex is the index into source of the start of the string that is
             // count characters away from startIndex.
             int leftStartIndex = startIndex - count + 1;
 
@@ -581,7 +582,7 @@ namespace System.Globalization
                     // uppercase both chars - notice that we need just one compare per char
                     if ((uint)(charA - 'a') <= (uint)('z' - 'a')) charA -= 0x20;
                     if ((uint)(charB - 'a') <= (uint)('z' - 'a')) charB -= 0x20;
-                    
+
                     if (charA != charB)
                         return false;
 
@@ -616,7 +617,7 @@ namespace System.Globalization
                 {
                     int charA = *a;
                     int charB = *b;
-                    
+
                     if (charA != charB)
                         return false;
 
@@ -714,7 +715,7 @@ namespace System.Globalization
                     // uppercase both chars - notice that we need just one compare per char
                     if ((uint)(charA - 'a') <= (uint)('z' - 'a')) charA -= 0x20;
                     if ((uint)(charB - 'a') <= (uint)('z' - 'a')) charB -= 0x20;
-                    
+
                     if (charA != charB)
                         return false;
 
@@ -749,7 +750,7 @@ namespace System.Globalization
                 {
                     int charA = *a;
                     int charB = *b;
-                    
+
                     if (charA != charB)
                         return false;
 
@@ -773,10 +774,10 @@ namespace System.Globalization
             {
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
-            
+
             byte [] keyData;
             if (source.Length == 0)
-            { 
+            {
                 keyData = Array.Empty<Byte>();
             }
             else
@@ -797,7 +798,7 @@ namespace System.Globalization
             }
 
             return new SortKey(Name, source, options, keyData);
-        }       
+        }
 
         private static unsafe bool IsSortable(char *text, int length)
         {
@@ -856,7 +857,7 @@ namespace System.Globalization
             {
                 int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
 
-                byte[] borrowedArr = null;
+                byte[]? borrowedArr = null;
                 Span<byte> span = sortKeyLength <= 512 ?
                     stackalloc byte[512] :
                     (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
@@ -912,7 +913,7 @@ namespace System.Globalization
 
             return buffer;
         }
-        
+
         private SortVersion GetSortVersion()
         {
             Debug.Assert(!GlobalizationMode.Invariant);

@@ -14,7 +14,7 @@ namespace System.Globalization
     /// </summary>
     public class StringInfo
     {
-        private string _str;
+        private string _str = null!;
 
         private int[]? _indexes;
 
@@ -24,7 +24,6 @@ namespace System.Globalization
 
         public StringInfo(string value)
         {
-            _str = null!;
             this.String = value;
         }
 

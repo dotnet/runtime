@@ -308,6 +308,6 @@ namespace System.Globalization
             }
         }
 
-        public override int[]? Eras => new int[] { ChineseEra };
+        public override int[] Eras => new int[] { ChineseEra };
     }
 }

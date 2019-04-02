@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
-// This file contains the handling of Windows OS specific culture features.  
+// This file contains the handling of Windows OS specific culture features.
 
 namespace System.Globalization
 {
@@ -15,12 +16,12 @@ namespace System.Globalization
         OemCodePage = 2,
         MacCodePage = 3,
         EbcdicCodePage = 4,
-        GeoId = 5, 
-        DigitSubstitution = 6, 
-        SpecificLocaleIndex = 7, 
+        GeoId = 5,
+        DigitSubstitution = 6,
+        SpecificLocaleIndex = 7,
         ConsoleLocaleIndex = 8
     }
-    
+
     internal partial class LocaleData
     {
         // this is done rather than using a large readonly array of strings to avoid
@@ -894,10 +895,10 @@ namespace System.Globalization
             "zh-tw_radstr"            + //  40404 - 4265
             "zu"                      + //  00035 - 4277
             "zu-za";                    //  00435 - 4279
-        
+
         // c_threeLetterWindowsLanguageName is string containing 3-letter Windows language names
-        // every 3-characters entry is matching locale name entry in c_localeNames 
-        
+        // every 3-characters entry is matching locale name entry in c_localeNames
+
         private const string c_threeLetterWindowsLanguageName =
             "ZZZ" + // aa
             "ZZZ" + // aa-dj
@@ -2636,7 +2637,7 @@ namespace System.Globalization
             4279,  // 863  - zu-za
             4284
         };
-               
+
         private const int NUMERIC_LOCALE_DATA_COUNT_PER_ROW = 9;
         // s_nameIndexToNumericData is mapping from index in s_localeNamesIndices to locale data.
         // each row in the table will have the following data:
@@ -3510,7 +3511,7 @@ namespace System.Globalization
             0x435  , 0x4e4 , 0x352 , 0x2710, 0x1f4 , 0xd1  , 1 , 863 , 863 , // 863  - zu-za
         };
 
-        // s_lcids list all supported lcids. used to binary search and we use the index of the matched lcid to 
+        // s_lcids list all supported lcids. used to binary search and we use the index of the matched lcid to
         // get the index in s_localeNamesIndices using s_lcidToCultureNameIndices
         private static readonly int[] s_lcids = new int[]
         {
@@ -3963,7 +3964,7 @@ namespace System.Globalization
             0x41404, // 445  - 4195
             0x50804, // 446  - 4115
             0x51004  // 447  - 4224
-        };        
+        };
         // each element in s_lcidToCultureNameIndices is index to s_localeNamesIndices
         private static readonly int[] s_lcidToCultureNameIndices = new int[]
         {
@@ -4417,8 +4418,8 @@ namespace System.Globalization
             845  , // 446  - 50804 - 4115
             857    // 447  - 51004 - 4224
         };
-          
-        internal static string LCIDToLocaleName(int culture)
+
+        internal static string? LCIDToLocaleName(int culture)
         {
             int left = 0;
             int right = s_lcids.Length - 1;
@@ -4434,9 +4435,9 @@ namespace System.Globalization
                 {
                     int indexToLocaleNamesIndices = s_lcidToCultureNameIndices[index];
                     Debug.Assert(indexToLocaleNamesIndices < s_localeNamesIndices.Length - 1);
-                    
-                    return c_localeNames.Substring(s_localeNamesIndices[indexToLocaleNamesIndices], 
-                                                                         s_localeNamesIndices[indexToLocaleNamesIndices + 1] - 
+
+                    return c_localeNames.Substring(s_localeNamesIndices[indexToLocaleNamesIndices],
+                                                                         s_localeNamesIndices[indexToLocaleNamesIndices + 1] -
                                                                          s_localeNamesIndices[indexToLocaleNamesIndices]);
                 }
                 else if (culture < s_lcids[index])
@@ -4457,27 +4458,27 @@ namespace System.Globalization
             int index = SearchCultureName(cultureName);
             if (index < 0)
             {
-                return -1; 
+                return -1;
             }
-            
-            Debug.Assert((s_localeNamesIndices.Length-1 == (s_nameIndexToNumericData.Length/NUMERIC_LOCALE_DATA_COUNT_PER_ROW)) && 
+
+            Debug.Assert((s_localeNamesIndices.Length-1 == (s_nameIndexToNumericData.Length/NUMERIC_LOCALE_DATA_COUNT_PER_ROW)) &&
                             index < s_localeNamesIndices.Length);
-            
+
             return s_nameIndexToNumericData[index * NUMERIC_LOCALE_DATA_COUNT_PER_ROW + (int) part];
         }
-        
-        internal static string GetThreeLetterWindowsLanguageName(string cultureName)
+
+        internal static string? GetThreeLetterWindowsLanguageName(string cultureName)
         {
             int index = SearchCultureName(cultureName);
             if (index < 0)
             {
                 return null;
             }
-            
+
             Debug.Assert(s_localeNamesIndices.Length-1 == (c_threeLetterWindowsLanguageName.Length / 3));
-            return c_threeLetterWindowsLanguageName.Substring(index * 3, 3); 
+            return c_threeLetterWindowsLanguageName.Substring(index * 3, 3);
         }
-        
+
         internal static string GetLocaleDataMappedCulture(string cultureName, LocaleDataParts part)
         {
             int indexToIndicesTable = GetLocaleDataNumericPart(cultureName, part);
@@ -4485,25 +4486,25 @@ namespace System.Globalization
             {
                 return ""; // fallback to invariant
             }
-            
+
             Debug.Assert(indexToIndicesTable < s_localeNamesIndices.Length-1);
-            
-            return c_localeNames.Substring(s_localeNamesIndices[indexToIndicesTable], 
+
+            return c_localeNames.Substring(s_localeNamesIndices[indexToIndicesTable],
                                            s_localeNamesIndices[indexToIndicesTable+1] - s_localeNamesIndices[indexToIndicesTable]);
         }
-        
+
         internal static string GetSpecificCultureName(string cultureName)
         {
             return GetLocaleDataMappedCulture(cultureName, LocaleDataParts.SpecificLocaleIndex);
         }
-        
+
         internal static string GetConsoleUICulture(string cultureName)
         {
             return GetLocaleDataMappedCulture(cultureName, LocaleDataParts.ConsoleLocaleIndex);
         }
-        
+
         // SearchCultureName will binary search c_localeNames using s_localeNamesIndices.
-        // return index in s_localeNamesIndices, or -1 if it fail finding any match   
+        // return index in s_localeNamesIndices, or -1 if it fail finding any match
         private static int SearchCultureName(string name)
         {
             int left = 0;
@@ -4550,7 +4551,7 @@ namespace System.Globalization
             // couldn't find culture name
             return -1;
         }
-        
+
         // optimized to avoid parameters checking
         private static int CompareOrdinal(string s1, string s2, int index, int length)
         {
