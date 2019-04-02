@@ -168,7 +168,11 @@ struct _MonoAssemblyName {
 	uint32_t hash_alg;
 	uint32_t hash_len;
 	uint32_t flags;
+#ifdef ENABLE_NETCORE
+	int major, minor, build, revision, arch;
+#else
 	uint16_t major, minor, build, revision, arch;
+#endif
 };
 
 struct MonoTypeNameParse {

@@ -2354,32 +2354,41 @@ typed_reference_to_object (MonoTypedRef *tref, MonoError *error)
 	HANDLE_FUNCTION_RETURN_REF (MonoObject, result);
 }
 
-void
-ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionField *field, MonoReflectionType *field_type, MonoTypedRef *obj, MonoObject *value, MonoReflectionType *context_type)
+MonoObjectHandle
+ves_icall_System_RuntimeFieldHandle_GetValueDirect (MonoReflectionFieldHandle field_h, MonoReflectionTypeHandle field_type_h, MonoTypedRef *obj, MonoReflectionTypeHandle context_type_h, MonoError *error)
 {
-	ICALL_ENTRY ();
+	MonoClassField *field = MONO_HANDLE_GETVAL (field_h, field);
+	MonoClass *klass = mono_class_from_mono_type_internal (field->type);
 
-	MonoClassField *f;
+	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (field->parent))) {
+		mono_error_set_not_implemented (error, "");
+		return MONO_HANDLE_NEW (MonoObject, NULL);
+	} else if (MONO_TYPE_IS_REFERENCE (field->type)) {
+		return MONO_HANDLE_NEW (MonoObject, *(MonoObject**)((guint8*)obj->value + field->offset - sizeof (MonoObject)));
+	} else {
+		return mono_value_box_handle (mono_domain_get (), klass, (guint8*)obj->value + field->offset - sizeof (MonoObject), error);
+	}
+}
 
-	g_assert (field);
+void
+ves_icall_System_RuntimeFieldHandle_SetValueDirect (MonoReflectionFieldHandle field_h, MonoReflectionTypeHandle field_type_h, MonoTypedRef *obj, MonoObjectHandle value_h, MonoReflectionTypeHandle context_type_h, MonoError *error)
+{
+	MonoClassField *f = MONO_HANDLE_GETVAL (field_h, field);
+
 	g_assert (obj);
 
-	f = field->field;
 	if (!MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (f->parent))) {
-		MonoReflectionFieldHandle fieldHandle = MONO_HANDLE_NEW (MonoReflectionField, field);
-		MonoObjectHandle objHandle = typed_reference_to_object (obj, error), 
-			valueHandle = MONO_HANDLE_NEW (MonoObject, value);
-		goto_if_nok (error, leave);
-		ves_icall_RuntimeFieldInfo_SetValueInternal (fieldHandle, objHandle, valueHandle, error);
+		MonoObjectHandle objHandle = typed_reference_to_object (obj, error);
+		return_if_nok (error);
+		ves_icall_RuntimeFieldInfo_SetValueInternal (field_h, objHandle, value_h, error);
 	} else if (MONO_TYPE_IS_REFERENCE (f->type)) {
-		mono_copy_value (f->type, (guint8*)obj->value + f->offset - sizeof (MonoObject), value, FALSE);
+		mono_copy_value (f->type, (guint8*)obj->value + f->offset - sizeof (MonoObject), MONO_HANDLE_RAW (value_h), FALSE);
 	} else {
-		g_assert (value);
-		mono_copy_value (f->type, (guint8*)obj->value + f->offset - sizeof (MonoObject), mono_object_unbox_internal (value), FALSE);
+		guint gchandle = 0;
+		g_assert (MONO_HANDLE_RAW (value_h));
+		mono_copy_value (f->type, (guint8*)obj->value + f->offset - sizeof (MonoObject), mono_object_handle_pin_unbox (value_h, &gchandle), FALSE);
+		mono_gchandle_free_internal (gchandle);
 	}
-
-leave:
-	ICALL_RETURN ();
 }
 
 MonoObject *
@@ -5875,6 +5884,59 @@ MonoArrayHandle
 ves_icall_System_Reflection_RuntimeAssembly_GetExportedTypes (MonoReflectionAssemblyHandle assembly_handle, MonoError *error)
 {
 	return ves_icall_System_Reflection_Assembly_GetTypes (assembly_handle, TRUE, error);
+}
+
+MonoArrayHandle
+ves_icall_System_Reflection_RuntimeAssembly_GetForwardedTypes (MonoReflectionAssemblyHandle assembly_h, MonoError *error)
+{
+	MonoAssembly *assembly = MONO_HANDLE_GETVAL (assembly_h, assembly);
+	MonoImage *image = assembly->image;
+	guint32 cols [MONO_EXP_TYPE_SIZE];
+	const char *name;
+	const char *nspace;
+	guint32 impl, assembly_idx;
+	int count = 0;
+
+	g_assert (!assembly_is_dynamic (assembly));
+	MonoTableInfo *table = &image->tables [MONO_TABLE_EXPORTEDTYPE];
+	for (int i = 0; i < table->rows; ++i) {
+		if (mono_metadata_decode_row_col (table, i, MONO_EXP_TYPE_FLAGS) & TYPE_ATTRIBUTE_FORWARDER)
+			count ++;
+	}
+	MonoArrayHandle res = mono_array_new_handle (mono_domain_get (), mono_defaults.runtimetype_class, count, error);
+	return_val_if_nok (error, NULL_HANDLE_ARRAY);
+	int aindex = 0;
+	for (int i = 0; i < table->rows; ++i) {
+		mono_metadata_decode_row (table, i, cols, MONO_EXP_TYPE_SIZE);
+		if (!(cols [MONO_EXP_TYPE_FLAGS] & TYPE_ATTRIBUTE_FORWARDER))
+			continue;
+		impl = cols [MONO_EXP_TYPE_IMPLEMENTATION];
+		name = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAME]);
+		nspace = mono_metadata_string_heap (image, cols [MONO_EXP_TYPE_NAMESPACE]);
+
+		g_assert ((impl & MONO_IMPLEMENTATION_MASK) == MONO_IMPLEMENTATION_ASSEMBLYREF);
+
+		assembly_idx = impl >> MONO_IMPLEMENTATION_BITS;
+
+		mono_assembly_load_reference (image, assembly_idx - 1);
+		g_assert (image->references [assembly_idx - 1]);
+		if (image->references [assembly_idx - 1] == (gpointer)-1)
+			continue;
+		MonoClass *klass = mono_class_from_name_checked (image->references [assembly_idx - 1]->image, nspace, name, error);
+		if (!is_ok (error))
+			continue;
+		MonoReflectionTypeHandle rt = mono_type_get_object_handle (mono_domain_get (), m_class_get_byval_arg (klass), error);
+		if (!is_ok (error))
+			continue;
+		MONO_HANDLE_ARRAY_SETREF (res, aindex, rt);
+		aindex ++;
+	}
+	if (aindex < count) {
+		// FIXME:
+		mono_error_set_type_load_name (error, g_strdup (""), g_strdup (""), "");
+		return MONO_HANDLE_NEW (MonoArray, NULL);
+	}
+	return res;
 }
 #endif
 
