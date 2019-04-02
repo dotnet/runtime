@@ -312,8 +312,7 @@ EventPipeSession *EventPipeConfiguration::CreateSession(
     EventPipeSessionType sessionType,
     unsigned int circularBufferSizeInMB,
     const EventPipeProviderConfiguration *pProviders,
-    uint32_t numProviders,
-    uint64_t multiFileTraceLengthInSeconds)
+    uint32_t numProviders)
 {
     CONTRACTL
     {
@@ -328,8 +327,7 @@ EventPipeSession *EventPipeConfiguration::CreateSession(
         sessionType,
         circularBufferSizeInMB,
         pProviders,
-        numProviders,
-        multiFileTraceLengthInSeconds);
+        numProviders);
 }
 
 void EventPipeConfiguration::DeleteSession(EventPipeSession *pSession)
