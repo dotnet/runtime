@@ -276,9 +276,10 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_GetWithInvalidHostHeader_ThrowsException()
         {
-            if (PlatformDetection.IsNetCore && !UseSocketsHttpHandler)
+            if (PlatformDetection.IsNetCore && (!UseSocketsHttpHandler || LoopbackServerFactory.IsHttp2))
             {
-                // Only .NET Framework and SocketsHttpHandler use the Host header to influence the SSL auth.
+                // Only .NET Framework and SocketsHttpHandler with HTTP/1.x use the Host header to influence the SSL auth.
+                // Host header is not used for HTTP2
                 return;
             }
 
@@ -782,13 +783,15 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            const string content = "hello world";
+
             // Using examples from https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
             // Exercises all exposed request.Headers and request.Content.Headers strongly-typed properties
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (var client = CreateHttpClient())
                 {
-                    byte[] contentArray = Encoding.ASCII.GetBytes("hello world");
+                    byte[] contentArray = Encoding.ASCII.GetBytes(content);
                     var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteArrayContent(contentArray) };
 
                     request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
@@ -851,77 +854,94 @@ namespace System.Net.Http.Functional.Tests
                     request.Headers.Add("X-Csrf-Token", "i8XNjC4b8KVok4uw5RftR38Wgp2BFwql");
                     request.Headers.Add("X-Request-ID", "f058ebd6-02f7-4d3f-942e-904344e8cde5");
                     request.Headers.Add("X-Request-ID", "f058ebd6-02f7-4d3f-942e-904344e8cde5");
+                    request.Headers.Add("X-Empty", "");
+                    request.Headers.Add("X-Null", (string)null);
+                    request.Headers.Add("X-Underscore_Name", "X-Underscore_Name");
+                    request.Headers.Add("X-End", "End");
 
                     (await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead)).Dispose();
                 }
             }, async server =>
             {
-                await server.AcceptConnectionAsync(async connection =>
                 {
-                    var headersSet = new HashSet<string>();
-                    string line;
-                    while (!string.IsNullOrEmpty(line = await connection.Reader.ReadLineAsync()))
-                    {
-                        Assert.True(headersSet.Add(line));
-                    }
+                    HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
 
-                    await connection.Writer.WriteAsync($"HTTP/1.1 200 OK\r\nDate: {DateTimeOffset.UtcNow:R}\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
-                    while (await connection.Socket.ReceiveAsync(new ArraySegment<byte>(new byte[1000]), SocketFlags.None) > 0);
+                    var headersSet = requestData.Headers;
 
-                    Assert.Contains("Accept-Charset: utf-8", headersSet);
-                    Assert.Contains("Accept-Encoding: gzip, deflate", headersSet);
-                    Assert.Contains("Accept-Language: en-US", headersSet);
-                    Assert.Contains("Accept-Datetime: Thu, 31 May 2007 20:35:00 GMT", headersSet);
-                    Assert.Contains("Access-Control-Request-Method: GET", headersSet);
-                    Assert.Contains("Access-Control-Request-Headers: GET", headersSet);
-                    Assert.Contains("Age: 12", headersSet);
-                    Assert.Contains("Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", headersSet);
-                    Assert.Contains("Cache-Control: no-cache", headersSet);
-                    Assert.Contains("Connection: close", headersSet, StringComparer.OrdinalIgnoreCase); // NetFxHandler uses "Close" vs "close"
+                    Assert.Equal(content, Encoding.ASCII.GetString(requestData.Body));
+
+                    Assert.Equal("utf-8", requestData.GetSingleHeaderValue("Accept-Charset"));
+                    Assert.Equal("gzip, deflate", requestData.GetSingleHeaderValue("Accept-Encoding"));
+                    Assert.Equal("en-US", requestData.GetSingleHeaderValue("Accept-Language"));
+                    Assert.Equal("Thu, 31 May 2007 20:35:00 GMT", requestData.GetSingleHeaderValue("Accept-Datetime"));
+                    Assert.Equal("GET", requestData.GetSingleHeaderValue("Access-Control-Request-Method"));
+                    Assert.Equal("GET", requestData.GetSingleHeaderValue("Access-Control-Request-Headers"));
+                    Assert.Equal("12", requestData.GetSingleHeaderValue("Age"));
+                    Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Authorization"));
+                    Assert.Equal("no-cache", requestData.GetSingleHeaderValue("Cache-Control"));
                     if (!IsNetfxHandler)
                     {
-                        Assert.Contains("Cookie: $Version=1; Skin=new", headersSet);
+                        Assert.Equal("$Version=1; Skin=new", requestData.GetSingleHeaderValue("Cookie"));
                     }
-                    Assert.Contains("Date: Tue, 15 Nov 1994 08:12:31 GMT", headersSet);
-                    Assert.Contains("Expect: 100-continue", headersSet);
-                    Assert.Contains("Forwarded: for=192.0.2.60;proto=http;by=203.0.113.43", headersSet);
-                    Assert.Contains("From: User Name <user@example.com>", headersSet);
-                    Assert.Contains("Host: en.wikipedia.org:8080", headersSet);
-                    Assert.Contains("If-Match: \"37060cd8c284d8af7ad3082f209582d\"", headersSet);
-                    Assert.Contains("If-Modified-Since: Sat, 29 Oct 1994 19:43:31 GMT", headersSet);
-                    Assert.Contains("If-None-Match: \"737060cd8c284d8af7ad3082f209582d\"", headersSet);
-                    Assert.Contains("If-Range: Wed, 21 Oct 2015 07:28:00 GMT", headersSet);
-                    Assert.Contains("If-Unmodified-Since: Sat, 29 Oct 1994 19:43:31 GMT", headersSet);
-                    Assert.Contains("Max-Forwards: 10", headersSet);
-                    Assert.Contains("Origin: http://www.example-social-network.com", headersSet);
-                    Assert.Contains("Pragma: no-cache", headersSet);
-                    Assert.Contains("Proxy-Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", headersSet);
-                    Assert.Contains("Range: bytes=500-999", headersSet);
-                    Assert.Contains("Referer: http://en.wikipedia.org/wiki/Main_Page", headersSet);
-                    Assert.Contains("TE: trailers, deflate", headersSet);
-                    Assert.Contains("Trailer: MyTrailer", headersSet);
-                    Assert.Contains("Transfer-Encoding: chunked", headersSet);
-                    Assert.Contains("User-Agent: Mozilla/5.0", headersSet);
-                    Assert.Contains("Upgrade: HTTPS/1.3, IRC/6.9, RTA/x11, websocket", headersSet);
-                    Assert.Contains("Via: 1.0 fred, 1.1 example.com (Apache/1.1)", headersSet);
-                    Assert.Contains("Warning: 199 - \"Miscellaneous warning\"", headersSet);
-                    Assert.Contains("X-Requested-With: XMLHttpRequest", headersSet);
-                    Assert.Contains("DNT: 1 (Do Not Track Enabled)", headersSet);
-                    Assert.Contains("X-Forwarded-For: client1, proxy1, proxy2", headersSet);
-                    Assert.Contains("X-Forwarded-Host: en.wikipedia.org:8080", headersSet);
-                    Assert.Contains("X-Forwarded-Proto: https", headersSet);
-                    Assert.Contains("Front-End-Https: https", headersSet);
-                    Assert.Contains("X-Http-Method-Override: DELETE", headersSet);
-                    Assert.Contains("X-ATT-DeviceId: GT-P7320/P7320XXLPG", headersSet);
-                    Assert.Contains("X-Wap-Profile: http://wap.samsungmobile.com/uaprof/SGH-I777.xml", headersSet);
-                    if (!IsNetfxHandler && !PlatformDetection.IsUap)
+                    Assert.Equal("Tue, 15 Nov 1994 08:12:31 GMT", requestData.GetSingleHeaderValue("Date"));
+                    Assert.Equal("100-continue", requestData.GetSingleHeaderValue("Expect"));
+                    Assert.Equal("for=192.0.2.60;proto=http;by=203.0.113.43", requestData.GetSingleHeaderValue("Forwarded"));
+                    Assert.Equal("User Name <user@example.com>", requestData.GetSingleHeaderValue("From"));
+                    Assert.Equal("\"37060cd8c284d8af7ad3082f209582d\"", requestData.GetSingleHeaderValue("If-Match"));
+                    Assert.Equal("Sat, 29 Oct 1994 19:43:31 GMT", requestData.GetSingleHeaderValue("If-Modified-Since"));
+                    Assert.Equal("\"737060cd8c284d8af7ad3082f209582d\"", requestData.GetSingleHeaderValue("If-None-Match"));
+                    Assert.Equal("Wed, 21 Oct 2015 07:28:00 GMT", requestData.GetSingleHeaderValue("If-Range"));
+                    Assert.Equal("Sat, 29 Oct 1994 19:43:31 GMT", requestData.GetSingleHeaderValue("If-Unmodified-Since"));
+                    Assert.Equal("10", requestData.GetSingleHeaderValue("Max-Forwards"));
+                    Assert.Equal("http://www.example-social-network.com", requestData.GetSingleHeaderValue("Origin"));
+                    Assert.Equal("no-cache", requestData.GetSingleHeaderValue("Pragma"));
+                    Assert.Equal("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", requestData.GetSingleHeaderValue("Proxy-Authorization"));
+                    Assert.Equal("bytes=500-999", requestData.GetSingleHeaderValue("Range"));
+                    Assert.Equal("http://en.wikipedia.org/wiki/Main_Page", requestData.GetSingleHeaderValue("Referer"));
+                    Assert.Equal("MyTrailer", requestData.GetSingleHeaderValue("Trailer"));
+                    Assert.Equal("Mozilla/5.0", requestData.GetSingleHeaderValue("User-Agent"));
+                    Assert.Equal("1.0 fred, 1.1 example.com (Apache/1.1)", requestData.GetSingleHeaderValue("Via"));
+                    Assert.Equal("199 - \"Miscellaneous warning\"", requestData.GetSingleHeaderValue("Warning"));
+                    Assert.Equal("XMLHttpRequest", requestData.GetSingleHeaderValue("X-Requested-With"));
+                    Assert.Equal("1 (Do Not Track Enabled)", requestData.GetSingleHeaderValue("DNT"));
+                    Assert.Equal("client1, proxy1, proxy2", requestData.GetSingleHeaderValue("X-Forwarded-For"));
+                    Assert.Equal("en.wikipedia.org:8080", requestData.GetSingleHeaderValue("X-Forwarded-Host"));
+                    Assert.Equal("https", requestData.GetSingleHeaderValue("X-Forwarded-Proto"));
+                    Assert.Equal("https", requestData.GetSingleHeaderValue("Front-End-Https"));
+                    Assert.Equal("DELETE", requestData.GetSingleHeaderValue("X-Http-Method-Override"));
+                    Assert.Equal("GT-P7320/P7320XXLPG", requestData.GetSingleHeaderValue("X-ATT-DeviceId"));
+                    Assert.Equal("http://wap.samsungmobile.com/uaprof/SGH-I777.xml", requestData.GetSingleHeaderValue("X-Wap-Profile"));
+                    Assert.Equal("...", requestData.GetSingleHeaderValue("X-UIDH"));
+                    Assert.Equal("i8XNjC4b8KVok4uw5RftR38Wgp2BFwql", requestData.GetSingleHeaderValue("X-Csrf-Token"));
+                    Assert.Equal("f058ebd6-02f7-4d3f-942e-904344e8cde5, f058ebd6-02f7-4d3f-942e-904344e8cde5", requestData.GetSingleHeaderValue("X-Request-ID"));
+                    Assert.Equal("", requestData.GetSingleHeaderValue("X-Null"));
+                    Assert.Equal("", requestData.GetSingleHeaderValue("X-Empty"));
+                    Assert.Equal("X-Underscore_Name", requestData.GetSingleHeaderValue("X-Underscore_Name"));
+                    Assert.Equal("End", requestData.GetSingleHeaderValue("X-End"));
+
+                    if (LoopbackServerFactory.IsHttp2)
                     {
-                        Assert.Contains("Proxy-Connection: keep-alive", headersSet);
+                        // HTTP/2 forbids  certain headers or values.
+                        Assert.Equal("trailers", requestData.GetSingleHeaderValue("TE"));
+                        Assert.Equal(0, requestData.GetHeaderValueCount("Upgrade"));
+                        Assert.Equal(0, requestData.GetHeaderValueCount("Proxy-Connection"));
+                        Assert.Equal(0, requestData.GetHeaderValueCount("Host"));
+                        Assert.Equal(0, requestData.GetHeaderValueCount("Connection"));
+                        Assert.Equal(0, requestData.GetHeaderValueCount("Transfer-Encoding"));
                     }
-                    Assert.Contains("X-UIDH: ...", headersSet);
-                    Assert.Contains("X-Csrf-Token: i8XNjC4b8KVok4uw5RftR38Wgp2BFwql", headersSet);
-                    Assert.Contains("X-Request-ID: f058ebd6-02f7-4d3f-942e-904344e8cde5, f058ebd6-02f7-4d3f-942e-904344e8cde5", headersSet);
-                });
+                    else
+                    {
+                        // Verify HTTP/1.x headers
+                        Assert.Equal("close", requestData.GetSingleHeaderValue("Connection"), StringComparer.OrdinalIgnoreCase); // NetFxHandler uses "Close" vs "close"
+                        Assert.Equal("en.wikipedia.org:8080", requestData.GetSingleHeaderValue("Host"));
+                        Assert.Equal("trailers, deflate", requestData.GetSingleHeaderValue("TE"));
+                        Assert.Equal("HTTPS/1.3, IRC/6.9, RTA/x11, websocket", requestData.GetSingleHeaderValue("Upgrade"));
+                        if (!IsNetfxHandler && !PlatformDetection.IsUap)
+                        {
+                            Assert.Equal("keep-alive", requestData.GetSingleHeaderValue("Proxy-Connection"));
+                        }
+                    }
+                }
             });
         }
 
@@ -2012,7 +2032,7 @@ namespace System.Net.Http.Functional.Tests
                         "Cookie: ignore_cookie=choco2\r\n" + "Content-type: text/plain\r\n" + $"Set-Cookie: {SetCookieIgnored2}\r\n");
 
                     var result = new char[TestString.Length];
-                    await connection.Reader.ReadAsync(result, 0, TestString.Length);
+                    await connection.ReadBlockAsync(result, 0, TestString.Length);
                     Assert.Equal(TestString, new string(result));
 
                     // Send final status code.
@@ -2057,7 +2077,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.SendResponseAsync(responseStatusCode);
 
                     var result = new char[TestString.Length];
-                    await connection.Reader.ReadAsync(result, 0, TestString.Length);
+                    await connection.ReadBlockAsync(result, 0, TestString.Length);
                     Assert.Equal(TestString, new string(result));
 
                     // Send final status code.
@@ -2096,7 +2116,7 @@ namespace System.Net.Http.Functional.Tests
                         string.Concat(Enumerable.Repeat(Valid100ContinueResponse, 3)));
 
                     var result = new char[TestString.Length];
-                    await connection.Reader.ReadAsync(result, 0, TestString.Length);
+                    await connection.ReadBlockAsync(result, 0, TestString.Length);
                     Assert.Equal(TestString, new string(result));
 
                     // Send final status code.
@@ -2139,7 +2159,7 @@ namespace System.Net.Http.Functional.Tests
                     await connection.ReadRequestHeaderAndSendResponseAsync();
 
                     var result = new char[TestString.Length];
-                    await connection.Reader.ReadAsync(result, 0, TestString.Length);
+                    await connection.ReadBlockAsync(result, 0, TestString.Length);
                     Assert.Equal(TestString, new string(result));
 
                     await clientFinished.Task;
@@ -2660,7 +2680,7 @@ namespace System.Net.Http.Functional.Tests
         {
             string userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.18 Safari/537.36";
 
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (var client = CreateHttpClient())
                 {
@@ -2668,11 +2688,14 @@ namespace System.Net.Http.Functional.Tests
                     message.Headers.TryAddWithoutValidation("User-Agent", userAgent);
                     (await client.SendAsync(message).ConfigureAwait(false)).Dispose();
                 }
-            }, server => server.AcceptConnectionAsync(async connection =>
+            },
+            async server =>
             {
-                List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"User-Agent: {userAgent}", headers);
-            }));
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK);
+
+                string agent = requestData.GetSingleHeaderValue("User-Agent");
+                Assert.Equal(userAgent, agent);
+            });
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]

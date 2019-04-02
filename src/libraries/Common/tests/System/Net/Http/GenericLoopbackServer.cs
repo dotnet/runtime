@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Test.Common
 {
-    // Loopback server abstraction. 
+    // Loopback server abstraction.
     // Tests that want to run over both HTTP/1.1 and HTTP/2 should use this instead of the protocol-specific loopback servers.
 
     public abstract class LoopbackServerFactory
@@ -54,6 +54,7 @@ namespace System.Net.Test.Common
 
     public class HttpRequestData
     {
+        public byte[] Body;
         public string Method;
         public string Path;
         public List<HttpHeaderData> Headers { get; }

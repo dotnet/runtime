@@ -126,7 +126,7 @@ namespace System.Net.WebSockets.Client.Tests
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
-                Assert.Contains("CONNECT", await connection.Reader.ReadLineAsync());
+                Assert.Contains("CONNECT", await connection.ReadLineAsync());
                 connectionAccepted = true;
             }));
 

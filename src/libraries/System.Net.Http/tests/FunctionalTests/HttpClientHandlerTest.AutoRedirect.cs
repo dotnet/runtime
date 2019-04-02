@@ -191,7 +191,7 @@ namespace System.Net.Http.Functional.Tests
                             // meaning we can just read to the end to get the content
                             await connection.ReadRequestHeaderAndSendResponseAsync((HttpStatusCode)statusCode, $"Location: {redirUrl}\r\nConnection: close\r\n");
                             connection.Socket.Shutdown(SocketShutdown.Send);
-                            await connection.Reader.ReadToEndAsync();
+                            await connection.ReadToEndAsync();
                         });
 
                         await Task.WhenAny(getResponseTask, serverTask);
@@ -207,7 +207,7 @@ namespace System.Net.Http.Functional.Tests
                             // meaning we can just read to the end to get the content
                             receivedRequest = await connection.ReadRequestHeaderAndSendResponseAsync(additionalHeaders: "Connection: close\r\n");
                             connection.Socket.Shutdown(SocketShutdown.Send);
-                            receivedContent = await connection.Reader.ReadToEndAsync();
+                            receivedContent = await connection.ReadToEndAsync();
                         });
 
                         await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask2);

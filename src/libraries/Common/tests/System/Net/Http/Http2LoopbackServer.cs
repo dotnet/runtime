@@ -24,6 +24,7 @@ namespace System.Net.Test.Common
         private Uri _uri;
         private bool _ignoreSettingsAck;
         private bool _ignoreWindowUpdates;
+        public TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
         public Uri Address
         {
@@ -401,7 +402,7 @@ namespace System.Net.Test.Common
             new HttpHeaderData("if-modified-since", ""),
             new HttpHeaderData("if-none-match", ""),
             new HttpHeaderData("if-range", ""),
-            new HttpHeaderData("if-unmodifiedsince", ""),
+            new HttpHeaderData("if-unmodified-since", ""),
             new HttpHeaderData("last-modified", ""),
             new HttpHeaderData("link", ""),
             new HttpHeaderData("location", ""),
@@ -496,8 +497,12 @@ namespace System.Net.Test.Common
             HttpRequestData requestData = new HttpRequestData();
 
             // Receive HEADERS frame for request.
-            HeadersFrame headersFrame = (HeadersFrame) await ReadFrameAsync(TimeSpan.FromSeconds(30));
-            Assert.Equal(FrameFlags.EndHeaders | FrameFlags.EndStream, headersFrame.Flags);
+            Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            Assert.Equal(FrameType.Headers, frame.Type);
+            HeadersFrame headersFrame = (HeadersFrame) frame;
+
+            // TODO CONTINUATION support
+            Assert.Equal(FrameFlags.EndHeaders, FrameFlags.EndHeaders & headersFrame.Flags);
 
             int streamId = headersFrame.StreamId;
 
@@ -514,6 +519,34 @@ namespace System.Net.Test.Common
             // Extract method and path
             requestData.Method = requestData.GetSingleHeaderValue(":method");
             requestData.Path = requestData.GetSingleHeaderValue(":path");
+
+            byte[] body = null;
+            while ((frame.Flags & FrameFlags.EndStream) == 0)
+            {
+                frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+                Assert.Equal(FrameType.Data, frame.Type);
+                if (frame.Length > 1)
+                {
+                    DataFrame dataFrame = (DataFrame)frame;
+
+                    if (body == null)
+                    {
+                        body = dataFrame.Data.ToArray();
+                    }
+                    else
+                    {
+                        byte[] newBuffer = new byte[body.Length + dataFrame.Data.Length];
+
+                        body.CopyTo(newBuffer, 0);
+                        dataFrame.Data.Span.CopyTo(newBuffer.AsSpan().Slice(body.Length));
+                        body= newBuffer;
+                    }
+                }
+            }
+            if (body != null)
+            {
+                requestData.Body = body;
+            }
 
             return (streamId, requestData);
         }

@@ -726,10 +726,21 @@ namespace System.Net.Http
             _headerBuffer.Commit(bytesWritten);
         }
 
-        private void WriteLiteralHeader(string name, string value)
+        private void WriteLiteralHeader(string name, string[] values)
         {
             int bytesWritten;
-            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, value, _headerBuffer.AvailableSpan, out bytesWritten))
+            while (!HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingNewName(name, values, HttpHeaderParser.DefaultSeparator, _headerBuffer.AvailableSpan, out bytesWritten))
+            {
+                _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
+            }
+
+            _headerBuffer.Commit(bytesWritten);
+        }
+
+        private void WriteLiteralHeaderValues(string[] values, string separator)
+        {
+            int bytesWritten;
+            while (!HPackEncoder.EncodeStringLiterals(values, separator, _headerBuffer.AvailableSpan, out bytesWritten))
             {
                 _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
             }
@@ -740,7 +751,7 @@ namespace System.Net.Http
         private void WriteLiteralHeaderValue(string value)
         {
             int bytesWritten;
-            while (!HPackEncoder.EncodeStringLiteral(value, _headerBuffer.AvailableSpan, out bytesWritten, toLower: false))
+            while (!HPackEncoder.EncodeStringLiteral(value, _headerBuffer.AvailableSpan, out bytesWritten))
             {
                 _headerBuffer.EnsureAvailableSpace(_headerBuffer.AvailableLength + 1);
             }
@@ -769,25 +780,48 @@ namespace System.Net.Http
                 if (knownHeader != null)
                 {
                     // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
-                    // (see pseudo-header handling below in WriteHeaders). The Connection header is also not supported in HTTP2.
-                    if (knownHeader != KnownHeaders.Host && knownHeader != KnownHeaders.Connection)
+                    // (see pseudo-header handling below in WriteHeaders).
+                    // The Connection, Upgrade and ProxyConnection headers are also not supported in HTTP2.
+                    if (knownHeader != KnownHeaders.Host && knownHeader != KnownHeaders.Connection && knownHeader != KnownHeaders.Upgrade && knownHeader != KnownHeaders.ProxyConnection)
                     {
-                        // For all other known headers, send them via their pre-encoded name and the associated value.
-                        for (int i = 0; i < header.Value.Length; i++)
+                        if (header.Key.KnownHeader == KnownHeaders.TE)
                         {
-                            WriteBytes(knownHeader.Http2EncodedName);
-                            WriteLiteralHeaderValue(header.Value[i]);
+                            // HTTP/2 allows only 'trailers' TE header. rfc7540 8.1.2.2
+                            foreach (string value in header.Value)
+                            {
+                                if (string.Equals(value, "trailers", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    WriteBytes(knownHeader.Http2EncodedName);
+                                    WriteLiteralHeaderValue(value);
+                                    break;
+                                }
+                            }
+                            continue;
                         }
+
+                        // For all other known headers, send them via their pre-encoded name and the associated value.
+                        WriteBytes(knownHeader.Http2EncodedName);
+                        string separator = null;
+                        if (header.Value.Length > 1)
+                        {
+                            HttpHeaderParser parser = header.Key.Parser;
+                            if (parser != null && parser.SupportsMultipleValues)
+                            {
+                                separator = parser.Separator;
+                            }
+                            else
+                            {
+                                separator = HttpHeaderParser.DefaultSeparator;
+                            }
+                        }
+
+                        WriteLiteralHeaderValues(header.Value, separator);
                     }
                 }
                 else
                 {
                     // The header is not known: fall back to just encoding the header name and value(s).
-                    string name = header.Key.Name;
-                    for (int i = 0; i < header.Value.Length; i++)
-                    {
-                        WriteLiteralHeader(name, header.Value[i]);
-                    }
+                    WriteLiteralHeader(header.Key.Name, header.Value);
                 }
             }
         }
