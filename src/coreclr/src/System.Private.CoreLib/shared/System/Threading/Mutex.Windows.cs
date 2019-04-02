@@ -4,10 +4,8 @@
 
 #nullable enable
 using System.IO;
-using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
-using System.Diagnostics;
 
 namespace System.Threading
 {
