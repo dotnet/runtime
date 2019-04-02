@@ -153,12 +153,12 @@ class AffinitySet
 
     uintptr_t m_bitset[MAX_SUPPORTED_CPUS / BitsPerBitsetEntry];
 
-    uintptr_t GetBitsetEntryMask(size_t cpuIndex)
+    static uintptr_t GetBitsetEntryMask(size_t cpuIndex)
     {
         return (uintptr_t)1 << (cpuIndex & (BitsPerBitsetEntry - 1));
     }
 
-    size_t GetBitsetEntryIndex(size_t cpuIndex)
+    static size_t GetBitsetEntryIndex(size_t cpuIndex)
     {
         return cpuIndex / BitsPerBitsetEntry;
     }
@@ -171,7 +171,7 @@ public:
     }
 
     // Check if the set contains a processor
-    bool Contains(size_t cpuIndex)
+    bool Contains(size_t cpuIndex) const
     {
         return (m_bitset[GetBitsetEntryIndex(cpuIndex)] & GetBitsetEntryMask(cpuIndex)) != 0;
     }
@@ -189,7 +189,7 @@ public:
     }
 
     // Check if the set is empty
-    bool IsEmpty()
+    bool IsEmpty() const
     {
         for (size_t i = 0; i < MAX_SUPPORTED_CPUS / BitsPerBitsetEntry; i++)
         {
@@ -203,7 +203,7 @@ public:
     }
 
     // Return number of processors in the affinity set
-    size_t Count()
+    size_t Count() const
     {
         size_t count = 0;
         for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
@@ -388,10 +388,13 @@ public:
     //  true if the priority boost was successful, false otherwise.
     static bool BoostThreadPriority();
 
-    // Get set of processors enabled for GC for the current process
+    // Set the set of processors enabled for GC threads for the current process based on config specified affinity mask and set
+    // Parameters:
+    //  configAffinityMask - mask specified by the GCHeapAffinitizeMask config
+    //  configAffinitySet - affinity set specified by the GCHeapAffinitizeRanges config
     // Return:
     //  set of enabled processors
-    static AffinitySet* GetCurrentProcessAffinitySet();
+    static const AffinitySet* SetGCThreadsAffinitySet(uintptr_t configAffinityMask, const AffinitySet* configAffinitySet);
 
     //
     // Global memory info
@@ -476,7 +479,6 @@ public:
     // Return:
     //  true if it succeeded
     static bool GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_no, uint16_t* node_no);
-
 };
 
 #endif // __GCENV_OS_H__

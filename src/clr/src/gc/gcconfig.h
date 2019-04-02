@@ -156,6 +156,6 @@ static void Initialize();
 
 };
 
-bool ParseGCHeapAffinitySettings(AffinitySet* config_affinity_set);
+bool ParseGCHeapAffinitizeRanges(AffinitySet* config_affinity_set);
 
 #endif // __GCCONFIG_H__
