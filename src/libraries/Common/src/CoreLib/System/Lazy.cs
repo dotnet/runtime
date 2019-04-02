@@ -196,7 +196,7 @@ namespace System
         private Func<T>? _factory;
 
         // _value eventually stores the lazily created value. It is valid when _state = null.
-        private T _value = default!; // TODO-NULLABLE: Generic annotation
+        private T _value = default!; // TODO-NULLABLE-GENERIC
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/> class that 
@@ -443,7 +443,7 @@ namespace System
         public override string? ToString()
         {
             return IsValueCreated ?
-                Value!.ToString() : // TODO-NULLABLE: Documented to throw NullReferenceException
+                Value!.ToString() : // Throws NullReferenceException as if caller called ToString on the value itself
                 SR.Lazy_ToString_ValueNotCreated;
         }
 
@@ -454,7 +454,7 @@ namespace System
             {
                 if (!IsValueCreated)
                 {
-                    return default!; // TODO-NULLABLE: generic nullability
+                    return default!; // TODO-NULLABLE-GENERIC
                 }
                 return _value;
             }

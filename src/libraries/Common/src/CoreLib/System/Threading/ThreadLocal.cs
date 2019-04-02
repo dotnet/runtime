@@ -202,7 +202,7 @@ namespace System.Threading
 
                     // And clear the references from the slot table to the linked slot and the value so that
                     // both can get garbage collected.
-                    slotArray[id].Value!._value = default!; // TODO-NULLABILITY: need a way to annotate Ts
+                    slotArray[id].Value!._value = default!; // TODO-NULLABLE-GENERIC
                     slotArray[id].Value = null;
                 }
             }
@@ -229,7 +229,7 @@ namespace System.Threading
         /// </remarks>
         public override string? ToString()
         {
-            return Value!.ToString(); // TODO-NULLABILITY: This is actually documented to null ref if Value is null!
+            return Value!.ToString(); // Throws NullReferenceException as if caller called ToString on the value itself
         }
 
         /// <summary>
@@ -320,7 +320,7 @@ namespace System.Threading
             T value;
             if (_valueFactory == null)
             {
-                value = default!; // TODO-NULLABILITY: Need a way to annotate T as nullable
+                value = default!; // TODO-NULLABLE-GENERIC
             }
             else
             {
@@ -520,7 +520,7 @@ namespace System.Threading
 
                 LinkedSlot? slot;
                 if (slotArray == null || id >= slotArray.Length || (slot = slotArray[id].Value) == null || !_initialized)
-                    return default!; // TODO-NULLABILITY: Need a way to annotate T
+                    return default!; // TODO-NULLABLE-GENERIC
                 return slot._value;
             }
         }
@@ -646,7 +646,7 @@ namespace System.Threading
             internal volatile LinkedSlotVolatile[]? _slotArray;
 
             // The value for this slot.
-            internal T _value = default!; // TODO-NULLABILITY: should not need to initialize this to default!
+            internal T _value = default!; // TODO-NULLABLE-GENERIC
         }
 
         /// <summary>
