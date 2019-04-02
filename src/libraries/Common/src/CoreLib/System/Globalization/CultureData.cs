@@ -796,8 +796,7 @@ namespace System.Globalization
                 {
                     case "zh-CHS":
                     case "zh-CHT":
-                        // TODO-NULLABLE: dotnet/roslyn#34273
-                        return _sName!;
+                        return _sName!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34273
                 }
                 return _sRealName!;
             }

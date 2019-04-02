@@ -53,7 +53,7 @@ namespace System.Threading
             }
         }
 
-        public static bool TryOpenExisting(string name, out Semaphore? result) => // TODO-NULLABLE: Try pattern with non-null result when true
+        public static bool TryOpenExisting(string name, out Semaphore? result) => // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             OpenExistingWorker(name, out result) == OpenExistingResult.Success;
 
         public int Release() => ReleaseCore(1);

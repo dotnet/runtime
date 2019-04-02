@@ -335,8 +335,7 @@ namespace System.Threading
                 {
                     if (safeWaitHandles[i] != null)
                     {
-                        // TODO-NULLABLE: '!' below should not be required
-                        safeWaitHandles[i]!.DangerousRelease();
+                        safeWaitHandles[i]!.DangerousRelease(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                         safeWaitHandles[i] = null;
                     }
                 }

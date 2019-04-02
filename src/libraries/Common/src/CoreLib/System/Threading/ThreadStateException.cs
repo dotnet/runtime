@@ -12,6 +12,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Threading
@@ -26,13 +27,13 @@ namespace System.Threading
             HResult = HResults.COR_E_THREADSTATE;
         }
 
-        public ThreadStateException(string message)
+        public ThreadStateException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_THREADSTATE;
         }
 
-        public ThreadStateException(string message, Exception innerException)
+        public ThreadStateException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_THREADSTATE;
