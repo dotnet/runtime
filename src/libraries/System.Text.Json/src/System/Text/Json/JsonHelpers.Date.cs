@@ -108,7 +108,7 @@ namespace System.Text.Json
             int hour = 0;
             int minute = 0;
             int second = 0;
-            int fraction = 0;
+            int fraction = 0; // This value should never be greater than 9_999_999.
             int offsetHours = 0;
             int offsetMinutes = 0;
             byte offsetToken = default;
@@ -215,25 +215,21 @@ namespace System.Text.Json
             // Source does not have enough characters for YYYY-MM-DDThh:mm:ss.s
             if (source.Length < 21)
             {
-                value = default;
-                bytesConsumed = 0;
-                kind = default;
-                return false;
+                goto ReturnFalse;
             }
 
             sourceIndex = 20;
 
-            // Parse fraction
+            // Parse fraction. This value should never be greater than 9_999_999
             {
                 int numDigitsRead = 0;
+                int fractionEnd = Math.Min(sourceIndex + JsonConstants.DateTimeParseNumFractionDigits, source.Length);
 
-                while (sourceIndex < source.Length && IsDigit(curByte = source[sourceIndex]))
+                while (sourceIndex < fractionEnd && IsDigit(curByte = source[sourceIndex]))
                 {
-                    int prevFractionTimesTen = fraction * 10;
-
-                    if ((prevFractionTimesTen + (int)(curByte - (uint)'0') <= JsonConstants.MaxDateTimeFraction) && (numDigitsRead < JsonConstants.DateTimeNumFractionDigits))
+                    if (numDigitsRead < JsonConstants.DateTimeNumFractionDigits)
                     {
-                        fraction = prevFractionTimesTen + (int)(curByte - (uint)'0');
+                        fraction = (fraction * 10) + (int)(curByte - (uint)'0');
                         numDigitsRead++;
                     }
 
@@ -258,6 +254,8 @@ namespace System.Text.Json
                 goto FinishedParsing;
             }
 
+            curByte = source[sourceIndex];
+
             if (curByte == JsonConstants.UtcOffsetToken)
             {
                 bytesConsumed++;
@@ -268,6 +266,10 @@ namespace System.Text.Json
             {
                 offsetToken = source[sourceIndex++];
                 goto ParseOffset;
+            }
+            else if (IsDigit(curByte))
+            {
+                goto ReturnFalse;
             }
 
             goto FinishedParsing;
