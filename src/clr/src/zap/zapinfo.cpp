@@ -205,8 +205,14 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
+    {
         jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN);
+#ifndef PLATFORM_UNIX
+        // PInvoke Helpers are not yet implemented on non-Windows platforms
+        jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PINVOKE_HELPERS);
 #endif
+    }
+#endif  // FEATURE_READYTORUN_COMPILER
 
     return jitFlags;
 }
@@ -1988,12 +1994,15 @@ void * ZapInfo::getAddressOfPInvokeFixup(CORINFO_METHOD_HANDLE method,void **ppI
 
     m_pImage->m_pPreloader->AddMethodToTransitiveClosureOfInstantiations(method);
 
-    CORINFO_MODULE_HANDLE moduleHandle = m_pEECompileInfo->GetLoaderModuleForEmbeddableMethod(method);
-    if (moduleHandle == m_pImage->m_hModule 
-        && m_pImage->m_pPreloader->CanEmbedMethodHandle(method, m_currentMethodHandle))
+    if (!IsReadyToRunCompilation())
     {
-        *ppIndirection = NULL;
-        return PVOID(m_pImage->GetWrappers()->GetAddrOfPInvokeFixup(method));
+        CORINFO_MODULE_HANDLE moduleHandle = m_pEECompileInfo->GetLoaderModuleForEmbeddableMethod(method);
+        if (moduleHandle == m_pImage->m_hModule
+            && m_pImage->m_pPreloader->CanEmbedMethodHandle(method, m_currentMethodHandle))
+        {
+            *ppIndirection = NULL;
+            return PVOID(m_pImage->GetWrappers()->GetAddrOfPInvokeFixup(method));
+        }
     }
 
     //
@@ -3849,9 +3858,11 @@ CorInfoUnmanagedCallConv ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
 BOOL ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
                                                        CORINFO_SIG_INFO* sig)
 {
-    // READYTORUN: FUTURE: P/Invoke
+#ifdef PLATFORM_UNIX
+    // TODO: Support for pinvoke helpers on non-Windows platforms
     if (IsReadyToRunCompilation())
-        return TRUE;
+        return TRUE; 
+#endif
 
     return m_pEEJitInfo->pInvokeMarshalingRequired(method, sig);
 }

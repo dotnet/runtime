@@ -494,6 +494,10 @@ public:
 
     void    SetInteropParamExceptionInfo(UINT resID, UINT paramIdx);
     bool    HasInteropParamExceptionInfo();
+    bool    TargetHasThis()
+    {
+        return m_targetHasThis == TRUE;
+    }
 
     void ClearCode();
 
@@ -556,6 +560,7 @@ protected:
     BOOL                m_fHasCleanupCode;
     BOOL                m_fHasExceptionCleanupCode;
     BOOL                m_fCleanupWorkListIsSetup;
+    BOOL                m_targetHasThis;
     DWORD               m_dwThreadLocalNum;                 // managed-to-native only
     DWORD               m_dwArgMarshalIndexLocalNum;
     DWORD               m_dwCleanupWorkListLocalNum;
