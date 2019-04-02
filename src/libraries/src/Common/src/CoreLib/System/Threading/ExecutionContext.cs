@@ -11,6 +11,7 @@
 **
 ===========================================================*/
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -18,7 +19,7 @@ using System.Runtime.Serialization;
 
 namespace System.Threading
 {
-    public delegate void ContextCallback(object state);
+    public delegate void ContextCallback(object? state);
 
     internal delegate void ContextCallback<TState>(ref TState state);
 
@@ -27,8 +28,8 @@ namespace System.Threading
         internal static readonly ExecutionContext Default = new ExecutionContext(isDefault: true);
         internal static readonly ExecutionContext DefaultFlowSuppressed = new ExecutionContext(AsyncLocalValueMap.Empty, Array.Empty<IAsyncLocal>(), isFlowSuppressed: true);
 
-        private readonly IAsyncLocalValueMap m_localValues;
-        private readonly IAsyncLocal[] m_localChangeNotifications;
+        private readonly IAsyncLocalValueMap? m_localValues;
+        private readonly IAsyncLocal[]? m_localChangeNotifications;
         private readonly bool m_isFlowSuppressed;
         private readonly bool m_isDefault;
 
@@ -39,7 +40,7 @@ namespace System.Threading
 
         private ExecutionContext(
             IAsyncLocalValueMap localValues,
-            IAsyncLocal[] localChangeNotifications,
+            IAsyncLocal[]? localChangeNotifications,
             bool isFlowSuppressed)
         {
             m_localValues = localValues;
@@ -52,9 +53,9 @@ namespace System.Threading
             throw new PlatformNotSupportedException();
         }
 
-        public static ExecutionContext Capture()
+        public static ExecutionContext? Capture()
         {
-            ExecutionContext executionContext = Thread.CurrentThread._executionContext;
+            ExecutionContext? executionContext = Thread.CurrentThread._executionContext;
             if (executionContext == null)
             {
                 executionContext = Default;
@@ -67,7 +68,7 @@ namespace System.Threading
             return executionContext;
         }
 
-        private ExecutionContext ShallowClone(bool isFlowSuppressed)
+        private ExecutionContext? ShallowClone(bool isFlowSuppressed)
         {
             Debug.Assert(isFlowSuppressed != m_isFlowSuppressed);
 
@@ -84,7 +85,7 @@ namespace System.Threading
         public static AsyncFlowControl SuppressFlow()
         {
             Thread currentThread = Thread.CurrentThread;
-            ExecutionContext executionContext = currentThread._executionContext ?? Default;
+            ExecutionContext? executionContext = currentThread._executionContext ?? Default;
             if (executionContext.m_isFlowSuppressed)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotSupressFlowMultipleTimes);
@@ -119,7 +120,7 @@ namespace System.Threading
 
         internal bool IsDefault => m_isDefault;
 
-        public static void Run(ExecutionContext executionContext, ContextCallback callback, object state)
+        public static void Run(ExecutionContext executionContext, ContextCallback callback, object? state)
         {
             // Note: ExecutionContext.Run is an extremely hot function and used by every await, ThreadPool execution, etc.
             if (executionContext == null)
@@ -130,7 +131,7 @@ namespace System.Threading
             RunInternal(executionContext, callback, state);
         }
 
-        internal static void RunInternal(ExecutionContext executionContext, ContextCallback callback, object state)
+        internal static void RunInternal(ExecutionContext? executionContext, ContextCallback callback, object? state)
         {
             // Note: ExecutionContext.RunInternal is an extremely hot function and used by every await, ThreadPool execution, etc.
             // Note: Manual enregistering may be addressed by "Exception Handling Write Through Optimization"
@@ -140,7 +141,7 @@ namespace System.Threading
             // Capture references to Thread Contexts
             Thread currentThread0 = Thread.CurrentThread;
             Thread currentThread = currentThread0;
-            ExecutionContext previousExecutionCtx0 = currentThread0._executionContext;
+            ExecutionContext? previousExecutionCtx0 = currentThread0._executionContext;
             if (previousExecutionCtx0 != null && previousExecutionCtx0.m_isDefault)
             {
                 // Default is a null ExecutionContext internally
@@ -151,7 +152,7 @@ namespace System.Threading
             // This allows us to restore them and undo any Context changes made in callback.Invoke
             // so that they won't "leak" back into caller.
             // These variables will cross EH so be forced to stack
-            ExecutionContext previousExecutionCtx = previousExecutionCtx0;
+            ExecutionContext? previousExecutionCtx = previousExecutionCtx0;
             SynchronizationContext previousSyncCtx = currentThread0._synchronizationContext;
 
             if (executionContext != null && executionContext.m_isDefault)
@@ -165,7 +166,7 @@ namespace System.Threading
                 RestoreChangedContextToThread(currentThread0, executionContext, previousExecutionCtx0);
             }
 
-            ExceptionDispatchInfo edi = null;
+            ExceptionDispatchInfo? edi = null;
             try
             {
                 callback.Invoke(state);
@@ -188,7 +189,7 @@ namespace System.Threading
                 currentThread1._synchronizationContext = previousSyncCtx1;
             }
 
-            ExecutionContext previousExecutionCtx1 = previousExecutionCtx;
+            ExecutionContext? previousExecutionCtx1 = previousExecutionCtx;
             ExecutionContext currentExecutionCtx1 = currentThread1._executionContext;
             if (currentExecutionCtx1 != previousExecutionCtx1)
             {
@@ -200,7 +201,7 @@ namespace System.Threading
         }
 
         // Direct copy of the above RunInternal overload, except that it passes the state into the callback strongly-typed and by ref.
-        internal static void RunInternal<TState>(ExecutionContext executionContext, ContextCallback<TState> callback, ref TState state)
+        internal static void RunInternal<TState>(ExecutionContext? executionContext, ContextCallback<TState> callback, ref TState state)
         {
             // Note: ExecutionContext.RunInternal is an extremely hot function and used by every await, ThreadPool execution, etc.
             // Note: Manual enregistering may be addressed by "Exception Handling Write Through Optimization"
@@ -210,7 +211,7 @@ namespace System.Threading
             // Capture references to Thread Contexts
             Thread currentThread0 = Thread.CurrentThread;
             Thread currentThread = currentThread0;
-            ExecutionContext previousExecutionCtx0 = currentThread0._executionContext;
+            ExecutionContext? previousExecutionCtx0 = currentThread0._executionContext;
             if (previousExecutionCtx0 != null && previousExecutionCtx0.m_isDefault)
             {
                 // Default is a null ExecutionContext internally
@@ -221,7 +222,7 @@ namespace System.Threading
             // This allows us to restore them and undo any Context changes made in callback.Invoke
             // so that they won't "leak" back into caller.
             // These variables will cross EH so be forced to stack
-            ExecutionContext previousExecutionCtx = previousExecutionCtx0;
+            ExecutionContext? previousExecutionCtx = previousExecutionCtx0;
             SynchronizationContext previousSyncCtx = currentThread0._synchronizationContext;
 
             if (executionContext != null && executionContext.m_isDefault)
@@ -235,7 +236,7 @@ namespace System.Threading
                 RestoreChangedContextToThread(currentThread0, executionContext, previousExecutionCtx0);
             }
 
-            ExceptionDispatchInfo edi = null;
+            ExceptionDispatchInfo? edi = null;
             try
             {
                 callback.Invoke(ref state);
@@ -258,7 +259,7 @@ namespace System.Threading
                 currentThread1._synchronizationContext = previousSyncCtx1;
             }
 
-            ExecutionContext previousExecutionCtx1 = previousExecutionCtx;
+            ExecutionContext? previousExecutionCtx1 = previousExecutionCtx;
             ExecutionContext currentExecutionCtx1 = currentThread1._executionContext;
             if (currentExecutionCtx1 != previousExecutionCtx1)
             {
@@ -282,7 +283,7 @@ namespace System.Threading
                 RestoreChangedContextToThread(threadPoolThread, contextToRestore: executionContext, currentContext: null);
             }
 
-            ExceptionDispatchInfo edi = null;
+            ExceptionDispatchInfo? edi = null;
             try
             {
                 callback.Invoke(state);
@@ -333,7 +334,7 @@ namespace System.Threading
             // ThreadPoolWorkQueue.Dispatch will handle notifications and reset EC and SyncCtx back to default
         }
 
-        internal static void RestoreChangedContextToThread(Thread currentThread, ExecutionContext contextToRestore, ExecutionContext currentContext)
+        internal static void RestoreChangedContextToThread(Thread currentThread, ExecutionContext? contextToRestore, ExecutionContext? currentContext)
         {
             Debug.Assert(currentThread == Thread.CurrentThread);
             Debug.Assert(contextToRestore != currentContext);
@@ -376,13 +377,13 @@ namespace System.Threading
             Debug.Assert(Thread.CurrentThread._synchronizationContext == null, "ThreadPool thread not on Default SynchronizationContext.");
         }
 
-        internal static void OnValuesChanged(ExecutionContext previousExecutionCtx, ExecutionContext nextExecutionCtx)
+        internal static void OnValuesChanged(ExecutionContext? previousExecutionCtx, ExecutionContext? nextExecutionCtx)
         {
             Debug.Assert(previousExecutionCtx != nextExecutionCtx);
 
             // Collect Change Notifications 
-            IAsyncLocal[] previousChangeNotifications = previousExecutionCtx?.m_localChangeNotifications;
-            IAsyncLocal[] nextChangeNotifications = nextExecutionCtx?.m_localChangeNotifications;
+            IAsyncLocal[]? previousChangeNotifications = previousExecutionCtx?.m_localChangeNotifications;
+            IAsyncLocal[]? nextChangeNotifications = nextExecutionCtx?.m_localChangeNotifications;
 
             // At least one side must have notifications
             Debug.Assert(previousChangeNotifications != null || nextChangeNotifications != null);
@@ -393,8 +394,8 @@ namespace System.Threading
                 if (previousChangeNotifications != null && nextChangeNotifications != null)
                 {
                     // Notifications can't exist without values
-                    Debug.Assert(previousExecutionCtx.m_localValues != null);
-                    Debug.Assert(nextExecutionCtx.m_localValues != null);
+                    Debug.Assert(previousExecutionCtx!.m_localValues != null); // TODO-NULLABLE: Compiler can't see that we're only here when this is non-null
+                    Debug.Assert(nextExecutionCtx!.m_localValues != null); // TODO-NULLABLE: Compiler can't see that we're only here when this is non-null
                     // Both contexts have change notifications, check previousExecutionCtx first
                     foreach (IAsyncLocal local in previousChangeNotifications)
                     {
@@ -428,7 +429,7 @@ namespace System.Threading
                 else if (previousChangeNotifications != null)
                 {
                     // Notifications can't exist without values
-                    Debug.Assert(previousExecutionCtx.m_localValues != null);
+                    Debug.Assert(previousExecutionCtx!.m_localValues != null); // TODO-NULLABLE: Compiler can't see that we're only here when this is non-null
                     // No current values, so just check previous against null
                     foreach (IAsyncLocal local in previousChangeNotifications)
                     {
@@ -442,9 +443,9 @@ namespace System.Threading
                 else // Implied: nextChangeNotifications != null
                 {
                     // Notifications can't exist without values
-                    Debug.Assert(nextExecutionCtx.m_localValues != null);
+                    Debug.Assert(nextExecutionCtx!.m_localValues != null); // TODO-NULLABLE: Compiler can't see that we're only here when this is non-null
                     // No previous values, so just check current against null
-                    foreach (IAsyncLocal local in nextChangeNotifications)
+                    foreach (IAsyncLocal local in nextChangeNotifications!) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34665
                     {
                         nextExecutionCtx.m_localValues.TryGetValue(local, out object currentValue);
                         if (currentValue != null)
@@ -468,14 +469,16 @@ namespace System.Threading
             throw new InvalidOperationException(SR.InvalidOperation_NullContext);
         }
 
-        internal static object GetLocalValue(IAsyncLocal local)
+        internal static object? GetLocalValue(IAsyncLocal local)
         {
-            ExecutionContext current = Thread.CurrentThread._executionContext;
+            ExecutionContext? current = Thread.CurrentThread._executionContext;
             if (current == null)
             {
                 return null;
             }
 
+            Debug.Assert(!current.IsDefault);
+            Debug.Assert(current.m_localValues != null, "Only the default context should have null, and we shouldn't be here on the default context");
             current.m_localValues.TryGetValue(local, out object value);
             return value;
         }
@@ -484,10 +487,13 @@ namespace System.Threading
         {
             ExecutionContext current = Thread.CurrentThread._executionContext;
 
-            object previousValue = null;
+            object? previousValue = null;
             bool hadPreviousValue = false;
             if (current != null)
             {
+                Debug.Assert(!current.IsDefault);
+                Debug.Assert(current.m_localValues != null, "Only the default context should have null, and we shouldn't be here on the default context");
+
                 hadPreviousValue = current.m_localValues.TryGetValue(local, out previousValue);
             }
 
@@ -503,11 +509,14 @@ namespace System.Threading
             //   indicates that this is the first value change for the IAsyncLocal and it needs to be registered for change
             //   notifications. So in this case, a null value must be stored in 'm_localValues' to indicate that the IAsyncLocal
             //   is already registered for change notifications.
-            IAsyncLocal[] newChangeNotifications = null;
+            IAsyncLocal[]? newChangeNotifications = null;
             IAsyncLocalValueMap newValues;
             bool isFlowSuppressed = false;
             if (current != null)
             {
+                Debug.Assert(!current.IsDefault);
+                Debug.Assert(current.m_localValues != null, "Only the default context should have null, and we shouldn't be here on the default context");
+
                 isFlowSuppressed = current.m_isFlowSuppressed;
                 newValues = current.m_localValues.Set(local, newValue, treatNullValueAsNonexistent: !needChangeNotifications);
                 newChangeNotifications = current.m_localChangeNotifications;
@@ -564,7 +573,7 @@ namespace System.Threading
 
     public struct AsyncFlowControl : IDisposable
     {
-        private Thread _thread;
+        private Thread? _thread;
 
         internal void Initialize(Thread currentThread)
         {
@@ -607,7 +616,7 @@ namespace System.Threading
             Undo();
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is AsyncFlowControl && Equals((AsyncFlowControl)obj);
         }
