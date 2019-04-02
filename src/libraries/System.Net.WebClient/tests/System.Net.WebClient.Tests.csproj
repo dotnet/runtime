@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{D2348221-084D-4076-91BF-C24D28E7D386}</ProjectGuid>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="WebClientTest.cs" />
