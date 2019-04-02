@@ -132,7 +132,7 @@ $ bin\Debug\netcoreapp3.0\win-x64\publish\App.exe
 
 ## More Advanced Scenario - Using your local CoreFx build
 
-If you built corefx locally with `build -BuildAllConfigurations` after building binaries it will build NuGet packages containing them. You can use those in your projects.
+If you built corefx locally with `build -allconfigurations` after building binaries it will build NuGet packages containing them. You can use those in your projects.
 
 To use your local built corefx packages you will need to be a self-contained application and so you will
 need to follow the "Self-contained" steps from above. Once you can successfully restore, build, publish,
