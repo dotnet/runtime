@@ -42,7 +42,7 @@
 
 * Therefore, you will need to add the following package references in your project:
   - `<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="..." />`
-  - `<PackageReference Include="System.Memory" Version=..." />`
+  - `<PackageReference Include="System.Memory" Version="..." />`
   - The System.Memory package transitively brings in the other dependencies.
 
 ### CLS Compliance
