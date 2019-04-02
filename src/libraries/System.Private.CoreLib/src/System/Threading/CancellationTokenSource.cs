@@ -682,7 +682,7 @@ namespace System.Threading
                                 // Transition to the target syncContext and continue there.
                                 node.SynchronizationContext.Send(s =>
                                 {
-                                    var n = (CallbackNode)s;
+                                    var n = (CallbackNode)s!;
                                     n.Partition.Source.ThreadIDExecutingCallbacks = Environment.CurrentManagedThreadId;
                                     n.ExecuteCallback();
                                 }, node);
