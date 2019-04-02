@@ -94,13 +94,27 @@ pal::hresult_t coreclr_t::create(
     host_handle_t host_handle;
     domain_id_t domain_id;
 
+    int propertyCount = properties.count();
+    std::vector<std::vector<char>> keys_strs(propertyCount);
+    std::vector<const char*> keys(propertyCount);
+    std::vector<std::vector<char>> values_strs(propertyCount);
+    std::vector<const char*> values(propertyCount);
+    std::function<void (int,const pal::string_t &,const pal::string_t &)> callback = [&] (int index, const pal::string_t& key, const pal::string_t& value)
+    {
+        pal::pal_clrstring(key, &keys_strs[index]);
+        keys[index] = keys_strs[index].data();
+        pal::pal_clrstring(value, &values_strs[index]);
+        values[index] = values_strs[index].data();
+    };
+    properties.enumerate(callback);
+
     pal::hresult_t hr;
     hr = coreclr_initialize(
         exe_path,
         app_domain_friendly_name,
-        properties.count(),
-        properties.keys(),
-        properties.values(),
+        propertyCount,
+        keys.data(),
+        values.data(),
         &host_handle,
         &domain_id);
 
@@ -174,21 +188,21 @@ pal::hresult_t coreclr_t::shutdown(int* latchedExitCode)
 
 namespace
 {
-    const char *PropertyNameMapping[] =
+    const pal::char_t *PropertyNameMapping[] =
     {
-        "TRUSTED_PLATFORM_ASSEMBLIES",
-        "NATIVE_DLL_SEARCH_DIRECTORIES",
-        "PLATFORM_RESOURCE_ROOTS",
-        "AppDomainCompatSwitch",
-        "APP_CONTEXT_BASE_DIRECTORY",
-        "APP_CONTEXT_DEPS_FILES",
-        "FX_DEPS_FILE",
-        "PROBING_DIRECTORIES",
-        "FX_PRODUCT_VERSION",
-        "JIT_PATH",
-        "STARTUP_HOOKS",
-        "APP_PATHS",
-        "APP_NI_PATHS"
+        _X("TRUSTED_PLATFORM_ASSEMBLIES"),
+        _X("NATIVE_DLL_SEARCH_DIRECTORIES"),
+        _X("PLATFORM_RESOURCE_ROOTS"),
+        _X("AppDomainCompatSwitch"),
+        _X("APP_CONTEXT_BASE_DIRECTORY"),
+        _X("APP_CONTEXT_DEPS_FILES"),
+        _X("FX_DEPS_FILE"),
+        _X("PROBING_DIRECTORIES"),
+        _X("FX_PRODUCT_VERSION"),
+        _X("JIT_PATH"),
+        _X("STARTUP_HOOKS"),
+        _X("APP_PATHS"),
+        _X("APP_NI_PATHS")
     };
 
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");
@@ -202,7 +216,7 @@ coreclr_property_bag_t::coreclr_property_bag_t()
     _values.reserve(init_size);
 }
 
-void coreclr_property_bag_t::add(common_property key, const char *value)
+void coreclr_property_bag_t::add(common_property key, const pal::char_t *value)
 {
     int idx = static_cast<int>(key);
     assert(0 <= idx && idx < static_cast<int>(common_property::Last));
@@ -210,7 +224,7 @@ void coreclr_property_bag_t::add(common_property key, const char *value)
     add(PropertyNameMapping[idx], value);
 }
 
-void coreclr_property_bag_t::add(const char *key, const char *value)
+void coreclr_property_bag_t::add(const pal::char_t *key, const pal::char_t *value)
 {
     if (key == nullptr || value == nullptr)
         return;
@@ -220,7 +234,7 @@ void coreclr_property_bag_t::add(const char *key, const char *value)
     _values.push_back(value);
 }
 
-bool coreclr_property_bag_t::try_get(common_property key, const char **value)
+bool coreclr_property_bag_t::try_get(common_property key, const pal::char_t **value)
 {
     int idx = static_cast<int>(key);
     assert(0 <= idx && idx < static_cast<int>(common_property::Last));
@@ -228,14 +242,14 @@ bool coreclr_property_bag_t::try_get(common_property key, const char **value)
     return try_get(PropertyNameMapping[idx], value);
 }
 
-bool coreclr_property_bag_t::try_get(const char *key, const char **value)
+bool coreclr_property_bag_t::try_get(const pal::char_t *key, const pal::char_t **value)
 {
     assert(key != nullptr && value != nullptr);
     for (int i = 0; i < count(); ++i)
     {
-        if (0 == pal::cstrcasecmp(_keys[i], key))
+        if (0 == pal::strcasecmp(_keys[i].c_str(), key))
         {
-            *value = _values[i];
+            *value = _values[i].c_str();
             return true;
         }
     }
@@ -246,12 +260,7 @@ bool coreclr_property_bag_t::try_get(const char *key, const char **value)
 void coreclr_property_bag_t::log_properties()
 {
     for (int i = 0; i < count(); ++i)
-    {
-        pal::string_t key, val;
-        pal::clr_palstring(_keys[i], &key);
-        pal::clr_palstring(_values[i], &val);
-        trace::verbose(_X("Property %s = %s"), key.c_str(), val.c_str());
-    }
+        trace::verbose(_X("Property %s = %s"), _keys[i].c_str(), _values[i].c_str());
 }
 
 int coreclr_property_bag_t::count()
@@ -260,12 +269,8 @@ int coreclr_property_bag_t::count()
     return static_cast<int>(_keys.size());
 }
 
-const char** coreclr_property_bag_t::keys()
+void coreclr_property_bag_t::enumerate(std::function<void(int, const pal::string_t&, const pal::string_t&)> &callback)
 {
-    return _keys.data();
-}
-
-const char** coreclr_property_bag_t::values()
-{
-    return _values.data();
+    for (int i = 0; i < count(); ++i)
+        callback(i, _keys[i], _values[i]);
 }
