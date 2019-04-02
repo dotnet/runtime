@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 #include <assert.h>
-#include <new>
 #include <stdio.h>
 #include "diagnosticsipc.h"
 
@@ -47,7 +46,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
     const uint32_t nOutBufferSize = 16 * 1024;
     HANDLE hPipe = ::CreateNamedPipeA(
         _pNamedPipeName,                                            // pipe name
-        PIPE_ACCESS_DUPLEX/* | FILE_FLAG_OVERLAPPED*/,              // read/write access
+        PIPE_ACCESS_DUPLEX,                                         // read/write access
         PIPE_TYPE_BYTE | PIPE_WAIT | PIPE_REJECT_REMOTE_CLIENTS,    // message type pipe, message-read and blocking mode
         PIPE_UNLIMITED_INSTANCES,                                   // max. instances
         nOutBufferSize,                                             // output buffer size
@@ -71,10 +70,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
         return nullptr;
     }
 
-    auto pIpcStream = new (std::nothrow) IpcStream(hPipe);
-    if (pIpcStream == nullptr && callback != nullptr)
-        callback("Failed to allocate an IpcStream object.", 1);
-    return pIpcStream;
+    return new IpcStream(hPipe);
 }
 
 void IpcStream::DiagnosticsIpc::Unlink(ErrorCallback callback)
@@ -85,11 +81,13 @@ IpcStream::~IpcStream()
 {
     if (_hPipe != INVALID_HANDLE_VALUE)
     {
+        Flush();
+
         const BOOL fSuccessDisconnectNamedPipe = ::DisconnectNamedPipe(_hPipe);
         assert(fSuccessDisconnectNamedPipe != 0);
 
         const BOOL fSuccessCloseHandle = ::CloseHandle(_hPipe);
-        assert(CloseHandle != 0);
+        assert(fSuccessCloseHandle != 0);
     }
 }
 

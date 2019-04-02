@@ -15,7 +15,7 @@
 
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
-#define READYTORUN_MAJOR_VERSION 0x0002
+#define READYTORUN_MAJOR_VERSION 0x0003
 #define READYTORUN_MINOR_VERSION 0x0002
 // R2R Version 2.1 adds the READYTORUN_SECTION_INLINING_INFO section
 // R2R Version 2.2 adds the READYTORUN_SECTION_PROFILEDATA_INFO section
@@ -180,6 +180,8 @@ enum ReadyToRunFixupKind
 
     READYTORUN_FIXUP_DelegateCtor               = 0x2C, /* optimized delegate ctor */
     READYTORUN_FIXUP_DeclaringTypeHandle        = 0x2D,
+
+    READYTORUN_FIXUP_IndirectPInvokeTarget      = 0x2E, /* Target of an inlined pinvoke */
 };
 
 //
@@ -229,6 +231,10 @@ enum ReadyToRunHelper
 
     READYTORUN_HELPER_MemSet                    = 0x40,
     READYTORUN_HELPER_MemCpy                    = 0x41,
+
+    // PInvoke helpers
+    READYTORUN_HELPER_PInvokeBegin              = 0x42,
+    READYTORUN_HELPER_PInvokeEnd                = 0x43,
 
     // Get string handle lazily
     READYTORUN_HELPER_GetString                 = 0x50,

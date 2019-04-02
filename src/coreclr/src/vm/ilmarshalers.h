@@ -583,7 +583,10 @@ public:
         bool byrefNativeReturn = false;
         CorElementType typ = ELEMENT_TYPE_VOID;
         UINT32 nativeSize = 0;
-
+        bool nativeMethodIsMemberFunction = (m_pslNDirect->TargetHasThis() && IsCLRToNative(m_dwMarshalFlags))
+            || (m_pslNDirect->HasThis() && !IsCLRToNative(m_dwMarshalFlags))
+            || ((CorInfoCallConv)m_pslNDirect->GetStubTargetCallingConv() == CORINFO_CALLCONV_THISCALL);
+            
         // we need to convert value type return types to primitives as
         // JIT does not inline P/Invoke calls that return structures
         if (nativeType.IsValueClass())
@@ -599,33 +602,56 @@ public:
                 nativeSize = wNativeSize;
             }
 
-#if defined(_TARGET_X86_)
+#if defined(_TARGET_X86_) || (defined(_TARGET_AMD64_) && defined(_WIN32))
             // JIT32 and JIT64 (which is only used on the Windows Desktop CLR) has a problem generating
             // code for the pinvoke ILStubs which do a return using a struct type.  Therefore, we
             // change the signature of calli to return void and make the return buffer as first argument. 
 
-            // for X86 and AMD64-Windows we bash the return type from struct to U1, U2, U4 or U8
+            // For Windows AMD64 and x86, we need to use a return buffer for native member functions returning structures.
+            // for X86 Windows non-member functions we bash the return type from struct to U1, U2, U4 or U8
             // and use byrefNativeReturn for all other structs.
             // for UNIX_X86_ABI, we always need a return buffer argument for any size of structs.
-            switch (nativeSize)
+#if defined(_WIN32)
+            if (nativeMethodIsMemberFunction)
             {
-#ifndef UNIX_X86_ABI
-                case 1: typ = ELEMENT_TYPE_U1; break;
-                case 2: typ = ELEMENT_TYPE_U2; break;
-                case 4: typ = ELEMENT_TYPE_U4; break;
-                case 8: typ = ELEMENT_TYPE_U8; break;
-#endif
-                default: byrefNativeReturn = true; break;
+                byrefNativeReturn = true;
             }
-#endif
+            else
+#endif // _WIN32
+            {
+#ifndef _TARGET_AMD64_
+                switch (nativeSize)
+                {
+#ifndef UNIX_X86_ABI
+                    case 1: typ = ELEMENT_TYPE_U1; break;
+                    case 2: typ = ELEMENT_TYPE_U2; break;
+                    case 4: typ = ELEMENT_TYPE_U4; break;
+                    case 8: typ = ELEMENT_TYPE_U8; break;
+#endif // UNIX_X86_ABI
+                    default: byrefNativeReturn = true; break;
+                }
+#endif // _TARGET_AMD64_
+            }
+#endif // defined(_TARGET_X86_) || (defined(_TARGET_AMD64_) && defined(_WIN32))
         }
 
-        if (IsHresultSwap(dwMarshalFlags) || (byrefNativeReturn && IsCLRToNative(dwMarshalFlags)))
+        if (IsHresultSwap(dwMarshalFlags) || (byrefNativeReturn && (IsCLRToNative(m_dwMarshalFlags) || nativeMethodIsMemberFunction)))
         {
             LocalDesc extraParamType = nativeType;
             extraParamType.MakeByRef();
 
             m_pcsMarshal->SetStubTargetArgType(&extraParamType, false);
+            if (byrefNativeReturn && !IsCLRToNative(m_dwMarshalFlags))
+            {
+                // If doing a native->managed call and returning a structure by-ref,
+                // the native signature has an extra param for the struct return
+                // than the managed signature. Adjust the target stack delta to account this extra
+                // parameter.
+                m_pslNDirect->AdjustTargetStackDeltaForExtraParam();
+                // We also need to account for the lack of a return value in the native signature.
+                // To do this, we adjust the stack delta again for the return parameter.
+                m_pslNDirect->AdjustTargetStackDeltaForExtraParam();
+            }
             
             if (IsHresultSwap(dwMarshalFlags))
             {
@@ -741,6 +767,10 @@ public:
                 // we tolerate NULL here mainly for backward compatibility reasons
                 m_nativeHome.EmitCopyToByrefArgWithNullCheck(m_pcsUnmarshal, &nativeType, argidx);
                 m_pcsUnmarshal->EmitLDC(S_OK);
+            }
+            else if (byrefNativeReturn && nativeMethodIsMemberFunction)
+            {
+                m_nativeHome.EmitCopyToByrefArg(m_pcsUnmarshal, &nativeType, argidx);
             }
             else
             {

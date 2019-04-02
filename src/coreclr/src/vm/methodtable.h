@@ -326,8 +326,10 @@ struct MethodTableWriteableData
         enum_flag_NGEN_OverridingInterface  = 0x00080000, // Overriding interface that we should generate WinRT CCW stubs for.
 
 #ifdef FEATURE_READYTORUN_COMPILER
-        enum_flag_NGEN_IsLayoutFixedComputed = 0x0010000, // Set if we have cached the result of IsLayoutFixed computation
-        enum_flag_NGEN_IsLayoutFixed        = 0x0020000, // The result of the IsLayoutFixed computation
+        enum_flag_NGEN_IsLayoutFixedComputed                    = 0x0010000, // Set if we have cached the result of IsLayoutFixed computation
+        enum_flag_NGEN_IsLayoutFixed                            = 0x0020000, // The result of the IsLayoutFixed computation
+        enum_flag_NGEN_IsLayoutInCurrentVersionBubbleComputed   = 0x0040000, // Set if we have cached the result of IsLayoutInCurrentVersionBubble computation
+        enum_flag_NGEN_IsLayoutInCurrentVersionBubble           = 0x0080000, // The result of the IsLayoutInCurrentVersionBubble computation
 #endif
 
 #endif // FEATURE_PREJIT
@@ -4143,6 +4145,10 @@ public:
     BOOL Validate ();
 
 #ifdef FEATURE_READYTORUN_COMPILER
+    //
+    // Is field layout in this type within the current version bubble?
+    //
+    BOOL IsLayoutInCurrentVersionBubble();
     //
     // Is field layout in this type fixed within the current version bubble?
     // This check does not take the inheritance chain into account.

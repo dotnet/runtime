@@ -521,7 +521,7 @@ RefPosition* LinearScan::newRefPosition(
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(0);
-    newRP->setAllocateIfProfitable(false);
+    newRP->setRegOptional(false);
 
     // We can't have two RefPositions on a RegRecord at the same location, unless they are different types.
     assert((regRecord->lastRefPosition == nullptr) || (regRecord->lastRefPosition->nodeLocation < theLocation) ||
@@ -619,7 +619,7 @@ RefPosition* LinearScan::newRefPosition(Interval*    theInterval,
     newRP->registerAssignment = mask;
 
     newRP->setMultiRegIdx(multiRegIdx);
-    newRP->setAllocateIfProfitable(false);
+    newRP->setRegOptional(false);
 
     associateRefPosWithInterval(newRP);
 
@@ -657,7 +657,7 @@ RefPosition* LinearScan::newUseRefPosition(Interval* theInterval,
     RefPosition* pos = newRefPosition(theInterval, currentLoc, RefTypeUse, treeNode, mask, multiRegIdx);
     if (theTreeNode->IsRegOptional())
     {
-        pos->setAllocateIfProfitable(true);
+        pos->setRegOptional(true);
     }
     return pos;
 }
@@ -2576,6 +2576,7 @@ void LinearScan::BuildDefsWithKills(GenTree* tree, int dstCount, regMaskTP dstCa
         // even if 'enregisterLocalVars' is false, or 'liveLargeVectors' is empty, though currently the allocation
         // phase will fully (rather than partially) spill those, so we don't need to build the UpperVectorRestore
         // RefPositions in that case.
+        // This must be done after the kills, so that we know which large vectors are still live.
         //
         if ((killMask & RBM_FLT_CALLEE_TRASH) != RBM_NONE)
         {
@@ -2653,7 +2654,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
         operand = nullptr;
     }
     RefPosition* useRefPos = newRefPosition(interval, currentLoc, RefTypeUse, operand, candidates, multiRegIdx);
-    useRefPos->setAllocateIfProfitable(regOptional);
+    useRefPos->setRegOptional(regOptional);
     return useRefPos;
 }
 
