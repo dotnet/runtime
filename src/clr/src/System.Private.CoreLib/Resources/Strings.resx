@@ -3754,4 +3754,10 @@
   <data name="Serialization_DangerousDeserialization_Switch" xml:space="preserve">
     <value>An action was attempted during deserialization that could lead to a security vulnerability. The action has been aborted. To allow the action, set the '{0}' AppContext switch to true.</value>
   </data>
+  <data name="Argument_InvalidStartupHookSimpleAssemblyName" xml:space="preserve">
+    <value>The startup hook simple assembly name '{0}' is invalid. It must be a valid assembly name and it may not contain directory separator, space or comma characters and must not end with '.dll'.</value>
+  </data>
+  <data name="Argument_StartupHookAssemblyLoadFailed" xml:space="preserve">
+    <value>Startup hook assembly '{0}' failed to load. See inner exception for details.</value>
+  </data>
 </root>
