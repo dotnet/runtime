@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Internal.Runtime.CompilerServices;
@@ -42,10 +44,10 @@ namespace System.Buffers
         /// An array of per-core array stacks. The slots are lazily initialized to avoid creating
         /// lots of overhead for unused array sizes.
         /// </summary>
-        private readonly PerCoreLockedStacks[] _buckets = new PerCoreLockedStacks[NumBuckets];
+        private readonly PerCoreLockedStacks?[] _buckets = new PerCoreLockedStacks[NumBuckets];
         /// <summary>A per-thread array of arrays, to cache one array per array size per thread.</summary>
         [ThreadStatic]
-        private static T[][] t_tlsBuckets;
+        private static T[]?[]? t_tlsBuckets;
 
         private int _callbackCreated;
 
@@ -54,7 +56,8 @@ namespace System.Buffers
         /// <summary>
         /// Used to keep track of all thread local buckets for trimming if needed
         /// </summary>
-        private static readonly ConditionalWeakTable<T[][], object> s_allTlsBuckets = s_trimBuffers ? new ConditionalWeakTable<T[][], object>() : null;
+        private static readonly ConditionalWeakTable<T[]?[], object?>? s_allTlsBuckets =
+            s_trimBuffers ? new ConditionalWeakTable<T[]?[], object?>() : null;
 
         /// <summary>Initialize the pool.</summary>
         public TlsOverPerCoreLockedStacksArrayPool()
@@ -94,7 +97,7 @@ namespace System.Buffers
             }
 
             ArrayPoolEventSource log = ArrayPoolEventSource.Log;
-            T[] buffer;
+            T[]? buffer;
 
             // Get the bucket number for the array length
             int bucketIndex = Utilities.SelectBucketIndex(minimumLength);
@@ -103,7 +106,7 @@ namespace System.Buffers
             if (bucketIndex < _buckets.Length)
             {
                 // First try to get it from TLS if possible.
-                T[][] tlsBuckets = t_tlsBuckets;
+                T[]?[]? tlsBuckets = t_tlsBuckets;
                 if (tlsBuckets != null)
                 {
                     buffer = tlsBuckets[bucketIndex];
@@ -119,7 +122,7 @@ namespace System.Buffers
                 }
 
                 // We couldn't get a buffer from TLS, so try the global stack.
-                PerCoreLockedStacks b = _buckets[bucketIndex];
+                PerCoreLockedStacks? b = _buckets[bucketIndex];
                 if (b != null)
                 {
                     buffer = b.TryPop();
@@ -185,13 +188,14 @@ namespace System.Buffers
                 // if there was a previous one there, push that to the global stack.  This
                 // helps to keep LIFO access such that the most recently pushed stack will
                 // be in TLS and the first to be popped next.
-                T[][] tlsBuckets = t_tlsBuckets;
+                T[]?[]? tlsBuckets = t_tlsBuckets;
                 if (tlsBuckets == null)
                 {
                     t_tlsBuckets = tlsBuckets = new T[NumBuckets][];
                     tlsBuckets[bucketIndex] = array;
                     if (s_trimBuffers)
                     {
+                        Debug.Assert(s_allTlsBuckets != null, "Should be non-null iff s_trimBuffers is true");
                         s_allTlsBuckets.Add(tlsBuckets, null);
                         if (Interlocked.Exchange(ref _callbackCreated, 1) != 1)
                         {
@@ -201,7 +205,7 @@ namespace System.Buffers
                 }
                 else
                 {
-                    T[] prev = tlsBuckets[bucketIndex];
+                    T[]? prev = tlsBuckets[bucketIndex];
                     tlsBuckets[bucketIndex] = array;
 
                     if (prev != null)
@@ -222,6 +226,9 @@ namespace System.Buffers
 
         public bool Trim()
         {
+            Debug.Assert(s_trimBuffers);
+            Debug.Assert(s_allTlsBuckets != null);
+
             int milliseconds = Environment.TickCount;
             MemoryPressure pressure = GetMemoryPressure();
 
@@ -229,7 +236,7 @@ namespace System.Buffers
             if (log.IsEnabled())
                 log.BufferTrimPoll(milliseconds, (int)pressure);
 
-            PerCoreLockedStacks[] perCoreBuckets = _buckets;
+            PerCoreLockedStacks?[] perCoreBuckets = _buckets;
             for (int i = 0; i < perCoreBuckets.Length; i++)
             {
                 perCoreBuckets[i]?.Trim((uint)milliseconds, Id, pressure, _bucketArraySizes[i]);
@@ -240,12 +247,12 @@ namespace System.Buffers
                 // Under high pressure, release all thread locals
                 if (log.IsEnabled())
                 {
-                    foreach (KeyValuePair<T[][], object> tlsBuckets in s_allTlsBuckets)
+                    foreach (KeyValuePair<T[]?[], object> tlsBuckets in s_allTlsBuckets)
                     {
-                        T[][] buckets = tlsBuckets.Key;
+                        T[]?[] buckets = tlsBuckets.Key;
                         for (int i = 0; i < buckets.Length; i++)
                         {
-                            T[] buffer = Interlocked.Exchange(ref buckets[i], null);
+                            T[]? buffer = Interlocked.Exchange(ref buckets[i], null);
                             if (buffer != null)
                             {
                                 // As we don't want to take a perf hit in the rent path it
@@ -257,9 +264,9 @@ namespace System.Buffers
                 }
                 else
                 {
-                    foreach (KeyValuePair<T[][], object> tlsBuckets in s_allTlsBuckets)
+                    foreach (KeyValuePair<T[]?[], object?> tlsBuckets in s_allTlsBuckets)
                     {
-                        T[][] buckets = tlsBuckets.Key;
+                        T[]?[] buckets = tlsBuckets.Key;
                         Array.Clear(buckets, 0, buckets.Length);
                     }
                 }
@@ -355,11 +362,11 @@ namespace System.Buffers
 
             /// <summary>Try to get an array from the stacks.  If each is empty when it's tested, null will be returned.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public T[] TryPop()
+            public T[]? TryPop()
             {
                 // Try to pop from the associated stack first.  If that fails,
                 // round-robin through the other stacks.
-                T[] arr;
+                T[]? arr;
                 LockedStack[] stacks = _perCoreStacks;
                 int index = Thread.GetCurrentProcessorId() % stacks.Length;
                 for (int i = 0; i < stacks.Length; i++)
@@ -383,7 +390,7 @@ namespace System.Buffers
         /// <summary>Provides a simple stack of arrays, protected by a lock.</summary>
         private sealed class LockedStack
         {
-            private readonly T[][] _arrays = new T[MaxBuffersPerArraySizePerCore][];
+            private readonly T[]?[] _arrays = new T[MaxBuffersPerArraySizePerCore][];
             private int _count;
             private uint _firstStackItemMS;
 
@@ -408,9 +415,9 @@ namespace System.Buffers
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public T[] TryPop()
+            public T[]? TryPop()
             {
-                T[] arr = null;
+                T[]? arr = null;
                 Monitor.Enter(this);
                 if (_count > 0)
                 {
@@ -473,7 +480,8 @@ namespace System.Buffers
 
                         while (_count > 0 && trimCount-- > 0)
                         {
-                            T[] array = _arrays[--_count];
+                            T[]? array = _arrays[--_count];
+                            Debug.Assert(array != null, "No nulls should have been present in slots < _count.");
                             _arrays[_count] = null;
 
                             if (log.IsEnabled())

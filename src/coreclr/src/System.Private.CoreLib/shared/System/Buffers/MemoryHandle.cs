@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.InteropServices;
 
 namespace System.Buffers
@@ -13,7 +14,7 @@ namespace System.Buffers
     {
         private void* _pointer;
         private GCHandle _handle;
-        private IPinnable _pinnable;
+        private IPinnable? _pinnable;
 
         /// <summary>
         /// Creates a new memory handle for the memory.
@@ -22,7 +23,7 @@ namespace System.Buffers
         /// <param name="pinnable">reference to manually managed object, or default if there is no memory manager</param>
         /// <param name="handle">handle used to pin array buffers</param>
         [CLSCompliant(false)]
-        public MemoryHandle(void* pointer, GCHandle handle = default, IPinnable pinnable = default)
+        public MemoryHandle(void* pointer, GCHandle handle = default, IPinnable? pinnable = default)
         {
             _pointer = pointer;
             _handle = handle;
