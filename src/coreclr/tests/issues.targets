@@ -71,9 +71,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/keyword/TwoKeywords/TwoKeywords/*">
             <Issue>23224, often fails with timeout in release</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Methodical/flowgraph/dev10_bug679955/volatileLocal1/*">
-            <Issue>23545</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- All Unix targets -->
