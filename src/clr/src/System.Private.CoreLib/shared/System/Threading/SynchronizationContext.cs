@@ -14,7 +14,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_APPX && !ENABLE_WINRT
-        public static SynchronizationContext Current => Thread.CurrentThread._synchronizationContext;
+        public static SynchronizationContext? Current => Thread.CurrentThread._synchronizationContext;
 #endif
 
         protected void SetWaitNotificationRequired() => _requireWaitNotification = true;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Threading
@@ -41,9 +42,7 @@ namespace System.Threading
     /// </remarks>
     internal struct DeferredDisposableLifetime<T> where T : class, IDeferredDisposable
     {
-        //
-        // _count is positive until Dispose is called, after which it's (-1 - refcount).
-        //
+        /// <summary>_count is positive until Dispose is called, after which it's (-1 - refcount).</summary>
         private int _count;
 
         public bool AddRef(T obj)

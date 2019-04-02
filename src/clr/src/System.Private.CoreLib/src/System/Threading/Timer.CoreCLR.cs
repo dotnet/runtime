@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.Win32;
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -61,7 +61,7 @@ namespace System.Threading
 
         private readonly int _id; // TimerQueues[_id] == this
 
-        private AppDomainTimerSafeHandle m_appDomainTimer;
+        private AppDomainTimerSafeHandle? m_appDomainTimer;
 
         private TimerQueue(int id)
         {
