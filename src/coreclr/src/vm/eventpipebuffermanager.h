@@ -18,7 +18,7 @@ class EventPipeBufferList;
 // This class is a TLS wrapper around a pointer to thread-specific EventPipeBufferList
 // The struct wrapper is present mainly because we need a way to free the EventPipeBufferList
 // when the thread that owns it dies. Placing this class as a TLS variable will call ~ThreadEventBufferList()
-// when the thread dies so we can free EventPipeBufferList in the destructor.  
+// when the thread dies so we can free EventPipeBufferList in the destructor.
 class ThreadEventBufferList
 {
 #ifndef __GNUC__
@@ -103,7 +103,7 @@ public:
     // Write the contents of the managed buffers to the specified file.
     // The stopTimeStamp is used to determine when tracing was stopped to ensure that we
     // skip any events that might be partially written due to races when tracing is stopped.
-    void WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_INTEGER stopTimeStamp);
+    void WriteAllBuffersToFile(EventPipeFile *pFastSerializableObject, LARGE_INTEGER stopTimeStamp);
 
     // Attempt to de-allocate resources as best we can.  It is possible for some buffers to leak because
     // threads can be in the middle of a write operation and get blocked, and we may not get an opportunity
