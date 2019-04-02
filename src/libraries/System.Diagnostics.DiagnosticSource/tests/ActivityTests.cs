@@ -483,11 +483,13 @@ namespace System.Diagnostics.Tests
 
                 // Set the parent to something that is W3C by string
                 activity = new Activity("activity2");
-                activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01");
+                activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
                 activity.Start();
                 Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
                 Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
                 Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
+                Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
+                Assert.False(activity.Recorded);
                 Assert.True(IdIsW3CFormat(activity.Id));
                 activity.Stop();
 
@@ -498,6 +500,8 @@ namespace System.Diagnostics.Tests
                 activity.Start();
                 Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
                 Assert.Equal(activityTraceId.ToHexString(), activity.TraceId.ToHexString());
+                Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
+                Assert.False(activity.Recorded);
                 Assert.True(IdIsW3CFormat(activity.Id));
                 activity.Stop();
 
@@ -668,6 +672,80 @@ namespace System.Diagnostics.Tests
             Assert.Null(activity.RootId);
             activity.SetParentId("|0123456789abcdef0123456789abcdef.0123456789abcdef.");
             Assert.Equal("0123456789abcdef0123456789abcdef", activity.RootId);
+        }
+
+        [Fact]
+        public void ActivityTraceFlagsTests()
+        {
+            Activity activity;
+
+            // Set the 'Recorded' bit by using SetParentId with a -01 flags.  
+            activity = new Activity("activity1");
+            activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01");
+            activity.Start();
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+            Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
+            Assert.True(IdIsW3CFormat(activity.Id));
+            Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
+            Assert.True(activity.Recorded);
+            activity.Stop();
+
+            // Set the 'Recorded' bit by using SetParentId by using the TraceId, SpanId, ActivityTraceFlags overload 
+            activity = new Activity("activity2");
+            ActivityTraceId activityTraceId = ActivityTraceId.CreateRandom();
+            activity.SetParentId(activityTraceId, ActivitySpanId.CreateRandom(), ActivityTraceFlags.Recorded);
+            activity.Start();
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.Equal(activityTraceId.ToHexString(), activity.TraceId.ToHexString());
+            Assert.True(IdIsW3CFormat(activity.Id));
+            Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
+            Assert.True(activity.Recorded);
+            activity.Stop();
+
+            /****************************************************/
+            // Set the 'Recorded' bit explicitly after the fact.   
+            activity = new Activity("activity3");
+            activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-00");
+            activity.Start();
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+            Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
+            Assert.True(IdIsW3CFormat(activity.Id));
+            Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
+            Assert.False(activity.Recorded);
+
+            activity.ActivityTraceFlags = ActivityTraceFlags.Recorded;
+            Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
+            Assert.True(activity.Recorded);
+            activity.Stop();
+
+            /****************************************************/
+            // Confirm that that flags are propagated to children.  
+            activity = new Activity("activity4");
+            activity.SetParentId("00-0123456789abcdef0123456789abcdef-0123456789abcdef-01");
+            activity.Start();
+            Assert.Equal(activity, Activity.Current);
+            Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
+            Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
+            Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
+            Assert.True(IdIsW3CFormat(activity.Id));
+            Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
+            Assert.True(activity.Recorded);
+
+            // create a child
+            var childActivity = new Activity("activity4Child");
+            childActivity.Start();
+            Assert.Equal(childActivity, Activity.Current);
+
+            Assert.Equal("0123456789abcdef0123456789abcdef", childActivity.TraceId.ToHexString());
+            Assert.NotEqual(activity.SpanId.ToHexString(), childActivity.SpanId.ToHexString());
+            Assert.True(IdIsW3CFormat(childActivity.Id));
+            Assert.Equal(ActivityTraceFlags.Recorded, childActivity.ActivityTraceFlags);
+            Assert.True(childActivity.Recorded);
+
+            childActivity.Stop();
+            activity.Stop();
         }
 
         /// <summary>

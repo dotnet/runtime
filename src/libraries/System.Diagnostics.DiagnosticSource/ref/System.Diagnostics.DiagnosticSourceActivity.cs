@@ -25,23 +25,29 @@ namespace System.Diagnostics
         public static System.Diagnostics.ActivityIdFormat DefaultIdFormat { get { throw null; } set { } }
         public System.TimeSpan Duration { get { throw null; } }
         public static bool ForceDefaultIdFormat { get { throw null; } set { } }
-        public string Id { get { throw null; } }
+        public string Id {
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
+            get { throw null; } }
         public System.Diagnostics.ActivityIdFormat IdFormat { get { throw null; } }
         public string OperationName { get { throw null; } }
         public System.Diagnostics.Activity Parent { get { throw null; } }
         public string ParentId { get { throw null; } }
         public ref readonly System.Diagnostics.ActivitySpanId ParentSpanId { get { throw null; } }
+        public bool Recorded { get { throw null; } }
         public string RootId { get { throw null; } }
         public ref readonly System.Diagnostics.ActivitySpanId SpanId { get { throw null; } }
         public System.DateTime StartTimeUtc { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> Tags { get { throw null; } }
         public ref readonly System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
         public string TraceStateString { get { throw null; } set { } }
+        public System.Diagnostics.ActivityTraceFlags ActivityTraceFlags { get { throw null; } set { } }
         public System.Diagnostics.Activity AddBaggage(string key, string value) { throw null; }
         public System.Diagnostics.Activity AddTag(string key, string value) { throw null; }
         public string GetBaggageItem(string key) { throw null; }
         public System.Diagnostics.Activity SetEndTime(System.DateTime endTimeUtc) { throw null; }
-        public System.Diagnostics.Activity SetParentId(in System.Diagnostics.ActivityTraceId traceId, in System.Diagnostics.ActivitySpanId spanId) { throw null; }
+        public System.Diagnostics.Activity SetParentId(in System.Diagnostics.ActivityTraceId traceId, in System.Diagnostics.ActivitySpanId spanId, ActivityTraceFlags activityTraceFlags = ActivityTraceFlags.None) { throw null; }
         public System.Diagnostics.Activity SetParentId(string parentId) { throw null; }
         public System.Diagnostics.Activity SetStartTime(System.DateTime startTimeUtc) { throw null; }
         public System.Diagnostics.Activity Start() { throw null; }
@@ -49,9 +55,9 @@ namespace System.Diagnostics
     }
     public enum ActivityIdFormat
     {
-        Hierarchical = (byte)1,
-        Unknown = (byte)0,
-        W3C = (byte)2,
+        Hierarchical = 1,
+        Unknown = 0,
+        W3C = 2,
     }
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
     [System.Security.SecuritySafeCriticalAttribute]
@@ -93,8 +99,22 @@ namespace System.Diagnostics
         public string ToHexString() { throw null; }
         public override string ToString() { throw null; }
     }
+    [System.FlagsAttribute]
+    public enum ActivityTraceFlags
+    {
+        None = 0,
+        Recorded = 1,
+    }
+    public partial class DiagnosticListener
+    {
+        public override void OnActivityExport(System.Diagnostics.Activity activity, object payload) { }
+        public override void OnActivityImport(System.Diagnostics.Activity activity, object payload) { }
+        public virtual System.IDisposable Subscribe(System.IObserver<System.Collections.Generic.KeyValuePair<string, object>> observer, System.Func<string, object, object, bool> isEnabled, System.Action<System.Diagnostics.Activity, object> onActivityImport = null, System.Action<System.Diagnostics.Activity, object> onActivityExport = null) { throw null; }
+    }
     public abstract partial class DiagnosticSource
     {
+        public virtual void OnActivityExport(System.Diagnostics.Activity activity, object payload) { }
+        public virtual void OnActivityImport(System.Diagnostics.Activity activity, object payload) { }
         public System.Diagnostics.Activity StartActivity(System.Diagnostics.Activity activity, object args) { throw null; }
         public void StopActivity(System.Diagnostics.Activity activity, object args) { }
     }

@@ -629,6 +629,62 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void ActivityImportExport()
+        {
+            using (DiagnosticListener listener = new DiagnosticListener("TestingBasicIsEnabled"))
+            {
+                DiagnosticSource source = listener;
+                var result = new List<KeyValuePair<string, object>>();
+
+                bool seenPredicate = false;
+                Func<string, object, object, bool> predicate = delegate (string name, object obj1, object obj2)
+                {
+                    seenPredicate = true;
+                    return true;
+                };
+
+                Activity importerActivity = new Activity("activityImporter");
+                object importer = "MyImporterObject";
+                bool seenActivityImport = false;
+                Action<Activity, object> activityImport = delegate (Activity activity, object payload)
+                {
+                    Assert.Equal(activity.GetHashCode(), importerActivity.GetHashCode());
+                    Assert.Equal(importer, payload);
+                    seenActivityImport = true;
+
+                };
+
+                Activity exporterActivity = new Activity("activityExporter");
+                object exporter = "MyExporterObject";
+                bool seenActivityExport = false;
+                Action<Activity, object> activityExport = delegate (Activity activity, object payload)
+                {
+                    Assert.Equal(activity.GetHashCode(), exporterActivity.GetHashCode());
+                    Assert.Equal(exporter, payload);
+                    seenActivityExport = true;
+                };
+
+                // Use the Subscribe that allows you to hook the OnActivityImport and OnActivityExport calls.  
+                using (listener.Subscribe(new ObserverToList<TelemData>(result), predicate, activityImport, activityExport))
+                {
+                    if (listener.IsEnabled("IntPayload"))
+                        listener.Write("IntPayload", 5);
+
+                    Assert.True(seenPredicate);
+                    Assert.Equal(1, result.Count);
+                    Assert.Equal("IntPayload", result[0].Key);
+                    Assert.Equal(5, result[0].Value);
+
+                    listener.OnActivityImport(importerActivity, importer);
+                    Assert.True(seenActivityImport);
+
+                    listener.OnActivityExport(exporterActivity, exporter);
+                    Assert.True(seenActivityExport);
+                }
+            }
+        }
+
         #region Helpers 
         /// <summary>
         /// Returns the list of active diagnostic listeners.  
