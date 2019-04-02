@@ -3,11 +3,6 @@
 -nomethod *LastIndexOf_ArrayOfPointers_ThrowsNotSupportedException
 -nomethod *Reverse_ArrayOfPointers_ThrowsNotSupportedException
 # No SRE yet
--nomethod *CreateInstance_TypeNotRuntimeType_ThrowsArgumentException
--nomethod *CreateInstance_NotRuntimeType_ThrowsArgumentException
--nomethod *CreateInstance_NonPublicValueTypeWithPrivateDefaultConstructor_Success
--nomethod *CreateInstance_TypeBuilder_ThrowsNotSupportedException
--nomethod *CreateInstance_PublicOnlyValueTypeWithPrivateDefaultConstructor_ThrowsMissingMethodException
 -nomethod System.Tests.EnumTests.GetName_MultipleMatches
 -nomethod System.Tests.EnumTests.GetName_Invalid
 -nomethod System.Tests.EnumTests.GetName_NonIntegralTypes
@@ -28,21 +23,6 @@
 -nomethod System.Tests.GCTests.LargeObjectHeapCompactionModeRoundTrips
 -nomethod System.Tests.GCTests.GetAllocatedBytesForCurrentThread
 -nomethod System.Tests.GCTests.LatencyRoundtrips
-# InternalGetSatelliteAssembly
--nomethod System.Tests.UriCreateStringTests.Create_String_InvalidUriKind_ThrowsArgumentException
--nomethod System.Tests.UriMethodTests.MakeRelative_Invalid
--nomethod System.Tests.UriMethodTests.IsWellFormedUriString
--nomethod System.Tests.UriMethodTests.EscapeDataString_Invalid
--nomethod System.Tests.UriMethodTests.EscapeUriString_Invalid
--nomethod System.Tests.UriMethodTests.GetComponents_Invalid
-
-# Remote test runner can't load System.Globalization.Native
--nomethod System.Text.Tests.StringBuilderTests.Test_Insert_Float
--nomethod System.Text.Tests.StringBuilderTests.Test_Insert_Double
--nomethod System.Text.Tests.StringBuilderTests.Test_Insert_Decimal
--nomethod System.Text.Tests.StringBuilderTests.Test_Append_Float
--nomethod System.Text.Tests.StringBuilderTests.Test_Append_Double
--nomethod System.Text.Tests.StringBuilderTests.Test_Append_Decimal
 
 # Works, but leads to a SIGSEGV under lldb even with explicit-null-checks
 -nomethod *Append_CharPointer_Null_ThrowsNullReferenceException
@@ -63,7 +43,6 @@
 -nomethod System.Tests.ActivatorTests.CreateInstance_DesignatedOptionalParameters_ThrowsMissingMemberException
 -nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
 -nomethod System.Tests.StringTests.NormalizationTest
--nomethod System.Tests.StringTests.IndexOf_HungarianDoubleCompression_HungarianCulture
 -nomethod *HideDetectionHappensBeforeBindingFlagChecks
 -nomethod *TestRefReturnNullableNoValue
 -nomethod *TestRefReturnOfPointer
@@ -74,7 +53,6 @@
 -nomethod *StaticThrow_UpdatesStackTraceAppropriately
 -nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnNullable
 -nomethod System.Runtime.Serialization.Tests.SerializationExceptionTests.Ctor_SerializationInfo_StreamingContext
--nomethod System.Tests.BufferTests.BlockCopy_Invalid
 -nomethod System.Tests.GCTests.ReRegisterForFinalize
 -nomethod System.Tests.WeakReferenceTests.NonGeneric
 
@@ -87,10 +65,6 @@
 -nomethod System.Tests.GCTests.KeepAlive_Null
 -nomethod System.Tests.LazyTests.Value_Invalid
 -nomethod System.Tests.LazyTests.Value_ThrownException_DoesntCreateValue
-
-# GCHandle.ctor is not implemented
--nomethod System.Tests.UriCreateStringTests.Path_Query_Fragment
--nomethod System.Tests.UriCreateStringTests.OriginalString_AbsoluteUri_ToString
 
 -noclass System.Tests.TypeTestsExtended
 -noclass System.Tests.ArgIteratorTests

@@ -339,12 +339,6 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 	MonoTypeEnum vt;
 	vt = m_class_get_byval_arg (vc)->type;
 
-#ifdef ENABLE_NETCORE
-	if (m_class_is_enumtype (ec) && m_class_is_primitive (vc))
-		/* Can't convert a primitive to an enum */
-		INVALID_CAST;
-#endif
-
 	/* Check element (destination) type. */
 	switch (et) {
 	case MONO_TYPE_STRING:
@@ -648,7 +642,11 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 
 	g_assert (m_class_get_rank (ic) == 1);
 	if (mono_handle_array_has_bounds (idxs) || MONO_HANDLE_GETVAL (idxs, max_length) != m_class_get_rank (ac)) {
+#ifdef ENABLE_NETCORE
+		mono_error_set_argument (error, NULL, "");
+#else
 		mono_error_set_argument (error, "idxs", "");
+#endif
 		return;
 	}
 
