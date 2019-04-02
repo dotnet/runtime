@@ -10,7 +10,7 @@ namespace System.IO.Packaging
     /// <summary>
     /// This class has the utility methods for composing and parsing an Uri of pack:// scheme
     /// </summary>
-    public static class PackUriHelper
+    public static partial class PackUriHelper
     {
         #region Public Methods
 
@@ -380,7 +380,7 @@ namespace System.IO.Packaging
         }
 
         #endregion Internal Methods
-        
+
         #region Private Methods
 
         private static readonly char[] HexUpperChars = {
