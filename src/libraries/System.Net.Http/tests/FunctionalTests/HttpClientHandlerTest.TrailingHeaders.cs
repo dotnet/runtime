@@ -351,7 +351,7 @@ namespace System.Net.Http.Functional.Tests
             using (var server = Http2LoopbackServer.CreateServer())
             using (var client = new HttpClient(CreateHttpClientHandler(useSocketsHttpHandler: true, useHttp2LoopbackServer: true)))
             {
-                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address, HttpCompletionOption.ResponseHeadersRead);
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
                 await server.EstablishConnectionAsync();
 
