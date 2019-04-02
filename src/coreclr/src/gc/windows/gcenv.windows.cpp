@@ -518,16 +518,30 @@ bool GCToOSInterface::Initialize()
     InitNumaNodeInfo();
     InitCPUGroupInfo();
 
-    uintptr_t pmask, smask;
-    if (!!::GetProcessAffinityMask(::GetCurrentProcess(), (PDWORD_PTR)&pmask, (PDWORD_PTR)&smask))
+    if (CanEnableGCCPUGroups())
     {
-        pmask &= smask;
-
-        for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
+        // When CPU groups are enabled, then the process is not bound by the process affinity set at process launch.
+        // Set the initial affinity mask so that all processors are enabled.
+        for (size_t i = 0; i < g_nProcessors; i++)
         {
-            if ((pmask & ((uintptr_t)1 << i)) != 0)
+            g_processAffinitySet.Add(i);
+        }
+    }
+    else
+    {
+        // When CPU groups are disabled, the process affinity mask specified at the process launch cannot be
+        // escaped.
+        uintptr_t pmask, smask;
+        if (!!::GetProcessAffinityMask(::GetCurrentProcess(), (PDWORD_PTR)&pmask, (PDWORD_PTR)&smask))
+        {
+            pmask &= smask;
+
+            for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
             {
-                g_processAffinitySet.Add(i);
+                if ((pmask & ((uintptr_t)1 << i)) != 0)
+                {
+                    g_processAffinitySet.Add(i);
+                }
             }
         }
     }
@@ -953,11 +967,44 @@ bool GCToOSInterface::BoostThreadPriority()
     return !!SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 }
 
-// Get set of processors enabled for GC for the current process
+// Set the set of processors enabled for GC threads for the current process based on config specified affinity mask and set
+// Parameters:
+//  configAffinityMask - mask specified by the GCHeapAffinitizeMask config
+//  configAffinitySet  - affinity set specified by the GCHeapAffinitizeRanges config
 // Return:
 //  set of enabled processors
-AffinitySet* GCToOSInterface::GetCurrentProcessAffinitySet()
+const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffinityMask, const AffinitySet* configAffinitySet)
 {
+    // When the configAffinitySet is not empty, enforce the cpu groups
+    if (CanEnableGCCPUGroups())
+    {
+        if (!configAffinitySet->IsEmpty())
+        {
+            // Update the process affinity set using the configured set
+            for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+            {
+                if (g_processAffinitySet.Contains(i) && !configAffinitySet->Contains(i))
+                {
+                    g_processAffinitySet.Remove(i);
+                }
+            }
+        }
+    }
+    else
+    {
+        if (configAffinityMask != 0)
+        {
+            // Update the process affinity set using the configured mask
+            for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
+            {
+                if (g_processAffinitySet.Contains(i) && ((configAffinityMask & ((uintptr_t)1 << i)) == 0))
+                {
+                    g_processAffinitySet.Remove(i);
+                }
+            }
+        }
+    }
+
     return &g_processAffinitySet;
 }
 
@@ -1205,7 +1252,6 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
         uint16_t gn, gpn;
         GetGroupForProcessor((uint16_t)heap_number, &gn, &gpn);
 
-//      dprintf(3, ("using processor group %d, mask %Ix for heap %d\n", gn, (uintptr_t)1 << gpn), heap_number));
         *proc_no = GroupProcNo(gn, gpn).GetCombinedValue();
 
         if (GCToOSInterface::CanEnableGCNumaAware())
@@ -1232,7 +1278,6 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
             {
                 if (bit_number == heap_number)
                 {
-                    //dprintf (3, ("Using processor %d for heap %d", proc_number, heap_number));
                     *proc_no = GroupProcNo(GroupProcNo::NoGroup, proc_number).GetCombinedValue();
 
                     if (GCToOSInterface::CanEnableGCNumaAware())
