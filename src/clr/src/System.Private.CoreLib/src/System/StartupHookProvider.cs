@@ -13,15 +13,6 @@ namespace System
     {
         private const string StartupHookTypeName = "StartupHook";
         private const string InitializeMethodName = "Initialize";
-
-        private static readonly char[] s_disallowedSimpleAssemblyNameChars = new char[]
-        {
-            Path.DirectorySeparatorChar,
-            Path.AltDirectorySeparatorChar,
-            ' ',
-            ','
-        };
-
         private const string DisallowedSimpleAssemblyNameSuffix = ".dll";
 
         private struct StartupHookNameOrPath
@@ -43,6 +34,14 @@ namespace System
                 return;
             }
 
+            char[] disallowedSimpleAssemblyNameChars = new char[]
+            {
+                Path.DirectorySeparatorChar,
+                Path.AltDirectorySeparatorChar,
+                ' ',
+                ','
+            };
+
             // Parse startup hooks variable
             string[] startupHookParts = startupHooksVariable.Split(Path.PathSeparator);
             StartupHookNameOrPath[] startupHooks = new StartupHookNameOrPath[startupHookParts.Length];
@@ -63,9 +62,9 @@ namespace System
                     // The intent here is to only support simple assembly names, but AssemblyName .ctor accepts
                     // lot of other forms (fully qualified assembly name, strings which look like relative paths and so on).
                     // So add a check on top which will disallow any directory separator, space or comma in the assembly name.
-                    for (int j = 0; j < s_disallowedSimpleAssemblyNameChars.Length; j++)
+                    for (int j = 0; j < disallowedSimpleAssemblyNameChars.Length; j++)
                     {
-                        if (startupHookPart.Contains(s_disallowedSimpleAssemblyNameChars[j]))
+                        if (startupHookPart.Contains(disallowedSimpleAssemblyNameChars[j]))
                         {
                             throw new ArgumentException(SR.Format(SR.Argument_InvalidStartupHookSimpleAssemblyName, startupHookPart));
                         }
