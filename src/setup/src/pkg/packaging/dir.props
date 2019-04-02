@@ -23,7 +23,7 @@
   <PropertyGroup>
     <CombinedCompressedFile>dotnet-runtime-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
     <HostFxrCompressedFile>dotnet-hostfxr-internal-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
-    <NetHostCompressedFile>dotnet-nethost-$(PackageTargetRid).$(AppHostVersion)$(CompressedFileExtension)</NetHostCompressedFile>
+    <NetHostCompressedFile>dotnet-nethost-$(AppHostVersion)-$(PackageTargetRid)$(CompressedFileExtension)</NetHostCompressedFile>
     <SharedFrameworkCompressedFile>dotnet-runtime-internal-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
     <SharedFrameworkSymbolsCompressedFile>dotnet-runtime-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
   </PropertyGroup>
