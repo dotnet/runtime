@@ -61,7 +61,7 @@ namespace System.Threading
         {
             try
             {
-                Interlocked.CompareExchange(ref target, Activator.CreateInstance<T>(), null!); // TODO-NULLABLE: Need to be able to express ref T nullability
+                Interlocked.CompareExchange(ref target, Activator.CreateInstance<T>(), null!); // TODO-NULLABLE-GENERIC
             }
             catch (MissingMethodException)
             {
@@ -118,7 +118,7 @@ namespace System.Threading
                 throw new InvalidOperationException(SR.Lazy_StaticInit_InvalidOperation);
             }
 
-            Interlocked.CompareExchange(ref target, value, null!); // TODO-NULLABLE: Need to be able to express ref T nullability
+            Interlocked.CompareExchange(ref target, value, null!); // TODO-NULLABLE-GENERIC
             Debug.Assert(target != null);
             return target;
         }
