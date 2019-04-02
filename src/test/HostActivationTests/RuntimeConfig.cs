@@ -4,6 +4,7 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -77,6 +78,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private bool? _applyPatches;
         private readonly string _path;
         private readonly List<Framework> _frameworks = new List<Framework>();
+        private readonly List<Tuple<string, string>> _properties = new List<Tuple<string, string>>();
 
         /// <summary>
         /// Creates new runtime config - overwrites existing file on Save if any.
@@ -100,9 +102,28 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 {
                     JObject root = (JObject)JToken.ReadFrom(reader);
                     JObject runtimeOptions = (JObject)root["runtimeOptions"];
-                    foreach (JObject framework in runtimeOptions["frameworks"])
+                    var singleFramework = runtimeOptions["framework"] as JObject;
+                    if (singleFramework != null)
                     {
-                        runtimeConfig.WithFramework(Framework.FromJson(framework));
+                        runtimeConfig.WithFramework(Framework.FromJson(singleFramework));
+                    }
+
+                    var frameworks = runtimeOptions["frameworks"];
+                    if (frameworks != null)
+                    {
+                        foreach (JObject framework in frameworks)
+                        {
+                            runtimeConfig.WithFramework(Framework.FromJson(framework));
+                        }
+                    }
+
+                    var configProperties = runtimeOptions["configProperties"] as JObject;
+                    if (configProperties != null)
+                    {
+                        foreach (KeyValuePair<string, JToken> property in configProperties)
+                        {
+                            runtimeConfig.WithProperty(property.Key, (string)property.Value);
+                        }
                     }
 
                     runtimeConfig._rollForwardOnNoCandidateFx = (int?)runtimeOptions[Constants.RollForwardOnNoCandidateFxSetting.RuntimeConfigPropertyName];
@@ -146,6 +167,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             return this;
         }
 
+        public RuntimeConfig WithProperty(string name, string value)
+        {
+            _properties.Add(new Tuple<string, string>(name, value));
+            return this;
+        }
+
         public void Save()
         {
             JObject runtimeOptions = new JObject()
@@ -165,6 +192,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 runtimeOptions.Add(
                     Constants.ApplyPatchesSetting.RuntimeConfigPropertyName,
                     _applyPatches.Value);
+            }
+
+            if (_properties.Count > 0)
+            {
+                JObject configProperties = new JObject();
+                foreach (var property in _properties)
+                {
+                    configProperties.Add(property.Item1, property.Item2);
+                }
+
+                runtimeOptions.Add("configProperties", configProperties);
             }
 
             JObject json = new JObject()
