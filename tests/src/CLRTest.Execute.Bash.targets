@@ -253,7 +253,6 @@ fi
       </PropertyGroup>
       <PropertyGroup>
       <_CLRTestRunFile Condition="'$(CLRTestIsHosted)'=='true'">"$CORE_ROOT/corerun"</_CLRTestRunFile>
-      
       <BashCLRTestLaunchCmds>$(BashIlrtTestLaunchCmds)</BashCLRTestLaunchCmds>
 
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun'">
