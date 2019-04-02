@@ -47,71 +47,56 @@ GC_CONFIGURATION_KEYS
 #undef INT_CONFIG
 }
 
-bool ParseGCHeapAffinitySettings(AffinitySet* config_affinity_set)
+bool ParseGCHeapAffinitizeRanges(AffinitySet* config_affinity_set)
 {
     bool success = true;
 
-    // Get the affinity set configured by the user
-    uintptr_t heap_affinity_mask = GCConfig::GetGCHeapAffinitizeMask();
-    if (heap_affinity_mask != 0)
+    GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
+    const char* cpu_index_ranges = cpu_index_ranges_holder.Get();
+
+    // The cpu index ranges is a comma separated list of indices or ranges of indices (e.g. 1-5).
+    // Example 1,3,5,7-9,12
+
+    if (cpu_index_ranges != NULL)
     {
-        for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
+        char* number_end;
+
+        do
         {
-            if (heap_affinity_mask & ((uintptr_t)1 << i))
+            size_t start_index = strtoul(cpu_index_ranges, &number_end, 10);
+
+            if (number_end == cpu_index_ranges)
             {
-                config_affinity_set->Add(i);
+                // No number found, invalid format
+                break;
             }
-        }
-    }
-    else
-    {
-        GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
-        const char* cpu_index_ranges = cpu_index_ranges_holder.Get();
 
-        // The cpu index ranges is a comma separated list of indices or ranges of indices (e.g. 1-5).
-        // Example 1,3,5,7-9,12
+            size_t end_index = start_index;
 
-        if (cpu_index_ranges != NULL)
-        {
-            char* number_end;
-
-            do
+            if (*number_end == '-')
             {
-                size_t start_index = strtoul(cpu_index_ranges, &number_end, 10);
-
-                if (number_end == cpu_index_ranges)
+                char* range_end_start = number_end + 1;
+                end_index = strtoul(range_end_start, &number_end, 10);
+                if (number_end == range_end_start)
                 {
                     // No number found, invalid format
                     break;
                 }
-
-                size_t end_index = start_index;
-
-                if (*number_end == '-')
-                {
-                    char* range_end_start = number_end + 1;
-                    end_index = strtoul(range_end_start, &number_end, 10);
-                    if (number_end == range_end_start)
-                    {
-                        // No number found, invalid format
-                        break;
-                    }
-                }
-
-                if ((start_index < MAX_SUPPORTED_CPUS) && end_index < (MAX_SUPPORTED_CPUS))
-                {
-                    for (size_t i = start_index; i <= end_index; i++)
-                    {
-                        config_affinity_set->Add(i);
-                    }
-                }
-
-                cpu_index_ranges = number_end + 1;
             }
-            while (*number_end == ',');
 
-            success = (*number_end == '\0');
+            if ((start_index < MAX_SUPPORTED_CPUS) && end_index < (MAX_SUPPORTED_CPUS))
+            {
+                for (size_t i = start_index; i <= end_index; i++)
+                {
+                    config_affinity_set->Add(i);
+                }
+            }
+
+            cpu_index_ranges = number_end + 1;
         }
+        while (*number_end == ',');
+
+        success = (*number_end == '\0');
     }
 
     return success;
