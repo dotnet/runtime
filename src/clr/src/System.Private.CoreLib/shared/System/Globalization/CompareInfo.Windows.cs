@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -111,7 +112,7 @@ namespace System.Globalization
 
             return FindStringOrdinal(FIND_FROMEND, source, startIndex - count + 1, count, value, value.Length, ignoreCase);
         }
-        
+
         private unsafe int GetHashCodeOfStringCore(ReadOnlySpan<char> source, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -141,7 +142,7 @@ namespace System.Globalization
                 // sort keys, LCMapStringEx treats the output buffer as containing opaque binary data.
                 // See https://docs.microsoft.com/en-us/windows/desktop/api/winnls/nf-winnls-lcmapstringex.
 
-                byte[] borrowedArr = null;
+                byte[]? borrowedArr = null;
                 Span<byte> span = sortKeyLength <= 512 ?
                     stackalloc byte[512] :
                     (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
@@ -177,7 +178,7 @@ namespace System.Globalization
             fixed (char* char1 = &string1)
             fixed (char* char2 = &string2)
             {
-                // Use the OS to compare and then convert the result to expected value by subtracting 2 
+                // Use the OS to compare and then convert the result to expected value by subtracting 2
                 return Interop.Kernel32.CompareStringOrdinal(char1, count1, char2, count2, true) - 2;
             }
         }
@@ -191,7 +192,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+            string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
@@ -224,7 +225,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+            string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
             fixed (char* pString1 = &MemoryMarshal.GetReference(string1))
@@ -263,7 +264,7 @@ namespace System.Globalization
             Debug.Assert(!lpStringSource.IsEmpty);
             Debug.Assert(!lpStringValue.IsEmpty);
 
-            string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+            string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
             fixed (char* pSource = &MemoryMarshal.GetReference(lpStringSource))
@@ -282,7 +283,7 @@ namespace System.Globalization
                                     _sortHandle);
             }
         }
-        
+
         private unsafe int FindString(
             uint dwFindNLSStringFlags,
             string lpStringSource,
@@ -297,7 +298,7 @@ namespace System.Globalization
             Debug.Assert(lpStringSource != null);
             Debug.Assert(lpStringValue != null);
 
-            string localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
+            string? localeName = _sortHandle != IntPtr.Zero ? null : _sortName;
 
             fixed (char* pLocaleName = localeName)
             fixed (char* pSource = lpStringSource)
@@ -493,9 +494,9 @@ namespace System.Globalization
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(options));
             }
 
-            byte [] keyData = null;
+            byte [] keyData;
             if (source.Length == 0)
-            { 
+            {
                 keyData = Array.Empty<byte>();
             }
             else
