@@ -360,4 +360,16 @@
   <data name="ZipZeroSizeFileIsNotValidArchive" xml:space="preserve">
     <value>Archive file cannot be size 0.</value>
   </data>
+  <data name="InnerPackageUriHasFragment" xml:space="preserve">
+    <value>Package URI obtained from the pack URI cannot contain a Fragment.</value>
+  </data>
+  <data name="FragmentMustStartWithHash" xml:space="preserve">
+    <value>The '{0}' parameter must start with '#'.</value>
+  </data>
+  <data name="UriShouldBePackScheme" xml:space="preserve">
+    <value>URI must contain pack:// scheme.</value>
+  </data>
+  <data name="UriShouldBeAbsolute" xml:space="preserve">
+    <value>Must have absolute URI.</value>
+  </data>
 </root>

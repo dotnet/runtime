@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{1F827C19-6023-48D3-909F-9F43AB42FAF0}</ProjectGuid>
     <RootNamespace>System.IO.Packaging</RootNamespace>
@@ -50,6 +50,7 @@
     <Compile Include="System\IO\Packaging\ZipPackagePart.cs" />
     <Compile Include="System\IO\Packaging\ZipStreamManager.cs" />
     <Compile Include="System\IO\Packaging\ZipWrappingStream.cs" />
+    <Compile Condition="'$(TargetGroup)'!='netstandard1.3'" Include="System\IO\Packaging\PackUriHelper.PackUriScheme.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netfx' OR '$(TargetGroup)' == 'net46' ">
     <Reference Include="mscorlib" />
