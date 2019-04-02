@@ -10,7 +10,8 @@
 
 #ifdef FEATURE_PERFTRACING
 
-EventPipeBlock::EventPipeBlock(unsigned int maxBlockSize)
+EventPipeBlock::EventPipeBlock(unsigned int maxBlockSize) :
+    FastSerializableObject(1, 0)
 {
     CONTRACTL
     {
@@ -71,7 +72,7 @@ bool EventPipeBlock::WriteEvent(EventPipeEventInstance &instance)
         return false;
     }
 
-    BYTE* alignedEnd = m_pWritePointer + totalSize + sizeof(totalSize); 
+    BYTE* alignedEnd = m_pWritePointer + totalSize + sizeof(totalSize);
 
     memcpy(m_pWritePointer, &totalSize, sizeof(totalSize));
     m_pWritePointer += sizeof(totalSize);

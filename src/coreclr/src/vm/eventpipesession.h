@@ -39,9 +39,6 @@ private:
     // Start timestamp.
     LARGE_INTEGER m_sessionStartTimeStamp;
 
-    // The maximum trace length in seconds.  Used to determine when to flush the current file and start a new one.
-    UINT64 m_multiFileTraceLengthInSeconds;
-
 public:
 
     // TODO: This needs to be exposed via EventPipe::CreateSession() and EventPipe::DeleteSession() to avoid memory ownership issues.
@@ -49,8 +46,7 @@ public:
         EventPipeSessionType sessionType,
         unsigned int circularBufferSizeInMB,
         const EventPipeProviderConfiguration *pProviders,
-        uint32_t numProviders,
-        uint64_t multiFileTraceLengthInSeconds);
+        uint32_t numProviders);
     ~EventPipeSession();
 
     // Determine if the session is valid or not.  Invalid sessions can be detected before they are enabled.
@@ -96,12 +92,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_sessionStartTimeStamp;
-    }
-
-    UINT64 GetMultiFileTraceLengthInSeconds() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_multiFileTraceLengthInSeconds;
     }
 
     // Add a new provider to the session.

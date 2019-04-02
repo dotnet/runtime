@@ -110,11 +110,11 @@ struct LocalDesc
 
         bool lastElementTypeIsValueType = false;
         
-        if (ElementType[0] == ELEMENT_TYPE_VALUETYPE)
+        if (ElementType[cbType - 1] == ELEMENT_TYPE_VALUETYPE)
         {
             lastElementTypeIsValueType = true;
         }
-        else if ((ElementType[0] == ELEMENT_TYPE_INTERNAL) &&
+        else if ((ElementType[cbType - 1] == ELEMENT_TYPE_INTERNAL) &&
                     (InternalToken.IsNativeValueType() ||
                      InternalToken.GetMethodTable()->IsValueType()))
         {
@@ -378,7 +378,7 @@ class ILStubLinker
 public:
 
     ILStubLinker(Module* pModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD,
-                 BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub = FALSE);
+                 BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub = FALSE, BOOL fIsReverseStub = FALSE);
     ~ILStubLinker();
     
     void GenerateCode(BYTE* pbBuffer, size_t cbBufferSize);
@@ -424,7 +424,6 @@ public:
     void GetStubReturnType(LocalDesc * pLoc);
     void GetStubReturnType(LocalDesc * pLoc, Module * pModule);
     CorCallingConvention GetStubTargetCallingConv();
-
     
     CorElementType GetStubTargetReturnElementType() { WRAPPER_NO_CONTRACT; return m_nativeFnSigBuilder.GetReturnElementType(); }
 
@@ -504,12 +503,23 @@ protected:
     void SetStubTargetReturnType(LocalDesc* pLoc);
     void SetStubTargetCallingConv(CorCallingConvention uNativeCallingConv);
 
+    bool ReturnOpcodePopsStack()
+    {
+        if ((!m_fIsReverseStub && m_StubHasVoidReturnType) || (m_fIsReverseStub && m_StubTargetHasVoidReturnType))
+        {
+            return false;
+        }
+        return true;
+    }
+
     void TransformArgForJIT(LocalDesc *pLoc);
 
     Module * GetStubSigModule();
     SigTypeContext *GetStubSigTypeContext();
 
     BOOL    m_StubHasVoidReturnType;
+    BOOL    m_StubTargetHasVoidReturnType;
+    BOOL    m_fIsReverseStub;
     INT     m_iTargetStackDelta;
     DWORD   m_cbCurrentCompressedSigLen;
     DWORD   m_nLocals;

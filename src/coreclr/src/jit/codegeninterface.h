@@ -25,11 +25,16 @@
 #include "jitgcinfo.h"
 #include "treelifeupdater.h"
 
-// Disable this flag to avoid using psiScope/siScope info to report reporting
-// variables' home location during the method/prolog code.
 #if 1
+// Enable USING_SCOPE_INFO flag to use psiScope/siScope info to report variables' locations.
 #define USING_SCOPE_INFO
-#endif // USING_SCOPE_INFO
+#endif
+#if 0
+// Enable USING_VARIABLE_LIVE_RANGE flag to use VariableLiveRange info to report variables' locations.
+// Note: if both USING_SCOPE_INFO and USING_VARIABLE_LIVE_RANGE are defined, then USING_SCOPE_INFO
+// information is reported to the debugger.
+#define USING_VARIABLE_LIVE_RANGE
+#endif
 
 // Forward reference types
 
@@ -521,7 +526,11 @@ public:
         // Helper functions
 
         bool vlIsInReg(regNumber reg) const;
-        bool vlIsOnStk(regNumber reg, signed offset) const;
+        bool vlIsOnStack(regNumber reg, signed offset) const;
+        bool vlIsOnStack() const;
+
+        void storeVariableInRegisters(regNumber reg, regNumber otherReg);
+        void storeVariableOnStack(regNumber stackBaseReg, NATIVE_OFFSET variableStackOffset);
 
         siVarLoc(const LclVarDsc* varDsc, regNumber baseReg, int offset, bool isFramePointerUsed);
         siVarLoc(){};
@@ -543,6 +552,12 @@ public:
     };
 
 public:
+    siVarLoc getSiVarLoc(const LclVarDsc* varDsc, unsigned int stackLevel) const;
+
+#ifdef DEBUG
+    void dumpSiVarLoc(const siVarLoc* varLoc) const;
+#endif
+
     unsigned getCurrentStackLevel() const;
 
 protected:

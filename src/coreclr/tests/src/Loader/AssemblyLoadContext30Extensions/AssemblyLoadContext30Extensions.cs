@@ -6,8 +6,6 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.IO;
 
-using Console = Internal.Console;
-
 namespace My
 {
     public class CustomAssemblyLoadContext : AssemblyLoadContext
@@ -119,7 +117,7 @@ public class Program
 
     public static void AssemblyLoadByteArrayName()
     {
-#if ReadAllBytes // System.IO.File.ReadAllBytes is not found when ReferenceSystemPrivateCoreLib is true
+#if runDisabled // This test case fails when the assembly is a ready2run image
         try
         {
             Console.WriteLine("AssemblyLoadByteArrayName()");
@@ -138,7 +136,7 @@ public class Program
             Assert(alc.GetType().ToString() == "System.Runtime.Loader.IndividualAssemblyLoadContext");
 
             Console.WriteLine(alc.ToString());
-            Assert(alc.ToString().Contains("\"Default"));
+            Assert(alc.ToString().Contains("\"Assembly.Load(byte[], ...)\""));
             Assert(alc.ToString().Contains("\" System.Runtime.Loader.IndividualAssemblyLoadContext"));
             Assert(alc.ToString().Contains(" #"));
         }
