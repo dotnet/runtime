@@ -101,7 +101,7 @@ namespace System.Threading
         public static void RestoreFlow()
         {
             Thread currentThread = Thread.CurrentThread;
-            ExecutionContext executionContext = currentThread._executionContext;
+            ExecutionContext? executionContext = currentThread._executionContext;
             if (executionContext == null || !executionContext.m_isFlowSuppressed)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotRestoreUnsupressedFlow);
@@ -112,7 +112,7 @@ namespace System.Threading
 
         public static bool IsFlowSuppressed()
         {
-            ExecutionContext executionContext = Thread.CurrentThread._executionContext;
+            ExecutionContext? executionContext = Thread.CurrentThread._executionContext;
             return executionContext != null && executionContext.m_isFlowSuppressed;
         }
 
@@ -153,7 +153,7 @@ namespace System.Threading
             // so that they won't "leak" back into caller.
             // These variables will cross EH so be forced to stack
             ExecutionContext? previousExecutionCtx = previousExecutionCtx0;
-            SynchronizationContext previousSyncCtx = currentThread0._synchronizationContext;
+            SynchronizationContext? previousSyncCtx = currentThread0._synchronizationContext;
 
             if (executionContext != null && executionContext.m_isDefault)
             {
@@ -180,7 +180,7 @@ namespace System.Threading
             }
 
             // Re-enregistrer variables post EH with 1 post-fix so they can be used in registers rather than from stack
-            SynchronizationContext previousSyncCtx1 = previousSyncCtx;
+            SynchronizationContext? previousSyncCtx1 = previousSyncCtx;
             Thread currentThread1 = currentThread;
             // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
             if (currentThread1._synchronizationContext != previousSyncCtx1)
@@ -190,7 +190,7 @@ namespace System.Threading
             }
 
             ExecutionContext? previousExecutionCtx1 = previousExecutionCtx;
-            ExecutionContext currentExecutionCtx1 = currentThread1._executionContext;
+            ExecutionContext? currentExecutionCtx1 = currentThread1._executionContext;
             if (currentExecutionCtx1 != previousExecutionCtx1)
             {
                 RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
@@ -223,7 +223,7 @@ namespace System.Threading
             // so that they won't "leak" back into caller.
             // These variables will cross EH so be forced to stack
             ExecutionContext? previousExecutionCtx = previousExecutionCtx0;
-            SynchronizationContext previousSyncCtx = currentThread0._synchronizationContext;
+            SynchronizationContext? previousSyncCtx = currentThread0._synchronizationContext;
 
             if (executionContext != null && executionContext.m_isDefault)
             {
@@ -250,7 +250,7 @@ namespace System.Threading
             }
 
             // Re-enregistrer variables post EH with 1 post-fix so they can be used in registers rather than from stack
-            SynchronizationContext previousSyncCtx1 = previousSyncCtx;
+            SynchronizationContext? previousSyncCtx1 = previousSyncCtx;
             Thread currentThread1 = currentThread;
             // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
             if (currentThread1._synchronizationContext != previousSyncCtx1)
@@ -260,7 +260,7 @@ namespace System.Threading
             }
 
             ExecutionContext? previousExecutionCtx1 = previousExecutionCtx;
-            ExecutionContext currentExecutionCtx1 = currentThread1._executionContext;
+            ExecutionContext? currentExecutionCtx1 = currentThread1._executionContext;
             if (currentExecutionCtx1 != previousExecutionCtx1)
             {
                 RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
@@ -299,7 +299,7 @@ namespace System.Threading
             // Enregister threadPoolThread as it crossed EH, and use enregistered variable
             Thread currentThread = threadPoolThread;
 
-            ExecutionContext currentExecutionCtx = currentThread._executionContext;
+            ExecutionContext? currentExecutionCtx = currentThread._executionContext;
 
             // Restore changed SynchronizationContext back to Default
             currentThread._synchronizationContext = null;
@@ -353,7 +353,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ResetThreadPoolThread(Thread currentThread)
         {
-            ExecutionContext currentExecutionCtx = currentThread._executionContext;
+            ExecutionContext? currentExecutionCtx = currentThread._executionContext;
 
             // Reset to defaults
             currentThread._synchronizationContext = null;
@@ -485,7 +485,7 @@ namespace System.Threading
 
         internal static void SetLocalValue(IAsyncLocal local, object? newValue, bool needChangeNotifications)
         {
-            ExecutionContext current = Thread.CurrentThread._executionContext;
+            ExecutionContext? current = Thread.CurrentThread._executionContext;
 
             object? previousValue = null;
             bool hadPreviousValue = false;
