@@ -60,6 +60,5 @@ namespace System.Diagnostics
         {
             return IsEnabled(name);
         }
-
     }
 }
