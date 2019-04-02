@@ -92,13 +92,28 @@ jobs:
 # https://github.com/Microsoft/azure-pipelines-yaml/pull/46 for more information
 
 #
-# Debug build (Pull request)
+# Debug builds
 #
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: build-job.yml
       buildConfig: debug
+      ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+        platforms:
+        - Windows_NT_x64
+        - Windows_NT_x86
+      ${{ if in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI') }}:
+        platforms:
+        - Linux_arm
+        - Linux_arm64
+        - Linux_musl_arm64
+        - Linux_musl_x64
+        - Linux_rhel6_x64
+        - Linux_x64
+        - OSX_x64
+        - Windows_NT_arm
+        - Windows_NT_arm64
 
 #
 # Checked build
@@ -115,18 +130,32 @@ jobs:
         - Linux_x64
         - Windows_NT_x64
         - Windows_NT_x86
-
 #
-# Release build (Pull request)
+# Release builds
 #
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: build-job.yml
       buildConfig: release
+      ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+        platforms:
+        - Linux_arm64
+        - Linux_musl_x64
+        - Linux_rhel6_x64
+        - Windows_NT_arm
+        - Windows_NT_arm64
+        - Windows_NT_x64
+      ${{ if in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI') }}:
+        platforms:
+        - Linux_arm
+        - Linux_musl_arm64
+        - Linux_x64
+        - OSX_x64
+        - Windows_NT_x86
 
 #
-# Release build (Official build)
+# Release builds (Official build) - non-PullRequest
 #
 - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
@@ -142,8 +171,7 @@ jobs:
 #
 # Checked test builds
 #
-
-# The jobs that can be triggered in PR, manually from ADO and that are scheduled
+# The test jobs that can be triggered by a PR, manually from ADO and that are scheduled
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'Manual', 'Schedule')) }}:
   - template: eng/platform-matrix.yml
     parameters:
