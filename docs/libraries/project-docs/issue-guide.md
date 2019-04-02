@@ -65,7 +65,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.IO](https://github.com/dotnet/corefx/labels/area-System.IO)                           | [@JeremyKuhne](https://github.com/JeremyKuhne) |  |
 | [System.IO.Compression](https://github.com/dotnet/corefx/labels/area-System.IO.Compression)   | **[@buyaa-n](https://github.com/buyaa-n)**, [@ahsonkhan](https://github.com/ahsonkhan), [@ViktorHofer](https://github.com/ViktorHofer) |  |
 | [System.IO.Pipelines](https://github.com/dotnet/corefx/labels/area-System.IO.Pipelines)       | **[@pakrym](https://github.com/pakrym)**, [@davidfowl](https://github.com/davidfowl) |  |
-| [System.Linq](https://github.com/dotnet/corefx/labels/area-System.Linq)                       | [@cston](https://github.com/cston), [@333fred](https://github.com/333fred) |  |
+| [System.Linq](https://github.com/dotnet/corefx/labels/area-System.Linq)                       | [@maryamariyan](https://github.com/maryamariyan) |  |
 | [System.Linq.Expressions](https://github.com/dotnet/corefx/labels/area-System.Linq.Expressions) | [@cston](https://github.com/cston), [@333fred](https://github.com/333fred) | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
 | [System.Linq.Parallel](https://github.com/dotnet/corefx/labels/area-System.Linq.Parallel)     | **[@tarekgh](https://github.com/tarekgh)**, [@kouvel](https://github.com/kouvel) |  |
 | [System.Management](https://github.com/dotnet/corefx/labels/area-System.Management)           | [@Anipik](https://github.com/Anipik) | WMI |
