@@ -55,8 +55,7 @@ public:
         EventPipeSessionType sessionType,
         unsigned int circularBufferSizeInMB,
         const EventPipeProviderConfiguration *pProviders,
-        uint32_t numProviders,
-        uint64_t multiFileTraceLengthInSeconds = 0);
+        uint32_t numProviders);
 
     // Delete a session.
     void DeleteSession(EventPipeSession *pSession);
