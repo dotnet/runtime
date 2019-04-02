@@ -48,7 +48,12 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(const char* className, const char* meth
     // TODO-Throughput: replace sequential search by binary search
 
     InstructionSet isa = lookupIsa(className, enclosingClassName);
-    assert(isa != InstructionSet_ILLEGAL);
+    if (isa == InstructionSet_ILLEGAL)
+    {
+        // There are several platform-agnostic intrinsics (e.g., Vector64) that
+        // are not supported in x86, so early return NI_Illegal
+        return NI_Illegal;
+    }
 
     assert(methodName != nullptr);
 
@@ -179,6 +184,17 @@ static InstructionSet lookupInstructionSet(const char* className)
             return InstructionSet_POPCNT;
         }
     }
+    else if (className[0] == 'V')
+    {
+        if (strncmp(className, "Vector128", 9) == 0)
+        {
+            return InstructionSet_Vector128;
+        }
+        else if (strncmp(className, "Vector256", 9) == 0)
+        {
+            return InstructionSet_Vector256;
+        }
+    }
     else if (strcmp(className, "Fma") == 0)
     {
         return InstructionSet_FMA;
@@ -188,7 +204,6 @@ static InstructionSet lookupInstructionSet(const char* className)
         return InstructionSet_LZCNT;
     }
 
-    unreached();
     return InstructionSet_ILLEGAL;
 }
 
@@ -504,7 +519,6 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
         case InstructionSet_AES:
         case InstructionSet_AVX:
         case InstructionSet_AVX2:
-        case InstructionSet_Base:
         case InstructionSet_BMI1:
         case InstructionSet_BMI2:
         case InstructionSet_BMI1_X64:
@@ -525,6 +539,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
         case InstructionSet_SSE41_X64:
         case InstructionSet_SSE42:
         case InstructionSet_SSE42_X64:
+        case InstructionSet_Vector128:
+        case InstructionSet_Vector256:
         {
             return true;
         }
@@ -928,7 +944,8 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     // other intrinsics need special importation
     switch (isa)
     {
-        case InstructionSet_Base:
+        case InstructionSet_Vector128:
+        case InstructionSet_Vector256:
             return impBaseIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig, mustExpand);
@@ -1024,17 +1041,17 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
-        case NI_Base_Vector256_As:
-        case NI_Base_Vector256_AsByte:
-        case NI_Base_Vector256_AsDouble:
-        case NI_Base_Vector256_AsInt16:
-        case NI_Base_Vector256_AsInt32:
-        case NI_Base_Vector256_AsInt64:
-        case NI_Base_Vector256_AsSByte:
-        case NI_Base_Vector256_AsSingle:
-        case NI_Base_Vector256_AsUInt16:
-        case NI_Base_Vector256_AsUInt32:
-        case NI_Base_Vector256_AsUInt64:
+        case NI_Vector256_As:
+        case NI_Vector256_AsByte:
+        case NI_Vector256_AsDouble:
+        case NI_Vector256_AsInt16:
+        case NI_Vector256_AsInt32:
+        case NI_Vector256_AsInt64:
+        case NI_Vector256_AsSByte:
+        case NI_Vector256_AsSingle:
+        case NI_Vector256_AsUInt16:
+        case NI_Vector256_AsUInt32:
+        case NI_Vector256_AsUInt64:
         {
             if (!compSupports(InstructionSet_AVX))
             {
@@ -1045,17 +1062,17 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             __fallthrough;
         }
 
-        case NI_Base_Vector128_As:
-        case NI_Base_Vector128_AsByte:
-        case NI_Base_Vector128_AsDouble:
-        case NI_Base_Vector128_AsInt16:
-        case NI_Base_Vector128_AsInt32:
-        case NI_Base_Vector128_AsInt64:
-        case NI_Base_Vector128_AsSByte:
-        case NI_Base_Vector128_AsSingle:
-        case NI_Base_Vector128_AsUInt16:
-        case NI_Base_Vector128_AsUInt32:
-        case NI_Base_Vector128_AsUInt64:
+        case NI_Vector128_As:
+        case NI_Vector128_AsByte:
+        case NI_Vector128_AsDouble:
+        case NI_Vector128_AsInt16:
+        case NI_Vector128_AsInt32:
+        case NI_Vector128_AsInt64:
+        case NI_Vector128_AsSByte:
+        case NI_Vector128_AsSingle:
+        case NI_Vector128_AsUInt16:
+        case NI_Vector128_AsUInt32:
+        case NI_Vector128_AsUInt64:
         {
             // We fold away the cast here, as it only exists to satisfy
             // the type system. It is safe to do this here since the retNode type
@@ -1069,7 +1086,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Base_Vector128_CreateScalarUnsafe:
+        case NI_Vector128_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
 
@@ -1091,7 +1108,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Base_Vector128_ToScalar:
+        case NI_Vector128_ToScalar:
         {
             assert(sig->numArgs == 1);
 
@@ -1103,9 +1120,9 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Base_Vector128_ToVector256:
-        case NI_Base_Vector128_ToVector256Unsafe:
-        case NI_Base_Vector256_GetLower:
+        case NI_Vector128_ToVector256:
+        case NI_Vector128_ToVector256Unsafe:
+        case NI_Vector256_GetLower:
         {
             assert(sig->numArgs == 1);
 
@@ -1117,7 +1134,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Base_Vector128_Zero:
+        case NI_Vector128_Zero:
         {
             assert(sig->numArgs == 0);
 
@@ -1128,7 +1145,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Base_Vector256_CreateScalarUnsafe:
+        case NI_Vector256_CreateScalarUnsafe:
         {
             assert(sig->numArgs == 1);
 
@@ -1150,7 +1167,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Base_Vector256_ToScalar:
+        case NI_Vector256_ToScalar:
         {
             assert(sig->numArgs == 1);
 
@@ -1162,7 +1179,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Base_Vector256_Zero:
+        case NI_Vector256_Zero:
         {
             assert(sig->numArgs == 0);
 
@@ -1173,7 +1190,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Base_Vector256_WithElement:
+        case NI_Vector256_WithElement:
         {
             if (!compSupports(InstructionSet_AVX))
             {
@@ -1183,7 +1200,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             __fallthrough;
         }
 
-        case NI_Base_Vector128_WithElement:
+        case NI_Vector128_WithElement:
         {
             assert(sig->numArgs == 3);
             GenTree* indexOp = impStackTop(1).val;
@@ -1263,7 +1280,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     vectorOp =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, NI_Base_Vector256_GetLower, baseType, simdSize);
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, NI_Vector256_GetLower, baseType, simdSize);
                 }
             }
 
@@ -1287,8 +1304,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                             // vector.WithElement(0, value)
                             // =>
                             // movss   xmm0, xmm1 (xmm0 = vector, xmm1 = value)
-                            valueOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp,
-                                                               NI_Base_Vector128_CreateScalarUnsafe, TYP_FLOAT, 16);
+                            valueOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp, NI_Vector128_CreateScalarUnsafe,
+                                                               TYP_FLOAT, 16);
                             retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, valueOp, NI_SSE_MoveScalar,
                                                                TYP_FLOAT, 16);
                         }
@@ -1298,9 +1315,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                             // =>
                             // shufps  xmm1, xmm0, 0   (xmm0 = vector, xmm1 = value)
                             // shufps  xmm1, xmm0, 226
-                            GenTree* tmpOp =
-                                gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp, NI_Base_Vector128_CreateScalarUnsafe,
-                                                         TYP_FLOAT, 16);
+                            GenTree* tmpOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp,
+                                                                      NI_Vector128_CreateScalarUnsafe, TYP_FLOAT, 16);
                             GenTree* dupVectorOp = nullptr;
                             vectorOp = impCloneExpr(vectorOp, &dupVectorOp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                                     nullptr DEBUGARG("Clone Vector for Vector128<float>.WithElement"));
@@ -1332,9 +1348,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                             // =>
                             // shufps  xmm1, xmm0, 32   (xmm0 = vector, xmm1 = value)
                             // shufps  xmm0, xmm1, 36
-                            GenTree* tmpOp =
-                                gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp, NI_Base_Vector128_CreateScalarUnsafe,
-                                                         TYP_FLOAT, 16);
+                            GenTree* tmpOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp,
+                                                                      NI_Vector128_CreateScalarUnsafe, TYP_FLOAT, 16);
                             GenTree* dupVectorOp = nullptr;
                             vectorOp = impCloneExpr(vectorOp, &dupVectorOp, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
                                                     nullptr DEBUGARG("Clone Vector for Vector128<float>.WithElement"));
@@ -1348,7 +1363,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                     }
                     else
                     {
-                        valueOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp, NI_Base_Vector128_CreateScalarUnsafe,
+                        valueOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp, NI_Vector128_CreateScalarUnsafe,
                                                            TYP_FLOAT, 16);
                         immNode->AsIntCon()->SetIconValue(imm8 * 16);
                         __fallthrough;
@@ -1378,8 +1393,8 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                     // vector.WithElement(1, value)
                     // =>
                     // unpcklpd  xmm0, xmm1  (xmm0 = vector, xmm1 = value)
-                    valueOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp, NI_Base_Vector128_CreateScalarUnsafe,
-                                                       TYP_DOUBLE, 16);
+                    valueOp =
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, valueOp, NI_Vector128_CreateScalarUnsafe, TYP_DOUBLE, 16);
                     NamedIntrinsic in = (imm8 == 0) ? NI_SSE2_MoveScalar : NI_SSE2_UnpackLow;
                     retNode           = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, valueOp, in, TYP_DOUBLE, 16);
                     break;
@@ -1401,7 +1416,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        case NI_Base_Vector256_GetElement:
+        case NI_Vector256_GetElement:
         {
             if (!compSupports(InstructionSet_AVX))
             {
@@ -1411,7 +1426,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             __fallthrough;
         }
 
-        case NI_Base_Vector128_GetElement:
+        case NI_Vector128_GetElement:
         {
             assert(sig->numArgs == 2);
             GenTree* indexOp = impStackTop().val;
@@ -1482,7 +1497,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                 else
                 {
                     vectorOp =
-                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, NI_Base_Vector256_GetLower, baseType, simdSize);
+                        gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, NI_Vector256_GetLower, baseType, simdSize);
                 }
             }
 
@@ -1508,7 +1523,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                     case TYP_FLOAT:
                     case TYP_DOUBLE:
-                        resIntrinsic = NI_Base_Vector128_ToScalar;
+                        resIntrinsic = NI_Vector128_ToScalar;
                         break;
 
                     default:
@@ -1544,7 +1559,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                                                 nullptr DEBUGARG("Clone Vector for Vector128<float>.GetElement"));
                         vectorOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, clonedVectorOp, immNode,
                                                             NI_SSE_Shuffle, TYP_FLOAT, 16);
-                        return gtNewSimdHWIntrinsicNode(retType, vectorOp, NI_Base_Vector128_ToScalar, TYP_FLOAT, 16);
+                        return gtNewSimdHWIntrinsicNode(retType, vectorOp, NI_Vector128_ToScalar, TYP_FLOAT, 16);
                     }
                     __fallthrough;
                 }
@@ -1578,8 +1593,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
                     // pshufd xmm1, xmm0, 0xEE (xmm0 = vector)
                     vectorOp = gtNewSimdHWIntrinsicNode(TYP_SIMD16, vectorOp, gtNewIconNode(0xEE), NI_SSE2_Shuffle,
                                                         TYP_INT, 16);
-                    retNode =
-                        gtNewSimdHWIntrinsicNode(TYP_DOUBLE, vectorOp, NI_Base_Vector128_ToScalar, TYP_DOUBLE, 16);
+                    retNode = gtNewSimdHWIntrinsicNode(TYP_DOUBLE, vectorOp, NI_Vector128_ToScalar, TYP_DOUBLE, 16);
                     break;
 
                 default:

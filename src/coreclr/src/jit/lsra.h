@@ -960,7 +960,7 @@ private:
     void processBlockEndAllocation(BasicBlock* current);
 
     // Record variable locations at start/end of block
-    void processBlockStartLocations(BasicBlock* current, bool allocationPass);
+    void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
 
 #ifdef _TARGET_ARM_
@@ -1286,6 +1286,7 @@ private:
     void dumpRegRecordTitleIfNeeded();
     void dumpRegRecordTitleLines();
     void dumpRegRecords();
+    void dumpNewBlock(BasicBlock* currentBlock, LsraLocation location);
     // An abbreviated RefPosition dump for printing with column-based register state
     void dumpRefPositionShort(RefPosition* refPosition, BasicBlock* currentBlock);
     // Print the number of spaces occupied by a dumpRefPositionShort()
@@ -1399,6 +1400,9 @@ private:
     void removeFromBlockSequenceWorkList(BasicBlockList* listNode, BasicBlockList* prevNode);
     BasicBlock* getNextCandidateFromWorkList();
 
+    // Indicates whether the allocation pass has been completed.
+    bool allocationPassComplete;
+
     // The bbNum of the block being currently allocated or resolved.
     unsigned int curBBNum;
     // The current location
@@ -1452,15 +1456,15 @@ private:
 #if defined(_TARGET_AMD64_)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
-        return (emitTypeSize(type) == 32);
+        return (type == TYP_SIMD32);
     }
     static const var_types LargeVectorSaveType = TYP_SIMD16;
 #elif defined(_TARGET_ARM64_)
     static bool varTypeNeedsPartialCalleeSave(var_types type)
     {
         // ARM64 ABI FP Callee save registers only require Callee to save lower 8 Bytes
-        // For SIMD types longer then 8 bytes Caller is responsible for saving and restoring Upper bytes.
-        return (emitTypeSize(type) == 16);
+        // For SIMD types longer than 8 bytes Caller is responsible for saving and restoring Upper bytes.
+        return ((type == TYP_SIMD16) || (type == TYP_SIMD12));
     }
     static const var_types LargeVectorSaveType = TYP_DOUBLE;
 #else // !defined(_TARGET_AMD64_) && !defined(_TARGET_ARM64_)
@@ -1526,7 +1530,7 @@ private:
 #endif // !_TARGET_XARCH_
     // This is the main entry point for building the RefPositions for a node.
     // These methods return the number of sources.
-    int BuildNode(GenTree* stmt);
+    int BuildNode(GenTree* tree);
 
     void getTgtPrefOperands(GenTreeOp* tree, bool& prefOp1, bool& prefOp2);
     bool supportsSpecialPutArg();
@@ -1719,7 +1723,7 @@ public:
     LclVarDsc* getLocalVar(Compiler* comp)
     {
         assert(isLocalVar);
-        return &(comp->lvaTable[this->varNum]);
+        return comp->lvaGetDesc(this->varNum);
     }
 
     // Get the local tracked variable "index" (lvVarIndex), used in bitmasks.
@@ -1897,7 +1901,7 @@ public:
     // Indicates whether this ref position is to be allocated a reg only if profitable. Currently these are the
     // ref positions that lower/codegen has indicated as reg optional and is considered a contained memory operand if
     // no reg is allocated.
-    unsigned char allocRegIfProfitable : 1;
+    unsigned char regOptional : 1;
 
     // Used by RefTypeDef/Use positions of a multi-reg call node.
     // Indicates the position of the register that this ref position refers to.
@@ -2034,23 +2038,23 @@ public:
                 || refType == RefTypeUpperVectorSaveDef || refType == RefTypeUpperVectorSaveUse
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
                 ) &&
-               !AllocateIfProfitable();
+               !RegOptional();
     }
 
-    void setAllocateIfProfitable(bool val)
+    void setRegOptional(bool val)
     {
-        allocRegIfProfitable = val;
+        regOptional = val;
     }
 
     // Returns true whether this ref position is to be allocated
     // a reg only if it is profitable.
-    bool AllocateIfProfitable()
+    bool RegOptional()
     {
         // TODO-CQ: Right now if a ref position is marked as
         // copyreg or movereg, then it is not treated as
         // 'allocate if profitable'. This is an implementation
         // limitation that needs to be addressed.
-        return allocRegIfProfitable && !copyReg && !moveReg;
+        return regOptional && !copyReg && !moveReg;
     }
 
     void setMultiRegIdx(unsigned idx)

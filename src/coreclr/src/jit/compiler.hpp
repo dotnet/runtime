@@ -1308,10 +1308,9 @@ inline GenTree* Compiler::gtUnusedValNode(GenTree* expr)
  * operands
  */
 
-inline void Compiler::gtSetStmtInfo(GenTree* stmt)
+inline void Compiler::gtSetStmtInfo(GenTreeStmt* stmt)
 {
-    assert(stmt->gtOper == GT_STMT);
-    GenTree* expr = stmt->gtStmt.gtStmtExpr;
+    GenTree* expr = stmt->gtStmtExpr;
 
     /* Recursively process the expression */
 
@@ -1817,17 +1816,15 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
  *  referenced in a statement.
  */
 
-inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(GenTree* stmt)
+inline VARSET_VALRET_TP Compiler::lvaStmtLclMask(GenTreeStmt* stmt)
 {
-    GenTree*   tree;
     unsigned   varNum;
     LclVarDsc* varDsc;
     VARSET_TP  lclMask(VarSetOps::MakeEmpty(this));
 
-    assert(stmt->gtOper == GT_STMT);
     assert(fgStmtListThreaded);
 
-    for (tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
+    for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
     {
         if (tree->gtOper != GT_LCL_VAR)
         {

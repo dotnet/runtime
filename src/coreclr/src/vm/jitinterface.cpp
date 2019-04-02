@@ -4629,8 +4629,10 @@ TypeCompareState CEEInfo::compareTypesForCast(
     // In R2R it is a breaking change for a previously positive
     // cast to become negative, but not for a previously negative
     // cast to become positive. So in R2R a negative result is
-    // always reported back as May.
-    if (IsReadyToRunCompilation() && (result == TypeCompareState::MustNot))
+    // always reported back as May, except for CoreLib version bubble.
+    if (IsReadyToRunCompilation() && (result == TypeCompareState::MustNot)
+        && !GetAppDomain()->ToCompilationDomain()->GetTargetModule()->IsSystem()
+        && !IsLargeVersionBubbleEnabled())
     {
         result = TypeCompareState::May;
     }
@@ -10179,11 +10181,27 @@ void CEEInfo::getEEInfo(CORINFO_EE_INFO *pEEInfoOut)
     }
     else
     {
-        // inlinedCallFrameInfo is not used for R2R compilation
+        // We'll declare a fixed size to use for the inlined call frame for R2R here. The size we declare
+        // is currently slightly larger that the actual size of the struct, just in case we decide to add
+        // more fields to the struct in the future, in an effort to not completely invalidate existing R2R images.
+        // The assert below ensures that this fixed size is at least large enough to hold the data structures 
+        // used at runtime. 
+        // ** IMPORTANT ** If you ever need to change the value of this fixed size, make sure to change the R2R
+        // version number, otherwise older R2R images will probably crash when used.
+
+        const int r2rInlinedCallFrameSize = TARGET_POINTER_SIZE * 11;
+
+#if defined(_DEBUG) && !defined(CROSSBITNESS_COMPILE)
+        InlinedCallFrame::GetEEInfo(&pEEInfoOut->inlinedCallFrameInfo);
+        _ASSERTE(pEEInfoOut->inlinedCallFrameInfo.size <= r2rInlinedCallFrameSize);
+#endif
+
+        // inlinedCallFrameInfo is mostly not used for R2R compilation (only the size field is used)
         ZeroMemory(&pEEInfoOut->inlinedCallFrameInfo, sizeof(pEEInfoOut->inlinedCallFrameInfo));
 
-        pEEInfoOut->offsetOfThreadFrame = (DWORD)-1;
-        pEEInfoOut->offsetOfGCState     = (DWORD)-1;
+        pEEInfoOut->offsetOfThreadFrame         = (DWORD)-1;
+        pEEInfoOut->offsetOfGCState             = (DWORD)-1;
+        pEEInfoOut->inlinedCallFrameInfo.size   = r2rInlinedCallFrameSize;
     }
 
 #ifndef CROSSBITNESS_COMPILE
