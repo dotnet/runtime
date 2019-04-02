@@ -15,7 +15,7 @@ namespace System.Net.WebSockets.Client.Tests
         {
             string serverResponse = null;
             string currentRequestLine;
-            while (!string.IsNullOrEmpty(currentRequestLine = await connection.Reader.ReadLineAsync().ConfigureAwait(false)))
+            while (!string.IsNullOrEmpty(currentRequestLine = await connection.ReadLineAsync().ConfigureAwait(false)))
             {
                 string[] tokens = currentRequestLine.Split(new char[] { ':' }, 2);
                 if (tokens.Length == 2)

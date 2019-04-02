@@ -120,7 +120,7 @@ namespace System.Net.Http.Functional.Tests
 
                 server.AcceptConnectionAsync(connection => 
                 {
-                    while (!string.IsNullOrEmpty(connection.Reader.ReadLine())) ;
+                    while (!string.IsNullOrEmpty(connection.ReadLine())) ;
 
                     connection.Writer.Write(responseText);
                     connection.Socket.Shutdown(SocketShutdown.Send);
@@ -141,7 +141,7 @@ namespace System.Net.Http.Functional.Tests
 
                 await server.AcceptConnectionAsync(async connection => 
                 {
-                    while (!string.IsNullOrEmpty(await connection.Reader.ReadLineAsync().ConfigureAwait(false))) ;
+                    while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false))) ;
 
                     await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
                     connection.Socket.Shutdown(SocketShutdown.Send);
@@ -168,8 +168,9 @@ namespace System.Net.Http.Functional.Tests
 
                 await server.AcceptConnectionAsync(async connection => 
                 {
-                    while (!string.IsNullOrEmpty(await connection.Reader.ReadLineAsync().ConfigureAwait(false))) ;
-                    for (int i = 0; i < numBytes; i++) Assert.NotEqual(-1, connection.Reader.Read());
+                    byte[] postData = new byte[numBytes];
+                    while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false))) ;
+                    Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
 
                     await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
                     connection.Socket.Shutdown(SocketShutdown.Send);
@@ -191,7 +192,7 @@ namespace System.Net.Http.Functional.Tests
 
                     await server.AcceptConnectionAsync(async connection =>
                     {
-                        while (!string.IsNullOrEmpty(await connection.Reader.ReadLineAsync())) ;
+                        while (!string.IsNullOrEmpty(await connection.ReadLineAsync())) ;
                         await connection.Writer.WriteAsync(CreateResponse(new string('a', 32 * 1024)));
 
                         WeakReference wr = wrt.GetAwaiter().GetResult();

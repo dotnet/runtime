@@ -56,7 +56,7 @@ namespace System.Net.Http.HPack
             CreateHeaderField("if-modified-since", ""),
             CreateHeaderField("if-none-match", ""),
             CreateHeaderField("if-range", ""),
-            CreateHeaderField("if-unmodifiedsince", ""),
+            CreateHeaderField("if-unmodified-since", ""),
             CreateHeaderField("last-modified", ""),
             CreateHeaderField("link", ""),
             CreateHeaderField("location", ""),

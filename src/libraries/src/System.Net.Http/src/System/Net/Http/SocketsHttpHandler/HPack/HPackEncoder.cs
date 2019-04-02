@@ -58,7 +58,7 @@ namespace System.Net.Http.HPack
                 if (IntegerEncoder.Encode(index, 4, destination, out int indexLength))
                 {
                     Debug.Assert(indexLength >= 1);
-                    if (EncodeStringLiteral(value, destination.Slice(indexLength), out int nameLength, toLower: false))
+                    if (EncodeStringLiteral(value, destination.Slice(indexLength), out int nameLength))
                     {
                         bytesWritten = indexLength + nameLength;
                         return true;
@@ -106,7 +106,7 @@ namespace System.Net.Http.HPack
         }
 
         /// <summary>Encodes a "Literal Header Field without Indexing - New Name".</summary>
-        public static bool EncodeLiteralHeaderFieldWithoutIndexingNewName(string name, string value, Span<byte> destination, out int bytesWritten)
+        public static bool EncodeLiteralHeaderFieldWithoutIndexingNewName(string name, string[] values, string separator, Span<byte> destination, out int bytesWritten)
         {
             // From https://tools.ietf.org/html/rfc7541#section-6.2.2
             // ------------------------------------------------------
@@ -126,8 +126,8 @@ namespace System.Net.Http.HPack
             if ((uint)destination.Length >= 3)
             {
                 destination[0] = 0;
-                if (EncodeStringLiteral(name, destination.Slice(1), out int nameLength, toLower: true) &&
-                    EncodeStringLiteral(value, destination.Slice(1 + nameLength), out int valueLength, toLower: false))
+                if (EncodeLiteralHeaderName(name, destination.Slice(1), out int nameLength) &&
+                    EncodeStringLiterals(values, separator, destination.Slice(1 + nameLength), out int valueLength))
                 {
                     bytesWritten = 1 + nameLength + valueLength;
                     return true;
@@ -165,7 +165,7 @@ namespace System.Net.Http.HPack
             if ((uint)destination.Length >= 2)
             {
                 destination[0] = 0;
-                if (EncodeStringLiteral(name, destination.Slice(1), out int nameLength, toLower: true))
+                if (EncodeLiteralHeaderName(name, destination.Slice(1), out int nameLength))
                 {
                     bytesWritten = 1 + nameLength;
                     return true;
@@ -176,7 +176,7 @@ namespace System.Net.Http.HPack
             return false;
         }
 
-        public static bool EncodeStringLiteral(string value, Span<byte> destination, out int bytesWritten, bool toLower)
+        private static bool EncodeLiteralHeaderName(string value, Span<byte> destination, out int bytesWritten)
         {
             // From https://tools.ietf.org/html/rfc7541#section-5.2
             // ------------------------------------------------------
@@ -193,24 +193,14 @@ namespace System.Net.Http.HPack
                 if (IntegerEncoder.Encode(value.Length, 7, destination, out int integerLength))
                 {
                     Debug.Assert(integerLength >= 1);
-                    
+
                     destination = destination.Slice(integerLength);
                     if (value.Length <= destination.Length)
                     {
-                        if (toLower)
+                        for (int i = 0; i < value.Length; i++)
                         {
-                            for (int i = 0; i < value.Length; i++)
-                            {
-                                char c = value[i];
-                                destination[i] = (byte)((uint)(c - 'A') <= ('Z' - 'A') ? c | 0x20 : c);
-                            }
-                        }
-                        else
-                        {
-                            for (int i = 0; i < value.Length; i++)
-                            {
-                                destination[i] = (byte)value[i];
-                            }
+                            char c = value[i];
+                            destination[i] = (byte)((uint)(c - 'A') <= ('Z' - 'A') ? c | 0x20 : c);
                         }
 
                         bytesWritten = integerLength + value.Length;
@@ -220,6 +210,114 @@ namespace System.Net.Http.HPack
             }
 
             bytesWritten = 0;
+            return false;
+        }
+
+        private static bool EncodeStringLiteralValue(string value, Span<byte> destination, out int bytesWritten)
+        {
+            if (value.Length <= destination.Length)
+            {
+                for (int i = 0; i < value.Length; i++)
+                {
+                    char c = value[i];
+                    if ((c & 0xFF80) != 0)
+                    {
+                        throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
+                    }
+
+                    destination[i] = (byte)c;
+                }
+
+                bytesWritten = value.Length;
+                return true;
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        public static bool EncodeStringLiteral(string value, Span<byte> destination, out int bytesWritten)
+        {
+            // From https://tools.ietf.org/html/rfc7541#section-5.2
+            // ------------------------------------------------------
+            //   0   1   2   3   4   5   6   7
+            // +---+---+---+---+---+---+---+---+
+            // | H |    String Length (7+)     |
+            // +---+---------------------------+
+            // |  String Data (Length octets)  |
+            // +-------------------------------+
+
+            if (destination.Length != 0)
+            {
+                destination[0] = 0; // TODO: Use Huffman encoding
+                if (IntegerEncoder.Encode(value.Length, 7, destination, out int integerLength))
+                {
+                    Debug.Assert(integerLength >= 1);
+
+                    if (EncodeStringLiteralValue(value, destination.Slice(integerLength), out int valueLength))
+                    {
+                        bytesWritten = integerLength + valueLength;
+                        return true;
+                    }
+                }
+            }
+
+            bytesWritten = 0;
+            return false;
+        }
+
+        public static bool EncodeStringLiterals(string[] values, string separator, Span<byte> destination, out int bytesWritten)
+        {
+            bytesWritten = 0;
+
+            if (values.Length == 0)
+            {
+                return EncodeStringLiteral("", destination, out bytesWritten);
+            }
+            else if (values.Length == 1)
+            {
+                return EncodeStringLiteral(values[0], destination, out bytesWritten);
+            }
+
+            if (destination.Length != 0)
+            {
+                int valueLength = 0;
+
+                // Calculate length of all parts and separators.
+                foreach (string part in values)
+                {
+                    valueLength = checked((int)(valueLength + part.Length));
+                }
+
+                valueLength = checked((int)(valueLength + (values.Length - 1) * separator.Length));
+
+                if (IntegerEncoder.Encode(valueLength, 7, destination, out int integerLength))
+                {
+                    Debug.Assert(integerLength >= 1);
+
+                    int encodedLength = 0;
+                    for (int j = 0; j < values.Length; j++)
+                    {
+                        if (j != 0 && !EncodeStringLiteralValue(separator, destination.Slice(integerLength), out encodedLength))
+                        {
+                            return false;
+                        }
+
+                        integerLength += encodedLength;
+
+                        if (!EncodeStringLiteralValue(values[j], destination.Slice(integerLength), out encodedLength))
+                        {
+                            return false;
+                        }
+
+                        integerLength += encodedLength;
+                    }
+
+                    bytesWritten = integerLength;
+                    return true;
+                }
+            }
+
             return false;
         }
 
