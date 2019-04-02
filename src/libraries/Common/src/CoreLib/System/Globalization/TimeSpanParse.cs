@@ -1691,7 +1691,7 @@ namespace System.Globalization
             // one of the formats.
             for (int i = 0; i < formats.Length; i++)
             {
-                // TODO-NULLABLE: ! below should not be required
+                // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                 if (formats[i] == null || formats[i]!.Length == 0)
                 {
                     return result.SetBadFormatSpecifierFailure();
