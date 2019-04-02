@@ -2,9 +2,6 @@ using System;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-// Needed because this test is compiled with roslyn
-[assembly: KeptAttributeAttribute (typeof (System.Diagnostics.DebuggableAttribute))]
-
 namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.BaseProvidesInterfaceMember {
 	// mcs silently generates an explicit interface `Method` on `FooWithBase` that calls `BaseFoo.Method`, this leads to a failure
 	// because the explicit interface `Method` needs a `[Kept]` on it.
