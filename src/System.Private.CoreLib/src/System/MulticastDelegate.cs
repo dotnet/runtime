@@ -165,7 +165,7 @@ namespace System
             if (a[index] != null)
             {
                 MulticastDelegate d = (MulticastDelegate)o;
-                MulticastDelegate dd = (MulticastDelegate)a[index]!; // TODO-NULLABLE: Compiler should track nullability through indexers
+                MulticastDelegate dd = (MulticastDelegate)a[index]!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
 
                 if (dd._methodPtr == d._methodPtr &&
                     dd._target == d._target &&
