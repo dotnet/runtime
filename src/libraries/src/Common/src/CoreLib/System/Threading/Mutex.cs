@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.IO;
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
@@ -15,12 +16,12 @@ namespace System.Threading
     /// </summary>
     public sealed partial class Mutex : WaitHandle
     {
-        public Mutex(bool initiallyOwned, string name, out bool createdNew)
+        public Mutex(bool initiallyOwned, string? name, out bool createdNew)
         {
             CreateMutexCore(initiallyOwned, name, out createdNew);
         }
 
-        public Mutex(bool initiallyOwned, string name)
+        public Mutex(bool initiallyOwned, string? name)
         {
             CreateMutexCore(initiallyOwned, name, out _);
         }
@@ -42,7 +43,7 @@ namespace System.Threading
 
         public static Mutex OpenExisting(string name)
         {
-            switch (OpenExistingWorker(name, out Mutex result))
+            switch (OpenExistingWorker(name, out Mutex? result))
             {
                 case OpenExistingResult.NameNotFound:
                     throw new WaitHandleCannotBeOpenedException();
@@ -52,11 +53,12 @@ namespace System.Threading
                     throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, name));
 
                 default:
+                    Debug.Assert(result != null, "result should be non-null on success");
                     return result;
             }
         }
 
-        public static bool TryOpenExisting(string name, out Mutex result) =>
+        public static bool TryOpenExisting(string name, out Mutex? result) => // TODO-NULLABLE: Try pattern with non-null result when true
             OpenExistingWorker(name, out result) == OpenExistingResult.Success;
     }
 }
