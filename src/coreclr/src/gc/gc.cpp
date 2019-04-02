@@ -34086,24 +34086,13 @@ HRESULT GCHeap::Initialize()
 
 #ifdef MULTIPLE_HEAPS
     AffinitySet config_affinity_set;
-    if (!ParseGCHeapAffinitySettings(&config_affinity_set))
+    if (!ParseGCHeapAffinitizeRanges(&config_affinity_set))
     {
         return CLR_E_GC_BAD_AFFINITY_CONFIG;
     }
 
-    AffinitySet* process_affinity_set = GCToOSInterface::GetCurrentProcessAffinitySet();
-
-    if (!config_affinity_set.IsEmpty())
-    {
-        // Update the process affinity set using the configured set
-        for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
-        {
-            if (process_affinity_set->Contains(i) && !config_affinity_set.Contains(i))
-            {
-                process_affinity_set->Remove(i);
-            }
-        }
-    }
+    uintptr_t config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
+    const AffinitySet* process_affinity_set = GCToOSInterface::SetGCThreadsAffinitySet(config_affinity_mask, &config_affinity_set);
 
     if (process_affinity_set->IsEmpty())
     {
@@ -34129,7 +34118,7 @@ HRESULT GCHeap::Initialize()
 
     if (gc_heap::heap_hard_limit)
     {
-        gc_heap::gc_thread_no_affinitize_p = (config_affinity_set.Count() == 0);
+        gc_heap::gc_thread_no_affinitize_p = ((config_affinity_set.Count() == 0) && (config_affinity_mask == 0));
     }
 
     if (!(gc_heap::gc_thread_no_affinitize_p))

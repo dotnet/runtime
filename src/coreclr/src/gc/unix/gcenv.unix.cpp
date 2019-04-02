@@ -490,11 +490,26 @@ bool GCToOSInterface::BoostThreadPriority()
     return false;
 }
 
-// Get set of processors enabled for GC for the current process
+// Set the set of processors enabled for GC threads for the current process based on config specified affinity mask and set
+// Parameters:
+//  configAffinityMask - mask specified by the GCHeapAffinitizeMask config
+//  configAffinitySet  - affinity set specified by the GCHeapAffinitizeRanges config
 // Return:
 //  set of enabled processors
-AffinitySet* GCToOSInterface::GetCurrentProcessAffinitySet()
+const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffinityMask, const AffinitySet* configAffinitySet)
 {
+    if (!configAffinitySet->IsEmpty())
+    {
+        // Update the process affinity set using the configured set
+        for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+        {
+            if (g_processAffinitySet.Contains(i) && !configAffinitySet->Contains(i))
+            {
+                g_processAffinitySet.Remove(i);
+            }
+        }
+    }
+
     return &g_processAffinitySet;
 }
 
