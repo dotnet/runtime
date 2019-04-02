@@ -1,5 +1,5 @@
 
-NETCORESDK_VERSION=3.0.100-preview4-010759
+NETCORESDK_VERSION=3.0.100-preview4-011024
 NETCORESDK_FILE=dotnet-sdk-$(NETCORESDK_VERSION)-osx-x64.tar.gz
 URL:=https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$(NETCORESDK_VERSION)/$(NETCORESDK_FILE)
 
@@ -14,7 +14,7 @@ run-sample:
 	COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(VERSION)" sample/HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
 
 # COREHOST_TRACE=1 
-VERSION:=3.0.0-preview4-27514-06
+VERSION:=3.0.0-preview4-27601-05
 SHAREDRUNTIME:=shared/Microsoft.NETCore.App/$(VERSION)
 
 bcl:
@@ -55,6 +55,7 @@ clean:
 xtest-%: prepare check-env dl-test-assets
 	echo -n "***************** $* *********************"
 	ln -sf $(CURDIR)/sdk/$(NETCORESDK_VERSION)/System.Text.Encoding.CodePages.dll assets/extracted/$*/
+	ln -sf $(CURDIR)/shared/Microsoft.AspNetCore.App/3.0.0-preview4-19180-01/Newtonsoft.Json.dll assets/extracted/$*/
 	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/xunit.console.deps.json assets/extracted/$*/
 	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/CoreFx.Private.TestUtilities.dll assets/extracted/$*/
 	sed -i -e 's/9.9.9/$(VERSION)/g' assets/extracted/$*/*.runtimeconfig.json
