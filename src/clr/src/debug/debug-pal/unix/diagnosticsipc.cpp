@@ -4,7 +4,6 @@
 
 #include <pal.h>
 #include <pal_assert.h>
-#include <new>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -14,7 +13,7 @@
 
 IpcStream::DiagnosticsIpc::DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress) :
     _serverSocket(serverSocket),
-    _pServerAddress(new (std::nothrow) sockaddr_un),
+    _pServerAddress(new sockaddr_un),
     _isUnlinked(false)
 {
     _ASSERTE(_pServerAddress != nullptr);
@@ -105,10 +104,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
         return nullptr;
     }
 
-    auto pIpcStream = new (std::nothrow) IpcStream(clientSocket);
-    if (pIpcStream == nullptr && callback != nullptr)
-        callback("Failed to allocate an IpcStream object.", 1);
-    return pIpcStream;
+    return new IpcStream(clientSocket);
 }
 
 //! This helps remove the socket from the filesystem when the runtime exits.
@@ -137,6 +133,8 @@ IpcStream::~IpcStream()
 {
     if (_clientSocket != -1)
     {
+        Flush();
+
         const int fSuccessClose = ::close(_clientSocket);
         _ASSERTE(fSuccessClose != -1);
     }

@@ -17,17 +17,17 @@ class EventPipeProtocolHelper
 public:
     // IPC event handlers.
     static void EnableFileTracingEventHandler(IpcStream *pStream);
-    static void DisableTracingEventHandler(IpcStream *pStream);
+    static void DisableFileTracingEventHandler(IpcStream *pStream);
+
+    static void AttachTracingEventHandler(IpcStream *pStream);
 
 private:
     const static uint32_t DefaultCircularBufferMB = 1024; // 1 GB
     const static uint64_t DefaultMultiFileTraceLengthInSeconds = 0;
-    const static uint32_t DefaultProfilerSamplingRateInNanoseconds = 1000000;
+    const static uint32_t DefaultProfilerSamplingRateInNanoseconds = 1000000; // 1 msec.
+    const static uint32_t IpcStreamReadBufferSize = 8192;
 
-    //! Read a list of providers: "Provider[,Provider]"
-    //!     Provider:       "(GUID|KnownProviderName)[:Flags[:Level][:KeyValueArgs]]"
-    //!     KeyValueArgs:   "[key1=value1][;key2=value2]"
-    static bool TryParseProviderConfigurations(uint8_t *&bufferCursor, uint32_t &bufferLen, CQuickArray<EventPipeProviderConfiguration> &result);
+    static bool TryParseProviderConfiguration(uint8_t *&bufferCursor, uint32_t &bufferLen, CQuickArray<EventPipeProviderConfiguration> &result);
 };
 
 #endif // FEATURE_PERFTRACING

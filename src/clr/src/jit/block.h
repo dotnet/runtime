@@ -897,9 +897,9 @@ struct BasicBlock : private LIR::Range
                              // is bbCodeOffsEnd - bbCodeOffs, assuming neither are BAD_IL_OFFSET.
 
 #ifdef DEBUG
-    void dspBlockILRange(); // Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???" for
-                            // BAD_IL_OFFSET.
-#endif                      // DEBUG
+    void dspBlockILRange() const; // Display the block's IL range as [XXX...YYY), where XXX and YYY might be "???" for
+                                  // BAD_IL_OFFSET.
+#endif                            // DEBUG
 
     VARSET_TP bbVarUse; // variables used     by block (before an assignment)
     VARSET_TP bbVarDef; // variables assigned by block (before a use)
@@ -1076,7 +1076,7 @@ struct BasicBlock : private LIR::Range
     // Returns the first statement in the statement list of "this" that is
     // not an SSA definition (a lcl = phi(...) assignment).
     GenTreeStmt* FirstNonPhiDef();
-    GenTree*     FirstNonPhiDefOrCatchArgAsg();
+    GenTreeStmt* FirstNonPhiDefOrCatchArgAsg();
 
     BasicBlock() : bbLiveIn(VarSetOps::UninitVal()), bbLiveOut(VarSetOps::UninitVal())
     {

@@ -49,6 +49,8 @@ bool IpcStreamWriter::Write(const void *lpBuffer, const uint32_t nBytesToWrite, 
     }
     CONTRACTL_END;
 
+    if (_pStream == nullptr)
+        return false;
     return _pStream->Write(lpBuffer, nBytesToWrite, nBytesWritten);
 }
 
@@ -96,6 +98,9 @@ bool FileStreamWriter::Write(const void *lpBuffer, const uint32_t nBytesToWrite,
         PRECONDITION(nBytesToWrite > 0);
     }
     CONTRACTL_END;
+
+    if (m_pFileStream == nullptr)
+        return false;
 
     ULONG outCount;
     HRESULT hResult = m_pFileStream->Write(lpBuffer, nBytesToWrite, &outCount);
@@ -177,16 +182,15 @@ void FastSerializer::WriteBuffer(BYTE *pBuffer, unsigned int length)
         size_t prevPos = m_currentPos;
 #endif
         m_currentPos += outCount;
-#ifdef _DEBUG
-        _ASSERTE(prevPos < m_currentPos);
-#endif
 
-        if (length != outCount)
-        {
-            // This will cause us to stop writing to the file.
-            // The file will still remain open until shutdown so that we don't have to take a lock at this level when we touch the file stream.
-            m_writeErrorEncountered = true;
-        }
+        // This will cause us to stop writing to the file.
+        // The file will still remain open until shutdown so that we don't
+        // have to take a lock at this level when we touch the file stream.
+        m_writeErrorEncountered = (length != outCount);
+
+#ifdef _DEBUG
+        _ASSERTE(m_writeErrorEncountered || (prevPos < m_currentPos));
+#endif
     }
     EX_CATCH
     {

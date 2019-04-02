@@ -415,10 +415,10 @@ public:
     struct Location
     {
         BasicBlock*          block;
-        GenTree*             stmt;
+        GenTreeStmt*         stmt;
         GenTreeLclVarCommon* tree;
         GenTree*             parent;
-        Location(BasicBlock* block, GenTree* stmt, GenTreeLclVarCommon* tree, GenTree* parent)
+        Location(BasicBlock* block, GenTreeStmt* stmt, GenTreeLclVarCommon* tree, GenTree* parent)
             : block(block), stmt(stmt), tree(tree), parent(parent)
         {
         }
@@ -463,7 +463,7 @@ public:
     // Given a "tree" node, check if it contains array bounds check node and
     // optimize to remove it, if possible. Requires "stmt" and "block" that
     // contain the tree.
-    void OptimizeRangeCheck(BasicBlock* block, GenTree* stmt, GenTree* tree);
+    void OptimizeRangeCheck(BasicBlock* block, GenTreeStmt* stmt, GenTree* tree);
 
     // Given the index expression try to find its range.
     // The range of a variable depends on its rhs which in turn depends on its constituent variables.
