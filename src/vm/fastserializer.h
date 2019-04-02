@@ -92,6 +92,12 @@ public:
         return m_currentPos;
     }
 
+    bool HasWriteErrors() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_writeErrorEncountered;
+    }
+
 private:
     void WriteSerializationType(FastSerializableObject *pObject);
     void WriteFileHeader();

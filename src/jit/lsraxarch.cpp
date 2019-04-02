@@ -2403,10 +2403,10 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         // must be handled within the case.
         switch (intrinsicId)
         {
-            case NI_Base_Vector128_CreateScalarUnsafe:
-            case NI_Base_Vector128_ToScalar:
-            case NI_Base_Vector256_CreateScalarUnsafe:
-            case NI_Base_Vector256_ToScalar:
+            case NI_Vector128_CreateScalarUnsafe:
+            case NI_Vector128_ToScalar:
+            case NI_Vector256_CreateScalarUnsafe:
+            case NI_Vector256_ToScalar:
             {
                 assert(numArgs == 1);
 
@@ -2432,9 +2432,9 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 break;
             }
 
-            case NI_Base_Vector128_ToVector256:
-            case NI_Base_Vector128_ToVector256Unsafe:
-            case NI_Base_Vector256_GetLower:
+            case NI_Vector128_ToVector256:
+            case NI_Vector128_ToVector256Unsafe:
+            case NI_Vector256_GetLower:
             {
                 assert(numArgs == 1);
 

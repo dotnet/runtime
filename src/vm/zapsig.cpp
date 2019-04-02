@@ -1132,14 +1132,21 @@ BOOL ZapSig::EncodeMethod(
     // FUTURE: This condition should likely be changed or reevaluated once support for smaller version bubbles is implemented.
     if (IsReadyToRunCompilation() && (!IsLargeVersionBubbleEnabled() || !pMethod->GetModule()->IsInCurrentVersionBubble()))
     {
-        if (pResolvedToken == NULL)
+        if (pMethod->IsNDirect())
         {
-            _ASSERTE(!"CORINFO_RESOLVED_TOKEN required to encode method!");
-            ThrowHR(E_FAIL);
+            ownerType = pMethod->GetMethodTable_NoLogging();
         }
+        else
+        {
+            if (pResolvedToken == NULL)
+            {
+                _ASSERTE(!"CORINFO_RESOLVED_TOKEN required to encode method!");
+                ThrowHR(E_FAIL);
+            }
 
-        // Encode the referencing method type
-        ownerType = TypeHandle(pResolvedToken->hClass);
+            // Encode the referencing method type
+            ownerType = TypeHandle(pResolvedToken->hClass);
+        }
     }
     else
 #endif
@@ -1198,7 +1205,9 @@ BOOL ZapSig::EncodeMethod(
             methodFlags |= ENCODE_METHOD_SIG_Constrained;
         }
 
-        Module * pReferencingModule = (Module *)pResolvedToken->tokenScope;
+        Module * pReferencingModule = pMethod->IsNDirect() ?
+            pMethod->GetModule() :
+            (Module *)pResolvedToken->tokenScope;
 
         if (!pReferencingModule->IsInCurrentVersionBubble())
         {
@@ -1208,7 +1217,9 @@ BOOL ZapSig::EncodeMethod(
             ThrowHR(E_FAIL);
         }
 
-        methodToken = pResolvedToken->token;
+        methodToken = pMethod->IsNDirect() ?
+            pMethod->GetMemberDef_NoLogging() :
+            pResolvedToken->token;
 
         if (TypeFromToken(methodToken) == mdtMethodSpec)
         {
@@ -1218,7 +1229,7 @@ BOOL ZapSig::EncodeMethod(
         switch (TypeFromToken(methodToken))
         {
         case mdtMethodDef:
-            _ASSERTE(pResolvedToken->pTypeSpec == NULL);
+            _ASSERTE(pMethod->IsNDirect() || pResolvedToken->pTypeSpec == NULL);
             if (!ownerType.HasInstantiation() || ownerType.IsTypicalTypeDefinition())
             {
                 methodFlags &= ~ENCODE_METHOD_SIG_OwnerType;
@@ -1226,6 +1237,7 @@ BOOL ZapSig::EncodeMethod(
             break;
 
         case mdtMemberRef:
+            _ASSERTE(pResolvedToken != NULL);
             methodFlags |= ENCODE_METHOD_SIG_MemberRefToken;
 
             if (pResolvedToken->pTypeSpec == NULL)

@@ -5591,15 +5591,50 @@ HCIMPL0(VOID, JIT_PollGC)
 }
 HCIMPLEND
 
+
+/*************************************************************/
+// This helper is similar to JIT_RareDisableHelper, but has more operations
+// tailored to the post-pinvoke operations.
+extern "C" FCDECL0(VOID, JIT_PInvokeEndRarePath);
+
+HCIMPL0(void, JIT_PInvokeEndRarePath)
+{
+    BEGIN_PRESERVE_LAST_ERROR;
+
+    FCALL_CONTRACT;
+
+    Thread *thread = GetThread();
+
+    // We need to disable the implicit FORBID GC region that exists inside an FCALL
+    // in order to call RareDisablePreemptiveGC().
+    FC_CAN_TRIGGER_GC();
+    thread->RareDisablePreemptiveGC();
+    FC_CAN_TRIGGER_GC_END();
+
+    FC_GC_POLL_NOT_NEEDED();
+
+    HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
+    thread->HandleThreadAbort();
+    HELPER_METHOD_FRAME_END();
+
+    InlinedCallFrame* frame = (InlinedCallFrame*)thread->m_pFrame;
+
+    thread->m_pFrame->Pop(thread);
+
+    END_PRESERVE_LAST_ERROR;
+}
+HCIMPLEND
+
 /*************************************************************/
 // For an inlined N/Direct call (and possibly for other places that need this service)
 // we have noticed that the returning thread should trap for one reason or another.
 // ECall sets up the frame.
 
+extern "C" FCDECL0(VOID, JIT_RareDisableHelper);
+
 #if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
 // The JIT expects this helper to preserve the return value on AMD64 and ARM. We should eventually
 // switch other platforms to the same convention since it produces smaller code.
-extern "C" FCDECL0(VOID, JIT_RareDisableHelper);
 extern "C" FCDECL0(VOID, JIT_RareDisableHelperWorker);
 
 HCIMPL0(void, JIT_RareDisableHelperWorker)
@@ -5782,6 +5817,9 @@ Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubS
 }
 
 #endif // _WIN64
+
+EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
+EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 
 //========================================================================
 //

@@ -3002,7 +3002,6 @@ public:
     PTR_VOID                m_StubSecretArg;
 #endif // _WIN64
 
-protected:
     // X86: ESP after pushing the outgoing arguments, and just before calling
     // out to unmanaged code.
     // Other platforms: the field stays set throughout the declaring method.
