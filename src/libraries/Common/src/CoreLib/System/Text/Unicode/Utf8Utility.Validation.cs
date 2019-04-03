@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.Intrinsics.X86;
 using Internal.Runtime.CompilerServices;
 
 #if BIT64
@@ -121,23 +122,63 @@ namespace System.Text.Unicode
                         // the alignment check consumes at most a single DWORD.)
 
                         byte* pInputBufferFinalPosAtWhichCanSafelyLoop = pFinalPosWhereCanReadDWordFromInputBuffer - 3 * sizeof(uint); // can safely read 4 DWORDs here
+                        uint mask;
 
                         do
                         {
-                            if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[0] | ((uint*)pInputBuffer)[1]))
+                            if (Sse2.IsSupported && Bmi1.IsSupported)
                             {
-                                goto LoopTerminatedEarlyDueToNonAsciiDataInFirstPair;
-                            }
+                                // pInputBuffer is 32-bit aligned but not necessary 128-bit aligned, so we're
+                                // going to perform an unaligned load. We don't necessarily care about aligning
+                                // this because we pessimistically assume we'll encounter non-ASCII data at some
+                                // point in the not-too-distant future (otherwise we would've stayed entirely
+                                // within the all-ASCII vectorized code at the entry to this method).
 
-                            if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[2] | ((uint*)pInputBuffer)[3]))
+                                mask = (uint)Sse2.MoveMask(Sse2.LoadVector128((byte*)pInputBuffer));
+                                if (mask != 0)
+                                {
+                                    goto Sse2LoopTerminatedEarlyDueToNonAsciiData;
+                                }
+                            }
+                            else
                             {
-                                goto LoopTerminatedEarlyDueToNonAsciiDataInSecondPair;
+                                if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[0] | ((uint*)pInputBuffer)[1]))
+                                {
+                                    goto LoopTerminatedEarlyDueToNonAsciiDataInFirstPair;
+                                }
+
+                                if (!ASCIIUtility.AllBytesInUInt32AreAscii(((uint*)pInputBuffer)[2] | ((uint*)pInputBuffer)[3]))
+                                {
+                                    goto LoopTerminatedEarlyDueToNonAsciiDataInSecondPair;
+                                }
                             }
 
                             pInputBuffer += 4 * sizeof(uint); // consumed 4 DWORDs
                         } while (pInputBuffer <= pInputBufferFinalPosAtWhichCanSafelyLoop);
 
                         continue; // need to perform a bounds check because we might be running out of data
+
+                    Sse2LoopTerminatedEarlyDueToNonAsciiData:
+
+                        Debug.Assert(BitConverter.IsLittleEndian);
+                        Debug.Assert(Sse2.IsSupported);
+                        Debug.Assert(Bmi1.IsSupported);
+
+                        // The 'mask' value will have a 0 bit for each ASCII byte we saw and a 1 bit
+                        // for each non-ASCII byte we saw. We can count the number of ASCII bytes,
+                        // bump our input counter by that amount, and resume processing from the
+                        // "the first byte is no longer ASCII" portion of the main loop.
+
+                        Debug.Assert(mask != 0);
+
+                        pInputBuffer += Bmi1.TrailingZeroCount(mask);
+                        if (pInputBuffer > pFinalPosWhereCanReadDWordFromInputBuffer)
+                        {
+                            goto ProcessRemainingBytesSlow;
+                        }
+
+                        thisDWord = Unsafe.ReadUnaligned<uint>(pInputBuffer); // no longer guaranteed to be aligned
+                        goto BeforeProcessTwoByteSequence;
 
                     LoopTerminatedEarlyDueToNonAsciiDataInSecondPair:
 
