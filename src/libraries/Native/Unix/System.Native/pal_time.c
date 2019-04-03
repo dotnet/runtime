@@ -193,7 +193,7 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     int32_t cpuUtilization = 0;
     if (cpuTotalTime > 0 && cpuBusyTime > 0)
     {
-        cpuUtilization = (int32_t)(cpuBusyTime / cpuTotalTime);
+        cpuUtilization = (int32_t)(cpuBusyTime * 100 / cpuTotalTime);
     }
 
     assert(cpuUtilization >= 0 && cpuUtilization <= 100);
