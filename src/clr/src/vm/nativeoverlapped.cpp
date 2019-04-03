@@ -40,7 +40,7 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
     //Poll and wait if GC is in progress, to avoid blocking GC for too long.
     FC_GC_POLL();
 
-    *lpOverlapped = ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(pThread, errorCode, numBytes, &key, DefaultADID);
+    *lpOverlapped = ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(pThread, errorCode, numBytes, &key);
     if(*lpOverlapped == NULL)
     {
         return;
@@ -107,7 +107,6 @@ FCIMPL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped
         g_pOverlappedDataClass = MscorlibBinder::GetClass(CLASS__OVERLAPPEDDATA);
         // We have optimization to avoid creating event if IO is in default domain.  This depends on default domain 
         // can not be unloaded.
-        _ASSERTE(SystemDomain::System()->DefaultDomain()->GetId().m_dwId == DefaultADID);
     }
 
     CONSISTENCY_CHECK(overlapped->GetMethodTable() == g_pOverlappedDataClass);

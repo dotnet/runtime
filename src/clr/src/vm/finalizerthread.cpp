@@ -105,109 +105,38 @@ void CallFinalizer(Object* obj)
     }
 }
 
-struct FinalizeAllObjects_Args {
-    OBJECTREF fobj;
-    int bitToCheck;
-};
-
-void FinalizerThread::FinalizeAllObjects_Wrapper(void *ptr)
+void FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    FinalizeAllObjects_Args *args = (FinalizeAllObjects_Args *) ptr;
-    _ASSERTE(args->fobj);
-    Object *fobj = OBJECTREFToObject(args->fobj);
-    args->fobj = NULL;      // don't want to do this guy again, if we take an exception here:
-    args->fobj = ObjectToOBJECTREF(FinalizeAllObjects(fobj, args->bitToCheck));
-}
-
-// The following is inadequate when we have multiple Finalizer threads in some future release.
-// Instead, we will have to store this in TLS or pass it through the call tree of finalization.
-// It is used to tie together the base exception handling and the AppDomain transition exception
-// handling for this thread.
-static struct ManagedThreadCallState *pThreadTurnAround;
-
-Object * FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread,int bitToCheck,bool *pbTerminate)
-{
-    STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-    bool fTerminate=false;
-    Object *pReturnObject = NULL;
-    
-
-    AppDomain* targetAppDomain = fobj->GetAppDomain();
-    AppDomain* currentDomain = pThread->GetDomain();
-    if (! targetAppDomain)
+    class ResetFinalizerStartTime
     {
-        // if can't get into domain to finalize it, then it must be agile so finalize in current domain
-        targetAppDomain = currentDomain;
+    public:
+        ResetFinalizerStartTime()
+        {
+            if (CLRHosted())
+            {
+                g_ObjFinalizeStartTime = CLRGetTickCount64();
+            }                    
+        }
+        ~ResetFinalizerStartTime()
+        {
+            if (g_ObjFinalizeStartTime)
+            {
+                g_ObjFinalizeStartTime = 0;
+            }
+        }
+    };
+    {
+        ResetFinalizerStartTime resetTime;
+        CallFinalizer(fobj);
     }
-
-    if (targetAppDomain == currentDomain)
-    {
-        class ResetFinalizerStartTime
-        {
-        public:
-            ResetFinalizerStartTime()
-            {
-                if (CLRHosted())
-                {
-                    g_ObjFinalizeStartTime = CLRGetTickCount64();
-                }                    
-            }
-            ~ResetFinalizerStartTime()
-            {
-                if (g_ObjFinalizeStartTime)
-                {
-                    g_ObjFinalizeStartTime = 0;
-                }
-            }
-        };
-        {
-            ResetFinalizerStartTime resetTime;
-            CallFinalizer(fobj);
-        }
-        pThread->InternalReset();
-    } 
-    else 
-    {
-        if (!currentDomain->IsDefaultDomain())
-        {
-            // this means we are in some other domain, so need to return back out through the DoADCallback
-            // and handle the object from there in another domain.
-            pReturnObject = fobj;
-            fTerminate = true;
-        } 
-        else
-        {
-            // otherwise call back to ourselves to process as many as we can in that other domain
-            FinalizeAllObjects_Args args;
-            args.fobj = ObjectToOBJECTREF(fobj);
-            args.bitToCheck = bitToCheck;
-            GCPROTECT_BEGIN(args.fobj);
-            {
-                _ASSERTE(pThreadTurnAround != NULL);
-                ManagedThreadBase::FinalizerAppDomain(targetAppDomain,
-                                                      FinalizeAllObjects_Wrapper,
-                                                      &args,
-                                                      pThreadTurnAround);
-            }
-            pThread->InternalReset();
-            // process the object we got back or be done if we got back null
-            pReturnObject = OBJECTREFToObject(args.fobj);
-            GCPROTECT_END();
-        }
-    }        
-        
-    *pbTerminate = fTerminate;
-    return pReturnObject;
+    pThread->InternalReset();
 }
 
-Object * FinalizerThread::FinalizeAllObjects(Object* fobj, int bitToCheck)
+void FinalizerThread::FinalizeAllObjects(int bitToCheck)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -216,12 +145,8 @@ Object * FinalizerThread::FinalizeAllObjects(Object* fobj, int bitToCheck)
     FireEtwGCFinalizersBegin_V1(GetClrInstanceId());
 
     unsigned int fcount = 0; 
-    bool fTerminate = false;
 
-    if (fobj == NULL)
-    {
-        fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
-    }
+    Object* fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
 
     Thread *pThread = GetThread();
 
@@ -246,21 +171,11 @@ Object * FinalizerThread::FinalizeAllObjects(Object* fobj, int bitToCheck)
         else
         {
             fcount++;
-            fobj = DoOneFinalization(fobj, pThread, bitToCheck,&fTerminate);
-            if (fTerminate)
-            {
-                break;
-            }
-
-            if (fobj == NULL)
-            {
-                fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
-            }
+            DoOneFinalization(fobj, pThread);
+            fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
         }
     }
     FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
-    
-    return fobj;
 }
 
 
@@ -498,11 +413,6 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
     SCAN_IGNORE_THROW;
     SCAN_IGNORE_TRIGGER;
 
-    // This is used to stitch together the exception handling at the base of our thread with
-    // any eventual transitions into different AppDomains for finalization.
-    _ASSERTE(args != NULL);
-    pThreadTurnAround = (ManagedThreadCallState *) args;
-
     BOOL bPriorityBoosted = FALSE;
 
     while (!fQuitFinalizer)
@@ -591,7 +501,7 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         }
         FastInterlockExchange ((LONG*)&g_FinalizerIsRunning, TRUE);
 
-        FinalizeAllObjects(NULL, 0);
+        FinalizeAllObjects(0);
         _ASSERTE(GetFinalizerThread()->GetDomain()->IsDefaultDomain());
 
         FastInterlockExchange ((LONG*)&g_FinalizerIsRunning, FALSE);
@@ -619,12 +529,7 @@ void FinalizerThread::FinalizeObjectsOnShutdown(LPVOID args)
 {
     WRAPPER_NO_CONTRACT;
 
-    // This is used to stitch together the exception handling at the base of our thread with
-    // any eventual transitions into different AppDomains for finalization.
-    _ASSERTE(args != NULL);
-    pThreadTurnAround = (ManagedThreadCallState *) args;
-
-    FinalizeAllObjects(NULL, BIT_SBLK_FINALIZER_RUN);
+    FinalizeAllObjects(BIT_SBLK_FINALIZER_RUN);
 }
 
 

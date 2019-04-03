@@ -639,7 +639,7 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
     
     // Deleting the DomainAssemblies will have created a list of LoaderAllocator's on the AppDomain
     // Call this shutdown function to clean those up.
-    pAppDomain->ShutdownFreeLoaderAllocators(TRUE);
+    pAppDomain->ShutdownFreeLoaderAllocators();
 } // LoaderAllocator::GCLoaderAllocators
         
 //---------------------------------------------------------------------------------------
@@ -848,7 +848,7 @@ LOADERHANDLE LoaderAllocator::AllocateHandle(OBJECTREF value)
     else
     {
         OBJECTREF* pRef = GetDomain()->AllocateObjRefPtrsInLargeTable(1);
-        SetObjectReference(pRef, gc.value, GetDomain()->AsAppDomain());
+        SetObjectReference(pRef, gc.value);
         retVal = (((UINT_PTR)pRef) + 1);
     }
 
@@ -932,7 +932,7 @@ OBJECTREF LoaderAllocator::CompareExchangeValueInHandle(LOADERHANDLE handle, OBJ
         gc.previous = *ptr;
         if ((*ptr) == gc.compare)
         {
-            SetObjectReference(ptr, gc.value, GetDomain()->AsAppDomain());
+            SetObjectReference(ptr, gc.value);
         }
     }
     else
@@ -979,7 +979,7 @@ void LoaderAllocator::SetHandleValue(LOADERHANDLE handle, OBJECTREF value)
     if ((((UINT_PTR)handle) & 1) != 0)
     {
         OBJECTREF *ptr = (OBJECTREF *)(((UINT_PTR)handle) - 1);
-        SetObjectReference(ptr, value, GetDomain()->AsAppDomain());
+        SetObjectReference(ptr, value);
     }
     else
     {
