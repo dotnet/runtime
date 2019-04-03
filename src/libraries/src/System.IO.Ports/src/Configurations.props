@@ -5,12 +5,12 @@
       netstandard-Linux;
       netstandard-OSX;
       netstandard;
-      net461;
+      net461-Windows_NT;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations)
       uap-Windows_NT;
-      netfx;
+      netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
