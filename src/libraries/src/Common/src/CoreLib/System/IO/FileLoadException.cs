@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.IO
@@ -16,25 +17,25 @@ namespace System.IO
             HResult = HResults.COR_E_FILELOAD;
         }
 
-        public FileLoadException(string message)
+        public FileLoadException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_FILELOAD;
         }
 
-        public FileLoadException(string message, Exception inner)
+        public FileLoadException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_FILELOAD;
         }
 
-        public FileLoadException(string message, string fileName) : base(message)
+        public FileLoadException(string? message, string? fileName) : base(message)
         {
             HResult = HResults.COR_E_FILELOAD;
             FileName = fileName;
         }
 
-        public FileLoadException(string message, string fileName, Exception inner)
+        public FileLoadException(string? message, string? fileName, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_FILELOAD;
@@ -53,8 +54,8 @@ namespace System.IO
             }
         }
 
-        public string FileName { get; }
-        public string FusionLog { get; }
+        public string? FileName { get; }
+        public string? FusionLog { get; }
 
         public override string ToString()
         {

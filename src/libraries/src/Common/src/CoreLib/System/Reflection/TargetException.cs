@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Reflection
@@ -15,12 +16,12 @@ namespace System.Reflection
         {
         }
 
-        public TargetException(string message)
+        public TargetException(string? message)
             : this(message, null)
         {
         }
 
-        public TargetException(string message, Exception inner)
+        public TargetException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_TARGET;
