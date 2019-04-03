@@ -137,8 +137,8 @@ namespace ILLink.Tasks
 				args.Append (" -a ").Append (assemblyItem.ItemSpec);
 			}
 
-			HashSet<string> directories = new HashSet<string> ();
-			HashSet<string> assemblyNames = new HashSet<string> ();
+			HashSet<string> directories = new HashSet<string> (StringComparer.OrdinalIgnoreCase);
+			HashSet<string> assemblyNames = new HashSet<string> (StringComparer.OrdinalIgnoreCase);
 			foreach (var assembly in AssemblyPaths) {
 				var assemblyPath = assembly.ItemSpec;
 				var assemblyName = Path.GetFileNameWithoutExtension (assemblyPath);
