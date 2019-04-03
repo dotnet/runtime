@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
+#nullable enable
 namespace System.Runtime.Serialization
 {
     // Thrown when a dangerous action would be performed during deserialization 
@@ -21,13 +20,13 @@ namespace System.Runtime.Serialization
 
         // Creates a new DeserializationBlockedException with a message indicating an opt-out switch
         // for a particular part of SerializationGuard
-        public DeserializationBlockedException(string message)
+        public DeserializationBlockedException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_SERIALIZATION;
         }
 
-        public DeserializationBlockedException(Exception innerException)
+        public DeserializationBlockedException(Exception? innerException)
             : base(SR.Serialization_DangerousDeserialization, innerException)
         {
             HResult = HResults.COR_E_SERIALIZATION;
