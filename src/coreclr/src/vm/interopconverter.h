@@ -144,12 +144,6 @@ inline void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown *pUnk, MethodTabl
     return GetObjectRefFromComIP(pObjOut, &pUnk, pMTClass, pItfMT, dwFlags);
 }
 
-
-//--------------------------------------------------------------------------------
-// UnMarshalObjectForCurrentDomain
-// unmarshal the managed object for the current domain
-BOOL UnMarshalObjectForCurrentDomain(ADID pObjDomain, ComCallWrapper* pWrap, OBJECTREF* pResult);
-
 #endif // FEATURE_COMINTEROP
 
 #endif // #ifndef _H_INTEROPCONVERTER_

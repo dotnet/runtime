@@ -175,15 +175,11 @@ HRESULT IterateAppDomains(CallbackObject * callbackObj,
     //     < AppDomainCreationFinished issued
     //     < AD NOT available from catch-up enumeration
     //     
-    // The AppDomainIterator constructor parameter m_bActive is set to be TRUE below,
-    // meaning only AppDomains in stage STAGE_ACTIVE or higher will be included
-    // in the iteration.
     //     * AppDomainCreationFinished (with S_OK hrStatus) is issued once the AppDomain
     //         reaches STAGE_ACTIVE.
-    AppDomainIterator appDomainIterator(TRUE);
-    while (appDomainIterator.Next())
+    AppDomain * pAppDomain = ::GetAppDomain();
+    if (pAppDomain->IsActive())
     {
-        AppDomain * pAppDomain = appDomainIterator.GetDomain();
 
         // Of course, the AD could start unloading here, but if it does we're guaranteed
         // the profiler has had a chance to see the Unload callback for the AD, and thus

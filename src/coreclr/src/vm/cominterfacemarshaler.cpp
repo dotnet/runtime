@@ -47,8 +47,6 @@ COMInterfaceMarshaler::COMInterfaceMarshaler()
     m_flags = RCW::CF_None;
     m_pCallback = NULL;
     m_pThread = NULL;
-
-    m_dwServerSyncBlockIndex = 0;
 }
 
 //--------------------------------------------------------------------------------
@@ -239,33 +237,6 @@ VOID COMInterfaceMarshaler::InitializeObjectClass(IUnknown *pIncomingIP)
         
     if (m_typeHandle.IsNull())
         m_typeHandle = TypeHandle(g_pBaseCOMObject);
-}
-
-//--------------------------------------------------------------------
-// OBJECTREF COMInterfaceMarshaler::GetCCWObject()
-//--------------------------------------------------------------------
-OBJECTREF COMInterfaceMarshaler::GetCCWObject()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF oref = NULL;
-
-    if (m_dwServerSyncBlockIndex != 0)
-    {
-        AppDomain* pCurrDomain = m_pThread->GetDomain();
-
-        // if we are in the right AD, we know for sure that the object is still alive
-        // since we keep the CCW addref'ed
-        oref = ObjectToOBJECTREF(g_pSyncTable[m_dwServerSyncBlockIndex].m_Object);
-    }
-
-    return oref;
 }
 
 //--------------------------------------------------------------------------------

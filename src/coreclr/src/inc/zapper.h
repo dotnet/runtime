@@ -298,7 +298,6 @@ class Zapper
     void ComputeAssemblyDependencies(CORINFO_ASSEMBLY_HANDLE hAssembly);
 
     void CreatePdb(BSTR pAssemblyPathOrName, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath);
-    void CreatePdbInCurrentDomain(BSTR pAssemblyPathOrName, BSTR pNativeImagePath, BSTR pPdbPath, BOOL pdbLines, BSTR pManagedPdbSearchPath);
 
     void DefineOutputAssembly(SString& strAssemblyName, ULONG * pHashAlgId);
 
@@ -379,9 +378,6 @@ class Zapper
     public:
         virtual void doCallback() = NULL;
     };
-
-    static HRESULT __stdcall GenericDomainCallback(LPVOID pvArgs);
-    void InvokeDomainCallback(DomainCallback *callback);
 
     void CompileInCurrentDomain(__in LPCWSTR path, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig);
     void ComputeDependenciesInCurrentDomain(LPCWSTR pAssemblyName, CORCOMPILE_NGEN_SIGNATURE * pNativeImageSig);

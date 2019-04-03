@@ -2938,9 +2938,6 @@
   <data name="NotSupported_DBNullSerial" xml:space="preserve">
     <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
   </data>
-  <data name="NotSupported_DelegateMarshalToWrongDomain" xml:space="preserve">
-    <value>Delegates cannot be marshaled from native code into a domain other than their home domain.</value>
-  </data>
   <data name="NotSupported_DelegateSerHolderSerial" xml:space="preserve">
     <value>DelegateSerializationHolder objects are designed to represent a delegate during serialization and are not serializable themselves.</value>
   </data>
