@@ -63,7 +63,9 @@
     <Compile Include="System\Data\DataRowChangeEvent.cs" />
     <Compile Include="System\Data\DataRowChangeEventHandler.cs" />
     <Compile Include="System\Data\DataRowCollection.cs" />
+    <Compile Include="System\Data\DataRowComparer.cs" />
     <Compile Include="System\Data\DataRowCreatedEventHandler.cs" />
+    <Compile Include="System\Data\DataRowExtensions.cs" />
     <Compile Include="System\Data\DataRowState.cs" />
     <Compile Include="System\Data\DataRowVersion.cs" />
     <Compile Include="System\Data\DataRowView.cs" />
@@ -71,11 +73,13 @@
     <Compile Include="System\Data\DataSet.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="System\Data\DataSetUtil.cs" />
     <Compile Include="System\Data\DataSetDateTime.cs" />
     <Compile Include="System\Data\DataSysAttribute.cs" />
     <Compile Include="System\Data\DataTable.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="System\Data\DataTableExtensions.cs" />
     <Compile Include="System\Data\DataTableClearEvent.cs" />
     <Compile Include="System\Data\DataTableClearEventHandler.cs" />
     <Compile Include="System\Data\DataTableCollection.cs" />
@@ -99,6 +103,8 @@
     <Compile Include="System\Data\DBConcurrencyException.cs" />
     <Compile Include="System\Data\DbType.cs" />
     <Compile Include="System\Data\DefaultValueTypeConverter.cs" />
+    <Compile Include="System\Data\EnumerableRowCollection.cs" />
+    <Compile Include="System\Data\EnumerableRowCollectionExtensions.cs" />
     <Compile Include="System\Data\FillErrorEventArgs.cs" />
     <Compile Include="System\Data\FillErrorEventHandler.cs" />
     <Compile Include="System\Data\ForeignKeyConstraint.cs" />
@@ -118,6 +124,7 @@
     <Compile Include="System\Data\ITableMapping.cs" />
     <Compile Include="System\Data\ITableMappingCollection.cs" />
     <Compile Include="System\Data\KeyRestrictionBehavior.cs" />
+    <Compile Include="System\Data\LinqDataView.cs" />
     <Compile Include="System\Data\LoadOption.cs" />
     <Compile Include="System\Data\MappingType.cs" />
     <Compile Include="System\Data\MergeFailedEvent.cs" />
@@ -125,6 +132,7 @@
     <Compile Include="System\Data\Merger.cs" />
     <Compile Include="System\Data\MissingMappingAction.cs" />
     <Compile Include="System\Data\MissingSchemaAction.cs" />
+    <Compile Include="System\Data\OrderedEnumerableRowCollection.cs" />
     <Compile Include="System\Data\ParameterDirection.cs" />
     <Compile Include="System\Data\PrimaryKeyTypeConverter.cs" />
     <Compile Include="System\Data\PropertyCollection.cs" />
@@ -143,11 +151,14 @@
     <Compile Include="System\Data\Select.cs" />
     <Compile Include="System\Data\Selection.cs" />
     <Compile Include="System\Data\SimpleType.cs" />
+    <Compile Include="System\Data\SortExpressionBuilder.cs" />
     <Compile Include="System\Data\SqlDbType.cs" />
     <Compile Include="System\Data\StateChangeEvent.cs" />
     <Compile Include="System\Data\StateChangeEventHandler.cs" />
     <Compile Include="System\Data\StatementType.cs" />
     <Compile Include="System\Data\StrongTypingException.cs" />
+    <Compile Include="System\Data\TypedTableBase.cs" />
+    <Compile Include="System\Data\TypedTableBaseExtensions.cs" />
     <Compile Include="System\Data\UniqueConstraint.cs" />
     <Compile Include="System\Data\UpdateRowSource.cs" />
     <Compile Include="System\Data\Common\UInt64Storage.cs" />
