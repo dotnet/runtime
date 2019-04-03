@@ -850,8 +850,14 @@ namespace System.Text
 
             ReadOnlySpan<byte> bytes = new ReadOnlySpan<byte>(pOriginalBytes, originalByteCount).Slice(bytesConsumedSoFar);
 
-            int totalCharCount = decoder.DrainLeftoverDataForGetCharCount(bytes, out int bytesConsumedJustNow);
-            bytes = bytes.Slice(bytesConsumedJustNow);
+            int bytesConsumedJustNow = 0;
+            int totalCharCount = 0;
+
+            if (decoder.HasLeftoverData)
+            {
+                totalCharCount = decoder.DrainLeftoverDataForGetCharCount(bytes, out bytesConsumedJustNow);
+                bytes = bytes.Slice(bytesConsumedJustNow);
+            }
 
             // Now try invoking the "fast path" (no fallback) implementation.
             // We can use Unsafe.AsPointer here since these spans are created from pinned data (raw pointers).
@@ -1120,10 +1126,15 @@ namespace System.Text
             ReadOnlySpan<byte> bytes = new ReadOnlySpan<byte>(pOriginalBytes, originalByteCount).Slice(bytesConsumedSoFar);
             Span<char> chars = new Span<char>(pOriginalChars, originalCharCount).Slice(charsWrittenSoFar);
 
-            int charsWrittenJustNow = decoder.DrainLeftoverDataForGetChars(bytes, chars, out int bytesConsumedJustNow);
+            int bytesConsumedJustNow = 0;
+            int charsWrittenJustNow = 0;
 
-            bytes = bytes.Slice(bytesConsumedJustNow);
-            chars = chars.Slice(charsWrittenJustNow);
+            if (decoder.HasLeftoverData)
+            {
+                charsWrittenJustNow = decoder.DrainLeftoverDataForGetChars(bytes, chars, out bytesConsumedJustNow);
+                bytes = bytes.Slice(bytesConsumedJustNow);
+                chars = chars.Slice(charsWrittenJustNow);
+            }
 
             Debug.Assert(!decoder.InternalHasFallbackBuffer || decoder.FallbackBuffer.Remaining == 0, "Should be no remaining fallback data at this point.");
 

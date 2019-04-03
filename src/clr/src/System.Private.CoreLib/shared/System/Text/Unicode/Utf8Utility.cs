@@ -39,7 +39,7 @@ namespace System.Text.Unicode
                 int index = (int)(void*)Unsafe.ByteOffset(ref *pUtf8Data, ref *pFirstInvalidByte);
 
                 isAscii = (utf16CodeUnitCountAdjustment == 0); // If UTF-16 char count == UTF-8 byte count, it's ASCII.
-                return (index <= utf8Data.Length) ? index : -1;
+                return (index < utf8Data.Length) ? index : -1;
             }
         }
 

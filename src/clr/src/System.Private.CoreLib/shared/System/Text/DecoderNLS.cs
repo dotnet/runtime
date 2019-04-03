@@ -266,6 +266,7 @@ namespace System.Text
             // to be in progress. Unlike EncoderNLS, this is simply a Debug.Assert. No exception is thrown.
 
             Debug.Assert(_fallbackBuffer is null || _fallbackBuffer.Remaining == 0, "Should have no data remaining in the fallback buffer.");
+            Debug.Assert(HasLeftoverData, "Caller shouldn't invoke this routine unless there's leftover data in the decoder.");
 
             // Copy the existing leftover data plus as many bytes as possible of the new incoming data
             // into a temporary concated buffer, then get its char count by decoding it.
@@ -319,6 +320,7 @@ namespace System.Text
             // to be in progress. Unlike EncoderNLS, this is simply a Debug.Assert. No exception is thrown.
 
             Debug.Assert(_fallbackBuffer is null || _fallbackBuffer.Remaining == 0, "Should have no data remaining in the fallback buffer.");
+            Debug.Assert(HasLeftoverData, "Caller shouldn't invoke this routine unless there's leftover data in the decoder.");
 
             // Copy the existing leftover data plus as many bytes as possible of the new incoming data
             // into a temporary concated buffer, then transcode it from bytes to chars.
@@ -370,6 +372,14 @@ namespace System.Text
 
         Finish:
 
+            // Report back the number of bytes (from the new incoming span) we consumed just now.
+            // This calculation is simple: it's the difference between the original leftover byte
+            // count and the number of bytes from the combined buffer we needed to decode the first
+            // scalar value. We need to report this before the call to SetLeftoverData /
+            // ClearLeftoverData because those methods will overwrite the _leftoverByteCount field.
+
+            bytesConsumed = combinedBufferBytesConsumed - _leftoverByteCount;
+
             if (persistNewCombinedBuffer)
             {
                 Debug.Assert(combinedBufferBytesConsumed == combinedBuffer.Length, "We should be asked to persist the entire combined buffer.");
@@ -380,7 +390,6 @@ namespace System.Text
                 ClearLeftoverData(); // the buffer contains no partial data; we'll go down the normal paths
             }
 
-            bytesConsumed = combinedBufferBytesConsumed - _leftoverByteCount; // amount of 'bytes' buffer consumed just now
             return charsWritten;
 
         DestinationTooSmall:
