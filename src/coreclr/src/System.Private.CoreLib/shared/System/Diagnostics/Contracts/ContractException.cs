@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Reflection;
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Diagnostics.Contracts
@@ -17,13 +13,13 @@ namespace System.Diagnostics.Contracts
     public sealed class ContractException : Exception
     {
         private readonly ContractFailureKind _kind;
-        private readonly string _userMessage;
-        private readonly string _condition;
+        private readonly string? _userMessage;
+        private readonly string? _condition;
 
-        public ContractFailureKind Kind { get { return _kind; } }
-        public string Failure { get { return this.Message; } }
-        public string UserMessage { get { return _userMessage; } }
-        public string Condition { get { return _condition; } }
+        public ContractFailureKind Kind => _kind;
+        public string Failure => this.Message;
+        public string? UserMessage => _userMessage;
+        public string? Condition => _condition;
 
         // Called by COM Interop, if we see COR_E_CODECONTRACTFAILED as an HRESULT.
         private ContractException()
@@ -31,7 +27,7 @@ namespace System.Diagnostics.Contracts
             HResult = HResults.COR_E_CODECONTRACTFAILED;
         }
 
-        public ContractException(ContractFailureKind kind, string failure, string userMessage, string condition, Exception innerException)
+        public ContractException(ContractFailureKind kind, string? failure, string? userMessage, string? condition, Exception? innerException)
             : base(failure, innerException)
         {
             HResult = HResults.COR_E_CODECONTRACTFAILED;
