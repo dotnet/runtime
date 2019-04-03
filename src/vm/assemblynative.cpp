@@ -1331,7 +1331,14 @@ INT_PTR QCALLTYPE AssemblyNative::GetLoadContextForAssembly(QCall::AssemblyHandl
     // We should have a load context binder at this point.
     _ASSERTE(pOpaqueBinder != nullptr);
 
+    // the TPA binder uses the default ALC
+    // WinRT assemblies (bound using the WinRT binder) don't actually have an ALC,
+    // so treat them the same as if they were loaded into the TPA ALC in this case.
+#ifdef FEATURE_COMINTEROP
+    if (!AreSameBinderInstance(pTPABinder, pOpaqueBinder) && !AreSameBinderInstance(pCurDomain->GetWinRtBinder(), pOpaqueBinder))
+#else
     if (!AreSameBinderInstance(pTPABinder, pOpaqueBinder))
+#endif // FEATURE_COMINTEROP
     {
         // Only CLRPrivBinderAssemblyLoadContext instance contains the reference to its
         // corresponding managed instance.
