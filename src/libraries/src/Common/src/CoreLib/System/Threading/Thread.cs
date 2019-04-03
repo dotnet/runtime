@@ -19,7 +19,7 @@ namespace System.Threading
         private static AsyncLocal<IPrincipal?>? s_asyncLocalPrincipal;
 
         [ThreadStatic]
-        private static Thread t_currentThread;
+        private static Thread? t_currentThread;
 
         public Thread(ThreadStart start)
             : this()
