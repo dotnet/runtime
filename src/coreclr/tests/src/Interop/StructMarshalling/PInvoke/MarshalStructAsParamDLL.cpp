@@ -1178,6 +1178,16 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE MarshalStructAsParam_AsExpByRefOutL
 	return TRUE;
 }
 
+extern "C" DLL_EXPORT int GetStringLength(AutoString str)
+{
+#ifdef _WIN32
+    return (int)wcslen(str.str);
+#else
+    return (int)strlen(str.str);
+#endif
+}
+
+
 extern "C" DLL_EXPORT HFA STDMETHODCALLTYPE GetHFA(float f1, float f2, float f3, float f4)
 {
     return {f1, f2, f3, f4};
