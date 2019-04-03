@@ -17,13 +17,6 @@ namespace System.Runtime.InteropServices.Tests
 
             try
             {
-                // Make sure the native memory is correctly laid out.
-                for (int i = 0; i < s.Length; i++)
-                {
-                    char c = (char)Marshal.ReadInt16(IntPtr.Add(ptr, i << 1));
-                    Assert.Equal(s[i], c);
-                }
-
                 // Make sure the memory roundtrips.
                 Assert.Equal(s, Marshal.PtrToStringAuto(ptr));
             }
