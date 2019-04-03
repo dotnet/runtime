@@ -1,9 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <ProjectGuid>{C7CB4B69-2A11-4A20-A21E-5C954855AE5A}</ProjectGuid>
     <AssemblyName>System.Data.DataSetExtensions</AssemblyName>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
@@ -14,19 +13,5 @@
     <Reference Include="System.Data.Common" />
     <Reference Include="System.Linq" />
     <Reference Include="System.ComponentModel.TypeConverter" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="System\Data\DataRowComparer.cs" />
-    <Compile Include="System\Data\DataRowExtensions.cs" />
-    <Compile Include="System\Data\DataSetUtil.cs" />
-    <Compile Include="System\Data\DataTableExtensions.cs" />
-    <Compile Include="System\Data\EnumerableRowCollection.cs" />
-    <Compile Include="System\Data\EnumerableRowCollectionExtensions.cs" />
-    <Compile Include="System\Data\OrderedEnumerableRowCollection.cs" />
-    <Compile Include="System\Data\SortExpressionBuilder.cs" />
-    <Compile Include="System\Data\TypedTableBase.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="System\Data\TypedTableBaseExtensions.cs" />
   </ItemGroup>
 </Project>

@@ -516,4 +516,14 @@
   <data name="ADP_DbProviderFactories_FactoryNotLoadable" xml:space="preserve"><value>The registered .NET Data Provider's DbProviderFactory implementation type '{0}' couldn't be loaded.</value></data>
   <data name="ADP_DbProviderFactories_NoAssemblyQualifiedName" xml:space="preserve"><value>The missing .NET Data Provider's assembly qualified name is required.</value></data>
   <data name="ADP_DbProviderFactories_NotAFactoryType" xml:space="preserve"><value>The type '{0}' doesn't inherit from DbProviderFactory.</value></data>
+  <data name="DataSetLinq_InvalidEnumerationValue" xml:space="preserve"><value>The {0} enumeration value, {1}, is not valid.</value></data>
+  <data name="LDV_InvalidNumOfKeys" xml:space="preserve"><value>Must provide '{0}' keys to find.</value></data>
+  <data name="LDVRowStateError" xml:space="preserve"><value>DataViewRowState must be DataViewRowState.CurrentRows.</value></data>
+  <data name="ToLDVUnsupported" xml:space="preserve"><value>Can not create DataView after using projection.</value></data>
+  <data name="DataSetLinq_EmptyDataRowSource" xml:space="preserve"><value>The source contains no DataRows.</value></data>
+  <data name="DataSetLinq_NullDataRow" xml:space="preserve"><value>The source contains a DataRow reference that is null.</value></data>
+  <data name="DataSetLinq_CannotLoadDetachedRow" xml:space="preserve"><value>The source contains a detached DataRow that cannot be copied to the DataTable.</value></data>
+  <data name="DataSetLinq_CannotCompareDeletedRow" xml:space="preserve"><value>The DataRowComparer does not work with DataRows that have been deleted since it only compares current values.</value></data>
+  <data name="DataSetLinq_CannotLoadDeletedRow" xml:space="preserve"><value>The source contains a deleted DataRow that cannot be copied to the DataTable.</value></data>
+  <data name="DataSetLinq_NonNullableCast" xml:space="preserve"><value>Cannot cast DBNull. Value to type '{0}'. Please use a nullable type.</value></data>
 </root>
