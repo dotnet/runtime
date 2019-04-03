@@ -1057,6 +1057,14 @@
                 {
                     "name": "System.Runtime.InteropServices.Tests.ArrayWithOffsetTests.Ctor_Array_Offset",
                     "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.StringToCoTaskMemAutoTests.StringToCoTaskMemAuto_NonNullString_Roundtrips",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.StringToHGlobalAutoTests.StringToHGlobalAuto_NonNullString_Roundtrips",
+                    "reason": "https://github.com/dotnet/coreclr/pull/23664"
                 }
             ]
         }
