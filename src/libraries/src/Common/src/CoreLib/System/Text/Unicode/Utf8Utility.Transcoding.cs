@@ -928,7 +928,7 @@ namespace System.Text.Unicode
 
                     if (BitConverter.IsLittleEndian && Bmi2.X64.IsSupported)
                     {
-                        const ulong PEXT_MASK = 0x007F007F_007F007Ful;
+                        const ulong PEXT_MASK = 0x00FF00FF_00FF00FFul;
 
                         // Try reading and writing 8 elements per iteration.
                         uint maxIters = minElementsRemaining / 8;

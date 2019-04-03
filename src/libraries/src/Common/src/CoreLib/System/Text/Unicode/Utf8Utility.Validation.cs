@@ -40,14 +40,13 @@ namespace System.Text.Unicode
                 // Quick check - did we just end up consuming the entire input buffer?
                 // If so, short-circuit the remainder of the method.
 
-                if ((int)numAsciiBytesCounted == inputLength)
+                inputLength -= (int)numAsciiBytesCounted;
+                if (inputLength == 0)
                 {
                     utf16CodeUnitCountAdjustment = 0;
                     scalarCountAdjustment = 0;
                     return pInputBuffer;
                 }
-
-                inputLength -= (int)numAsciiBytesCounted;
             }
 
 #if DEBUG
@@ -604,9 +603,9 @@ namespace System.Text.Unicode
             Debug.Assert(inputBufferRemainingBytes < 4);
             while (inputBufferRemainingBytes > 0)
             {
-                byte firstByte = pInputBuffer[0];
+                uint firstByte = pInputBuffer[0];
 
-                if (firstByte < 0x80u)
+                if ((byte)firstByte < 0x80u)
                 {
                     // 1-byte (ASCII) case
                     pInputBuffer++;
@@ -616,10 +615,10 @@ namespace System.Text.Unicode
                 else if (inputBufferRemainingBytes >= 2)
                 {
                     uint secondByte = pInputBuffer[1]; // typed as 32-bit since we perform arithmetic (not just comparisons) on this value
-                    if (firstByte < 0xE0u)
+                    if ((byte)firstByte < 0xE0u)
                     {
                         // 2-byte case
-                        if (firstByte >= 0xC2u && IsLowByteUtf8ContinuationByte(secondByte))
+                        if ((byte)firstByte >= 0xC2u && IsLowByteUtf8ContinuationByte(secondByte))
                         {
                             pInputBuffer += 2;
                             tempUtf16CodeUnitCountAdjustment--; // 2 UTF-8 bytes -> 1 UTF-16 code unit (and 1 scalar)
@@ -629,16 +628,16 @@ namespace System.Text.Unicode
                     }
                     else if (inputBufferRemainingBytes >= 3)
                     {
-                        if (firstByte <= 0xF0u)
+                        if ((byte)firstByte < 0xF0u)
                         {
-                            if (firstByte == 0xE0u)
+                            if ((byte)firstByte == 0xE0u)
                             {
                                 if (!UnicodeUtility.IsInRangeInclusive(secondByte, 0xA0u, 0xBFu))
                                 {
                                     goto Error; // overlong encoding
                                 }
                             }
-                            else if (firstByte == 0xEDu)
+                            else if ((byte)firstByte == 0xEDu)
                             {
                                 if (!UnicodeUtility.IsInRangeInclusive(secondByte, 0x80u, 0x9Fu))
                                 {
