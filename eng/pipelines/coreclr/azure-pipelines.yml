@@ -123,6 +123,17 @@ jobs:
     parameters:
       jobTemplate: build-job.yml
       buildConfig: checked
+      ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
+        platforms:
+        - Linux_arm
+        - Linux_arm64
+        - Linux_musl_x64
+        - Linux_x64
+        - OSX_x64
+        - Windows_NT_arm
+        - Windows_NT_arm64
+        - Windows_NT_x64
+        - Windows_NT_x86
       ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc') }}:
         platforms:
         - Linux_arm
@@ -130,6 +141,7 @@ jobs:
         - Linux_x64
         - Windows_NT_x64
         - Windows_NT_x86
+
 #
 # Release builds
 #
@@ -177,6 +189,17 @@ jobs:
     parameters:
       jobTemplate: test-job.yml
       buildConfig: checked
+      ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
+        platforms:
+        - Linux_arm
+        - Linux_arm64
+        - Linux_musl_x64
+        - Linux_x64
+        - OSX_x64
+        - Windows_NT_arm
+        - Windows_NT_arm64
+        - Windows_NT_x64
+        - Windows_NT_x86
       ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc') }}:
         platforms:
         - Linux_arm
