@@ -1336,17 +1336,7 @@ namespace System.Text
             // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
 
             Vector128<byte> asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
-
-            if (Sse41.X64.IsSupported)
-            {
-                // Use PEXTRQ instruction if available, since it can extract from the vector directly to the destination address.
-                Unsafe.WriteUnaligned<ulong>(pAsciiBuffer, Sse41.X64.Extract(asciiVector.AsUInt64(), 0));
-            }
-            else
-            {
-                // Bounce this through a temporary register (with potential stack spillage) before writing to memory.
-                Unsafe.WriteUnaligned<ulong>(pAsciiBuffer, asciiVector.AsUInt64().GetElement(0));
-            }
+            Unsafe.WriteUnaligned<ulong>(pAsciiBuffer, asciiVector.AsUInt64().GetElement(0));
 
             nuint currentOffsetInElements = SizeOfVector128 / 2; // we processed 8 elements so far
 
@@ -1385,16 +1375,7 @@ namespace System.Text
 
                 // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
                 asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
-
-                // See comments earlier in this method for information about how this works.
-                if (Sse41.X64.IsSupported)
-                {
-                    Unsafe.WriteUnaligned<ulong>(pAsciiBuffer + currentOffsetInElements, Sse41.X64.Extract(asciiVector.AsUInt64(), 0));
-                }
-                else
-                {
-                    Unsafe.WriteUnaligned<ulong>(pAsciiBuffer + currentOffsetInElements, asciiVector.AsUInt64().GetElement(0));
-                }
+                Unsafe.WriteUnaligned<ulong>(pAsciiBuffer + currentOffsetInElements, asciiVector.AsUInt64().GetElement(0));
             }
 
             // Calculate how many elements we wrote in order to get pAsciiBuffer to its next alignment
@@ -1470,15 +1451,7 @@ namespace System.Text
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
 
-            // See comments earlier in this method for information about how this works.
-            if (Sse41.X64.IsSupported)
-            {
-                *(ulong*)(pAsciiBuffer + currentOffsetInElements) = Sse41.X64.Extract(asciiVector.AsUInt64(), 0);
-            }
-            else
-            {
-                *(ulong*)(pAsciiBuffer + currentOffsetInElements) = asciiVector.AsUInt64().GetElement(0);
-            }
+            *(ulong*)(pAsciiBuffer + currentOffsetInElements) = asciiVector.AsUInt64().GetElement(0);
             currentOffsetInElements += SizeOfVector128 / 2;
 
             goto Finish;
