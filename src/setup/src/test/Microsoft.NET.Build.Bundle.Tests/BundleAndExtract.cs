@@ -18,19 +18,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
             sharedTestState = fixture;
         }
 
-        [Fact]
-        public void Test()
-        {
-            var fixture = sharedTestState.TestFixture
-                .Copy();
 
+        private void Run(TestProjectFixture fixture, string publishDir, string singleFileDir)
+        {
             var dotnet = fixture.SdkDotnet;
-            var appDll = fixture.TestProject.AppDll;
             var hostName = Path.GetFileName(fixture.TestProject.AppExe);
-            var publishDir = fixture.TestProject.OutputDirectory;
 
             // Run the App normally
-           Command.Create(Path.Combine(publishDir, hostName))
+            Command.Create(Path.Combine(publishDir, hostName))
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
@@ -38,12 +33,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
                 .Pass()
                 .And
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
-
-            // Create a directory for bundle/extraction output.
-            // This directory shouldn't be within TestProject.OutputDirectory, since the bundler
-            // will (attempt to) embed all files below the TestProject.OutputDirectory tree into one file.
-            string singleFileDir = Path.Combine(fixture.TestProject.ProjectDirectory, "oneExe");
-            Directory.CreateDirectory(singleFileDir);
 
             // Bundle to a single-file
             string bundleDll = Path.Combine(sharedTestState.RepoDirectories.Artifacts,
@@ -82,6 +71,60 @@ namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
                 .Pass()
                 .And
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
+        }
+
+        private string GetSingleFileDir(TestProjectFixture fixture)
+        {
+            // Create a directory for bundle/extraction output.
+            // This directory shouldn't be within TestProject.OutputDirectory, since the bundler
+            // will (attempt to) embed all files below the TestProject.OutputDirectory tree into one file.
+
+            string singleFileDir = Path.Combine(fixture.TestProject.ProjectDirectory, "oneExe");
+            Directory.CreateDirectory(singleFileDir);
+
+            return singleFileDir;
+        }
+
+        private string RelativePath(string path)
+        {
+            return Path.GetRelativePath(Directory.GetCurrentDirectory(), path)
+                       .TrimEnd(Path.DirectorySeparatorChar);
+        }
+
+        [Fact]
+        public void TestWithAbsolutePaths()
+        {
+            var fixture = sharedTestState.TestFixture
+                .Copy();
+
+            string publishDir = fixture.TestProject.OutputDirectory;
+            string singleFileDir = GetSingleFileDir(fixture);
+
+            Run(fixture, publishDir, singleFileDir);
+        }
+
+        [Fact]
+        public void TestWithRelativePaths()
+        {
+            var fixture = sharedTestState.TestFixture
+                .Copy();
+
+            string publishDir = RelativePath(fixture.TestProject.OutputDirectory);
+            string singleFileDir = RelativePath(GetSingleFileDir(fixture));
+
+            Run(fixture, publishDir, singleFileDir);
+        }
+
+        [Fact]
+        public void TestWithRelativePathsDirSeparator()
+        {
+            var fixture = sharedTestState.TestFixture
+                .Copy();
+
+            string publishDir = RelativePath(fixture.TestProject.OutputDirectory) + Path.DirectorySeparatorChar;
+            string singleFileDir = RelativePath(GetSingleFileDir(fixture)) + Path.DirectorySeparatorChar;
+
+            Run(fixture, publishDir, singleFileDir);
         }
 
         public class SharedTestState : IDisposable
