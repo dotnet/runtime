@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Resources
@@ -17,13 +17,13 @@ namespace System.Resources
             HResult = System.HResults.COR_E_MISSINGMANIFESTRESOURCE;
         }
 
-        public MissingManifestResourceException(string message)
+        public MissingManifestResourceException(string? message)
             : base(message)
         {
             HResult = System.HResults.COR_E_MISSINGMANIFESTRESOURCE;
         }
 
-        public MissingManifestResourceException(string message, Exception inner)
+        public MissingManifestResourceException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = System.HResults.COR_E_MISSINGMANIFESTRESOURCE;
