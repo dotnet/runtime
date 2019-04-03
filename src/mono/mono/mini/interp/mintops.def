@@ -659,6 +659,23 @@ OPDEF(MINT_LD_DELEGATE_INVOKE_IMPL, "ld_delegate_invoke_impl", 2, MintOpNoArgs)
 
 OPDEF(MINT_START_ABORT_PROT, "start_abort_protected", 1, MintOpNoArgs)
 
+// Math intrinsics
+OPDEF(MINT_ABS, "abs", 1, MintOpNoArgs)
+OPDEF(MINT_ASIN, "asin", 1, MintOpNoArgs)
+OPDEF(MINT_ASINH, "asinh", 1, MintOpNoArgs)
+OPDEF(MINT_ACOS, "acos", 1, MintOpNoArgs)
+OPDEF(MINT_ACOSH, "acosh", 1, MintOpNoArgs)
+OPDEF(MINT_ATAN, "atan", 1, MintOpNoArgs)
+OPDEF(MINT_ATANH, "atanh", 1, MintOpNoArgs)
+OPDEF(MINT_COS, "cos", 1, MintOpNoArgs)
+OPDEF(MINT_CBRT, "cbrt", 1, MintOpNoArgs)
+OPDEF(MINT_COSH, "cosh", 1, MintOpNoArgs)
+OPDEF(MINT_SIN, "sin", 1, MintOpNoArgs)
+OPDEF(MINT_SQRT, "sqrt", 1, MintOpNoArgs)
+OPDEF(MINT_SINH, "sinh", 1, MintOpNoArgs)
+OPDEF(MINT_TAN, "tan", 1, MintOpNoArgs)
+OPDEF(MINT_TANH, "tanh", 1, MintOpNoArgs)
+
 /*
  * This needs to be an opcode because we need to trigger the enter event after
  * the STINARG* opcodes have executed.

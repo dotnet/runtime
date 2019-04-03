@@ -1161,6 +1161,46 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
 		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
+	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Math") && csignature->param_count == 1 && csignature->params [0]->type == MONO_TYPE_R8) {
+		if (tm [0] == 'A') {
+			if (strcmp (tm, "Abs") == 0 && csignature->params [0]->type == MONO_TYPE_R8) {
+				*op = MINT_ABS;
+			} else if (strcmp (tm, "Asin") == 0){
+				*op = MINT_ASIN;
+			} else if (strcmp (tm, "Asinh") == 0){
+				*op = MINT_ASINH;
+			} else if (strcmp (tm, "Acos") == 0){
+				*op = MINT_ACOS;
+			} else if (strcmp (tm, "Acosh") == 0){
+				*op = MINT_ACOSH;
+			} else if (strcmp (tm, "Atan") == 0){
+				*op = MINT_ATAN;
+			} else if (strcmp (tm, "Atanh") == 0){
+				*op = MINT_ATANH;
+			}
+		} else if (tm [0] == 'C') {
+			if (strcmp (tm, "Cos") == 0) {
+				*op = MINT_COS;
+			} else if (strcmp (tm, "Cbrt") == 0){
+				*op = MINT_CBRT;
+			} else if (strcmp (tm, "Cosh") == 0){
+				*op = MINT_COSH;
+			}
+		} else if (tm [0] == 'S') {
+			if (strcmp (tm, "Sin") == 0) {
+				*op = MINT_SIN;
+			} else if (strcmp (tm, "Sqrt") == 0) {
+				*op = MINT_SQRT;
+			} else if (strcmp (tm, "Sinh") == 0){
+				*op = MINT_SINH;
+			}
+		} else if (tm [0] == 'T') {
+			if (strcmp (tm, "Tan") == 0) {
+				*op = MINT_TAN;
+			} else if (strcmp (tm, "Tanh") == 0){
+				*op = MINT_TANH;
+			}
+		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && (!strcmp (klass_name, "Span`1") || !strcmp (klass_name, "ReadOnlySpan`1"))) {
 		if (!strcmp (tm, "get_Item") && csignature->params [0]->type != MONO_TYPE_VALUETYPE) {
 			MonoGenericClass *gclass = mono_class_get_generic_class (target_method->klass);
