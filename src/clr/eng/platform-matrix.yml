@@ -94,7 +94,8 @@ jobs:
         osIdentifier: Linux_musl
         containerName: musl_arm64_build_image
         helixQueues:
-        # TODO: enable (Alpine.38.Arm64.Open) once https://github.com/dotnet/coreclr/issues/23621 is resolved
+        - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          - (Alpine.38.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-46e69dd-20190313223330
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - (Alpine.38.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-46e69dd-20190313223330
         crossrootfsDir: '/crossrootfs/arm64'
