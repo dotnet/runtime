@@ -15,7 +15,7 @@ public:
     Rationalizer(Compiler* comp);
 
 #ifdef DEBUG
-    static void ValidateStatement(GenTree* tree, BasicBlock* block);
+    static void ValidateStatement(GenTreeStmt* stmt, BasicBlock* block);
 
     // general purpose sanity checking of de facto standard GenTree
     void SanityCheck();
@@ -47,14 +47,14 @@ private:
 #endif
                            GenTreeArgList* args);
 
-    void RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*>& parents);
+    void RewriteIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents);
 
     // Other transformations
     void RewriteAssignment(LIR::Use& use);
     void RewriteAddress(LIR::Use& use);
 
     // Root visitor
-    Compiler::fgWalkResult RewriteNode(GenTree** useEdge, ArrayStack<GenTree*>& parents);
+    Compiler::fgWalkResult RewriteNode(GenTree** useEdge, Compiler::GenTreeStack& parents);
 };
 
 inline Rationalizer::Rationalizer(Compiler* _comp) : Phase(_comp, "IR Rationalize", PHASE_RATIONALIZE)

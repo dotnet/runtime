@@ -71,6 +71,7 @@ This file contains the logic for providing Execution Script generation.
   <Import Project="CLRTest.CrossGen.targets" />
   <Import Project="CLRTest.GC.targets" />
   <Import Project="CLRTest.Execute.*.targets" />
+  <Import Project="CLRTest.MockHosting.targets" Condition="'$(RequiresMockHostPolicy)' == 'true'" />
   
   <Target Name="GenerateExecutionScriptsInternal"
     Condition="$(_CLRTestNeedsToRun) or $(_CLRTestBuildsExecutable)"

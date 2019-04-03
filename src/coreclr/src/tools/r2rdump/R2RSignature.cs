@@ -679,6 +679,10 @@ namespace R2RDump
                     builder.Append(" (DECLARING_TYPE_HANDLE)");
                     break;
 
+                case ReadyToRunFixupKind.READYTORUN_FIXUP_IndirectPInvokeTarget:
+                    ParseMethod(builder);
+                    builder.Append(" (INDIRECT_PINVOKE_TARGET)");
+                    break;
 
                 default:
                     builder.Append(string.Format("Unknown fixup type: {0:X2}", fixupType));
@@ -1124,6 +1128,15 @@ namespace R2RDump
 
                 case ReadyToRunHelper.READYTORUN_HELPER_MemCpy:
                     builder.Append("MEM_CPY");
+                    break;
+
+                // PInvoke helpers
+                case ReadyToRunHelper.READYTORUN_HELPER_PInvokeBegin:
+                    builder.Append("PINVOKE_BEGIN");
+                    break;
+
+                case ReadyToRunHelper.READYTORUN_HELPER_PInvokeEnd:
+                    builder.Append("PINVOKE_END");
                     break;
 
                 // Get string handle lazily

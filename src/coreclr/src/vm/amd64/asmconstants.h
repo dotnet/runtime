@@ -556,6 +556,24 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__StringObject__m_StringLength
 ASMCONSTANTS_C_ASSERT(OFFSETOF__ArrayTypeDesc__m_Arg
                     == offsetof(ArrayTypeDesc, m_Arg));
 
+// For JIT_PInvokeBegin and JIT_PInvokeEnd helpers
+#define               OFFSETOF__InlinedCallFrame__m_Datum 0x10
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_Datum
+                    == offsetof(InlinedCallFrame, m_Datum));
+
+#define               OFFSETOF__InlinedCallFrame__m_pCallSiteSP 0x20
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCallSiteSP
+                    == offsetof(InlinedCallFrame, m_pCallSiteSP));
+
+#define               OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress 0x28
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCallerReturnAddress
+                    == offsetof(InlinedCallFrame, m_pCallerReturnAddress));
+
+#define               OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP 0x30
+ASMCONSTANTS_C_ASSERT(OFFSETOF__InlinedCallFrame__m_pCalleeSavedFP
+                    == offsetof(InlinedCallFrame, m_pCalleeSavedFP));
+
+
 #define CallDescrData__pSrc                0x00
 #define CallDescrData__numStackSlots       0x08
 #ifdef UNIX_AMD64_ABI

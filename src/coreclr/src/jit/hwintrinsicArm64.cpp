@@ -13,9 +13,11 @@ enum Flag
 {
 #define HARDWARE_INTRINSIC_CLASS(flag, jit_config, isa) isa = 1ULL << InstructionSet_##isa,
 #include "hwintrinsiclistArm64.h"
-    None     = 0,
-    Base     = 1ULL << InstructionSet_Base,
-    EveryISA = ~0ULL
+    None      = 0,
+    Base      = 1ULL << InstructionSet_Base,
+    Vector64  = 1ULL << InstructionSet_Vector64,
+    Vector128 = 1ULL << InstructionSet_Vector128,
+    EveryISA  = ~0ULL
 };
 
 Flag operator|(Flag a, Flag b)
@@ -77,6 +79,10 @@ InstructionSet Compiler::lookupHWIntrinsicISA(const char* className)
     {
         if (strcmp(className, "Base") == 0)
             return InstructionSet_Base;
+        if (strncmp(className, "Vector64", 8) == 0)
+            return InstructionSet_Vector64;
+        if (strncmp(className, "Vector128", 9) == 0)
+            return InstructionSet_Vector128;
 #define HARDWARE_INTRINSIC_CLASS(flag, jit_config, isa)                                                                \
     if (strcmp(className, #isa) == 0)                                                                                  \
         return InstructionSet_##isa;
@@ -151,6 +157,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(InstructionSet isa)
         case InstructionSet_Simd:
         case InstructionSet_Sha1:
         case InstructionSet_Sha256:
+        case InstructionSet_Vector64:
+        case InstructionSet_Vector128:
             return true;
 
         default:
@@ -179,6 +187,8 @@ bool HWIntrinsicInfo::isScalarIsa(InstructionSet isa)
         case InstructionSet_Simd:
         case InstructionSet_Sha1:
         case InstructionSet_Sha256:
+        case InstructionSet_Vector64:
+        case InstructionSet_Vector128:
             return false;
 
         default:
@@ -325,24 +335,24 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
-        case NI_Base_Vector64_AsByte:
-        case NI_Base_Vector64_AsInt16:
-        case NI_Base_Vector64_AsInt32:
-        case NI_Base_Vector64_AsSByte:
-        case NI_Base_Vector64_AsSingle:
-        case NI_Base_Vector64_AsUInt16:
-        case NI_Base_Vector64_AsUInt32:
-        case NI_Base_Vector128_As:
-        case NI_Base_Vector128_AsByte:
-        case NI_Base_Vector128_AsDouble:
-        case NI_Base_Vector128_AsInt16:
-        case NI_Base_Vector128_AsInt32:
-        case NI_Base_Vector128_AsInt64:
-        case NI_Base_Vector128_AsSByte:
-        case NI_Base_Vector128_AsSingle:
-        case NI_Base_Vector128_AsUInt16:
-        case NI_Base_Vector128_AsUInt32:
-        case NI_Base_Vector128_AsUInt64:
+        case NI_Vector64_AsByte:
+        case NI_Vector64_AsInt16:
+        case NI_Vector64_AsInt32:
+        case NI_Vector64_AsSByte:
+        case NI_Vector64_AsSingle:
+        case NI_Vector64_AsUInt16:
+        case NI_Vector64_AsUInt32:
+        case NI_Vector128_As:
+        case NI_Vector128_AsByte:
+        case NI_Vector128_AsDouble:
+        case NI_Vector128_AsInt16:
+        case NI_Vector128_AsInt32:
+        case NI_Vector128_AsInt64:
+        case NI_Vector128_AsSByte:
+        case NI_Vector128_AsSingle:
+        case NI_Vector128_AsUInt16:
+        case NI_Vector128_AsUInt32:
+        case NI_Vector128_AsUInt64:
         {
             if (!featureSIMD)
             {

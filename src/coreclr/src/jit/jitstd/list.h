@@ -52,8 +52,8 @@ public:
     {
     private:
         const_iterator(Node* ptr);
-        const_iterator();
     public:
+        const_iterator();
         const_iterator(const const_iterator& it);
         const_iterator(const typename list<T, Allocator>::iterator& it);
 
