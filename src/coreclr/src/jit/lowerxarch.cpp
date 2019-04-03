@@ -145,12 +145,11 @@ void Lowering::LowerStoreIndir(GenTreeIndir* node)
 //
 void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 {
-    GenTree*  dstAddr       = blkNode->Addr();
-    unsigned  size          = blkNode->gtBlkSize;
-    GenTree*  source        = blkNode->Data();
-    Compiler* compiler      = comp;
-    GenTree*  srcAddrOrFill = nullptr;
-    bool      isInitBlk     = blkNode->OperIsInitBlkOp();
+    GenTree* dstAddr       = blkNode->Addr();
+    unsigned size          = blkNode->gtBlkSize;
+    GenTree* source        = blkNode->Data();
+    GenTree* srcAddrOrFill = nullptr;
+    bool     isInitBlk     = blkNode->OperIsInitBlkOp();
 
     if (!isInitBlk)
     {
@@ -593,7 +592,6 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     }
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    GenTree* dst     = putArgStk;
     GenTree* srcAddr = nullptr;
 
     bool haveLocalAddr = false;
@@ -615,7 +613,7 @@ void Lowering::LowerPutArgStk(GenTreePutArgStk* putArgStk)
     // it might be the right thing to do.
 
     // This threshold will decide from using the helper or let the JIT decide to inline
-    // a code sequence of its choice.
+    // a code sequence of its choice, but currently we use CPBLK_UNROLL_LIMIT, see #20549.
     ssize_t helperThreshold = max(CPBLK_MOVS_LIMIT, CPBLK_UNROLL_LIMIT);
     ssize_t size            = putArgStk->gtNumSlots * TARGET_POINTER_SIZE;
 
@@ -1765,11 +1763,11 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
         return;
     }
 
-    GenTree* dividend = node->gtGetOp1();
-    GenTree* divisor  = node->gtGetOp2();
+    GenTree* divisor = node->gtGetOp2();
 
     bool divisorCanBeRegOptional = true;
 #ifdef _TARGET_X86_
+    GenTree* dividend = node->gtGetOp1();
     if (dividend->OperGet() == GT_LONG)
     {
         divisorCanBeRegOptional = false;
@@ -2656,8 +2654,8 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
             switch (containingIntrinsicId)
             {
-                case NI_Base_Vector128_CreateScalarUnsafe:
-                case NI_Base_Vector256_CreateScalarUnsafe:
+                case NI_Vector128_CreateScalarUnsafe:
+                case NI_Vector256_CreateScalarUnsafe:
                 {
                     assert(supportsSIMDScalarLoads == false);
 

@@ -50,12 +50,10 @@ class Program
             .Select(s => s[random.Next(s.Length)]).ToArray());
     }
 
-    private static bool LaunchTest(string testName, string[] logEntriesToCheck, string randomCookie)
+    private static bool LaunchTest(string testName, string[] logEntriesToCheck, string randomCookie, bool swallowExcep = false, bool useEntryPointFilter = false)
     {
         EventLog logBefore = new EventLog("Application");
         int logBeforeCount = logBefore.Entries.Count;
-
-        DateTime dt = DateTime.Now;
 
         Process testProcess = new Process();
         string currentPath = Directory.GetCurrentDirectory();
@@ -64,6 +62,8 @@ class Program
         testProcess.StartInfo.FileName = corerunPath;
         testProcess.StartInfo.Arguments = currentPath + "\\WindowsEventLog.exe " + testName + " " + randomCookie;
         testProcess.StartInfo.EnvironmentVariables["CORE_ROOT"] = Environment.GetEnvironmentVariable("CORE_ROOT");
+        testProcess.StartInfo.EnvironmentVariables["COMPlus_Corhost_Swallow_Uncaught_Exceptions"] = swallowExcep ? "1" : "0";
+        testProcess.StartInfo.EnvironmentVariables["COMPlus_UseEntryPointFilter"] = useEntryPointFilter ? "1" : "0";
         testProcess.StartInfo.UseShellExecute = false;
 
         testProcess.Start();
@@ -75,31 +75,30 @@ class Program
 
         Console.WriteLine("Found {0} entries in Event Log", logAfter.Entries.Count);
 
-        foreach (EventLogEntry entry in logAfter.Entries)
+        for (int i = logAfter.Entries.Count - 1; i >= logBeforeCount; --i)
         {
+            EventLogEntry entry = logAfter.Entries[i];
             int checkCount = 0;
-            if (entry.TimeGenerated > dt.AddMinutes(-3))  // Grant some leeway in the time error was logged
-            {
-                String source = entry.Source;
-                String message = entry.Message;
 
+            String source = entry.Source;
+            String message = entry.Message;
+
+            if (source.Contains(".NET Runtime"))
+            {
+                Console.WriteLine("***      Event Log       ***");
+                Console.WriteLine(message);
                 foreach (string logEntry in logEntriesToCheck)
                 {
                     Console.WriteLine("Checking for existence of : " + logEntry);
                     if (message.Contains(logEntry))
                         checkCount += 1;
                     else
-                        Console.WriteLine("Couldn't find it in: " + message);
+                        Console.WriteLine("!!! Couldn't find it !!!");
                 }
 
-                if (source.Contains(".NET Runtime") && checkCount == logEntriesToCheck.Length && logBeforeCount < logAfter.Entries.Count)
+                if (checkCount == logEntriesToCheck.Length)
                 {
                     return true;
-                }
-                else if (source.Contains(".NET Runtime"))
-                {
-                    Console.WriteLine("***      Event Log       ***");
-                    Console.WriteLine(message);
                 }
             }
         }
@@ -117,11 +116,11 @@ class Program
     }
 #endif
 
-    private static bool RunUnhandledExceptionTest()
+    private static bool RunUnhandledExceptionTest(bool swallowExcep = false, bool useEntryPointFilter = false)
     {
         string cookie = RandomCookie();
         string[] logEntriesToCheck = { "unhandled exception", "ArgumentException", cookie };
-        return LaunchTest("UnhandledException", logEntriesToCheck, cookie);
+        return LaunchTest("UnhandledException", logEntriesToCheck, cookie, swallowExcep, useEntryPointFilter);
     }
 
     private static bool RunFailFastTest()
@@ -130,7 +129,6 @@ class Program
         string[] logEntriesToCheck = { "The application requested process termination through System.Environment.FailFast(string message).", "ArgumentException", cookie };
         return LaunchTest("FailFast", logEntriesToCheck, cookie);
     }
-
 
     public static int Main(string[] args)
     {
@@ -144,7 +142,30 @@ class Program
 
             if (!RunUnhandledExceptionTest())
             {
-                Console.WriteLine("WindowsEventLog Test: UnhandledExceptionTest failed.");
+                Console.WriteLine("WindowsEventLog Test: UnhandledExceptionTest() failed.");
+                return 1;
+            }
+
+            if (RunUnhandledExceptionTest(swallowExcep:true))
+            {
+                // Swallowing exceptions is reported to prevent logging to the Windows log.
+                // This is more of a test configuration sanity check than a requirement
+                Console.WriteLine("WindowsEventLog Test: UnhandledExceptionTest(swallowExcep:true) should have failed.");
+                return 1;
+            }
+
+            if (!RunUnhandledExceptionTest(swallowExcep:true, useEntryPointFilter:true))
+            {
+                // Logging should be the same with useEntryPointFilter
+                Console.WriteLine("WindowsEventLog Test: UnhandledExceptionTest(swallowExcep:true, useEntryPointFilter:true) failed.");
+                return 1;
+            }
+
+            if (!RunUnhandledExceptionTest(swallowExcep:false, useEntryPointFilter:true))
+            {
+                // Logging should be the same with useEntryPointFilter even without swallowing exception handler
+                // This is more of a test configuration sanity check than a requirement
+                Console.WriteLine("WindowsEventLog Test: UnhandledExceptionTest(swallowExcep:false, useEntryPointFilter:true) failed.");
                 return 1;
             }
 

@@ -87,6 +87,30 @@ LOCAL_LABEL(\__PInvokeStubFuncName\()_0):
 .endm
 
 // ------------------------------------------------------------------
+// IN:
+// InlinedCallFrame (x0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+//                          before actual InlinedCallFrame data)
+//
+//
+    LEAF_ENTRY JIT_PInvokeBegin, _TEXT
+        // Not yet supported
+        EMIT_BREAKPOINT
+        ret lr
+    LEAF_END JIT_PInvokeBegin, _TEXT
+
+// ------------------------------------------------------------------
+// IN:
+// InlinedCallFrame (x0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+//                          before actual InlinedCallFrame data)
+//
+//
+    LEAF_ENTRY JIT_PInvokeEnd, _TEXT
+        // Not yet supported
+        EMIT_BREAKPOINT
+        ret lr
+    LEAF_END JIT_PInvokeEnd, _TEXT
+
+// ------------------------------------------------------------------
 // VarargPInvokeStub & VarargPInvokeGenILStub
 //
 // in:

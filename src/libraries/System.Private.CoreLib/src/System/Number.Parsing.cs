@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -274,7 +275,7 @@ namespace System
 
             string decSep;                  // decimal separator from NumberFormatInfo.
             string groupSep;                // group separator from NumberFormatInfo.
-            string currSymbol = null;       // currency symbol from NumberFormatInfo.
+            string? currSymbol = null;       // currency symbol from NumberFormatInfo.
 
             bool parsingCurrency = false;
             if ((styles & NumberStyles.AllowCurrencySymbol) != 0)
@@ -529,7 +530,7 @@ namespace System
             int index = 0;
             int num = value[0];
 
-            // Skip past any whitespace at the beginning.  
+            // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
             {
                 do
@@ -700,7 +701,7 @@ namespace System
             int index = 0;
             int num = value[0];
 
-            // Skip past any whitespace at the beginning.  
+            // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
             {
                 do
@@ -944,7 +945,7 @@ namespace System
             int index = 0;
             int num = value[0];
 
-            // Skip past any whitespace at the beginning.  
+            // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
             {
                 do
@@ -1116,7 +1117,7 @@ namespace System
             int num = value[0];
             uint numValue;
 
-            // Skip past any whitespace at the beginning.  
+            // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
             {
                 do
@@ -1272,7 +1273,7 @@ namespace System
             int index = 0;
             int num = value[0];
 
-            // Skip past any whitespace at the beginning.  
+            // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
             {
                 do
@@ -1444,7 +1445,7 @@ namespace System
             int num = value[0];
             uint numValue;
 
-            // Skip past any whitespace at the beginning.  
+            // Skip past any whitespace at the beginning.
             if ((styles & NumberStyles.AllowLeadingWhite) != 0 && IsWhite(num))
             {
                 do

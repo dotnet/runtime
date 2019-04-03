@@ -1530,7 +1530,7 @@ void ILCodeStream::EmitPOP()
 void ILCodeStream::EmitRET()
 {
     WRAPPER_NO_CONTRACT;
-    INT16 iStackDelta = m_pOwner->m_StubHasVoidReturnType ? 0 : -1;
+    INT16 iStackDelta = m_pOwner->ReturnOpcodePopsStack() ? -1 : 0;
     Emit(CEE_RET, iStackDelta, 0);
 }
 void ILCodeStream::EmitSHR_UN()
@@ -1683,11 +1683,6 @@ void ILCodeStream::EmitCALL(BinderMethodID id, int numInArgs, int numRetArgs)
     STANDARD_VM_CONTRACT;
     EmitCALL(GetToken(MscorlibBinder::GetMethod(id)), numInArgs, numRetArgs);
 }
-
-
-
-
-
 
 void ILStubLinker::SetHasThis (bool fHasThis)
 {
@@ -2156,14 +2151,15 @@ static BOOL SigHasVoidReturnType(const Signature &signature)
 
 
 ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, SigTypeContext *pTypeContext, MethodDesc *pMD,
-                           BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub) :
+                           BOOL fTargetHasThis, BOOL fStubHasThis, BOOL fIsNDirectStub, BOOL fIsReverseStub) :
     m_pCodeStreamList(NULL),
     m_stubSig(signature),
     m_pTypeContext(pTypeContext),
     m_pCode(NULL),
     m_pStubSigModule(pStubSigModule),
     m_pLabelList(NULL),
-    m_StubHasVoidReturnType(0),
+    m_StubHasVoidReturnType(FALSE),
+    m_fIsReverseStub(fIsReverseStub),
     m_iTargetStackDelta(0),
     m_cbCurrentCompressedSigLen(1),
     m_nLocals(0),
@@ -2181,7 +2177,9 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     m_managedSigPtr = signature.CreateSigPointer();
     if (!signature.IsEmpty())
     {
+        // Until told otherwise, assume that the stub has the same return type as the signature.
         m_StubHasVoidReturnType = SigHasVoidReturnType(signature);
+        m_StubTargetHasVoidReturnType = m_StubHasVoidReturnType;
         
         //
         // Get the stub's calling convention.  Set m_fHasThis to match
@@ -2477,10 +2475,13 @@ void ILStubLinker::SetStubTargetReturnType(LocalDesc* pLoc)
 
     m_nativeFnSigBuilder.SetReturnType(pLoc);
 
-    if ((1 != pLoc->cbType) || (ELEMENT_TYPE_VOID != pLoc->ElementType[0]))
+    // Update check for if a stub has a void return type based on the provided return type.
+    m_StubTargetHasVoidReturnType = ((1 == pLoc->cbType) && (ELEMENT_TYPE_VOID == pLoc->ElementType[0])) ? TRUE : FALSE;
+    if (!m_StubTargetHasVoidReturnType)
     {
         m_iTargetStackDelta++;
     }
+
 }
 
 DWORD ILStubLinker::SetStubTargetArgType(CorElementType typ, bool fConsumeStubArg /*= true*/)

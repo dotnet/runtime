@@ -200,4 +200,19 @@ public class NumericTesting : Server.Contract.INumericTesting
     {
         return i1 + i2 + i3 + i4 + i5 + i6 + i7 + i8 + i9 + i10 + i11 + i12;
     }
+
+    public Server.Contract.SizeF MakeSize(float width, float height)
+    {
+        return new Server.Contract.SizeF { width = width, height = height };
+    }
+
+    public Server.Contract.Size MakeSizeSmall(byte width, byte height)
+    {
+        return new Server.Contract.Size { width = width, height = height };
+    }
+
+    public Server.Contract.HFA_4 MakeHFA(float x, float y, float z, float w)
+    {
+        return new Server.Contract.HFA_4 {x = x, y = y, z = z, w = w};
+    }
 }
