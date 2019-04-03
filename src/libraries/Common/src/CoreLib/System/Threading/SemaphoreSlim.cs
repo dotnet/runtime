@@ -898,7 +898,7 @@ namespace System.Threading
         /// <summary>
         /// Private helper method to wake up waiters when a cancellationToken gets canceled.
         /// </summary>
-        private static Action<object?> s_cancellationTokenCanceledEventHandler = new Action<object?>(CancellationTokenCanceledEventHandler);
+        private static readonly Action<object?> s_cancellationTokenCanceledEventHandler = new Action<object?>(CancellationTokenCanceledEventHandler);
         private static void CancellationTokenCanceledEventHandler(object? obj)
         {
             Debug.Assert(obj is SemaphoreSlim, "Expected a SemaphoreSlim");

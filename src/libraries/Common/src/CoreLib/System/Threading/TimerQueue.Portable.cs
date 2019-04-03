@@ -12,8 +12,8 @@ namespace System.Threading
     //
     internal partial class TimerQueue : IThreadPoolWorkItem
     {
-        private static List<TimerQueue> s_scheduledTimers;
-        private static List<TimerQueue> s_scheduledTimersToFire;
+        private static List<TimerQueue>? s_scheduledTimers;
+        private static List<TimerQueue>? s_scheduledTimersToFire;
 
         /// <summary>
         /// This event is used by the timer thread to wait for timer expiration. It is also

@@ -91,7 +91,7 @@ namespace System.Threading
         // The maximum number of waiters (only used if the thread tracking is disabled)
         // The actual maximum waiters count is this number divided by two because each waiter increments the waiters count by 2
         // The waiters count is calculated by m_owner & WAITERS_MASK 01111....110
-        private static int MAXIMUM_WAITERS = WAITERS_MASK;
+        private const int MAXIMUM_WAITERS = WAITERS_MASK;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int CompareExchange(ref int location, int value, int comparand, ref bool success)
