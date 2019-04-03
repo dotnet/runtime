@@ -34088,7 +34088,7 @@ HRESULT GCHeap::Initialize()
     AffinitySet config_affinity_set;
     if (!ParseGCHeapAffinitizeRanges(&config_affinity_set))
     {
-        return CLR_E_GC_BAD_AFFINITY_CONFIG;
+        return CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT;
     }
 
     uintptr_t config_affinity_mask = static_cast<uintptr_t>(GCConfig::GetGCHeapAffinitizeMask());
@@ -34096,7 +34096,7 @@ HRESULT GCHeap::Initialize()
 
     if (process_affinity_set->IsEmpty())
     {
-        return CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT;
+        return CLR_E_GC_BAD_AFFINITY_CONFIG;
     }
 
     nhp_from_config = static_cast<uint32_t>(GCConfig::GetHeapCount());
