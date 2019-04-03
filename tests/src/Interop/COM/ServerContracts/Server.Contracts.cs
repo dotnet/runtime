@@ -11,6 +11,18 @@ namespace Server.Contract
     using System.Runtime.InteropServices;
     using System.Text;
 
+    public struct SizeF
+    {
+        public float width;
+        public float height;
+    }
+
+    public struct Size
+    {
+        public byte width;
+        public byte height;
+    }
+
     [ComVisible(true)]
     [Guid("05655A94-A915-4926-815D-A9EA648BAAD9")]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -48,6 +60,14 @@ namespace Server.Contract
 
         int Add_ManyInts11(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, int i9, int i10, int i11);
         int Add_ManyInts12(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, int i9, int i10, int i11, int i12);
+
+        [PreserveSig]
+        SizeF MakeSize(float width, float height);
+        [PreserveSig]
+        Size MakeSizeSmall(byte width, byte height);
+
+        [PreserveSig]
+        HFA_4 MakeHFA(float x, float y, float z, float w);
     }
 
     [ComVisible(true)]

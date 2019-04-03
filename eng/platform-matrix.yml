@@ -32,14 +32,15 @@ jobs:
         osIdentifier: Linux
         containerName: ubuntu_1404_arm_cross_build_image
         helixQueues:
-          ${{ if eq(variables['System.TeamProject'], 'public') }}:
-            asString: 'Ubuntu.1404.Arm32.Open'
-            asArray:
-            - Ubuntu.1404.Arm32.Open
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            # We don't have any Linux/arm32 internal Helix queues
-            asString: ''
-            asArray: []
+        # Ubuntu.1404.Arm32.Open is used only by CI while Ubuntu.1604.Arm32.Open serves PRs and scheduled builds.
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
+          - Ubuntu.1404.Arm32.Open
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          - (Ubuntu.1804.Arm32.Open)Ubuntu.1604.Arm32.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-0a0ebdd-20190312215532
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - (Debian.9.Arm32)Ubuntu.1604.Arm32@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-0a0ebdd-20190312215452
+          - (Ubuntu.1604.Arm32)Ubuntu.1604.Arm32@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm32v7-0a0ebdd-20190312215551
+          - (Ubuntu.1804.Arm32)Ubuntu.1604.Arm32@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-0a0ebdd-20190312215532
         crossrootfsDir: '/crossrootfs/arm'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -54,22 +55,13 @@ jobs:
         osIdentifier: Linux
         containerName: ubuntu_1604_arm64_cross_build_image
         helixQueues:
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            asString: '(Ubuntu.18.04.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351'
-            asArray:
-            - (Ubuntu.18.04.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            # TODO: add Ubuntu.1604.Arm64.Open once Jenkins has been shutdown
-            asString: '(Debian.9.Arm64 on Docker)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438.Open on Docker)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438,(Ubuntu.18.04.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351'
-            asArray:
-            - (Debian.9.Arm64 on Docker)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438.Open on Docker)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438
-            - (Ubuntu.18.04.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            asString: '(Debian.9.Arm64 on Docker)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438,Ubuntu.1604.Arm64,(Ubuntu.18.04.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351'
-            asArray:
-            - (Debian.9.Arm64 on Docker)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438
-            - Ubuntu.1604.Arm64
-            - (Ubuntu.18.04.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351
+        - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          - (Ubuntu.1804.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          - (Debian.9.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - (Debian.9.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438
+          - (Ubuntu.1804.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -84,15 +76,11 @@ jobs:
         osIdentifier: Linux_musl
         containerName: musl_x64_build_image
         helixQueues:
-          ${{ if eq(variables['System.TeamProject'], 'public') }}:
-            # TODO: there are no open Alpine queues https://github.com/dotnet/core-eng/issues/4958
-            asString: ''
-            asArray: []
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            asString: 'Alpine.36.Amd64,Alpine.38.Amd64'
-            asArray:
-            - Alpine.36.Amd64
-            - Alpine.38.Amd64
+        - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          - (Alpine.38.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-45b1fa2-20190327215821
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - Alpine.36.Amd64
+          - Alpine.38.Amd64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
   # Linux musl arm64
@@ -106,14 +94,9 @@ jobs:
         osIdentifier: Linux_musl
         containerName: musl_arm64_build_image
         helixQueues:
-          ${{ if eq(variables['System.TeamProject'], 'public') }}:
-            # TODO: there are no Alpine arm64 queues https://github.com/dotnet/core-eng/issues/5206
-            asString: ''
-            asArray: []
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            # TODO: there are no Alpine arm64 queues https://github.com/dotnet/core-eng/issues/5206
-            asString: ''
-            asArray: []
+        # TODO: enable (Alpine.38.Arm64.Open) once https://github.com/dotnet/coreclr/issues/23621 is resolved
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - (Alpine.38.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-46e69dd-20190313223330
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
@@ -128,15 +111,9 @@ jobs:
         osIdentifier: Linux_rhel6
         containerName: centos6_x64_build_image
         helixQueues:
-          ${{ if eq(variables['System.TeamProject'], 'public') }}:
-            # TODO: enable RedHat.6.Amd64.Open
-            # when https://github.com/dotnet/core-eng/issues/4100 is resolved
-            asString: ''
-            asArray: []
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            asString: 'RedHat.6.Amd64'
-            asArray:
-            - RedHat.6.Amd64
+        # TODO: enable RedHat.6.Amd64.Open once https://github.com/dotnet/coreclr/issues/23580 is resolved
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - RedHat.6.Amd64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
   # Linux x64
@@ -150,28 +127,21 @@ jobs:
         osIdentifier: Linux
         containerName: centos7_x64_build_image
         helixQueues:
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            asString: 'Ubuntu.1804.Amd64.Open'
-            asArray:
-            - Ubuntu.1804.Amd64.Open
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            asString: 'Debian.9.Amd64.Open,Ubuntu.1604.Amd64.Open,Ubuntu.1804.Amd64.Open,Centos.7.Amd64.Open,Fedora.28.Amd64.Open,RedHat.7.Amd64.Open'
-            asArray:
-            - Debian.9.Amd64.Open
-            - Ubuntu.1604.Amd64.Open
-            - Ubuntu.1804.Amd64.Open
-            - Centos.7.Amd64.Open
-            - Fedora.28.Amd64.Open
-            - RedHat.7.Amd64.Open
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            asString: 'Debian.9.Amd64,Ubuntu.1604.Amd64,Ubuntu.1804.Amd64,Centos.7.Amd64,Fedora.28.Amd64,RedHat.7.Amd64'
-            asArray:
-            - Debian.9.Amd64
-            - Ubuntu.1604.Amd64
-            - Ubuntu.1804.Amd64
-            - Centos.7.Amd64
-            - Fedora.28.Amd64
-            - RedHat.7.Amd64
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          - Ubuntu.1804.Amd64.Open
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          - Debian.9.Amd64.Open
+          - Ubuntu.1604.Amd64.Open
+          - Ubuntu.1804.Amd64.Open
+          - Centos.7.Amd64.Open
+          - RedHat.7.Amd64.Open
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - Debian.9.Amd64
+          - Ubuntu.1604.Amd64
+          - Ubuntu.1804.Amd64
+          - Centos.7.Amd64
+          - Fedora.28.Amd64
+          - RedHat.7.Amd64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
 # FreeBSD
@@ -201,22 +171,16 @@ jobs:
         osGroup: OSX
         osIdentifier: OSX
         helixQueues:
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            asString: 'OSX.1013.Amd64.Open'
-            asArray:
-            - OSX.1013.Amd64.Open
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            # TODO: add OSX.1012.Amd64.Open once Jenkins has been shutdown
-            asString: 'OSX.1013.Amd64.Open,OSX.1014.Amd64.Open'
-            asArray:
-            - OSX.1013.Amd64.Open
-            - OSX.1014.Amd64.Open
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            asString: 'OSX.1012.Amd64,OSX.1013.Amd64,OSX.1014.Amd64'
-            asArray:
-            - OSX.1012.Amd64
-            - OSX.1013.Amd64
-            - OSX.1014.Amd64
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          - OSX.1013.Amd64.Open
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          # TODO: add OSX.1012.Amd64.Open once Jenkins has been shutdown
+          - OSX.1013.Amd64.Open
+          - OSX.1014.Amd64.Open
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - OSX.1012.Amd64
+          - OSX.1013.Amd64
+          - OSX.1014.Amd64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
   # Windows x64
@@ -229,25 +193,19 @@ jobs:
         osGroup: Windows_NT
         osIdentifier: Windows_NT
         helixQueues:
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            asString: 'Windows.10.Amd64.Open'
-            asArray:
-            - Windows.10.Amd64.Open
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            # TODO: add Windows.10.Nano.Amd64.Open once https://github.com/dotnet/coreclr/issues/21693 has been resolved
-            # TODO: add Windows.7.Amd64.Open once https://github.com/dotnet/coreclr/issues/21796 has been resolved
-            asString: 'Windows.10.Amd64.Open,Windows.81.Amd64.Open'
-            asArray:
-            - Windows.10.Amd64.Open
-            - Windows.81.Amd64.Open
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            asString: 'Windows.10.Amd64,Windows.10.Nano.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64'
-            asArray:
-            - Windows.10.Amd64
-            - Windows.10.Nano.Amd64
-            - Windows.10.Amd64.Core
-            - Windows.7.Amd64
-            - Windows.81.Amd64
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          - Windows.10.Amd64.Open
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          # TODO: add Windows.10.Nano.Amd64.Open once https://github.com/dotnet/coreclr/issues/21693 has been resolved
+          - Windows.7.Amd64.Open
+          - Windows.81.Amd64.Open
+          - Windows.10.Amd64.Open
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - Windows.7.Amd64
+          - Windows.81.Amd64
+          - Windows.10.Amd64
+          - Windows.10.Amd64.Core
+          - Windows.10.Nano.Amd64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
   # Windows x86
@@ -260,23 +218,17 @@ jobs:
         osGroup: Windows_NT
         osIdentifier: Windows_NT
         helixQueues:
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            asString: 'Windows.10.Amd64.Open'
-            asArray:
-            - Windows.10.Amd64.Open
-          ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-            # TODO: add Windows.7.Amd64.Open once https://github.com/dotnet/coreclr/issues/21796 has been resolved
-            asString: 'Windows.10.Amd64.Open,Windows.81.Amd64.Open'
-            asArray:
-            - Windows.10.Amd64.Open
-            - Windows.81.Amd64.Open
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            asString: 'Windows.10.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64'
-            asArray:
-            - Windows.10.Amd64
-            - Windows.10.Amd64.Core
-            - Windows.7.Amd64
-            - Windows.81.Amd64
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          - Windows.10.Amd64.Open
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+          - Windows.7.Amd64.Open
+          - Windows.81.Amd64.Open
+          - Windows.10.Amd64.Open
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - Windows.7.Amd64
+          - Windows.81.Amd64
+          - Windows.10.Amd64
+          - Windows.10.Amd64.Core
         ${{ insert }}: ${{ parameters.jobParameters }}
 
   # Windows arm
@@ -289,14 +241,9 @@ jobs:
         osGroup: Windows_NT
         osIdentifier: Windows_NT
         helixQueues:
-          ${{ if eq(variables['System.TeamProject'], 'public') }}:
-            # TODO: add Windows.10.Arm64.Open once Jenkins has been shutdown
-            asString: ''
-            asArray: []
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            asString: 'Windows.10.Arm64'
-            asArray:
-            - Windows.10.Arm64
+        # TODO: add Windows.10.Arm64.Open once Jenkins has been shutdown
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - Windows.10.Arm64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
   # Windows arm64
@@ -309,12 +256,7 @@ jobs:
         osGroup: Windows_NT
         osIdentifier: Windows_NT
         helixQueues:
-          ${{ if eq(variables['System.TeamProject'], 'public') }}:
-            # TODO: add Windows.10.Arm64.Open once Jenkins has been shutdown
-            asString: ''
-            asArray: []
-          ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-            asString: 'Windows.10.Arm64'
-            asArray:
-            - Windows.10.Arm64
+        # TODO: add Windows.10.Arm64.Open once Jenkins has been shutdown
+        - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          - Windows.10.Arm64
         ${{ insert }}: ${{ parameters.jobParameters }}

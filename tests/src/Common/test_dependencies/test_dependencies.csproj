@@ -25,6 +25,9 @@
     <PackageReference Include="System.Drawing.Common">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
+    <PackageReference Include="System.Runtime.Intrinsics.Experimental">
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
+    </PackageReference>
   </ItemGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>

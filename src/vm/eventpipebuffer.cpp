@@ -133,22 +133,6 @@ LARGE_INTEGER EventPipeBuffer::GetMostRecentTimeStamp() const
     return m_mostRecentTimeStamp;
 }
 
-void EventPipeBuffer::Clear()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    memset(m_pBuffer, 0, (size_t)(m_pLimit - m_pBuffer));
-    m_pCurrent = GetNextAlignedAddress(m_pBuffer);
-    m_mostRecentTimeStamp.QuadPart = 0;
-    m_pLastPoppedEvent = NULL;
-}
-
 EventPipeEventInstance* EventPipeBuffer::GetNext(EventPipeEventInstance *pEvent, LARGE_INTEGER beforeTimeStamp)
 {
     CONTRACTL

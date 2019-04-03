@@ -2175,6 +2175,9 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
             // Set size to zero so that lvaSetStruct will appropriately set the SIMD-relevant fields.
             fieldVarDsc->lvExactSize = 0;
             compiler->lvaSetStruct(varNum, pFieldInfo->fldTypeHnd, false, true);
+            // We will not recursively promote this, so mark it as 'lvRegStruct' (note that we wouldn't
+            // be promoting this if we didn't think it could be enregistered.
+            fieldVarDsc->lvRegStruct = true;
         }
 #endif // FEATURE_SIMD
 
@@ -7047,8 +7050,6 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             printf(" V%02u.%s(offs=0x%02x)", varDsc->lvParentLcl, eeGetFieldName(fldHnd), varDsc->lvFldOffset);
 
             lvaPromotionType promotionType = lvaGetPromotionType(parentvarDsc);
-            // We should never have lvIsStructField set if it is a reg-sized non-field-addressed struct.
-            assert(!varDsc->lvRegStruct);
             switch (promotionType)
             {
                 case PROMOTION_TYPE_NONE:

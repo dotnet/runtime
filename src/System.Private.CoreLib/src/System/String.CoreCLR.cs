@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -77,7 +78,7 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern string Intern();
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern string IsInterned();
+        private extern string? IsInterned();
 
         public static string Intern(string str)
         {
@@ -89,7 +90,7 @@ namespace System
             return str.Intern();
         }
 
-        public static string IsInterned(string str)
+        public static string? IsInterned(string str)
         {
             if (str == null)
             {
