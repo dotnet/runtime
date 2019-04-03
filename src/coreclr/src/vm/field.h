@@ -521,7 +521,7 @@ public:
 
         GCPROTECT_BEGIN(objRef);
         OBJECTREF *pObjRef = (OBJECTREF *)GetCurrentStaticAddress();
-        SetObjectReference(pObjRef, objRef, GetAppDomain());
+        SetObjectReference(pObjRef, objRef);
         GCPROTECT_END();
     }
 

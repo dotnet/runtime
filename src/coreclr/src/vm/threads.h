@@ -275,8 +275,6 @@ public:
     BOOL IsAddressInStack (PTR_VOID addr) const { return TRUE; }
     static BOOL IsAddressInCurrentStack (PTR_VOID addr) { return TRUE; }
 
-    Frame *IsRunningIn(AppDomain* pDomain, int *count) { return NULL; }
-
     StackingAllocator    m_MarshalAlloc;
 
  private:
@@ -484,28 +482,6 @@ inline BOOL dbgOnly_IsSpecialEEThread() { return FALSE; }
 #define TRIGGERSGC() ANNOTATION_GC_TRIGGERS
 
 inline void CommonTripThread() { }
-
-//current ad, always safe
-#define ADV_CURRENTAD   0
-//default ad, never unloaded
-#define ADV_DEFAULTAD   1
-// held by iterator, iterator holds a ref
-#define ADV_ITERATOR    2
-// the appdomain is on the stack
-#define ADV_RUNNINGIN   4
-// we're in process of creating the appdomain, refcount guaranteed to be >0
-#define ADV_CREATING    8
-// compilation domain - ngen guarantees it won't be unloaded until everyone left
-#define ADV_COMPILATION  0x10
-// finalizer thread - synchronized with ADU
-#define ADV_FINALIZER     0x40
-// held by AppDomainRefTaker
-#define ADV_REFTAKER    0x100
-
-#define CheckADValidity(pDomain,ADValidityKind) { }
-
-#define ENTER_DOMAIN_PTR(_pDestDomain,ADValidityKind) {
-#define END_DOMAIN_TRANSITION }
 
 class DeadlockAwareLock
 {
@@ -2404,9 +2380,6 @@ public:
         return m_pDomain;
     }
 
-    Frame *IsRunningIn(AppDomain* pDomain, int *count);
-    Frame *GetFirstTransitionInto(AppDomain *pDomain, int *count);
-
     //---------------------------------------------------------------
     // Track use of the thread block.  See the general comments on
     // thread destruction in threads.cpp, for details.
@@ -3819,9 +3792,6 @@ public:
         return (m_LastThrownObjectHandle == g_pPreallocatedStackOverflowException);
     }
 
-    void SetKickOffDomainId(ADID ad);
-    ADID GetKickOffDomainId();
-
     // get the current notification (if any) from this thread
     OBJECTHANDLE GetThreadCurrNotification();
 
@@ -3833,8 +3803,6 @@ public:
 
 private:
     void SetLastThrownObjectHandle(OBJECTHANDLE h);
-
-    ADID m_pKickOffDomainId;
 
     ThreadExceptionState  m_ExceptionState;
 
@@ -6481,286 +6449,6 @@ class GCForbidLoaderUseHolder
 // general corruption.
 BOOL HasIllegalReentrancy();
 
-//
-// _pThread:        (Thread*)       current Thread
-// _pCurrDomain:    (AppDomain*)    current AppDomain
-// _pDestDomain:    (AppDomain*)    AppDomain to transition to
-// _predicate_expr: (bool)          Expression to predicate the transition.  If this is true, we transition,
-//                                  otherwise we don't.  WARNING : if you change this macro, be sure you
-//                                  guarantee that this macro argument is only evaluated once.
-//
-
-//
-// @TODO: can't we take the transition with a holder?
-//
-#define ENTER_DOMAIN_SETUPVARS(_pThread, _predicate_expr)                                       \
-{                                                                                               \
-    DEBUG_ASSURE_NO_RETURN_BEGIN(DOMAIN)                                                        \
-                                                                                                \
-    Thread*     _ctx_trans_pThread          = (_pThread);                                       \
-    bool        _ctx_trans_fTransitioned    = false;                                            \
-    bool        _ctx_trans_fPredicate       = (_predicate_expr);                                \
-    bool        _ctx_trans_fRaiseNeeded     = false;                                            \
-    Exception* _ctx_trans_pTargetDomainException=NULL;                   \
-    ADID _ctx_trans_pDestDomainId=ADID(0);                                               \
-    FrameWithCookie<ContextTransitionFrame> _ctx_trans_Frame;                                                   \
-    ContextTransitionFrame* _ctx_trans_pFrame = &_ctx_trans_Frame;                              \
-
-#define ENTER_DOMAIN_SWITCH_CTX_BY_ADID(_pCurrDomainPtr,_pDestDomainId,_bUnsafePoint)           \
-    AppDomain* _ctx_trans_pCurrDomain=_pCurrDomainPtr;                                          \
-    _ctx_trans_pDestDomainId=(ADID)_pDestDomainId;                                               \
-    if (_ctx_trans_fPredicate &&                                                                \
-        (_ctx_trans_pCurrDomain==NULL ||                                                        \
-            (_ctx_trans_pCurrDomain->GetId() != _ctx_trans_pDestDomainId)))                     \
-    {                                                                                           \
-        _ctx_trans_fTransitioned = true;                                                        \
-    }
-
-#define ENTER_DOMAIN_SWITCH_CTX_BY_ADPTR(_pCurrDomain,_pDestDomain)                             \
-    AppDomain* _ctx_trans_pCurrDomain=_pCurrDomain;                                             \
-    AppDomain* _ctx_trans_pDestDomain=_pDestDomain;                                             \
-    _ctx_trans_pDestDomainId=_ctx_trans_pDestDomain->GetId();                  \
-                                                                                                \
-    if (_ctx_trans_fPredicate && (_ctx_trans_pCurrDomain != _ctx_trans_pDestDomain))            \
-    {                                                                                           \
-        TESTHOOKCALL(AppDomainCanBeUnloaded(_ctx_trans_pDestDomain->GetId().m_dwId,FALSE));        \
-        GCX_FORBID();                                                                           \
-                                                                                                \
-        _ctx_trans_fTransitioned = true;                                                        \
-    }
-
-
-
-#define ENTER_DOMAIN_SETUP_EH                                                                   \
-    /* work around unreachable code warning */                                                  \
-    SCAN_BLOCKMARKER_N(DOMAIN);                                                                 \
-    if (true) EX_TRY                                                                            \
-    {                                                                                           \
-        SCAN_BLOCKMARKER_MARK_N(DOMAIN);                                                        \
-        LOG((LF_APPDOMAIN, LL_INFO1000, "ENTER_DOMAIN(%s, %s, %d): %s\n",                              \
-            __FUNCTION__, __FILE__, __LINE__,                                                   \
-            _ctx_trans_fTransitioned ? "ENTERED" : "NOP"));
-
-// Note: we go to preemptive mode before the EX_RETHROW Going preemp here is safe, since there are many other paths in
-// this macro that toggle the GC mode, too.
-#define END_DOMAIN_TRANSITION                                                                   \
-        TESTHOOKCALL(LeavingAppDomain(::GetAppDomain()->GetId().m_dwId)); \
-    }                                                                                           \
-    EX_CATCH                                                                                    \
-    {                                                                                           \
-        SCAN_BLOCKMARKER_USE_N(DOMAIN);                                                         \
-        LOG((LF_EH|LF_APPDOMAIN, LL_INFO1000, "ENTER_DOMAIN(%s, %s, %d): exception in flight\n",             \
-            __FUNCTION__, __FILE__, __LINE__));                                                 \
-                                                                                                \
-        if (!_ctx_trans_fTransitioned)                                                          \
-        {                                                                                       \
-            if (_ctx_trans_pThread->PreemptiveGCDisabled())                                     \
-            {                                                                                   \
-                _ctx_trans_pThread->EnablePreemptiveGC();                                       \
-            }                                                                                   \
-                                                                                                \
-             EX_RETHROW;                                                                         \
-        }                                                                                       \
-                                                                                                \
-                                                                                                \
-        _ctx_trans_pTargetDomainException=EXTRACT_EXCEPTION();                                  \
-                                                                                                \
-        /* Save Watson buckets before the exception object is changed */                        \
-        CAPTURE_BUCKETS_AT_TRANSITION(_ctx_trans_pThread, GET_THROWABLE());                     \
-                                                                                                \
-        _ctx_trans_fRaiseNeeded = true;                                                         \
-        SCAN_BLOCKMARKER_END_USE_N(DOMAIN);                                                     \
-    }                                                                                           \
-    /* SwallowAllExceptions is fine because we don't get to this point */                       \
-    /* unless fRaiseNeeded = true or no exception was thrown */                                 \
-    EX_END_CATCH(SwallowAllExceptions);                                                         \
-                                                                                                \
-    if (_ctx_trans_fRaiseNeeded)                                                                \
-    {                                                                                           \
-        SCAN_BLOCKMARKER_USE_N(DOMAIN);                                                        \
-        LOG((LF_EH, LL_INFO1000, "RaiseCrossContextException(%s, %s, %d)\n",                    \
-            __FUNCTION__, __FILE__, __LINE__));                                                 \
-        _ctx_trans_pThread->RaiseCrossContextException(_ctx_trans_pTargetDomainException, _ctx_trans_pFrame);                       \
-    }                                                                                           \
-                                                                                                \
-    LOG((LF_APPDOMAIN, LL_INFO1000, "LEAVE_DOMAIN(%s, %s, %d)\n",                                      \
-            __FUNCTION__, __FILE__, __LINE__));                                                 \
-                                                                                                \
-    TESTHOOKCALL(LeftAppDomain(_ctx_trans_pDestDomainId.m_dwId));                                           \
-    DEBUG_ASSURE_NO_RETURN_END(DOMAIN)                                                          \
-}
-
-//current ad, always safe
-#define ADV_CURRENTAD   0
-//default ad, never unloaded
-#define ADV_DEFAULTAD   1
-// held by iterator, iterator holds a ref
-#define ADV_ITERATOR    2
-// the appdomain is on the stack
-#define ADV_RUNNINGIN   4
-// we're in process of creating the appdomain, refcount guaranteed to be >0
-#define ADV_CREATING    8
-// compilation domain - ngen guarantees it won't be unloaded until everyone left
-#define ADV_COMPILATION  0x10
-// finalizer thread - synchronized with ADU
-#define ADV_FINALIZER     0x40
-// held by AppDomainRefTaker
-#define ADV_REFTAKER    0x100
-
-#ifdef _DEBUG
-void CheckADValidity(AppDomain* pDomain, DWORD ADValidityKind);
-#else
-#define CheckADValidity(pDomain,ADValidityKind)
-#endif
-
-// Please keep these macros in sync with the NO_EH_AT_TRANSITION macros below.
-#define ENTER_DOMAIN_ID_PREDICATED(_pDestDomain,_predicate_expr) \
-    TESTHOOKCALL(EnteringAppDomain(_pDestDomain.m_dwId))    ;    \
-    ENTER_DOMAIN_SETUPVARS(GetThread(), _predicate_expr) \
-    ENTER_DOMAIN_SWITCH_CTX_BY_ADID(_ctx_trans_pThread->GetDomain(), _pDestDomain, FALSE) \
-    ENTER_DOMAIN_SETUP_EH    \
-    TESTHOOKCALL(EnteredAppDomain(_pDestDomain.m_dwId)); 
-
-#define ENTER_DOMAIN_PTR_PREDICATED(_pDestDomain,ADValidityKind,_predicate_expr) \
-    TESTHOOKCALL(EnteringAppDomain((_pDestDomain)->GetId().m_dwId)); \
-    ENTER_DOMAIN_SETUPVARS(GetThread(), _predicate_expr) \
-    CheckADValidity(_ctx_trans_fPredicate?(_pDestDomain):GetAppDomain(),ADValidityKind);      \
-    ENTER_DOMAIN_SWITCH_CTX_BY_ADPTR(_ctx_trans_pThread->GetDomain(), _pDestDomain) \
-    ENTER_DOMAIN_SETUP_EH    \
-    TESTHOOKCALL(EnteredAppDomain((_pDestDomain)->GetId().m_dwId)); 
-
-
-#define ENTER_DOMAIN_PTR(_pDestDomain,ADValidityKind) \
-    TESTHOOKCALL(EnteringAppDomain((_pDestDomain)->GetId().m_dwId)); \
-    CheckADValidity(_pDestDomain,ADValidityKind);      \
-    ENTER_DOMAIN_SETUPVARS(GetThread(), true) \
-    ENTER_DOMAIN_SWITCH_CTX_BY_ADPTR(_ctx_trans_pThread->GetDomain(), _pDestDomain) \
-    ENTER_DOMAIN_SETUP_EH   \
-    TESTHOOKCALL(EnteredAppDomain((_pDestDomain)->GetId().m_dwId)); 
-
-#define ENTER_DOMAIN_ID(_pDestDomain) \
-    ENTER_DOMAIN_ID_PREDICATED(_pDestDomain,true)
-
-// <EnableADTransitionWithoutEH>
-// The following macros support the AD transition *without* using EH at transition boundary.
-// Please keep them in sync with the macros above.
-#define ENTER_DOMAIN_PTR_NO_EH_AT_TRANSITION(_pDestDomain,ADValidityKind) \
-    TESTHOOKCALL(EnteringAppDomain((_pDestDomain)->GetId().m_dwId)); \
-    CheckADValidity(_pDestDomain,ADValidityKind);      \
-    ENTER_DOMAIN_SETUPVARS(GetThread(), true) \
-    ENTER_DOMAIN_SWITCH_CTX_BY_ADPTR(_ctx_trans_pThread->GetDomain(), _pDestDomain) \
-    TESTHOOKCALL(EnteredAppDomain((_pDestDomain)->GetId().m_dwId));
-
-#define ENTER_DOMAIN_ID_NO_EH_AT_TRANSITION_PREDICATED(_pDestDomain,_predicate_expr) \
-    TESTHOOKCALL(EnteringAppDomain(_pDestDomain.m_dwId))    ;    \
-    ENTER_DOMAIN_SETUPVARS(GetThread(), _predicate_expr) \
-    ENTER_DOMAIN_SWITCH_CTX_BY_ADID(_ctx_trans_pThread->GetDomain(), _pDestDomain, FALSE) \
-    TESTHOOKCALL(EnteredAppDomain(_pDestDomain.m_dwId));
-
-#define ENTER_DOMAIN_ID_NO_EH_AT_TRANSITION(_pDestDomain) \
-    ENTER_DOMAIN_ID_NO_EH_AT_TRANSITION_PREDICATED(_pDestDomain,true)
-
-#define END_DOMAIN_TRANSITION_NO_EH_AT_TRANSITION                                   \
-        TESTHOOKCALL(LeavingAppDomain(::GetAppDomain()->GetId().m_dwId));           \
-        LOG((LF_APPDOMAIN, LL_INFO1000, "LEAVE_DOMAIN(%s, %s, %d)\n",               \
-                __FUNCTION__, __FILE__, __LINE__));                                 \
-                                                                                    \
-        __returnToPreviousAppDomainHolder.SuppressRelease();                        \
-        TESTHOOKCALL(LeftAppDomain(_ctx_trans_pDestDomainId.m_dwId));               \
-        DEBUG_ASSURE_NO_RETURN_END(DOMAIN)                                          \
-    } // Close scope setup by ENTER_DOMAIN_SETUPVARS
-
-// </EnableADTransitionWithoutEH>
-
-#define GET_CTX_TRANSITION_FRAME() \
-    (_ctx_trans_pFrame)
-
-//-----------------------------------------------------------------------------
-// System to make Cross-Appdomain calls.
-//
-// Cross-AppDomain calls are made via a callback + args. This gives us the flexibility
-// to check if a transition is needed, and take fast vs. slow paths for the debugger.
-//
-// Example usage:
-//   struct FooArgs : public CtxTransitionBaseArgs { ... } args (...); // load up args
-//   MakeCallWithPossibleAppDomainTransition(pNewDomain, MyFooFunc, &args);
-//
-// MyFooFunc is always executed in pNewDomain.
-// If we're already in pNewDomain, then that just becomes MyFooFunc(&args);
-// else we'll switch ADs, and do the proper Try/Catch/Rethrow.
-//-----------------------------------------------------------------------------
-
-// All Arg structs should derive from this. This makes certain standard args
-// are available (such as the context-transition frame).
-// The ADCallback helpers will fill in these base args.
-struct CtxTransitionBaseArgs;
-
-// Pointer type for the AppDomain callback function.
-typedef void (*FPAPPDOMAINCALLBACK)(
-    CtxTransitionBaseArgs*             pData     // Caller's private data
-);
-
-
-//-----------------------------------------------------------------------------
-// Call w/a  wrapper.
-// We've already transitioned AppDomains here. This just places a 1st-pass filter to sniff
-// for catch-handler found callbacks for the debugger.
-//-----------------------------------------------------------------------------
-void MakeADCallDebuggerWrapper(
-    FPAPPDOMAINCALLBACK fpCallback,
-    CtxTransitionBaseArgs * args,
-    ContextTransitionFrame* pFrame);
-
-// Invoke a callback in another appdomain.
-// Caller should have checked that we're actually transitioning domains here.
-void MakeCallWithAppDomainTransition(
-    ADID pTargetDomain,
-    FPAPPDOMAINCALLBACK fpCallback,
-    CtxTransitionBaseArgs * args);
-
-// Invoke the callback in the AppDomain.
-// Ensure that predicate only gets evaluted once!!
-#define MakePredicatedCallWithPossibleAppDomainTransition(pTargetDomain, fPredicate, fpCallback, args) \
-{ \
-    Thread*     _ctx_trans_pThread          = GetThread(); \
-    _ASSERTE(_ctx_trans_pThread != NULL); \
-    ADID  _ctx_trans_pCurrDomain      = _ctx_trans_pThread->GetDomain()->GetId(); \
-    ADID  _ctx_trans_pDestDomain      = (pTargetDomain);                                   \
-    \
-    if (fPredicate && (_ctx_trans_pCurrDomain != _ctx_trans_pDestDomain)) \
-    { \
-        /* Transition domains and make the call */ \
-        MakeCallWithAppDomainTransition(pTargetDomain, (FPAPPDOMAINCALLBACK) fpCallback, args); \
-    } \
-    else      \
-    { \
-        /* No transition needed. Just call directly.  */ \
-        (fpCallback)(args); \
-    }\
-}
-
-// Invoke the callback in the AppDomain.
-#define MakeCallWithPossibleAppDomainTransition(pTargetDomain, fpCallback, args) \
-    MakePredicatedCallWithPossibleAppDomainTransition(pTargetDomain, true, fpCallback, args)
-
-
-struct CtxTransitionBaseArgs
-{
-    // This function fills out the private base args.
-    friend void MakeCallWithAppDomainTransition(
-        ADID pTargetDomain,
-        FPAPPDOMAINCALLBACK fpCallback,
-        CtxTransitionBaseArgs * args);
-
-public:
-    CtxTransitionBaseArgs() { pCtxFrame = NULL; }
-    // This will be NULL if we didn't actually transition.
-    ContextTransitionFrame* GetCtxTransitionFrame() { return pCtxFrame; }
-private:
-    ContextTransitionFrame* pCtxFrame;
-};
-
-
 // We have numerous places where we start up a managed thread.  This includes several places in the
 // ThreadPool, the 'new Thread(...).Start()' case, and the Finalizer.  Try to factor the code so our
 // base exception handling behavior is consistent across those places.  The resulting code is convoluted,
@@ -6783,27 +6471,15 @@ struct ManagedThreadCallState;
 struct ManagedThreadBase
 {
     // The 'new Thread(...).Start()' case from COMSynchronizable kickoff thread worker
-    static void KickOff(ADID pAppDomain,
-                        ADCallBackFcnType pTarget,
+    static void KickOff(ADCallBackFcnType pTarget,
                         LPVOID args);
 
     // The IOCompletion, QueueUserWorkItem, AddTimer, RegisterWaitForSingleObject cases in
     // the ThreadPool
-    static void ThreadPool(ADID pAppDomain, ADCallBackFcnType pTarget, LPVOID args);
+    static void ThreadPool(ADCallBackFcnType pTarget, LPVOID args);
 
-    // The Finalizer thread separates the tasks of establishing exception handling at its
-    // base and transitioning into AppDomains.  The turnaround structure that ties the 2 calls together
-    // is the ManagedThreadCallState.
-
-
-    // For the case (like Finalization) where the base transition and the AppDomain transition are
-    // separated, an opaque structure is used to tie together the two calls.
-
+    // The Finalizer thread uses this path
     static void FinalizerBase(ADCallBackFcnType pTarget);
-    static void FinalizerAppDomain(AppDomain* pAppDomain,
-                                   ADCallBackFcnType pTarget,
-                                   LPVOID args,
-                                   ManagedThreadCallState *pTurnAround);
 };
 
 

@@ -277,7 +277,7 @@ FCIMPL0(Object*, SystemNative::GetCommandLineArgs)
     {
         STRINGREF str = StringObject::NewString(argv[i]);
         STRINGREF * destData = ((STRINGREF*)(strArray->GetDataPtr())) + i;
-        SetObjectReference((OBJECTREF*)destData, (OBJECTREF)str, strArray->GetAppDomain());
+        SetObjectReference((OBJECTREF*)destData, (OBJECTREF)str);
     }
     delete [] argv;
 

@@ -75,18 +75,6 @@ LOCAL_LABEL(HaveThread):
 
 LOCAL_LABEL(InCooperativeMode):
 
-#if _DEBUG
-    mov     eax, dword ptr [ebp - UMThunkStub_THREAD_OFFSET]
-    mov     eax, dword ptr [eax + Thread__m_pDomain]
-    mov     esi, dword ptr [eax + AppDomain__m_dwId]
-
-    mov     eax, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
-    mov     edi, dword ptr [eax + UMEntryThunk__m_dwDomainId]
-
-    cmp     esi, edi
-    jne     LOCAL_LABEL(WrongAppDomain)
-#endif
-
     mov     eax, dword ptr [ebp - UMThunkStub_UMENTRYTHUNK_OFFSET]
     mov     ebx, dword ptr [eax + UMEntryThunk__m_pUMThunkMarshInfo]
     mov     eax, dword ptr [ebx + UMThunkMarshInfo__m_cbActualArgSize]
@@ -177,10 +165,5 @@ LOCAL_LABEL(UMThunkStub_CopyStackArgs):
     pop     ecx
     pop     edx
     jmp     LOCAL_LABEL(UMThunkStub_ArgumentsSetup)
-
-#if _DEBUG
-LOCAL_LABEL(WrongAppDomain):
-    int3
-#endif
 
 NESTED_END UMThunkStub, _TEXT

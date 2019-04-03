@@ -365,12 +365,11 @@ bool ModuleRecord::MatchWithModule(ModuleVersion & modVersion, bool & gotVersion
 }
 
 
-MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(AppDomain * pDomain, ICLRPrivBinder * pBinderContext, LONG nSession, bool fAppxMode)
-    : m_stats(pDomain->GetMulticoreJitManager().GetStats()), m_appdomainSession(pDomain->GetMulticoreJitManager().GetProfileSession())
+MulticoreJitProfilePlayer::MulticoreJitProfilePlayer(ICLRPrivBinder * pBinderContext, LONG nSession, bool fAppxMode)
+    : m_stats(::GetAppDomain()->GetMulticoreJitManager().GetStats()), m_appdomainSession(::GetAppDomain()->GetMulticoreJitManager().GetProfileSession())
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_DomainID           = pDomain->GetId();
     m_pBinderContext     = pBinderContext;
     m_nMySession         = nSession;
     m_moduleCount        = 0;
@@ -1238,9 +1237,8 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     unsigned nSize = m_nFileSize;
 
-    MulticoreJitTrace(("PlayProfile %d bytes in (%d, %s)", 
+    MulticoreJitTrace(("PlayProfile %d bytes in (%s)", 
         nSize,
-        GetAppDomain()->GetId().m_dwId, 
         GetAppDomain()->GetFriendlyNameForLogging()));
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
@@ -1321,14 +1319,12 @@ HRESULT MulticoreJitProfilePlayer::JITThreadProc(Thread * pThread)
 
     EX_TRY
     {
-        ENTER_DOMAIN_ID(m_DomainID);
         {
             // Go into preemptive mode
             GCX_PREEMP();
 
             m_stats.m_hr = PlayProfile();
         }
-        END_DOMAIN_TRANSITION;
     }
     EX_CATCH
     {

@@ -75,7 +75,7 @@ TieredCompilationManager::TieredCompilationManager() :
 }
 
 // Called at AppDomain Init
-void TieredCompilationManager::Init(ADID appDomainId)
+void TieredCompilationManager::Init()
 {
     CONTRACTL
     {
@@ -86,7 +86,6 @@ void TieredCompilationManager::Init(ADID appDomainId)
     CONTRACTL_END;
 
     CrstHolder holder(&m_lock);
-    m_domainId = appDomainId;
 }
 
 #endif // FEATURE_TIERED_COMPILATION && !DACCESS_COMPILE
@@ -343,7 +342,6 @@ bool TieredCompilationManager::TryInitiateTieringDelay()
     {
         return false;
     }
-    timerContextHolder->AppDomainId = m_domainId;
     timerContextHolder->TimerId = 0;
 
     {
@@ -400,7 +398,7 @@ void WINAPI TieredCompilationManager::TieringDelayTimerCallback(PVOID parameter,
     EX_TRY
     {
         GCX_COOP();
-        ManagedThreadBase::ThreadPool(timerContext->AppDomainId, TieringDelayTimerCallbackInAppDomain, nullptr);
+        ManagedThreadBase::ThreadPool(TieringDelayTimerCallbackInAppDomain, nullptr);
     }
     EX_CATCH
     {
@@ -422,7 +420,6 @@ void TieredCompilationManager::TieringDelayTimerCallbackInAppDomain(LPVOID param
 void TieredCompilationManager::TieringDelayTimerCallbackWorker()
 {
     WRAPPER_NO_CONTRACT;
-    _ASSERTE(GetAppDomain()->GetId() == m_domainId);
 
     HANDLE tieringDelayTimerHandle;
     bool tier1CallCountingCandidateMethodRecentlyRecorded;
@@ -582,11 +579,7 @@ void TieredCompilationManager::OptimizeMethodsCallback()
     EX_TRY
     {
         GCX_COOP();
-        ENTER_DOMAIN_ID(m_domainId);
-        {
-            OptimizeMethods();
-        }
-        END_DOMAIN_TRANSITION;
+        OptimizeMethods();
     }
     EX_CATCH
     {
@@ -609,7 +602,6 @@ void TieredCompilationManager::OptimizeMethods()
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE(DebugGetWorkerThreadCount() != 0);
-    _ASSERTE(GetAppDomain()->GetId() == m_domainId);
 
     ULONGLONG startTickCount = CLRGetTickCount64();
     NativeCodeVersion nativeCodeVersion;
