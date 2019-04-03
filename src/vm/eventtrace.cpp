@@ -1492,14 +1492,8 @@ void BulkStaticsLogger::LogAllStatics()
     }
     CONTRACTL_END;
 
-    // Enumerate only active app domains (first parameter).  We use the unsafe
-    // iterator here because this method is called under the threadstore lock
-    // and it's safe to use while the runtime is suspended.
-    UnsafeAppDomainIterator appIter(TRUE);
-    appIter.Init();
-    while (appIter.Next())
     {
-        AppDomain *domain = appIter.GetDomain();
+        AppDomain *domain = ::GetAppDomain(); // There is only 1 AppDomain, so no iterator here.
 
         AppDomain::AssemblyIterator assemblyIter = domain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded|kIncludeExecution));
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
@@ -5676,19 +5670,19 @@ VOID ETW::LoaderLog::SendDomainEvent(BaseDomain *pBaseDomain, DWORD dwEventOptio
 
     if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleLoad)
     {
-        FireEtwAppDomainLoad_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, pBaseDomain->GetId().m_dwId, GetClrInstanceId());
+        FireEtwAppDomainLoad_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, DefaultADID, GetClrInstanceId());
     }
     else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload)
     {
-        FireEtwAppDomainUnload_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, pBaseDomain->GetId().m_dwId, GetClrInstanceId());
+        FireEtwAppDomainUnload_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, DefaultADID, GetClrInstanceId());
     }
     else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
     {
-        FireEtwAppDomainDCStart_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, pBaseDomain->GetId().m_dwId, GetClrInstanceId());
+        FireEtwAppDomainDCStart_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, DefaultADID, GetClrInstanceId());
     }
     else if(dwEventOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd)
     {
-        FireEtwAppDomainDCEnd_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, pBaseDomain->GetId().m_dwId, GetClrInstanceId());
+        FireEtwAppDomainDCEnd_V1(ullDomainId, ulDomainFlags, szDtraceOutput1, DefaultADID, GetClrInstanceId());
     }
     else
     {

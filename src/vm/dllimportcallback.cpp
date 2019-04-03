@@ -819,7 +819,7 @@ UMEntryThunk *UMEntryThunkCache::GetUMEntryThunk(MethodDesc *pMD)
         miHolder.Assign(pMarshInfo);
 
         pMarshInfo->LoadTimeInit(pMD);
-        pThunk->LoadTimeInit(NULL, NULL, pMarshInfo, pMD, m_pDomain->GetId());
+        pThunk->LoadTimeInit(NULL, NULL, pMarshInfo, pMD);
 
         // add it to the cache
         CacheElement element;

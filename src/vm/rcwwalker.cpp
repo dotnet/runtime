@@ -558,18 +558,11 @@ void RCWWalker::WalkRCWs()
 
     BOOL bWalkFailed = FALSE;
     
-    //
-    // Walk every AppDomain
-    // Use UnsafeAppDomain iterator to avoid taking locks
-    //
     HRESULT hr = S_OK;
     EX_TRY
     {
-        UnsafeAppDomainIterator appDomainIterator(TRUE);
-        appDomainIterator.Init();
-        while (appDomainIterator.Next())
         {
-            AppDomain *pDomain = appDomainIterator.GetDomain();
+            AppDomain *pDomain = ::GetAppDomain(); // There is only actually 1 AppDomain in CoreCLR, so no iterator
             
             RCWRefCache *pRCWRefCache = pDomain->GetRCWRefCache();
             _ASSERTE(pRCWRefCache != NULL);
@@ -590,11 +583,6 @@ void RCWWalker::WalkRCWs()
             // Shrink the dependent handle cache if necessary and clear unused handles.
             //
             pRCWRefCache->ShrinkDependentHandles();
-
-            if (FAILED(hr))
-            {
-                break;
-            }
         }
     }
     EX_CATCH

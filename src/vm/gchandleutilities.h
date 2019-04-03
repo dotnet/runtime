@@ -30,7 +30,6 @@ private:
     GCHandleUtilities() = delete;
 };
 
-void ValidateObjectAndAppDomain(OBJECTREF objRef, ADIndex appDomainIndex);
 void ValidateHandleAssignment(OBJECTHANDLE handle, OBJECTREF objRef);
 void DiagHandleCreated(OBJECTHANDLE handle, OBJECTREF object);
 void DiagHandleDestroyed(OBJECTHANDLE handle);
@@ -41,11 +40,9 @@ inline OBJECTREF ObjectFromHandle(OBJECTHANDLE handle)
     _ASSERTE(handle);
 
 #if defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
-    // not allowed to dispatch virtually on a IGCHandleManager when compiling for DAC
-    DWORD context = (DWORD)(SIZE_T)GCHandleUtilities::GetGCHandleManager()->GetHandleContext(handle);
     OBJECTREF objRef = ObjectToOBJECTREF(*(Object**)handle);
 
-    ValidateObjectAndAppDomain(objRef, ADIndex(context));
+    VALIDATEOBJECTREF(objRef);
 #endif // defined(_DEBUG_IMPL) && !defined(DACCESS_COMPILE)
 
     // Wrap the raw OBJECTREF and return it

@@ -1931,7 +1931,7 @@ CLRDATA_ADDRESS GetAppDomain(CLRDATA_ADDRESS objPtr)
             return NULL;
         }
         
-        DWORD adIndex = (value >> SBLK_APPDOMAIN_SHIFT) & SBLK_MASK_APPDOMAININDEX;
+        DWORD adIndex = 0;
         if ( ((value & BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX) != 0) || adIndex==0)
         {
             // No AppDomainID information. We'll make use of a heuristic.
