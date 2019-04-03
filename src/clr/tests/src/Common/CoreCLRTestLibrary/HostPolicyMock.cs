@@ -43,35 +43,8 @@ namespace TestLibrary
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]
         public delegate void ErrorWriterDelegate(string message);
 
-        public static string DeleteExistingHostpolicy(string coreRoot)
-        {
-#if REFERENCING_SYSTEMPRIVATECORELIB
-            throw new Exception("This API is not supported when compiled referencing SPCL");
-
-#else
-            string hostPolicyFileName = XPlatformUtils.GetStandardNativeLibraryFileName("hostpolicy");
-            string destinationPath = Path.Combine(coreRoot, hostPolicyFileName);
-
-            if (File.Exists(destinationPath))
-            {
-                File.Delete(destinationPath);
-            }
-
-            return destinationPath;
-#endif
-        }
-
         public static void Initialize(string testBasePath, string coreRoot)
         {
-#if !REFERENCING_SYSTEMPRIVATECORELIB
-            string hostPolicyFileName = XPlatformUtils.GetStandardNativeLibraryFileName("hostpolicy");
-            string destinationPath = DeleteExistingHostpolicy(coreRoot);
-
-            File.Copy(
-                Path.Combine(testBasePath, hostPolicyFileName),
-                destinationPath);
-#endif
-
             _assemblyDependencyResolverType = typeof(AssemblyDependencyResolver);
 
             // This is needed for marshalling of function pointers to work - requires private access to the ADR unfortunately

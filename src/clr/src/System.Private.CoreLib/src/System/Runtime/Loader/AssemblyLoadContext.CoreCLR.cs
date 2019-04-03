@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime.Loader
 {
-    public abstract partial class AssemblyLoadContext
+    public partial class AssemblyLoadContext
     {
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr InitializeAssemblyLoadContext(IntPtr ptrAssemblyLoadContext, bool fRepresentsTPALoadContext, bool isCollectible);

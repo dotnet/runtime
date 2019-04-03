@@ -272,6 +272,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 else if (category == HW_Category_MemoryStore)
                 {
+                    // The Mask instructions do not currently support containment of the address.
+                    assert(!op2->isContained());
                     if (intrinsicId == NI_AVX_MaskStore || intrinsicId == NI_AVX2_MaskStore)
                     {
                         emit->emitIns_AR_R_R(ins, simdSize, op2Reg, op3Reg, op1Reg, 0);
@@ -321,7 +323,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (isa)
     {
-        case InstructionSet_Base:
+        case InstructionSet_Vector128:
+        case InstructionSet_Vector256:
             genBaseIntrinsic(node);
             break;
         case InstructionSet_SSE:
@@ -430,39 +433,48 @@ void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emi
 
             regSet.tmpRlsTemp(tmpDsc);
         }
-        else if (op1->OperIsHWIntrinsic())
+        else if (op1->isIndir() || op1->OperIsHWIntrinsic())
         {
-            emit->emitIns_R_AR(ins, attr, targetReg, op1->gtGetOp1()->gtRegNum, 0);
-            return;
-        }
-        else if (op1->isIndir())
-        {
-            GenTreeIndir* memIndir = op1->AsIndir();
-            GenTree*      memBase  = memIndir->gtOp1;
+            GenTree*      addr;
+            GenTreeIndir* memIndir = nullptr;
 
-            switch (memBase->OperGet())
+            if (op1->isIndir())
+            {
+                memIndir = op1->AsIndir();
+                addr     = memIndir->Addr();
+            }
+            else
+            {
+                assert(op1->AsHWIntrinsic()->OperIsMemoryLoad());
+                assert(HWIntrinsicInfo::lookupNumArgs(op1->AsHWIntrinsic()) == 1);
+                addr = op1->gtGetOp1();
+            }
+
+            switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
                 {
-                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
-
-                    // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(!memIndir->HasIndex());
-                    assert(memIndir->Scale() == 1);
-                    assert(memIndir->Offset() == 0);
-
                     break;
                 }
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    emit->emitIns_R_C(ins, attr, targetReg, memBase->gtClsVar.gtClsVarHnd, 0);
+                    emit->emitIns_R_C(ins, attr, targetReg, addr->gtClsVar.gtClsVarHnd, 0);
                     return;
                 }
 
                 default:
                 {
+                    if (memIndir == nullptr)
+                    {
+                        // This is the HW intrinsic load case.
+                        // Until we improve the handling of addressing modes in the emitter, we'll create a
+                        // temporary GT_IND to generate code with.
+                        GenTreeIndir load = indirForm(op1->TypeGet(), addr);
+                        memIndir          = &load;
+                    }
                     emit->emitIns_R_A(ins, attr, targetReg, memIndir);
                     return;
                 }
@@ -607,43 +619,48 @@ void CodeGen::genHWIntrinsic_R_R_RM(
 
             regSet.tmpRlsTemp(tmpDsc);
         }
-        else if (op2->OperIsHWIntrinsic())
+        else if (op2->isIndir() || op2->OperIsHWIntrinsic())
         {
-            GenTree* addr = op2->gtGetOp1();
-            // Until we improve the handling of addressing modes in the emitter, we'll create a
-            // temporary GT_IND to generate code with.
-            GenTreeIndir load = indirForm(node->TypeGet(), addr);
-            emit->emitIns_SIMD_R_R_A(ins, attr, targetReg, op1Reg, &load);
-            return;
-        }
-        else if (op2->isIndir())
-        {
-            GenTreeIndir* memIndir = op2->AsIndir();
-            GenTree*      memBase  = memIndir->gtOp1;
+            GenTree*      addr;
+            GenTreeIndir* memIndir = nullptr;
 
-            switch (memBase->OperGet())
+            if (op2->isIndir())
+            {
+                memIndir = op2->AsIndir();
+                addr     = memIndir->Addr();
+            }
+            else
+            {
+                assert(op2->AsHWIntrinsic()->OperIsMemoryLoad());
+                assert(HWIntrinsicInfo::lookupNumArgs(op2->AsHWIntrinsic()) == 1);
+                addr = op2->gtGetOp1();
+            }
+
+            switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
                 {
-                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
-
-                    // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(!memIndir->HasIndex());
-                    assert(memIndir->Scale() == 1);
-                    assert(memIndir->Offset() == 0);
-
                     break;
                 }
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    emit->emitIns_SIMD_R_R_C(ins, attr, targetReg, op1Reg, memBase->gtClsVar.gtClsVarHnd, 0);
+                    emit->emitIns_SIMD_R_R_C(ins, attr, targetReg, op1Reg, addr->gtClsVar.gtClsVarHnd, 0);
                     return;
                 }
 
                 default:
                 {
+                    if (memIndir == nullptr)
+                    {
+                        // This is the HW intrinsic load case.
+                        // Until we improve the handling of addressing modes in the emitter, we'll create a
+                        // temporary GT_IND to generate code with.
+                        GenTreeIndir load = indirForm(op2->TypeGet(), addr);
+                        memIndir          = &load;
+                    }
                     emit->emitIns_SIMD_R_R_A(ins, attr, targetReg, op1Reg, memIndir);
                     return;
                 }
@@ -767,40 +784,48 @@ void CodeGen::genHWIntrinsic_R_R_RM_I(GenTreeHWIntrinsic* node, instruction ins,
 
             regSet.tmpRlsTemp(tmpDsc);
         }
-        else if (op2->OperIsHWIntrinsic())
+        else if (op2->isIndir() || op2->OperIsHWIntrinsic())
         {
-            emit->emitIns_SIMD_R_R_AR_I(ins, simdSize, targetReg, op1Reg, op2->gtGetOp1()->gtRegNum, ival);
-            return;
-        }
-        else if (op2->isIndir())
-        {
-            GenTreeIndir* memIndir = op2->AsIndir();
-            GenTree*      memBase  = memIndir->gtOp1;
+            GenTree*      addr;
+            GenTreeIndir* memIndir = nullptr;
 
-            switch (memBase->OperGet())
+            if (op2->isIndir())
+            {
+                memIndir = op2->AsIndir();
+                addr     = memIndir->Addr();
+            }
+            else
+            {
+                assert(op2->AsHWIntrinsic()->OperIsMemoryLoad());
+                assert(HWIntrinsicInfo::lookupNumArgs(op2->AsHWIntrinsic()) == 1);
+                addr = op2->gtGetOp1();
+            }
+
+            switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
                 {
-                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
-
-                    // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(!memIndir->HasIndex());
-                    assert(memIndir->Scale() == 1);
-                    assert(memIndir->Offset() == 0);
-
                     break;
                 }
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    emit->emitIns_SIMD_R_R_C_I(ins, simdSize, targetReg, op1Reg, memBase->gtClsVar.gtClsVarHnd, 0,
-                                               ival);
+                    emit->emitIns_SIMD_R_R_C_I(ins, simdSize, targetReg, op1Reg, addr->gtClsVar.gtClsVarHnd, 0, ival);
                     return;
                 }
 
                 default:
                 {
+                    if (memIndir == nullptr)
+                    {
+                        // This is the HW intrinsic load case.
+                        // Until we improve the handling of addressing modes in the emitter, we'll create a
+                        // temporary GT_IND to generate code with.
+                        GenTreeIndir load = indirForm(op2->TypeGet(), addr);
+                        memIndir          = &load;
+                    }
                     emit->emitIns_SIMD_R_R_A_I(ins, simdSize, targetReg, op1Reg, memIndir, ival);
                     return;
                 }
@@ -923,40 +948,48 @@ void CodeGen::genHWIntrinsic_R_R_RM_R(GenTreeHWIntrinsic* node, instruction ins)
 
             regSet.tmpRlsTemp(tmpDsc);
         }
-        else if (op2->OperIsHWIntrinsic())
+        else if (op2->isIndir() || op2->OperIsHWIntrinsic())
         {
-            emit->emitIns_SIMD_R_R_AR_R(ins, simdSize, targetReg, op1Reg, op3Reg, op2->gtGetOp1()->gtRegNum);
-            return;
-        }
-        else if (op2->isIndir())
-        {
-            GenTreeIndir* memIndir = op2->AsIndir();
-            GenTree*      memBase  = memIndir->gtOp1;
+            GenTree*      addr;
+            GenTreeIndir* memIndir = nullptr;
 
-            switch (memBase->OperGet())
+            if (op2->isIndir())
+            {
+                memIndir = op2->AsIndir();
+                addr     = memIndir->Addr();
+            }
+            else
+            {
+                assert(op2->AsHWIntrinsic()->OperIsMemoryLoad());
+                assert(HWIntrinsicInfo::lookupNumArgs(op2->AsHWIntrinsic()) == 1);
+                addr = op2->gtGetOp1();
+            }
+
+            switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
                 {
-                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
-
-                    // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(!memIndir->HasIndex());
-                    assert(memIndir->Scale() == 1);
-                    assert(memIndir->Offset() == 0);
-
                     break;
                 }
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    emit->emitIns_SIMD_R_R_C_R(ins, simdSize, targetReg, op1Reg, op3Reg, memBase->gtClsVar.gtClsVarHnd,
-                                               0);
+                    emit->emitIns_SIMD_R_R_C_R(ins, simdSize, targetReg, op1Reg, op3Reg, addr->gtClsVar.gtClsVarHnd, 0);
                     return;
                 }
 
                 default:
                 {
+                    if (memIndir == nullptr)
+                    {
+                        // This is the HW intrinsic load case.
+                        // Until we improve the handling of addressing modes in the emitter, we'll create a
+                        // temporary GT_IND to generate code with.
+                        GenTreeIndir load = indirForm(op2->TypeGet(), addr);
+                        memIndir          = &load;
+                    }
                     emit->emitIns_SIMD_R_R_A_R(ins, simdSize, targetReg, op1Reg, op3Reg, memIndir);
                     return;
                 }
@@ -1042,39 +1075,47 @@ void CodeGen::genHWIntrinsic_R_R_R_RM(
 
             regSet.tmpRlsTemp(tmpDsc);
         }
-        else if (op3->OperIsHWIntrinsic())
+        else if (op3->isIndir() || op3->OperIsHWIntrinsic())
         {
-            emit->emitIns_SIMD_R_R_R_AR(ins, attr, targetReg, op1Reg, op2Reg, op3->gtGetOp1()->gtRegNum);
-            return;
-        }
-        else if (op3->isIndir())
-        {
-            GenTreeIndir* memIndir = op3->AsIndir();
-            GenTree*      memBase  = memIndir->gtOp1;
+            GenTree*      addr;
+            GenTreeIndir* memIndir = nullptr;
+            if (op3->isIndir())
+            {
+                memIndir = op3->AsIndir();
+                addr     = memIndir->Addr();
+            }
+            else
+            {
+                assert(op3->AsHWIntrinsic()->OperIsMemoryLoad());
+                assert(HWIntrinsicInfo::lookupNumArgs(op3->AsHWIntrinsic()) == 1);
+                addr = op3->gtGetOp1();
+            }
 
-            switch (memBase->OperGet())
+            switch (addr->OperGet())
             {
                 case GT_LCL_VAR_ADDR:
                 {
-                    varNum = memBase->AsLclVarCommon()->GetLclNum();
+                    varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
-
-                    // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(!memIndir->HasIndex());
-                    assert(memIndir->Scale() == 1);
-                    assert(memIndir->Offset() == 0);
-
                     break;
                 }
 
                 case GT_CLS_VAR_ADDR:
                 {
-                    emit->emitIns_SIMD_R_R_R_C(ins, attr, targetReg, op1Reg, op2Reg, memBase->gtClsVar.gtClsVarHnd, 0);
+                    emit->emitIns_SIMD_R_R_R_C(ins, attr, targetReg, op1Reg, op2Reg, addr->gtClsVar.gtClsVarHnd, 0);
                     return;
                 }
 
                 default:
                 {
+                    if (memIndir == nullptr)
+                    {
+                        // This is the HW intrinsic load case.
+                        // Until we improve the handling of addressing modes in the emitter, we'll create a
+                        // temporary GT_IND to generate code with.
+                        GenTreeIndir load = indirForm(op3->TypeGet(), addr);
+                        memIndir          = &load;
+                    }
                     emit->emitIns_SIMD_R_R_R_A(ins, attr, targetReg, op1Reg, op2Reg, memIndir);
                     return;
                 }
@@ -1224,8 +1265,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
-        case NI_Base_Vector128_CreateScalarUnsafe:
-        case NI_Base_Vector256_CreateScalarUnsafe:
+        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector256_CreateScalarUnsafe:
         {
             if (varTypeIsIntegral(baseType))
             {
@@ -1250,8 +1291,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_Base_Vector128_ToScalar:
-        case NI_Base_Vector256_ToScalar:
+        case NI_Vector128_ToScalar:
+        case NI_Vector256_ToScalar:
         {
             assert(varTypeIsFloating(baseType));
 
@@ -1269,7 +1310,7 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_Base_Vector128_ToVector256:
+        case NI_Vector128_ToVector256:
         {
             // ToVector256 has zero-extend semantics in order to ensure it is deterministic
             // We always emit a move to the target register, even when op1Reg == targetReg,
@@ -1289,8 +1330,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_Base_Vector128_ToVector256Unsafe:
-        case NI_Base_Vector256_GetLower:
+        case NI_Vector128_ToVector256Unsafe:
+        case NI_Vector256_GetLower:
         {
             if (op1->isContained() || op1->isUsedFromSpillTemp())
             {
@@ -1304,8 +1345,8 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_Base_Vector128_Zero:
-        case NI_Base_Vector256_Zero:
+        case NI_Vector128_Zero:
+        case NI_Vector256_Zero:
         {
             assert(op1 == nullptr);
             emit->emitIns_SIMD_R_R_R(ins, attr, targetReg, targetReg, targetReg);
@@ -1433,6 +1474,17 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_SSE_X64_ConvertToInt64:
+        case NI_SSE_X64_ConvertToInt64WithTruncation:
+        {
+            assert(targetType == TYP_LONG);
+            assert(op1 != nullptr);
+            assert(op2 == nullptr);
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+            genHWIntrinsic_R_RM(node, ins, EA_8BYTE);
+            break;
+        }
+
         case NI_SSE_X64_ConvertScalarToVector128Single:
         {
             assert(baseType == TYP_LONG);
@@ -1451,6 +1503,8 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             assert(baseType == TYP_UBYTE);
             assert(op2 == nullptr);
 
+            // These do not support containment.
+            assert(!op1->isContained());
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType);
             op1Reg          = op1->gtRegNum;
             emit->emitIns_AR(ins, emitTypeSize(baseType), op1Reg, 0);
@@ -1623,8 +1677,9 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
         case NI_SSE2_ConvertToInt32:
         case NI_SSE2_ConvertToInt32WithTruncation:
         case NI_SSE2_ConvertToUInt32:
-        case NI_SSE2_X64_ConvertToUInt64:
         case NI_SSE2_X64_ConvertToInt64:
+        case NI_SSE2_X64_ConvertToInt64WithTruncation:
+        case NI_SSE2_X64_ConvertToUInt64:
         {
             assert(op2 == nullptr);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -1668,10 +1723,9 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             assert(op1 != nullptr);
             assert(op2 != nullptr);
 
-            op2Reg          = op2->gtRegNum;
-            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
-            op1Reg          = op1->gtRegNum;
-            emit->emitIns_AR_R(ins, emitTypeSize(baseType), op2Reg, op1Reg, 0);
+            instruction     ins   = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+            GenTreeStoreInd store = storeIndirForm(node->TypeGet(), op1, op2);
+            emit->emitInsStoreInd(ins, emitTypeSize(baseType), &store);
             break;
         }
 
@@ -2141,6 +2195,7 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
                 argList                 = argList->Rest();
                 GenTree* op3            = argList->Current();
                 op3Reg                  = op3->gtRegNum;
+                assert(!op3->isContained());
                 assert(op3Reg != op1Reg);
                 assert(op3Reg != targetReg);
                 assert(op3Reg != REG_EDX);
@@ -2149,6 +2204,8 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
                 assert(lowReg != targetReg);
             }
 
+            // These do not support containment
+            assert(!op2->isContained());
             emitAttr attr = emitTypeSize(targetType);
             // mov the first operand into implicit source operand EDX/RDX
             if (op1Reg != REG_EDX)
@@ -2160,7 +2217,7 @@ void CodeGen::genBMI1OrBMI2Intrinsic(GenTreeHWIntrinsic* node)
             // generate code for MULX
             genHWIntrinsic_R_R_RM(node, ins, attr, targetReg, lowReg, op2);
 
-            // If requires the lower half result, store in the memory opinted by op3
+            // If requires the lower half result, store in the memory pointed to by op3
             if (numArgs == 3)
             {
                 emit->emitIns_AR_R(INS_mov, attr, lowReg, op3Reg, 0);

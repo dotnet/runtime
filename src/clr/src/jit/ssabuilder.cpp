@@ -113,7 +113,7 @@ void Compiler::fgResetForSsa()
         blk->bbPostOrderNum = 0;
         for (GenTreeStmt* stmt = blk->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
         {
-            for (GenTree* tree = stmt->gtStmt.gtStmtList; tree != nullptr; tree = tree->gtNext)
+            for (GenTree* tree = stmt->gtStmtList; tree != nullptr; tree = tree->gtNext)
             {
                 if (tree->IsLocal())
                 {
@@ -652,7 +652,7 @@ void SsaBuilder::ComputeIteratedDominanceFrontier(BasicBlock* b, const BlkToBlkV
 static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
 {
     // Walk the statements for phi nodes.
-    for (GenTree* stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
+    for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
     {
         // A prefix of the statements of the block are phi definition nodes. If we complete processing
         // that prefix, exit.
@@ -661,7 +661,7 @@ static GenTree* GetPhiNode(BasicBlock* block, unsigned lclNum)
             break;
         }
 
-        GenTree* tree = stmt->gtStmt.gtStmtExpr;
+        GenTree* tree = stmt->gtStmtExpr;
 
         GenTree* phiLhs = tree->gtOp.gtOp1;
         assert(phiLhs->OperGet() == GT_LCL_VAR);
@@ -756,7 +756,7 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
 
                     GenTree* phiAsg = m_pCompiler->gtNewAssignNode(phiLhs, phiRhs);
 
-                    GenTree* stmt = m_pCompiler->fgInsertStmtAtBeg(bbInDomFront, phiAsg);
+                    GenTreeStmt* stmt = m_pCompiler->fgInsertStmtAtBeg(bbInDomFront, phiAsg);
                     m_pCompiler->gtSetStmtInfo(stmt);
                     m_pCompiler->fgSetStmtSeq(stmt);
                 }
@@ -991,7 +991,7 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
                 bool phiFound = false;
 #endif
                 // A prefix of blocks statements will be SSA definitions.  Search those for "lclNum".
-                for (GenTree* stmt = handler->bbTreeList; stmt; stmt = stmt->gtNext)
+                for (GenTreeStmt* stmt = handler->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
                 {
                     // If the tree is not an SSA def, break out of the loop: we're done.
                     if (!stmt->IsPhiDefnStmt())
@@ -999,7 +999,7 @@ void SsaBuilder::AddDefToHandlerPhis(BasicBlock* block, unsigned lclNum, unsigne
                         break;
                     }
 
-                    GenTree* tree = stmt->gtStmt.gtStmtExpr;
+                    GenTree* tree = stmt->gtStmtExpr;
 
                     assert(tree->IsPhiDefn());
 
@@ -1172,16 +1172,16 @@ void SsaBuilder::BlockRenameVariables(BasicBlock* block, SsaRenameState* pRename
     // We need to iterate over phi definitions, to give them SSA names, but we need
     // to know which are which, so we don't add phi definitions to handler phi arg lists.
     // Statements are phi defns until they aren't.
-    bool     isPhiDefn   = true;
-    GenTree* firstNonPhi = block->FirstNonPhiDef();
-    for (GenTree* stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
+    bool         isPhiDefn   = true;
+    GenTreeStmt* firstNonPhi = block->FirstNonPhiDef();
+    for (GenTreeStmt* stmt = block->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
     {
         if (stmt == firstNonPhi)
         {
             isPhiDefn = false;
         }
 
-        for (GenTree* tree = stmt->gtStmt.gtStmtList; tree; tree = tree->gtNext)
+        for (GenTree* tree = stmt->gtStmtList; tree; tree = tree->gtNext)
         {
             TreeRenameVariables(tree, block, pRenameState, isPhiDefn);
         }
@@ -1239,9 +1239,10 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
     for (BasicBlock* succ : block->GetAllSuccs(m_pCompiler))
     {
         // Walk the statements for phi nodes.
-        for (GenTree* stmt = succ->bbTreeList; stmt != nullptr && stmt->IsPhiDefnStmt(); stmt = stmt->gtNext)
+        for (GenTreeStmt* stmt = succ->firstStmt(); stmt != nullptr && stmt->IsPhiDefnStmt();
+             stmt              = stmt->getNextStmt())
         {
-            GenTree* tree = stmt->gtStmt.gtStmtExpr;
+            GenTree* tree = stmt->gtStmtExpr;
             assert(tree->IsPhiDefn());
 
             // Get the phi node from GT_ASG.
@@ -1376,9 +1377,9 @@ void SsaBuilder::AssignPhiNodeRhsVariables(BasicBlock* block, SsaRenameState* pR
                 // For a filter, we consider the filter to be the "real" handler.
                 BasicBlock* handlerStart = succTry->ExFlowBlock();
 
-                for (GenTree* stmt = handlerStart->bbTreeList; stmt; stmt = stmt->gtNext)
+                for (GenTreeStmt* stmt = handlerStart->firstStmt(); stmt != nullptr; stmt = stmt->getNextStmt())
                 {
-                    GenTree* tree = stmt->gtStmt.gtStmtExpr;
+                    GenTree* tree = stmt->gtStmtExpr;
 
                     // Check if the first n of the statements are phi nodes. If not, exit.
                     if (tree->OperGet() != GT_ASG || tree->gtOp.gtOp2 == nullptr ||
@@ -1870,9 +1871,9 @@ void Compiler::JitTestCheckSSA()
     for (NodeToTestDataMap::KeyIterator ki = testData->Begin(); !ki.Equal(testData->End()); ++ki)
     {
         TestLabelAndNum tlAndN;
-        GenTree*        node = ki.Get();
-        bool            b    = testData->Lookup(node, &tlAndN);
-        assert(b);
+        GenTree*        node       = ki.Get();
+        bool            nodeExists = testData->Lookup(node, &tlAndN);
+        assert(nodeExists);
         if (tlAndN.m_tl == TL_SsaName)
         {
             if (node->OperGet() != GT_LCL_VAR)
@@ -1911,7 +1912,8 @@ void Compiler::JitTestCheckSSA()
                 }
                 // The mapping(s) must be one-to-one: if the label has a mapping, then the ssaNm must, as well.
                 ssize_t num2;
-                bool    b = ssaToLabel->Lookup(ssaNm, &num2);
+                bool    ssaExists = ssaToLabel->Lookup(ssaNm, &num2);
+                assert(ssaExists);
                 // And the mappings must be the same.
                 if (tlAndN.m_num != num2)
                 {

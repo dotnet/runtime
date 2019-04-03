@@ -20,7 +20,7 @@ namespace System
     /// </summary>
     [DebuggerTypeProxy(typeof(MemoryDebugView<>))]
     [DebuggerDisplay("{ToString(),raw}")]
-    public readonly struct Memory<T>
+    public readonly struct Memory<T> : IEquatable<Memory<T>>
     {
         // NOTE: With the current implementation, Memory<T> and ReadOnlyMemory<T> must have the same layout,
         // as code uses Unsafe.As to cast between them.

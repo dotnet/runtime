@@ -388,11 +388,7 @@ public:
 //
 // Similarly, inserting breakpoints can be avoided for JIT_PollGC() and JIT_StressGC().
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_AMD64_)
 extern "C" FCDECL0(VOID, JIT_RareDisableHelper);
-#else
-FCDECL0(VOID, JIT_RareDisableHelper);
-#endif
 
 /****************************************************************************/
 /* sprinkle interupt instructions that will stop on every GCSafe location

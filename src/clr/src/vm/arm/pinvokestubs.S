@@ -76,6 +76,30 @@
 .endmacro
 
 // ------------------------------------------------------------------
+// IN:
+// InlinedCallFrame (r0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+//                          before actual InlinedCallFrame data)
+//
+//
+    LEAF_ENTRY JIT_PInvokeBegin, _TEXT
+        // Not yet supported
+        EMIT_BREAKPOINT
+        bx lr
+    LEAF_END JIT_PInvokeBegin, _TEXT
+
+// ------------------------------------------------------------------
+// IN:
+// InlinedCallFrame (r0) = pointer to the InlinedCallFrame data, including the GS cookie slot (GS cookie right 
+//                          before actual InlinedCallFrame data)
+//
+//
+    LEAF_ENTRY JIT_PInvokeEnd, _TEXT
+        // Not yet supported
+        EMIT_BREAKPOINT
+        bx lr
+    LEAF_END JIT_PInvokeEnd, _TEXT
+
+// ------------------------------------------------------------------
 // VarargPInvokeStub & VarargPInvokeGenILStub
 // There is a separate stub when the method has a hidden return buffer arg.
 //

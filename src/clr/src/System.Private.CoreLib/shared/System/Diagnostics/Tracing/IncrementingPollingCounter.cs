@@ -55,7 +55,7 @@ namespace System.Diagnostics.Tracing
             {
                 lock(MyLock)
                 {
-                    _increment += _getCountFunction();
+                    _increment = _getCountFunction();
                 }
             }
             catch (Exception ex)

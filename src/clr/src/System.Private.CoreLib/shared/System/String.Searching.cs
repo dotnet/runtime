@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
@@ -18,7 +19,7 @@ namespace System
             return SpanHelpers.IndexOf(
                 ref _firstChar,
                 Length,
-                ref value._firstChar,
+                ref value!._firstChar,      // TODO-NULLABLE: Compiler Bug?
                 value.Length) >= 0;
         }
 
