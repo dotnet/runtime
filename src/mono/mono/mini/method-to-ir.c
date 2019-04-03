@@ -10955,7 +10955,7 @@ mono_ldptr:
 				CHECK_TYPELOAD (klass);
 
 				if (mini_is_gsharedvt_klass (klass)) {
-					MonoInst *ins = mini_emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_CLASS_SIZEOF);
+					ins = mini_emit_get_gsharedvt_info_klass (cfg, klass, MONO_RGCTX_INFO_CLASS_SIZEOF);
 					ins->type = STACK_I4;
 				} else {
 					val = mono_type_size (m_class_get_byval_arg (klass), &ialign);
