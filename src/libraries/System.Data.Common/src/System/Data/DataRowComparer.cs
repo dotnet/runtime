@@ -206,10 +206,8 @@ namespace System.Data
                 }
                 else
                 {
-                    ValueType vt = value as ValueType;
-
                     // have to unbox value types.
-                    if (vt != null)
+                    if (value is ValueType vt)
                     {
                         hash = vt.GetHashCode();
                     }

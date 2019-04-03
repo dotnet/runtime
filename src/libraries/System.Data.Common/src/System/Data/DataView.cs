@@ -162,6 +162,36 @@ namespace System.Data
             SetIndex(Sort, RowState, newFilter);
         }
 
+        internal DataView(DataTable table, System.Predicate<DataRow> predicate, System.Comparison<DataRow> comparison, DataViewRowState RowState) 
+        {
+            GC.SuppressFinalize(this);
+            DataCommonEventSource.Log.Trace("<ds.DataView.DataView|API> %d#, table=%d, RowState=%d{ds.DataViewRowState}\n",
+                           ObjectID, (table != null) ? table.ObjectID : 0, (int)RowState);
+
+            if (table == null)
+            {
+                throw ExceptionBuilder.CanNotUse();
+            }
+
+            _dvListener = new DataViewListener(this);
+            _locked = false;
+            _table = table;
+            _dvListener.RegisterMetaDataEvents(table);
+
+            if ((((int)RowState) & ((int)~(DataViewRowState.CurrentRows | DataViewRowState.OriginalRows))) != 0)
+            {
+                throw ExceptionBuilder.RecordStateRange();
+            }
+            else if ((((int)RowState) & ((int)DataViewRowState.ModifiedOriginal)) != 0 &&
+                     (((int)RowState) & ((int)DataViewRowState.ModifiedCurrent)) != 0)
+            {
+                throw ExceptionBuilder.SetRowStateFilter();
+            }
+
+            _comparison = comparison;
+            SetIndex2("", RowState, ((null != predicate) ? new RowPredicateFilter(predicate) : null), true);
+        }
+
         /// <summary>
         /// Sets or gets a value indicating whether deletes are allowed.
         /// </summary>
@@ -724,6 +754,12 @@ namespace System.Data
             {
                 DataCommonEventSource.Log.ExitScope(logScopeId);
             }
+        }
+
+        /// <summary>This method exists for LinqDataView to keep a level of abstraction away from the RBTree</summary>
+        internal Range FindRecords<TKey,TRow>(Index.ComparisonBySelector<TKey,TRow> comparison, TKey key) where TRow:DataRow
+        {
+            return _index.FindRecords(comparison, key);
         }
 
         /// <summary>Convert a Range into a DataRowView[].</summary>
