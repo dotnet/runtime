@@ -3429,7 +3429,6 @@ public:
     DebuggerIPCE_FuncEvalType          m_evalType;
     mdMethodDef                        m_methodToken;
     mdTypeDef                          m_classToken;
-    ADID                               m_appDomainId;       // Safe even if AD unloaded
     PTR_DebuggerModule                 m_debuggerModule;     // Only valid if AD is still around
     RSPTR_CORDBEVAL                    m_funcEvalKey;
     bool                               m_successful;        // Did the eval complete successfully

@@ -650,13 +650,13 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_HillClimbing_GainExponent,                    
 ///
 #ifdef FEATURE_TIERED_COMPILATION
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_TieredCompilation, W("TieredCompilation"), 1, "Enables tiered compilation")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Tier1CallCountThreshold, W("TieredCompilation_Tier1CallCountThreshold"), 30, "Number of times a method must be called after which it is promoted to tier 1.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Tier1CallCountingDelayMs, W("TieredCompilation_Tier1CallCountingDelayMs"), 100, "A perpetual delay in milliseconds that is applied to tier 1 call counting and jitting, while there is tier 0 activity.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Tier1DelaySingleProcMultiplier, W("TieredCompilation_Tier1DelaySingleProcMultiplier"), 10, "Multiplier for TieredCompilation_Tier1CallCountingDelayMs that is applied on a single-processor machine or when the process is affinitized to a single processor.")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_DisableTier0Jit, W("TieredCompilation_DisableTier0Jit"), 0, "For methods that don't have pregenerated code, disable jitting them at tier 0 and start with a higher tier instead. For methods that have pregenerated code, tiering occurs normally.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_QuickJit, W("TC_QuickJit"), 0, "For methods that would be jitted, enable using quick JIT when appropriate.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_StartupTier_CallCountThreshold, W("TC_StartupTier_CallCountThreshold"), 30, "Number of times a method must be called in the startup tier after which it is promoted to the next tier.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_StartupTier_CallCountingDelayMs, W("TC_StartupTier_CallCountingDelayMs"), 100, "A perpetual delay in milliseconds that is applied call counting in the startup tier and jitting at higher tiers, while there is startup-like activity.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TC_StartupTier_DelaySingleProcMultiplier, W("TC_StartupTier_DelaySingleProcMultiplier"), 10, "Multiplier for TC_StartupTier_CallCountingDelayMs that is applied on a single-processor machine or when the process is affinitized to a single processor.")
 
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Test_CallCounting, W("TieredCompilation_Test_CallCounting"), 1, "Enabled by default (only activates when TieredCompilation is also enabled). If disabled immediately backpatches prestub, and likely prevents any tier1 promotion")
-RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredCompilation_Test_OptimizeTier0, W("TieredCompilation_Test_OptimizeTier0"), 0, "Use optimized codegen (normally used by tier1) in tier0")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_StartupTier_CallCounting, W("TC_StartupTier_CallCounting"), 1, "Enabled by default (only activates when TieredCompilation is also enabled). If disabled immediately backpatches prestub, and likely prevents any promotion to higher tiers")
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_TC_StartupTier_OptimizeCode, W("TC_StartupTier_OptimizeCode"), 0, "Use optimized codegen (normally used by the optimized tier) in the startup tier")
 #endif
 
 ///
