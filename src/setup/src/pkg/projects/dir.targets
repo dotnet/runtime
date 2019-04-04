@@ -33,7 +33,9 @@
     <ItemGroup>
       <WindowsNativeFile Include="@(File)"
                          Condition="'%(File.Extension)' == '.dll' OR '%(File.Extension)' == '.exe'" />
-      <WindowsSymbolFile Include="@(File -> '%(RootDir)%(Directory)%(Filename).pdb')" />
+      <!-- Don't include *.pdb for export libraries -->
+      <WindowsSymbolFile Include="@(File -> '%(RootDir)%(Directory)%(Filename).pdb')"
+                         Condition="'%(File.Extension)' != '.lib'" />
       <!-- Crossgened files (on windows) have both a *.pdb and a *.ni.pdb symbol file.  Include the *.ni.pdb file as well if it exists. -->
       <WindowsSymbolFile Include="@(File -> '%(RootDir)%(Directory)%(Filename).ni.pdb')" />
       <ExistingWindowsSymbolFile Include="@(WindowsSymbolFile)" Condition="Exists('%(Identity)')" />
