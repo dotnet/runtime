@@ -52,6 +52,12 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
+                if (Avx.IsSupported)
+                {
+                    // Validates passing a static member works, using pinning and Load
+                    test.RunClsVarScenario_Load();
+                }
+
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -67,14 +73,38 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local class works
                 test.RunClassLclFldScenario();
 
+                if (Avx.IsSupported)
+                {
+                    // Validates passing the field of a local class works, using pinning and Load
+                    test.RunClassLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
+
+                if (Avx.IsSupported)
+                {
+                    // Validates passing an instance member of a class works, using pinning and Load
+                    test.RunClassFldScenario_Load();
+                }
 
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
+                if (Avx.IsSupported)
+                {
+                    // Validates passing the field of a local struct works, using pinning and Load
+                    test.RunStructLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                if (Avx.IsSupported)
+                {
+                    // Validates passing an instance member of a struct works, using pinning and Load
+                    test.RunStructFldScenario_Load();
+                }
             }
             else
             {
@@ -114,6 +144,21 @@ namespace JIT.HardwareIntrinsics.X86
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
+            }
+
+            public void RunStructFldScenario_Load(SimpleBinaryOpTest__MinInt32 testClass)
+            {
+                fixed (Vector256<Int32>* pFld1 = &_fld1)
+                fixed (Vector256<Int32>* pFld2 = &_fld2)
+                {
+                    var result = Avx2.Min(
+                        Avx.LoadVector256((Int32*)(pFld1)),
+                        Avx.LoadVector256((Int32*)(pFld2))
+                    );
+
+                    Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                    testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
+                }
             }
         }
 
@@ -254,6 +299,23 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar1, _clsVar2, _dataTable.outArrayPtr);
         }
 
+        public void RunClsVarScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
+
+            fixed (Vector256<Int32>* pClsVar1 = &_clsVar1)
+            fixed (Vector256<Int32>* pClsVar2 = &_clsVar2)
+            {
+                var result = Avx2.Min(
+                    Avx.LoadVector256((Int32*)(pClsVar1)),
+                    Avx.LoadVector256((Int32*)(pClsVar2))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_clsVar1, _clsVar2, _dataTable.outArrayPtr);
+            }
+        }
+
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -301,6 +363,25 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
         }
 
+        public void RunClassLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
+
+            var test = new SimpleBinaryOpTest__MinInt32();
+
+            fixed (Vector256<Int32>* pFld1 = &test._fld1)
+            fixed (Vector256<Int32>* pFld2 = &test._fld2)
+            {
+                var result = Avx2.Min(
+                    Avx.LoadVector256((Int32*)(pFld1)),
+                    Avx.LoadVector256((Int32*)(pFld2))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
+            }
+        }
+
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
@@ -309,6 +390,23 @@ namespace JIT.HardwareIntrinsics.X86
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
+
+            fixed (Vector256<Int32>* pFld1 = &_fld1)
+            fixed (Vector256<Int32>* pFld2 = &_fld2)
+            {
+                var result = Avx2.Min(
+                    Avx.LoadVector256((Int32*)(pFld1)),
+                    Avx.LoadVector256((Int32*)(pFld2))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
+            }
         }
 
         public void RunStructLclFldScenario()
@@ -322,12 +420,34 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
         }
 
+        public void RunStructLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
+
+            var test = TestStruct.Create();
+            var result = Avx2.Min(
+                Avx.LoadVector256((Int32*)(&test._fld1)),
+                Avx.LoadVector256((Int32*)(&test._fld2))
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
+        }
+        
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunStructFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()

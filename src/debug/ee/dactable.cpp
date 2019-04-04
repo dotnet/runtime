@@ -13,10 +13,6 @@
 #include "stdafx.h"
 #include <daccess.h>
 
-// This header include will need to be rmeoved as part of GitHub#12170.
-// The only reason it's here now is that this file references the GC-private
-// variable g_HandleTableMap.
-#include "../../gc/objecthandle.h"
 #include "../../vm/virtualcallstub.h"
 #include "../../vm/win32threadpool.h"
 #include "../../vm/hillclimbing.h"
@@ -26,6 +22,10 @@
 #include "../../vm/gcenv.h"
 #include "../../vm/ecall.h"
 #include "../../vm/rcwwalker.h"
+// This header include will need to be rmeoved as part of GitHub#12170.
+// The only reason it's here now is that this file references the GC-private
+// variable g_HandleTableMap.
+#include "../../gc/objecthandle.h"
 
 #ifdef DEBUGGING_SUPPORTED
 

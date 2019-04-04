@@ -423,6 +423,23 @@ private:
     ULONG_PTR _actCookie;
 };
 
+bool TryLoadHostPolicy(StackSString& hostPolicyPath)
+{
+    const WCHAR *hostpolicyName = W("hostpolicy.dll");
+    HMODULE hMod = ::GetModuleHandleW(hostpolicyName);
+    if (hMod != nullptr)
+    {
+        return true;
+    }
+    // Check if a hostpolicy exists and if it does, load it.
+    if (INVALID_FILE_ATTRIBUTES != ::GetFileAttributesW(hostPolicyPath.GetUnicode()))
+    {
+        hMod = ::LoadLibraryExW(hostPolicyPath.GetUnicode(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+    }
+
+    return hMod != nullptr;
+}
+
 bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbose, const bool waitForDebugger, DWORD &exitCode)
 {
 
@@ -497,6 +514,17 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
     }
     nativeDllSearchDirs.Append(W(";"));
     nativeDllSearchDirs.Append(hostEnvironment.m_coreCLRDirectoryPath);
+
+    // Preload mock hostpolicy if requested.
+    StackSString hostpolicyPath;
+    if (WszGetEnvironmentVariable(W("MOCK_HOSTPOLICY"), hostpolicyPath) > 0 && hostpolicyPath.GetCount() > 0)
+    {
+        if (!TryLoadHostPolicy(hostpolicyPath))
+        {
+            log << W("Unable to load requested mock hostpolicy.");
+            return false;
+        }
+    }
 
     // Start the CoreCLR
 

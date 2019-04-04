@@ -77,30 +77,6 @@ inline void Thread::SetThrowable(OBJECTREF pThrowable DEBUG_ARG(ThreadExceptionS
     m_ExceptionState.SetThrowable(pThrowable DEBUG_ARG(stecFlags));
 }
 
-inline void Thread::SetKickOffDomainId(ADID ad)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    m_pKickOffDomainId = ad;
-}
-
-
-inline ADID Thread::GetKickOffDomainId()
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_pKickOffDomainId.m_dwId != 0);
-    return m_pKickOffDomainId;
-}
-
 // get the current notification (if any) from this thread
 inline OBJECTHANDLE Thread::GetThreadCurrNotification()
 {

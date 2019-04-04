@@ -298,6 +298,11 @@ public struct LongStructPack16Explicit
     public long l2;
 }
 
+[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+public struct AutoString
+{
+    public string str;
+}
 
 [StructLayout(LayoutKind.Sequential)]
 public struct HFA

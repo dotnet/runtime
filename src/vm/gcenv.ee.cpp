@@ -61,15 +61,9 @@ VOID GCToEEInterface::AfterGcScanRoots (int condemned, int max_gen,
     CONTRACTL_END;
 
 #ifdef FEATURE_COMINTEROP
-    // Go through all the app domains and for each one detach all the *unmarked* RCWs to prevent
+    // Go through all the only app domain and detach all the *unmarked* RCWs to prevent
     // the RCW cache from resurrecting them.
-    UnsafeAppDomainIterator i(TRUE);
-    i.Init();
-
-    while (i.Next())
-    {
-        i.GetDomain()->DetachRCWs();
-    }
+    ::GetAppDomain()->DetachRCWs();
 #endif // FEATURE_COMINTEROP
 }
 
@@ -1474,24 +1468,21 @@ uint32_t GCToEEInterface::GetDefaultDomainIndex()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return SystemDomain::System()->DefaultDomain()->GetIndex().m_dwIndex;
+    return DefaultADID;
 }
 
 void *GCToEEInterface::GetAppDomainAtIndex(uint32_t appDomainIndex)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ADIndex index(appDomainIndex);
-    return static_cast<void *>(SystemDomain::GetAppDomainAtIndex(index));
+    return ::GetAppDomain();
 }
 
 bool GCToEEInterface::AppDomainCanAccessHandleTable(uint32_t appDomainID)
 {
     LIMITED_METHOD_CONTRACT;
 
-    ADIndex index(appDomainID);
-    AppDomain *pDomain = SystemDomain::GetAppDomainAtIndex(index);
-    return (pDomain != NULL);
+    return appDomainID == DefaultADID;
 }
 
 uint32_t GCToEEInterface::GetIndexOfAppDomainBeingUnloaded()

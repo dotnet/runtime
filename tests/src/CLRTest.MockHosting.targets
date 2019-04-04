@@ -1,0 +1,21 @@
+<!--
+***********************************************************************************************
+CLRTest.MockHosting.targets
+
+This file contains the logic for correctly hooking up a mock hostpolicy to a test.
+
+***********************************************************************************************
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <HostPolicyFileExtension>.so</HostPolicyFileExtension>
+    <HostPolicyFileExtension Condition="'$(TargetsOSX)' =='true'">.dylib</HostPolicyFileExtension>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)/Common/hostpolicymock/CMakeLists.txt" />
+    <!-- %28 decodes to '('. It's needed to keep MSBuild from trying to parse $(pwd) as an MSBuild property -->
+    <CLRTestBashEnvironmentVariable Include="export MOCK_HOSTPOLICY=$%28pwd)/libhostpolicy$(HostPolicyFileExtension)" />
+    <!-- %25 decodes to '%'. It's needed to keep %cd itself from being decoded since we want '%cd%' directly in the script. -->
+    <CLRTestBatchEnvironmentVariable Include="set MOCK_HOSTPOLICY=%25cd%\hostpolicy.dll" />
+  </ItemGroup>
+</Project>

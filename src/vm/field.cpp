@@ -393,8 +393,7 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
     {
         OBJECTREF ref = ObjectToOBJECTREF(*(Object**)pInVal);
 
-        SetObjectReference((OBJECTREF*)pFieldAddress, ref, 
-                            o->GetAppDomain());
+        SetObjectReference((OBJECTREF*)pFieldAddress, ref);
     }
     else if (fieldType == ELEMENT_TYPE_VALUETYPE)
     {
@@ -402,8 +401,7 @@ void    FieldDesc::SetInstanceField(OBJECTREF o, const VOID * pInVal)
         // The Approximate MT is enough to do the copy
         CopyValueClass(pFieldAddress,
                         (void*)pInVal,
-                        LookupFieldTypeHandle().GetMethodTable(),
-                        o->GetAppDomain());
+                        LookupFieldTypeHandle().GetMethodTable());
     }
     else
     {

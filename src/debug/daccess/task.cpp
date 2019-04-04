@@ -854,19 +854,8 @@ ClrDataAppDomain::GetUniqueID(
 
     DAC_ENTER_SUB(m_dac);
     
-    EX_TRY
-    {
-        *id = m_appDomain->GetId().m_dwId;
-        status = S_OK;
-    }
-    EX_CATCH
-    {
-        if (!DacExceptionFilter(GET_EXCEPTION(), m_dac, &status))
-        {
-            EX_RETHROW;
-        }
-    }
-    EX_END_CATCH(SwallowAllExceptions)
+    *id = DefaultADID;
+    status = S_OK;
 
     DAC_LEAVE();
     return status;

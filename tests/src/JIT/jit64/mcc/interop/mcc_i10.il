@@ -13,7 +13,7 @@
   .class MyClass
   {
     .method assembly static pinvokeimpl("native_i1c" as "#1" cdecl) 
-        vararg valuetype MCCTest.VType1 Sum(float32) cil managed preservesig {
+        vararg valuetype MCCTest.VType1 Sum(float64) cil managed preservesig {
     }
 
     .method private static int32 Main(string[] args)
@@ -39,19 +39,19 @@
       ldc.r8     12
       ldc.r8     1
       neg
-      call       vararg valuetype MCCTest.VType1 MCCTest.MyClass::Sum(float32, ..., 
-																		float32, 
-																		float32, 
-																		float32, 
-																		float32, 
-																		float32, 
-																		float32, 
-																		float32, 
-																		float32, 
-																		float32, 
-																		float32, 
-																		float32, 
-																		float32)
+      call       vararg valuetype MCCTest.VType1 MCCTest.MyClass::Sum(float64, ...,
+																		float64,
+																		float64,
+																		float64,
+																		float64,
+																		float64,
+																		float64,
+																		float64,
+																		float64,
+																		float64,
+																		float64,
+																		float64,
+																		float64)
 
       stloc.s    res
 

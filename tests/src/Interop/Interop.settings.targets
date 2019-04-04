@@ -4,11 +4,6 @@
     <InteropCommonDir>$(MSBuildThisFileDirectory)common/</InteropCommonDir>
   </PropertyGroup>
 
-  <!-- Environment properties -->
-  <PropertyGroup>
-    <DefineConstants Condition="'$(ReferenceSystemPrivateCoreLib)' == 'true'">$(DefineConstants);REFERENCING_SYSTEMPRIVATECORELIB</DefineConstants>
-  </PropertyGroup>
-
   <!-- Add the CoreCLRTestLibrary dependency -->
   <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' != 'true')">
     <ProjectReference
@@ -20,7 +15,7 @@
        Compile in relevant files used for testing interop. -->
   <ItemGroup Condition="('$(IgnoreCoreCLRTestLibraryDependency)' != 'true') And ('$(ReferenceSystemPrivateCoreLib)' == 'true')">
     <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\Assertion.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\HostPolicyMock.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\HostPolicyMock.cs" Condition="'$(RequiresMockHostPolicy)' == 'true'"/>
     <Compile Include="$(MSBuildThisFileDirectory)\..\Common\CoreCLRTestLibrary\XPlatformUtils.cs" />
   </ItemGroup>
 

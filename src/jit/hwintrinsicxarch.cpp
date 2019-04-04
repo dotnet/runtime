@@ -48,10 +48,18 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(const char* className, const char* meth
     // TODO-Throughput: replace sequential search by binary search
 
     InstructionSet isa = lookupIsa(className, enclosingClassName);
+    JITDUMP("HW Intrinsic ");
+    if (enclosingClassName != nullptr)
+    {
+        JITDUMP("%s.", enclosingClassName);
+    }
+    JITDUMP("%s.%s: ", className, methodName);
+
     if (isa == InstructionSet_ILLEGAL)
     {
         // There are several platform-agnostic intrinsics (e.g., Vector64) that
         // are not supported in x86, so early return NI_Illegal
+        JITDUMP("Not supported");
         return NI_Illegal;
     }
 
@@ -66,12 +74,14 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(const char* className, const char* meth
 
         if (strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
         {
+            JITDUMP("Supported");
             return hwIntrinsicInfoArray[i].id;
         }
     }
 
     // There are several helper intrinsics that are implemented in managed code
     // Those intrinsics will hit this code path and need to return NI_Illegal
+    JITDUMP("Not supported");
     return NI_Illegal;
 }
 

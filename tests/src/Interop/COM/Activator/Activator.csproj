@@ -8,7 +8,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <OutputType>Exe</OutputType>
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
-
+    <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
     <!-- Test unsupported outside of windows -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsWindows)' != 'true'">true</DisableProjectBuild>
@@ -29,7 +29,6 @@
     <ProjectReference Include="Servers\AssemblyB.csproj" />
     <ProjectReference Include="Servers\AssemblyC.csproj" />
     <ProjectReference Include="Servers\AssemblyContracts.csproj" />
-    <ProjectReference Include="../../../Common/hostpolicymock/CMakeLists.txt" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
