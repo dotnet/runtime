@@ -13,7 +13,7 @@
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19203.1</NETStandardLibraryPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview4-27602-72</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftBclJsonSourcesPackageVersion>4.6.0-preview.19072.2</MicrosoftBclJsonSourcesPackageVersion>
-    <MicrosoftWindowsDesktopAppPackageVersion>3.0.0-preview4-27603-22</MicrosoftWindowsDesktopAppPackageVersion>
+    <MicrosoftWindowsDesktopAppPackageVersion>3.0.0-preview4-27604-2</MicrosoftWindowsDesktopAppPackageVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
