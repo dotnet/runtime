@@ -22,14 +22,18 @@ namespace System.Text.Json.Serialization
         // Support System.Array and other types that don't implement IList
         internal List<object> TempEnumerableValues;
 
-        // For performance, we order the properties by the first usage and this index helps find the right slot quicker.
+        // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         internal int PropertyIndex;
+        internal List<PropertyRef> PropertyRefCache;
+
+        // The current JSON data for a property does not match a given POCO, so ignore the property (recursively for enumerables or object).
         internal bool Drain;
 
         internal void Reset()
         {
             ReturnValue = null;
             JsonClassInfo = null;
+            PropertyRefCache = null;
             PropertyIndex = 0;
             Drain = false;
             ResetProperty();

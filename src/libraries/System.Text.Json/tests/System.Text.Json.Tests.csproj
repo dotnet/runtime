@@ -24,6 +24,7 @@
     <Compile Include="ResizableArray.cs" />
     <Compile Include="Serialization\Array.ReadTests.cs" />
     <Compile Include="Serialization\Array.WriteTests.cs" />
+    <Compile Include="Serialization\CacheTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
     <Compile Include="Serialization\EnumTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />

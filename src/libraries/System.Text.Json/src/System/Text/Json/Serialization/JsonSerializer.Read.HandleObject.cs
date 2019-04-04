@@ -43,6 +43,8 @@ namespace System.Text.Json.Serialization
                 return isLastFrame;
             }
 
+            state.Current.JsonClassInfo.UpdateSortedPropertyCache(ref state.Current);
+
             object value = state.Current.ReturnValue;
 
             if (isLastFrame)

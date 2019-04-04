@@ -43,12 +43,12 @@ namespace System.Text.Json.Serialization
                     ArrayPool<byte>.Shared.Return(tempArray);
                 }
 
-                _property_refs.Add(new PropertyRef(GetKey(propertyNameBytes), jsonInfo));
+                _propertyRefs.Add(new PropertyRef(GetKey(propertyNameBytes), jsonInfo));
             }
             else
             {
                 // A single property or an IEnumerable
-                _property_refs.Add(new PropertyRef(0, jsonInfo));
+                _propertyRefs.Add(new PropertyRef(0, jsonInfo));
             }
         }
 
