@@ -76,8 +76,7 @@ typedef Wrapper<DelegateInfo *, AcquireDelegateInfo, ReleaseDelegateInfo> Delega
 
 /*****************************************************************************************************/
 // Caller has to GC protect Objectrefs being passed in
-DelegateInfo *DelegateInfo::MakeDelegateInfo(AppDomain *pAppDomain,
-                                             OBJECTREF *state,
+DelegateInfo *DelegateInfo::MakeDelegateInfo(OBJECTREF *state,
                                              OBJECTREF *waitEvent,
                                              OBJECTREF *registeredWaitHandle)
 {
@@ -96,14 +95,13 @@ DelegateInfo *DelegateInfo::MakeDelegateInfo(AppDomain *pAppDomain,
         PRECONDITION(state == NULL || IsProtectedByGCFrame(state));
         PRECONDITION(waitEvent == NULL || IsProtectedByGCFrame(waitEvent));
         PRECONDITION(registeredWaitHandle == NULL || IsProtectedByGCFrame(registeredWaitHandle));
-        PRECONDITION(CheckPointer(pAppDomain));
         INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
     
     DelegateInfoHolder delegateInfo = (DelegateInfo*) ThreadpoolMgr::GetRecycledMemory(ThreadpoolMgr::MEMTYPE_DelegateInfo);
-    
-    delegateInfo->m_appDomainId = pAppDomain->GetId();
+
+    AppDomain* pAppDomain = ::GetAppDomain();    
 
     if (state != NULL)
         delegateInfo->m_stateHandle = pAppDomain->CreateHandle(*state);
@@ -362,7 +360,7 @@ VOID NTAPI RegisterWaitForSingleObjectCallback(PVOID delegateInfo, BOOLEAN Timer
 
     RegisterWaitForSingleObjectCallback_Args args = { ((DelegateInfo*) delegateInfo), TimerOrWaitFired };
 
-    ManagedThreadBase::ThreadPool(((DelegateInfo*) delegateInfo)->m_appDomainId, RegisterWaitForSingleObjectCallback_Worker, &args);
+    ManagedThreadBase::ThreadPool(RegisterWaitForSingleObjectCallback_Worker, &args);
 
     // We should have released all locks.
     _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
@@ -403,10 +401,7 @@ FCIMPL5(LPVOID, ThreadPoolNative::CorRegisterWaitForSingleObject,
     Thread* pCurThread = GetThread();
     _ASSERTE( pCurThread);
 
-    AppDomain* appDomain = pCurThread->GetDomain();
-    _ASSERTE(appDomain);
-
-    DelegateInfoHolder delegateInfo = DelegateInfo::MakeDelegateInfo(appDomain,
+    DelegateInfoHolder delegateInfo = DelegateInfo::MakeDelegateInfo(
                                                                 &gc.state,
                                                                 (OBJECTREF *)&gc.waitObject,
                                                                 &gc.registeredWaitObject);
@@ -501,7 +496,6 @@ FCIMPL2(FC_BOOL_RET, ThreadPoolNative::CorUnregisterWait, LPVOID WaitHandle, Obj
     {
         // Create a GCHandle in the WaitInfo, so that it can hold on to the safe handle
         pWaitInfo->ExternalEventSafeHandle = GetAppDomain()->CreateHandle(NULL);
-        pWaitInfo->handleOwningAD = GetAppDomain()->GetId();
 
         // Holder will now release objecthandle in face of exceptions
         wiHolder.Assign(pWaitInfo);
@@ -647,7 +641,7 @@ void __stdcall BindIoCompletionCallbackStubEx(DWORD ErrorCode,
     GCX_COOP();
 
     BindIoCompletion_Args args = {ErrorCode, numBytesTransferred, lpOverlapped};
-    ManagedThreadBase::ThreadPool((ADID)DefaultADID, BindIoCompletionCallBack_Worker, &args);
+    ManagedThreadBase::ThreadPool(BindIoCompletionCallBack_Worker, &args);
 
     LOG((LF_INTEROP, LL_INFO10000, "Leaving IO_CallBackStub thread 0x%x retCode 0x%x, overlap 0x%x\n",  pThread, ErrorCode, lpOverlapped));
         // We should have released all locks.
@@ -798,7 +792,7 @@ VOID WINAPI AppDomainTimerCallback(PVOID callbackState, BOOLEAN timerOrWaitFired
     GCX_COOP();
 
     ThreadpoolMgr::TimerInfoContext* pTimerInfoContext = (ThreadpoolMgr::TimerInfoContext*)callbackState;
-    ManagedThreadBase::ThreadPool(pTimerInfoContext->AppDomainId, AppDomainTimerCallback_Worker, pTimerInfoContext);
+    ManagedThreadBase::ThreadPool(AppDomainTimerCallback_Worker, pTimerInfoContext);
 
     // We should have released all locks.
     _ASSERTE(g_fEEShutDown || pThread->m_dwLockCount == 0 || pThread->m_fRudeAborted);
@@ -815,10 +809,8 @@ HANDLE QCALLTYPE AppDomainTimerNative::CreateAppDomainTimer(INT32 dueTime, INT32
     _ASSERTE(timerId >= 0);
 
     AppDomain* pAppDomain = GetThread()->GetDomain();
-    ADID adid = pAppDomain->GetId();
 
     ThreadpoolMgr::TimerInfoContext* timerContext = new ThreadpoolMgr::TimerInfoContext();
-    timerContext->AppDomainId = adid;
     timerContext->TimerId = timerId;
     NewHolder<ThreadpoolMgr::TimerInfoContext> timerContextHolder(timerContext);
 

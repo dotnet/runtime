@@ -11913,9 +11913,17 @@ BOOL HasLayoutMetadata(Assembly* pAssembly, IMDInternalImport* pInternalImport, 
     {
         *pNLTType = nltAnsi;
     }
-    else if (IsTdUnicodeClass(clFlags) || IsTdAutoClass(clFlags))
+    else if (IsTdUnicodeClass(clFlags))
     {
         *pNLTType = nltUnicode;
+    }
+    else if (IsTdAutoClass(clFlags))
+    {
+#ifdef PLATFORM_WINDOWS
+        *pNLTType = nltUnicode;
+#else
+        *pNLTType = nltAnsi; // We don't have a utf8 charset in metadata yet, but ANSI == UTF-8 off-Windows
+#endif
     }
     else
     {

@@ -37,6 +37,12 @@ class ExactSpellingTest
         public static extern int MarshalPointer_Int_InOut2([In, Out] ref int intValue);
     }
 
+    class Auto
+    {
+        [DllImport("ExactSpellingNative", CharSet = CharSet.Auto, ExactSpelling = false)]
+        public static extern int Marshal_Int_InOut2([In, Out] int intValue);
+    }
+
     public static int Main(string[] args)
     {
         int failures = 0;
@@ -87,6 +93,15 @@ class ExactSpellingTest
         int int8 = intManaged;
         int intRet8 = Ansi.MarshalPointer_Int_InOut2(ref int8);
         failures += Verify(intReturnAnsi, intNative, intRet8, int8);
+
+        Console.WriteLine("Method Auto.Marshal_Int_InOut: ExactSpelling = false. Verify CharSet.Auto behavior per-platform.");
+        int int9 = intManaged;
+        int intRet9 = Auto.Marshal_Int_InOut2(int9);
+#if PLATFORM_WINDOWS
+        failures += Verify(intReturnUnicode, intManaged, intRet9, int9);
+#else
+        failures += Verify(intReturnAnsi, intManaged, intRet9, int9);
+#endif
         
         return 100 + failures;
     }

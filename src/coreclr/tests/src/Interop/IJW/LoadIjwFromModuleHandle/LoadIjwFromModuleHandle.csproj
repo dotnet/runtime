@@ -12,6 +12,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <ReferenceSystemPrivateCoreLib>true</ReferenceSystemPrivateCoreLib>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
 
     <!-- IJW is Windows-only -->
     <!-- Test unsupported outside of windows -->
@@ -43,7 +44,6 @@
   <ItemGroup>
     <ProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />
     <ProjectReference Include="../ijwhostmock/CMakeLists.txt" />
-    <ProjectReference Include="../../../Common/hostpolicymock/CMakeLists.txt" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Interop.settings.targets))\Interop.settings.targets" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

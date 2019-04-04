@@ -17,7 +17,6 @@ include asmconstants.inc
 MIN_SIZE equ 28h
 
 JIT_NEW                 equ     ?JIT_New@@YAPEAVObject@@PEAUCORINFO_CLASS_STRUCT_@@@Z
-Object__DEBUG_SetAppDomain equ ?DEBUG_SetAppDomain@Object@@QEAAXPEAVAppDomain@@@Z
 CopyValueClassUnchecked equ     ?CopyValueClassUnchecked@@YAXPEAX0PEAVMethodTable@@@Z
 JIT_Box                 equ     ?JIT_Box@@YAPEAVObject@@PEAUCORINFO_CLASS_STRUCT_@@PEAX@Z
 g_pStringClass          equ     ?g_pStringClass@@3PEAVMethodTable@@EA
