@@ -5875,6 +5875,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			++sp;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_LDFTN_DYNAMIC) {
+			ERROR_DECL (error);
+			InterpMethod *m = mono_interp_get_imethod (mono_domain_get (), (MonoMethod*) sp [-1].data.p, error);
+			mono_error_assert_ok (error);
+			sp [-1].data.p = m;
+			ip++;
+			MINT_IN_BREAK;
+		}
 
 #define LDARG(datamem, argtype) \
 	sp->data.datamem = (argtype) frame->stack_args [*(guint16 *)(ip + 1)].data.datamem; \
