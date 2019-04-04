@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization
                         Debug.Assert(state.Current.JsonClassInfo != default);
 
                         ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-                        state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, state.Current.PropertyIndex);
+                        state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
                         if (state.Current.JsonPropertyInfo == null)
                         {
                             state.Current.JsonPropertyInfo = s_missingProperty;
