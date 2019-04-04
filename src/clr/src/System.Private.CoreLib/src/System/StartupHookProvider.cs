@@ -50,6 +50,7 @@ namespace System
                 string startupHookPart = startupHookParts[i];
                 if (string.IsNullOrEmpty(startupHookPart))
                 {
+                    // Leave the slot in startupHooks empty (nulls for everything). This is simpler than shifting and resizing the array.
                     continue;
                 }
 
@@ -98,8 +99,6 @@ namespace System
         // "static void Initialize()" method.
         private static void CallStartupHook(StartupHookNameOrPath startupHook)
         {
-            Debug.Assert(startupHook.Path != null || startupHook.AssemblyName != null);
-
             Assembly assembly;
             try
             {
@@ -108,10 +107,15 @@ namespace System
                     Debug.Assert(Path.IsPathFullyQualified(startupHook.Path));
                     assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(startupHook.Path);
                 }
-                else
+                else if (startupHook.AssemblyName != null)
                 {
                     Debug.Assert(startupHook.AssemblyName != null);
                     assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(startupHook.AssemblyName);
+                }
+                else
+                {
+                    // Empty slot - skip it
+                    return;
                 }
             }
             catch (Exception assemblyLoadException)
