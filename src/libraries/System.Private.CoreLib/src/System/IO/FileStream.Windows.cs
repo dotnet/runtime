@@ -49,7 +49,7 @@ namespace System.IO
 
         private static readonly unsafe IOCompletionCallback s_ioCallback = FileStreamCompletionSource.IOCallback;
 
-        private Task? _activeBufferOperation = null;                 // tracks in-progress async ops using the buffer
+        private Task _activeBufferOperation = Task.CompletedTask;    // tracks in-progress async ops using the buffer
         private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
@@ -197,8 +197,7 @@ namespace System.IO
             return secAttrs;
         }
 
-        private bool HasActiveBufferOperation
-            => _activeBufferOperation != null && !_activeBufferOperation.IsCompleted;
+        private bool HasActiveBufferOperation => !_activeBufferOperation.IsCompleted;
 
         public override bool CanSeek => _canSeek;
 
@@ -1589,7 +1588,7 @@ namespace System.IO
             if (CanWrite)
             {
                 return Task.Factory.StartNew(
-                    state => ((FileStream)state).FlushOSBuffer(),
+                    state => ((FileStream)state!).FlushOSBuffer(), // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     this,
                     cancellationToken,
                     TaskCreationOptions.DenyChildAttach,
