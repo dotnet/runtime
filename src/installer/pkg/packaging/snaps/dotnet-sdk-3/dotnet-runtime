@@ -1,6 +1,6 @@
 #!/bin/sh
 
-dotnet_runtime_snaps=$(ls $SNAP/../..|grep dotnet-runtime)
+dotnet_runtime_snaps=$(ls "$SNAP/../.." | grep dotnet-runtime)
 
 for snap in "$dotnet_runtime_snaps"
 do
