@@ -373,7 +373,7 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
     if (pCode == NULL)
     {
 #ifdef FEATURE_TIERED_COMPILATION
-        if (g_pConfig->TieredCompilation_DisableTier0Jit() &&
+        if (!g_pConfig->TieredCompilation_QuickJit() &&
             IsEligibleForTieredCompilation() &&
             pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
             CallCounter::IsEligibleForTier0CallCounting(this))

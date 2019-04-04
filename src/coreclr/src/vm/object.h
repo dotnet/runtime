@@ -265,36 +265,6 @@ class Object
         return GetHeader()->GetSyncBlockIndex();
     }
 
-    ADIndex GetAppDomainIndex();
-
-    // Get app domain of object, or NULL if it is agile
-    AppDomain *GetAppDomain();
-
-#ifndef DACCESS_COMPILE
-    // Set app domain of object to current domain.
-    void SetAppDomain() { WRAPPER_NO_CONTRACT; SetAppDomain(::GetAppDomain()); }
-    BOOL SetAppDomainNoThrow();
-    
-#endif
-
-    // Set app domain of object to given domain - it can only be set once
-    void SetAppDomain(AppDomain *pDomain);
-
-#ifdef _DEBUG
-#ifndef DACCESS_COMPILE
-    // For SO-tolerance contract violation purposes, define these DEBUG_ versions to identify
-    // the codepaths to SetAppDomain that are called only from DEBUG code.
-    void DEBUG_SetAppDomain()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        DEBUG_SetAppDomain(::GetAppDomain());
-    }
-#endif //!DACCESS_COMPILE
-
-    void DEBUG_SetAppDomain(AppDomain *pDomain);
-#endif //_DEBUG
-
     // DO NOT ADD ANY ASSERTS TO THIS METHOD.
     // DO NOT USE THIS METHOD.
     // Yes folks, for better or worse the debugger pokes supposed object addresses 
@@ -527,14 +497,7 @@ class Object
 
 /*
  * Object ref setting routines.  You must use these to do 
- * proper write barrier support, as well as app domain 
- * leak checking.
- *
- * Note that the AppDomain parameter is the app domain affinity
- * of the object containing the field or value class.  It should
- * be NULL if the containing object is app domain agile. Note that
- * you typically get this value by calling obj->GetAppDomain() on 
- * the containing object.
+ * proper write barrier support.
  */
 
 // SetObjectReference sets an OBJECTREF field
@@ -566,9 +529,9 @@ inline void InitValueClass(void *dest, MethodTable *pMT)
 // Initialize value class argument
 void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT);
 
-#define SetObjectReference(_d,_r,_a)        SetObjectReferenceUnchecked(_d, _r)
-#define CopyValueClass(_d,_s,_m,_a)         CopyValueClassUnchecked(_d,_s,_m)       
-#define CopyValueClassArg(_d,_s,_m,_a,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)       
+#define SetObjectReference(_d,_r)        SetObjectReferenceUnchecked(_d, _r)
+#define CopyValueClass(_d,_s,_m)         CopyValueClassUnchecked(_d,_s,_m)       
+#define CopyValueClassArg(_d,_s,_m,_o)   CopyValueClassArgUnchecked(_d,_s,_m,_o)       
 
 #include <pshpack4.h>
 
@@ -590,7 +553,7 @@ class ArrayBase : public Object
     friend class GCHeap;
     friend class CObjectHeader;
     friend class Object;
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap DEBUG_ARG(BOOL bDontSetAppDomain)); 
+    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap); 
     friend OBJECTREF FastAllocatePrimitiveArray(MethodTable* arrayType, DWORD cElements, BOOL bAllocateInLargeHeap);
     friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
@@ -792,7 +755,7 @@ public:
         }
         CONTRACTL_END;
         _ASSERTE(i < GetNumComponents());
-        SetObjectReference(m_Array + i, ref, GetAppDomain());
+        SetObjectReference(m_Array + i, ref);
     }
 
     void ClearAt(SIZE_T i)
@@ -1193,7 +1156,7 @@ public:
         CONTRACTL_END;
 
         INDEBUG(TypeCheck());
-        SetObjectReference(&m_keepalive, keepalive, GetAppDomain());
+        SetObjectReference(&m_keepalive, keepalive);
     }
 
     TypeHandle GetType() {
@@ -1294,7 +1257,7 @@ public:
     void SetKeepAlive(OBJECTREF keepalive)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReference(&m_object, keepalive, GetAppDomain());
+        SetObjectReference(&m_object, keepalive);
     }
 
     MethodDesc *GetMethod() {
@@ -1334,7 +1297,7 @@ public:
     void SetKeepAlive(OBJECTREF keepalive)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReference(&m_object, keepalive, GetAppDomain());
+        SetObjectReference(&m_object, keepalive);
     }
 
     FieldDesc *GetField() {
@@ -1381,7 +1344,7 @@ class ReflectModuleBaseObject : public Object
     void SetAssembly(OBJECTREF assembly)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReference(&m_runtimeAssembly, assembly, GetAppDomain());
+        SetObjectReference(&m_runtimeAssembly, assembly);
     }
 };
 
@@ -1553,7 +1516,7 @@ public:
         _ASSERTE(newThreadStartArg == NULL);
         // Note: this is an unchecked assignment.  We are cleaning out the ThreadStartArg field when 
         // a thread starts so that ADU does not cause problems
-        SetObjectReferenceUnchecked( (OBJECTREF *)&m_ThreadStartArg, newThreadStartArg);
+        SetObjectReference( (OBJECTREF *)&m_ThreadStartArg, newThreadStartArg);
     
     }
 
@@ -1641,7 +1604,7 @@ class AssemblyBaseObject : public Object
     void SetSyncRoot(OBJECTREF pSyncRoot)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReferenceUnchecked(&m_pSyncRoot, pSyncRoot);
+        SetObjectReference(&m_pSyncRoot, pSyncRoot);
     }
 };
 NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive);
@@ -2223,7 +2186,7 @@ public:
     BOOL IsWrapperDelegate() { LIMITED_METHOD_CONTRACT; return _methodPtrAux == NULL; }
     
     OBJECTREF GetTarget() { LIMITED_METHOD_CONTRACT; return _target; }
-    void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target, GetAppDomain()); }
+    void SetTarget(OBJECTREF target) { WRAPPER_NO_CONTRACT; SetObjectReference(&_target, target); }
     static int GetOffsetOfTarget() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _target); }
 
     PCODE GetMethodPtr() { LIMITED_METHOD_CONTRACT; return _methodPtr; }
@@ -2235,14 +2198,14 @@ public:
     static int GetOffsetOfMethodPtrAux() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _methodPtrAux); }
 
     OBJECTREF GetInvocationList() { LIMITED_METHOD_CONTRACT; return _invocationList; }
-    void SetInvocationList(OBJECTREF invocationList) { WRAPPER_NO_CONTRACT; SetObjectReference(&_invocationList, invocationList, GetAppDomain()); }
+    void SetInvocationList(OBJECTREF invocationList) { WRAPPER_NO_CONTRACT; SetObjectReference(&_invocationList, invocationList); }
     static int GetOffsetOfInvocationList() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationList); }
 
     INT_PTR GetInvocationCount() { LIMITED_METHOD_CONTRACT; return _invocationCount; }
     void SetInvocationCount(INT_PTR invocationCount) { LIMITED_METHOD_CONTRACT; _invocationCount = invocationCount; }
     static int GetOffsetOfInvocationCount() { LIMITED_METHOD_CONTRACT; return offsetof(DelegateObject, _invocationCount); }
 
-    void SetMethodBase(OBJECTREF newMethodBase) { LIMITED_METHOD_CONTRACT; SetObjectReference((OBJECTREF*)&_methodBase, newMethodBase, GetAppDomain()); }
+    void SetMethodBase(OBJECTREF newMethodBase) { LIMITED_METHOD_CONTRACT; SetObjectReference((OBJECTREF*)&_methodBase, newMethodBase); }
 
     // README:
     // If you modify the order of these fields, make sure to update the definition in 
@@ -2464,7 +2427,7 @@ public:
     void SetHandleTable(PTRARRAYREF handleTable)
     {
         LIMITED_METHOD_CONTRACT;
-        SetObjectReferenceUnchecked(&m_pSlots, (OBJECTREF)handleTable);
+        SetObjectReference(&m_pSlots, (OBJECTREF)handleTable);
     }
 
     INT32 GetSlotsUsed()
@@ -2569,7 +2532,7 @@ public:
     void SetInnerException(OBJECTREF innerException)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReference((OBJECTREF*)&_innerException, (OBJECTREF)innerException, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&_innerException, (OBJECTREF)innerException);
     }
 
     OBJECTREF GetInnerException()
@@ -2602,7 +2565,7 @@ public:
     void SetMessage(STRINGREF message)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReference((OBJECTREF*)&_message, (OBJECTREF)message, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&_message, (OBJECTREF)message);
     }
 
     STRINGREF GetMessage()
@@ -2614,7 +2577,7 @@ public:
     void SetStackTraceString(STRINGREF stackTraceString)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReference((OBJECTREF*)&_stackTraceString, (OBJECTREF)stackTraceString, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&_stackTraceString, (OBJECTREF)stackTraceString);
     }
 
     STRINGREF GetStackTraceString()
@@ -2632,28 +2595,28 @@ public:
     void SetHelpURL(STRINGREF helpURL)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReference((OBJECTREF*)&_helpURL, (OBJECTREF)helpURL, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&_helpURL, (OBJECTREF)helpURL);
     }
 
     void SetSource(STRINGREF source)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReference((OBJECTREF*)&_source, (OBJECTREF)source, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&_source, (OBJECTREF)source);
     }
 
     void ClearStackTraceForThrow()
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReferenceUnchecked((OBJECTREF*)&_remoteStackTraceString, NULL);
-        SetObjectReferenceUnchecked((OBJECTREF*)&_stackTrace, NULL);
-        SetObjectReferenceUnchecked((OBJECTREF*)&_stackTraceString, NULL);
+        SetObjectReference((OBJECTREF*)&_remoteStackTraceString, NULL);
+        SetObjectReference((OBJECTREF*)&_stackTrace, NULL);
+        SetObjectReference((OBJECTREF*)&_stackTraceString, NULL);
     }
 
     void ClearStackTracePreservingRemoteStackTrace()
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReferenceUnchecked((OBJECTREF*)&_stackTrace, NULL);
-        SetObjectReferenceUnchecked((OBJECTREF*)&_stackTraceString, NULL);
+        SetObjectReference((OBJECTREF*)&_stackTrace, NULL);
+        SetObjectReference((OBJECTREF*)&_stackTraceString, NULL);
     }
 
     // This method will set the reference to the array
@@ -2661,7 +2624,7 @@ public:
     void SetWatsonBucketReference(OBJECTREF oWatsonBucketArray)
     {
         WRAPPER_NO_CONTRACT;
-        SetObjectReference((OBJECTREF*)&_watsonBuckets, (OBJECTREF)oWatsonBucketArray, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&_watsonBuckets, (OBJECTREF)oWatsonBucketArray);
     }
 
     // This method will return the reference to the array
@@ -2901,7 +2864,7 @@ class GCHeapHashObject : public Object
         STATIC_CONTRACT_GC_NOTRIGGER;
         STATIC_CONTRACT_MODE_COOPERATIVE;
 
-        SetObjectReference((OBJECTREF*)&_data, (OBJECTREF)data, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&_data, (OBJECTREF)data);
     }
 
     protected:

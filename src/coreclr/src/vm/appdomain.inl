@@ -31,16 +31,6 @@ inline DomainAssembly* AppDomain::FindDomainAssembly(Assembly* assembly)
     return assembly->FindDomainAssembly(this);    
 };
 
-inline BOOL AppDomain::IsRunningIn(Thread* pThread)
-{
-    WRAPPER_NO_CONTRACT;
-    if (IsDefaultDomain()) 
-        return TRUE;
-    return pThread->IsRunningIn(this, NULL)!=NULL;
-}
-
-
-
 inline void AppDomain::AddMemoryPressure()
 {
     STANDARD_VM_CONTRACT;

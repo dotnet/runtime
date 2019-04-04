@@ -1527,6 +1527,9 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     // These jobs are very fast on Linux/arm64 hardware, so run them daily.
                     addPeriodicTriggerHelper(job, '@daily')
                 }
+                else if (scenario == 'corefx_baseline') {
+                    addPeriodicTriggerHelper(job, '@daily')
+                }
                 else {
                     addPeriodicTriggerHelper(job, '@weekly')
                 }

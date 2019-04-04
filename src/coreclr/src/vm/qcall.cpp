@@ -95,13 +95,6 @@ void QCall::AppDomainHandle::VerifyDomainHandle() const
 
     // System.AppDomain.GetNativeHandle() should ensure that we're not calling through with a null AppDomain pointer.
     _ASSERTE(m_pAppDomain);
-
-    // QCalls should only be made with pointers to the current domain
-    _ASSERTE(GetAppDomain() == m_pAppDomain);
-
-    // We should not have a QCall made on an invalid AppDomain. Once unload a domain, we won't let anyone else
-    // in and any threads that are already in will be unwound.
-    _ASSERTE(SystemDomain::GetAppDomainAtIndex(m_pAppDomain->GetIndex()) != NULL);
 }
 
 #endif // _DEBUG

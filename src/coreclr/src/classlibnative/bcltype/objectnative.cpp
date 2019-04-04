@@ -60,7 +60,7 @@ FCIMPL1(Object*, ObjectNative::GetObjectValue, Object* obj)
     // MethodTable::Box is a cleaner way to copy value class, but it is slower than following code.
     //
     retVal = OBJECTREFToObject(AllocateObject(pMT));
-    CopyValueClass(retVal->GetData(), objRef->GetData(), pMT, retVal->GetAppDomain());
+    CopyValueClass(retVal->GetData(), objRef->GetData(), pMT);
     HELPER_METHOD_FRAME_END();
 
     return(retVal);

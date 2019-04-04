@@ -2289,7 +2289,6 @@ BOOL ThreadpoolMgr::RegisterWaitForSingleObject(PHANDLE phNewWaitObject,
         waitInfo->refCount = 1;     // safe to do this since no wait has yet been queued, so no other thread could be modifying this
         waitInfo->ExternalCompletionEvent = INVALID_HANDLE;
         waitInfo->ExternalEventSafeHandle = NULL;
-        waitInfo->handleOwningAD = (ADID) 0;
 
         waitInfo->timer.startTime = GetTickCount();
         waitInfo->timer.remainingTime = timeout;
@@ -3663,8 +3662,7 @@ LPOVERLAPPED ThreadpoolMgr::CompletionPortDispatchWorkWithinAppDomain(
     Thread* pThread,
     DWORD* pErrorCode, 
     DWORD* pNumBytes,
-    size_t* pKey,
-    DWORD adid)
+    size_t* pKey)
 //
 //This function is called just after dispatching the previous BindIO callback
 //to Managed code. This is a perf optimization to do a quick call to 
@@ -4488,7 +4486,6 @@ BOOL ThreadpoolMgr::CreateTimerQueueTimer(PHANDLE phNewTimer,
     timerInfo->flag = Flag;
     timerInfo->ExternalCompletionEvent = INVALID_HANDLE;
     timerInfo->ExternalEventSafeHandle = NULL;
-    timerInfo->handleOwningAD = (ADID) 0;
 
     BOOL status = QueueUserAPC((PAPCFUNC)InsertNewTimer,TimerThread,(size_t)timerInfo);
     if (FALSE == status)

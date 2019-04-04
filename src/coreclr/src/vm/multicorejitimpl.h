@@ -245,7 +245,6 @@ class MulticoreJitProfilePlayer
 friend class MulticoreJitRecorder;
 
 private:
-    ADID                               m_DomainID;
     ICLRPrivBinder * m_pBinderContext;
     LONG                               m_nMySession;
     unsigned                           m_nStartTime;
@@ -298,7 +297,7 @@ private:
 
 public:
 
-    MulticoreJitProfilePlayer(AppDomain * pDomain, ICLRPrivBinder * pBinderContext, LONG nSession, bool fAppxMode);
+    MulticoreJitProfilePlayer(ICLRPrivBinder * pBinderContext, LONG nSession, bool fAppxMode);
 
     ~MulticoreJitProfilePlayer();
 

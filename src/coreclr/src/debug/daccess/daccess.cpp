@@ -3829,18 +3829,15 @@ ClrDataAccess::GetAppDomainByUniqueID(
 
     EX_TRY
     {
-        AppDomainIterator iter(FALSE);
-
-        status = E_INVALIDARG;
-        while (iter.Next())
+        if (uniqueID != DefaultADID)
         {
-            if (iter.GetDomain()->GetId().m_dwId == uniqueID)
-            {
-                *appDomain = new (nothrow)
-                    ClrDataAppDomain(this, iter.GetDomain());
-                status = *appDomain ? S_OK : E_OUTOFMEMORY;
-                break;
-            }
+            status = E_INVALIDARG;
+        }
+        else
+        {
+            *appDomain = new (nothrow)
+                ClrDataAppDomain(this, AppDomain::GetCurrentDomain());
+            status = *appDomain ? S_OK : E_OUTOFMEMORY;
         }
     }
     EX_CATCH
@@ -8105,7 +8102,7 @@ bool DacHandleWalker::FetchMoreHandles(HANDLESCANPROC callback)
                         if (mask & 1)
                         {
                             dac_handle_table *pTable = hTable;
-                            PTR_AppDomain pDomain = SystemDomain::GetAppDomainAtIndex(ADIndex(pTable->uADIndex));
+                            PTR_AppDomain pDomain = AppDomain::GetCurrentDomain();
                             param.AppDomain = TO_CDADDR(pDomain.GetAddr());
                             param.Type = handleType;
 

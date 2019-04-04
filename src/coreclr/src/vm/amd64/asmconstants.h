@@ -104,10 +104,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__ComMethodFrame
 ASMCONSTANTS_C_ASSERT(OFFSETOF__UMEntryThunk__m_pUMThunkMarshInfo
                     == offsetof(UMEntryThunk, m_pUMThunkMarshInfo));
 
-#define               OFFSETOF__UMEntryThunk__m_dwDomainId   0x20
-ASMCONSTANTS_C_ASSERT(OFFSETOF__UMEntryThunk__m_dwDomainId
-                    == offsetof(UMEntryThunk, m_dwDomainId));
-
 #define               OFFSETOF__UMThunkMarshInfo__m_pILStub         0x00
 ASMCONSTANTS_C_ASSERT(OFFSETOF__UMThunkMarshInfo__m_pILStub
                     == offsetof(UMThunkMarshInfo, m_pILStub));
@@ -146,10 +142,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pFrame
 #define               OFFSETOF__Thread__m_State                     0x8
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_State
                     == offsetof(Thread, m_State));
-
-#define               OFFSETOF__Thread__m_pDomain                   0x18
-ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_pDomain
-                    == offsetof(Thread, m_pDomain));
 
 #define               OFFSETOF__Thread__m_dwLockCount               0x20
 ASMCONSTANTS_C_ASSERT(OFFSETOF__Thread__m_dwLockCount
@@ -261,14 +253,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceInfo_t__m_pMethodTable
 #define               SIZEOF__InterfaceInfo_t   0x8
 ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
                     == sizeof(InterfaceInfo_t));
-
-#define               OFFSETOF__AppDomain__m_dwId   0x8
-ASMCONSTANTS_C_ASSERT(OFFSETOF__AppDomain__m_dwId 
-                    == offsetof(AppDomain, m_dwId));
-
-#define               OFFSETOF__AppDomain__m_sDomainLocalBlock   DBG_FRE(0x10, 0x10)
-ASMCONSTANTS_C_ASSERT(OFFSETOF__AppDomain__m_sDomainLocalBlock
-                    == offsetof(AppDomain, m_sDomainLocalBlock));
 
 #define               OFFSETOF__DomainLocalBlock__m_pModuleSlots   0x8 
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DomainLocalBlock__m_pModuleSlots
