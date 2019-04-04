@@ -88,7 +88,7 @@ namespace System.Globalization
         private const string sortableDateTimePattern = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
         private const string universalSortableDateTimePattern = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
 
-        private Calendar calendar = null!;
+        private Calendar calendar = null!; // initialized in helper called by ctors
 
         private int firstDayOfWeek = -1;
         private int calendarWeekRule = -1;

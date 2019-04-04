@@ -14,7 +14,7 @@ namespace System.Globalization
     /// </summary>
     public class StringInfo
     {
-        private string _str = null!;
+        private string _str = null!; // initialized in helper called by ctors
 
         private int[]? _indexes;
 
