@@ -97,7 +97,8 @@ public:
       "Specifies processor mask for Server GC threads")                                        \
   STRING_CONFIG(GCHeapAffinitizeRanges, "GCHeapAffinitizeRanges",                              \
       "Specifies list of processors for Server GC threads. The format is a comma separated "   \
-      "list of processor numbers or ranges of processor numbers. Example: 1,3,5,7-9,12")       \
+      "list of processor numbers or ranges of processor numbers. On Windows, each entry is "   \
+      "prefixed by the CPU group number. Example: Unix - 1,3,5,7-9,12, Windows - 0:1,1:7-9")   \
   INT_CONFIG(GCHighMemPercent, "GCHighMemPercent", 0,                                          \
       "The percent for GC to consider as high memory")                                         \
   INT_CONFIG(GCProvModeStress, "GCProvModeStress", 0,                                          \
@@ -156,6 +157,6 @@ static void Initialize();
 
 };
 
-bool ParseGCHeapAffinitizeRanges(AffinitySet* config_affinity_set);
+bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* config_affinity_set);
 
 #endif // __GCCONFIG_H__
