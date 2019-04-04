@@ -59,13 +59,23 @@
     <RepoTool Include="dotnet-reportgenerator-globaltool" Version="$(DotNetReportGeneratorGlobalToolPackageVersion)" />
   </ItemGroup>
 
-  <!--
-    Temporarily opt-in as dotnet restore interactive doesn't seem to work.
-    https://github.com/NuGet/Home/issues/7812. Use nuget restore meanwhile.
-  -->
+  <!-- Opt-in target to restore internal tools with interactive authentication. -->
   <Target Name="InitOptionalTools"
           Condition="'$(RestoreInternalTools)' == 'true'"
           AfterTargets="Restore">
+
+    <PropertyGroup>
+      <ToolsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', '.tools', 'CredentialsProvider'))</ToolsDir>
+      <CredentialsProviderScriptUrl Condition="'$(OS)' == 'Windows_NT'">https://raw.githubusercontent.com/Microsoft/artifacts-credprovider/master/helpers/installcredprovider.ps1</CredentialsProviderScriptUrl>
+      <CredentialsProviderScriptUrl Condition="'$(OS)' != 'Windows_NT'">https://raw.githubusercontent.com/Microsoft/artifacts-credprovider/master/helpers/installcredprovider.sh</CredentialsProviderScriptUrl>
+    </PropertyGroup>
+
+    <DownloadFile SourceUrl="$(CredentialsProviderScriptUrl)" DestinationFolder="$(ToolsDir)">
+      <Output TaskParameter="DownloadedFile" ItemName="CredentialsProviderScriptPath" />
+    </DownloadFile>
+
+    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="powershell -ExecutionPolicy ByPass -NoProfile -File &quot;%(CredentialsProviderScriptPath.Identity)&quot;" />
+    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod +x &quot;%(CredentialsProviderScriptPath.Identity)&quot; %26%26 &quot;%(CredentialsProviderScriptPath.Identity)&quot;" />
 
     <PropertyGroup>
       <OptionalToolDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common', 'internal'))</OptionalToolDir>
