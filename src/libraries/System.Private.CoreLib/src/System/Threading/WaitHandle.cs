@@ -265,12 +265,18 @@ namespace System.Threading
             }
         }
 
-        private static int WaitMultiple(ReadOnlySpan<WaitHandle> waitHandles, bool waitAll, int millisecondsTimeout)
+        private static int WaitMultiple(WaitHandle[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
             if (waitHandles == null)
             {
                 throw new ArgumentNullException(nameof(waitHandles), SR.ArgumentNull_Waithandles);
             }
+
+            return WaitMultiple(new ReadOnlySpan<WaitHandle>(waitHandles), waitAll, millisecondsTimeout);
+        }
+
+        private static int WaitMultiple(ReadOnlySpan<WaitHandle> waitHandles, bool waitAll, int millisecondsTimeout)
+        {
             if (waitHandles.Length == 0)
             {
                 //
