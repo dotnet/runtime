@@ -21,6 +21,7 @@
 // ************</IMPORTANT NOTE>*************
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#nullable enable
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -204,7 +205,7 @@ namespace System.Threading.Tasks
             if (first != segment.m_state.m_lastCopy)
             {
                 result = array[first];
-                array[first] = default; // Clear the slot to release the element
+                array[first] = default!; // Clear the slot to release the element  // TODO-NULLABLE-GENERIC
                 segment.m_state.m_first = (first + 1) & (array.Length - 1);
                 return true;
             }
@@ -239,12 +240,12 @@ namespace System.Threading.Tasks
 
             if (first == segment.m_state.m_last)
             {
-                result = default;
+                result = default!; // TODO-NULLABLE-GENERIC
                 return false;
             }
 
             result = array[first];
-            array[first] = default; // Clear the slot to release the element
+            array[first] = default!; // Clear the slot to release the element  // TODO-NULLABLE-GENERIC
             segment.m_state.m_first = (first + 1) & (segment.m_array.Length - 1);
             segment.m_state.m_lastCopy = segment.m_state.m_last; // Refresh m_lastCopy to ensure that m_first has not passed m_lastCopy
 
@@ -269,7 +270,7 @@ namespace System.Threading.Tasks
         /// <remarks>WARNING: This should only be used for debugging purposes.  It is not safe to be used concurrently.</remarks>
         public IEnumerator<T> GetEnumerator()
         {
-            for (Segment segment = m_head; segment != null; segment = segment.m_next)
+            for (Segment? segment = m_head; segment != null; segment = segment.m_next)
             {
                 for (int pt = segment.m_state.m_first;
                     pt != segment.m_state.m_last;
@@ -290,7 +291,7 @@ namespace System.Threading.Tasks
             get
             {
                 int count = 0;
-                for (Segment segment = m_head; segment != null; segment = segment.m_next)
+                for (Segment? segment = m_head; segment != null; segment = segment.m_next)
                 {
                     int arraySize = segment.m_array.Length;
                     int first, last;
@@ -311,7 +312,7 @@ namespace System.Threading.Tasks
         private sealed class Segment
         {
             /// <summary>The next segment in the linked list of segments.</summary>
-            internal Segment m_next;
+            internal Segment? m_next;
             /// <summary>The data stored in this segment.</summary>
             internal readonly T[] m_array;
             /// <summary>Details about the segment.</summary>
