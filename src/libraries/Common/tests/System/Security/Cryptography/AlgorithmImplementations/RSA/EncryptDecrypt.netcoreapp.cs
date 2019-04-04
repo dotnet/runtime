@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
@@ -84,6 +85,43 @@ namespace System.Security.Cryptography.Rsa.Tests
                 actual = new byte[cipherBytes.Length + 1];
                 Assert.True(rsa.TryEncrypt(TestData.HelloBytes, actual, RSAEncryptionPadding.OaepSHA1, out bytesWritten));
                 Assert.Equal(cipherBytes.Length, bytesWritten);
+            }
+        }
+
+        [Fact]
+        public void Decrypt_WrongKey_Pkcs7()
+        {
+            Decrypt_WrongKey(RSAEncryptionPadding.Pkcs1);
+        }
+
+        [Fact]
+        public void Decrypt_WrongKey_OAEP_SHA1()
+        {
+            Decrypt_WrongKey(RSAEncryptionPadding.OaepSHA1);
+        }
+
+        [Fact]
+        public void Decrypt_WrongKey_OAEP_SHA256()
+        {
+            Decrypt_WrongKey(RSAEncryptionPadding.OaepSHA256);
+        }
+
+        private static void Decrypt_WrongKey(RSAEncryptionPadding padding)
+        {
+            using (RSA rsa1 = RSAFactory.Create())
+            using (RSA rsa2 = RSAFactory.Create())
+            {
+                byte[] encrypted = rsa1.Encrypt(TestData.HelloBytes, padding);
+                byte[] buf = new byte[encrypted.Length];
+                buf.AsSpan().Fill(0xCA);
+
+                int bytesWritten = 0;
+
+                Assert.ThrowsAny<CryptographicException>(
+                    () => rsa2.TryDecrypt(encrypted, buf, padding, out bytesWritten));
+
+                Assert.Equal(0, bytesWritten);
+                Assert.True(buf.All(b => b == 0xCA));
             }
         }
     }
