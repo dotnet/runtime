@@ -17,6 +17,7 @@
   <!-- Package names if they are used in more then one location in the repo -->
   <PropertyGroup>
     <MicrosoftDotNetXUnitExtensionsPackage>Microsoft.DotNet.XUnitExtensions</MicrosoftDotNetXUnitExtensionsPackage>
+    <MicrosoftDotNetXUnitConsoleRunnerPackage>microsoft.dotnet.xunitconsolerunner</MicrosoftDotNetXUnitConsoleRunnerPackage>
     <MicrosoftDotNetRemoteExecutorPackage>Microsoft.DotNet.RemoteExecutor</MicrosoftDotNetRemoteExecutorPackage>
     <NETStandardLibraryPackageId>NETStandard.Library</NETStandardLibraryPackageId>
   </PropertyGroup>
@@ -28,6 +29,7 @@
     <MicrosoftDotNetGenAPIPackageVersion>1.0.0-beta.19202.3</MicrosoftDotNetGenAPIPackageVersion>
     <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.19177.11</MicrosoftDotNetGenFacadesPackageVersion>
     <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.0-beta.19202.3</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.5.1-beta.19202.3</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
     <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19202.3</MicrosoftDotNetBuildTasksPackagingPackageVersion>
     <MicrosoftDotNetCoreFxTestingPackageVersion>1.0.0-beta.19202.3</MicrosoftDotNetCoreFxTestingPackageVersion>
     <MicrosoftDotNetRemoteExecutorPackageVersion>1.0.0-beta.19202.3</MicrosoftDotNetRemoteExecutorPackageVersion>

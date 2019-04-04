@@ -62,6 +62,10 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>36bc9d99630b4b544c6f09065dc37c00b4ca90a9</Sha>
     </Dependency>
+    <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.5.1-beta.19202.3">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>36bc9d99630b4b544c6f09065dc37c00b4ca90a9</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="1.0.0-beta.19202.3">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>36bc9d99630b4b544c6f09065dc37c00b4ca90a9</Sha>
