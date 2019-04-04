@@ -12,7 +12,9 @@ namespace System.Text.Json.Serialization
             Info = info;
         }
 
+        // The first 6 bytes are the first part of the name and last 2 bytes are the name's length.
         public readonly ulong Key;
+
         public readonly JsonPropertyInfo Info;
     }
 }
