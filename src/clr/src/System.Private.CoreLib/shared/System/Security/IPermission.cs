@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Security
 {
 #if PROJECTN
@@ -11,8 +12,8 @@ namespace System.Security
     {
         IPermission Copy();
         void Demand();
-        IPermission Intersect(IPermission target);
-        bool IsSubsetOf(IPermission target);
-        IPermission Union(IPermission target);
+        IPermission? Intersect(IPermission? target);
+        bool IsSubsetOf(IPermission? target);
+        IPermission? Union(IPermission? target);
     }
 }
