@@ -4273,10 +4273,8 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
     {
 #if defined(_TARGET_XARCH_)
-        assert(strcmp(namespaceName + 25, ".X86") == 0 || namespaceName[25] == '\0');
         result = HWIntrinsicInfo::lookupId(className, methodName, enclosingClassName);
 #elif defined(_TARGET_ARM64_)
-        assert(strcmp(namespaceName + 25, ".Arm.Arm64") == 0 || namespaceName[25] == '\0');
         result = lookupHWIntrinsic(className, methodName);
 #else // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
 #error Unsupported platform
