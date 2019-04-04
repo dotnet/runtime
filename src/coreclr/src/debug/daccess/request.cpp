@@ -2320,7 +2320,7 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
                 offsetof(AppDomain, m_sDomainLocalBlock);
             appdomainData->pDomainLocalModules = PTR_CDADDR(pAppDomain->m_sDomainLocalBlock.m_pModuleSlots);
 
-            appdomainData->dwId = pAppDomain->GetId().m_dwId;
+            appdomainData->dwId = DefaultADID;
             appdomainData->appDomainStage = (DacpAppDomainDataStage)pAppDomain->m_Stage.Load();
             if (pAppDomain->IsActive())
             {
@@ -3580,12 +3580,7 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
             pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
             pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
             pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.GetHoldingThread());
-
-            if (pBlock->GetAppDomainIndex().m_dwIndex)
-            {
-                pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(
-                        SystemDomain::TestGetAppDomainAtIndex(pBlock->GetAppDomainIndex()));
-            }
+            pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
 
             // TODO: Microsoft, implement the wait list
             pSyncBlockData->AdditionalThreadCount = 0;

@@ -1417,8 +1417,6 @@ typedef DWORD (*ENCODEMODULE_CALLBACK)(LPVOID pModuleContext, CORINFO_MODULE_HAN
 // Define function pointer DEFINETOKEN_CALLBACK
 typedef void (*DEFINETOKEN_CALLBACK)(LPVOID pModuleContext, CORINFO_MODULE_HANDLE moduleHandle, DWORD index, mdTypeRef* token);
 
-typedef HRESULT (*CROSS_DOMAIN_CALLBACK)(LPVOID pArgs);
-
 class ICorCompileInfo
 {
   public:
@@ -1455,13 +1453,6 @@ class ICorCompileInfo
             BOOL fForceDebug,
             BOOL fForceProfiling,
             BOOL fForceInstrument
-            ) = 0;
-
-    // calls pfnCallback in the specified domain
-    virtual HRESULT MakeCrossDomainCallback(
-            ICorCompilationDomain*  pDomain,
-            CROSS_DOMAIN_CALLBACK   pfnCallback,
-            LPVOID                  pArgs
             ) = 0;
 
     // Destroys a compilation domain

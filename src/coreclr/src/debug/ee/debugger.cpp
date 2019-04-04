@@ -1411,22 +1411,6 @@ DebuggerEval::DebuggerEval(CONTEXT * pContext, DebuggerIPCE_FuncEvalInfo * pEval
     // AppDomain ID which is safe to use after the AD is unloaded.  It's only safe to
     // use the DebuggerModule* after we've verified the ADID is still valid (i.e. by entering that domain).
     m_debuggerModule = g_pDebugger->LookupOrCreateModule(pEvalInfo->vmDomainFile);
-
-    if (m_debuggerModule == NULL)
-    {
-        // We have no associated code.
-        _ASSERTE((m_evalType == DB_IPCE_FET_NEW_STRING) || (m_evalType == DB_IPCE_FET_NEW_ARRAY));
-
-        // We'll just do the creation in whatever domain the thread is already in.
-        // It's conceivable that we might want to allow the caller to specify a specific domain, but
-        // ICorDebug provides the debugger with no was to specify the domain.
-        m_appDomainId = m_thread->GetDomain()->GetId();
-    }
-    else
-    {
-        m_appDomainId = m_debuggerModule->GetAppDomain()->GetId();
-    }
-
     m_funcEvalKey = pEvalInfo->funcEvalKey;
     m_argCount = pEvalInfo->argCount;
     m_targetCodeAddr = NULL;
@@ -9357,8 +9341,8 @@ void Debugger::SendCreateAppDomainEvent(AppDomain * pRuntimeAppDomain)
         return;
     }
 
-    STRESS_LOG2(LF_CORDB, LL_INFO10000, "D::SCADE: AppDomain creation:%#08x, %#08x\n",
-            pRuntimeAppDomain, pRuntimeAppDomain->GetId().m_dwId);
+    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::SCADE: AppDomain creation:%#08x\n",
+            pRuntimeAppDomain);
 
 
 
@@ -9412,8 +9396,8 @@ void Debugger::SendExitAppDomainEvent(AppDomain* pRuntimeAppDomain)
     LOG((LF_CORDB, LL_INFO100, "D::EAD: Exit AppDomain 0x%08x.\n",
         pRuntimeAppDomain));
 
-    STRESS_LOG3(LF_CORDB, LL_INFO10000, "D::EAD: AppDomain exit:%#08x, %#08x, %#08x\n",
-            pRuntimeAppDomain, pRuntimeAppDomain->GetId().m_dwId, CORDebuggerAttached());
+    STRESS_LOG2(LF_CORDB, LL_INFO10000, "D::EAD: AppDomain exit:%#08x, %#08x\n",
+            pRuntimeAppDomain, CORDebuggerAttached());
 
     Thread *thread = g_pEEInterface->GetThread();
     // Prevent other Runtime threads from handling events.
@@ -10403,7 +10387,6 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     //
     AppDomain *pDomain = pThread->GetDomain();
     AppDomain *pResultDomain = ((pDE->m_debuggerModule == NULL) ? pDomain : pDE->m_debuggerModule->GetAppDomain());
-    _ASSERTE( pResultDomain->GetId() == pDE->m_appDomainId );
 
     // Send a func eval complete event to the Right Side.
     DebuggerIPCEvent* ipce = m_pRCThread->GetIPCEventSendBuffer();
@@ -11099,9 +11082,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             if(fValid)
             {
                 // Get the appdomain
-                IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
-                ADIndex appDomainIndex = ADIndex((DWORD)(SIZE_T)(mgr->GetHandleContext(objectHandle)));
-                pAppDomain = SystemDomain::GetAppDomainAtIndex(appDomainIndex);
+                pAppDomain = AppDomain::GetCurrentDomain();
 
                 _ASSERTE(pAppDomain != NULL);
             }
@@ -14745,12 +14726,11 @@ HRESULT Debugger::AddAppDomainToIPC(AppDomain *pAppDomain)
     HRESULT hr = S_OK;
     LPCWSTR szName = NULL;
 
-    LOG((LF_CORDB, LL_INFO100, "D::AADTIPC: Executing AADTIPC for AppDomain 0x%08x (0x%x).\n",
-        pAppDomain,
-        pAppDomain->GetId().m_dwId));
+    LOG((LF_CORDB, LL_INFO100, "D::AADTIPC: Executing AADTIPC for AppDomain 0x%08x.\n",
+        pAppDomain));
 
-    STRESS_LOG2(LF_CORDB, LL_INFO10000, "D::AADTIPC: AddAppDomainToIPC:%#08x, %#08x\n",
-            pAppDomain, pAppDomain->GetId().m_dwId);
+    STRESS_LOG1(LF_CORDB, LL_INFO10000, "D::AADTIPC: AddAppDomainToIPC:%#08x\n",
+            pAppDomain);
 
 
 
@@ -14789,9 +14769,6 @@ HRESULT Debugger::AddAppDomainToIPC(AppDomain *pAppDomain)
             hr = E_OUTOFMEMORY;
             goto LErrExit;
         }
-
-        // copy the ID
-        pAppDomainInfo->m_id = pAppDomain->GetId().m_dwId;
 
         // Now set the AppDomainName.
 
@@ -14845,9 +14822,8 @@ HRESULT Debugger::RemoveAppDomainFromIPC (AppDomain *pAppDomain)
 
     HRESULT hr = E_FAIL;
 
-    LOG((LF_CORDB, LL_INFO100, "D::RADFIPC: Executing RADFIPC for AppDomain 0x%08x (0x%x).\n",
-        pAppDomain,
-        pAppDomain->GetId().m_dwId));
+    LOG((LF_CORDB, LL_INFO100, "D::RADFIPC: Executing RADFIPC for AppDomain 0x%08x.\n",
+        pAppDomain));
 
     // if none of the slots are occupied, then simply return.
     if (m_pAppDomainCB->m_iNumOfUsedSlots == 0)
@@ -14989,7 +14965,7 @@ HRESULT Debugger::IterateAppDomainsForPdbs()
 
     while (pADInfo)
     {
-        STRESS_LOG3(LF_CORDB, LL_INFO100, "Iterating over domain %#08x AD:%#08x %ls\n", pADInfo->m_pAppDomain->GetId().m_dwId, pADInfo->m_pAppDomain, pADInfo->m_szAppDomainName);
+        STRESS_LOG2(LF_CORDB, LL_INFO100, "Iterating over domain AD:%#08x %ls\n", pADInfo->m_pAppDomain, pADInfo->m_szAppDomainName);
 
         AppDomain::AssemblyIterator i;
         i = pADInfo->m_pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(kIncludeLoaded | kIncludeLoading | kIncludeExecution));
@@ -15635,7 +15611,7 @@ HRESULT Debugger::SetReference(void *objectRefAddress,
         OBJECTREF *dst = (OBJECTREF*)objectRefAddress;
         OBJECTREF  src = *((OBJECTREF*)&newReference);
 
-        SetObjectReferenceUnchecked(dst, src);
+        SetObjectReference(dst, src);
     }
     else
     {
@@ -15674,7 +15650,7 @@ HRESULT Debugger::SetValueClass(void *oldData, void *newData, DebuggerIPCE_Basic
         return CORDBG_E_CLASS_NOT_LOADED;
 
     // Update the value class.
-    CopyValueClassUnchecked(oldData, newData, th.GetMethodTable());
+    CopyValueClass(oldData, newData, th.GetMethodTable());
 
     // Free the buffer that is holding the new data. This is a buffer that was created in response to a GET_BUFFER
     // message, so we release it with ReleaseRemoteBuffer.

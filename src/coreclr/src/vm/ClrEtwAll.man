@@ -1655,6 +1655,25 @@
                         </UserData>
                     </template>
 
+                    <template tid="R2RGetEntryPoint">
+                        <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="MethodNamespace" inType="win:UnicodeString" />
+                        <data name="MethodName" inType="win:UnicodeString" />
+                        <data name="MethodSignature" inType="win:UnicodeString" />
+                        <data name="EntryPoint" inType="win:UInt64" outType="win:HexInt64" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <UserData>
+                            <R2RGetEntryPoint xmlns="myNs">
+                                <MethodID> %1 </MethodID>
+                                <MethodNamespace> %2 </MethodNamespace>
+                                <MethodName> %3 </MethodName>
+                                <MethodSignature> %4 </MethodSignature>
+                                <EntryPoint> %5 </EntryPoint>
+                                <ClrInstanceID> %6 </ClrInstanceID>
+                            </R2RGetEntryPoint>
+                        </UserData>
+                    </template>
+
                     <template tid="MethodLoadUnloadVerbose">
                         <data name="MethodID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
@@ -2968,6 +2987,11 @@
                            keywords ="JitKeyword NGenKeyword" opcode="MethodLoad"
                            task="CLRMethod"
                            symbol="MethodLoad_V2" message="$(string.RuntimePublisher.MethodLoad_V2EventMessage)"/>
+
+                    <event value="159" version="0" level="win:Verbose" template="R2RGetEntryPoint"
+                           keywords ="NGenKeyword" opcode="MethodLoad"
+                           task="CLRMethod"
+                           symbol="R2RGetEntryPoint" message="$(string.RuntimePublisher.R2RGetEntryPointEventMessage)"/>
 
                     <event value="142" version="0" level="win:Informational"  template="MethodLoadUnload"
                            keywords ="JitKeyword NGenKeyword" opcode="MethodUnload"
@@ -6393,6 +6417,7 @@
                 <string id="RuntimePublisher.MethodLoadEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
                 <string id="RuntimePublisher.MethodLoad_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7" />
                 <string id="RuntimePublisher.MethodLoad_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nClrInstanceID=%7;%nReJITID=%8" />
+                <string id="RuntimePublisher.R2RGetEntryPointEventMessage" value="MethodID=%1;%nMethodName=%2;%nEntryPoint=%3;%nClrInstanceID=%4" />
                 <string id="RuntimePublisher.MethodLoadVerboseEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9" />
                 <string id="RuntimePublisher.MethodLoadVerbose_V1EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10" />
                 <string id="RuntimePublisher.MethodLoadVerbose_V2EventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6;%nMethodNamespace=%7;%nMethodName=%8;%nMethodSignature=%9;%nClrInstanceID=%10;%nReJITID=%11" />

@@ -465,9 +465,9 @@ void DispParamDelegateMarshaler::MarshalNativeToManaged(VARIANT *pSrcVar, OBJECT
     }
 
     if (pDelegate == NULL)
-        SetObjectReference(pDestObj, NULL, GetAppDomain());
+        SetObjectReference(pDestObj, NULL);
     else
-        SetObjectReference(pDestObj, COMDelegate::ConvertToDelegate(pDelegate, m_pDelegateMT), GetAppDomain());
+        SetObjectReference(pDestObj, COMDelegate::ConvertToDelegate(pDelegate, m_pDelegateMT));
 }
 
 void DispParamDelegateMarshaler::MarshalManagedToNative(OBJECTREF *pSrcObj, VARIANT *pDestVar)

@@ -537,7 +537,7 @@ enum EEToManagedCallFlags
     /* thread abort has been requested */                                       \
     if (!(flags & EEToManagedCriticalCall))                                     \
     {                                                                           \
-        TESTHOOKCALL(AppDomainCanBeUnloaded(CURRENT_THREAD->GetDomain()->GetId().m_dwId,FALSE)); \
+        TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID,FALSE));                \
         if (CURRENT_THREAD->IsAbortRequested()) {                               \
             CURRENT_THREAD->HandleThreadAbort();                                \
         }                                                                       \
