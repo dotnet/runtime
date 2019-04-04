@@ -12,7 +12,7 @@ namespace System
 {
     [ClassInterface(ClassInterfaceType.None)]
     [ComVisible(true)]
-    public abstract class Delegate : ICloneable, ISerializable
+    public abstract partial class Delegate : ICloneable, ISerializable
     {
         // _target is the object we will invoke on
         internal object _target;
@@ -82,22 +82,6 @@ namespace System
                              DelegateBindingFlags.StaticMethodOnly |
                              DelegateBindingFlags.OpenDelegateOnly |
                              DelegateBindingFlags.CaselessMatching);
-        }
-
-        // Protect the default constructor so you can't build a delegate
-        private Delegate()
-        {
-        }
-
-        public object DynamicInvoke(params object[] args)
-        {
-            // Theoretically we should set up a LookForMyCaller stack mark here and pass that along.
-            // But to maintain backward compatibility we can't switch to calling an 
-            // internal overload of DynamicInvokeImpl that takes a stack mark.
-            // Fortunately the stack walker skips all the reflection invocation frames including this one.
-            // So this method will never be returned by the stack walker as the caller.
-            // See SystemDomain::CallersMethodCallbackWithStackMark in AppDomain.cpp.
-            return DynamicInvokeImpl(args);
         }
 
         protected virtual object DynamicInvokeImpl(object[] args)
@@ -177,42 +161,6 @@ namespace System
                 return GetType().GetHashCode();
         }
 
-        public static Delegate Combine(Delegate a, Delegate b)
-        {
-            if ((object)a == null) // cast to object for a more efficient test
-                return b;
-
-            return a.CombineImpl(b);
-        }
-
-        public static Delegate Combine(params Delegate[] delegates)
-        {
-            if (delegates == null || delegates.Length == 0)
-                return null;
-
-            Delegate d = delegates[0];
-            for (int i = 1; i < delegates.Length; i++)
-                d = Combine(d, delegates[i]);
-
-            return d;
-        }
-
-        public virtual Delegate[] GetInvocationList()
-        {
-            Delegate[] d = new Delegate[1];
-            d[0] = this;
-            return d;
-        }
-
-        // This routine will return the method
-        public MethodInfo Method
-        {
-            get
-            {
-                return GetMethodImpl();
-            }
-        }
-
         protected virtual MethodInfo GetMethodImpl()
         {
             if ((_methodBase == null) || !(_methodBase is MethodInfo))
@@ -276,63 +224,6 @@ namespace System
             }
         }
 
-
-        public static Delegate Remove(Delegate source, Delegate value)
-        {
-            if (source == null)
-                return null;
-
-            if (value == null)
-                return source;
-
-            if (!InternalEqualTypes(source, value))
-                throw new ArgumentException(SR.Arg_DlgtTypeMis);
-
-            return source.RemoveImpl(value);
-        }
-
-        public static Delegate RemoveAll(Delegate source, Delegate value)
-        {
-            Delegate newDelegate = null;
-
-            do
-            {
-                newDelegate = source;
-                source = Remove(source, value);
-            }
-            while (newDelegate != source);
-
-            return newDelegate;
-        }
-
-        protected virtual Delegate CombineImpl(Delegate d)
-        {
-            throw new MulticastNotSupportedException(SR.Multicast_Combine);
-        }
-
-        protected virtual Delegate RemoveImpl(Delegate d)
-        {
-            return (d.Equals(this)) ? null : this;
-        }
-
-
-        public virtual object Clone()
-        {
-            return MemberwiseClone();
-        }
-
-        // V1 API.
-        public static Delegate CreateDelegate(Type type, object target, string method)
-        {
-            return CreateDelegate(type, target, method, false, true);
-        }
-
-        // V1 API.
-        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase)
-        {
-            return CreateDelegate(type, target, method, ignoreCase, true);
-        }
-
         // V1 API.
         public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
@@ -369,18 +260,6 @@ namespace System
             }
 
             return d;
-        }
-
-        // V1 API.
-        public static Delegate CreateDelegate(Type type, Type target, string method)
-        {
-            return CreateDelegate(type, target, method, false, true);
-        }
-
-        // V1 API.
-        public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase)
-        {
-            return CreateDelegate(type, target, method, ignoreCase, true);
         }
 
         // V1 API.
@@ -463,12 +342,6 @@ namespace System
         }
 
         // V2 API.
-        public static Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method)
-        {
-            return CreateDelegate(type, firstArgument, method, true);
-        }
-
-        // V2 API.
         public static Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
             // Validate the parameters.
@@ -503,43 +376,6 @@ namespace System
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
 
             return d;
-        }
-
-        // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Delegate d1, Delegate d2)
-        {
-            // Test d2 first to allow branch elimination when inlined for null checks (== null)
-            // so it can become a simple test
-            if (d2 is null)
-            {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
-                return (d1 is null) ? true : false;
-            }
-
-            return ReferenceEquals(d2, d1) ? true : d2.Equals((object)d1);
-        }
-
-        public static bool operator !=(Delegate d1, Delegate d2)
-        {
-            // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
-            // so it can become a simple test
-            if (d2 is null)
-            {
-                // return true/false not the test result https://github.com/dotnet/coreclr/issues/914
-                return (d1 is null) ? false : true;
-            }
-
-            return ReferenceEquals(d2, d1) ? false : !d2.Equals(d1);
-        }
-
-        //
-        // Implementation of ISerializable
-        //
-
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         //
@@ -612,12 +448,6 @@ namespace System
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
 
             return d;
-        }
-
-        // V1 API.
-        public static Delegate CreateDelegate(Type type, MethodInfo method)
-        {
-            return CreateDelegate(type, method, true);
         }
 
         internal static Delegate CreateDelegateInternal(RuntimeType rtType, RuntimeMethodInfo rtMethod, object firstArgument, DelegateBindingFlags flags)
