@@ -1146,7 +1146,7 @@ EnCAddedField *EnCAddedField::Allocate(OBJECTREF thisPointer, EnCFieldDesc *pFD)
         IGCHandleManager *mgr = GCHandleUtilities::GetGCHandleManager();
         OBJECTREF pHelperObj = ObjectToOBJECTREF(mgr->GetDependentHandleSecondary(pEntry->m_FieldData));
         OBJECTREF *pHelperRef = (OBJECTREF *)pHelperField->GetAddress( pHelperObj->GetAddress() );
-        SetObjectReference( pHelperRef, obj, pDomain );
+        SetObjectReference( pHelperRef, obj);
 
         GCPROTECT_END ();
     }
@@ -1425,7 +1425,7 @@ EnCAddedStaticField *EnCAddedStaticField::Allocate(EnCFieldDesc *pFD)
         OBJECTREF **pOR = (OBJECTREF**)&pEntry->m_FieldData;
         *pOR = pDomain->AllocateStaticFieldObjRefPtrs(1);
         OBJECTREF obj = AllocateObject(pFD->GetFieldTypeHandleThrowing().GetMethodTable());
-        SetObjectReference( *pOR, obj, pDomain );
+        SetObjectReference( *pOR, obj);
     } 
     else if (pFD->GetFieldType() == ELEMENT_TYPE_CLASS) 
     {

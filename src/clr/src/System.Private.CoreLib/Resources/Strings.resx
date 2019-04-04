@@ -1264,9 +1264,6 @@
   <data name="Argument_InvalidSerializedString" xml:space="preserve">
     <value>The specified serialized string '{0}' is not supported.</value>
   </data>
-  <data name="Argument_InvalidStartupHookSyntax" xml:space="preserve">
-    <value>The syntax of the startup hook variable was invalid.</value>
-  </data>
   <data name="Argument_InvalidStartupHookSignature" xml:space="preserve">
     <value>The signature of the startup hook '{0}' in assembly '{1}' was invalid. It must be 'public static void Initialize()'.</value>
   </data>
@@ -1929,9 +1926,6 @@
   </data>
   <data name="ArrayTypeMismatch_ConstrainedCopy" xml:space="preserve">
     <value>Array.ConstrainedCopy will only work on array types that are provably compatible, without any form of boxing, unboxing, widening, or casting of each array element.  Change the array types (i.e., copy a Derived[] to a Base[]), or use a mitigation strategy in the CER for Array.Copy's less powerful reliability contract, such as cloning the array or throwing away the potentially corrupt destination array.</value>
-  </data>
-  <data name="AssemblyLoadContext_Constructor_CannotInstantiateWhileUnloading" xml:space="preserve">
-    <value>Cannot instantiate AssemblyLoadContext while the current process is exiting.</value>
   </data>
   <data name="AssemblyLoadContext_Unload_CannotUnloadIfNotCollectible" xml:space="preserve">
     <value>Cannot unload non-collectible AssemblyLoadContext.</value>
@@ -2941,9 +2935,6 @@
   <data name="NotSupported_DBNullSerial" xml:space="preserve">
     <value>Only one DBNull instance may exist, and calls to DBNull deserialization methods are not allowed.</value>
   </data>
-  <data name="NotSupported_DelegateMarshalToWrongDomain" xml:space="preserve">
-    <value>Delegates cannot be marshaled from native code into a domain other than their home domain.</value>
-  </data>
   <data name="NotSupported_DynamicAssembly" xml:space="preserve">
     <value>The invoked member is not supported in a dynamic assembly.</value>
   </data>
@@ -3753,5 +3744,11 @@
   </data>
   <data name="Serialization_DangerousDeserialization_Switch" xml:space="preserve">
     <value>An action was attempted during deserialization that could lead to a security vulnerability. The action has been aborted. To allow the action, set the '{0}' AppContext switch to true.</value>
+  </data>
+  <data name="Argument_InvalidStartupHookSimpleAssemblyName" xml:space="preserve">
+    <value>The startup hook simple assembly name '{0}' is invalid. It must be a valid assembly name and it may not contain directory separator, space or comma characters and must not end with '.dll'.</value>
+  </data>
+  <data name="Argument_StartupHookAssemblyLoadFailed" xml:space="preserve">
+    <value>Startup hook assembly '{0}' failed to load. See inner exception for details.</value>
   </data>
 </root>

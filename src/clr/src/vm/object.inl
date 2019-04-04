@@ -22,16 +22,6 @@ inline PTR_VOID Object::UnBox()       // if it is a value class, get the pointer
     return dac_cast<PTR_BYTE>(this) + sizeof(*this);
 }
 
-inline ADIndex Object::GetAppDomainIndex()
-{
-    WRAPPER_NO_CONTRACT;
-#ifndef _DEBUG
-    // ok to cast to AppDomain because we know it's a real AppDomain if it's not shared
-    return (dac_cast<PTR_AppDomain>(GetGCSafeMethodTable()->GetDomain())->GetIndex());
-#endif
-    return GetHeader()->GetAppDomainIndex();
-}
-
 inline DWORD Object::GetNumComponents()
 {
     LIMITED_METHOD_DAC_CONTRACT;

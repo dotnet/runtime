@@ -1188,8 +1188,7 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
             pUMEntryThunk->LoadTimeInit(
                 pManagedTargetForDiagnostics,
                 objhnd,
-                pUMThunkMarshInfo, pInvokeMeth,
-                GetAppDomain()->GetId());
+                pUMThunkMarshInfo, pInvokeMeth);
 
 #ifdef FEATURE_WINDOWSPHONE
             // Perform the runtime initialization lazily for better startup time. Lazy initialization
@@ -1301,9 +1300,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         
         pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
         _ASSERTE(pUMEntryThunk);
-
-        if (pUMEntryThunk->GetDomainId() != GetAppDomain()->GetId())
-            COMPlusThrow(kNotSupportedException, W("NotSupported_DelegateMarshalToWrongDomain"));
 
         GCPROTECT_END();
         return pDelegate;

@@ -221,7 +221,6 @@ public:
     };
 
     typedef struct {
-        ADID AppDomainId;
         INT32 TimerId;
     } TimerInfoContext;
 
@@ -321,7 +320,7 @@ public:
     static BOOL HaveTimerInfosToFlush() { return TimerInfosToBeRecycled != NULL; }
 
 #ifndef FEATURE_PAL    
-    static LPOVERLAPPED CompletionPortDispatchWorkWithinAppDomain(Thread* pThread, DWORD* pErrorCode, DWORD* pNumBytes, size_t* pKey, DWORD adid);
+    static LPOVERLAPPED CompletionPortDispatchWorkWithinAppDomain(Thread* pThread, DWORD* pErrorCode, DWORD* pNumBytes, size_t* pKey);
     static void StoreOverlappedInfoInThread(Thread* pThread, DWORD dwErrorCode, DWORD dwNumBytes, size_t key, LPOVERLAPPED lpOverlapped);
 #endif // !FEATURE_PAL
 
@@ -425,7 +424,6 @@ private:
         CLREvent            InternalCompletionEvent; // only one of InternalCompletion or ExternalCompletion is used
                                                      // but I cant make a union since CLREvent has a non-default constructor
         HANDLE              ExternalCompletionEvent; // they are signalled when all callbacks have completed (refCount=0)
-        ADID                handleOwningAD;
         OBJECTHANDLE        ExternalEventSafeHandle;
 
     } ;
@@ -493,7 +491,6 @@ private:
     }
 
     static VOID ReleaseInfo(OBJECTHANDLE& hndSafeHandle, 
-        ADID& owningAD, 
         HANDLE hndNativeHandle)
     {
         CONTRACTL
@@ -519,26 +516,22 @@ private:
             {
                 EX_TRY
                 {
-                    ENTER_DOMAIN_ID(owningAD);
+                    // Read the GC handle
+                    refSH = (SAFEHANDLEREF) ObjectToOBJECTREF(ObjectFromHandle(hndSafeHandle));
+
+                    // Destroy the GC handle
+                    DestroyHandle(hndSafeHandle);
+
+                    if (refSH != NULL)
                     {
-                        // Read the GC handle
-                        refSH = (SAFEHANDLEREF) ObjectToOBJECTREF(ObjectFromHandle(hndSafeHandle));
+                        SafeHandleHolder h(&refSH);
 
-                        // Destroy the GC handle
-                        DestroyHandle(hndSafeHandle);
-
-                        if (refSH != NULL)
+                        HANDLE hEvent = refSH->GetHandle();
+                        if (hEvent != INVALID_HANDLE_VALUE)
                         {
-                            SafeHandleHolder h(&refSH);
-                            
-                            HANDLE hEvent = refSH->GetHandle();
-                            if (hEvent != INVALID_HANDLE_VALUE)
-                            {
-                                UnsafeSetEvent(hEvent);
-                            }
+                            UnsafeSetEvent(hEvent);
                         }
                     }
-                    END_DOMAIN_TRANSITION;
                 }
                 EX_CATCH
                 {
@@ -549,7 +542,6 @@ private:
             GCPROTECT_END();
             
             hndSafeHandle = NULL;
-            owningAD = (ADID) 0;
         }
 #endif
     }
@@ -574,7 +566,6 @@ private:
         HANDLE ExternalCompletionEvent;     // only one of this is used, but cant do a union since CLREvent has a non-default constructor
         CLREvent InternalCompletionEvent;   // flags indicates which one is being used
         OBJECTHANDLE    ExternalEventSafeHandle;
-        ADID    handleOwningAD;
     } TimerInfo;
 
     static VOID AcquireWaitInfo(WaitInfo *pInfo)
@@ -585,7 +576,6 @@ private:
         WRAPPER_NO_CONTRACT;
 #ifndef DACCESS_COMPILE
         ReleaseInfo(pInfo->ExternalEventSafeHandle, 
-        pInfo->handleOwningAD, 
         pInfo->ExternalCompletionEvent);
 #endif
     }
@@ -597,7 +587,6 @@ private:
         WRAPPER_NO_CONTRACT;
 #ifndef DACCESS_COMPILE
         ReleaseInfo(pInfo->ExternalEventSafeHandle, 
-        pInfo->handleOwningAD, 
         pInfo->ExternalCompletionEvent);
 #endif
     }

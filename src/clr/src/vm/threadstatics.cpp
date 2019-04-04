@@ -423,7 +423,7 @@ void ThreadLocalBlock::AllocateThreadStaticBoxes(MethodTable * pMT)
             PTR_BYTE pStaticBase = pMT->GetGCThreadStaticsBasePointer();
             _ASSERTE(pStaticBase != NULL);
 
-            SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj, GetAppDomain() );
+            SetObjectReference( (OBJECTREF*)(pStaticBase + pField->GetOffset()), obj );
 
             // If we created a pinning handle, save it to the list
             if (handle != NULL)

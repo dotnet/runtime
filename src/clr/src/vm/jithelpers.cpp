@@ -1129,7 +1129,7 @@ HCIMPL3(VOID, JIT_SetFieldObj, Object *obj, FieldDesc *pFD, Object *value)
     }
 
     void * address = pFD->GetAddressGuaranteedInHeap(obj);
-    SetObjectReference((OBJECTREF*)address, ObjectToOBJECTREF(value), GetAppDomain());
+    SetObjectReference((OBJECTREF*)address, ObjectToOBJECTREF(value));
     FC_GC_POLL();
 }
 HCIMPLEND
@@ -1166,7 +1166,7 @@ HCIMPL4(VOID, JIT_GetFieldStruct_Framed, LPVOID retBuff, Object *obj, FieldDesc 
     if (!fRemoted)
     {
         void * pAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
-        CopyValueClass(retBuff, pAddr, pFieldMT, objRef->GetAppDomain());
+        CopyValueClass(retBuff, pAddr, pFieldMT);
     }
 
     HELPER_METHOD_FRAME_END();          // Tear down the frame
@@ -1187,7 +1187,7 @@ HCIMPL4(VOID, JIT_GetFieldStruct, LPVOID retBuff, Object *obj, FieldDesc *pFD, M
     }
 
     void * pAddr = pFD->GetAddressGuaranteedInHeap(obj);
-    CopyValueClass(retBuff, pAddr, pFieldMT, obj->GetAppDomain());
+    CopyValueClass(retBuff, pAddr, pFieldMT);
 }
 HCIMPLEND
 #include <optdefault.h>
@@ -1220,7 +1220,7 @@ HCIMPL4(VOID, JIT_SetFieldStruct_Framed, Object *obj, FieldDesc *pFD, MethodTabl
     if (!fRemoted)
     {
         void * pAddr = pFD->GetAddress(OBJECTREFToObject(objRef));
-        CopyValueClass(pAddr, valuePtr, pFieldMT, objRef->GetAppDomain());
+        CopyValueClass(pAddr, valuePtr, pFieldMT);
     }
 
     HELPER_METHOD_FRAME_END();          // Tear down the frame
@@ -1241,7 +1241,7 @@ HCIMPL4(VOID, JIT_SetFieldStruct, Object *obj, FieldDesc *pFD, MethodTable *pFie
     }
 
     void * pAddr = pFD->GetAddressGuaranteedInHeap(obj);
-    CopyValueClass(pAddr, valuePtr, pFieldMT, obj->GetAppDomain());
+    CopyValueClass(pAddr, valuePtr, pFieldMT);
 }
 HCIMPLEND
 #include <optdefault.h>
@@ -3472,7 +3472,7 @@ HCIMPL3(void, JIT_Stelem_Ref_Portable, PtrArray* array, unsigned idx, Object *va
         }
 
 #ifdef _TARGET_ARM64_
-        SetObjectReferenceUnchecked((OBJECTREF*)&array->m_Array[idx], ObjectToOBJECTREF(val));
+        SetObjectReference((OBJECTREF*)&array->m_Array[idx], ObjectToOBJECTREF(val));
 #else
         // The performance gain of the optimized JIT_Stelem_Ref in
         // jitinterfacex86.cpp is mainly due to calling JIT_WriteBarrier
@@ -4215,7 +4215,7 @@ HCIMPL2(VOID, JIT_GetRuntimeFieldHandle, Object ** destPtr, CORINFO_FIELD_HANDLE
 
     FieldDesc *pField = (FieldDesc *)field;
     SetObjectReference((OBJECTREF*) destPtr,
-                       pField->GetStubFieldInfo(), GetAppDomain());
+                       pField->GetStubFieldInfo());
 
     HELPER_METHOD_FRAME_END();
 }
@@ -4246,7 +4246,7 @@ HCIMPL2(VOID, JIT_GetRuntimeMethodHandle, Object ** destPtr, CORINFO_METHOD_HAND
 
     MethodDesc *pMethod = (MethodDesc *)method;
     SetObjectReference((OBJECTREF*) destPtr,
-                       pMethod->GetStubMethodInfo(), GetAppDomain());
+                       pMethod->GetStubMethodInfo());
 
     HELPER_METHOD_FRAME_END();
 }
@@ -4282,7 +4282,7 @@ HCIMPL2(VOID, JIT_GetRuntimeTypeHandle, Object ** destPtr, CORINFO_CLASS_HANDLE 
         if (typePtr != NULL)
         {
             SetObjectReference((OBJECTREF*) destPtr,
-                               typePtr, GetAppDomain());
+                               typePtr);
             return;
         }
     }
@@ -4290,7 +4290,7 @@ HCIMPL2(VOID, JIT_GetRuntimeTypeHandle, Object ** destPtr, CORINFO_CLASS_HANDLE 
     HELPER_METHOD_FRAME_BEGIN_0();
 
     SetObjectReference((OBJECTREF*) destPtr,
-                       typeHnd.GetManagedClassObject(), GetAppDomain());
+                       typeHnd.GetManagedClassObject());
 
     HELPER_METHOD_FRAME_END();
 }
@@ -4605,7 +4605,7 @@ NOINLINE static void JIT_MonExit_Helper(Object* obj, BYTE* pbLockTaken)
 
     if (pbLockTaken != 0) *pbLockTaken = 0;
 
-    TESTHOOKCALL(AppDomainCanBeUnloaded(GET_THREAD()->GetDomain()->GetId().m_dwId,FALSE));
+    TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID,FALSE));
     
     if (GET_THREAD()->IsAbortRequested()) {
         GET_THREAD()->HandleThreadAbort();
@@ -4630,7 +4630,7 @@ NOINLINE static void JIT_MonExit_Signal(Object* obj)
     if (psb != NULL)
         psb->QuickGetMonitor()->Signal();
 
-    TESTHOOKCALL(AppDomainCanBeUnloaded(GET_THREAD()->GetDomain()->GetId().m_dwId,FALSE));
+    TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID,FALSE));
     
     if (GET_THREAD()->IsAbortRequested()) {
         GET_THREAD()->HandleThreadAbort();
@@ -4768,7 +4768,7 @@ NOINLINE static void JIT_MonExitStatic_Helper(AwareLock *lock, BYTE* pbLockTaken
         COMPlusThrow(kSynchronizationLockException);
     MONHELPER_STATE(*pbLockTaken = 0;)
 
-    TESTHOOKCALL(AppDomainCanBeUnloaded(GET_THREAD()->GetDomain()->GetId().m_dwId,FALSE));
+    TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID,FALSE));
     if (GET_THREAD()->IsAbortRequested()) {
         GET_THREAD()->HandleThreadAbort();
     }
@@ -4786,7 +4786,7 @@ NOINLINE static void JIT_MonExitStatic_Signal(AwareLock *lock)
 
     lock->Signal();
 
-    TESTHOOKCALL(AppDomainCanBeUnloaded(GET_THREAD()->GetDomain()->GetId().m_dwId,FALSE));
+    TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID,FALSE));
     if (GET_THREAD()->IsAbortRequested()) {
         GET_THREAD()->HandleThreadAbort();
     }
@@ -5557,7 +5557,7 @@ HCIMPL3(VOID, JIT_StructWriteBarrier, void *dest, void* src, CORINFO_CLASS_HANDL
     MethodTable *pMT = typeHnd.AsMethodTable();
 
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();    // Set up a frame
-    CopyValueClassUnchecked(dest, src, pMT);
+    CopyValueClass(dest, src, pMT);
     HELPER_METHOD_FRAME_END_POLL();
 
 }

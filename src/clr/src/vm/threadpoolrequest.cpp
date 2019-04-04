@@ -118,27 +118,6 @@ DWORD PerAppDomainTPCountList::FindFirstFreeTpEntry()
     return DwfreeIndex;
 }
 
-
-void PerAppDomainTPCountList::SetAppDomainId(TPIndex index, ADID id)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    IPerAppDomainTPCount * pAdCount = dac_cast<PTR_IPerAppDomainTPCount>(s_appDomainIndexList.Get(index.m_dwIndex-1));
-
-    //SetAppDomainID needs to be called after the PerDomainCount has been 
-    //succesfully allocated for the appdomain.
-    _ASSERTE(pAdCount);
-
-    STRESS_LOG2(LF_THREADPOOL, LL_INFO1000, "SetAppDomainId: index %d id %d\n", index.m_dwIndex, id.m_dwId);
-    pAdCount->SetAppDomainId(id);
-}
-
 //---------------------------------------------------------------------------
 //ResetAppDomainIndex: Resets the  AppDomain ID  and the  per-appdomain 
 //                     thread pool counts
@@ -556,7 +535,6 @@ void ManagedPerAppDomainTPCount::SetAppDomainRequestsActive()
     //
 
     _ASSERTE(m_index.m_dwIndex != UNUSED_THREADPOOL_INDEX);
-    _ASSERTE(m_id.m_dwId != 0);
 
 #ifndef DACCESS_COMPILE
         LONG count = VolatileLoad(&m_numRequestsPending);
@@ -581,7 +559,6 @@ void ManagedPerAppDomainTPCount::ClearAppDomainRequestsActive()
     //the TpIndex is set to unused.
 
     _ASSERTE(m_index.m_dwIndex != UNUSED_THREADPOOL_INDEX);
-    _ASSERTE(m_id.m_dwId != 0);
 
     LONG count = VolatileLoad(&m_numRequestsPending);
     while (count > 0)
@@ -653,32 +630,24 @@ void ManagedPerAppDomainTPCount::DispatchWorkItem(bool* foundWork, bool* wasNotR
         //
 
         {
-            ADID appDomainId(m_id);
-
             // This TPIndex may have been recycled since we chose it for workitem dispatch.
-            // Thus it's possible for the ADID we just read to refer to an AppDomain that's still
-            // being created.  If so, the new AppDomain will necessarily have zero requests
+            // If so, the new AppDomain will necessarily have zero requests
             // pending (because the destruction of the previous AD that used this TPIndex
             // will have reset this object).  We don't want to call into such an AppDomain.
     // TODO: fix this another way!
     //        if (IsRequestPending())
             {
-                ManagedThreadBase::ThreadPool(appDomainId, QueueUserWorkItemManagedCallback, wasNotRecalled);
+                ManagedThreadBase::ThreadPool(QueueUserWorkItemManagedCallback, wasNotRecalled);
             }
 
             if (pThread->IsAbortRequested())
             {
                 // thread was aborted, and may not have had a chance to tell us it has work.
-                ENTER_DOMAIN_ID(m_id)
-                {
-                    ThreadpoolMgr::SetAppDomainRequestsActive();
-                    ThreadpoolMgr::QueueUserWorkItem(NULL,
-                        NULL,
-                        0,
-                        FALSE);
-
-                }
-                END_DOMAIN_TRANSITION;
+                ThreadpoolMgr::SetAppDomainRequestsActive();
+                ThreadpoolMgr::QueueUserWorkItem(NULL,
+                    NULL,
+                    0,
+                    FALSE);
             }
         }
 

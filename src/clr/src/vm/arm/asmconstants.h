@@ -127,9 +127,6 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__FloatArgumentRegisters == sizeof(FloatArgumentRegi
 #define UMEntryThunk__m_pUMThunkMarshInfo 0x0C
 ASMCONSTANTS_C_ASSERT(UMEntryThunk__m_pUMThunkMarshInfo == offsetof(UMEntryThunk, m_pUMThunkMarshInfo))
 
-#define UMEntryThunk__m_dwDomainId 0x10
-ASMCONSTANTS_C_ASSERT(UMEntryThunk__m_dwDomainId == offsetof(UMEntryThunk, m_dwDomainId))
-
 #define UMThunkMarshInfo__m_pILStub 0x00
 ASMCONSTANTS_C_ASSERT(UMThunkMarshInfo__m_pILStub == offsetof(UMThunkMarshInfo, m_pILStub))
 
@@ -179,15 +176,6 @@ ASMCONSTANTS_C_ASSERT(Thread__m_pFrame == offsetof(Thread, m_pFrame));
 #define Thread_m_pFrame Thread__m_pFrame
 
 #ifndef CROSSGEN_COMPILE
-#define               Thread__m_pDomain                 0x10
-ASMCONSTANTS_C_ASSERT(Thread__m_pDomain == offsetof(Thread, m_pDomain));
-
-#define               AppDomain__m_dwId                 0x04
-ASMCONSTANTS_C_ASSERT(AppDomain__m_dwId == offsetof(AppDomain, m_dwId));
-
-#define               AppDomain__m_sDomainLocalBlock                 0x08
-ASMCONSTANTS_C_ASSERT(AppDomain__m_sDomainLocalBlock == offsetof(AppDomain, m_sDomainLocalBlock));
-
 #define               DomainLocalBlock__m_pModuleSlots                 0x04
 ASMCONSTANTS_C_ASSERT(DomainLocalBlock__m_pModuleSlots == offsetof(DomainLocalBlock, m_pModuleSlots));
 
