@@ -4244,7 +4244,7 @@ void Interpreter::StInd_Ref()
     OBJECTREF val = ObjectToOBJECTREF(OpStackGet<Object*>(stackInd1));
     OBJECTREF* ptr = OpStackGet<OBJECTREF*>(stackInd0);
     ThrowOnInvalidPointer(ptr);
-    SetObjectReferenceUnchecked(ptr, val);
+    SetObjectReference(ptr, val);
     m_curStackHt -= 2;
 
 #if INTERP_TRACING
@@ -5555,7 +5555,7 @@ void Interpreter::CpObj()
     else
     {
         OBJECTREF val = *reinterpret_cast<OBJECTREF*>(src);
-        SetObjectReferenceUnchecked(reinterpret_cast<OBJECTREF*>(dest), val);
+        SetObjectReference(reinterpret_cast<OBJECTREF*>(dest), val);
     }
     m_curStackHt -= 2;
     m_ILCodePtr += 5;
@@ -5675,7 +5675,7 @@ void Interpreter::StObj()
         GCX_FORBID();
 
         OBJECTREF val = ObjectToOBJECTREF(OpStackGet<Object*>(valInd));
-        SetObjectReferenceUnchecked(reinterpret_cast<OBJECTREF*>(dest), val);
+        SetObjectReference(reinterpret_cast<OBJECTREF*>(dest), val);
     }
 
     m_curStackHt -= 2;
@@ -5730,7 +5730,7 @@ void Interpreter::InitObj()
     else
     {
         // The ostack entry is an object reference.
-        SetObjectReferenceUnchecked(reinterpret_cast<OBJECTREF*>(dest), NULL);
+        SetObjectReference(reinterpret_cast<OBJECTREF*>(dest), NULL);
     }
     m_curStackHt -= 1;
     m_ILCodePtr += 6;
@@ -7565,7 +7565,7 @@ void Interpreter::StFld()
         else if (valCit == CORINFO_TYPE_CLASS)
         {
             OBJECTREF val = ObjectToOBJECTREF(OpStackGet<Object*>(valInd));
-            SetObjectReferenceUnchecked(reinterpret_cast<OBJECTREF*>(destPtr), val);
+            SetObjectReference(reinterpret_cast<OBJECTREF*>(destPtr), val);
         }
         else
         {
@@ -7831,7 +7831,7 @@ void Interpreter::StSFld()
     }
     else if (valCit == CORINFO_TYPE_CLASS)
     {
-        SetObjectReferenceUnchecked(reinterpret_cast<OBJECTREF*>(dstPtr), ObjectToOBJECTREF(OpStackGet<Object*>(m_curStackHt)));
+        SetObjectReference(reinterpret_cast<OBJECTREF*>(dstPtr), ObjectToOBJECTREF(OpStackGet<Object*>(m_curStackHt)));
     }
     else
     {

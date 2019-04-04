@@ -65,8 +65,6 @@ public:
     static void IKeyValuePairUnboxWorker(OBJECTREF oref, OBJECTREF *porefResult);
 
 private:
-    OBJECTREF GetCCWObject();
-    
     OBJECTREF FindOrCreateObjectRefInternal(IUnknown **ppIncomingIP, MethodTable *pIncomingItfMT, bool bIncomingIPAddRefed);
     VOID      CreateObjectRef(BOOL fDuplicate, OBJECTREF *pComObj, IUnknown **ppIncomingIP, MethodTable *pIncomingItfMT, bool bIncomingIPAddRefed);
     void IReferenceUnbox(IUnknown **ppIncomingIP, OBJECTREF *poref, bool bIncomingIPAddRefed);
@@ -92,10 +90,6 @@ private:
     DWORD                   m_flags;
     
     ICOMInterfaceMarshalerCallback  *m_pCallback;        // Callback to call when we created a RCW or got back RCW from cache
-
-    // For Transparent Proxys
-    ADID                    m_dwServerDomainId;
-    DWORD                   m_dwServerSyncBlockIndex;
 };
 
 

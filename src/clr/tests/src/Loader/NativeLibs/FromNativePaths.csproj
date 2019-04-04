@@ -18,7 +18,21 @@
     <Compile Include="FromNativePaths.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <CLRTestBashEnvironmentVariable Include="export CORE_LIBRARIES=$CORE_LIBRARIES:$%28pwd)/Subdirectory" />
+    <CLRTestBatchEnvironmentVariable Include="set CORE_LIBRARIES=$CORE_LIBRARIES%3B%25cd%\\Subdirectory" />
+  </ItemGroup>
+  <PropertyGroup>
+    <PathEnvSetupCommands>
+    <![CDATA[
+      mkdir Subdirectory
+      ]]>
+    </PathEnvSetupCommands>
+    <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(PathEnvSetupCommands)</BashCLRTestPreCommands>
+    <CLRTestBatchPreCommands>$(BatchCLRTestPreCommands);$(PathEnvSetupCommands)</CLRTestBatchPreCommands>
+  </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

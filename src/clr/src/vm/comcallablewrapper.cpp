@@ -706,8 +706,6 @@ WeakReferenceImpl::WeakReferenceImpl(SimpleComCallWrapper *pSimpleWrapper, Threa
     //
     AppDomain *pDomain = pCurrentThread->GetDomain();
 
-    m_adid = pDomain->GetId();
-
     {
         GCX_COOP_THREAD_EXISTS(pCurrentThread);
         m_ppObject = pDomain->CreateShortWeakHandle(pSimpleWrapper->GetObjectRef());
@@ -843,7 +841,6 @@ HRESULT WeakReferenceImpl::ResolveInternal(Thread *pThread, REFIID riid, IInspec
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(ppvObject));
-        PRECONDITION(AppDomain::GetCurrentDomain()->GetId() == m_adid);
     }
     CONTRACTL_END;
 
@@ -1216,7 +1213,6 @@ void SimpleComCallWrapper::InitNew(OBJECTREF oref, ComCallWrapperCache *pWrapper
     m_pOuter = NULL;
 
     m_pSyncBlock = pSyncBlock;
-    m_dwDomainId = GetAppDomain()->GetId();
     
     if (pMT->IsComObjectType())
         m_flags |= enum_IsExtendsCom;
@@ -2382,12 +2378,9 @@ void ComCallWrapper::Cleanup()
         }
     }
 
-    // get this info before the simple wrapper gets cleaned up.
-    ADID domainId=CURRENT_APPDOMAIN_ID;
     if (m_pSimpleWrapper)
     {
         m_pSimpleWrapper->Cleanup();
-        domainId=m_pSimpleWrapper->GetDomainID();
     }
 
     if (g_fEEStarted || m_pSimpleWrapper->GetOuter() == NULL) 

@@ -3030,9 +3030,9 @@ void CodeGen::genPutArgStkSIMD12(GenTree* treeNode)
 //    The upper half of all AVX registers is volatile, even the callee-save registers.
 //    When a 32-byte SIMD value is live across a call, the register allocator will use this intrinsic
 //    to cause the upper half to be saved.  It will first attempt to find another, unused, callee-save
-//    register.  If such a register cannot be found, it will save it to an available caller-save register.
-//    In that case, this node will be marked GTF_SPILL, which will cause genProduceReg to save the 16 byte
-//    value to the stack.  (Note that if there are no caller-save registers available, the entire 32 byte
+//    register.  If such a register cannot be found, it will save the upper half to the upper half
+//    of the localVar's home location.
+//    (Note that if there are no caller-save registers available, the entire 32 byte
 //    value will be spilled to the stack.)
 //
 void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
@@ -3044,10 +3044,22 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
     regNumber targetReg = simdNode->gtRegNum;
     regNumber op1Reg    = genConsumeReg(op1);
     assert(op1Reg != REG_NA);
-    assert(targetReg != REG_NA);
-    getEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, targetReg, op1Reg, 0x01);
+    if (targetReg != REG_NA)
+    {
+        getEmitter()->emitIns_R_R_I(INS_vextractf128, EA_32BYTE, targetReg, op1Reg, 0x01);
+        genProduceReg(simdNode);
+    }
+    else
+    {
+        // The localVar must have a stack home.
+        unsigned   varNum = op1->AsLclVarCommon()->gtLclNum;
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        assert(varDsc->lvOnFrame);
+        // We want to store this to the upper 16 bytes of this localVar's home.
+        int offs = 16;
 
-    genProduceReg(simdNode);
+        getEmitter()->emitIns_S_R_I(INS_vextractf128, EA_32BYTE, varNum, offs, op1Reg, 0x01);
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -3064,12 +3076,6 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 //    For consistency with genSIMDIntrinsicUpperSave, and to ensure that lclVar nodes always
 //    have their home register, this node has its targetReg on the lclVar child, and its source
 //    on the simdNode.
-//    Regarding spill, please see the note above on genSIMDIntrinsicUpperSave.  If we have spilled
-//    an upper-half to a caller save register, this node will be marked GTF_SPILLED.  However, unlike
-//    most spill scenarios, the saved tree will be different from the restored tree, but the spill
-//    restore logic, which is triggered by the call to genConsumeReg, requires us to provide the
-//    spilled tree (saveNode) in order to perform the reload.  We can easily find that tree,
-//    as it is in the spill descriptor for the register from which it was saved.
 //
 void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 {
@@ -3081,13 +3087,20 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
     regNumber lclVarReg = genConsumeReg(op1);
     assert(lclVarReg != REG_NA);
     assert(srcReg != REG_NA);
-    if (simdNode->gtFlags & GTF_SPILLED)
+    if (srcReg != REG_STK)
     {
-        GenTree* saveNode = regSet.rsSpillDesc[srcReg]->spillTree;
-        noway_assert(saveNode != nullptr && (saveNode->gtRegNum == srcReg));
-        genConsumeReg(saveNode);
+        getEmitter()->emitIns_R_R_I(INS_vinsertf128, EA_32BYTE, lclVarReg, srcReg, 0x01);
     }
-    getEmitter()->emitIns_R_R_I(INS_vinsertf128, EA_32BYTE, lclVarReg, srcReg, 0x01);
+    else
+    {
+        // The localVar must have a stack home.
+        unsigned   varNum = op1->AsLclVarCommon()->gtLclNum;
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        assert(varDsc->lvOnFrame);
+        // We will load this from the upper 16 bytes of this localVar's home.
+        int offs = 16;
+        getEmitter()->emitIns_R_S_I(INS_vinsertf128, EA_32BYTE, lclVarReg, varNum, offs, 0x01);
+    }
 }
 
 //------------------------------------------------------------------------

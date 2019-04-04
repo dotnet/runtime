@@ -1326,7 +1326,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
 
         // If the variant is a byref static array, then remember the property value.
         if (IsVariantByrefStaticArray(pSrcOleVariant))
-            SetObjectReference(&pObjs->ByrefStaticArrayBackupPropVal, pObjs->PropVal, pAppDomain);
+            SetObjectReference(&pObjs->ByrefStaticArrayBackupPropVal, pObjs->PropVal);
     }
 
 
@@ -3299,8 +3299,6 @@ DispatchMemberInfo* DispatchExInfo::CreateDispatchMemberInfoInstance(DISPID Disp
 
     DispatchMemberInfo* pInfo = new DispatchMemberInfo(this, DispID, strMemberName, MemberInfoObj);
 
-    AppDomain* pDomain = SystemDomain::GetAppDomainFromId(m_pSimpleWrapperOwner->GetDomainID(), ADV_CURRENTAD);
-    
     pInfo->SetHandle(GetLoaderAllocator()->AllocateHandle(MemberInfoObj));
     
     RETURN pInfo;

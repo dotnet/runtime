@@ -118,18 +118,18 @@ void Attribute::SetManagedValue(CustomAttributeManagedValues gc, CustomAttribute
 
     if (type == SERIALIZATION_TYPE_TYPE || type == SERIALIZATION_TYPE_STRING)
     {
-        SetObjectReference((OBJECTREF*)&pValue->m_enumOrTypeName, gc.string, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&pValue->m_enumOrTypeName, gc.string);
     }
     else if (type == SERIALIZATION_TYPE_ENUM)
     {
-        SetObjectReference((OBJECTREF*)&pValue->m_type.m_enumName, gc.string, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&pValue->m_type.m_enumName, gc.string);
     }
     else if (type == SERIALIZATION_TYPE_SZARRAY)
     {
-        SetObjectReference((OBJECTREF*)&pValue->m_value, gc.array, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&pValue->m_value, gc.array);
         
         if (pValue->m_type.m_arrayType == SERIALIZATION_TYPE_ENUM)
-            SetObjectReference((OBJECTREF*)&pValue->m_type.m_enumName, gc.string, GetAppDomain());
+            SetObjectReference((OBJECTREF*)&pValue->m_type.m_enumName, gc.string);
     }   
 }
 

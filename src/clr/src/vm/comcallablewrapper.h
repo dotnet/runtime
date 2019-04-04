@@ -997,8 +997,6 @@ private:
     };
     
 public:
-    ADID GetDomainID();
-
     VOID ResetHandleStrength();
     VOID MarkHandleWeak();
 
@@ -1375,9 +1373,7 @@ typedef DPTR(class WeakReferenceImpl) PTR_WeakReferenceImpl;
 class WeakReferenceImpl : public IUnknownCommon<IWeakReference>
 {
 private:
-    ADID                m_adid;                 // AppDomain ID of where this weak reference is created
     OBJECTHANDLE        m_ppObject;             // Short weak global handle points back to the object, 
-                                                // created in domain ID = m_adid
     
 public:
     WeakReferenceImpl(SimpleComCallWrapper *pSimpleWrapper, Thread *pCurrentThread);
@@ -1574,25 +1570,6 @@ public:
     // Connection point helper methods.
     BOOL FindConnectionPoint(REFIID riid, IConnectionPoint **ppCP);
     void EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP);
-
-    ADID GetDomainID()
-    {
-        CONTRACTL
-        {
-            WRAPPER(THROWS);
-            WRAPPER(GC_TRIGGERS);
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        return m_dwDomainId;
-    }
-
-    ADID GetRawDomainID()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_dwDomainId;
-    }
 
     // is the object aggregated by a COM component
     BOOL IsAggregated()
@@ -2077,8 +2054,6 @@ private:
     // Points to uncommonly used data that are dynamically allocated
     VolatilePtr<SimpleCCWAuxData>   m_pAuxData;         
 
-    ADID                            m_dwDomainId;
-
     DWORD                           m_flags;
 
     // This maintains both COM ref and Jupiter ref in 64-bit
@@ -2142,13 +2117,6 @@ inline ComCallWrapper* __stdcall ComCallWrapper::InlineGetWrapper(OBJECTREF* ppO
     pWrap->AddRef();
     
     RETURN pWrap;
-}
-
-inline ADID ComCallWrapper::GetDomainID()
-{
-    WRAPPER_NO_CONTRACT;
-    
-    return GetSimpleWrapper()->GetDomainID();
 }
 
 inline ULONG ComCallWrapper::GetRefCount()

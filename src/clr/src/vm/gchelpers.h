@@ -22,10 +22,8 @@
 
 OBJECTREF AllocateValueSzArray(TypeHandle elementType, INT32 length);
     // The main Array allocation routine, can do multi-dimensional
-OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap = FALSE
-                          DEBUG_ARG(BOOL bDontSetAppDomain = FALSE));
-OBJECTREF AllocateArrayEx(TypeHandle arrayClass, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap = FALSE
-                          DEBUG_ARG(BOOL bDontSetAppDomain = FALSE));
+OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap = FALSE);
+OBJECTREF AllocateArrayEx(TypeHandle arrayClass, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap = FALSE);
     // Optimized verion of above
 OBJECTREF FastAllocatePrimitiveArray(MethodTable* arrayType, DWORD cElements, BOOL bAllocateInLargeHeap = FALSE);
 

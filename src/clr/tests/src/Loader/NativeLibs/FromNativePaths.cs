@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 public class FromNativePaths
@@ -29,17 +30,21 @@ public class FromNativePaths
         // search paths for corerun include the folder where corerun resides. Move the native library there to verify that it
         // can be loaded from there.
 
-        var coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
-        if (string.IsNullOrWhiteSpace(coreRoot))
+        var coreLibraries = Environment.GetEnvironmentVariable("CORE_LIBRARIES");
+        if (string.IsNullOrWhiteSpace(coreLibraries))
         {
-            Console.WriteLine("FromNativePaths failed: CORE_ROOT is not defined.");
+            Console.WriteLine("FromNativePaths failed: CORE_LIBRARIES is not defined.");
             return false;
         }
-        if (!Directory.Exists(coreRoot))
+
+        // In case there were multiple paths in CORE_LIBRARIES, assume that the last one is the one added in the test script.
+        coreLibraries = coreLibraries.Split(new [] {TestLibrary.Utilities.IsWindows ? ';' : ':'}, StringSplitOptions.RemoveEmptyEntries).Last();
+
+        if (!Directory.Exists(coreLibraries))
         {
             Console.WriteLine(
-                "FromNativePaths failed: Directory specified by CORE_ROOT does not exist: {0}",
-                coreRoot);
+                "FromNativePaths failed: Directory specified by CORE_LIBRARIES does not exist: {0}",
+                coreLibraries);
             return false;
         }
 
@@ -51,7 +56,7 @@ public class FromNativePaths
             if (!File.Exists(nativeLibraryName))
                 continue;
 
-            var destinationPath = Path.Combine(coreRoot, nativeLibraryName);
+            var destinationPath = Path.Combine(coreLibraries, nativeLibraryName);
             try
             {
                 var destinationFileInfo = new FileInfo(destinationPath);

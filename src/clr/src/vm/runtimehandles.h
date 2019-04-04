@@ -96,7 +96,7 @@ public:
 
     void SetType(OBJECTREF type)
     {
-        SetObjectReference(&_type, type, GetAppDomain());
+        SetObjectReference(&_type, type);
     }
 
     OBJECTREF _type;
@@ -534,7 +534,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference(&m_returnType, returnType, GetAppDomain());
+        SetObjectReference(&m_returnType, returnType);
     }
 
     void SetKeepAlive(OBJECTREF keepAlive)
@@ -545,7 +545,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference(&m_keepalive, keepAlive, GetAppDomain());
+        SetObjectReference(&m_keepalive, keepAlive);
     }
 
     void SetDeclaringType(REFLECTCLASSBASEREF declaringType)
@@ -556,7 +556,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference((OBJECTREF*)&m_declaringType, (OBJECTREF)declaringType, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&m_declaringType, (OBJECTREF)declaringType);
     }
 
     void SetArgumentArray(PTRARRAYREF ptrArrayarguments)
@@ -567,7 +567,7 @@ private:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        SetObjectReference((OBJECTREF*)&m_PtrArrayarguments, (OBJECTREF)ptrArrayarguments, GetAppDomain());
+        SetObjectReference((OBJECTREF*)&m_PtrArrayarguments, (OBJECTREF)ptrArrayarguments);
     }
         
     void SetArgument(INT32 argument, OBJECTREF argumentType)

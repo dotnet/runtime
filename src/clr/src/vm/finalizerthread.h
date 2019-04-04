@@ -46,10 +46,9 @@ class FinalizerThread
     static void ProcessProfilerAttachIfNecessary(ULONGLONG * pui64TimestampLastCheckedEventMs);
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
-    static Object * DoOneFinalization(Object* fobj, Thread* pThread, int bitToCheck, bool *pbTerminate);
+    static void DoOneFinalization(Object* fobj, Thread* pThread);
 
-    static void FinalizeAllObjects_Wrapper(void *ptr);
-    static Object * FinalizeAllObjects(Object* fobj, int bitToCheck);
+    static void FinalizeAllObjects(int bitToCheck);
 
 public:
     static Thread* GetFinalizerThread() 
