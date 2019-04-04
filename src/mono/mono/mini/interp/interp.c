@@ -2814,6 +2814,14 @@ static int opcode_counts[512];
 #define MINT_IN_DEFAULT default:
 #endif
 
+#define INIT_VTABLE(vtable) do { \
+		if (G_UNLIKELY (!(vtable)->initialized)) { \
+			mono_runtime_class_init_full ((vtable), error); \
+			if (!mono_error_ok (error)) \
+				THROW_EX (mono_error_convert_to_exception (error), ip); \
+		} \
+	} while (0);
+
 /*
  * If EXIT_AT_FINALLY is not -1, exit after exiting the finally clause with that index.
  * If BASE_FRAME is not NULL, copy arguments/locals from BASE_FRAME.
@@ -4810,11 +4818,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 /* We init class here to preserve cctor order */
 #define LDSFLD(datamem, fieldtype) { \
 	MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)]; \
-	if (G_UNLIKELY (!vtable->initialized)) { \
-		mono_runtime_class_init_full (vtable, error); \
-		if (!mono_error_ok (error)) \
-			THROW_EX (mono_error_convert_to_exception (error), ip); \
-	} \
+	INIT_VTABLE (vtable); \
 	sp[0].data.datamem = * (fieldtype *)(imethod->data_items [* (guint16 *)(ip + 2)]) ; \
 	ip += 3; \
 	sp++; \
@@ -4841,26 +4845,24 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLD_VT) {
-			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (imethod->domain, field);
-			EXCEPTION_CHECKPOINT;
-			int size = READ32 (ip + 2);
-			ip += 4;
-
+			// FIXME This is still 30 times slower than JIT. Could we optimize it even further ?
+			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)];
+			gpointer addr = imethod->data_items [*(guint16*)(ip + 2)];
+			MonoClass *klass = (MonoClass*) imethod->data_items [*(guint16*)(ip + 3)];
+			INIT_VTABLE (vtable);
 			sp->data.p = vt_sp;
+			mono_value_copy_internal (vt_sp, addr, klass);
+
+			int size = mono_class_value_size (klass, NULL);
 			vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
-			stackval_from_data (field->type, sp, addr, FALSE);
+			ip += 4;
 			++sp;
 			MINT_IN_BREAK;
 		}
 
 #define STSFLD(datamem, fieldtype) { \
 	MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)]; \
-	if (G_UNLIKELY (!vtable->initialized)) { \
-		mono_runtime_class_init_full (vtable, error); \
-		if (!mono_error_ok (error)) \
-			THROW_EX (mono_error_convert_to_exception (error), ip); \
-	} \
+	INIT_VTABLE (vtable); \
 	sp --; \
 	* (fieldtype *)(imethod->data_items [* (guint16 *)(ip + 2)]) = sp[0].data.datamem; \
 	ip += 3; \
@@ -4887,16 +4889,16 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STSFLD_VT) {
-			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (imethod->domain, field);
-			EXCEPTION_CHECKPOINT;
-			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
-			i32 = mono_class_value_size (klass, NULL);
-			ip += 2;
+			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)];
+			gpointer addr = imethod->data_items [*(guint16*)(ip + 2)];
+			MonoClass *klass = (MonoClass*) imethod->data_items [*(guint16*)(ip + 3)];
+			INIT_VTABLE (vtable);
+			mono_value_copy_internal (addr, sp [-1].data.vt, klass);
 
+			int size = mono_class_value_size (klass, NULL);
+			vt_sp -= ALIGN_TO (size, MINT_VT_ALIGNMENT);
+			ip += 4;
 			--sp;
-			stackval_to_data (field->type, sp, addr, FALSE);
-			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STOBJ_VT) {
