@@ -2,7 +2,7 @@
 
 dotnet_runtime_snaps=$(ls $SNAP/../..|grep dotnet-runtime)
 
-for snap in $dotnet_runtime_snaps
+for snap in "$dotnet_runtime_snaps"
 do
   runtime_dir=$(realpath $SNAP/../../$snap/current/shared/Microsoft.NETCore.App)
   if [ -d "$runtime_dir" ]; then
