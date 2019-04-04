@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <functional>
 
 class coreclr_property_bag_t;
 
