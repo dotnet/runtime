@@ -34086,7 +34086,9 @@ HRESULT GCHeap::Initialize()
 
 #ifdef MULTIPLE_HEAPS
     AffinitySet config_affinity_set;
-    if (!ParseGCHeapAffinitizeRanges(&config_affinity_set))
+    GCConfigStringHolder cpu_index_ranges_holder(GCConfig::GetGCHeapAffinitizeRanges());
+
+    if (!ParseGCHeapAffinitizeRanges(cpu_index_ranges_holder.Get(), &config_affinity_set))
     {
         return CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT;
     }

@@ -912,6 +912,55 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     return success;
 }
 
+// Parse the confing string describing affinitization ranges and update the passed in affinitySet accordingly
+// Parameters:
+//  config_string - string describing the affinitization range, platform specific
+//  start_index  - the range start index extracted from the config_string
+//  end_index    - the range end index extracted from the config_string, equal to the start_index if only an index and not a range was passed in
+// Return:
+//  true if the configString was successfully parsed, false if it was not correct
+bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_string, size_t* start_index, size_t* end_index)
+{
+    size_t index_offset = 0;
+
+    char* number_end;
+    size_t group_number = strtoul(*config_string, &number_end, 10);
+
+    if ((number_end == *config_string) || (*number_end != ':'))
+    {
+        // No number or no colon after the number found, invalid format
+        return false;
+    }
+
+    WORD group_begin;
+    WORD group_size;
+    if (!CPUGroupInfo::GetCPUGroupRange((WORD)group_number, &group_begin, &group_size))
+    {
+        // group number out of range
+        return false;
+    }
+
+    index_offset = group_begin;
+    *config_string = number_end + 1;
+
+    size_t start, end;
+    if (!ParseIndexOrRange(config_string, &start, &end))
+    {
+        return false;
+    }
+
+    if ((start >= group_size) || (end >= group_size))
+    {
+        // Invalid CPU index values or range
+        return false;
+    }
+
+    *start_index = index_offset + start;
+    *end_index = index_offset + end;
+
+    return true;
+}
+
 // Initialize the critical section
 void CLRCriticalSection::Initialize()
 {

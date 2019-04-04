@@ -1300,6 +1300,55 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     return success;
 }
 
+// Parse the confing string describing affinitization ranges and update the passed in affinitySet accordingly
+// Parameters:
+//  config_string - string describing the affinitization range, platform specific
+//  start_index  - the range start index extracted from the config_string
+//  end_index    - the range end index extracted from the config_string, equal to the start_index if only an index and not a range was passed in
+// Return:
+//  true if the configString was successfully parsed, false if it was not correct
+bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_string, size_t* start_index, size_t* end_index)
+{
+    assert(g_fEnableGCCPUGroups);
+
+    char* number_end;
+    size_t group_number = strtoul(*config_string, &number_end, 10);
+
+    if ((number_end == *config_string) || (*number_end != ':'))
+    {
+        // No number or no colon after the number found, invalid format
+        return false;
+    }
+
+    if (group_number >= g_nGroups)
+    {
+        // Group number out of range
+        return false;
+    }
+
+    *config_string = number_end + 1;
+
+    size_t start, end;
+    if (!ParseIndexOrRange(config_string, &start, &end))
+    {
+        return false;
+    }
+
+    uint16_t group_processor_count = g_CPUGroupInfoArray[group_number].nr_active;
+    if ((start >= group_processor_count) || (end >= group_processor_count))
+    {
+        // Invalid CPU index values or range
+        return false;
+    }
+
+    uint16_t group_begin = g_CPUGroupInfoArray[group_number].begin;
+
+    *start_index = group_begin + start;
+    *end_index = group_begin + end;
+
+    return true;
+}
+
 // Parameters of the GC thread stub
 struct GCThreadStubParam
 {
