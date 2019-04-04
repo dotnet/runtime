@@ -488,11 +488,21 @@ NOHANDLES(ICALL(MATH_6, "Cosh", ves_icall_System_Math_Cosh))
 NOHANDLES(ICALL(MATH_7, "Exp", ves_icall_System_Math_Exp))
 NOHANDLES(ICALL(MATH_7a, "FMod", ves_icall_System_Math_FMod))
 NOHANDLES(ICALL(MATH_8, "Floor", ves_icall_System_Math_Floor))
+#if ENABLE_NETCORE
+NOHANDLES(ICALL(MATH_22, "FusedMultiplyAdd", ves_icall_System_Math_FusedMultiplyAdd))
+NOHANDLES(ICALL(MATH_23, "ILogB", ves_icall_System_Math_ILogB))
+#endif
 NOHANDLES(ICALL(MATH_9, "Log", ves_icall_System_Math_Log))
 NOHANDLES(ICALL(MATH_10, "Log10", ves_icall_System_Math_Log10))
+#if ENABLE_NETCORE
+NOHANDLES(ICALL(MATH_24, "Log2", ves_icall_System_Math_Log2))
+#endif
 NOHANDLES(ICALL(MATH_10a, "ModF", ves_icall_System_Math_ModF))
 NOHANDLES(ICALL(MATH_11, "Pow", ves_icall_System_Math_Pow))
 NOHANDLES(ICALL(MATH_12, "Round", ves_icall_System_Math_Round))
+#if ENABLE_NETCORE
+NOHANDLES(ICALL(MATH_25, "ScaleB", ves_icall_System_Math_ScaleB))
+#endif
 NOHANDLES(ICALL(MATH_14, "Sin", ves_icall_System_Math_Sin))
 NOHANDLES(ICALL(MATH_15, "Sinh", ves_icall_System_Math_Sinh))
 NOHANDLES(ICALL(MATH_16, "Sqrt", ves_icall_System_Math_Sqrt))
@@ -514,10 +524,20 @@ NOHANDLES(ICALL(MATHF_11, "Cosh", ves_icall_System_MathF_Cosh))
 NOHANDLES(ICALL(MATHF_12, "Exp", ves_icall_System_MathF_Exp))
 NOHANDLES(ICALL(MATHF_22, "FMod", ves_icall_System_MathF_FMod))
 NOHANDLES(ICALL(MATHF_13, "Floor", ves_icall_System_MathF_Floor))
+#if ENABLE_NETCORE
+NOHANDLES(ICALL(MATHF_24, "FusedMultiplyAdd", ves_icall_System_MathF_FusedMultiplyAdd))
+NOHANDLES(ICALL(MATHF_25, "ILogB", ves_icall_System_MathF_ILogB))
+#endif
 NOHANDLES(ICALL(MATHF_14, "Log", ves_icall_System_MathF_Log))
 NOHANDLES(ICALL(MATHF_15, "Log10", ves_icall_System_MathF_Log10))
+#if ENABLE_NETCORE
+NOHANDLES(ICALL(MATHF_26, "Log2", ves_icall_System_MathF_Log2))
+#endif
 NOHANDLES(ICALL(MATHF_23, "ModF(single,single*)", ves_icall_System_MathF_ModF))
 NOHANDLES(ICALL(MATHF_16, "Pow", ves_icall_System_MathF_Pow))
+#if ENABLE_NETCORE
+NOHANDLES(ICALL(MATHF_27, "ScaleB", ves_icall_System_MathF_ScaleB))
+#endif
 NOHANDLES(ICALL(MATHF_17, "Sin", ves_icall_System_MathF_Sin))
 NOHANDLES(ICALL(MATHF_18, "Sinh", ves_icall_System_MathF_Sinh))
 NOHANDLES(ICALL(MATHF_19, "Sqrt", ves_icall_System_MathF_Sqrt))

@@ -145,6 +145,16 @@ ICALL_EXPORT float ves_icall_System_MathF_Sqrt (float);
 ICALL_EXPORT float ves_icall_System_MathF_Tan (float);
 ICALL_EXPORT float ves_icall_System_MathF_Tanh (float);
 ICALL_EXPORT float ves_icall_System_Math_Abs_single (float);
+#if ENABLE_NETCORE
+ICALL_EXPORT gint32 ves_icall_System_Math_ILogB (double);
+ICALL_EXPORT double ves_icall_System_Math_Log2 (double);
+ICALL_EXPORT double ves_icall_System_Math_ScaleB (double, gint32);
+ICALL_EXPORT double ves_icall_System_Math_FusedMultiplyAdd (double, double, double);
+ICALL_EXPORT gint32 ves_icall_System_MathF_ILogB (float);
+ICALL_EXPORT float ves_icall_System_MathF_Log2 (float);
+ICALL_EXPORT float ves_icall_System_MathF_ScaleB (float, gint32);
+ICALL_EXPORT float ves_icall_System_MathF_FusedMultiplyAdd (float, float, float);
+#endif
 ICALL_EXPORT gint ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetOffsetToStringData (void);
 ICALL_EXPORT gint32 ves_icall_System_Buffer_ByteLengthInternal (MonoArray*);
 ICALL_EXPORT gint32 ves_icall_System_Environment_get_ProcessorCount (void);
