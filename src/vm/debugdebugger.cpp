@@ -384,68 +384,55 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
 
         // Allocate memory for the MethodInfo objects
         BASEARRAYREF methodInfoArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgMethodHandle), (OBJECTREF)methodInfoArray,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgMethodHandle), (OBJECTREF)methodInfoArray);
 
         // Allocate memory for the Offsets 
         OBJECTREF offsets = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiOffset), (OBJECTREF)offsets,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiOffset), (OBJECTREF)offsets);
 
         // Allocate memory for the ILOffsets 
         OBJECTREF ilOffsets = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiILOffset), (OBJECTREF)ilOffsets,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiILOffset), (OBJECTREF)ilOffsets);
 
         // Allocate memory for the array of assembly file names
         PTRARRAYREF assemblyPathArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pStringClass);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssemblyPath), (OBJECTREF)assemblyPathArray,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssemblyPath), (OBJECTREF)assemblyPathArray);
 
         // Allocate memory for the array of assemblies
         PTRARRAYREF assemblyArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pObjectClass);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssembly), (OBJECTREF)assemblyArray,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgAssembly), (OBJECTREF)assemblyArray);
 
         // Allocate memory for the LoadedPeAddress
         BASEARRAYREF loadedPeAddressArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgLoadedPeAddress), (OBJECTREF)loadedPeAddressArray,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgLoadedPeAddress), (OBJECTREF)loadedPeAddressArray);
 
         // Allocate memory for the LoadedPeSize
         OBJECTREF loadedPeSizeArray = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLoadedPeSize), (OBJECTREF)loadedPeSizeArray,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLoadedPeSize), (OBJECTREF)loadedPeSizeArray);
 
         // Allocate memory for the InMemoryPdbAddress
         BASEARRAYREF inMemoryPdbAddressArray = (BASEARRAYREF) AllocatePrimitiveArray(ELEMENT_TYPE_I, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgInMemoryPdbAddress), (OBJECTREF)inMemoryPdbAddressArray,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgInMemoryPdbAddress), (OBJECTREF)inMemoryPdbAddressArray);
 
         // Allocate memory for the InMemoryPdbSize
         OBJECTREF inMemoryPdbSizeArray = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiInMemoryPdbSize), (OBJECTREF)inMemoryPdbSizeArray,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiInMemoryPdbSize), (OBJECTREF)inMemoryPdbSizeArray);
 
         // Allocate memory for the MethodTokens
         OBJECTREF methodTokens = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiMethodToken), (OBJECTREF)methodTokens,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiMethodToken), (OBJECTREF)methodTokens);
         
         // Allocate memory for the Filename string objects
         PTRARRAYREF filenameArray = (PTRARRAYREF) AllocateObjectArray(data.cElements, g_pStringClass);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgFilename), (OBJECTREF)filenameArray,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgFilename), (OBJECTREF)filenameArray);
 
         // Allocate memory for the LineNumbers
         OBJECTREF lineNumbers = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLineNumber), (OBJECTREF)lineNumbers,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLineNumber), (OBJECTREF)lineNumbers);
 
         // Allocate memory for the ColumnNumbers
         OBJECTREF columnNumbers = AllocatePrimitiveArray(ELEMENT_TYPE_I4, data.cElements);
-        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiColumnNumber), (OBJECTREF)columnNumbers,
-                            pStackFrameHelper->GetAppDomain());
+        SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiColumnNumber), (OBJECTREF)columnNumbers);
 
         // Allocate memory for the flag indicating if this frame represents the last one from a foreign
         // exception stack trace provided we have any such frames. Otherwise, set it to null.
@@ -459,13 +446,11 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         {
             IsLastFrameFromForeignStackTraceFlags = AllocatePrimitiveArray(ELEMENT_TYPE_BOOLEAN, data.cElements);
 
-            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), (OBJECTREF)IsLastFrameFromForeignStackTraceFlags,
-                                pStackFrameHelper->GetAppDomain());
+            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), (OBJECTREF)IsLastFrameFromForeignStackTraceFlags);
         }
         else
         {
-            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), NULL,
-                                pStackFrameHelper->GetAppDomain());
+            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->rgiLastFrameFromForeignExceptionStackTrace), NULL);
         }
 
         // Determine if there are any dynamic methods in the stack trace.  If there are,
@@ -489,8 +474,7 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
         if (iNumDynamics)
         {            
             PTRARRAYREF dynamicDataArray = (PTRARRAYREF) AllocateObjectArray(iNumDynamics, g_pObjectClass);
-            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->dynamicMethods), (OBJECTREF)dynamicDataArray,
-                                pStackFrameHelper->GetAppDomain());
+            SetObjectReference( (OBJECTREF *)&(pStackFrameHelper->dynamicMethods), (OBJECTREF)dynamicDataArray);
         }
         
         int iNumValidFrames = 0;
@@ -842,7 +826,7 @@ FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
         g_pDebugInterface->SendCustomDebuggerNotification(pThread, pDomainFile, classToken);   
         pThread->ClearThreadCurrNotification();
 
-        TESTHOOKCALL(AppDomainCanBeUnloaded(pThread->GetDomain()->GetId().m_dwId, FALSE));
+        TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID, FALSE));
         if (pThread->IsAbortRequested())
         {
             pThread->HandleThreadAbort();

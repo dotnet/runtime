@@ -99,10 +99,6 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
     // so the value of this bit does not matter for strings
 #define BIT_SBLK_STRING_HAS_NO_HIGH_CHARS   0x80000000
 
-// Used as workaround for infinite loop case.  Will set this bit in the sblk if we have already
-// seen this sblk in our agile checking logic.  Problem is seen when object 1 has a ref to object 2
-// and object 2 has a ref to object 1.  The agile checker will infinitely loop on these references.
-#define BIT_SBLK_AGILE_IN_PROGRESS          0x80000000
 #define BIT_SBLK_STRING_HIGH_CHARS_KNOWN    0x40000000
 #define BIT_SBLK_STRING_HAS_SPECIAL_SORT    0xC0000000
 #define BIT_SBLK_STRING_HIGH_CHAR_MASK      0xC0000000
@@ -121,14 +117,10 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 //   value is zero if no thread is holding the lock
 // - following six bits (bits 10 thru 15) is recursion level used for the thin locks
 //   value is zero if lock is not taken or only taken once by the same thread
-// - following 11 bits (bits 16 thru 26) is app domain index
-//   value is zero if no app domain index is set for the object
 #define SBLK_MASK_LOCK_THREADID             0x000003FF   // special value of 0 + 1023 thread ids
 #define SBLK_MASK_LOCK_RECLEVEL             0x0000FC00   // 64 recursion levels
 #define SBLK_LOCK_RECLEVEL_INC              0x00000400   // each level is this much higher than the previous one
-#define SBLK_APPDOMAIN_SHIFT                16           // shift right this much to get appdomain index
 #define SBLK_RECLEVEL_SHIFT                 10           // shift right this much to get recursion level
-#define SBLK_MASK_APPDOMAININDEX            0x000007FF   // 2048 appdomain indices
 
 // add more bits here... (adjusting the following mask to make room)
 
@@ -849,12 +841,6 @@ class SyncBlock
     // space for the minimum, which is the pointer within an SLink.
     SLink       m_Link;
 
-    // This is the index for the appdomain to which the object belongs. If we
-    // can't set it in the object header, then we set it here. Note that an
-    // object doesn't always have this filled in. Only for COM interop, 
-    // finalizers and objects in handles
-    ADIndex m_dwAppDomainIndex;
-
     // This is the hash code for the object. It can either have been transfered
     // from the header dword, in which case it will be limited to 26 bits, or
     // have been generated right into this member variable here, when it will
@@ -987,19 +973,6 @@ class SyncBlock
     // Store information about fields added to this object by the Debugger's Edit and Continue support
     void SetEnCInfo(EnCSyncBlockInfo *pEnCInfo);
 #endif // EnC_SUPPORTED
-
-    ADIndex GetAppDomainIndex()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_dwAppDomainIndex;
-    }
-
-    void SetAppDomainIndex(ADIndex dwAppDomainIndex)
-    {
-        WRAPPER_NO_CONTRACT;
-        SetPrecious();
-        m_dwAppDomainIndex = dwAppDomainIndex;
-    }
 
     DWORD GetHashCode()
     {
@@ -1255,8 +1228,6 @@ class SyncBlockCache
 
     void    CleanupSyncBlocks();
 
-    void    CleanupSyncBlocksInAppDomain(AppDomain *pDomain);
-
     int GetTableEntryCount()
     {
         LIMITED_METHOD_CONTRACT;
@@ -1359,18 +1330,6 @@ class ObjHeader
         }
         CONTRACTL_END
 
-
-#ifdef _DEBUG
-        // if we have an index here, make sure we already transferred it to the syncblock
-        // before we clear it out
-        ADIndex adIndex = GetRawAppDomainIndex();
-        if (adIndex.m_dwIndex)
-        {
-            SyncBlock *pSyncBlock = SyncTableEntry::GetSyncTableEntry() [indx & ~BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX].m_SyncBlock;
-            _ASSERTE(pSyncBlock && pSyncBlock->GetAppDomainIndex() == adIndex);
-        }
-#endif
-
         LONG newValue;
         LONG oldValue;
         while (TRUE) {
@@ -1406,12 +1365,6 @@ class ObjHeader
 
         m_SyncBlockValue.RawValue() &=~(BIT_SBLK_IS_HASH_OR_SYNCBLKINDEX | BIT_SBLK_IS_HASHCODE | MASK_SYNCBLOCKINDEX);
     }
-
-    void SetAppDomainIndex(ADIndex);
-    void ResetAppDomainIndex(ADIndex);
-    void ResetAppDomainIndexNoFailure(ADIndex);
-    ADIndex GetRawAppDomainIndex();
-    ADIndex GetAppDomainIndex();
 
     // For now, use interlocked operations to twiddle bits in the bitfield portion.
     // If we ever have high-performance requirements where we can guarantee that no

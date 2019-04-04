@@ -691,61 +691,6 @@ GVAL_DECL(SIZE_T, g_runtimeVirtualSize);
 #define MAXULONGLONG                     UI64(0xffffffffffffffff)
 #endif
 
-// #ADID_vs_ADIndex
-// code:ADID is an ID for an appdomain that is sparse and remains unique within the process for the lifetime of the process.
-// Remoting and (I believe) the thread pool use the former as a way of referring to appdomains outside of their normal lifetime safely.
-// Interop also uses ADID to handle issues involving unloaded domains.
-// 
-// code:ADIndex is an ID for an appdomain that's dense and may be reused once the appdomain is unloaded.
-// This is useful for fast array based lookup from a number to an appdomain property.  
-struct ADIndex
-{
-    DWORD m_dwIndex;
-    ADIndex ()
-    : m_dwIndex(0)
-    {}
-    explicit ADIndex (DWORD id)
-    : m_dwIndex(id)
-    {
-        SUPPORTS_DAC;
-    }
-    BOOL operator==(const ADIndex& ad) const
-    {
-        return m_dwIndex == ad.m_dwIndex;
-    }
-    BOOL operator!=(const ADIndex& ad) const
-    {
-        return m_dwIndex != ad.m_dwIndex;
-    }
-};
-
-// An ADID is a number that represents an appdomain.  They are allcoated with code:SystemDomain::GetNewAppDomainId
-// ADIDs are NOT reused today, so they are unique even after the appdomain dies.  
-// 
-// see also code:BaseDomain::m_dwId 
-// see also code:ADIndex
-// see also code:ADIndex#ADID_vs_ADIndex
-struct ADID
-{
-    DWORD m_dwId;
-    ADID ()
-    : m_dwId(0)
-    {LIMITED_METHOD_CONTRACT;}
-    explicit ADID (DWORD id)
-    : m_dwId(id)
-    {LIMITED_METHOD_CONTRACT;}
-    BOOL operator==(const ADID& ad) const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return m_dwId == ad.m_dwId;
-    }
-    BOOL operator!=(const ADID& ad) const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_dwId != ad.m_dwId;
-    }
-};
-
 struct TPIndex
 {
     DWORD m_dwIndex;

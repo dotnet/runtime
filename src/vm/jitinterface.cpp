@@ -12279,8 +12279,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         // If we failed to jit, then fall back to the primary Jit.
         if (FAILED(ret))
         {
-            // Consider adding this call:
-            //      ((CEEJitInfo*)comp)->BackoutJitData(jitMgr);
+            ((CEEJitInfo*)comp)->BackoutJitData(jitMgr);
             ((CEEJitInfo*)comp)->ResetForJitRetry();
             ret = CORJIT_SKIPPED;
         }

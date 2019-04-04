@@ -1555,7 +1555,7 @@ inline BOOL MethodTable::UnBoxInto(void *dest, OBJECTREF src)
         if (src == NULL || src->GetMethodTable() != this)
             return FALSE;
 
-        CopyValueClass(dest, src->UnBox(), this, src->GetAppDomain());
+        CopyValueClass(dest, src->UnBox(), this);
     }
     return TRUE;
 }
@@ -1580,7 +1580,7 @@ inline BOOL MethodTable::UnBoxIntoArg(ArgDestination *argDest, OBJECTREF src)
         if (src == NULL || src->GetMethodTable() != this)
             return FALSE;
 
-        CopyValueClassArg(argDest, src->UnBox(), this, src->GetAppDomain(), 0);
+        CopyValueClassArg(argDest, src->UnBox(), this, 0);
     }
     return TRUE;
 }
@@ -1607,7 +1607,7 @@ inline void MethodTable::UnBoxIntoUnchecked(void *dest, OBJECTREF src)
     {
         _ASSERTE(src->GetMethodTable()->GetNumInstanceFieldBytes() == GetNumInstanceFieldBytes());
 
-        CopyValueClass(dest, src->UnBox(), this, src->GetAppDomain());
+        CopyValueClass(dest, src->UnBox(), this);
     }
 }
 #endif

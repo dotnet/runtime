@@ -504,7 +504,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddStringLiteral(EEStringData *pStri
     STRINGREF strObj = AllocateStringObject(pStringData);
                 
     // Allocate a handle for the string.
-    SetObjectReference(pStrObj[0], (OBJECTREF) strObj, NULL);
+    SetObjectReference(pStrObj[0], (OBJECTREF) strObj);
    
 
     // Allocate the StringLiteralEntry.
@@ -541,7 +541,7 @@ StringLiteralEntry *GlobalStringLiteralMap::AddInternedString(STRINGREF *pString
 
     {
     LargeHeapHandleBlockHolder pStrObj(&m_LargeHeapHandleTable,1);
-    SetObjectReference(pStrObj[0], (OBJECTREF) *pString, NULL);
+    SetObjectReference(pStrObj[0], (OBJECTREF) *pString);
 
     // Since the allocation might have caused a GC we need to re-get the
     // string data.
