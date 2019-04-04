@@ -20,7 +20,7 @@ namespace System
 
         // MethodBase, either cached after first request or assigned from a DynamicMethod
         // For open delegates to collectible types, this may be a LoaderAllocator object
-        internal object _methodBase = null!; // Initialized by VM as needed
+        internal object? _methodBase; // Initialized by VM as needed
 
         // _methodPtr is a pointer to the method we will invoke
         // It could be a small thunk if this is a static or UM call
