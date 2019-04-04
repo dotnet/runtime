@@ -356,7 +356,6 @@ MonoDlFallbackHandler *
 mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, MonoDlFallbackClose close_func, void *user_data)
 {
 	MonoDlFallbackHandler *handler = NULL;
-	MONO_ENTER_GC_UNSAFE;
 	if (load_func == NULL || symbol_func == NULL)
 		goto leave;
 
@@ -369,7 +368,6 @@ mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol sy
 	fallback_handlers = g_slist_prepend (fallback_handlers, handler);
 	
 leave:
-	MONO_EXIT_GC_UNSAFE;
 	return handler;
 }
 
