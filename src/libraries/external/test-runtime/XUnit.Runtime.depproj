@@ -35,7 +35,8 @@
     <PackageReference Condition="'$(TargetsAot)' == 'true'" Include="xunit.runner.utility" Version="$(XUnitPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetXUnitExtensionsPackage)" Version="$(MicrosoftDotNetXUnitExtensionsPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetRemoteExecutorPackage)" Version="$(MicrosoftDotNetRemoteExecutorPackageVersion)" />
-    <PackageReference Include="$(XUnitRunnerConsolePackageName)" Version="$(XUnitPackageVersion)" />
+    <PackageReference Condition="'$(TargetsNetCoreApp)' == 'true'" Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" Version="$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)" />
+    <PackageReference Condition="'$(TargetsNetFx)' == 'true'" Include="$(XUnitRunnerConsolePackageName)" Version="$(XUnitPackageVersion)" />
     <PackageReference Condition="'$(TargetsUap)' == 'true'" Include="$(MicrosoftDotNetUapTestToolsPackageName)" Version="$(MicrosoftDotNetUapTestToolsPackageVersion)" />
 
     <!-- for callstack line numbers -->
@@ -59,7 +60,8 @@
     <PackageToInclude Include="xunit.runner.utility" />
     <PackageToInclude Include="$(MicrosoftDotNetXUnitExtensionsPackage)" />
     <PackageToInclude Include="$(MicrosoftDotNetRemoteExecutorPackage)" />
-    <PackageToInclude Condition="'$(TargetsUap)' != 'true'" Include="$(XUnitRunnerConsolePackageName)" />
+    <PackageToInclude Condition="'$(TargetsNetCoreApp)' == 'true'" Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" />
+    <PackageToInclude Condition="'$(TargetsNetFx)' == 'true'" Include="$(XUnitRunnerConsolePackageName)" />
     <PackageToInclude Include="Microsoft.DiaSymReader.Native" />
     <PackageToInclude Include="Newtonsoft.Json" />
   </ItemGroup>
@@ -207,18 +209,18 @@
           Condition="'$(TargetGroup)' == 'netcoreapp'"
           BeforeTargets="ResolveReferences">
 
-    <Error Condition="!Exists('$(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\netcoreapp2.0\$(XUnitRunner).dll')"
-           Text="Error: looks the package $(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion) not restored or missing $(XUnitRunner).dll." />
+    <Error Condition="!Exists('$(PackagesDir)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)\lib\netcoreapp2.0\$(XUnitRunner).dll')"
+           Text="Error: looks the package $(PackagesDir)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion) not restored or missing $(XUnitRunner).dll." />
     <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\$(XUnitAdapter).dll')"
            Text="Error: looks the package $(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll." />
     <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion)\lib\netstandard1.5\$(TestPlatformHost).dll')"
            Text="Error: looks the package $(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion) not restored or missing $(TestPlatformHost).dll." />
 
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\netcoreapp2.0\*.*">
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)\lib\netcoreapp2.0\*.*">
         <Private>false</Private>
-        <NuGetPackageId>$(XUnitRunnerConsolePackageName)</NuGetPackageId>
-        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+        <NuGetPackageId>$(MicrosoftDotNetXUnitConsoleRunnerPackage)</NuGetPackageId>
+        <NuGetPackageVersion>$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
       <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\*.*">
         <Private>false</Private>
