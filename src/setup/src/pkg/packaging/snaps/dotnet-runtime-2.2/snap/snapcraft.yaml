@@ -24,23 +24,23 @@ slots:
 
 parts:
   dotnet-runtime:
-      plugin: dump
-      source: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/2.2.3/dotnet-runtime-2.2.3-linux-x64.tar.gz
-      source-checksum: sha512/476df111a1a7786b742b69759da36185720707ad45de0550dea418484a401fbe338adb8d1ba2706abdbb7ed5c489e7d7a76579ca50c60168dbebe52e00f7071f
-      stage-packages:
-        - libicu60
-        - libssl1.0.0
-        - libcurl3
-        - libgssapi-krb5-2
-        - liblttng-ust0
-        - libstdc++6
-        - zlib1g
-        - libgcc1
-        - lldb
-        - libunwind8
-        - libtinfo5
-        - libdb5.3
-        - libc6
-      #install: |
-      #  mv $SNAPCRAFT_PART_INSTALL/shared $SNAPCRAFT_PART_INSTALL/shared.real
-      #  ln -s /var/snap/$SNAPCRAFT_PROJECT_NAME/current $SNAPCRAFT_PART_INSTALL/shared
+    plugin: dump
+    source: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/2.2.3/dotnet-runtime-2.2.3-linux-x64.tar.gz
+    source-checksum: sha512/476df111a1a7786b742b69759da36185720707ad45de0550dea418484a401fbe338adb8d1ba2706abdbb7ed5c489e7d7a76579ca50c60168dbebe52e00f7071f
+    stage-packages:
+      - libicu60
+      - libssl1.0.0
+      - libcurl3
+      - libgssapi-krb5-2
+      - liblttng-ust0
+      - libstdc++6
+      - zlib1g
+      - libgcc1
+      - lldb
+      - libunwind8
+      - libtinfo5
+      - libdb5.3
+      - libc6
+    #install: |
+    #  mv $SNAPCRAFT_PART_INSTALL/shared $SNAPCRAFT_PART_INSTALL/shared.real
+    #  ln -s /var/snap/$SNAPCRAFT_PROJECT_NAME/current $SNAPCRAFT_PART_INSTALL/shared
