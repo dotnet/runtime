@@ -212,7 +212,7 @@ namespace
 
             // Check if it is an OBJECTREF (from the GC heap)
             if (pvDest)
-                SetObjectReferenceUnchecked((OBJECTREF *)pvDest, *src);
+                SetObjectReference((OBJECTREF *)pvDest, *src);
 
             *(OBJECTREF*)&ret = (*src);
         }

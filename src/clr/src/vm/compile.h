@@ -200,11 +200,6 @@ class CEECompileInfo : public ICorCompileInfo
                          BOOL                     fForceProfiling,
                          BOOL                     fForceInstrument);
 
-    HRESULT MakeCrossDomainCallback(
-                                    ICorCompilationDomain*  pDomain,
-                                    CROSS_DOMAIN_CALLBACK   pfnCallback,
-                                    LPVOID                  pArgs);
-   
     HRESULT DestroyDomain(ICorCompilationDomain   *pDomain);
 
     HRESULT LoadAssemblyByPath(LPCWSTR                  wzPath,

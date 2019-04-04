@@ -473,8 +473,6 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
         {   // our tear-off
             _ASSERTE(pWrap != NULL);
             AppDomain* pCurrDomain = pThread->GetDomain();
-            ADID pObjDomain = pWrap->GetDomainID();
-            _ASSERTE(pObjDomain == pCurrDomain->GetId());
             *pObjOut = pWrap->GetObjectRef();
         }
 
