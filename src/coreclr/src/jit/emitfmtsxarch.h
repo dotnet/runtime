@@ -170,6 +170,8 @@ IF_DEF(SRD_CNS,     IS_SF_RD,                   CNS )     // read  [stk], const
 IF_DEF(SWR_CNS,     IS_SF_WR,                   CNS )     // write [stk], const
 IF_DEF(SRW_CNS,     IS_SF_RW,                   CNS )     // r/w   [stk], const
 
+IF_DEF(SWR_RRD_CNS, IS_AM_WR|IS_R1_RD,          AMD_CNS)  // write [stk], read reg, const
+
 IF_DEF(SRW_SHF,     IS_SF_RW,                   CNS )     // shift [stk], const
 
 //----------------------------------------------------------------------------
