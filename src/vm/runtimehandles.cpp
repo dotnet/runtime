@@ -384,6 +384,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsWindowsRuntimeObjectType, ReflectClass
 }
 FCIMPLEND
 
+#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
 FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE)
 {
     FCALL_CONTRACT;
@@ -401,6 +402,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsTypeExportedToWindowsRuntime, ReflectC
     FC_RETURN_BOOL(isExportedToWinRT);
 }
 FCIMPLEND
+#endif
 #endif // FEATURE_COMINTEROP
 
 NOINLINE static MethodDesc * RestoreMethodHelper(MethodDesc * pMethod, LPVOID __me)

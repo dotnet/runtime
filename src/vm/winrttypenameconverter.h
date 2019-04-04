@@ -17,6 +17,7 @@
 #pragma once
 
 #include "..\md\winmd\inc\adapter.h"
+#include "clrprivbinding.h"
 
 struct WinRTTypeNameInfo;
 
@@ -90,7 +91,7 @@ public :
     // Get TypeHandle from a WinRT type name
     // Parse the WinRT type name in the form of WinRTType=TypeName[<WinRTType[, WinRTType, ...]>]
     //
-    static TypeHandle GetManagedTypeFromWinRTTypeName(LPCWSTR wszWinRTTypeName, bool *pbIsPrimitive);
+    static TypeHandle LoadManagedTypeForWinRTTypeName(LPCWSTR wszWinRTTypeName, ICLRPrivBinder * loadBinder, bool *pbIsPrimitive);
     
 private :
     
@@ -108,13 +109,13 @@ private :
     // Return TypeHandle for the specified WinRT type name (supports generic type)
     // Updates wszWinRTTypeName pointer as it parse the string    
     //
-    static TypeHandle GetManagedTypeFromWinRTTypeNameInternal(SString *ssTypeName, bool *pbIsPrimitive);
+    static TypeHandle LoadManagedTypeForWinRTTypeNameInternal(SString *ssTypeName, ICLRPrivBinder* loadBinder, bool *pbIsPrimitive);
     
     //
     // Return MethodTable* for the specified WinRT primitive type name (non-generic type)
     // Updates wszWinRTTypeName pointer as it parse the string
     //
-    static TypeHandle GetManagedTypeFromSimpleWinRTNameInternal(SString *ssTypeName, bool *pbIsPrimitive);
+    static TypeHandle GetManagedTypeFromSimpleWinRTNameInternal(SString *ssTypeName, ICLRPrivBinder* loadBinder, bool *pbIsPrimitive);
 
     static bool AppendWinRTTypeNameForManagedType(
         TypeHandle          thManagedType,
