@@ -52,9 +52,6 @@ namespace System.Security.Cryptography.Rsa.Tests
 
         public bool SupportsPss { get; } =
             !PlatformDetection.IsFullFramework || !(RSA.Create() is RSACryptoServiceProvider);
-
-        public bool SupportsDecryptingIntoExactSpaceRequired => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
     }
 
     public partial class RSAFactory

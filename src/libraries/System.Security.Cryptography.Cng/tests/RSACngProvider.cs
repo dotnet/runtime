@@ -35,8 +35,6 @@ namespace System.Security.Cryptography.Rsa.Tests
         public bool SupportsSha2Oaep => true;
 
         public bool SupportsPss => true;
-
-        public bool SupportsDecryptingIntoExactSpaceRequired => true;
     }
 
     public partial class RSAFactory

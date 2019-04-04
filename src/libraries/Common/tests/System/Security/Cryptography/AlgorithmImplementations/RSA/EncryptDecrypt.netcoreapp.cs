@@ -44,21 +44,13 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Assert.Equal(0, bytesWritten);
                 Assert.Equal<byte>(new byte[actual.Length], actual);
 
-                // Just right... but that may be insufficient on Unix, where with padding the output destination
-                // may need to be larger than the actual decrypted content.
+                // Just right.
                 actual = new byte[TestData.HelloBytes.Length];
                 bool decrypted = rsa.TryDecrypt(cipherBytes, actual, RSAEncryptionPadding.OaepSHA1, out bytesWritten);
-                if (RSAFactory.SupportsDecryptingIntoExactSpaceRequired || decrypted)
-                {
-                    Assert.True(decrypted);
-                    Assert.Equal(TestData.HelloBytes.Length, bytesWritten);
-                    Assert.Equal<byte>(TestData.HelloBytes, actual);
-                }
-                else
-                {
-                    Assert.Equal(0, bytesWritten);
-                    Assert.Equal<byte>(new byte[actual.Length], actual);
-                }
+
+                Assert.True(decrypted);
+                Assert.Equal(TestData.HelloBytes.Length, bytesWritten);
+                Assert.Equal<byte>(TestData.HelloBytes, actual);
 
                 // Bigger than needed
                 actual = new byte[TestData.HelloBytes.Length + 1000];
