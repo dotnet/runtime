@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -29,7 +30,7 @@ namespace System.IO
         /// synchronously from ReadAsync which can be reused if the count matches the next request.
         /// Only initialized when <see cref="_useAsyncIO"/> is true.
         /// </summary>
-        private AsyncState _asyncState;
+        private AsyncState? _asyncState;
 
         /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
         private bool? _canSeek;
@@ -507,9 +508,10 @@ namespace System.IO
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <param name="synchronousResult">If the operation completes synchronously, the number of bytes read.</param>
         /// <returns>A task that represents the asynchronous read operation.</returns>
-        private Task<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
+        private Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
         {
             Debug.Assert(_useAsyncIO);
+            Debug.Assert(_asyncState != null);
 
             if (!CanRead) // match Windows behavior; this gets thrown synchronously
             {
@@ -568,6 +570,7 @@ namespace System.IO
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
                 var thisRef = (FileStream)s;
+                Debug.Assert(thisRef._asyncState != null);
                 try
                 {
                     Memory<byte> memory = thisRef._asyncState.Memory;
@@ -668,6 +671,7 @@ namespace System.IO
         private ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_useAsyncIO);
+            Debug.Assert(_asyncState != null);
 
             if (cancellationToken.IsCancellationRequested)
                 return new ValueTask(Task.FromCanceled(cancellationToken));
@@ -725,6 +729,7 @@ namespace System.IO
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
                 var thisRef = (FileStream)s;
+                Debug.Assert(thisRef._asyncState != null);
                 try
                 {
                     ReadOnlyMemory<byte> readOnlyMemory = thisRef._asyncState.ReadOnlyMemory;
