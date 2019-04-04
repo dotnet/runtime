@@ -718,7 +718,7 @@ namespace System.Threading
     {
         private const uint MAX_SUPPORTED_TIMEOUT = (uint)0xfffffffe;
 
-        private TimerHolder _timer = null!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+        private TimerHolder _timer = null!; // initialized in helper called by ctors
 
         public Timer(TimerCallback callback,
                      object? state,
