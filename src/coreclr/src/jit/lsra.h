@@ -654,10 +654,12 @@ public:
     void insertCopyOrReload(BasicBlock* block, GenTree* tree, unsigned multiRegIdx, RefPosition* refPosition);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    // Insert code to save and restore the upper half of a vector that lives
-    // in a callee-save register at the point of a call (the upper half is
-    // not preserved).
-    void insertUpperVectorSaveAndReload(GenTree* tree, RefPosition* refPosition, BasicBlock* block);
+    void makeUpperVectorInterval(unsigned varIndex);
+    Interval* getUpperVectorInterval(unsigned varIndex);
+    // Save the upper half of a vector that lives in a callee-save register at the point of a call.
+    void insertUpperVectorSave(GenTree* tree, RefPosition* refPosition, Interval* lclVarInterval, BasicBlock* block);
+    // Restore the upper half of a vector that's been partially spilled prior to a use in 'tree'.
+    void insertUpperVectorRestore(GenTree* tree, Interval* interval, BasicBlock* block);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     // resolve along one block-block edge
@@ -989,8 +991,7 @@ private:
     void buildRefPositionsForNode(GenTree* tree, BasicBlock* block, LsraLocation loc);
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-    void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, VARSET_VALARG_TP liveLargeVectors);
-    void buildUpperVectorRestoreRefPositions(GenTree* tree, LsraLocation currentLoc, VARSET_VALARG_TP liveLargeVectors);
+    void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 #if defined(UNIX_AMD64_ABI)
@@ -1308,7 +1309,7 @@ private:
         LSRA_EVENT_START_BB, LSRA_EVENT_END_BB,
 
         // Miscellaneous
-        LSRA_EVENT_FREE_REGS,
+        LSRA_EVENT_FREE_REGS, LSRA_EVENT_UPPER_VECTOR_SAVE, LSRA_EVENT_UPPER_VECTOR_RESTORE,
 
         // Characteristics of the current RefPosition
         LSRA_EVENT_INCREMENT_RANGE_END, // ???
@@ -1641,6 +1642,10 @@ public:
         , isSpecialPutArg(false)
         , preferCalleeSave(false)
         , isConstant(false)
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+        , isUpperVector(false)
+        , isPartiallySpilled(false)
+#endif
         , physReg(REG_COUNT)
 #ifdef DEBUG
         , intervalIndex(0)
@@ -1710,6 +1715,24 @@ public:
     // True if this interval is defined by a constant node that may be reused and/or may be
     // able to reuse a constant that's already in a register.
     bool isConstant : 1;
+
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+    // True if this is a special interval for saving the upper half of a large vector.
+    bool isUpperVector : 1;
+    // This is a convenience method to avoid ifdef's everywhere this is used.
+    bool IsUpperVector() const
+    {
+        return isUpperVector;
+    }
+
+    // True if this interval has been partially spilled
+    bool isPartiallySpilled : 1;
+#else
+    bool IsUpperVector() const
+    {
+        return false;
+    }
+#endif
 
     // The register to which it is currently assigned.
     regNumber physReg;
@@ -2033,12 +2056,7 @@ public:
 
     bool RequiresRegister()
     {
-        return (IsActualRef()
-#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                || refType == RefTypeUpperVectorSaveDef || refType == RefTypeUpperVectorSaveUse
-#endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-                ) &&
-               !RegOptional();
+        return IsActualRef() && !RegOptional();
     }
 
     void setRegOptional(bool val)
