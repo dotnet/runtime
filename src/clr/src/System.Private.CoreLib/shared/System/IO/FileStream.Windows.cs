@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -46,11 +47,11 @@ namespace System.IO
         private bool _isPipe;      // Whether to disable async buffering code.
         private long _appendStart; // When appending, prevent overwriting file.
 
-        private static unsafe IOCompletionCallback s_ioCallback = FileStreamCompletionSource.IOCallback;
+        private static readonly unsafe IOCompletionCallback s_ioCallback = FileStreamCompletionSource.IOCallback;
 
-        private Task _activeBufferOperation = null;                 // tracks in-progress async ops using the buffer
-        private PreAllocatedOverlapped _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
-        private FileStreamCompletionSource _currentOverlappedOwner; // async op currently using the preallocated overlapped
+        private Task? _activeBufferOperation = null;                 // tracks in-progress async ops using the buffer
+        private PreAllocatedOverlapped? _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
+        private FileStreamCompletionSource? _currentOverlappedOwner; // async op currently using the preallocated overlapped
 
         private void Init(FileMode mode, FileShare share, string originalPath)
         {
@@ -406,7 +407,8 @@ namespace System.IO
 
         // Instance method to help code external to this MarshalByRefObject avoid
         // accessing its fields by ref.  This avoids a compiler warning.
-        private FileStreamCompletionSource CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource newSource, FileStreamCompletionSource existingSource) => Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
+        private FileStreamCompletionSource? CompareExchangeCurrentOverlappedOwner(FileStreamCompletionSource? newSource, FileStreamCompletionSource? existingSource) =>
+            Interlocked.CompareExchange(ref _currentOverlappedOwner, newSource, existingSource);
 
         private int ReadSpan(Span<byte> destination)
         {
@@ -732,7 +734,7 @@ namespace System.IO
             return;
         }
 
-        private Task<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
+        private Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
         {
             Debug.Assert(_useAsyncIO);
             if (!CanRead) throw Error.GetReadNotSupported();
@@ -1024,7 +1026,7 @@ namespace System.IO
             // We return a Task that represents one or both.
 
             // Flush the buffer asynchronously if there's anything to flush
-            Task flushTask = null;
+            Task? flushTask = null;
             if (_writePos > 0)
             {
                 flushTask = FlushWriteAsync(cancellationToken);
@@ -1341,6 +1343,7 @@ namespace System.IO
                 {
                     cancellationReg = cancellationToken.UnsafeRegister(s =>
                     {
+                        Debug.Assert(s is AsyncCopyToAwaitable);
                         var innerAwaitable = (AsyncCopyToAwaitable)s;
                         unsafe
                         {
@@ -1492,7 +1495,7 @@ namespace System.IO
             /// s_sentinel if the I/O operation completed before the await,
             /// s_callback if it completed after the await yielded.
             /// </summary>
-            internal Action _continuation;
+            internal Action? _continuation;
             /// <summary>Last error code from completed operation.</summary>
             internal uint _errorCode;
             /// <summary>Last number of read bytes from completed operation.</summary>
@@ -1519,7 +1522,8 @@ namespace System.IO
             /// <summary>Overlapped callback: store the results, then invoke the continuation delegate.</summary>
             internal static unsafe void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOVERLAP)
             {
-                var awaitable = (AsyncCopyToAwaitable)ThreadPoolBoundHandle.GetNativeOverlappedState(pOVERLAP);
+                var awaitable = (AsyncCopyToAwaitable?)ThreadPoolBoundHandle.GetNativeOverlappedState(pOVERLAP);
+                Debug.Assert(awaitable != null);
 
                 Debug.Assert(!ReferenceEquals(awaitable._continuation, s_sentinel), "Sentinel must not have already been set as the continuation");
                 awaitable._errorCode = errorCode;
@@ -1634,7 +1638,7 @@ namespace System.IO
                 // probably be consistent w/ every other directory.
                 int errorCode = Marshal.GetLastWin32Error();
 
-                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && _path.Length == PathInternal.GetRootLength(_path))
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && _path!.Length == PathInternal.GetRootLength(_path))
                     errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
 
                 throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
