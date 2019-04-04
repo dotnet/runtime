@@ -154,7 +154,7 @@ namespace System.Security.Cryptography
 
                 if (ret)
                 {
-                    Span<byte> tmpSlice = tmp.Slice(0, bytesWritten);
+                    tmp = tmp.Slice(0, bytesWritten);
 
                     if (bytesWritten > destination.Length)
                     {
@@ -163,10 +163,10 @@ namespace System.Security.Cryptography
                     }
                     else
                     {
-                        tmpSlice.CopyTo(destination);
+                        tmp.CopyTo(destination);
                     }
 
-                    CryptographicOperations.ZeroMemory(tmpSlice);
+                    CryptographicOperations.ZeroMemory(tmp);
                 }
 
                 if (rent != null)
