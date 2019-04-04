@@ -1304,7 +1304,7 @@ LEAF_ENTRY JIT_Stelem_Ref, _TEXT
     beq     C_FUNC(JIT_Stelem_DoWrite)
 
     // Types didnt match but allow writing into an array of objects
-    ldr     x3, =g_pObjectClass
+    PREPARE_EXTERNAL_VAR g_pObjectClass, x3
     ldr     x3, [x3]  // x3 = *g_pObjectClass
     cmp     x3, x12   // array type matches with Object*
     beq     C_FUNC(JIT_Stelem_DoWrite)

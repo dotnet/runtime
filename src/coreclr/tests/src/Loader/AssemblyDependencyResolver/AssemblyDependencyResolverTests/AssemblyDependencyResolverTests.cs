@@ -312,10 +312,6 @@ namespace AssemblyDependencyResolverTests
         public static int Main()
         {
             return TestBase.RunTests(
-                // It's important that the invalid hosting test runs first as it relies on the ability
-                // to delete (if it's there) the hostpolicy.dll. All other tests will end up loading the dll
-                // and thus locking it.
-                typeof(InvalidHostingTest),
                 typeof(AssemblyDependencyResolverTests),
                 typeof(NativeDependencyTests));
         }

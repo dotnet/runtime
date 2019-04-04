@@ -23,6 +23,7 @@ public class Managed
         S9Id,
         IncludeOuterIntegerStructSequentialId,
         S11Id,
+        AutoStringId,
         IntWithInnerSequentialId,
         SequentialWrapperId,
         SequentialDoubleWrapperId,
@@ -317,6 +318,9 @@ public class Managed
     static extern bool MarshalStructAsParam_AsSeqByValSequentialAggregateSequentialWrapper(AggregateSequentialWrapper wrapper);
 
     [DllImport("MarshalStructAsParam")]
+    static extern int GetStringLength(AutoString str);
+
+    [DllImport("MarshalStructAsParam")]
     static extern HFA GetHFA(float f1, float f2, float f3, float f4);
 
     [DllImport("MarshalStructAsParam")]
@@ -539,7 +543,20 @@ public class Managed
                         failures++;
                     }
                     break;
-
+                case StructID.AutoStringId:
+                    Console.WriteLine("\tCalling GetStringLength...");
+                    {
+                        AutoString autoStr = new AutoString
+                        {
+                            str = "Auto CharSet test string"
+                        };
+                        int actual = GetStringLength(autoStr);
+                        if (actual != autoStr.str.Length)
+                        {
+                            Console.WriteLine($"\tFAILED! Managed to Native failed in GetStringLength. Expected {autoStr.str.Length}, got {actual}");
+                        }
+                    }
+                    break;
                 case StructID.IntWithInnerSequentialId:
                     IntWithInnerSequential intWithInnerSeq = new IntWithInnerSequential
                     {
@@ -2217,6 +2234,7 @@ public class Managed
         MarshalStructAsParam_AsSeqByVal(StructID.S9Id);
         MarshalStructAsParam_AsSeqByVal(StructID.IncludeOuterIntegerStructSequentialId);
         MarshalStructAsParam_AsSeqByVal(StructID.S11Id);
+        MarshalStructAsParam_AsSeqByVal(StructID.AutoStringId);
         MarshalStructAsParam_AsSeqByVal(StructID.IntWithInnerSequentialId);
         MarshalStructAsParam_AsSeqByVal(StructID.SequentialWrapperId);
         MarshalStructAsParam_AsSeqByVal(StructID.SequentialDoubleWrapperId);

@@ -5328,7 +5328,7 @@ HRESULT EEToProfInterfaceImpl::RuntimeThreadResumed(ThreadID resumedThreadId)
         // ICorProfilerInfo2::DoStackSnapshot!  And that dude is called asynchronously and
         // must therefore never cause a GC.
         // Other reasons for notrigger: also called by notrigger dudes Thread::SysStartSuspendForDebug,
-        // CheckSuspended, Thread::IsRunningIn, Thread::IsExecutingWithinCer, Thread::IsExecutingWithinCer,
+        // CheckSuspended, Thread::IsExecutingWithinCer, Thread::IsExecutingWithinCer,
         // UnwindFrames
         GC_NOTRIGGER;
 

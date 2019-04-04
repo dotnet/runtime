@@ -907,7 +907,6 @@ HRESULT MulticoreJitRecorder::StartProfile(const wchar_t * pRoot, const wchar_t 
         }
 
         NewHolder<MulticoreJitProfilePlayer> player(new (nothrow) MulticoreJitProfilePlayer(
-            m_pDomain,
             m_pBinderContext,
             nSession,
             m_fAppxMode));

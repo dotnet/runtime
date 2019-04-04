@@ -9,11 +9,7 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        internal const int STD_INPUT_HANDLE = -10;
-        internal const int STD_OUTPUT_HANDLE = -11;
-        internal const int STD_ERROR_HANDLE = -12;
-
-        [DllImport(Libraries.Kernel32, SetLastError = true)]
-        internal static extern IntPtr GetStdHandle(int nStdHandle);
+        [DllImport(Libraries.Kernel32)]
+        internal static extern IntPtr GetStdHandle(int nStdHandle);  // param is NOT a handle, but it returns one!
     }
 }
