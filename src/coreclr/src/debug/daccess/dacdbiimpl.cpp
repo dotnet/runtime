@@ -570,7 +570,7 @@ ULONG DacDbiInterfaceImpl::GetAppDomainId(VMPTR_AppDomain   vmAppDomain)
     else
     {
         AppDomain * pAppDomain = vmAppDomain.GetDacPtr();
-        return pAppDomain->GetId().m_dwId;
+        return DefaultADID;
     }
 }
 

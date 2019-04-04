@@ -339,6 +339,18 @@ int ExecuteManagedAssembly(
     nativeDllSearchDirs.append(":");
     nativeDllSearchDirs.append(clrFilesAbsolutePath);
 
+    void* hostpolicyLib = nullptr;
+    char* mockHostpolicyPath = getenv("MOCK_HOSTPOLICY");
+    if (mockHostpolicyPath)
+    {
+        hostpolicyLib = dlopen(mockHostpolicyPath, RTLD_LAZY);
+        if (hostpolicyLib == nullptr)
+        {
+            fprintf(stderr, "Failed to load mock hostpolicy at path '%s'. Error: %s", mockHostpolicyPath, dlerror());
+            return -1;
+        }
+    }
+
     AddFilesFromDirectoryToTpaList(clrFilesAbsolutePath, tpaList);
 
     void* coreclrLib = dlopen(coreClrDllPath.c_str(), RTLD_NOW | RTLD_LOCAL);
@@ -464,6 +476,14 @@ int ExecuteManagedAssembly(
     {
         const char* error = dlerror();
         fprintf(stderr, "dlopen failed to open the libcoreclr.so with error %s\n", error);
+    }
+
+    if (hostpolicyLib)
+    {
+        if(dlclose(hostpolicyLib) != 0)
+        {
+            fprintf(stderr, "Warning - dlclose of mock hostpolicy failed.\n");
+        }
     }
 
     return exitCode;

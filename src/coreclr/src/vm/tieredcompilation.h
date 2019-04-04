@@ -24,7 +24,7 @@ public:
     TieredCompilationManager();
 #endif
 
-    void Init(ADID appDomainId);
+    void Init();
 
 #endif // FEATURE_TIERED_COMPILATION
 
@@ -65,7 +65,6 @@ private:
 
     Crst m_lock;
     SList<SListElem<NativeCodeVersion>> m_methodsToOptimize;
-    ADID m_domainId;
     BOOL m_isAppDomainShuttingDown;
     DWORD m_countOptimizationThreadsRunning;
     DWORD m_optimizationQuantumMs;

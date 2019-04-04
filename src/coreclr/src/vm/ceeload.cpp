@@ -4528,7 +4528,7 @@ OBJECTHANDLE Module::ResolveStringRef(DWORD token, BaseDomain *pDomain, bool bNe
         OBJECTREF* pRef = pDomain->AllocateObjRefPtrsInLargeTable(1);
 
         STRINGREF str = AllocateStringObject(&strData);
-        SetObjectReference(pRef, str, NULL);
+        SetObjectReference(pRef, str);
 
         #ifdef LOGGING 
         int length = strData.GetCharCount();
@@ -4639,7 +4639,7 @@ void Module::EnableModuleFailureTriggers(Module *pModuleTo, AppDomain *pDomain)
     // assemblies/app domains.
     //
     // This should throw.
-    STRESS_LOG2(LF_CLASSLOADER, LL_INFO100,"EnableModuleFailureTriggers for module %p in AppDomain %i\n",pModuleTo,pDomain->GetId().m_dwId);
+    STRESS_LOG1(LF_CLASSLOADER, LL_INFO100,"EnableModuleFailureTriggers for module %p\n",pModuleTo);
     DomainFile *pDomainFileTo = pModuleTo->GetDomainFile(pDomain);
     pDomainFileTo->EnsureActive();
 
@@ -4648,138 +4648,6 @@ void Module::EnableModuleFailureTriggers(Module *pModuleTo, AppDomain *pDomain)
 }
 
 #endif //!DACCESS_COMPILE
-
-//
-// an GetAssemblyIfLoadedAppDomainIterator is used to iterate over all domains that
-// are known to be walkable at the time GetAssemblyIfLoaded is executed.
-//
-// The iteration is guaranteed to include all domains that exist at the
-// start & end of the iteration that are safely accessible. This class is logically part
-// of GetAssemblyIfLoaded and logically has the same set of contracts.
-//
-
-class GetAssemblyIfLoadedAppDomainIterator
-{
-    enum IteratorType
-    {
-        StackwalkingThreadIterator,
-        AllAppDomainWalkingIterator,
-        CurrentAppDomainIterator
-    }  m_iterType;
-
-public:
-    GetAssemblyIfLoadedAppDomainIterator() : 
-      m_adIteratorAll(TRUE),
-      m_appDomainCurrent(NULL),
-      m_pFrame(NULL),
-      m_fNextCalledForCurrentADIterator(FALSE)
-    {
-        LIMITED_METHOD_CONTRACT;
-#ifndef DACCESS_COMPILE
-        if (IsStackWalkerThread())
-        {
-            Thread * pThread = (Thread *)ClrFlsGetValue(TlsIdx_StackWalkerWalkingThread);
-            m_iterType = StackwalkingThreadIterator;
-            m_pFrame = pThread->GetFrame();
-            m_appDomainCurrent = pThread->GetDomain();
-        }
-        else if (IsGCThread())
-        {
-            m_iterType = AllAppDomainWalkingIterator;
-            m_adIteratorAll.Init();
-        }
-        else
-        {
-            _ASSERTE(::GetAppDomain() != NULL);
-            m_appDomainCurrent = ::GetAppDomain();
-            m_iterType = CurrentAppDomainIterator;
-        }
-#else //!DACCESS_COMPILE
-        // We have to walk all AppDomains in debugger
-        m_iterType = AllAppDomainWalkingIterator;
-        m_adIteratorAll.Init();
-#endif //!DACCESS_COMPILE
-    }
-
-    BOOL Next()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        switch (m_iterType)
-        {
-#ifndef DACCESS_COMPILE
-        case StackwalkingThreadIterator:
-            if (!m_fNextCalledForCurrentADIterator)
-            {
-                m_fNextCalledForCurrentADIterator = TRUE;
-
-                // Try searching frame chain if the current domain is NULL
-                if (m_appDomainCurrent == NULL)
-                    return Next();
-
-                return TRUE;
-            }
-            else
-            {
-                while (m_pFrame != FRAME_TOP)
-                {
-                    AppDomain * pDomain = m_pFrame->GetReturnDomain();
-                    if ((pDomain != NULL) && (pDomain != m_appDomainCurrent))
-                    {
-                        m_appDomainCurrent = pDomain;
-                        return TRUE;
-                    }
-                    m_pFrame = m_pFrame->PtrNextFrame();
-                }
-
-                return FALSE;
-            }
-#endif //!DACCESS_COMPILE
-
-        case AllAppDomainWalkingIterator:
-            {
-                BOOL fSuccess = m_adIteratorAll.Next();
-                if (fSuccess)
-                    m_appDomainCurrent = m_adIteratorAll.GetDomain();
-                return fSuccess;
-            }
-
-#ifndef DACCESS_COMPILE
-        case CurrentAppDomainIterator:
-            {
-                BOOL retVal;
-                retVal = !m_fNextCalledForCurrentADIterator;
-                m_fNextCalledForCurrentADIterator = TRUE;
-                return retVal;
-            }
-#endif //!DACCESS_COMPILE
-        
-        default:
-            _ASSERTE(FALSE);
-            return FALSE;
-        }
-    }
-
-    AppDomain * GetDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_appDomainCurrent;
-    }
-
-    BOOL UsingCurrentAD()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_iterType == CurrentAppDomainIterator;
-    }
-
-  private:
-
-    UnsafeAppDomainIterator m_adIteratorAll;
-    AppDomain *             m_appDomainCurrent;
-    Frame *                 m_pFrame;
-    BOOL                    m_fNextCalledForCurrentADIterator;
-};  // class GetAssemblyIfLoadedAppDomainIterator
 
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_PREJIT)
 // This function, given an AssemblyRef into the ngen generated native metadata section, will find the assembly referenced if
@@ -4931,15 +4799,9 @@ Module::GetAssemblyIfLoaded(
     
     if (pAssembly == NULL)
     {
-        // If in stackwalking or gc mode
-        // For each AppDomain that is on the stack being walked...
-        // For each AppDomain in the process... if gc'ing
-        // For the current AppDomain ... if none of the above
-        GetAssemblyIfLoadedAppDomainIterator appDomainIter;
-
-        while (appDomainIter.Next())
+        do
         {
-            AppDomain * pAppDomainExamine = appDomainIter.GetDomain();
+            AppDomain * pAppDomainExamine = AppDomain::GetCurrentDomain();
             
             DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->FindDomainAssembly(pAppDomainExamine);
             if (pCurAssemblyInExamineDomain == NULL)
@@ -5006,14 +4868,14 @@ Module::GetAssemblyIfLoaded(
                     pAssembly = pDomainAssembly->GetCurrentAssembly(); // <NOTE> Do not use GetAssembly - that may force the completion of a load
 
                 // Only store in the rid map if working with the current AppDomain.
-                if (fCanUseRidMap && pAssembly && appDomainIter.UsingCurrentAD())
+                if (fCanUseRidMap && pAssembly)
                     StoreAssemblyRef(kAssemblyRef, pAssembly);
 
                 if (pAssembly != NULL)
                     break;
             }
 #endif //!DACCESS_COMPILE
-        }
+        } while (false);
     }
 
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_PREJIT)
@@ -5065,16 +4927,14 @@ Module::GetAssemblyIfLoaded(
             bool onlyScanCurrentModule = HasNativeImage() && GetFile()->IsAssembly();
             mdAssemblyRef foundAssemblyRef = mdAssemblyRefNil;
 
-            GetAssemblyIfLoadedAppDomainIterator appDomainIter;
-
             // In each AppDomain that might be interesting, scan for an ngen image that is loaded that has a dependency on the same 
             // assembly that is now being looked up. If that ngen image has the same dependency, then we can use the CORCOMPILE_DEPENDENCIES
             // table to find the exact AssemblyDef that defines the assembly, and attempt a load based on that information.
             // As this logic is expected to be used only in exceedingly rare situations, this code has not been tuned for performance
             // in any way.
-            while (!abortAdditionalChecks && appDomainIter.Next())
+            do
             {
-                AppDomain * pAppDomainExamine = appDomainIter.GetDomain();
+                AppDomain * pAppDomainExamine = ::GetAppDomain(); // There is only 1 AppDomain on CoreCLR
             
                 DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->FindDomainAssembly(pAppDomainExamine);
                 if (pCurAssemblyInExamineDomain == NULL)
@@ -5137,7 +4997,7 @@ Module::GetAssemblyIfLoaded(
 
                         pAssembly = pNativeImageModule->GetAssemblyIfLoadedFromNativeAssemblyRefWithRefDefMismatch(foundAssemblyRef, &abortAdditionalChecks);
 
-                        if (fCanUseRidMap && pAssembly && appDomainIter.UsingCurrentAD())
+                        if (fCanUseRidMap && pAssembly)
                             StoreAssemblyRef(kAssemblyRef, pAssembly);
                     }
 
@@ -5147,7 +5007,7 @@ Module::GetAssemblyIfLoaded(
 
                     pDomainFileNativeImage = pDomainFileNativeImage->FindNextDomainFileWithNativeImage();
                 }
-            }
+            } while (false);
         }
     }
 #endif // !defined(DACCESS_COMPILE) && defined(FEATURE_PREJIT)
@@ -6846,7 +6706,7 @@ void Module::FixupVTables()
                     FillMemory(pUMThunkMarshInfo, sizeof(*pUMThunkMarshInfo), 0);
 
                     pUMThunkMarshInfo->LoadTimeInit(pMD);
-                    pUMEntryThunk->LoadTimeInit(NULL, NULL, pUMThunkMarshInfo, pMD, pAppDomain->GetId());
+                    pUMEntryThunk->LoadTimeInit(NULL, NULL, pUMThunkMarshInfo, pMD);
                     SetTargetForVTableEntry(hInstThis, (BYTE **)&pPointers[iMethod], (BYTE *)pUMEntryThunk->GetCode());
 
                     pData->MarkMethodFixedUp(iFixup, iMethod);
