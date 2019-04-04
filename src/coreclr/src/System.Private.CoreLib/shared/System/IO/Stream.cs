@@ -256,7 +256,7 @@ namespace System.IO
 
         public virtual Task FlushAsync(CancellationToken cancellationToken)
         {
-            return Task.Factory.StartNew(state => ((Stream)state).Flush(), this,
+            return Task.Factory.StartNew(state => ((Stream)state!).Flush(), this, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
@@ -512,7 +512,7 @@ namespace System.IO
                 asyncWaiter.ContinueWith((t, state) =>
                 {
                     Debug.Assert(t.IsCompletedSuccessfully, "The semaphore wait should always complete successfully.");
-                    var rwt = (ReadWriteTask)state;
+                    var rwt = (ReadWriteTask)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     Debug.Assert(rwt._stream != null);
                     rwt._stream.RunReadWriteTask(rwt); // RunReadWriteTask(readWriteTask);
                 }, readWriteTask, default, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
