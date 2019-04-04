@@ -1009,6 +1009,7 @@ TESTS_IL_SRC=			\
 	dim-sealed.il \
 	dim-protected-accessibility1.il \
 	dim-protected-accessibility2.il \
+	twopassvariance.il \
 	tailcall-generic-cast-conservestack-il.il \
 	tailcall-generic-cast-nocrash-il.il \
 	tailcall-member-function-in-valuetype.il \

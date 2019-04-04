@@ -1579,48 +1579,19 @@ count_virtual_methods (MonoClass *klass)
 	return vcount;
 }
 
-static int
-find_interface (int num_ifaces, MonoClass **interfaces_full, MonoClass *ic)
-{
-	int m, l = 0;
-	if (!num_ifaces)
-		return -1;
-	while (1) {
-		if (l > num_ifaces)
-			return -1;
-		m = (l + num_ifaces) / 2;
-		if (interfaces_full [m] == ic)
-			return m;
-		if (l == num_ifaces)
-			return -1;
-		if (!interfaces_full [m] || interfaces_full [m]->interface_id > ic->interface_id) {
-			num_ifaces = m - 1;
-		} else {
-			l =  m + 1;
-		}
-	}
-}
-
 static mono_bool
 set_interface_and_offset (int num_ifaces, MonoClass **interfaces_full, int *interface_offsets_full, MonoClass *ic, int offset, mono_bool force_set)
 {
-	int i = find_interface (num_ifaces, interfaces_full, ic);
-	if (i >= 0) {
-		if (!force_set)
-			return TRUE;
-		interface_offsets_full [i] = offset;
-		return FALSE;
-	}
+	int i;
 	for (i = 0; i < num_ifaces; ++i) {
-		if (interfaces_full [i]) {
-			int end;
-			if (interfaces_full [i]->interface_id < ic->interface_id)
-				continue;
-			end = i + 1;
-			while (end < num_ifaces && interfaces_full [end]) end++;
-			memmove (interfaces_full + i + 1, interfaces_full + i, sizeof (MonoClass*) * (end - i));
-			memmove (interface_offsets_full + i + 1, interface_offsets_full + i, sizeof (int) * (end - i));
+		if (interfaces_full [i] && interfaces_full [i]->interface_id == ic->interface_id) {
+			if (!force_set)
+				return TRUE;
+			interface_offsets_full [i] = offset;
+			return FALSE;
 		}
+		if (interfaces_full [i])
+			continue;
 		interfaces_full [i] = ic;
 		interface_offsets_full [i] = offset;
 		break;
@@ -1784,7 +1755,6 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 		interface_offsets_count = num_ifaces = gklass->interface_offsets_count;
 		interfaces_full = (MonoClass **)g_malloc (sizeof (MonoClass*) * num_ifaces);
 		interface_offsets_full = (int *)g_malloc (sizeof (int) * num_ifaces);
-		ClassAndOffset *co_pair = (ClassAndOffset *) g_malloc (sizeof (ClassAndOffset) * num_ifaces);
 
 		cur_slot = 0;
 		for (int i = 0; i < num_ifaces; ++i) {
@@ -1800,9 +1770,8 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 
 			mono_class_setup_interface_id_internal (inflated);
 
-			co_pair [i].ic = inflated;
-			co_pair [i].offset = gklass->interface_offsets_packed [i];
-			co_pair [i].insertion_order = i;
+			interfaces_full [i] = inflated;
+			interface_offsets_full [i] = gklass->interface_offsets_packed [i];
 
 			int count = count_virtual_methods (inflated);
 			if (count == -1) {
@@ -1816,20 +1785,6 @@ setup_interface_offsets (MonoClass *klass, int cur_slot, gboolean overwrite)
 			cur_slot = MAX (cur_slot, interface_offsets_full [i] + count);
 			max_iid = MAX (max_iid, inflated->interface_id);
 		}
-
-		/* qsort() is not guaranteed to be a stable sort (elements with
-		 * equal keys stay in the same relative order).  In practice,
-		 * qsort from MSVC isn't stable.  So we add a
-		 * ClassAndOffset:insertion_order field and use it as a
-		 * secondary sorting key when the interface ids are equal. */
-		qsort (co_pair, num_ifaces, sizeof (ClassAndOffset), compare_by_interface_id);
-		for (int i = 0; i < num_ifaces; ++i) {
-			interfaces_full [i] = co_pair [i].ic;
-			interface_offsets_full [i] = co_pair [i].offset;
-
-			g_assert (i == 0 || interfaces_full [i]->interface_id >= interfaces_full [i - 1]->interface_id);
-		}
-		g_free (co_pair);
 
 		goto publish;
 	}
