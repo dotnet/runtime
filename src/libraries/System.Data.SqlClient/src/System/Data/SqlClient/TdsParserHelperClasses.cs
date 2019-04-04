@@ -808,8 +808,14 @@ namespace System.Data.SqlClient
         internal string rpcName;
         internal ushort ProcID;       // Used instead of name
         internal ushort options;
-        internal SqlParameter[] parameters;
-        internal byte[] paramoptions;
+
+        internal SqlParameter[] systemParams;
+        internal byte[] systemParamOptions;
+        internal int systemParamCount;
+
+        internal SqlParameterCollection userParams;
+        internal long[] userParamMap;
+        internal int userParamCount;
 
         internal int? recordsAffected;
         internal int cumulativeRecordsAffected;
@@ -822,17 +828,23 @@ namespace System.Data.SqlClient
         internal int warningsIndexEnd;
         internal SqlErrorCollection warnings;
 
-        internal string GetCommandTextOrRpcName()
+        internal SqlParameter GetParameterByIndex(int index, out byte options)
         {
-            if (TdsEnums.RPC_PROCID_EXECUTESQL == ProcID)
+            options = 0;
+            SqlParameter retval = null;
+            if (index < systemParamCount)
             {
-                // Param 0 is the actual sql executing
-                return (string)parameters[0].Value;
+                retval = systemParams[index];
+                options = systemParamOptions[index];
             }
             else
             {
-                return rpcName;
+                long data = userParamMap[index - systemParamCount];
+                int paramIndex = (int)(data & int.MaxValue);
+                options = (byte)((data >> 32) & 0xFF);
+                retval = userParams[paramIndex];
             }
+            return retval;
         }
     }
 
