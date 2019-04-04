@@ -4553,7 +4553,6 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
  *
  *
  *  The frame is laid out as follows for ARM64 (this is a general picture; details may differ for different conditions):
- *  TODO-ARM64-NYI: this is preliminary (copied from ARM and modified), and needs to be reviewed.
  *  NOTE: SP must be 16-byte aligned, so there may be alignment slots in the frame.
  *  We will often save and establish a frame pointer to create better ETW stack walks.
  *
