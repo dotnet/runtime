@@ -7978,7 +7978,7 @@ emit_method_inner (EmitContext *ctx)
 	}
 
 after_codegen:
-	if (!ctx->module->llvm_disable_self_init) {
+	if (cfg->compile_aot && !ctx->module->llvm_disable_self_init) {
 		g_ptr_array_add (ctx->module->cfgs, cfg);
 
 		/*
@@ -9097,7 +9097,9 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 {
 	MonoLLVMModule *module = &aot_module;
 	gboolean emit_dwarf = (flags & LLVM_MODULE_FLAG_DWARF) ? 1 : 0;
+#ifdef TARGET_WIN32_MSVC
 	gboolean emit_codeview = (flags & LLVM_MODULE_FLAG_CODEVIEW) ? 1 : 0;
+#endif
 	gboolean static_link = (flags & LLVM_MODULE_FLAG_STATIC) ? 1 : 0;
 	gboolean llvm_only = (flags & LLVM_MODULE_FLAG_LLVM_ONLY) ? 1 : 0;
 	gboolean interp = (flags & LLVM_MODULE_FLAG_INTERP) ? 1 : 0;
