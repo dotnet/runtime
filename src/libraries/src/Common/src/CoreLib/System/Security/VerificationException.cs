@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Security
@@ -16,13 +17,13 @@ namespace System.Security
             HResult = HResults.COR_E_VERIFICATION;
         }
 
-        public VerificationException(string message)
+        public VerificationException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_VERIFICATION;
         }
 
-        public VerificationException(string message, Exception innerException)
+        public VerificationException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_VERIFICATION;
