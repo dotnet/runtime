@@ -133,10 +133,10 @@ namespace System.Threading
                 //   2. if IsCancellationRequested = false, then NotifyCancellation will see that the event exists, and will call Set().
                 if (IsCancellationRequested)
                 {
-                    _kernelEvent!.Set(); // TODO-NULLABLE: The ! shouldn't be necessary due to CompareExchange initialization above.
+                    _kernelEvent!.Set(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 }
 
-                return _kernelEvent!; // TODO-NULLABLE: The ! shouldn't be necessary due to CompareExchange initialization above.
+                return _kernelEvent!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             }
         }
 
@@ -823,6 +823,7 @@ namespace System.Threading
             // this work with a callback mechanism will add additional cost to other more common cases.
             return new ValueTask(Task.Factory.StartNew(s =>
             {
+                Debug.Assert(s is Tuple<CancellationTokenSource, long>);
                 var state = (Tuple<CancellationTokenSource, long>)s;
                 state.Item1.WaitForCallbackToComplete(state.Item2);
             }, Tuple.Create(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default));

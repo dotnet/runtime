@@ -16,6 +16,7 @@
 //         return TaskToApm.End<int>(asyncResult);
 //     }
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Threading.Tasks
@@ -33,7 +34,7 @@ namespace System.Threading.Tasks
         /// <param name="callback">The callback to be invoked upon completion.</param>
         /// <param name="state">The state to be stored in the IAsyncResult.</param>
         /// <returns>An IAsyncResult to represent the task's asynchronous operation.</returns>
-        public static IAsyncResult Begin(Task task, AsyncCallback callback, object state)
+        public static IAsyncResult Begin(Task task, AsyncCallback callback, object? state)
         {
             Debug.Assert(task != null);
 
@@ -63,7 +64,7 @@ namespace System.Threading.Tasks
         /// <param name="asyncResult">The IAsyncResult to unwrap.</param>
         public static void End(IAsyncResult asyncResult)
         {
-            Task task;
+            Task? task;
 
             // If the IAsyncResult is our task-wrapping IAsyncResult, extract the Task.
             var twar = asyncResult as TaskWrapperAsyncResult;
@@ -91,7 +92,7 @@ namespace System.Threading.Tasks
         /// <param name="asyncResult">The IAsyncResult to unwrap.</param>
         public static TResult End<TResult>(IAsyncResult asyncResult)
         {
-            Task<TResult> task;
+            Task<TResult>? task;
 
             // If the IAsyncResult is our task-wrapping IAsyncResult, extract the Task.
             var twar = asyncResult as TaskWrapperAsyncResult;
@@ -158,7 +159,7 @@ namespace System.Threading.Tasks
             /// <summary>The wrapped Task.</summary>
             internal readonly Task Task;
             /// <summary>The new AsyncState value.</summary>
-            private readonly object _state;
+            private readonly object? _state;
             /// <summary>The new CompletedSynchronously value.</summary>
             private readonly bool _completedSynchronously;
 
@@ -166,7 +167,7 @@ namespace System.Threading.Tasks
             /// <param name="task">The Task to wrap.</param>
             /// <param name="state">The new AsyncState value</param>
             /// <param name="completedSynchronously">The new CompletedSynchronously value.</param>
-            internal TaskWrapperAsyncResult(Task task, object state, bool completedSynchronously)
+            internal TaskWrapperAsyncResult(Task task, object? state, bool completedSynchronously)
             {
                 Debug.Assert(task != null);
                 Debug.Assert(!completedSynchronously || task.IsCompleted, "If completedSynchronously is true, the task must be completed.");
@@ -180,7 +181,7 @@ namespace System.Threading.Tasks
             // - IsCompleted and AsyncWaitHandle just pass through to the Task.
             // - AsyncState and CompletedSynchronously return the corresponding values stored in this object.
 
-            object IAsyncResult.AsyncState { get { return _state; } }
+            object? IAsyncResult.AsyncState { get { return _state; } }
             bool IAsyncResult.CompletedSynchronously { get { return _completedSynchronously; } }
             bool IAsyncResult.IsCompleted { get { return this.Task.IsCompleted; } }
             WaitHandle IAsyncResult.AsyncWaitHandle { get { return ((IAsyncResult)this.Task).AsyncWaitHandle; } }
