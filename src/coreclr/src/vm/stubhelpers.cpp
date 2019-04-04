@@ -705,6 +705,9 @@ FCIMPL4(IUnknown*, StubHelpers::InterfaceMarshaler__ConvertToNative, Object* pOb
     // This is only called in IL stubs which are in CER, so we don't need to worry about ThreadAbort
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_NO_THREAD_ABORT, pObj);
 
+    // We're going to be making some COM calls, better initialize COM.
+    EnsureComStarted();
+
     pIntf = MarshalObjectToInterface(&pObj, pItfMT, pClsMT, dwFlags);
 
     // No exception will be thrown here (including thread abort as it is delayed in IL stubs)
@@ -725,6 +728,9 @@ FCIMPL4(Object*, StubHelpers::InterfaceMarshaler__ConvertToManaged, IUnknown **p
     
     OBJECTREF pObj = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_1(pObj);
+    
+    // We're going to be making some COM calls, better initialize COM.
+    EnsureComStarted();
 
     UnmarshalObjectFromInterface(&pObj, ppUnk, pItfMT, pClsMT, dwFlags);
 
@@ -893,7 +899,7 @@ FCIMPL2(ReflectClassBaseObject *, StubHelpers::WinRTTypeNameConverter__GetTypeFr
     HELPER_METHOD_FRAME_BEGIN_RET_2(refClass, refString);
 
     bool isPrimitive;
-    TypeHandle th = WinRTTypeNameConverter::GetManagedTypeFromWinRTTypeName(refString->GetBuffer(), &isPrimitive);
+    TypeHandle th = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(refString->GetBuffer(), /* pLoadBinder */ nullptr, &isPrimitive);
     *pbIsPrimitive = isPrimitive;
     
     refClass = th.GetManagedClassObject();

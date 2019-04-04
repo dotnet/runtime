@@ -5103,7 +5103,7 @@ void InitializeComInterop()
 }
 
 // Try to load a WinRT type.
-TypeHandle GetWinRTType(SString* ssTypeName, BOOL bThrowIfNotFound)
+TypeHandle LoadWinRTType(SString* ssTypeName, BOOL bThrowIfNotFound, ICLRPrivBinder* loadBinder /* =nullptr */)
 {
     CONTRACT (TypeHandle)
     {
@@ -5116,8 +5116,8 @@ TypeHandle GetWinRTType(SString* ssTypeName, BOOL bThrowIfNotFound)
     TypeHandle typeHandle;
 
     SString ssAssemblyName(SString::Utf8Literal, "WindowsRuntimeAssemblyName, ContentType=WindowsRuntime");
-    DomainAssembly *pAssembly = LoadDomainAssembly(&ssAssemblyName, NULL, 
-                                                   NULL, 
+    DomainAssembly *pAssembly = LoadDomainAssembly(&ssAssemblyName, nullptr, 
+                                                   loadBinder, 
                                                    bThrowIfNotFound, ssTypeName);
     if (pAssembly != NULL)
     {
@@ -6669,7 +6669,7 @@ TypeHandle GetClassFromIInspectable(IUnknown* pUnk, bool *pfSupportsIInspectable
         EX_TRY
         {
             LPCWSTR pszWinRTTypeName = (ssTmpClassName.IsEmpty() ? ssClassName  : ssTmpClassName);
-            classTypeHandle = WinRTTypeNameConverter::GetManagedTypeFromWinRTTypeName(pszWinRTTypeName, /*pbIsPrimitive = */ NULL);
+            classTypeHandle = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(pszWinRTTypeName, /* pLoadBinder */ nullptr, /*pbIsPrimitive = */ nullptr);
         }
         EX_CATCH
         {
