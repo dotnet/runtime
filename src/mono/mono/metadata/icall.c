@@ -3769,12 +3769,21 @@ read_enum_value (const char *mem, int type)
 	case MONO_TYPE_I2:
 		return (gint16) read16 (mem);
 	case MONO_TYPE_U4:
+	case MONO_TYPE_R4:
 		return read32 (mem);
 	case MONO_TYPE_I4:
 		return (gint32) read32 (mem);
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
+	case MONO_TYPE_R8:
 		return read64 (mem);
+	case MONO_TYPE_U:
+	case MONO_TYPE_I:
+#if SIZEOF_REGISTER == 8
+		return read64 (mem);
+#else
+		return read32 (mem);
+#endif
 	default:
 		g_assert_not_reached ();
 	}
@@ -3800,15 +3809,29 @@ write_enum_value (void *mem, int type, guint64 value)
 		break;
 	}
 	case MONO_TYPE_U4:
-	case MONO_TYPE_I4: {
+	case MONO_TYPE_I4:
+	case MONO_TYPE_R4: {
 		guint32 *p = (guint32 *)mem;
 		*p = value;
 		break;
 	}
 	case MONO_TYPE_U8:
-	case MONO_TYPE_I8: {
+	case MONO_TYPE_I8:
+	case MONO_TYPE_R8: {
 		guint64 *p = (guint64 *)mem;
 		*p = value;
+		break;
+	}
+	case MONO_TYPE_U:
+	case MONO_TYPE_I: {
+#if SIZEOF_REGISTER == 8
+		guint64 *p = (guint64 *)mem;
+		*p = value;
+#else
+		guint32 *p = (guint32 *)mem;
+		*p = value;
+		break;
+#endif
 		break;
 	}
 	default:
@@ -3933,6 +3956,7 @@ ves_icall_System_Enum_compare_value_to (MonoObjectHandle enumHandle, MonoObjectH
 	} while (0)
 
 	switch (basetype->type) {
+		case MONO_TYPE_BOOLEAN:
 		case MONO_TYPE_U1:
 			COMPARE_ENUM_VALUES (guint8);
 		case MONO_TYPE_I1:
@@ -3946,10 +3970,26 @@ ves_icall_System_Enum_compare_value_to (MonoObjectHandle enumHandle, MonoObjectH
 			COMPARE_ENUM_VALUES (guint32);
 		case MONO_TYPE_I4:
 			COMPARE_ENUM_VALUES (gint32);
+		case MONO_TYPE_R4:
+			COMPARE_ENUM_VALUES (gfloat);
 		case MONO_TYPE_U8:
 			COMPARE_ENUM_VALUES (guint64);
 		case MONO_TYPE_I8:
 			COMPARE_ENUM_VALUES (gint64);
+		case MONO_TYPE_R8:
+			COMPARE_ENUM_VALUES (gdouble);
+		case MONO_TYPE_U:
+#if SIZEOF_REGISTER == 8
+			COMPARE_ENUM_VALUES (guint64);
+#else
+			COMPARE_ENUM_VALUES (guint32);
+#endif
+		case MONO_TYPE_I:
+#if SIZEOF_REGISTER == 8
+			COMPARE_ENUM_VALUES (gint64);
+#else
+			COMPARE_ENUM_VALUES (gint32);
+#endif
 	}
 #undef COMPARE_ENUM_VALUES
 	/* indicates that the enum was of an unsupported underlying type */
@@ -3979,13 +4019,24 @@ ves_icall_System_Enum_get_hashcode (MonoObjectHandle enumHandle, MonoError *erro
 			return ((int)(guint16)value | (((int)value) << 16));
 		}
 		case MONO_TYPE_U4:
+		case MONO_TYPE_R4:
 			return *((guint32*)data);
 		case MONO_TYPE_I4:
 			return *((gint32*)data);
 		case MONO_TYPE_U8:
-		case MONO_TYPE_I8: {
+		case MONO_TYPE_I8:
+		case MONO_TYPE_R8: {
 			gint64 value = *((gint64*)data);
 			return (gint)(value & 0xffffffff) ^ (int)(value >> 32);
+		}
+		case MONO_TYPE_I:
+		case MONO_TYPE_U: {
+#if SIZEOF_REGISTER == 8
+			gint64 value = *((gint64*)data);
+			return (gint)(value & 0xffffffff) ^ (int)(value >> 32);
+#else
+			return *((guint32*)data);
+#endif
 		}
 		default:
 			g_error ("Implement type 0x%02x in get_hashcode", basetype->type);
@@ -4065,7 +4116,7 @@ ves_icall_System_Enum_GetEnumValuesAndNames (MonoReflectionTypeHandle type, Mono
 	}
 	return_val_if_nok (error, FALSE);
 
-	return sorted;
+	return sorted || base_type == MONO_TYPE_R4 || base_type == MONO_TYPE_R8;
 }
 
 enum {

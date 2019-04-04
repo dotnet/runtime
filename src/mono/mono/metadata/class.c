@@ -5994,6 +5994,10 @@ gboolean mono_type_is_valid_enum_basetype (MonoType * type) {
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
+#if ENABLE_NETCORE
+	case MONO_TYPE_R8:
+	case MONO_TYPE_R4:
+#endif
 		return TRUE;
 	default:
 		return FALSE;
