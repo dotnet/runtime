@@ -1,48 +1,37 @@
 name: dotnet-sdk
-version: 2.1.4
+version: 2.2.105
 summary: Cross-Platform .NET Core SDK
 description: |
   .NET Core SDK. https://dot.net/core.
 
-grade: devel
-confinement: devmode
+grade: stable
+confinement: classic
 
 apps:
   dotnet:
-    command: dotnet
-    plugs:
-      - network
-      - network-bind
-      - removable-media
-      - home
-
-plugs:
-  # Mount the content shared from dotnet-runtime into supported runtimes
-  # need feature to enable content interfaces between classic snaps in order for this to work.
-  dotnet-runtime-11:
-    content: dotnet-runtime-11
-    interface: content
-    target: /shared/Microsoft.NETCore.App/1.1.6
-    default-provider: dotnet-runtime:dotnet-runtime
-
+    command: dotnet-runtime
 
 parts:
   dotnet-sdk:
       plugin: dump
-      source: https://download.microsoft.com/download/1/1/5/115B762D-2B41-4AF3-9A63-92D9680B9409/dotnet-sdk-2.1.4-linux-x64.tar.gz
-      source-checksum: sha512/05fe90457a8b77ad5a5eb2f22348f53e962012a55077ac4ad144b279f6cad69740e57f165820bfd6104e88b30e93684bde3e858f781541d4f110f28cd52ce2b7
+      source: https://dotnetcli.blob.core.windows.net/dotnet/Sdk/2.2.105/dotnet-sdk-2.2.105-linux-x64.tar.gz
+      source-checksum: sha512/b7ad26b344995de91848adec56bda5dfe5fef0b83abaa3e4376dc790cf9786e945b625de1ae4cecaf5c5bef86284652886ed87696581553aeda89ee2e2e99517
       stage-packages:
-        - libicu55
+        - libicu60
         - libssl1.0.0
-        - libc6
         - libcurl3
         - libgssapi-krb5-2
-        - liblttng-ust0
         - libstdc++6
         - zlib1g
         - libgcc1
         - lldb
         - libunwind8
-      install:
-        mkdir $SNAPCRAFT_PART_INSTALL/shared/Microsoft.NETCore.App/1.1.6
+        - libtinfo5
+        - libc6
+        - liblttng-ust0
+        - liburcu6
+
+  runtime-wrapper:
+      plugin: dump
+      source: .
 
