@@ -77,7 +77,6 @@ static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER; // prevents races whe
 
 static bool g_signalForBreak = true;          // tracks whether the terminal should send signals for breaks, such that attributes have been changed
 
-static bool g_haveInitTermios = false;        // tracks whether g_initTermios has been initialized
 static struct termios g_initTermios;          // the initial attributes captured
 
 static bool g_hasCurrentTermios = false;      // tracks whether g_currentTermios is valid
@@ -93,7 +92,7 @@ static bool g_reading = false;                // tracks whether the application 
 static bool g_childUsesTerminal = false;      // tracks whether a child process is using the terminal
 static bool g_terminalUninitialized = false;  // tracks whether the application is terminating
 
-static bool g_noTty = false;                  // cache we are not a tty
+static bool g_hasTty = false;                  // cache we are not a tty
 
 static volatile bool g_receivedSigTtou = false;
 
@@ -163,7 +162,7 @@ static bool TcSetAttr(struct termios* termios, bool blockIfBackground)
 
 static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minChars, uint8_t decisecondsTimeout, bool blockIfBackground)
 {
-    if (g_noTty)
+    if (!g_hasTty)
     {
         errno = ENOTTY;
         return false;
@@ -171,7 +170,6 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
     g_childUsesTerminal = forChild;
 
-    assert(g_haveInitTermios);
     struct termios termios = g_initTermios;
 
     if (signalForBreak)
@@ -205,7 +203,7 @@ static bool ConfigureTerminal(bool signalForBreak, bool forChild, uint8_t minCha
 
 void UninitializeTerminal()
 {
-    assert(g_haveInitTermios);
+    assert(g_hasTty);
 
     // This method is called on SIGQUIT/SIGINT from the signal dispatching thread
     // and on atexit.
@@ -441,17 +439,13 @@ void ReinitializeTerminal()
     }
 }
 
-static bool InitializeTerminalCore()
+static void InitializeTerminalCore()
 {
-    g_haveInitTermios = tcgetattr(STDIN_FILENO, &g_initTermios) >= 0;
+    bool haveInitTermios = tcgetattr(STDIN_FILENO, &g_initTermios) >= 0;
 
-    if (!g_haveInitTermios && errno == ENOTTY)
+    if (haveInitTermios)
     {
-        g_noTty = true;
-    }
-
-    if (g_haveInitTermios)
-    {
+        g_hasTty = true;
         g_hasCurrentTermios = true;
         g_currentTermios = g_initTermios;
         g_signalForBreak = g_initTermios.c_lflag & (uint32_t)ISIG;
@@ -462,8 +456,6 @@ static bool InitializeTerminalCore()
     {
         g_signalForBreak = true;
     }
-
-    return g_haveInitTermios || g_noTty;
 }
 
 int32_t SystemNative_InitializeTerminalAndSignalHandling()
@@ -475,10 +467,8 @@ int32_t SystemNative_InitializeTerminalAndSignalHandling()
     {
         if (initialized == 0)
         {
-            if (InitializeTerminalCore())
-            {
-                initialized = InitializeSignalHandlingCore();
-            }
+            InitializeTerminalCore();
+            initialized = InitializeSignalHandlingCore();
         }
         pthread_mutex_unlock(&g_lock);
     }
