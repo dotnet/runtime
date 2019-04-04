@@ -56,7 +56,7 @@ namespace System.Globalization
         private const int undef = -1;
 
         // Override flag
-        private string _sRealName = null!; // Name you passed in (ie: en-US, en, or de-DE_phoneb)
+        private string _sRealName = null!; // Name you passed in (ie: en-US, en, or de-DE_phoneb). Initialized by helper called during initialization.
         private string? _sWindowsName; // Name OS thinks the object is (ie: de-DE_phoneb, or en-US (even if en was passed in))
 
         // Identity

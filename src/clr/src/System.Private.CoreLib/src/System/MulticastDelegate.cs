@@ -578,7 +578,7 @@ namespace System
         {
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
-            this._target = target!; // TODO-NULLABLE: Compiler can't see throw helper above
+            this._target = target!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             this._methodPtr = methodPtr;
         }
 
