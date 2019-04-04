@@ -50,7 +50,7 @@ namespace System
                 string startupHookPart = startupHookParts[i];
                 if (string.IsNullOrEmpty(startupHookPart))
                 {
-                    throw new ArgumentException(SR.Argument_InvalidStartupHookSyntax);
+                    continue;
                 }
 
                 if (Path.IsPathFullyQualified(startupHookPart))
