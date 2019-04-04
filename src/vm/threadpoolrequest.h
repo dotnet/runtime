@@ -57,7 +57,6 @@ public:
 
     //Takes care of dispatching requests in the right domain.
     virtual void DispatchWorkItem(bool* foundWork, bool* wasNotRecalled) = 0;
-    virtual void SetAppDomainId(ADID id) = 0;
     virtual void SetTPIndexUnused() = 0;
     virtual BOOL IsTPIndexUnused() = 0;
     virtual void SetTPIndex(TPIndex index) = 0; 
@@ -89,7 +88,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         VolatileStore(&m_numRequestsPending, (LONG)0);
-        m_id.m_dwId = 0;
     }
     
     inline BOOL IsRequestPending()
@@ -104,18 +102,6 @@ public:
     void ClearAppDomainRequestsActive();
     bool TakeActiveRequest();
 
-    inline void SetAppDomainId(ADID id)
-    {
-        LIMITED_METHOD_CONTRACT;
-        //This function should be called during appdomain creation when no managed code
-        //has started running yet. That implies, no requests should be pending
-        //or dispatched to this structure yet.
-
-        _ASSERTE(m_id.m_dwId == 0);
-
-        m_id = id;
-    }
-
     inline void SetTPIndex(TPIndex index) 
     {
         LIMITED_METHOD_CONTRACT;
@@ -123,7 +109,6 @@ public:
         //has started running yet. That implies, no requests should be pending
         //or dispatched to this structure yet.
 
-        _ASSERTE(m_id.m_dwId == 0);
         _ASSERTE(m_index.m_dwIndex == UNUSED_THREADPOOL_INDEX);
 
         m_index = index;
@@ -134,12 +119,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         if (m_index.m_dwIndex == UNUSED_THREADPOOL_INDEX)
         {
-            //This function is called during appdomain creation, and no new appdomains can be
-            //added removed at this time. So, make sure that the per-appdomain structures that 
-            //have been cleared(reclaimed) don't have any pending requests to them.
-
-            _ASSERTE(m_id.m_dwId == 0);
-
             return TRUE;
         }
 
@@ -149,19 +128,12 @@ public:
     inline void SetTPIndexUnused()
     {
         WRAPPER_NO_CONTRACT;
-        //This function should be called during appdomain unload when all threads have
-        //succesfully exited the appdomain. That implies, no requests should be pending
-        //or dispatched to this structure.
-
-        _ASSERTE(m_id.m_dwId == 0);
-
         m_index.m_dwIndex = UNUSED_THREADPOOL_INDEX;
     }
 
     void DispatchWorkItem(bool* foundWork, bool* wasNotRecalled);
 
 private:
-    ADID m_id;
     TPIndex m_index;
     struct DECLSPEC_ALIGN(MAX_CACHE_LINE_SIZE) {
         BYTE m_padding1[MAX_CACHE_LINE_SIZE - sizeof(LONG)];
@@ -225,10 +197,6 @@ public:
 
     bool TakeActiveRequest();
 
-    inline void SetAppDomainId(ADID id)
-    {
-    }
-
     void QueueUnmanagedWorkRequest(LPTHREAD_START_ROUTINE  function, PVOID context);
     PVOID DeQueueUnManagedWorkRequest(bool* lastOne);
 
@@ -287,7 +255,6 @@ public:
     static void ResetAppDomainIndex(TPIndex index);
     static bool AreRequestsPendingInAnyAppDomains();
     static LONG GetAppDomainIndexForThreadpoolDispatch();
-    static void SetAppDomainId(TPIndex index, ADID id);
     static TPIndex AddNewTPIndex();
 
     inline static IPerAppDomainTPCount* GetPerAppdomainCount(TPIndex index)

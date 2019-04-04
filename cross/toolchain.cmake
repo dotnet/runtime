@@ -76,8 +76,6 @@ if (CLR_CMAKE_COMPILER STREQUAL "Clang")
   add_compile_param(CROSS_LINK_FLAGS "--target=${TOOLCHAIN}")
 endif()
 
-add_compile_param(CROSS_LINK_FLAGS "-fuse-ld=gold")
-
 if(TARGET_ARCH_NAME STREQUAL "armel")
   if(DEFINED TIZEN_TOOLCHAIN) # For Tizen only
     add_compile_param(CROSS_LINK_FLAGS "-B${CROSS_ROOTFS}/usr/lib/gcc/${TIZEN_TOOLCHAIN}")

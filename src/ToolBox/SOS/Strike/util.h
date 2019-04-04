@@ -1737,8 +1737,6 @@ struct DumpArrayFlags
 #define BIT_SBLK_SPIN_LOCK                  0x10000000
 #define SBLK_MASK_LOCK_THREADID             0x000003FF   // special value of 0 + 1023 thread ids
 #define SBLK_MASK_LOCK_RECLEVEL             0x0000FC00   // 64 recursion levels
-#define SBLK_APPDOMAIN_SHIFT                16           // shift right this much to get appdomain index
-#define SBLK_MASK_APPDOMAININDEX            0x000007FF   // 2048 appdomain indices
 #define SBLK_RECLEVEL_SHIFT                 10           // shift right this much to get recursion level
 #define BIT_SBLK_IS_HASHCODE            0x04000000
 #define MASK_HASHCODE                   ((1<<HASHCODE_BITS)-1)

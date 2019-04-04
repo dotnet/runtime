@@ -202,7 +202,7 @@ public:
         
         if (objRef!=NULL)
         {
-            SetObjectReferenceUnchecked((OBJECTREF*)&m_or, objRef);
+            SetObjectReference((OBJECTREF*)&m_or, objRef);
         }
         else
         {

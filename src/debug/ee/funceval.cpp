@@ -980,7 +980,7 @@ static void GetFuncEvalArgValue(DebuggerEval *pDE,
                     if (size <= sizeof(ARG_SLOT))
                     {
                         // Its not ByRef, so we need to copy the value class onto the ARG_SLOT.
-                        CopyValueClassUnchecked(ArgSlotEndianessFixup(pArgument, sizeof(LPVOID)), pData, o1->GetMethodTable());
+                        CopyValueClass(ArgSlotEndianessFixup(pArgument, sizeof(LPVOID)), pData, o1->GetMethodTable());
                     }
                     else
                     {
@@ -2774,16 +2774,14 @@ void UnpackFuncEvalResult(DebuggerEval *pDE,
             // box the object
             CopyValueClass(retObject->GetData(),
                            pRetBuff,
-                           RetValueType.GetMethodTable(),
-                           retObject->GetAppDomain());
+                           RetValueType.GetMethodTable());
         }
         else
         {
             // box the primitive returned, retObject is a true nullable for nullabes, It will be Normalized later
             CopyValueClass(retObject->GetData(),
                            pDE->m_result,
-                           RetValueType.GetMethodTable(),
-                           retObject->GetAppDomain());
+                           RetValueType.GetMethodTable());
         }
 
         pDE->m_result[0] = ObjToArgSlot(retObject);
@@ -3434,8 +3432,6 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     // invalid due to an AD unload.
     // All normal func evals should have an AppDomain specified.
     //
-    _ASSERTE( pDE->m_appDomainId.m_dwId != 0 ); 
-    ENTER_DOMAIN_ID( pDE->m_appDomainId );
 
     // Wrap everything in a EX_TRY so we catch any exceptions that could be thrown.
     // Note that we don't let any thrown exceptions cross the AppDomain boundary because we don't 
@@ -3464,9 +3460,6 @@ static void GCProtectArgsAndDoNormalFuncEval(DebuggerEval *pDE,
     // the funceval.  If a ThreadAbort occurred other than for a funcEval abort, we'll re-throw it manually.
     EX_END_CATCH(SwallowAllExceptions);
 
-    // Restore context
-    END_DOMAIN_TRANSITION;
-
     protectValueClassFrame.Pop();
 
     CleanUpTemporaryVariables(protectValueClassFrame.GetValueClassInfoList());
@@ -3490,14 +3483,6 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
         return;
     }
     
-    // The method may be in a different AD than the thread.
-    // The RS already verified that all of the arguments are in the same appdomain as the function
-    // (because we can't verify it here).
-    // Note that this is exception safe, so we are guarenteed to be in the correct AppDomain when
-    // we leave this method.
-    // Before this, we can't safely use the DebuggerModule* since the domain may have been unloaded.
-    ENTER_DOMAIN_ID( pDE->m_appDomainId );
-
     OBJECTREF newObj = NULL;
     GCPROTECT_BEGIN(newObj);
 
@@ -3671,12 +3656,6 @@ void FuncEvalHijackRealWorker(DebuggerEval *pDE, Thread* pThread, FuncEvalFrame*
     EX_END_CATCH(SwallowAllExceptions);
 
     GCPROTECT_END();
-
-    //
-    // Restore context
-    //
-    END_DOMAIN_TRANSITION;
-
 }
 
 //
