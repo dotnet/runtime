@@ -1065,6 +1065,14 @@
                 {
                     "name": "System.Runtime.InteropServices.Tests.StringToHGlobalAutoTests.StringToHGlobalAuto_NonNullString_Roundtrips",
                     "reason": "https://github.com/dotnet/coreclr/pull/23664"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.ThrowExceptionForHRTests.ThrowExceptionForHR_NoErrorInfo_ReturnsValidException",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.ThrowExceptionForHRTests.ThrowExceptionForHR_ErrorInfo_ReturnsValidException",
+                    "reason": "outdated"
                 }
             ]
         }
