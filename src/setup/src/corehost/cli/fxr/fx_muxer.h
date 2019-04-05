@@ -17,7 +17,8 @@ enum class coreclr_delegate_type
 {
     invalid,
     com_activation,
-    load_in_memory_assembly
+    load_in_memory_assembly,
+    winrt_activation
 };
 
 class fx_muxer_t

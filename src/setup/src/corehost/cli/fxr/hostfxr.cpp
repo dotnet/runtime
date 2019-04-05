@@ -404,6 +404,8 @@ coreclr_delegate_type hostfxr_delegate_to_coreclr_delegate(hostfxr_delegate_type
         return coreclr_delegate_type::com_activation;
     case hostfxr_delegate_type::load_in_memory_assembly:
         return coreclr_delegate_type::load_in_memory_assembly;
+    case hostfxr_delegate_type::winrt_activation:
+        return coreclr_delegate_type::winrt_activation;
     }
     return coreclr_delegate_type::invalid;
 }
