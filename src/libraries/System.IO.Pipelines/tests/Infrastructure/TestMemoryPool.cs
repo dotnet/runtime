@@ -10,7 +10,7 @@ using System.Threading;
 
 namespace System.IO.Pipelines
 {
-    public class TestMemoryPool: MemoryPool<byte>
+    public class TestMemoryPool : MemoryPool<byte>
     {
         private MemoryPool<byte> _pool = Shared;
 
