@@ -255,6 +255,19 @@ mono_llvm_set_call_notailcall (LLVMValueRef func)
 #endif
 }
 
+void
+mono_llvm_set_call_noalias_ret (LLVMValueRef wrapped_calli)
+{
+#if LLVM_API_VERSION > 100
+	Instruction *calli = unwrap<Instruction> (wrapped_calli);
+
+	if (isa<CallInst> (calli))
+		dyn_cast<CallInst>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NoAlias);
+	else
+		dyn_cast<InvokeInst>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NoAlias);
+#endif
+}
+
 #if LLVM_API_VERSION > 500
 static Attribute::AttrKind
 convert_attr (AttrKind kind)

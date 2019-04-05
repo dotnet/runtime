@@ -3973,6 +3973,11 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	if (ins->opcode != OP_TAILCALL && ins->opcode != OP_TAILCALL_MEMBASE && LLVMGetInstructionOpcode (lcall) == LLVMCall)
 		mono_llvm_set_call_notailcall (lcall);
 
+	// As per the LLVM docs, a function has a noalias return value if and only if
+	// it is an allocation function. This is an allocation function.
+	if (call->method && call->method->wrapper_type == MONO_WRAPPER_ALLOC)
+		mono_llvm_set_call_noalias_ret (lcall);
+
 	/*
 	 * Modify cconv and parameter attributes to pass rgctx/imt correctly.
 	 */

@@ -107,6 +107,9 @@ void
 mono_llvm_set_call_notailcall (LLVMValueRef call);
 
 void
+mono_llvm_set_call_noalias_ret (LLVMValueRef wrapped_calli);
+
+void
 mono_llvm_add_func_attr (LLVMValueRef func, AttrKind kind);
 
 void
