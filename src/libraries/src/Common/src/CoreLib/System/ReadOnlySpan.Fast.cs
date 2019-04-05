@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -41,7 +42,7 @@ namespace System
         /// <param name="array">The target array.</param>
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlySpan(T[] array)
+        public ReadOnlySpan(T[]? array)
         {
             if (array == null)
             {
@@ -65,7 +66,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlySpan(T[] array, int start, int length)
+        public ReadOnlySpan(T[]? array, int start, int length)
         {
             if (array == null)
             {
