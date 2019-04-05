@@ -21,7 +21,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
         /// IsSupported property indicates whether any method provided
         /// by this class is supported by the current runtime.
         /// </summary>
-        public static bool IsSupported { get { return false; }}
+        public static bool IsSupported { [Intrinsic] get { return false; }}
 
         /// <summary>
         /// Vector abs

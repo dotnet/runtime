@@ -4,6 +4,7 @@
 
 #nullable enable
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -16,13 +17,13 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Sse2() { }
 
-        public new static bool IsSupported { get { return false; } }
+        public new static bool IsSupported { [Intrinsic] get { return false; } }
 
         public new abstract class X64 : Sse.X64
         {
             internal X64() { }
 
-            public new static bool IsSupported { get { return false; } }
+            public new static bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
             /// __int64 _mm_cvtsd_si64 (__m128d a)
