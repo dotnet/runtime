@@ -32,7 +32,7 @@ namespace System.Threading
 
                     bool result = Interop.Kernel32.QueryUnbiasedInterruptTime(out time100ns);
                     if (!result)
-                        throw Marshal.GetExceptionForHR(Marshal.GetLastWin32Error());
+                        throw Marshal.GetExceptionForHR(Marshal.GetLastWin32Error())!;
 
                     // convert to 100ns to milliseconds, and truncate to 32 bits.
                     return (int)(uint)(time100ns / 10000);
