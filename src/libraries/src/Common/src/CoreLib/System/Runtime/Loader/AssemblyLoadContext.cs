@@ -150,7 +150,7 @@ namespace System.Runtime.Loader
         // Event handler for resolving native libraries.
         // This event is raised if the native library could not be resolved via
         // the default resolution logic [including AssemblyLoadContext.LoadUnmanagedDll()]
-        // 
+        //
         // Inputs: Invoking assembly, and library name to resolve
         // Returns: A handle to the loaded native library
         public event Func<Assembly, string, IntPtr> ResolvingUnmanagedDll;
@@ -158,7 +158,7 @@ namespace System.Runtime.Loader
         // Event handler for resolving managed assemblies.
         // This event is raised if the managed assembly could not be resolved via
         // the default resolution logic [including AssemblyLoadContext.Load()]
-        // 
+        //
         // Inputs: The AssemblyLoadContext and AssemblyName to be loaded
         // Returns: The Loaded assembly object.
         public event Func<AssemblyLoadContext, AssemblyName, Assembly> Resolving;
@@ -243,7 +243,7 @@ namespace System.Runtime.Loader
             return Assembly.Load(assemblyName, ref stackMark, _nativeAssemblyLoadContext);
         }
 
-        // These methods load assemblies into the current AssemblyLoadContext 
+        // These methods load assemblies into the current AssemblyLoadContext
         // They may be used in the implementation of an AssemblyLoadContext derivation
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
@@ -288,7 +288,7 @@ namespace System.Runtime.Loader
 
                 return InternalLoadFromPath(assemblyPath, nativeImagePath);
             }
-        }        
+        }
 
         public Assembly LoadFromStream(Stream assembly)
         {
@@ -362,7 +362,7 @@ namespace System.Runtime.Loader
         {
             //defer to default coreclr policy of loading unmanaged dll
             return IntPtr.Zero;
-        }        
+        }
 
         public void Unload()
         {
@@ -387,7 +387,7 @@ namespace System.Runtime.Loader
                     }
                 }
             }
-        }        
+        }
 
         private void VerifyIsAlive()
         {
