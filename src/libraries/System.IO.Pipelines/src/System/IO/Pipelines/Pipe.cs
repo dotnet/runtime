@@ -424,7 +424,7 @@ namespace System.IO.Pipelines
         private void AdvanceReader(BufferSegment consumedSegment, int consumedIndex, BufferSegment examinedSegment, int examinedIndex)
         {
             // Throw if examined < consumed
-            if (consumedSegment != null && examinedSegment != null && GetLength(consumedSegment, consumedIndex, examinedSegment, examinedIndex) < 0)
+            if (consumedSegment != null && examinedSegment != null && BufferSegment.GetLength(consumedSegment, consumedIndex, examinedSegment, examinedIndex) < 0)
             {
                 ThrowHelper.ThrowInvalidOperationException_InvalidExaminedOrConsumedPosition();
             }
@@ -444,7 +444,7 @@ namespace System.IO.Pipelines
 
                 if (examinedSegment != null && _lastExaminedIndex >= 0)
                 {
-                    long examinedBytes = GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
+                    long examinedBytes = BufferSegment.GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
                     long oldLength = _length;
 
                     if (examinedBytes < 0)
@@ -533,18 +533,6 @@ namespace System.IO.Pipelines
             }
 
             TrySchedule(_writerScheduler, completionData);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static long GetLength(BufferSegment startSegment, int startIndex, BufferSegment endSegment, int endIndex)
-        {
-            return (endSegment.RunningIndex + (uint)endIndex) - (startSegment.RunningIndex + (uint)startIndex);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static long GetLength(long startPosition, BufferSegment endSegment, int endIndex)
-        {
-            return (endSegment.RunningIndex + (uint)endIndex) - startPosition;
         }
 
         internal void CompleteReader(Exception exception)

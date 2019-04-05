@@ -29,7 +29,7 @@ namespace System.IO.Pipelines
     }
     public partial class PipeOptions
     {
-        public PipeOptions(System.Buffers.MemoryPool<byte> pool = null, System.IO.Pipelines.PipeScheduler readerScheduler = null, System.IO.Pipelines.PipeScheduler writerScheduler = null, long pauseWriterThreshold = (long)32768, long resumeWriterThreshold = (long)16384, int minimumSegmentSize = 2048, bool useSynchronizationContext = true) { }
+        public PipeOptions(System.Buffers.MemoryPool<byte> pool = null, System.IO.Pipelines.PipeScheduler readerScheduler = null, System.IO.Pipelines.PipeScheduler writerScheduler = null, long pauseWriterThreshold = (long)65536, long resumeWriterThreshold = (long)32768, int minimumSegmentSize = 4096, bool useSynchronizationContext = true) { }
         public static System.IO.Pipelines.PipeOptions Default { get { throw null; } }
         public int MinimumSegmentSize { get { throw null; } }
         public long PauseWriterThreshold { get { throw null; } }
@@ -48,6 +48,7 @@ namespace System.IO.Pipelines
         public abstract void CancelPendingRead();
         public abstract void Complete(System.Exception exception = null);
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.IO.Pipelines.PipeReader Create(System.IO.Stream stream, System.IO.Pipelines.StreamPipeReaderOptions readerOptions = null) { throw null; }
         public abstract void OnWriterCompleted(System.Action<System.Exception, object> callback, object state);
         public abstract System.Threading.Tasks.ValueTask<System.IO.Pipelines.ReadResult> ReadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
         public abstract bool TryRead(out System.IO.Pipelines.ReadResult result);
@@ -85,5 +86,12 @@ namespace System.IO.Pipelines
     public static partial class StreamPipeExtensions
     {
         public static System.Threading.Tasks.Task CopyToAsync(this System.IO.Stream source, System.IO.Pipelines.PipeWriter destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+    }
+    public partial class StreamPipeReaderOptions
+    {
+        public StreamPipeReaderOptions(System.Buffers.MemoryPool<byte> pool = null, int bufferSize = 4096, int minimumReadSize = 1024) { }
+        public int BufferSize { get { throw null; } }
+        public int MinimumReadSize { get { throw null; } }
+        public System.Buffers.MemoryPool<byte> Pool { get { throw null; } }
     }
 }

@@ -93,6 +93,12 @@ namespace System.IO.Pipelines
 
         public int Length => End;
 
+        public int WritableBytes
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => AvailableMemory.Length - End;
+        }
+
         public void SetNext(BufferSegment segment)
         {
             Debug.Assert(segment != null);
@@ -108,5 +114,18 @@ namespace System.IO.Pipelines
                 segment = segment.NextSegment;
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static long GetLength(BufferSegment startSegment, int startIndex, BufferSegment endSegment, int endIndex)
+        {
+            return (endSegment.RunningIndex + (uint)endIndex) - (startSegment.RunningIndex + (uint)startIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static long GetLength(long startPosition, BufferSegment endSegment, int endIndex)
+        {
+            return (endSegment.RunningIndex + (uint)endIndex) - startPosition;
+        }
+
     }
 }
