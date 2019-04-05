@@ -3458,6 +3458,21 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             ni = lookupNamedIntrinsic(method);
 
 #ifdef FEATURE_HW_INTRINSICS
+            if (ni == NI_IsSupported_True)
+            {
+                return gtNewIconNode(true);
+            }
+
+            if (ni == NI_IsSupported_False)
+            {
+                return gtNewIconNode(false);
+            }
+
+            if (ni == NI_Throw_PlatformNotSupportedException)
+            {
+                return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
+            }
+
             if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
             {
                 GenTree* hwintrinsic = impHWIntrinsic(ni, method, sig, mustExpand);
@@ -4206,18 +4221,39 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 
 NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 {
-    NamedIntrinsic result = NI_Illegal;
-
     const char* className          = nullptr;
     const char* namespaceName      = nullptr;
     const char* enclosingClassName = nullptr;
     const char* methodName =
         info.compCompHnd->getMethodNameFromMetadata(method, &className, &namespaceName, &enclosingClassName);
 
+    JITDUMP("Named Intrinsic ");
+
+    if (namespaceName != nullptr)
+    {
+        JITDUMP("%s.", namespaceName);
+    }
+    if (enclosingClassName != nullptr)
+    {
+        JITDUMP("%s.", enclosingClassName);
+    }
+    if (className != nullptr)
+    {
+        JITDUMP("%s", className);
+    }
+    if (methodName != nullptr)
+    {
+        JITDUMP("%s", methodName);
+    }
+    JITDUMP(": ");
+
     if ((namespaceName == nullptr) || (className == nullptr) || (methodName == nullptr))
     {
-        return result;
+        JITDUMP("Not recognized, not enough metadata\n");
+        return NI_Illegal;
     }
+
+    NamedIntrinsic result = NI_Illegal;
 
     if (strcmp(namespaceName, "System") == 0)
     {
@@ -4272,16 +4308,36 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #ifdef FEATURE_HW_INTRINSICS
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)
     {
+        namespaceName += 25;
 #if defined(_TARGET_XARCH_)
-        result = HWIntrinsicInfo::lookupId(className, methodName, enclosingClassName);
+        if ((namespaceName[0] == '\0') || (strcmp(namespaceName, ".X86") == 0))
+        {
+            result = HWIntrinsicInfo::lookupId(this, className, methodName, enclosingClassName);
+        }
 #elif defined(_TARGET_ARM64_)
-        result = lookupHWIntrinsic(className, methodName);
+        if ((namespaceName[0] == '\0') || (strcmp(namespaceName, ".Arm.Arm64") == 0))
+        {
+            result = lookupHWIntrinsic(className, methodName);
+        }
 #else // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
 #error Unsupported platform
 #endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
+        else
+        {
+            assert(strcmp(methodName, "get_IsSupported") == 0);
+            return NI_IsSupported_False;
+        }
     }
 #endif // FEATURE_HW_INTRINSICS
 
+    if (result == NI_Illegal)
+    {
+        JITDUMP("Not recognized\n");
+    }
+    else
+    {
+        JITDUMP("Recognized\n");
+    }
     return result;
 }
 
