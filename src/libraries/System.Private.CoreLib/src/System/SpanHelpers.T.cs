@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices; // Do not remove. This is necessary for netstandard, since this file is mirrored into corefx
 
@@ -57,7 +58,7 @@ namespace System
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
 
-            if (default(T) != null || (object)value != null)
+            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 while (length >= 8)
                 {
@@ -127,7 +128,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             IntPtr index = (IntPtr)0; // Use IntPtr for arithmetic to avoid unnecessary 64->32->64 truncations
-            if (default(T) != null || (object)value != null)
+            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 while (length >= 8)
                 {
@@ -216,7 +217,7 @@ namespace System
 
             T lookUp;
             int index = 0;
-            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
+            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 while ((length - index) >= 8)
                 {
@@ -282,7 +283,7 @@ namespace System
                     lookUp = Unsafe.Add(ref searchSpace, index);
                     if ((object)lookUp is null)
                     {
-                        if ((object)value0 is null || (object)value1 is null)
+                        if ((object?)value0 is null || (object?)value1 is null)
                         {
                             goto Found;
                         }
@@ -321,7 +322,7 @@ namespace System
 
             T lookUp;
             int index = 0;
-            if (default(T) != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null))
+            if (default(T)! != null || ((object)value0 != null && (object)value1 != null && (object)value2 != null)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 while ((length - index) >= 8)
                 {
@@ -387,7 +388,7 @@ namespace System
                     lookUp = Unsafe.Add(ref searchSpace, index);
                     if ((object)lookUp is null)
                     {
-                        if ((object)value0 is null || (object)value1 is null || (object)value2 is null)
+                        if ((object?)value0 is null || (object?)value1 is null || (object?)value2 is null)
                         {
                             goto Found;
                         }
@@ -484,7 +485,7 @@ namespace System
         {
             Debug.Assert(length >= 0);
 
-            if (default(T) != null || (object)value != null)
+            if (default(T)! != null || (object)value != null) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 while (length >= 8)
                 {
@@ -567,7 +568,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
+            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 while (length >= 8)
                 {
@@ -633,7 +634,7 @@ namespace System
                     lookUp = Unsafe.Add(ref searchSpace, length);
                     if ((object)lookUp is null)
                     {
-                        if ((object)value0 is null || (object)value1 is null)
+                        if ((object?)value0 is null || (object?)value1 is null)
                         {
                             goto Found;
                         }
@@ -671,7 +672,7 @@ namespace System
             Debug.Assert(length >= 0);
 
             T lookUp;
-            if (default(T) != null || ((object)value0 != null && (object)value1 != null))
+            if (default(T)! != null || ((object)value0 != null && (object)value1 != null)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 while (length >= 8)
                 {
@@ -737,7 +738,7 @@ namespace System
                     lookUp = Unsafe.Add(ref searchSpace, length);
                     if ((object)lookUp is null)
                     {
-                        if ((object)value0 is null || (object)value1 is null || (object)value2 is null)
+                        if ((object?)value0 is null || (object?)value1 is null || (object?)value2 is null)
                         {
                             goto Found;
                         }
