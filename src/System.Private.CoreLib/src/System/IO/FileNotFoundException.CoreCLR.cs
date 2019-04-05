@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.IO
 {
     public partial class FileNotFoundException
     {
         // Do not delete: this is invoked from native code.
-        private FileNotFoundException(string fileName, string fusionLog, int hResult)
+        private FileNotFoundException(string? fileName, string? fusionLog, int hResult)
             : base(null)
         {
             HResult = hResult;
@@ -17,4 +18,3 @@ namespace System.IO
         }
     }
 }
-

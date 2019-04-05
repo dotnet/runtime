@@ -10,6 +10,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#nullable enable
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -33,9 +34,9 @@ namespace System.Threading.Tasks
         /// The lazily-initialized list of faulting exceptions.  Volatile
         /// so that it may be read to determine whether any exceptions were stored.
         /// </summary>
-        private volatile List<ExceptionDispatchInfo> m_faultExceptions;
+        private volatile List<ExceptionDispatchInfo>? m_faultExceptions;
         /// <summary>An exception that triggered the task to cancel.</summary>
-        private ExceptionDispatchInfo m_cancellationException;
+        private ExceptionDispatchInfo? m_cancellationException;
         /// <summary>Whether the holder was "observed" and thus doesn't cause finalization behavior.</summary>
         private volatile bool m_isHandled;
 
@@ -252,7 +253,7 @@ namespace System.Threading.Tasks
         /// <param name="calledFromFinalizer">Whether this is being called from a finalizer.</param>
         /// <param name="includeThisException">An extra exception to be included (optionally).</param>
         /// <returns>The aggregate exception to throw.</returns>
-        internal AggregateException CreateExceptionObject(bool calledFromFinalizer, Exception includeThisException)
+        internal AggregateException CreateExceptionObject(bool calledFromFinalizer, Exception? includeThisException)
         {
             var exceptions = m_faultExceptions;
             Debug.Assert(exceptions != null, "Expected an initialized list.");
@@ -284,7 +285,7 @@ namespace System.Threading.Tasks
         /// </summary>
         internal ReadOnlyCollection<ExceptionDispatchInfo> GetExceptionDispatchInfos()
         {
-            var exceptions = m_faultExceptions;
+            List<ExceptionDispatchInfo>? exceptions = m_faultExceptions;
             Debug.Assert(exceptions != null, "Expected an initialized list.");
             Debug.Assert(exceptions.Count > 0, "Expected at least one exception.");
             MarkAsHandled(false);
@@ -298,7 +299,7 @@ namespace System.Threading.Tasks
         /// <returns>
         /// The ExceptionDispatchInfo for the cancellation exception.  May be null.
         /// </returns>
-        internal ExceptionDispatchInfo GetCancellationExceptionDispatchInfo()
+        internal ExceptionDispatchInfo? GetCancellationExceptionDispatchInfo()
         {
             var edi = m_cancellationException;
             Debug.Assert(edi == null || edi.SourceException is OperationCanceledException,

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 using System.Text;
 
@@ -11,7 +12,7 @@ namespace System.Reflection
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class ReflectionTypeLoadException : SystemException, ISerializable
     {
-        public ReflectionTypeLoadException(Type[] classes, Exception[] exceptions)
+        public ReflectionTypeLoadException(Type[]? classes, Exception?[]? exceptions)
             : base(null)
         {
             Types = classes;
@@ -19,7 +20,7 @@ namespace System.Reflection
             HResult = HResults.COR_E_REFLECTIONTYPELOAD;
         }
 
-        public ReflectionTypeLoadException(Type[] classes, Exception[] exceptions, string message)
+        public ReflectionTypeLoadException(Type[]? classes, Exception?[]? exceptions, string? message)
             : base(message)
         {
             Types = classes;
@@ -40,9 +41,9 @@ namespace System.Reflection
             info.AddValue("Exceptions", LoaderExceptions, typeof(Exception[]));
         }
 
-        public Type[] Types { get; }
+        public Type[]? Types { get; }
 
-        public Exception[] LoaderExceptions { get; }
+        public Exception?[]? LoaderExceptions { get; }
 
         public override string Message => CreateString(isMessage: true);
 
@@ -52,14 +53,14 @@ namespace System.Reflection
         {
             string baseValue = isMessage ? base.Message : base.ToString();
 
-            Exception[] exceptions = LoaderExceptions;
+            Exception?[]? exceptions = LoaderExceptions;
             if (exceptions == null || exceptions.Length == 0)
             {
                 return baseValue;
             }
 
             var text = new StringBuilder(baseValue);
-            foreach (Exception e in exceptions)
+            foreach (Exception? e in exceptions)
             {
                 if (e != null)
                 {

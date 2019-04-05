@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -100,7 +101,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="obj">The object to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="obj" /> is a <see cref="Vector64{T}" /> and is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return (obj is Vector64<T>) && Equals((Vector64<T>)(obj));
         }
@@ -134,7 +135,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="format">The format specifier used to format the individual elements of the current instance.</param>
         /// <returns>An equivalent string representation of the current instance.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public string ToString(string format)
+        public string ToString(string? format)
         {
             return ToString(format, formatProvider: null);
         }
@@ -144,7 +145,7 @@ namespace System.Runtime.Intrinsics
         /// <param name="formatProvider">The format provider used to format the individual elements of the current instance.</param>
         /// <returns>An equivalent string representation of the current instance.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
-        public string ToString(string format, IFormatProvider formatProvider)
+        public string ToString(string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -16,7 +17,7 @@ namespace System
 
         public virtual object Clone() => MemberwiseClone();
 
-        public static Delegate Combine(Delegate a, Delegate b)
+        public static Delegate? Combine(Delegate? a, Delegate? b)
         {
             if (a is null)
                 return b;
@@ -24,35 +25,35 @@ namespace System
             return a.CombineImpl(b);
         }
 
-        public static Delegate Combine(params Delegate[] delegates)
+        public static Delegate? Combine(params Delegate?[]? delegates)
         {
-            if (delegates is null || delegates.Length == 0)
+            if (delegates == null || delegates.Length == 0)
                 return null;
 
-            Delegate d = delegates [0];
+            Delegate? d = delegates[0];
             for (int i = 1; i < delegates.Length; i++)
                 d = Combine(d, delegates[i]);
 
             return d;
         }
 
-        protected virtual Delegate CombineImpl(Delegate d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
+        protected virtual Delegate CombineImpl(Delegate? d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
 
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed. 
-        public static Delegate CreateDelegate(Type type, object firstArgument, MethodInfo method) => CreateDelegate(type, firstArgument, method, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method) => CreateDelegate(type, firstArgument, method, throwOnBindFailure: true)!;
 
         // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
-        public static Delegate CreateDelegate(Type type, MethodInfo method) => CreateDelegate(type, method, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, MethodInfo method) => CreateDelegate(type, method, throwOnBindFailure: true)!;
 
         // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
-        public static Delegate CreateDelegate(Type type, object target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true);
-        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, object target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
+        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
-        public static Delegate CreateDelegate(Type type, Type target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true);
-        public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true);
+        public static Delegate CreateDelegate(Type type, Type target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
+        public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
-        public object DynamicInvoke(params object[] args)
+        public object? DynamicInvoke(params object?[]? args)
         {
             return DynamicInvokeImpl(args);
         }
@@ -63,9 +64,9 @@ namespace System
 
         public MethodInfo Method => GetMethodImpl();
 
-        protected virtual Delegate RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
+        protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
 
-        public static Delegate Remove(Delegate source, Delegate value)
+        public static Delegate? Remove(Delegate? source, Delegate? value)
         {
             if (source == null)
                 return null;
@@ -79,9 +80,9 @@ namespace System
             return source.RemoveImpl(value);
         }
 
-        public static Delegate RemoveAll(Delegate source, Delegate value)
+        public static Delegate? RemoveAll(Delegate? source, Delegate? value)
         {
-            Delegate newDelegate = null;
+            Delegate? newDelegate = null;
 
             do
             {
@@ -95,7 +96,7 @@ namespace System
 
         // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(Delegate d1, Delegate d2)
+        public static bool operator ==(Delegate? d1, Delegate? d2)
         {
             // Test d2 first to allow branch elimination when inlined for null checks (== null)
             // so it can become a simple test
@@ -105,12 +106,12 @@ namespace System
                 return (d1 is null) ? true : false;
             }
 
-            return ReferenceEquals(d2, d1) || d2.Equals((object)d1);
+            return ReferenceEquals(d2, d1) ? true : d2.Equals((object?)d1);
         }
 
         // Force inline as the true/false ternary takes it above ALWAYS_INLINE size even though the asm ends up smaller
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(Delegate d1, Delegate d2)
+        public static bool operator !=(Delegate? d1, Delegate? d2)
         {
             // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
             // so it can become a simple test

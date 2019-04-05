@@ -13,8 +13,7 @@
 **
 =============================================================================*/
 
-
-
+#nullable enable
 using System;
 using System.Runtime;
 using System.Threading;

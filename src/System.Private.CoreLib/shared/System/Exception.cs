@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Runtime.Serialization;
 
@@ -16,7 +17,7 @@ namespace System
             _HResult = HResults.COR_E_EXCEPTION;
         }
 
-        public Exception(string message)
+        public Exception(string? message)
             : this()
         {
             _message = message;
@@ -27,7 +28,7 @@ namespace System
         // Note: the stack trace is not started until the exception 
         // is thrown
         // 
-        public Exception(string message, Exception innerException)
+        public Exception(string? message, Exception? innerException)
             : this()
         {
             _message = message;
@@ -72,7 +73,7 @@ namespace System
         // This will traverse exceptions using the innerException property.
         public virtual Exception GetBaseException()
         {
-            Exception inner = InnerException;
+            Exception? inner = InnerException;
             Exception back = this;
 
             while (inner != null)
@@ -84,12 +85,12 @@ namespace System
             return back;
         }
 
-        public Exception InnerException => _innerException;
+        public Exception? InnerException => _innerException;
 
         // Sets the help link for this exception.
         // This should be in a URL/URN form, such as:
         // "file:///C:/Applications/Bazzal/help.html#ErrorNum42"
-        public virtual string HelpLink
+        public virtual string? HelpLink
         {
             get
             {
@@ -101,7 +102,7 @@ namespace System
             }
         }
 
-        public virtual string Source
+        public virtual string? Source
         {
             get
             {
@@ -148,7 +149,7 @@ namespace System
         {
             string s = GetClassName();
 
-            string message = (needMessage ? Message : null);
+            string? message = (needMessage ? Message : null);
             if (!string.IsNullOrEmpty(message))
             {
                 s += ": " + message;
@@ -160,7 +161,7 @@ namespace System
                 "   " + SR.Exception_EndOfInnerExceptionStack;
             }
 
-            string stackTrace = GetStackTrace(needFileLineInfo);
+            string? stackTrace = GetStackTrace(needFileLineInfo);
             if (stackTrace != null)
             {
                 s += Environment.NewLine + stackTrace;

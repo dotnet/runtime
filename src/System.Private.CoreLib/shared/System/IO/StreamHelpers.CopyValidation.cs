@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.IO
 {
     /// <summary>Provides methods to help in the implementation of Stream-derived types.</summary>

@@ -10,9 +10,9 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System
@@ -51,7 +51,7 @@ namespace System
 
         internal LazyState State { get; }
 
-        private readonly ExceptionDispatchInfo _exceptionDispatch;
+        private readonly ExceptionDispatchInfo? _exceptionDispatch;
 
         /// <summary>
         /// Constructor that defines the state
@@ -121,14 +121,14 @@ namespace System
             }
         }
 
-        internal static LazyThreadSafetyMode? GetMode(LazyHelper state)
+        internal static LazyThreadSafetyMode? GetMode(LazyHelper? state)
         {
             if (state == null)
                 return null; // we don't know the mode anymore
             return state.GetMode();
         }
 
-        internal static bool GetIsValueFaulted(LazyHelper state) => state?._exceptionDispatch != null;
+        internal static bool GetIsValueFaulted(LazyHelper? state) => state?._exceptionDispatch != null;
 
         internal static LazyHelper Create(LazyThreadSafetyMode mode, bool useDefaultConstructor)
         {
@@ -189,14 +189,14 @@ namespace System
         }
 
         // _state, a volatile reference, is set to null after _value has been set
-        private volatile LazyHelper _state;
+        private volatile LazyHelper? _state;
 
         // we ensure that _factory when finished is set to null to allow garbage collector to clean up
         // any referenced items
-        private Func<T> _factory;
+        private Func<T>? _factory;
 
         // _value eventually stores the lazily created value. It is valid when _state = null.
-        private T _value;
+        private T _value = default!; // TODO-NULLABLE-GENERIC
 
         /// <summary>
         /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/> class that 
@@ -206,7 +206,7 @@ namespace System
         /// An instance created with this constructor may be used concurrently from multiple threads.
         /// </remarks>
         public Lazy()
-            : this(null, LazyThreadSafetyMode.ExecutionAndPublication, useDefaultConstructor:true)
+            : this(null, LazyThreadSafetyMode.ExecutionAndPublication, useDefaultConstructor: true)
         {
         }
 
@@ -237,7 +237,7 @@ namespace System
         /// An instance created with this constructor may be used concurrently from multiple threads.
         /// </remarks>
         public Lazy(Func<T> valueFactory)
-            : this(valueFactory, LazyThreadSafetyMode.ExecutionAndPublication, useDefaultConstructor:false)
+            : this(valueFactory, LazyThreadSafetyMode.ExecutionAndPublication, useDefaultConstructor: false)
         {
         }
 
@@ -248,7 +248,7 @@ namespace System
         /// <param name="isThreadSafe">true if this instance should be usable by multiple threads concurrently; false if the instance will only be used by one thread at a time.
         /// </param>
         public Lazy(bool isThreadSafe) :
-            this(null, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor:true)
+            this(null, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor: true)
         {
         }
 
@@ -275,7 +275,7 @@ namespace System
         /// <exception cref="System.ArgumentNullException"><paramref name="valueFactory"/> is
         /// a null reference (Nothing in Visual Basic).</exception>
         public Lazy(Func<T> valueFactory, bool isThreadSafe) :
-            this(valueFactory, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor:false)
+            this(valueFactory, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor: false)
         {
         }
 
@@ -295,7 +295,7 @@ namespace System
         {
         }
 
-        private Lazy(Func<T> valueFactory, LazyThreadSafetyMode mode, bool useDefaultConstructor)
+        private Lazy(Func<T>? valueFactory, LazyThreadSafetyMode mode, bool useDefaultConstructor)
         {
             if (valueFactory == null && !useDefaultConstructor)
                 throw new ArgumentNullException(nameof(valueFactory));
@@ -314,7 +314,7 @@ namespace System
         {
             try
             {
-                Func<T> factory = _factory;
+                Func<T>? factory = _factory;
                 if (factory == null)
                     throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
                 _factory = null;
@@ -351,7 +351,7 @@ namespace System
 
         private void PublicationOnly(LazyHelper publicationOnly, T possibleValue)
         {
-            LazyHelper previous = Interlocked.CompareExchange(ref _state, LazyHelper.PublicationOnlyWaitForOtherThreadToPublish, publicationOnly);
+            LazyHelper? previous = Interlocked.CompareExchange(ref _state, LazyHelper.PublicationOnlyWaitForOtherThreadToPublish, publicationOnly);
             if (previous == publicationOnly)
             {
                 _factory = null;
@@ -367,7 +367,7 @@ namespace System
 
         private void PublicationOnlyViaFactory(LazyHelper initializer)
         {
-            Func<T> factory = _factory;
+            Func<T>? factory = _factory;
             if (factory == null)
             {
                 PublicationOnlyWaitForOtherThreadToPublish();
@@ -393,7 +393,7 @@ namespace System
         {
             // we have to create a copy of state here, and use the copy exclusively from here on in
             // so as to ensure thread safety.
-            var state = _state;
+            LazyHelper? state = _state;
             if (state != null) 
             {
                 switch (state.State)
@@ -440,9 +440,11 @@ namespace System
         /// <exception cref="T:System.NullReferenceException">
         /// The <see cref="Value"/> is null.
         /// </exception>
-        public override string ToString()
+        public override string? ToString()
         {
-            return IsValueCreated ? Value.ToString() : SR.Lazy_ToString_ValueNotCreated;
+            return IsValueCreated ?
+                Value!.ToString() : // Throws NullReferenceException as if caller called ToString on the value itself
+                SR.Lazy_ToString_ValueNotCreated;
         }
 
         /// <summary>Gets the value of the Lazy&lt;T&gt; for debugging display purposes.</summary>
@@ -452,7 +454,7 @@ namespace System
             {
                 if (!IsValueCreated)
                 {
-                    return default;
+                    return default!; // TODO-NULLABLE-GENERIC
                 }
                 return _value;
             }
@@ -527,8 +529,7 @@ namespace System
         /// <summary>Returns the value of the Lazy object.</summary>
         public T Value
         {
-            get
-            { return _lazy.ValueForDebugDisplay; }
+            get { return _lazy.ValueForDebugDisplay; }
         }
 
         /// <summary>Returns the execution mode of the Lazy object</summary>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -29,7 +30,7 @@ namespace System.IO
         /// synchronously from ReadAsync which can be reused if the count matches the next request.
         /// Only initialized when <see cref="_useAsyncIO"/> is true.
         /// </summary>
-        private AsyncState _asyncState;
+        private AsyncState? _asyncState;
 
         /// <summary>Lazily-initialized value for whether the file supports seeking.</summary>
         private bool? _canSeek;
@@ -290,7 +291,7 @@ namespace System.IO
             // override may already exist on a derived type.
             if (_useAsyncIO && _writePos > 0)
             {
-                return new ValueTask(Task.Factory.StartNew(s => ((FileStream)s).Dispose(), this,
+                return new ValueTask(Task.Factory.StartNew(s => ((FileStream)s!).Dispose(), this, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
             }
 
@@ -364,7 +365,7 @@ namespace System.IO
             if (CanWrite)
             {
                 return Task.Factory.StartNew(
-                    state => ((FileStream)state).FlushOSBuffer(),
+                    state => ((FileStream)state!).FlushOSBuffer(), // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     this,
                     cancellationToken,
                     TaskCreationOptions.DenyChildAttach,
@@ -507,9 +508,10 @@ namespace System.IO
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <param name="synchronousResult">If the operation completes synchronously, the number of bytes read.</param>
         /// <returns>A task that represents the asynchronous read operation.</returns>
-        private Task<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
+        private Task<int>? ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
         {
             Debug.Assert(_useAsyncIO);
+            Debug.Assert(_asyncState != null);
 
             if (!CanRead) // match Windows behavior; this gets thrown synchronously
             {
@@ -567,7 +569,8 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStream)s;
+                var thisRef = (FileStream)s!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                Debug.Assert(thisRef._asyncState != null);
                 try
                 {
                     Memory<byte> memory = thisRef._asyncState.Memory;
@@ -668,6 +671,7 @@ namespace System.IO
         private ValueTask WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(_useAsyncIO);
+            Debug.Assert(_asyncState != null);
 
             if (cancellationToken.IsCancellationRequested)
                 return new ValueTask(Task.FromCanceled(cancellationToken));
@@ -724,7 +728,8 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStream)s;
+                var thisRef = (FileStream)s!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                Debug.Assert(thisRef._asyncState != null);
                 try
                 {
                     ReadOnlyMemory<byte> readOnlyMemory = thisRef._asyncState.ReadOnlyMemory;
