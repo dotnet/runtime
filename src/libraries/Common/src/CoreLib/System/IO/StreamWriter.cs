@@ -26,21 +26,20 @@ namespace System.IO
         private const int DefaultFileStreamBufferSize = 4096;
         private const int MinBufferSize = 128;
 
-        private const int DontCopyOnWriteLineThreshold = 512;
-
         // Bit bucket - Null has no backing store. Non closable.
-        public new static readonly StreamWriter Null = new StreamWriter(Stream.Null, UTF8NoBOM, MinBufferSize, true);
+        public new static readonly StreamWriter Null = new StreamWriter(Stream.Null, UTF8NoBOM, MinBufferSize, leaveOpen: true);
 
-        private Stream _stream;
-        private Encoding _encoding;
-        private Encoder _encoder;
-        private byte[] _byteBuffer;
-        private char[] _charBuffer;
+        private readonly Stream _stream;
+        private readonly Encoding _encoding;
+        private readonly Encoder _encoder;
+        private readonly byte[] _byteBuffer;
+        private readonly char[] _charBuffer;
         private int _charPos;
         private int _charLen;
         private bool _autoFlush;
         private bool _haveWrittenPreamble;
-        private bool _closable;
+        private readonly bool _closable;
+        private bool _disposed;
 
         // We don't guarantee thread safety on StreamWriter, but we should at 
         // least prevent users from trying to write anything while an Async
@@ -70,11 +69,6 @@ namespace System.IO
         // Maybe we can add a DiscardBufferedData() method to get out of such situation (like 
         // StreamReader though for different reason). Either way, the buffered data will be lost!
         private static Encoding UTF8NoBOM => EncodingCache.UTF8NoBOM;
-
-
-        internal StreamWriter() : base(null)
-        { // Ask for CurrentCulture all the time 
-        }
 
         public StreamWriter(Stream stream)
             : this(stream, UTF8NoBOM, DefaultBufferSize, false)
@@ -111,7 +105,25 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            Init(stream, encoding, bufferSize, leaveOpen);
+            _stream = stream;
+            _encoding = encoding;
+            _encoder = _encoding.GetEncoder();
+            if (bufferSize < MinBufferSize)
+            {
+                bufferSize = MinBufferSize;
+            }
+
+            _charBuffer = new char[bufferSize];
+            _byteBuffer = new byte[_encoding.GetMaxByteCount(bufferSize)];
+            _charLen = bufferSize;
+            // If we're appending to a Stream that already has data, don't write
+            // the preamble.
+            if (_stream.CanSeek && _stream.Position > 0)
+            {
+                _haveWrittenPreamble = true;
+            }
+
+            _closable = !leaveOpen;
         }
 
         public StreamWriter(string path)
@@ -129,8 +141,13 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(string path, bool append, Encoding encoding, int bufferSize)
+        public StreamWriter(string path, bool append, Encoding encoding, int bufferSize) :
+            this(ValidateArgsAndOpenPath(path, append, encoding, bufferSize), encoding, bufferSize, leaveOpen: false)
         { 
+        }
+
+        private static Stream ValidateArgsAndOpenPath(string path, bool append, Encoding encoding, int bufferSize)
+        {
             if (path == null)
                 throw new ArgumentNullException(nameof(path));
             if (encoding == null)
@@ -140,32 +157,7 @@ namespace System.IO
             if (bufferSize <= 0)
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
 
-            Stream stream = new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read,
-                DefaultFileStreamBufferSize, FileOptions.SequentialScan);
-            Init(stream, encoding, bufferSize, shouldLeaveOpen: false);
-        }
-
-        private void Init(Stream streamArg, Encoding encodingArg, int bufferSize, bool shouldLeaveOpen)
-        {
-            _stream = streamArg;
-            _encoding = encodingArg;
-            _encoder = _encoding.GetEncoder();
-            if (bufferSize < MinBufferSize)
-            {
-                bufferSize = MinBufferSize;
-            }
-
-            _charBuffer = new char[bufferSize];
-            _byteBuffer = new byte[_encoding.GetMaxByteCount(bufferSize)];
-            _charLen = bufferSize;
-            // If we're appending to a Stream that already has data, don't write
-            // the preamble.
-            if (_stream.CanSeek && _stream.Position > 0)
-            {
-                _haveWrittenPreamble = true;
-            }
-
-            _closable = !shouldLeaveOpen;
+            return new FileStream(path, append ? FileMode.Append : FileMode.Create, FileAccess.Write, FileShare.Read, DefaultFileStreamBufferSize, FileOptions.SequentialScan);
         }
 
         public override void Close()
@@ -182,15 +174,11 @@ namespace System.IO
                 // Also, we never close the handles for stdout & friends.  So we can safely 
                 // write any buffered data to those streams even during finalization, which 
                 // is generally the right thing to do.
-                if (_stream != null)
+                if (!_disposed && disposing)
                 {
                     // Note: flush on the underlying stream can throw (ex., low disk space)
-                    if (disposing /* || (LeaveOpen && stream is __ConsoleStream) */)
-                    {
-                        CheckAsyncTaskInProgress();
-
-                        Flush(true, true);
-                    }
+                    CheckAsyncTaskInProgress();
+                    Flush(flushStream: true, flushEncoder: true);
                 }
             }
             finally
@@ -202,7 +190,7 @@ namespace System.IO
         private void CloseStreamFromDispose(bool disposing)
         {
             // Dispose of our resources if this StreamWriter is closable. 
-            if (!LeaveOpen && _stream != null)
+            if (!LeaveOpen && !_disposed)
             {
                 try
                 {
@@ -217,11 +205,7 @@ namespace System.IO
                 }
                 finally
                 {
-                    _stream = null;
-                    _byteBuffer = null;
-                    _charBuffer = null;
-                    _encoding = null;
-                    _encoder = null;
+                    _disposed = true;
                     _charLen = 0;
                     base.Dispose(disposing);
                 }
@@ -239,7 +223,7 @@ namespace System.IO
             Debug.Assert(GetType() == typeof(StreamWriter));
             try
             {
-                if (_stream != null)
+                if (!_disposed)
                 {
                     await FlushAsync().ConfigureAwait(false);
                 }
@@ -263,11 +247,8 @@ namespace System.IO
             // flushEncoder should be true at the end of the file and if
             // the user explicitly calls Flush (though not if AutoFlush is true).
             // This is required to flush any dangling characters from our UTF-7 
-            // and UTF-8 encoders.  
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
+            // and UTF-8 encoders.
+            ThrowIfDisposed();
 
             // Perf boost for Flush on non-dirty writers.
             if (_charPos == 0 && !flushStream && !flushEncoder)
@@ -420,11 +401,8 @@ namespace System.IO
                 // else) due to temporaries that need to be cleared.  Given the use of unsafe code, we also
                 // make local copies of instance state to protect against potential concurrent misuse.
 
+                ThrowIfDisposed();
                 char[] charBuffer = _charBuffer;
-                if (charBuffer == null)
-                {
-                    throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-                }
 
                 fixed (char* bufferPtr = &MemoryMarshal.GetReference(buffer))
                 fixed (char* dstPtr = &charBuffer[0])
@@ -620,7 +598,6 @@ namespace System.IO
             }
         }
 
-        #region Task based Async APIs
         public override Task WriteAsync(char value)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
@@ -632,11 +609,7 @@ namespace System.IO
                 return base.WriteAsync(value);
             }
 
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
-
+            ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
             Task task = WriteAsyncInternal(this, value, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: false);
@@ -701,11 +674,7 @@ namespace System.IO
 
             if (value != null)
             {
-                if (_stream == null)
-                {
-                    throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-                }
-
+                ThrowIfDisposed();
                 CheckAsyncTaskInProgress();
 
                 Task task = WriteAsyncInternal(this, value, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: false);
@@ -809,11 +778,7 @@ namespace System.IO
                 return base.WriteAsync(buffer, index, count);
             }
 
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
-
+            ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
             Task task = WriteAsyncInternal(this, new ReadOnlyMemory<char>(buffer, index, count), _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: false, cancellationToken: default);
@@ -830,11 +795,7 @@ namespace System.IO
                 return base.WriteAsync(buffer, cancellationToken);
             }
 
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
-
+            ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
             if (cancellationToken.IsCancellationRequested)
@@ -909,11 +870,7 @@ namespace System.IO
                 return base.WriteLineAsync();
             }
 
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
-
+            ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
             Task task = WriteAsyncInternal(this, ReadOnlyMemory<char>.Empty, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true, cancellationToken: default);
@@ -934,11 +891,7 @@ namespace System.IO
                 return base.WriteLineAsync(value);
             }
 
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
-
+            ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
             Task task = WriteAsyncInternal(this, value, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true);
@@ -964,11 +917,7 @@ namespace System.IO
                 return base.WriteLineAsync(value);
             }
 
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
-
+            ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
             Task task = WriteAsyncInternal(this, value, _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true);
@@ -1006,11 +955,7 @@ namespace System.IO
                 return base.WriteLineAsync(buffer, index, count);
             }
 
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
-
+            ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
             Task task = WriteAsyncInternal(this, new ReadOnlyMemory<char>(buffer, index, count), _charBuffer, _charPos, _charLen, CoreNewLine, _autoFlush, appendNewLine: true, cancellationToken: default);
@@ -1026,11 +971,7 @@ namespace System.IO
                 return base.WriteLineAsync(buffer, cancellationToken);
             }
 
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
-
+            ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
             if (cancellationToken.IsCancellationRequested)
@@ -1060,11 +1001,7 @@ namespace System.IO
             // the user explicitly calls Flush (though not if AutoFlush is true).
             // This is required to flush any dangling characters from our UTF-7 
             // and UTF-8 encoders.  
-            if (_stream == null)
-            {
-                throw new ObjectDisposedException(null, SR.ObjectDisposed_WriterClosed);
-            }
-
+            ThrowIfDisposed();
             CheckAsyncTaskInProgress();
 
             Task task = FlushAsyncInternal(true, true, _charBuffer, _charPos);
@@ -1135,6 +1072,15 @@ namespace System.IO
                 await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
             }
         }
-        #endregion
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                ThrowObjectDisposedException();
+            }
+
+            void ThrowObjectDisposedException() => throw new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_WriterClosed);
+        }
     }  // class StreamWriter
 }  // namespace
