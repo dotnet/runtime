@@ -140,7 +140,7 @@ jobs:
           - Ubuntu.1604.Amd64
           - Ubuntu.1804.Amd64
           - Centos.7.Amd64
-          - Fedora.28.Amd64
+          - (Fedora.28.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-28-helix-45b1fa2-20190327215722
           - RedHat.7.Amd64
         ${{ insert }}: ${{ parameters.jobParameters }}
 
