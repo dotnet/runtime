@@ -10,6 +10,7 @@ namespace System.Text.Json.Serialization.Tests
     public static class CacheTests
     {
         [Fact]
+        [ActiveIssue(36618)]
         public static void MultipleThreads()
         {
             // Ensure no exceptions are thrown due to caching or other issues.
