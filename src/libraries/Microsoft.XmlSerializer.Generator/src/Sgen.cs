@@ -44,6 +44,8 @@ namespace Microsoft.XmlSerializer.Generator
 
             try
             {
+                args = ParseResponseFile(args);
+
                 for (int i = 0; i < args.Length; i++)
                 {
                     string arg = args[i];
@@ -131,12 +133,9 @@ namespace Microsoft.XmlSerializer.Generator
                         }
                         else
                         {
+                            //if there are multiple --reference switches, the last one will overwrite previous ones.
                             s_references = args[i];
-                            if (!string.IsNullOrEmpty(s_references))
-                            {
-                                ParseReferences();
-                            }
-                        }                        
+                        }
                     }
                     else
                     {
@@ -185,6 +184,11 @@ namespace Microsoft.XmlSerializer.Generator
                     Console.WriteLine("This tool is not intended to be used directly.");
                     Console.WriteLine("Please refer to https://go.microsoft.com/fwlink/?linkid=858594 on how to use it.");
                     return 0;
+                }
+
+                if (!string.IsNullOrEmpty(s_references))
+                {
+                    ParseReferences();
                 }
 
                 GenerateFile(types, assembly, proxyOnly, silent, warnings, force, codePath, parsableErrors);
@@ -614,6 +618,42 @@ namespace Microsoft.XmlSerializer.Generator
             }
 
             return null;
+        }
+
+        private string[] ParseResponseFile(string[] args)
+        {
+            var parsedArgs = new List<string>();
+            foreach (string arg in args)
+            {
+                if (!arg.EndsWith(".rsp"))
+                {
+                    parsedArgs.Add(arg);
+                }
+                else
+                {
+                    try
+                    {
+                        foreach (string line in File.ReadAllLines(arg))
+                        {
+                            int i = line.Trim().IndexOf(' ');
+                            if (i < 0)
+                            {
+                                parsedArgs.Add(line);
+                            }
+                            else
+                            {
+                                parsedArgs.Add(line.Substring(0, i));
+                                parsedArgs.Add(line.Substring(i + 1));
+                            }
+                        }
+                    }
+                    //If for any reasons the rsp file is not generated, this argument will be ignored and serializer will be generated with default settings
+                    catch (FileNotFoundException)
+                    { }
+                    
+                }
+            }
+            return parsedArgs.ToArray();
         }
     }
 }
