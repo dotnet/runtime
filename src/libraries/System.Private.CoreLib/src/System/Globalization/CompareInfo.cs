@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -50,10 +51,10 @@ namespace System.Globalization
         private string m_name;  // The name used to construct this CompareInfo. Do not rename (binary serialization)
 
         [NonSerialized]
-        private string _sortName; // The name that defines our behavior
+        private string _sortName = null!; // The name that defines our behavior
 
         [OptionalField(VersionAdded = 3)]
-        private SortVersion m_SortVersion; // Do not rename (binary serialization)
+        private SortVersion? m_SortVersion; // Do not rename (binary serialization)
 
         private int culture; // Do not rename (binary serialization). The fields sole purpose is to support Desktop serialization.
 
@@ -170,7 +171,9 @@ namespace System.Globalization
         [OnDeserializing]
         private void OnDeserializing(StreamingContext ctx)
         {
-            m_name = null;
+            // TODO-NULLABLE: this becomes null for a brief moment before deserialization
+            //                after serialization is finished it is never null
+            m_name = null!;
         }
 
         void IDeserializationCallback.OnDeserialization(object sender)
@@ -216,7 +219,6 @@ namespace System.Globalization
         ///  and the locale's changed behavior, then you'll get changed behavior, which is like
         ///  what happens for a version update)
         /// </summary>
-
         public virtual string Name
         {
             get
@@ -237,12 +239,12 @@ namespace System.Globalization
         /// than string2, and a number greater than 0 if string1 is greater
         /// than string2.
         /// </summary>
-        public virtual int Compare(string string1, string string2)
+        public virtual int Compare(string? string1, string? string2)
         {
             return Compare(string1, string2, CompareOptions.None);
         }
 
-        public virtual int Compare(string string1, string string2, CompareOptions options)
+        public virtual int Compare(string? string1, string? string2, CompareOptions options)
         {
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
@@ -296,7 +298,7 @@ namespace System.Globalization
         // TODO https://github.com/dotnet/coreclr/issues/13827:
         // This method shouldn't be necessary, as we should be able to just use the overload
         // that takes two spans.  But due to this issue, that's adding significant overhead.
-        internal int Compare(ReadOnlySpan<char> string1, string string2, CompareOptions options)
+        internal int Compare(ReadOnlySpan<char> string1, string? string2, CompareOptions options)
         {
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
@@ -368,23 +370,23 @@ namespace System.Globalization
         /// string1 is less than string2, and a number greater than 0 if
         /// string1 is greater than string2.
         /// </summary>
-        public virtual int Compare(string string1, int offset1, int length1, string string2, int offset2, int length2)
+        public virtual int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2)
         {
             return Compare(string1, offset1, length1, string2, offset2, length2, 0);
         }
 
-        public virtual int Compare(string string1, int offset1, string string2, int offset2, CompareOptions options)
+        public virtual int Compare(string? string1, int offset1, string? string2, int offset2, CompareOptions options)
         {
             return Compare(string1, offset1, string1 == null ? 0 : string1.Length - offset1,
                            string2, offset2, string2 == null ? 0 : string2.Length - offset2, options);
         }
 
-        public virtual int Compare(string string1, int offset1, string string2, int offset2)
+        public virtual int Compare(string? string1, int offset1, string? string2, int offset2)
         {
             return Compare(string1, offset1, string2, offset2, 0);
         }
 
-        public virtual int Compare(string string1, int offset1, int length1, string string2, int offset2, int length2, CompareOptions options)
+        public virtual int Compare(string? string1, int offset1, int length1, string? string2, int offset2, int length2, CompareOptions options)
         {
             if (options == CompareOptions.OrdinalIgnoreCase)
             {
@@ -499,7 +501,7 @@ namespace System.Globalization
 
             while (length != 0 && charA <= maxChar && charB <= maxChar)
             {
-                // Ordinal equals or lowercase equals if the result ends up in the a-z range 
+                // Ordinal equals or lowercase equals if the result ends up in the a-z range
                 if (charA == charB ||
                     ((charA | 0x20) == (charB | 0x20) &&
                         (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
@@ -659,7 +661,7 @@ namespace System.Globalization
                 IntPtr byteOffset = IntPtr.Zero;
                 while (length != 0)
                 {
-                    // Ordinal equals or lowercase equals if the result ends up in the a-z range 
+                    // Ordinal equals or lowercase equals if the result ends up in the a-z range
                     uint valueA = Unsafe.AddByteOffset(ref charA, byteOffset);
                     uint valueB = Unsafe.AddByteOffset(ref charB, byteOffset);
 
@@ -1339,7 +1341,7 @@ namespace System.Globalization
             return CreateSortKey(source, CompareOptions.None);
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             return value is CompareInfo otherCompareInfo
                 && Name == otherCompareInfo.Name;

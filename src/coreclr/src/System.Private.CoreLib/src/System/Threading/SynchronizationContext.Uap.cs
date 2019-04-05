@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Reflection;
@@ -11,11 +12,11 @@ namespace System.Threading
 {
     public partial class SynchronizationContext
     {
-        public static SynchronizationContext Current
+        public static SynchronizationContext? Current
         {
             get
             {
-                SynchronizationContext context = Thread.CurrentThread._synchronizationContext;
+                SynchronizationContext? context = Thread.CurrentThread._synchronizationContext;
 
                 if (context == null && ApplicationModel.IsUap)
                     context = GetWinRTContext();
@@ -24,7 +25,7 @@ namespace System.Threading
             }
         }
 
-        private static SynchronizationContext GetWinRTContext()
+        private static SynchronizationContext? GetWinRTContext()
         {
             Debug.Assert(Environment.IsWinRTSupported);
             Debug.Assert(ApplicationModel.IsUap);
@@ -39,14 +40,14 @@ namespace System.Threading
             // So, we check the VM to see if the current thread has a dispatcher; if it does, we pass that along to
             // System.Runtime.WindowsRuntime to get a corresponding SynchronizationContext.
             //
-            object dispatcher = GetWinRTDispatcherForCurrentThread();
+            object? dispatcher = GetWinRTDispatcherForCurrentThread();
             if (dispatcher != null)
                 return GetWinRTSynchronizationContext(dispatcher);
 
             return null;
         }
 
-        private static Func<object, SynchronizationContext> s_createSynchronizationContextDelegate;
+        private static Func<object, SynchronizationContext>? s_createSynchronizationContextDelegate;
 
         private static SynchronizationContext GetWinRTSynchronizationContext(object dispatcher)
         {
@@ -55,23 +56,23 @@ namespace System.Threading
             // It would be better if we could just implement WinRTSynchronizationContextFactory in mscorlib, but we can't, because
             // we can do very little with WinRT stuff in mscorlib.
             //
-            Func<object, SynchronizationContext> createSynchronizationContextDelegate = s_createSynchronizationContextDelegate;
+            Func<object, SynchronizationContext>? createSynchronizationContextDelegate = s_createSynchronizationContextDelegate;
             if (createSynchronizationContextDelegate == null)
             {
                 Type factoryType = Type.GetType("System.Threading.WinRTSynchronizationContextFactory, System.Runtime.WindowsRuntime", throwOnError: true);
                 
                 // Create an instance delegate for the Create static method
                 MethodInfo createMethodInfo = factoryType.GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                createSynchronizationContextDelegate = (Func<object, SynchronizationContext>)Delegate.CreateDelegate(typeof(Func<object, SynchronizationContext>), createMethodInfo, /* throwOnBindFailure */ true);
+                createSynchronizationContextDelegate = (Func<object, SynchronizationContext>)Delegate.CreateDelegate(typeof(Func<object, SynchronizationContext>), createMethodInfo);
 
                 s_createSynchronizationContextDelegate = createSynchronizationContextDelegate;
             }
 
-            return s_createSynchronizationContextDelegate(dispatcher);
+            return createSynchronizationContextDelegate(dispatcher);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [return: MarshalAs(UnmanagedType.Interface)]
-        private static extern object GetWinRTDispatcherForCurrentThread();
+        private static extern object? GetWinRTDispatcherForCurrentThread();
     }
 }

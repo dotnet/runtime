@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -14,29 +15,31 @@ namespace System.Threading
     internal sealed class ThreadHelper
     {
         private Delegate _start;
-        internal CultureInfo _startCulture;
-        internal CultureInfo _startUICulture;
-        private object _startArg = null;
-        private ExecutionContext _executionContext = null;
+        internal CultureInfo? _startCulture;
+        internal CultureInfo? _startUICulture;
+        private object? _startArg = null;
+        private ExecutionContext? _executionContext = null;
 
         internal ThreadHelper(Delegate start)
         {
             _start = start; 
         }
 
-        internal void SetExecutionContextHelper(ExecutionContext ec)
+        internal void SetExecutionContextHelper(ExecutionContext? ec)
         {
             _executionContext = ec;
         }
 
         internal static readonly ContextCallback s_threadStartContextCallback = new ContextCallback(ThreadStart_Context);
 
-        private static void ThreadStart_Context(object state)
+        private static void ThreadStart_Context(object? state)
         {
+            Debug.Assert(state is ThreadHelper);
             ThreadHelper t = (ThreadHelper)state;
 
             t.InitializeCulture();
 
+            Debug.Assert(t._start is ThreadStart || t._start is ParameterizedThreadStart);
             if (t._start is ThreadStart threadStart)
             {
                 threadStart();
@@ -63,11 +66,12 @@ namespace System.Threading
         }
 
         // call back helper
-        internal void ThreadStart(object obj)
+        internal void ThreadStart(object? obj)
         {
+            Debug.Assert(_start is ParameterizedThreadStart);
             _startArg = obj;
-            
-            ExecutionContext context = _executionContext;
+
+            ExecutionContext? context = _executionContext;
             if (context != null)
             {
                 ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
@@ -82,7 +86,9 @@ namespace System.Threading
         // call back helper
         internal void ThreadStart()
         {
-            ExecutionContext context = _executionContext;
+            Debug.Assert(_start is ThreadStart);
+
+            ExecutionContext? context = _executionContext;
             if (context != null)
             {
                 ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
@@ -112,13 +118,13 @@ namespace System.Threading
         ** ThreadBaseObject to maintain alignment between the two classes.
         ** DON'T CHANGE THESE UNLESS YOU MODIFY ThreadBaseObject in vm\object.h
         =========================================================================*/
-        internal ExecutionContext _executionContext; // this call context follows the logical thread
-        internal SynchronizationContext _synchronizationContext; // maintained separately from ExecutionContext
+        internal ExecutionContext? _executionContext; // this call context follows the logical thread
+        internal SynchronizationContext? _synchronizationContext; // maintained separately from ExecutionContext
 
-        private string _name;
-        private Delegate _delegate; // Delegate
+        private string? _name;
+        private Delegate? _delegate; // Delegate
 
-        private object _threadStartArg;
+        private object? _threadStartArg;
 
         /*=========================================================================
         ** The base implementation of Thread is all native.  The following fields
@@ -179,7 +185,7 @@ namespace System.Threading
         /// method on the IThreadable interface passed in the constructor. Once the
         /// thread is dead, it cannot be restarted with another call to Start.
         /// </summary>
-        public void Start(object parameter)
+        public void Start(object? parameter)
         {
             // In the case of a null delegate (second call to start on same thread)
             // StartInternal method will take care of the error reporting.
@@ -207,8 +213,10 @@ namespace System.Threading
             {
                 // If we reach here with a null delegate, something is broken. But we'll let the StartInternal method take care of
                 // reporting an error. Just make sure we don't try to dereference a null delegate.
-                ThreadHelper t = (ThreadHelper)_delegate.Target;
-                ExecutionContext ec = ExecutionContext.Capture();
+                Debug.Assert(_delegate.Target is ThreadHelper);
+                var t = (ThreadHelper)_delegate.Target;
+
+                ExecutionContext? ec = ExecutionContext.Capture();
                 t.SetExecutionContextHelper(ec);
             }
 
@@ -218,8 +226,10 @@ namespace System.Threading
         private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
         {
             Debug.Assert(_delegate != null);
+            Debug.Assert(_delegate.Target is ThreadHelper);
 
-            ThreadHelper t = (ThreadHelper)(_delegate.Target);
+            var t = (ThreadHelper)(_delegate.Target);
+
             if (uiCulture)
             {
                 t._startUICulture = value;
@@ -274,14 +284,14 @@ namespace System.Threading
         {
             Debug.Assert(maxStackSize >= 0);
 
-            var threadStartCallBack = new ThreadHelper(start);
+            var helper = new ThreadHelper(start);
             if (start is ThreadStart)
             {
-                SetStart(new ThreadStart(threadStartCallBack.ThreadStart), maxStackSize);
+                SetStart(new ThreadStart(helper.ThreadStart), maxStackSize);
             }
             else
             {
-                SetStart(new ParameterizedThreadStart(threadStartCallBack.ThreadStart), maxStackSize);
+                SetStart(new ParameterizedThreadStart(helper.ThreadStart), maxStackSize);
             }
         }
 
@@ -300,13 +310,13 @@ namespace System.Threading
         private extern void StartupSetApartmentStateInternal();
 #endif // FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
-        partial void ThreadNameChanged(string value)
+        partial void ThreadNameChanged(string? value)
         {
             InformThreadNameChange(GetNativeHandle(), value, value?.Length ?? 0);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void InformThreadNameChange(ThreadHandle t, string name, int len);
+        private static extern void InformThreadNameChange(ThreadHandle t, string? name, int len);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern DeserializationTracker GetThreadDeserializationTracker(ref StackCrawlMark stackMark);
