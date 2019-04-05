@@ -3540,7 +3540,7 @@ namespace System.Xml
                     int chDec;
                     int bDec;
                     bool completed;
-                    _ps.decoder.Convert(_ps.bytes, _ps.bytePos + bytesDecoded, 1, _ps.chars, _ps.charsUsed + charsDecoded, 1, false, out bDec, out chDec, out completed);
+                    _ps.decoder.Convert(_ps.bytes, _ps.bytePos + bytesDecoded, 1, _ps.chars, _ps.charsUsed + charsDecoded, 2, false, out bDec, out chDec, out completed);
                     charsDecoded += chDec;
                     bytesDecoded += bDec;
                 }
