@@ -394,6 +394,13 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
+        public void InvalidMinimumBufferSize_ThrowsArgException()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeWriterOptions(minimumBufferSize: 0));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeWriterOptions(minimumBufferSize: -1));
+        }
+
+        [Fact]
         public void CallGetMemoryWithNegativeSizeHint_ThrowsArgException()
         {
             PipeWriter writer = PipeWriter.Create(Stream.Null);
