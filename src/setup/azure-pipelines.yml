@@ -1,6 +1,9 @@
 trigger:
-- master
-- release/3.0
+  batch: true
+  branches:
+    include:
+    - master
+    - release/3.0
 
 pr:
 - master
