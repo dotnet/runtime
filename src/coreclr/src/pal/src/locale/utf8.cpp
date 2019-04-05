@@ -1138,8 +1138,8 @@ class UTF8Encoding
     {
         // Get our byte[]
         BYTE* pStart = *pSrc;
-        BYTE* bytesUnknown;        
-        int size = GetBytesUnknown(pStart, ch,  &bytesUnknown);
+        BYTE bytesUnknown[3];
+        int size = GetBytesUnknown(pStart, ch, bytesUnknown);
 
         // Do the actual fallback
         if (!fallback->InternalFallback(bytesUnknown, *pSrc, pTarget, size))
@@ -1156,8 +1156,8 @@ class UTF8Encoding
     int FallbackInvalidByteSequence(BYTE* pSrc, int ch, DecoderFallbackBuffer *fallback)
     {
         // Get our byte[]
-        BYTE *bytesUnknown;
-        int size = GetBytesUnknown(pSrc, ch, &bytesUnknown);
+        BYTE bytesUnknown[3];
+        int size = GetBytesUnknown(pSrc, ch, bytesUnknown);
 
         // Do the actual fallback
         int count = fallback->InternalFallback(bytesUnknown, pSrc, size);
@@ -1168,24 +1168,23 @@ class UTF8Encoding
         return count;
     }
 
-    int GetBytesUnknown(BYTE* pSrc, int ch, BYTE **bytesUnknown)
+    int GetBytesUnknown(BYTE* pSrc, int ch, BYTE* bytesUnknown)
     {
         int size;
-        BYTE bytes[3];
 
         // See if it was a plain char
         // (have to check >= 0 because we have all sorts of wierd bit flags)
         if (ch < 0x100 && ch >= 0)
         {
             pSrc--;
-            bytes[0] = (BYTE)ch;
+            bytesUnknown[0] = (BYTE)ch;
             size =  1;
         }
         // See if its an unfinished 2 byte sequence
         else if ((ch & (SupplimentarySeq | ThreeByteSeq)) == 0)
         {
             pSrc--;
-            bytes[0] = (BYTE)((ch & 0x1F) | 0xc0);
+            bytesUnknown[0] = (BYTE)((ch & 0x1F) | 0xc0);
             size = 1;
         }
         // So now we're either 2nd byte of 3 or 4 byte sequence or
@@ -1198,24 +1197,24 @@ class UTF8Encoding
             {
                 // 3rd byte of 4 byte sequence
                 pSrc -= 3;
-                bytes[0] = (BYTE)(((ch >> 12) & 0x07) | 0xF0);
-                bytes[1] = (BYTE)(((ch >> 6) & 0x3F) | 0x80);
-                bytes[2] = (BYTE)(((ch)& 0x3F) | 0x80);
+                bytesUnknown[0] = (BYTE)(((ch >> 12) & 0x07) | 0xF0);
+                bytesUnknown[1] = (BYTE)(((ch >> 6) & 0x3F) | 0x80);
+                bytesUnknown[2] = (BYTE)(((ch)& 0x3F) | 0x80);
                 size = 3;
             }
             else if ((ch & (FinalByte >> 12)) != 0)
             {
                 // 2nd byte of a 4 byte sequence
                 pSrc -= 2;
-                bytes[0] = (BYTE)(((ch >> 6) & 0x07) | 0xF0);
-                bytes[1] = (BYTE)(((ch)& 0x3F) | 0x80);
+                bytesUnknown[0] = (BYTE)(((ch >> 6) & 0x07) | 0xF0);
+                bytesUnknown[1] = (BYTE)(((ch)& 0x3F) | 0x80);
                 size = 2;
             }
             else
             {
                 // 4th byte of a 4 byte sequence
                 pSrc--;
-                bytes[0] = (BYTE)(((ch)& 0x07) | 0xF0);
+                bytesUnknown[0] = (BYTE)(((ch)& 0x07) | 0xF0);
                 size = 1;
             }
         }
@@ -1226,20 +1225,19 @@ class UTF8Encoding
             {
                 // So its 2nd byte of a 3 byte sequence
                 pSrc -= 2;
-                bytes[0] = (BYTE)(((ch >> 6) & 0x0F) | 0xE0);
-                bytes[1] = (BYTE)(((ch)& 0x3F) | 0x80);
+                bytesUnknown[0] = (BYTE)(((ch >> 6) & 0x0F) | 0xE0);
+                bytesUnknown[1] = (BYTE)(((ch)& 0x3F) | 0x80);
                 size = 2;
             }
             else
             {
                 // 1st byte of a 3 byte sequence
                 pSrc--;
-                bytes[0] = (BYTE)(((ch)& 0x0F) | 0xE0);
+                bytesUnknown[0] = (BYTE)(((ch)& 0x0F) | 0xE0);
                 size = 1;
             }
         }
 
-        *bytesUnknown = bytes;
         return size;
     }
 
