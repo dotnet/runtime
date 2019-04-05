@@ -107,16 +107,9 @@ public:
             return true;
         }
 
-        cpu_count = (double) quota / period;
-        if (cpu_count < UINT_MAX - 1)
-        {
-            // round up
-            *val = (UINT)(cpu_count + 0.999999999);
-        }
-        else
-        {
-            *val = UINT_MAX;
-        }
+        // Calculate cpu count based on quota and round it up
+        cpu_count = (double) quota / period  + 0.999999999;
+        *val = (cpu_count < UINT_MAX) ? (UINT)cpu_count : UINT_MAX;
 
         return true;
     }
