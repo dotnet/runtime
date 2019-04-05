@@ -50,5 +50,7 @@
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
+    <!-- Accessed by the WinRT Host -->
+    <type fullname="Internal.Runtime.InteropServices.WindowsRuntime.ActivationFactoryLoader" />
   </assembly>
 </linker>
