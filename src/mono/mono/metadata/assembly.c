@@ -4270,7 +4270,7 @@ exact_sn_match (MonoAssemblyName *wanted_name, MonoAssemblyName *candidate_name)
 #if ENABLE_NETCORE
 	gboolean result = mono_assembly_names_equal_flags (wanted_name, candidate_name, MONO_ANAME_EQ_IGNORE_VERSION);
 	if (result && assembly_names_compare_versions (wanted_name, candidate_name, -1) > 0)
-		result = false;
+		result = FALSE;
 #else
 	gboolean result = mono_assembly_names_equal (wanted_name, candidate_name);
 #endif
