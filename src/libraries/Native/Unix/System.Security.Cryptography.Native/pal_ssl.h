@@ -392,3 +392,7 @@ Shims the SSL_set_tlsext_host_name method.
 */
 DLLEXPORT int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, uint8_t* name);
 
+/*
+Shims the SSL_get_current_cipher and SSL_CIPHER_get_id.
+*/
+DLLEXPORT int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId);
