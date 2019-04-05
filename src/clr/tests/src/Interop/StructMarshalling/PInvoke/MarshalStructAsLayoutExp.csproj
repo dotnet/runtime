@@ -13,10 +13,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);STATIC</DefineConstants>
     <CLRTestPriority>1</CLRTestPriority>
-
-    <!-- Test unsupported outside of windows -->
-    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
-    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'"></PropertyGroup>
