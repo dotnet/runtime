@@ -18,9 +18,9 @@ namespace System.IO
         public static readonly BinaryWriter Null = new BinaryWriter();
 
         protected Stream OutStream;
-        private byte[] _buffer;    // temp space for writing primitives to.
-        private Encoding _encoding;
-        private Encoder _encoder;
+        private readonly byte[] _buffer;    // temp space for writing primitives to.
+        private readonly Encoding _encoding;
+        private readonly Encoder _encoder;
 
         private bool _leaveOpen;
 
