@@ -4053,9 +4053,6 @@ do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer 
 void
 mono_metadata_free_type (MonoType *type)
 {
-	if (type->has_cmods && mono_type_is_aggregate_mods (type))
-		free_aggregate_modifiers (mono_type_get_amods (type));
-	
 	if (type >= builtin_types && type < builtin_types + NBUILTIN_TYPES ())
 		return;
 	
