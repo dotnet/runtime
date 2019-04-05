@@ -80,7 +80,7 @@ namespace System.IO.Pipelines
         /// </summary>
         /// <param name="stream">The stream.</param>
         /// <param name="readerOptions">The options.</param>
-        /// <returns></returns>
+        /// <returns>A <see cref="PipeReader"/> that wraps the <see cref="Stream"/>.</returns>
         public static PipeReader Create(Stream stream, StreamPipeReaderOptions readerOptions = null)
         {
             return new StreamPipeReader(stream, readerOptions ?? StreamPipeReaderOptions.s_default);

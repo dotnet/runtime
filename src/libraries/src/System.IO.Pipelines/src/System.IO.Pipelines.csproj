@@ -33,6 +33,8 @@
     <Compile Include="System\IO\Pipelines\StreamPipeExtensions.cs" />
     <Compile Include="System\IO\Pipelines\StreamPipeReader.cs" />
     <Compile Include="System\IO\Pipelines\StreamPipeReaderOptions.cs" />
+    <Compile Include="System\IO\Pipelines\StreamPipeWriter.cs" />
+    <Compile Include="System\IO\Pipelines\StreamPipeWriterOptions.cs" />
     <Compile Include="System\IO\Pipelines\ThrowHelper.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">

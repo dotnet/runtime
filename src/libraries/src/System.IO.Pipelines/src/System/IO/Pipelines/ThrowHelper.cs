@@ -73,10 +73,11 @@ namespace System.IO.Pipelines
     internal enum ExceptionArgument
     {
         minimumSize,
-        bytesWritten,
+        bytes,
         callback,
         options,
         pauseWriterThreshold,
-        resumeWriterThreshold
+        resumeWriterThreshold,
+        sizeHint
     }
 }

@@ -171,43 +171,5 @@ namespace System.IO.Pipelines.Tests
             {
             }
         }
-
-        private class ThrowAfterNWritesStream : WriteOnlyStream
-        {
-            private readonly int _maxWrites;
-            private int _writes;
-
-            public ThrowAfterNWritesStream(int maxWrites)
-            {
-                _maxWrites = maxWrites;
-            }
-
-            public override void Write(byte[] buffer, int offset, int count)
-            {
-                throw new InvalidOperationException();
-            }
-
-            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-            {
-                if (_writes >= _maxWrites)
-                {
-                    throw new InvalidOperationException();
-                }
-                _writes++;
-                return Task.CompletedTask;
-            }
-
-#if !netstandard
-            public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
-            {
-                if (_writes >= _maxWrites)
-                {
-                    throw new InvalidOperationException();
-                }
-                _writes++;
-                return default;
-            }
-#endif
-        }
     }
 }
