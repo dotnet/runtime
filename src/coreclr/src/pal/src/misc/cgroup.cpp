@@ -90,7 +90,7 @@ public:
     {
         long long quota;
         long long period;
-        long long cpu_count;
+        double cpu_count;
 
         quota = ReadCpuCGroupValue(CFS_QUOTA_FILENAME);
         if (quota <= 0)
@@ -106,11 +106,12 @@ public:
             *val = 1;
             return true;
         }
-        
-        cpu_count = quota / period;
-        if (cpu_count < UINT_MAX)
+
+        cpu_count = (double) quota / period;
+        if (cpu_count < UINT_MAX - 1)
         {
-            *val = cpu_count;
+            // round up
+            *val = (UINT)(cpu_count + 0.999999999);
         }
         else
         {
