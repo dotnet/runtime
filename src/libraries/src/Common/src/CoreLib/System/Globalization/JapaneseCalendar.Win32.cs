@@ -93,10 +93,10 @@ namespace System.Globalization
             Array.Resize(ref registryEraRanges, iFoundEras);
 
             // Sort them
-            Array.Sort(registryEraRanges, CompareEraRanges);
+            Array.Sort(registryEraRanges!, CompareEraRanges); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
 
             // Clean up era information
-            for (int i = 0; i < registryEraRanges.Length; i++)
+            for (int i = 0; i < registryEraRanges!.Length; i++) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             {
                 // eras count backwards from length to 1 (and are 1 based indexes into string arrays)
                 registryEraRanges[i].era = registryEraRanges.Length - i;
