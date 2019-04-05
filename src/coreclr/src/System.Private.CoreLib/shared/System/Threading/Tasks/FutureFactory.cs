@@ -2103,7 +2103,7 @@ namespace System.Threading.Tasks
             (Task<Task<TAntecedentResult>[]> wrappedAntecedents, object? state) =>
             {
                 wrappedAntecedents.NotifyDebuggerOfWaitCompletionIfNecessary();
-                Debug.Assert(state is Func<Task<TAntecedentResult>>);
+                Debug.Assert(state is Func<Task<TAntecedentResult>[], TResult>);
                 var func = (Func<Task<TAntecedentResult>[], TResult>)state;
                 return func(wrappedAntecedents.Result);
             };
