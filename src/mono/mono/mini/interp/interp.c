@@ -6167,6 +6167,19 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_TAN) MATH_UNOP(tan); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_TANH) MATH_UNOP(tanh); MINT_IN_BREAK;
 
+		MINT_IN_CASE(MINT_INTRINS_GET_HASHCODE) {
+			sp [-1].data.i = mono_object_hash_internal (sp [-1].data.o);
+			ip++;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_INTRINS_GET_TYPE) {
+			if (!sp[-1].data.o)
+				THROW_EX (mono_get_exception_null_reference (), ip);
+			sp [-1].data.o = (MonoObject*) sp [-1].data.o->vtable->type;
+			ip++;
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_DEFAULT
 			g_print ("Unimplemented opcode: %04x %s at 0x%x\n", *ip, mono_interp_opname[*ip], ip-imethod->code);
 			THROW_EX (mono_get_exception_execution_engine ("Unimplemented opcode"), ip);

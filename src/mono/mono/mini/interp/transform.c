@@ -1282,6 +1282,13 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {
 		// We must intrinsify this method on interp so we don't return a pointer to native code entering interpreter
 		*op = MINT_LDFTN_DYNAMIC;
+	} else if (target_method->klass == mono_defaults.object_class) {
+		if (!strcmp (tm, "InternalGetHashCode"))
+			*op = MINT_INTRINS_GET_HASHCODE;
+#ifdef DISABLE_REMOTING
+		else if (!strcmp (tm, "GetType"))
+			*op = MINT_INTRINS_GET_TYPE;
+#endif
 	}
 
 	return FALSE;
