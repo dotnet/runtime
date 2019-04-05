@@ -30,7 +30,7 @@ internal static partial class Interop
                     {
                         Array.Resize(ref found!, count * 2); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     }
-                    found[count++] = Marshal.PtrToStringAnsi((IntPtr)name);
+                    found[count++] = Marshal.PtrToStringAnsi((IntPtr)name)!;
                 });
             }
 

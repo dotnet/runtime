@@ -16,7 +16,7 @@ internal static partial class Interop
         internal static string GetUnixName()
         {
             IntPtr ptr = GetUnixNamePrivate();
-            return Marshal.PtrToStringAnsi(ptr);
+            return Marshal.PtrToStringAnsi(ptr)!;
         }
     }
 }
