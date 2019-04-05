@@ -56,12 +56,13 @@ typedef float FLOAT;
 typedef double DOUBLE;
 #endif
 
-struct INNER2 // size = 12 bytes
+struct INNER2
 {
     INT f1;
     FLOAT f2;
     LPCSTR f3;
 };
+
 void ChangeINNER2(INNER2* p)
 {
 	p->f1 = 77;
@@ -161,7 +162,7 @@ bool IsCorrectInnerArraySequential(InnerArraySequential* p)
 }
 
 
-union InnerArrayExplicit // size = 32 bytes
+union InnerArrayExplicit
 {
 	struct InnerSequential arr[2];
 	struct
@@ -173,34 +174,48 @@ union InnerArrayExplicit // size = 32 bytes
 
 
 #ifdef WINDOWS
-	#ifdef _WIN64
-        #pragma warning(push) 
-        #pragma warning(disable: 4201) // nonstandard extension used: nameless struct/union
-		union OUTER3 // size = 32 bytes
-		{
-			struct InnerSequential arr[2];
-			struct
-			{
-				CHAR _unused0[24];
-				LPCSTR f4;
-			};
-		};
-        #pragma warning(pop)
-	#else
-		struct OUTER3 // size = 28 bytes
-		{
-			struct InnerSequential arr[2];
-			LPCSTR f4;
-		};
-	#endif
+#ifdef _WIN64
+#pragma warning(push) 
+#pragma warning(disable: 4201) // nonstandard extension used: nameless struct/union
+union OUTER3
+{
+    struct InnerSequential arr[2];
+    struct
+    {
+        CHAR _unused0[24];
+        LPCSTR f4;
+    };
+};
+static_assert_no_msg(sizeof(OUTER3) == 32);
+#pragma warning(pop)
+#else
+struct OUTER3
+{
+    struct InnerSequential arr[2];
+    LPCSTR f4;
+};
+static_assert_no_msg(sizeof(OUTER3) == 28);
 #endif
-
-#ifndef WINDOWS
-	struct OUTER3 // size = 28 bytes
-	{
-		struct InnerSequential arr[2];
-		LPCSTR f4;
-	};
+#else // WINDOWS
+#if defined(__x86_64__) || defined(__aarch64__)
+union OUTER3
+{
+    struct InnerSequential arr[2];
+    struct
+    {
+        CHAR _unused0[24];
+        LPCSTR f4;
+    };
+};
+static_assert_no_msg(sizeof(OUTER3) == 32);
+#else
+struct OUTER3
+{
+    struct InnerSequential arr[2];
+    LPCSTR f4;
+};
+static_assert_no_msg(sizeof(OUTER3) == 28);
+#endif
 #endif
 
 void PrintOUTER3(OUTER3* p, char const * name)
@@ -326,7 +341,7 @@ bool IsCorrectCharSetUnicodeSequential(CharSetUnicodeSequential* p)
 }
 
 
-struct NumberSequential // size = 64 bytes
+struct NumberSequential
 {
 	LONG64 i64;
 	ULONG64 ui64;
@@ -383,7 +398,7 @@ bool IsCorrectNumberSequential(NumberSequential* p)
 	return true;
 }
 
-struct S3 // size = 1032 bytes
+struct S3
 {
     BOOL flag;
     LPCSTR str;
@@ -434,7 +449,7 @@ bool IsCorrectS3(S3* p)
 	return true;
 }
 
-struct S4 // size = 8 bytes
+struct S4
 {
     INT age;
     LPCSTR name;
@@ -444,7 +459,7 @@ enum Enum1
     e1 = 1,
     e2 = 3 
 };
-struct S5 // size = 8 bytes
+struct S5
 {
     struct S4 s4;
     Enum1 ef;
@@ -471,7 +486,7 @@ bool IsCorrectS5(S5* str)
 	return true;
 }
 
-struct StringStructSequentialAnsi // size = 8 bytes
+struct StringStructSequentialAnsi
 {
 	LPCSTR first;
     LPCSTR last;
@@ -518,7 +533,7 @@ void ChangeStringStructSequentialAnsi(StringStructSequentialAnsi* str)
 	str->last = newLast;
 }
 
-struct StringStructSequentialUnicode // size = 8 bytes
+struct StringStructSequentialUnicode
 {
     LPCWSTR first;
     LPCWSTR last;
@@ -571,7 +586,7 @@ void ChangeStringStructSequentialUnicode(StringStructSequentialUnicode* str)
 }
 
 
-struct S8 // size = 32 bytes
+struct S8
 {
     LPCSTR name;
     BOOL gender;
@@ -614,7 +629,7 @@ void ChangeS8(S8* str)
 	str->mySByte = 64;
 }
 #pragma pack (8)
-struct S_int // size = 4 bytes
+struct S_int
 {
     INT i;
 };
@@ -622,19 +637,19 @@ struct S_int // size = 4 bytes
 struct S9;
 typedef void (*TestDelegate1)(struct S9 myStruct);
 
-struct S9 // size = 8 bytes
+struct S9
 {
     INT i32;
     TestDelegate1 myDelegate1;
 };
 
-struct S101 // size = 8 bytes
+struct S101
 {
     INT i;
     struct S_int s_int;
 };
 
-struct S10 // size = 8 bytes
+struct S10
 {
     struct S101 s;
 };
@@ -661,13 +676,13 @@ void ChangeS10(S10* str)
 typedef int* LPINT;
 #endif
 
-struct S11 // size = 8 bytes
+struct S11
 {
     LPINT i32;
     INT i;
 };
 
-union U // size = 8 bytes
+union U
 {
     INT i32;
     UINT ui32;
@@ -724,7 +739,7 @@ bool IsCorrectU(U* p)
 	return true;
 }
 
-struct ByteStructPack2Explicit // size = 2 bytes
+struct ByteStructPack2Explicit
 {
     BYTE b1;
     BYTE b2;
@@ -749,7 +764,7 @@ bool IsCorrectByteStructPack2Explicit(ByteStructPack2Explicit* p)
 
 
 
-struct ShortStructPack4Explicit // size = 4 bytes
+struct ShortStructPack4Explicit
 {
     SHORT s1;
     SHORT s2;
@@ -773,7 +788,7 @@ bool IsCorrectShortStructPack4Explicit(ShortStructPack4Explicit* p)
 }
 
 
-struct IntStructPack8Explicit // size = 8 bytes
+struct IntStructPack8Explicit
 {
     INT i1;
     INT i2;
@@ -796,7 +811,7 @@ bool IsCorrectIntStructPack8Explicit(IntStructPack8Explicit* p)
 	return true;
 }
 
-struct LongStructPack16Explicit // size = 16 bytes
+struct LongStructPack16Explicit
 {
     LONG64 l1;
     LONG64 l2;
@@ -834,6 +849,12 @@ struct HFA
     float f2;
     float f3;
     float f4;
+};
+
+struct DoubleHFA
+{
+    double d1;
+    double d2;
 };
 
 struct ManyInts
@@ -887,4 +908,52 @@ struct AggregateSequentialWrapper
     SequentialWrapper wrapper1;
     InnerSequential sequential;
     SequentialWrapper wrapper2;
+};
+
+union OverlappingLongFloat
+{
+    LONG64 a;
+    struct
+    {
+        char unused[4];
+        float f;
+    };
+};
+
+struct FixedBufferClassificationTest
+{
+    int arr[3];
+    float f;
+};
+
+// use float padding to ensure that we match the SystemV Classification
+// as if this field was not here (the case in the managed representation).
+union OverlappingMultipleEightbyte
+{
+    float arr[3];
+    struct
+    {
+        float padding[2]; 
+        int i;
+    };
+};
+
+union OverlappingMultipleEightbyteFirst
+{
+    float arr[3];
+    struct
+    {
+        float padding;
+        int i;
+    };
+};
+
+union OverlappingMultipleEightbyteMultiple
+{
+    float arr[3];
+    struct
+    {
+        float padding;
+        int i[3];
+    };
 };

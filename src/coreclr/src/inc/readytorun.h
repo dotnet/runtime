@@ -16,9 +16,12 @@
 #define READYTORUN_SIGNATURE 0x00525452 // 'RTR'
 
 #define READYTORUN_MAJOR_VERSION 0x0003
-#define READYTORUN_MINOR_VERSION 0x0002
+#define READYTORUN_MINOR_VERSION 0x0000
+#define MINIMUM_READYTORUN_MAJOR_VERSION 0x003
 // R2R Version 2.1 adds the READYTORUN_SECTION_INLINING_INFO section
 // R2R Version 2.2 adds the READYTORUN_SECTION_PROFILEDATA_INFO section
+// R2R Version 3.0 changes calling conventions to correctly handle explicit structures to spec.
+//     R2R 3.0 is not backward compatible with 2.x.
 
 struct READYTORUN_HEADER
 {
