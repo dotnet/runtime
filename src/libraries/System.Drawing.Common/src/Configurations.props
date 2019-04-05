@@ -7,6 +7,7 @@
       netcoreapp-Unix;
       net461;
       netstandard;
+      uap;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
