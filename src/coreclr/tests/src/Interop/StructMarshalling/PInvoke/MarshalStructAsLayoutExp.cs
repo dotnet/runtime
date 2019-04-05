@@ -15,7 +15,10 @@ public class Managed
         ByteStructPack2ExplicitId,
         ShortStructPack4ExplicitId,
         IntStructPack8ExplicitId,
-        LongStructPack16ExplicitId
+        LongStructPack16ExplicitId,
+        OverlappingLongFloatId,
+        OverlappingMultipleEightbyteId,
+        HFAId
     }
 
     [SecuritySafeCritical]
@@ -34,7 +37,7 @@ public class Managed
         if (failures > 0)
         {
             Console.WriteLine("\nTEST FAILED!");
-            return 101;
+            return 100 + failures;
         }
         else
         {
@@ -209,6 +212,21 @@ public class Managed
     [DllImport("MarshalStructAsParam")]
     static extern LongStructPack16Explicit GetLongStruct(long l1, long l2);
 
+    [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsExpByValOverlappingLongFloat(OverlappingLongFloat str, long expected);
+    [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsExpByValOverlappingLongFloat(OverlappingLongFloat2 str, long expected);
+    
+    [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsExpByValOverlappingMultipleEightByte(OverlappingMultipleEightbyte str, float i1, float i2, float i3);
+
+    [DllImport("MarshalStructAsParam")]
+    static extern float ProductHFA(ExplicitHFA hfa);
+    [DllImport("MarshalStructAsParam")]
+    static extern float ProductHFA(ExplicitFixedHFA hfa);
+    [DllImport("MarshalStructAsParam")]
+    static extern float ProductHFA(OverlappingHFA hfa);
+
     #region Marshal Explicit struct method
     [SecuritySafeCritical]
     private static void MarshalStructAsParam_AsExpByVal(StructID id)
@@ -351,7 +369,85 @@ public class Managed
                     {
                         failures++;
                     }
-                    break;    
+                    break;
+                case StructID.OverlappingLongFloatId:
+                    OverlappingLongFloat overlappingLongFloat = new OverlappingLongFloat
+                    {
+                        l = 12345,
+                        f = 12.45f
+                    };
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsExpByValOverlappingLongFloat...");
+                    if (!MarshalStructAsParam_AsExpByValOverlappingLongFloat(overlappingLongFloat, overlappingLongFloat.l))
+                    {
+                        Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsExpByValOverlappingLongFloat. Expected:True;Actual:False");
+                        failures++;
+                    }
+                    OverlappingLongFloat2 overlappingLongFloat2 = new OverlappingLongFloat2
+                    {
+                        l = 12345,
+                        f = 12.45f
+                    };
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsExpByValOverlappingLongFloat (Reversed field order)...");
+                    if (!MarshalStructAsParam_AsExpByValOverlappingLongFloat(overlappingLongFloat2, overlappingLongFloat.l))
+                    {
+                        Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsExpByValOverlappingLongFloat. Expected:True;Actual:False");
+                        failures++;
+                    }
+                    break;
+                case StructID.OverlappingMultipleEightbyteId:
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsExpByValOverlappingMultipleEightByte...");
+                    OverlappingMultipleEightbyte overlappingMultipleEightbyte = new OverlappingMultipleEightbyte
+                    {
+                        arr = new float[3] { 1f, 400f, 623289f},
+                        i = 1234
+                    };
+                    if (!MarshalStructAsParam_AsExpByValOverlappingMultipleEightByte(
+                            overlappingMultipleEightbyte,
+                            overlappingMultipleEightbyte.arr[0],
+                            overlappingMultipleEightbyte.arr[1],
+                            overlappingMultipleEightbyte.arr[2]))
+                    {
+                        Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsExpByValOverlappingMultipleEightByte. Expected True;Actual:False");
+                        failures++;
+                    }
+                    break;
+                case StructID.HFAId:
+                    OverlappingHFA hfa = new OverlappingHFA
+                    {
+                        hfa = new HFA
+                        {
+                            f1 = 2.0f,
+                            f2 = 10.5f,
+                            f3 = 15.2f,
+                            f4 = 0.12f
+                        }
+                    };
+
+                    float expected = hfa.hfa.f1 * hfa.hfa.f2 * hfa.hfa.f3 * hfa.hfa.f4;
+                    float actual;
+
+                    Console.WriteLine("\tCalling ProductHFA with Explicit HFA.");
+                    actual = ProductHFA(hfa.explicitHfa);
+                    if (expected != actual)
+                    {
+                        Console.WriteLine($"\tFAILED! Expected {expected}. Actual {actual}");
+                        failures++;
+                    }
+                    Console.WriteLine("\tCalling ProductHFA with Explicit Fixed HFA.");
+                    actual = ProductHFA(hfa.explicitFixedHfa);
+                    if (expected != actual)
+                    {
+                        Console.WriteLine($"\tFAILED! Expected {expected}. Actual {actual}");
+                        failures++;
+                    }
+                    Console.WriteLine("\tCalling ProductHFA with Overlapping HFA.");
+                    actual = ProductHFA(hfa);
+                    if (expected != actual)
+                    {
+                        Console.WriteLine($"\tFAILED! Expected {expected}. Actual {actual}");
+                        failures++;
+                    }
+                    break;
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -1464,6 +1560,9 @@ public class Managed
         MarshalStructAsParam_AsExpByVal(StructID.ShortStructPack4ExplicitId);
         MarshalStructAsParam_AsExpByVal(StructID.IntStructPack8ExplicitId);
         MarshalStructAsParam_AsExpByVal(StructID.LongStructPack16ExplicitId);
+        MarshalStructAsParam_AsExpByVal(StructID.OverlappingLongFloatId);
+        MarshalStructAsParam_AsExpByVal(StructID.OverlappingMultipleEightbyteId);
+        MarshalStructAsParam_AsExpByVal(StructID.HFAId);
     }
 
     [SecuritySafeCritical]
