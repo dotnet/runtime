@@ -70,3 +70,6 @@ PATCH_INFO(PROFILER_CLAUSE_COUNT, "profiler_clause_count")
  * function.
  */
 PATCH_INFO(METHOD_FTNDESC, "method_ftndesc")
+
+PATCH_INFO(TRAMPOLINE_FUNC_ADDR, "trampoline_func_addr")
+PATCH_INFO(SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR, "specific_trampoline_lazy_fetch_addr")

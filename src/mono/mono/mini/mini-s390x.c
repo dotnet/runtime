@@ -5345,6 +5345,8 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain,
 			case MONO_PATCH_INFO_EXC:
 				s390_patch_addr (ip, (guint64) target);
 				continue;
+			case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
+			case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 			case MONO_PATCH_INFO_METHOD:
 			case MONO_PATCH_INFO_JIT_ICALL:
 			case MONO_PATCH_INFO_JIT_ICALL_ADDR:

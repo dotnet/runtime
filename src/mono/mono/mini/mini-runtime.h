@@ -324,6 +324,7 @@ struct MonoJumpInfo {
 		int             offset;
 #endif
 		int index;
+		guint uindex;
 		MonoBasicBlock *bb;
 		MonoInst       *inst;
 		MonoMethod     *method;

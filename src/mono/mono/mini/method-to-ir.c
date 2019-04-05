@@ -6912,7 +6912,9 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					ins = (MonoInst*)mini_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR_CALL, info_data, fsig, sp);
 					NULLIFY_INS (addr);
 					goto calli_end;
-				} else if (info_type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+				} else if (info_type == MONO_PATCH_INFO_JIT_ICALL_ADDR
+						|| info_type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR
+						|| info_type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR) {
 					tailcall = FALSE;
 					ins = (MonoInst*)mini_emit_abs_call (cfg, info_type, info_data, fsig, sp);
 					NULLIFY_INS (addr);

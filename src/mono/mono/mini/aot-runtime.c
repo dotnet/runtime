@@ -3890,6 +3890,10 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT:
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
 		break;
+	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
+		ji->data.uindex = decode_value (p, &p);
+		break;
+	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		ji->data.index = decode_value (p, &p);
 		break;
@@ -5123,11 +5127,14 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	 * patches, so have to translate between the two.
 	 * FIXME: Clean this up, but how ?
 	 */
-	if (ji.type == MONO_PATCH_INFO_ABS || ji.type == MONO_PATCH_INFO_JIT_ICALL || ji.type == MONO_PATCH_INFO_ICALL_ADDR || ji.type == MONO_PATCH_INFO_JIT_ICALL_ADDR || ji.type == MONO_PATCH_INFO_RGCTX_FETCH) {
+	if (ji.type == MONO_PATCH_INFO_ABS || ji.type == MONO_PATCH_INFO_JIT_ICALL || ji.type == MONO_PATCH_INFO_ICALL_ADDR
+		|| ji.type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR || ji.type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR
+		|| ji.type == MONO_PATCH_INFO_JIT_ICALL_ADDR || ji.type == MONO_PATCH_INFO_RGCTX_FETCH) {
 		/* These should already have a function descriptor */
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		/* Our function descriptors have a 0 environment, gcc created ones don't */
-		if (ji.type != MONO_PATCH_INFO_JIT_ICALL && ji.type != MONO_PATCH_INFO_JIT_ICALL_ADDR && ji.type != MONO_PATCH_INFO_ICALL_ADDR)
+		if (ji.type != MONO_PATCH_INFO_JIT_ICALL && ji.type != MONO_PATCH_INFO_JIT_ICALL_ADDR && ji.type != MONO_PATCH_INFO_ICALL_ADDR
+				&& ji.type != MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR && ji.type != MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR)
 			g_assert (((gpointer*)target) [2] == 0);
 #endif
 		/* Empty */
@@ -5368,7 +5375,12 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 			 * When this code is executed, the runtime may not be initalized yet, so
 			 * resolve the patch info by hand.
 			 */
-			if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
+			if (ji->type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR) {
+				target = (gpointer)mono_get_trampoline_func ((MonoTrampolineType)ji->data.index);
+			} else if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR) {
+				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
+				target = mono_create_ftnptr_malloc ((guint8 *)target);
+			} else if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
 				if (!strcmp (ji->data.name, "mono_get_lmf_addr")) {
 					target = (gpointer)mono_get_lmf_addr;
 				} else if (!strcmp (ji->data.name, "mono_thread_force_interruption_checkpoint_noraise")) {
@@ -5379,18 +5391,6 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					target = (gpointer)mono_get_throw_exception ();
 				} else if (!strcmp (ji->data.name, "mono_rethrow_preserve_exception")) {
 					target = (gpointer)mono_get_rethrow_preserve_exception ();
-				} else if (strstr (ji->data.name, "trampoline_func_") == ji->data.name) {
-					MonoTrampolineType tramp_type2 = (MonoTrampolineType)atoi (ji->data.name + strlen ("trampoline_func_"));
-					target = (gpointer)mono_get_trampoline_func (tramp_type2);
-				} else if (strstr (ji->data.name, "specific_trampoline_lazy_fetch_") == ji->data.name) {
-					/* atoll is needed because the the offset is unsigned */
-					guint32 slot;
-					int res;
-
-					res = sscanf (ji->data.name, "specific_trampoline_lazy_fetch_%u", &slot);
-					g_assert (res == 1);
-					target = mono_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
-					target = mono_create_ftnptr_malloc ((guint8 *)target);
 				} else if (!strcmp (ji->data.name, "debugger_agent_single_step_from_context")) {
 					target = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
 				} else if (!strcmp (ji->data.name, "debugger_agent_breakpoint_from_context")) {
