@@ -325,13 +325,14 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
 
     BEGIN_QCALL;
 
+#ifndef FEATURE_PAL
     CPUGroupInfo::EnsureInitialized();
 
     if(CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
     {
         processorCount = CPUGroupInfo::GetNumActiveProcessors();
     }
-
+#endif // !FEATURE_PAL
     // Processor count will be 0 if CPU groups are disabled/not supported
     if(processorCount == 0)
     {

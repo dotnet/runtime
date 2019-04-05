@@ -167,9 +167,16 @@ class AffinitySet
 
 public:
 
+    static const size_t BitsetDataSize = MAX_SUPPORTED_CPUS / BitsPerBitsetEntry;
+
     AffinitySet()
     {
         memset(m_bitset, 0, sizeof(m_bitset));
+    }
+
+    uintptr_t* GetBitsetData()
+    {
+        return m_bitset;
     }
 
     // Check if the set contains a processor
@@ -476,9 +483,6 @@ public:
 
     // Is NUMA support available
     static bool CanEnableGCNumaAware();
-
-    // Gets the NUMA node for the processor
-    static bool GetNumaProcessorNode(uint16_t proc_no, uint16_t *node_no);
 
     // Get processor number and optionally its NUMA node number for the specified heap number
     // Parameters:
