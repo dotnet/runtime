@@ -740,6 +740,32 @@
         }
     },
     {
+        "name": "System.IO.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.IO.Tests.CloseTests.AfterDisposeThrows",
+                    "reason": "Readers/writers changed to not null out base stream on dispose"
+                },
+                {
+                    "name": "System.IO.Tests.CloseTests.AfterCloseThrows",
+                    "reason": "Readers/writers changed to not null out base stream on dispose"
+                },
+                {
+                    "name": "System.IO.Tests.StreamWriterWithBufferedStream_CloseTests.AfterDisposeThrows",
+                    "reason": "Readers/writers changed to not null out base stream on dispose"
+                },
+                {
+                    "name": "System.IO.Tests.StreamWriterWithBufferedStream_CloseTests.AfterCloseThrows",
+                    "reason": "Readers/writers changed to not null out base stream on dispose"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.IO.FileSystem.Tests",
         "enabled": true,
         "exclusions": {
