@@ -495,19 +495,12 @@ namespace System.Xml
                 }
                 // decode 1 character from the byte cache
                 i = GetFullChars(lastBytes, 0, 4, chars, charIndex);
-                Debug.Assert(i == 1);
+
                 charIndex += i;
                 charCount -= i;
                 charsUsed = i;
 
                 lastBytesCount = 0;
-
-                // if that's all that was requested -> return
-                if (charCount == 0)
-                {
-                    completed = (byteCount == 0);
-                    return;
-                }
             }
             else
             {
