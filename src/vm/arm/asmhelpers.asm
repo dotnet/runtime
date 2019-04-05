@@ -16,7 +16,6 @@
     SETALIAS CTPMethodTable__s_pThunkTable, ?s_pThunkTable@CTPMethodTable@@0PAVMethodTable@@A
     SETALIAS g_pObjectClass, ?g_pObjectClass@@3PAVMethodTable@@A
 
-    IMPORT GetThread
     IMPORT JIT_InternalThrow
     IMPORT JIT_WriteBarrier
     IMPORT TheUMEntryPrestubWorker
@@ -386,7 +385,8 @@ UMThunkStub_StackArgs SETA 10*4
 
         CHECK_STACK_ALIGNMENT
 
-        bl                  GetThread
+        ; r0 = GetThread(). Trashes r5
+        INLINE_GETTHREAD    r0, r5
         cbz                 r0, UMThunkStub_DoThreadSetup
 
 UMThunkStub_HaveThread
@@ -457,6 +457,8 @@ UMThunkStub_DoTrapReturningThreads
         b                   UMThunkStub_InCooperativeMode
 
         NESTED_END
+        
+        INLINE_GETTHREAD_CONSTANT_POOL
 
 ; ------------------------------------------------------------------
 
