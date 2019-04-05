@@ -158,12 +158,21 @@
       <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
     </MSBuild>
 
+    <!--
+      Workaround: zero-versioned Microsoft.VisualBasic.dll in non-Windows CoreFX transport package.
+      See https://github.com/dotnet/corefx/issues/36630
+    -->
+    <PropertyGroup Condition="'$(OSGroup)' != 'Windows_NT'">
+      <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
+    </PropertyGroup>
+
     <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
                               PackageId="$(Id)"
                               PackageVersion="$(Version)"
                               PlatformManifestFile="$(PlatformManifestFile)"
                               PropsFile="$(PropsFile)"
-                              PreferredPackages="$(Id);@(RuntimeDependency)" />
+                              PreferredPackages="$(Id);@(RuntimeDependency)"
+                              PermitDllAndExeFilesLackingFileVersion="$(PermitDllAndExeFilesLackingFileVersion)" />
   </Target>
 
   <Target Name="IncludeFileVersionPropsFile"
