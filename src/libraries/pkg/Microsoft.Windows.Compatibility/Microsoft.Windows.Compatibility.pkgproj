@@ -3,7 +3,7 @@
   <PropertyGroup>
       <!-- We use the PackageVersion property defined in Packaging.props for the Prerelease packages which are using it to be built -->
     <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
-    <PackageVersion>2.1.0</PackageVersion>
+    <PackageVersion>3.0.0</PackageVersion>
     <ServiceModelVersion>4.5.3</ServiceModelVersion>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
@@ -24,7 +24,6 @@
     <PrereleaseLibraryPackage Include="System.ComponentModel.Composition" />
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
-    <PrereleaseLibraryPackage Include="System.Data.DataSetExtensions" />
     <PrereleaseLibraryPackage Include="System.Data.SqlClient">
       <!-- SQL client defines its own version, higher than rest of master -->
       <Version>4.7.0</Version>
@@ -70,6 +69,9 @@
     <!-- Packages we don't build in master anymore -->
     <LibraryPackage Include="System.IO.Pipes.AccessControl">
       <Version>4.5.1</Version>
+    </LibraryPackage>
+    <LibraryPackage Include="System.Data.DataSetExtensions">
+      <Version>4.5.0</Version>
     </LibraryPackage>
   </ItemGroup>
   <ItemGroup>
