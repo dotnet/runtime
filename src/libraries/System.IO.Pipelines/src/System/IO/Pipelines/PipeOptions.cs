@@ -8,7 +8,7 @@ using System.Threading;
 namespace System.IO.Pipelines
 {
     /// <summary>
-    /// Represents a set of <see cref="Pipe"/> options
+    /// Represents a set of <see cref="Pipe"/> options.
     /// </summary>
     public class PipeOptions
     {
@@ -19,7 +19,7 @@ namespace System.IO.Pipelines
         private const int DefaultPauseWriterThreshold = DefaultMinimumSegmentSize * Pipe.InitialSegmentPoolSize;
 
         /// <summary>
-        /// Default instance of <see cref="PipeOptions"/>
+        /// Default instance of <see cref="PipeOptions"/>.
         /// </summary>
         public static PipeOptions Default { get; } = new PipeOptions();
 
