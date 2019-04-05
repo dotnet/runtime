@@ -7,13 +7,18 @@
   </PropertyGroup>
   <!--Package versions-->
   <PropertyGroup>
+    <!-- corefx -->
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview4.19204.4</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview4.19204.4</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
+    <!-- standard -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19203.1</NETStandardLibraryPackageVersion>
+    <!-- coreclr -->
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview4-27604-73</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <MicrosoftBclJsonSourcesPackageVersion>4.6.0-preview.19072.2</MicrosoftBclJsonSourcesPackageVersion>
+    <!-- dotnet-trusted -->
     <MicrosoftWindowsDesktopAppPackageVersion>3.0.0-preview4-27604-23</MicrosoftWindowsDesktopAppPackageVersion>
+    <!-- Not auto-updated. -->
+    <MicrosoftBclJsonSourcesPackageVersion>4.6.0-preview.19072.2</MicrosoftBclJsonSourcesPackageVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
