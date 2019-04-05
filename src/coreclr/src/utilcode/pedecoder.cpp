@@ -1801,12 +1801,6 @@ DWORD PEDecoder::ReadResourceDictionary(DWORD rvaOfResourceSection, DWORD rva, L
 
     IMAGE_RESOURCE_DIRECTORY *pResourceDirectory = (IMAGE_RESOURCE_DIRECTORY *)GetRvaData(rva);
 
-    if (pResourceDirectory->MajorVersion != 4)
-        return 0;
-
-    if (pResourceDirectory->MinorVersion != 0)
-        return 0;
-
     // Check to see if entire resource dictionary is accessible
     if (!CheckRva(rva + sizeof(IMAGE_RESOURCE_DIRECTORY), 
                        (sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY) * pResourceDirectory->NumberOfNamedEntries) +

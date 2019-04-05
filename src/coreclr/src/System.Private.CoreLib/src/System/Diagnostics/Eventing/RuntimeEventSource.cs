@@ -20,6 +20,8 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter _gen1GCCounter;
         private IncrementingPollingCounter _gen2GCCounter;
         private IncrementingPollingCounter _exceptionCounter;
+        private PollingCounter _cpuTimeCounter;
+        private PollingCounter _workingSetCounter;
 
         private const int EnabledPollingIntervalMilliseconds = 1000; // 1 second
 
@@ -41,6 +43,8 @@ namespace System.Diagnostics.Tracing
                 // overhead by at all times even when counters aren't enabled.
 
                 // On disable, PollingCounters will stop polling for values so it should be fine to leave them around.
+                _cpuTimeCounter = _cpuTimeCounter ?? new PollingCounter("CPU Usage", this, () => RuntimeEventSourceHelper.GetCpuUsage());
+                _workingSetCounter = _workingSetCounter ?? new PollingCounter("Working Set", this, () => Environment.WorkingSet);
                 _gcHeapSizeCounter = _gcHeapSizeCounter ?? new PollingCounter("GC Heap Size", this, () => GC.GetTotalMemory(false));
                 _gen0GCCounter = _gen0GCCounter ?? new IncrementingPollingCounter("Gen 0 GC Count", this, () => GC.CollectionCount(0));
                 _gen1GCCounter = _gen1GCCounter ?? new IncrementingPollingCounter("Gen 1 GC Count", this, () => GC.CollectionCount(1));

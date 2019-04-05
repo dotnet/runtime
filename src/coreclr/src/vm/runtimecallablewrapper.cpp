@@ -911,7 +911,7 @@ void WinRTClassFactory::Init()
                 IfFailThrow(cap.GetNonNullString(&szFactoryInterfaceName, &cbFactoryInterfaceName));
 
                 StackSString strFactoryInterface(SString::Utf8, szFactoryInterfaceName, cbFactoryInterfaceName);
-                MethodTable *pMTFactoryInterface = GetWinRTType(&strFactoryInterface, /* bThrowIfNotFound = */ TRUE).GetMethodTable();
+                MethodTable *pMTFactoryInterface = LoadWinRTType(&strFactoryInterface, /* bThrowIfNotFound = */ TRUE).GetMethodTable();
 
                 _ASSERTE(pMTFactoryInterface);
                 m_factoryInterfaces.Append(pMTFactoryInterface);
@@ -951,7 +951,7 @@ void WinRTClassFactory::Init()
             
                 // copy the name to a temporary buffer and NULL terminate it
                 StackSString ss(SString::Utf8, szName, cbName);
-                TypeHandle th = GetWinRTType(&ss, /* bThrowIfNotFound = */ TRUE);
+                TypeHandle th = LoadWinRTType(&ss, /* bThrowIfNotFound = */ TRUE);
 
                 MethodTable *pMTStaticInterface = th.GetMethodTable();
                 m_staticInterfaces.Append(pMTStaticInterface);
