@@ -5,6 +5,7 @@
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
 
+#nullable enable
 namespace System.IO
 {
     public partial class FileStream : Stream
