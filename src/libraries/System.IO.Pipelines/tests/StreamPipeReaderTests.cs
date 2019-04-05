@@ -116,7 +116,7 @@ namespace System.IO.Pipelines.Tests
         [MemberData(nameof(ReadSettings))]
         public async Task ReadWithDifferentSettings(int bytesInBuffer, int bufferSize, int minimumReadSize, int[] readBufferSizes)
         {
-            var options = new StreamPipeReaderOptions(bufferSize: bufferSize, minimumReadSize: minimumReadSize, pool: new CustomPool());
+            var options = new StreamPipeReaderOptions(bufferSize: bufferSize, minimumReadSize: minimumReadSize, pool: new HeapBufferPool());
             var stream = new MemoryStream(Enumerable.Range(0, bytesInBuffer).Select(i => (byte)i).ToArray());
             PipeReader reader = PipeReader.Create(stream, options);
 
@@ -443,7 +443,7 @@ namespace System.IO.Pipelines.Tests
         {
             // We're using the pipe here as a way to pump bytes into the reader asynchronously
             var pipe = new Pipe();
-            var options = new StreamPipeReaderOptions(pool: new CustomPool(), bufferSize: 10, minimumReadSize: 5);
+            var options = new StreamPipeReaderOptions(pool: new HeapBufferPool(), bufferSize: 10, minimumReadSize: 5);
             PipeReader reader = PipeReader.Create(pipe.Reader.AsStream(), options);
 
             pipe.Writer.WriteEmpty(6);
@@ -546,23 +546,6 @@ namespace System.IO.Pipelines.Tests
             return new object[] { bytesInBuffer, bufferSize, minimumReadSize, readSizes };
         }
 
-        private class ObserveDisposeStream : ReadOnlyStream
-        {
-            public int DisposedCount { get; set; }
-
-            public override int Read(byte[] buffer, int offset, int count)
-            {
-                throw new NotSupportedException();
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-                DisposedCount++;
-
-                base.Dispose(disposing);
-            }
-        }
-
         private class ThrowAfterZeroByteReadStream : MemoryStream
         {
             public ThrowAfterZeroByteReadStream()
@@ -605,37 +588,6 @@ namespace System.IO.Pipelines.Tests
                 return bytes;
             }
 #endif
-        }
-
-        // This pool returns exact buffer sizes
-        private class CustomPool : MemoryPool<byte>
-        {
-            public override int MaxBufferSize => int.MaxValue;
-
-            public override IMemoryOwner<byte> Rent(int minBufferSize = -1)
-            {
-                return new Owner(minBufferSize == -1 ? 4096 : minBufferSize);
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-
-            }
-
-            private class Owner : IMemoryOwner<byte>
-            {
-                public Owner(int size)
-                {
-                    Memory = new byte[size].AsMemory();
-                }
-
-                public Memory<byte> Memory { get; }
-
-                public void Dispose()
-                {
-
-                }
-            }
         }
     }
 }

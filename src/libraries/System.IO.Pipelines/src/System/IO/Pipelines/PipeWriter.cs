@@ -55,6 +55,17 @@ namespace System.IO.Pipelines
         }
 
         /// <summary>
+        /// Creates a <see cref="PipeWriter"/> wrapping the specified <see cref="Stream"/>.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="writerOptions">The options.</param>
+        /// <returns>A <see cref="PipeWriter"/> that wraps the <see cref="Stream"/>.</returns>
+        public static PipeWriter Create(Stream stream, StreamPipeWriterOptions writerOptions = null)
+        {
+            return new StreamPipeWriter(stream, writerOptions ?? StreamPipeWriterOptions.s_default);
+        }
+
+        /// <summary>
         /// Writes <paramref name="source"/> to the pipe and makes data accessible to <see cref="PipeReader"/>
         /// </summary>
         public virtual ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
