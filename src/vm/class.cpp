@@ -1243,12 +1243,6 @@ EEClass::CheckForHFA()
     // This method should be called for valuetypes only
     _ASSERTE(GetMethodTable()->IsValueType());
 
-    // No HFAs with explicit layout. There may be cases where explicit layout may be still
-    // eligible for HFA, but it is hard to tell the real intent. Make it simple and just 
-    // unconditionally disable HFAs for explicit layout.
-    if (HasExplicitFieldOffsetLayout())
-        return false;
-
     // The SIMD Intrinsic types are meant to be handled specially and should not be treated as HFA
     if (GetMethodTable()->IsIntrinsicType())
     {
@@ -1261,14 +1255,24 @@ EEClass::CheckForHFA()
             assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
             return false;
         }
+       
+        if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
+        {
+            return false;
+        }
     }
 
     CorElementType hfaType = ELEMENT_TYPE_END;
 
     FieldDesc *pFieldDescList = GetFieldDescList();
+
+    bool hasZeroOffsetField = false;
+
     for (UINT i = 0; i < GetNumInstanceFields(); i++)
     {
         FieldDesc *pFD = &pFieldDescList[i];
+        hasZeroOffsetField |= (pFD->GetOffset() == 0);
+
         CorElementType fieldType = pFD->GetFieldType();
 
         switch (fieldType)
@@ -1282,9 +1286,23 @@ EEClass::CheckForHFA()
             break;
 
         case ELEMENT_TYPE_R4:
-        case ELEMENT_TYPE_R8:
+            {
+                static const int REQUIRED_FLOAT_ALIGNMENT = 4;
+                if (pFD->GetOffset() % REQUIRED_FLOAT_ALIGNMENT != 0) // HFAs don't have unaligned fields.
+                {
+                    return false;
+                }
+            }
             break;
-
+        case ELEMENT_TYPE_R8:
+            {
+                static const int REQUIRED_DOUBLE_ALIGNMENT = 8;
+                if (pFD->GetOffset() % REQUIRED_DOUBLE_ALIGNMENT != 0) // HFAs don't have unaligned fields.
+                {
+                    return false;
+                }
+            }
+            break;
         default:
             // Not HFA
             return false;
@@ -1309,6 +1327,9 @@ EEClass::CheckForHFA()
     }
 
     if (hfaType == ELEMENT_TYPE_END)
+        return false;
+        
+    if (!hasZeroOffsetField) // If the struct doesn't have a zero-offset field, it's not an HFA.
         return false;
 
     int elemSize = (hfaType == ELEMENT_TYPE_R8) ? sizeof(double) : sizeof(float);
@@ -1351,7 +1372,8 @@ CorElementType EEClassLayoutInfo::GetNativeHFATypeRaw()
         case NFT_COPY4:
         case NFT_COPY8:
             fieldType = pFieldMarshaler->GetFieldDesc()->GetFieldType();
-            if (fieldType != ELEMENT_TYPE_R4 && fieldType != ELEMENT_TYPE_R8)
+            // An HFA can only have aligned float and double fields
+            if ((fieldType != ELEMENT_TYPE_R4 && fieldType != ELEMENT_TYPE_R8) || (pFieldMarshaler->GetExternalOffset() % pFieldMarshaler->AlignmentRequirement() != 0))
                 return ELEMENT_TYPE_END;
             break;
 

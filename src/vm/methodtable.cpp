@@ -2275,22 +2275,12 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
     }
     CONTRACTL_END;
     
-    WORD numIntroducedFields = GetNumIntroducedInstanceFields();
+    DWORD numIntroducedFields = GetNumIntroducedInstanceFields();
 
     // It appears the VM gives a struct with no fields of size 1.
     // Don't pass in register such structure.
     if (numIntroducedFields == 0)
     {
-        return false;
-    }
-
-    // No struct register passing with explicit layout. There may be cases where explicit layout may be still
-    // eligible for register struct passing, but it is hard to tell the real intent. Make it simple and just 
-    // unconditionally disable register struct passing for explicit layout.
-    if (GetClass()->HasExplicitFieldOffsetLayout())
-    {
-        LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s has explicit layout; will not be enregistered\n",
-               nestingLevel * 5, "", this->GetDebugClassName()));
         return false;
     }
 
@@ -2310,16 +2300,43 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
             return false;
         }
+
+        if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
+        {
+            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
+                nestingLevel * 5, "", this->GetDebugClassName()));
+
+            return false;
+        }
     }
 
 #ifdef _DEBUG
     LOG((LF_JIT, LL_EVERYTHING, "%*s**** Classify %s (%p), startOffset %d, total struct size %d\n",
         nestingLevel * 5, "", this->GetDebugClassName(), this, startOffsetOfStruct, helperPtr->structSize));
-    int fieldNum = -1;
 #endif // _DEBUG
 
-    FieldDesc *pField = GetApproxFieldDescListRaw();
-    FieldDesc *pFieldEnd = pField + numIntroducedFields;
+    FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
+
+    CorElementType firstFieldElementType = pFieldStart->GetFieldType();
+
+    // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+    // and who's size is an exact multiple of the size of the field.
+    // It is possible that we catch a false positive with this check, but that chance is extremely slim
+    // and the user can always change their structure to something more descriptive of what they want
+    // instead of adding additional padding at the end of a one-field structure.
+    // We do this check here to save looking up the FixedBufferAttribute when loading the field
+    // from metadata.
+    bool isFixedBuffer = numIntroducedFields == 1
+                                && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
+                                    || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
+                                && (pFieldStart->GetOffset() == 0)
+                                && HasLayout()
+                                && (GetNumInstanceFieldBytes() % pFieldStart->GetSize() == 0);
+
+    if (isFixedBuffer)
+    {
+        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize();
+    }
 
     // System types are loaded before others, so ByReference<T> would be loaded before Span<T> or any other type that has a
     // ByReference<T> field. ByReference<T> is the first by-ref-like system type to be loaded (see
@@ -2327,14 +2344,23 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
     // null, it must be the initial load of ByReference<T>.
     bool isThisByReferenceOfT = IsByRefLike() && (g_pByReferenceClass == nullptr || HasSameTypeDefAs(g_pByReferenceClass));
 
-    for (; pField < pFieldEnd; pField++)
+    for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
-#ifdef _DEBUG
-        ++fieldNum;
-#endif // _DEBUG
+        FieldDesc* pField;
+        DWORD fieldOffset;
 
-        DWORD fieldOffset = pField->GetOffset();
-        unsigned normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
+        if (isFixedBuffer)
+        {
+            pField = pFieldStart;
+            fieldOffset = fieldIndex * pField->GetSize();
+        }
+        else
+        {
+            pField = &pFieldStart[fieldIndex];
+            fieldOffset = pField->GetOffset();
+        }
+
+        unsigned int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
         unsigned int fieldSize = pField->GetSize();
         _ASSERTE(fieldSize != (unsigned int)-1);
@@ -2380,6 +2406,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             // use the native classification. If not, continue using the managed layout.
             if (useNativeLayout && pFieldMT->HasLayout())
             {
+
                 structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
             }
             else
@@ -2419,7 +2446,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                     // those fields to be at their natural alignment.
 
                     LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Field %d %s: offset %d (normalized %d), size %d not at natural alignment; not enregistering struct\n",
-                        nestingLevel * 5, "", fieldNum, fieldNum, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize));
+                        nestingLevel * 5, "", fieldIndex, fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize));
                     return false;
                 }
 
@@ -2441,21 +2468,19 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                 helperPtr->fieldOffsets[helperPtr->currentUniqueOffsetField] = normalizedFieldOffset;
 
                 LOG((LF_JIT, LL_EVERYTHING, "     %*s**** Field %d %s: offset %d (normalized %d), size %d, currentUniqueOffsetField %d, field type classification %s, chosen field classification %s\n",
-                    nestingLevel * 5, "", fieldNum, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize, helperPtr->currentUniqueOffsetField,
+                    nestingLevel * 5, "", fieldIndex, (i == 0 ? "Value" : "Type"), fieldOffset, normalizedFieldOffset, fieldSize, helperPtr->currentUniqueOffsetField,
                     GetSystemVClassificationTypeName(fieldClassificationType),
                     GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
 
                 helperPtr->currentUniqueOffsetField++;
 #ifdef _DEBUG
-                ++fieldNum;
+                ++fieldIndex;
 #endif // _DEBUG
             }
 
             // Both fields of the special TypedReference struct are handled.
-            pField = pFieldEnd;
-
             // Done classifying the System.TypedReference struct fields.
-            continue;
+            break;
         }
 
         if ((normalizedFieldOffset % fieldSize) != 0)
@@ -2464,21 +2489,14 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             // those fields to be at their natural alignment.
 
             LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Field %d %s: offset %d (normalized %d), size %d not at natural alignment; not enregistering struct\n",
-                   nestingLevel * 5, "", fieldNum, fieldNum, fieldName, fieldOffset, normalizedFieldOffset, fieldSize));
+                   nestingLevel * 5, "", fieldIndex, fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, fieldSize));
             return false;
         }
 
         if ((int)normalizedFieldOffset <= helperPtr->largestFieldOffset)
         {
             // Find the field corresponding to this offset and update the size if needed.
-            // We assume that either it matches the offset of a previously seen field, or
-            // it is an out-of-order offset (the VM does give us structs in non-increasing
-            // offset order sometimes) that doesn't overlap any other field.
-
-            // REVIEW: will the offset ever match a previously seen field offset for cases that are NOT ExplicitLayout?
-            // If not, we can get rid of this loop, and just assume the offset is from an out-of-order field. We wouldn't
-            // need to maintain largestFieldOffset, either, since we would then assume all fields are unique. We could
-            // also get rid of ReClassifyField().
+            // If the offset matches a previously encountered offset, update the classification and field size.
             int i;
             for (i = helperPtr->currentUniqueOffsetField - 1; i >= 0; i--)
             {
@@ -2492,15 +2510,12 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
                     helperPtr->fieldClassifications[i] = ReClassifyField(helperPtr->fieldClassifications[i], fieldClassificationType);
 
                     LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Field %d %s: offset %d (normalized %d), size %d, union with uniqueOffsetField %d, field type classification %s, reclassified field to %s\n",
-                           nestingLevel * 5, "", fieldNum, fieldName, fieldOffset, normalizedFieldOffset, fieldSize, i,
+                           nestingLevel * 5, "", fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, fieldSize, i,
                            GetSystemVClassificationTypeName(fieldClassificationType),
                            GetSystemVClassificationTypeName(helperPtr->fieldClassifications[i])));
 
                     break;
                 }
-                // Make sure the field doesn't start in the middle of another field.
-                _ASSERTE((normalizedFieldOffset <  helperPtr->fieldOffsets[i]) ||
-                         (normalizedFieldOffset >= helperPtr->fieldOffsets[i] + helperPtr->fieldSizes[i]));
             }
 
             if (i >= 0)
@@ -2530,7 +2545,7 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
         helperPtr->fieldOffsets[helperPtr->currentUniqueOffsetField] = normalizedFieldOffset;
 
         LOG((LF_JIT, LL_EVERYTHING, "     %*s**** Field %d %s: offset %d (normalized %d), size %d, currentUniqueOffsetField %d, field type classification %s, chosen field classification %s\n",
-               nestingLevel * 5, "", fieldNum, fieldName, fieldOffset, normalizedFieldOffset, fieldSize, helperPtr->currentUniqueOffsetField,
+               nestingLevel * 5, "", fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, fieldSize, helperPtr->currentUniqueOffsetField,
                GetSystemVClassificationTypeName(fieldClassificationType),
                GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
 
@@ -2571,7 +2586,7 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         return ClassifyEightBytesWithManagedLayout(helperPtr, nestingLevel, startOffsetOfStruct, useNativeLayout);
     }
 
-    const FieldMarshaler *pFieldMarshaler = GetLayoutInfo()->GetFieldMarshalers();
+    const FieldMarshaler *pFieldMarshalers = GetLayoutInfo()->GetFieldMarshalers();
     UINT  numIntroducedFields = GetLayoutInfo()->GetNumCTMFields();
 
     // No fields.
@@ -2580,14 +2595,24 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         return false;
     }
 
-    // No struct register passing with explicit layout. There may be cases where explicit layout may be still
-    // eligible for register struct passing, but it is hard to tell the real intent. Make it simple and just 
-    // unconditionally disable register struct passing for explicit layout.
-    if (GetClass()->HasExplicitFieldOffsetLayout())
+    // A fixed buffer type is always a value type that has exactly one value type field at offset 0
+    // and who's size is an exact multiple of the size of the field.
+    // It is possible that we catch a false positive with this check, but that chance is extremely slim
+    // and the user can always change their structure to something more descriptive of what they want
+    // instead of adding additional padding at the end of a one-field structure.
+    // We do this check here to save looking up the FixedBufferAttribute when loading the field
+    // from metadata.
+    CorElementType firstFieldElementType = pFieldMarshalers->GetFieldDesc()->GetFieldType();
+    bool isFixedBuffer = numIntroducedFields == 1
+                                && ( CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
+                                    || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
+                                && (pFieldMarshalers->GetExternalOffset() == 0)
+                                && IsValueType()
+                                && (GetLayoutInfo()->GetNativeSize() % pFieldMarshalers->NativeSize() == 0);
+
+    if (isFixedBuffer)
     {
-        LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithNativeLayout: struct %s has explicit layout; will not be enregistered\n",
-            nestingLevel * 5, "", this->GetDebugClassName()));
-        return false;
+        numIntroducedFields = GetNativeSize() / pFieldMarshalers->NativeSize();
     }
 
     // The SIMD Intrinsic types are meant to be handled specially and should not be passed as struct registers
@@ -2606,19 +2631,33 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 
             return false;
         }
+        
+        if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
+        {
+            LOG((LF_JIT, LL_EVERYTHING, "%*s**** ClassifyEightBytesWithManagedLayout: struct %s is a SIMD intrinsic type; will not be enregistered\n",
+                nestingLevel * 5, "", this->GetDebugClassName()));
+
+            return false;
+        }
     }
 
 #ifdef _DEBUG
     LOG((LF_JIT, LL_EVERYTHING, "%*s**** Classify for native struct %s (%p), startOffset %d, total struct size %d\n",
         nestingLevel * 5, "", this->GetDebugClassName(), this, startOffsetOfStruct, helperPtr->structSize));
-    int fieldNum = -1;
 #endif // _DEBUG
 
-    while (numIntroducedFields--)
+    for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
-#ifdef _DEBUG
-        ++fieldNum;
-#endif // _DEBUG
+        const FieldMarshaler* pFieldMarshaler;
+        if (isFixedBuffer)
+        {
+            // Reuse the first field marshaler for all fields if a fixed buffer.
+            pFieldMarshaler = pFieldMarshalers;
+        }
+        else
+        {
+            pFieldMarshaler = (FieldMarshaler*)(((BYTE*)pFieldMarshalers) + MAXFIELDMARSHALERSIZE * fieldIndex);
+        }
 
         FieldDesc *pField = pFieldMarshaler->GetFieldDesc();
         CorElementType fieldType = pField->GetFieldType();
@@ -2629,10 +2668,17 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             return false;
         }
 
+        unsigned int fieldNativeSize = pFieldMarshaler->NativeSize();
         DWORD fieldOffset = pFieldMarshaler->GetExternalOffset();
+
+        if (isFixedBuffer)
+        {
+            // Since we reuse the FieldMarshaler for fixed buffers, we need to adjust the offset.
+            fieldOffset += fieldIndex * fieldNativeSize;
+        }
+
         unsigned normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
-        unsigned int fieldNativeSize = pFieldMarshaler->NativeSize();
 
         _ASSERTE(fieldNativeSize != (unsigned int)-1);
 
@@ -2687,17 +2733,27 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             {
                 MethodTable* pFieldMT = ((FieldMarshaler_FixedArray*)pFieldMarshaler)->GetElementMethodTable();
 
-                bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
-                helperPtr->inEmbeddedStruct = true;
-                bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
-                helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
+                unsigned int numElements = ((FieldMarshaler_FixedArray*)pFieldMarshaler)->GetNumElements();
 
-                if (!structRet)
+                bool structRet = true;
+
+                for (unsigned int i = 0; i < numElements; i++, normalizedFieldOffset += pFieldMT->GetNativeSize())
                 {
-                    // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
-                    return false;
-                }
+                    bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
+                    helperPtr->inEmbeddedStruct = true;
+                    structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(
+                        helperPtr,
+                        nestingLevel + 1,
+                        normalizedFieldOffset,
+                        useNativeLayout);
+                    helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
 
+                    if (!structRet)
+                    {
+                        // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
+                        return false;
+                    }
+                }
                 continue;
             }
             case VT_DECIMAL:
@@ -2746,7 +2802,11 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 
             bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
             helperPtr->inEmbeddedStruct = true;
-            bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
+            bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(
+                helperPtr,
+                nestingLevel + 1,
+                normalizedFieldOffset,
+                useNativeLayout);
             helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
 
             if (!structRet)
@@ -2754,7 +2814,6 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
                 // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
                 return false;
             }
-
             continue;
         }
         else if (cls == NFT_NESTEDVALUECLASS)
@@ -2763,7 +2822,11 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
 
             bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
             helperPtr->inEmbeddedStruct = true;
-            bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(helperPtr, nestingLevel + 1, normalizedFieldOffset, useNativeLayout);
+            bool structRet = pFieldMT->ClassifyEightBytesWithNativeLayout(
+                helperPtr,
+                nestingLevel + 1,
+                normalizedFieldOffset,
+                useNativeLayout);
             helperPtr->inEmbeddedStruct = inEmbeddedStructPrev;
 
             if (!structRet)
@@ -2771,7 +2834,6 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
                 // If the nested struct says not to enregister, there's no need to continue analyzing at this level. Just return do not enregister.
                 return false;
             }
-
             continue;
         }
         else if (cls == NFT_COPY1)
@@ -2899,23 +2961,23 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
             }
         }
 
-        if ((normalizedFieldOffset % fieldNativeSize) != 0)
+        if ((normalizedFieldOffset % pFieldMarshaler->AlignmentRequirement()) != 0)
         {
             // The spec requires that struct values on the stack from register passed fields expects
             // those fields to be at their natural alignment.
 
-            LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Native Field %d %s: offset %d (normalized %d), native size %d not at natural alignment; not enregistering struct\n",
-                nestingLevel * 5, "", fieldNum, fieldNum, fieldName, fieldOffset, normalizedFieldOffset, fieldNativeSize));
+            LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Native Field %d %s: offset %d (normalized %d), required alignment %d not at natural alignment; not enregistering struct\n",
+                nestingLevel * 5, "", fieldIndex, fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, pFieldMarshaler->AlignmentRequirement()));
             return false;
         }
 
         if ((int)normalizedFieldOffset <= helperPtr->largestFieldOffset)
         {
             // Find the field corresponding to this offset and update the size if needed.
-            // We assume that either it matches the offset of a previously seen field, or
-            // it is an out-of-order offset (the VM does give us structs in non-increasing
-            // offset order sometimes) that doesn't overlap any other field.
-
+            // If the offset matches a previously encountered offset, update the classification and field size.
+            // We do not need to worry about this change incorrectly updating an eightbyte incorrectly
+            // by updating a field that spans multiple eightbytes since the only field that does so is a fixed array
+            // and a fixed array is represented by an array object in managed, which nothing can share an offset with.
             int i;
             for (i = helperPtr->currentUniqueOffsetField - 1; i >= 0; i--)
             {
@@ -2929,15 +2991,12 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
                     helperPtr->fieldClassifications[i] = ReClassifyField(helperPtr->fieldClassifications[i], fieldClassificationType);
 
                     LOG((LF_JIT, LL_EVERYTHING, "     %*sxxxx Native Field %d %s: offset %d (normalized %d), native size %d, union with uniqueOffsetField %d, field type classification %s, reclassified field to %s\n",
-                        nestingLevel * 5, "", fieldNum, fieldName, fieldOffset, normalizedFieldOffset, fieldNativeSize, i,
+                        nestingLevel * 5, "", fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, fieldNativeSize, i,
                         GetSystemVClassificationTypeName(fieldClassificationType),
                         GetSystemVClassificationTypeName(helperPtr->fieldClassifications[i])));
 
                     break;
                 }
-                // Make sure the field doesn't start in the middle of another field.
-                _ASSERTE((normalizedFieldOffset <  helperPtr->fieldOffsets[i]) ||
-                    (normalizedFieldOffset >= helperPtr->fieldOffsets[i] + helperPtr->fieldSizes[i]));
             }
 
             if (i >= 0)
@@ -2967,13 +3026,12 @@ bool MethodTable::ClassifyEightBytesWithNativeLayout(SystemVStructRegisterPassin
         helperPtr->fieldOffsets[helperPtr->currentUniqueOffsetField] = normalizedFieldOffset;
 
         LOG((LF_JIT, LL_EVERYTHING, "     %*s**** Native Field %d %s: offset %d (normalized %d), size %d, currentUniqueOffsetField %d, field type classification %s, chosen field classification %s\n",
-            nestingLevel * 5, "", fieldNum, fieldName, fieldOffset, normalizedFieldOffset, fieldNativeSize, helperPtr->currentUniqueOffsetField,
+            nestingLevel * 5, "", fieldIndex, fieldName, fieldOffset, normalizedFieldOffset, fieldNativeSize, helperPtr->currentUniqueOffsetField,
             GetSystemVClassificationTypeName(fieldClassificationType),
             GetSystemVClassificationTypeName(helperPtr->fieldClassifications[helperPtr->currentUniqueOffsetField])));
 
         _ASSERTE(helperPtr->currentUniqueOffsetField < SYSTEMV_MAX_NUM_FIELDS_IN_REGISTER_PASSED_STRUCT);
         helperPtr->currentUniqueOffsetField++;
-        ((BYTE*&)pFieldMarshaler) += MAXFIELDMARSHALERSIZE;
     } // end per-field for loop
 
     AssignClassifiedEightByteTypes(helperPtr, nestingLevel);
@@ -3013,23 +3071,31 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
         }
 
         // Calculate the eightbytes and their types.
-        unsigned int accumulatedSizeForEightByte = 0;
-        unsigned int currentEightByteOffset = 0;
-        unsigned int currentEightByte = 0;
 
         int lastFieldOrdinal = sortedFieldOrder[largestFieldOffset];
         unsigned int offsetAfterLastFieldByte = largestFieldOffset + helperPtr->fieldSizes[lastFieldOrdinal];
         SystemVClassificationType lastFieldClassification = helperPtr->fieldClassifications[lastFieldOrdinal];
 
-        unsigned offset = 0;
-        for (unsigned fieldSize = 0; offset < helperPtr->structSize; offset += fieldSize)
+        unsigned int usedEightBytes = 0;
+        unsigned int accumulatedSizeForEightBytes = 0;
+        bool foundFieldInEightByte = false;
+        for (unsigned int offset = 0; offset < helperPtr->structSize; offset++)
         {
             SystemVClassificationType fieldClassificationType;
+            unsigned int fieldSize = 0;
 
             int ordinal = sortedFieldOrder[offset];
             if (ordinal == -1)
             {
-                // If there is no field that starts as this offset, treat its contents as padding.
+                if (offset < accumulatedSizeForEightBytes)
+                {
+                    // We're within a field and there is not an overlapping field that starts here.
+                    // There's no work we need to do, so go to the next loop iteration.
+                    continue;
+                }
+
+                // If there is no field that starts as this offset and we are not within another field,
+                // treat its contents as padding.
                 // Any padding that follows the last field receives the same classification as the
                 // last field; padding between fields receives the NO_CLASS classification as per
                 // the SysV ABI spec.
@@ -3038,6 +3104,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
             }
             else
             {
+                foundFieldInEightByte = true;
                 fieldSize = helperPtr->fieldSizes[ordinal];
                 _ASSERTE(fieldSize > 0);
 
@@ -3045,72 +3112,78 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
                 _ASSERTE(fieldClassificationType != SystemVClassificationTypeMemory && fieldClassificationType != SystemVClassificationTypeUnknown);
             }
 
-            if (helperPtr->eightByteClassifications[currentEightByte] == fieldClassificationType)
-            {
-                // Do nothing. The eight-byte already has this classification.
-            }
-            else if (helperPtr->eightByteClassifications[currentEightByte] == SystemVClassificationTypeNoClass)
-            {
-                helperPtr->eightByteClassifications[currentEightByte] = fieldClassificationType;
-            }
-            else if ((helperPtr->eightByteClassifications[currentEightByte] == SystemVClassificationTypeInteger) ||
-                (fieldClassificationType == SystemVClassificationTypeInteger))
-            {
-                _ASSERTE((fieldClassificationType != SystemVClassificationTypeIntegerReference) && 
-                    (fieldClassificationType != SystemVClassificationTypeIntegerByRef));
+            unsigned int fieldStartEightByte = offset / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
+            unsigned int fieldEndEightByte = (offset + fieldSize - 1) / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
 
-                helperPtr->eightByteClassifications[currentEightByte] = SystemVClassificationTypeInteger;
-            }
-            else if ((helperPtr->eightByteClassifications[currentEightByte] == SystemVClassificationTypeIntegerReference) ||
-                (fieldClassificationType == SystemVClassificationTypeIntegerReference))
-            {
-                helperPtr->eightByteClassifications[currentEightByte] = SystemVClassificationTypeIntegerReference;
-            }
-            else if ((helperPtr->eightByteClassifications[currentEightByte] == SystemVClassificationTypeIntegerByRef) ||
-                (fieldClassificationType == SystemVClassificationTypeIntegerByRef))
-            {
-                helperPtr->eightByteClassifications[currentEightByte] = SystemVClassificationTypeIntegerByRef;
-            }
-            else
-            {
-                helperPtr->eightByteClassifications[currentEightByte] = SystemVClassificationTypeSSE;
-            }
+            _ASSERTE(fieldEndEightByte < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
-            accumulatedSizeForEightByte += fieldSize;
-            while (accumulatedSizeForEightByte >= SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
+            usedEightBytes = Max(usedEightBytes, fieldEndEightByte + 1);
+
+            for (unsigned int currentFieldEightByte = fieldStartEightByte; currentFieldEightByte <= fieldEndEightByte; currentFieldEightByte++)
             {
-                // Save data for this eightbyte.
-                helperPtr->eightByteSizes[currentEightByte] = SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
-                helperPtr->eightByteOffsets[currentEightByte] = currentEightByteOffset;
-
-                // Set up for next eightbyte.
-                currentEightByte++;
-                _ASSERTE(currentEightByte <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
-
-                currentEightByteOffset += SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
-                accumulatedSizeForEightByte -= SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
-
-                // If a field is large enough to span multiple eightbytes, then set the eightbyte classification to the field's classification.
-                if (accumulatedSizeForEightByte > 0)
+                if (helperPtr->eightByteClassifications[currentFieldEightByte] == fieldClassificationType)
                 {
-                    helperPtr->eightByteClassifications[currentEightByte] = fieldClassificationType;
+                    // Do nothing. The eight-byte already has this classification.
+                }
+                else if (helperPtr->eightByteClassifications[currentFieldEightByte] == SystemVClassificationTypeNoClass)
+                {
+                    helperPtr->eightByteClassifications[currentFieldEightByte] = fieldClassificationType;
+                }
+                else if ((helperPtr->eightByteClassifications[currentFieldEightByte] == SystemVClassificationTypeInteger) ||
+                    (fieldClassificationType == SystemVClassificationTypeInteger))
+                {
+                    _ASSERTE((fieldClassificationType != SystemVClassificationTypeIntegerReference) && 
+                        (fieldClassificationType != SystemVClassificationTypeIntegerByRef));
+
+                    helperPtr->eightByteClassifications[currentFieldEightByte] = SystemVClassificationTypeInteger;
+                }
+                else if ((helperPtr->eightByteClassifications[currentFieldEightByte] == SystemVClassificationTypeIntegerReference) ||
+                    (fieldClassificationType == SystemVClassificationTypeIntegerReference))
+                {
+                    helperPtr->eightByteClassifications[currentFieldEightByte] = SystemVClassificationTypeIntegerReference;
+                }
+                else if ((helperPtr->eightByteClassifications[currentFieldEightByte] == SystemVClassificationTypeIntegerByRef) ||
+                    (fieldClassificationType == SystemVClassificationTypeIntegerByRef))
+                {
+                    helperPtr->eightByteClassifications[currentFieldEightByte] = SystemVClassificationTypeIntegerByRef;
+                }
+                else
+                {
+                    helperPtr->eightByteClassifications[currentFieldEightByte] = SystemVClassificationTypeSSE;
                 }
             }
 
-            _ASSERTE(accumulatedSizeForEightByte < SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES);
+            if ((offset + 1) % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES == 0) // If we just finished checking the last byte of an eightbyte
+            {
+                if (!foundFieldInEightByte)
+                {
+                    // If we didn't find a field in an eight-byte (i.e. there are no explicit offsets that start a field in this eightbyte)
+                    // then the classification of this eightbyte might be NoClass. We can't hand a classification of NoClass to the JIT
+                    // so set the class to Integer (as though the struct has a char[8] padding) if the class is NoClass.
+                    if (helperPtr->eightByteClassifications[offset / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES] == SystemVClassificationTypeNoClass)
+                    {
+                        helperPtr->eightByteClassifications[offset / SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES] = SystemVClassificationTypeInteger;
+                    }
+                }
+
+                foundFieldInEightByte = false;
+            }
+
+            accumulatedSizeForEightBytes = Max(accumulatedSizeForEightBytes, offset + fieldSize);
         }
 
-        // Handle structs that end in the middle of an eightbyte.
-        if (accumulatedSizeForEightByte > 0 && accumulatedSizeForEightByte < SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES)
+        for (unsigned int currentEightByte = 0; currentEightByte < usedEightBytes; currentEightByte++)
         {
-            _ASSERTE((helperPtr->structSize % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES) != 0);
+            unsigned int eightByteSize = accumulatedSizeForEightBytes < (SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES * (currentEightByte + 1))
+                ? accumulatedSizeForEightBytes % SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES
+                :   SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
 
-            helperPtr->eightByteSizes[currentEightByte] = accumulatedSizeForEightByte;
-            helperPtr->eightByteOffsets[currentEightByte] = currentEightByteOffset;
-            currentEightByte++;
+            // Save data for this eightbyte.
+            helperPtr->eightByteSizes[currentEightByte] = eightByteSize;
+            helperPtr->eightByteOffsets[currentEightByte] = currentEightByte * SYSTEMV_EIGHT_BYTE_SIZE_IN_BYTES;
         }
 
-        helperPtr->eightByteCount = currentEightByte;
+        helperPtr->eightByteCount = usedEightBytes;
 
         _ASSERTE(helperPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
@@ -3119,6 +3192,7 @@ void  MethodTable::AssignClassifiedEightByteTypes(SystemVStructRegisterPassingHe
         LOG((LF_JIT, LL_EVERYTHING, "     **** Number EightBytes: %d\n", helperPtr->eightByteCount));
         for (unsigned i = 0; i < helperPtr->eightByteCount; i++)
         {
+            _ASSERTE(helperPtr->eightByteClassifications[i] != SystemVClassificationTypeNoClass);
             LOG((LF_JIT, LL_EVERYTHING, "     **** eightByte %d -- classType: %s, eightByteOffset: %d, eightByteSize: %d\n",
                 i, GetSystemVClassificationTypeName(helperPtr->eightByteClassifications[i]), helperPtr->eightByteOffsets[i], helperPtr->eightByteSizes[i]));
         }

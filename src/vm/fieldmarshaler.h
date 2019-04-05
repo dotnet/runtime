@@ -1038,6 +1038,13 @@ public:
         return OleVariant::GetElementSizeForVarType(m_vt, GetElementMethodTable()) * m_numElems;
     }
 
+    UINT32 GetNumElements() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        
+        return m_numElems;
+    }
+
     MethodTable* GetElementMethodTable() const
     {
         return GetElementTypeHandle().GetMethodTable();
