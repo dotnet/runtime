@@ -1331,10 +1331,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 // Allocate free memory with specific alignment                                   
 //
 LPVOID ClrVirtualAllocAligned(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect, SIZE_T alignment);
-                                   
-//******************************************************************************
-// Returns the number of processors that a process has been configured to run on
-//******************************************************************************
+
 class NumaNodeInfo 
 {
 private:
@@ -1350,9 +1347,15 @@ public: 	// functions
 
     static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
                                      DWORD allocType, DWORD prot, DWORD node);
+#ifndef FEATURE_PAL
     static BOOL GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no);
+#else // !FEATURE_PAL
+    static BOOL GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no);
+#endif // !FEATURE_PAL
 #endif
 };
+
+#ifndef FEATURE_PAL
 
 struct CPU_Group_Info 
 {
@@ -1413,8 +1416,14 @@ public:
     }
 };
 
-int GetCurrentProcessCpuCount();
 DWORD_PTR GetCurrentProcessCpuMask();
+
+#endif // !FEATURE_PAL
+
+//******************************************************************************
+// Returns the number of processors that a process has been configured to run on
+//******************************************************************************
+int GetCurrentProcessCpuCount();
 
 uint32_t GetOsPageSize();
 

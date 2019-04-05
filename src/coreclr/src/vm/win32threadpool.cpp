@@ -345,12 +345,16 @@ BOOL ThreadpoolMgr::Initialize()
     UnManagedPerAppDomainTPCount* pADTPCount;
     pADTPCount = PerAppDomainTPCountList::GetUnmanagedTPCount();
 
+#ifndef FEATURE_PAL
     //ThreadPool_CPUGroup
     CPUGroupInfo::EnsureInitialized();
     if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
         NumberOfProcessors = CPUGroupInfo::GetNumActiveProcessors();
     else
         NumberOfProcessors = GetCurrentProcessCpuCount();
+#else // !FEATURE_PAL
+    NumberOfProcessors = GetCurrentProcessCpuCount();
+#endif // !FEATURE_PAL
     InitPlatformVariables();
 
     EX_TRY
@@ -380,20 +384,15 @@ BOOL ThreadpoolMgr::Initialize()
         RetiredWorkerSemaphore = new CLRLifoSemaphore();
         RetiredWorkerSemaphore->Create(0, ThreadCounter::MaxPossibleCount);
 
+#ifndef FEATURE_PAL
         //ThreadPool_CPUGroup
         if (CPUGroupInfo::CanEnableGCCPUGroups() && CPUGroupInfo::CanEnableThreadUseAllCpuGroups())
             RecycledLists.Initialize( CPUGroupInfo::GetNumActiveProcessors() );
         else
             RecycledLists.Initialize( g_SystemInfo.dwNumberOfProcessors );
-        /*
-            {
-                SYSTEM_INFO sysInfo;
-
-                ::GetSystemInfo( &sysInfo );
-
-                RecycledLists.Initialize( sysInfo.dwNumberOfProcessors );
-            }
-        */
+#else // !FEATURE_PAL
+        RecycledLists.Initialize( g_SystemInfo.dwNumberOfProcessors );
+#endif // !FEATURE_PAL
     }
     EX_CATCH
     {
@@ -4095,9 +4094,10 @@ DWORD WINAPI ThreadpoolMgr::GateThreadStart(LPVOID lpArgs)
         return 0;
     }
 
+#ifndef FEATURE_PAL
     //GateThread can start before EESetup, so ensure CPU group information is initialized;
     CPUGroupInfo::EnsureInitialized();
-
+#endif // !FEATURE_PAL
     // initialize CPU usage information structure;
     prevCPUInfo.idleTime.QuadPart   = 0;
     prevCPUInfo.kernelTime.QuadPart = 0;
