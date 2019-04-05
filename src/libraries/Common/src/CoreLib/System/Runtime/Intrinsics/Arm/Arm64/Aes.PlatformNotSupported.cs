@@ -17,7 +17,8 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     [CLSCompliant(false)]
     public static class Aes
     {
-        public static bool IsSupported {  get { return false; } }
+        public static bool IsSupported { [Intrinsic] get { return false; } }
+
         /// <summary>
         /// Performs AES single round decryption
         /// vaesdq_u8 (uint8x16_t data, uint8x16_t key)
