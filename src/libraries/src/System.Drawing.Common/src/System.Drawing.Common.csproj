@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <ProjectGuid>{191B3618-FECD-4ABD-9D6B-5AC90DC33621}</ProjectGuid>
@@ -7,9 +7,9 @@
     <WarningsNotAsErrors>CS0618</WarningsNotAsErrors>
     <DefineConstants>$(DefineConstants);NETCORE</DefineConstants>
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS;FEATURE_SYSTEM_EVENTS</DefineConstants>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_Drawing</GeneratePlatformNotSupportedAssemblyMessage>
-    <Configurations>net461-Debug;net461-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Unix-Debug;netcoreapp2.0-Unix-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true' OR '$(TargetGroup)' == 'netcoreapp' OR '$(TargetsUap)' == 'true'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetsUap)' == 'true'">SR.PlatformNotSupported_Drawing</GeneratePlatformNotSupportedAssemblyMessage>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Unix-Debug;netcoreapp2.0-Unix-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp'))">
     <!-- Shared source code, all configurations -->
@@ -31,7 +31,6 @@
     <Compile Include="System\Drawing\Pen.cs" />
     <Compile Include="System\Drawing\Pens.cs" />
     <Compile Include="System\Drawing\RotateFlipType.cs" />
-    <Compile Include="System\Drawing\SystemColors.cs" />
     <Compile Include="System\Drawing\StringFormat.cs" />
     <Compile Include="System\Drawing\SystemFonts.cs" />
     <Compile Include="System\Drawing\SystemPens.cs" />
@@ -182,6 +181,9 @@
     <Compile Include="misc\InvalidEnumArgumentException.cs" />
     <Compile Include="$(CommonPath)\System\Drawing\KnownColor.cs">
       <Link>System\Drawing\KnownColor.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\SystemColors.cs">
+      <Link>System\Drawing\SystemColors.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp')) AND '$(TargetsWindows)' == 'true'">

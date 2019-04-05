@@ -40,6 +40,9 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Hashing\HashHelpers.cs">
       <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\SystemColors.cs">
+      <Link>System\Drawing\SystemColors.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- System color features require Win32 PInvoke's which are disallowed in UAP. -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(TargetGroup)' != 'uap'">
