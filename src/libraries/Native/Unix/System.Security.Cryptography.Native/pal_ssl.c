@@ -167,7 +167,7 @@ SSL* CryptoNative_SslCreate(SSL_CTX* ctx)
 int32_t CryptoNative_SslGetError(SSL* ssl, int32_t ret)
 {
     // This pops off "old" errors left by other operations
-    // until the first error is equal to the last one, 
+    // until the first error is equal to the last one,
     // this should be looked at again when OpenSsl 1.1 is migrated to
     while (ERR_peek_error() != ERR_peek_last_error())
     {
@@ -676,3 +676,18 @@ int32_t CryptoNative_SslSetTlsExtHostName(SSL* ssl, uint8_t* name)
     return (int32_t)SSL_set_tlsext_host_name(ssl, name);
 }
 
+int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
+{
+    const SSL_CIPHER* cipher = SSL_get_current_cipher(ssl);
+    if (!cipher)
+    {
+        *cipherId = -1;
+        return 0;
+    }
+
+    // OpenSSL uses its own identifier
+    // lower 2 bytes of that ID contain IANA value
+    *cipherId = SSL_CIPHER_get_id(cipher) & 0xFFFF;
+
+    return 1;
+}

@@ -424,6 +424,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(RSA_verify) \
     REQUIRED_FUNCTION(SSL_CIPHER_description) \
     REQUIRED_FUNCTION(SSL_CIPHER_get_bits) \
+    REQUIRED_FUNCTION(SSL_CIPHER_get_id) \
     REQUIRED_FUNCTION(SSL_ctrl) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
@@ -542,7 +543,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LIGHTUP_FUNCTION(EC_GROUP_set_curve_GF2m) \
     LIGHTUP_FUNCTION(EC_POINT_get_affine_coordinates_GF2m) \
     LIGHTUP_FUNCTION(EC_POINT_set_affine_coordinates_GF2m) \
-    
+
 // Declare pointers to all the used OpenSSL functions
 #define REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
 #define NEW_REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
@@ -810,6 +811,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define sk_value OPENSSL_sk_value_ptr
 #define SSL_CIPHER_get_bits SSL_CIPHER_get_bits_ptr
 #define SSL_CIPHER_description SSL_CIPHER_description_ptr
+#define SSL_CIPHER_get_id SSL_CIPHER_get_id_ptr
 #define SSL_ctrl SSL_ctrl_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr

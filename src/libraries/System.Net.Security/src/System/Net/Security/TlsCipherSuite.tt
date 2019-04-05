@@ -1,0 +1,133 @@
+﻿<#@ template debug="false" hostspecific="false" language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ assembly name="System.Xml" #>
+<#@ assembly name="System.Xml.Linq" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Xml.Linq" #>
+<#@ output extension=".cs" #>
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+// This file has been auto-generated. Do not edit by hand.
+// Instead open Developer Command prompt and run: TextTransform FileName.tt
+// Or set AllowTlsCipherSuiteGeneration=true and open VS and edit there directly
+
+// This line is needed so that file compiles both as a T4 template and C# file<#= "<" + "#+" #>
+
+#if PRODUCT
+namespace System.Net.Security
+{
+#endif
+    [CLSCompliant(false)]
+    public enum TlsCipherSuite : ushort
+    {
+<#
+foreach (var record in GetIanaRecords())
+{
+    // we want to traverse whole list even though we don't need to (so that we know about any new RFCs)
+    if (!record.Refs.Select(IsPublicRfc).ToArray().Contains(true))
+        continue;
+    var rfcs = string.Join(", ", record.Refs.Where(IsPublicRfc));
+    var rfcComment = string.IsNullOrEmpty(rfcs) ? "" : $" // {rfcs}";
+#>
+        <#= record.Name #> = <#= record.Value #>,<#= rfcComment #>
+<#
+} // foreach (var record in GetIanaRecords())
+#>
+#if PRODUCT
+    }
+#endif
+}
+//<#= "#" + ">" #>
+<#+
+const string source = @"https://www.iana.org/assignments/tls-parameters/tls-parameters.xml";
+
+class CipherSuiteInfo
+{
+    public string Name;
+    public string Value;
+    public string[] Refs;
+}
+
+static bool ShouldUseValue(string description)
+{
+    return !description.Contains("Unassigned") && !description.Contains("Reserved") && !description.Contains("_SCSV");
+}
+
+static XElement ElementLN(XElement el, string localName)
+{
+    return el.Elements().Where((e) => e.Name.LocalName == localName).Single();
+}
+
+static IEnumerable<CipherSuiteInfo> GetIanaRecords()
+{
+    return XDocument.Load(source)
+        .Descendants()
+        .Where((el) =>
+            el.Name.LocalName == "registry" &&
+            el.Attribute("id").Value == "tls-parameters-4")
+        .Single()
+        .Descendants()
+        .Where((el) =>
+            el.Name.LocalName == "record" &&
+            ShouldUseValue(el.Elements().Where((rec) => rec.Name.LocalName == "description").Single().Value))
+        .Select(record =>
+        {
+            var value = ElementLN(record, "value").Value.Remove(4, 3); // substr("0x00,0x01", 4, 3) => ",0x"
+            var description = ElementLN(record, "description").Value;
+            var refs = record.Elements()
+                    .Where((el) => el.Name.LocalName == "xref")
+                    .Select((el) => el.Attribute("data").Value).ToArray();
+            return new CipherSuiteInfo()
+            {
+                Name = description,
+                Value = value,
+                Refs = refs,
+            };
+        });
+}
+
+private static bool IsPublicRfc(string rfc)
+{
+    switch (rfc)
+    {
+        case "rfc8446": // TLS 1.3, August 2018
+        case "rfc5246": // TLS 1.2, August 2008
+        case "rfc4346": // TLS 1.1, April 2006
+        case "rfc8492": // Secure Password Ciphersuites, February 2019
+        case "rfc6347": // DTLS 1.2, January 2012
+        case "rfc5469": // DES and IDEA, February 2009
+        case "rfc2712": // Kerberos, October 1999
+        case "rfc4785": // PSK with NULL encryption, January 2007
+        case "rfc4279": // PSK for TLS, December 2005
+        case "rfc4162": // SEED, August 2005
+        case "rfc5288": // AES GCM, August 2008
+        case "rfc5487": // PSK with SHA-256/384 and AES GCM, March 2009
+        case "rfc8422": // ECC for TLS 1.2 and earlier, August 2018
+        case "rfc5054": // SRP for TLS auth, November 2007
+        case "rfc5289": // ECC with SHA-256/384 and AES GCM, August 2008
+        case "rfc5489": // ECDHE_PSK, March 2009
+        case "rfc8442": // ECDHE_PSK with AES-GCM/CCM for (D)TLS 1.2, September 2018
+        case "rfc6209": // ARIA, April 2011
+        case "rfc5932": // Camellia cipher suites, June 2010
+        case "rfc6367": // Camellia cipher suites, September 2011
+        case "rfc6655": // AES-CCM, July 2012
+        case "rfc7251": // AES-CCM ECC for TLS, June 2014
+        case "rfc7905": // ChaCha20-Poly1305 cipher suites, June 2016
+            return true;
+
+        // WIP/drafts
+        case "draft-smyshlyaev-tls12-gost-suites": // Gost for TLS 1.2, December 2018
+        case "RFC-harkins-tls-dragonfly-03": // SRP for TLS, July 2018
+        case "draft-camwinget-tls-ts13-macciphersuites": // auth and integrity only ciphersuites, June 2018
+        case "https://www.ietf.org/about/groups/iesg/minutes/2018/": // not an RFC
+            return false;
+        default:
+            throw new Exception($"Unknown rfc: {rfc}. Please see IsPublicRfc in the .tt file.");
+    }
+}
+
+#>
