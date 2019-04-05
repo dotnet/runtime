@@ -67,12 +67,15 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CanReadMultipleTimes()
         {
-            static async Task DoAsyncRead(PipeReader reader, int[] bufferSizes)
+            // This needs to run inline to synchronize the reader and writer
+            TaskCompletionSource<object> waitForRead = null;
+
+            async Task DoAsyncRead(PipeReader reader, int[] bufferSizes)
             {
                 var index = 0;
                 while (true)
                 {
-                    ReadResult readResult = await reader.ReadAsync();
+                    ReadResult readResult = await reader.ReadAsync().ConfigureAwait(false);
 
                     if (readResult.IsCompleted)
                     {
@@ -82,24 +85,27 @@ namespace System.IO.Pipelines.Tests
                     Assert.Equal(bufferSizes[index], readResult.Buffer.Length);
                     reader.AdvanceTo(readResult.Buffer.End);
                     index++;
+                    waitForRead?.TrySetResult(null);
                 }
 
                 reader.Complete();
             }
 
-            static async Task DoAsyncWrites(PipeWriter writer, int[] bufferSizes)
+            async Task DoAsyncWrites(PipeWriter writer, int[] bufferSizes)
             {
                 for (int i = 0; i < bufferSizes.Length; i++)
                 {
                     writer.WriteEmpty(bufferSizes[i]);
-                    await writer.FlushAsync();
+                    waitForRead = new TaskCompletionSource<object>();
+                    await writer.FlushAsync().ConfigureAwait(false);
+                    await waitForRead.Task;
                 }
 
                 writer.Complete();
             }
 
             // We're using the pipe here as a way to pump bytes into the reader asynchronously
-            var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe();
             var options = new StreamPipeReaderOptions(bufferSize: 4096);
             PipeReader reader = PipeReader.Create(pipe.Reader.AsStream(), options);
 
@@ -110,6 +116,8 @@ namespace System.IO.Pipelines.Tests
 
             await readingTask;
             await writingTask;
+
+            pipe.Reader.Complete();
         }
 
         [Theory]
@@ -469,6 +477,8 @@ namespace System.IO.Pipelines.Tests
             reader.AdvanceTo(readResult.Buffer.End);
 
             reader.Complete();
+
+            pipe.Writer.Complete();
         }
 
         [Fact]
