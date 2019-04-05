@@ -19,7 +19,7 @@ namespace System
             return SpanHelpers.IndexOf(
                 ref _firstChar,
                 Length,
-                ref value!._firstChar,      // TODO-NULLABLE: Compiler Bug?
+                ref value!._firstChar, // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 value.Length) >= 0;
         }
 

@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Globalization;
 using System.Runtime.Serialization;
 
@@ -23,7 +24,7 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArgumentException : SystemException
     {
-        private string _paramName;
+        private string? _paramName;
 
         // Creates a new ArgumentException with its message 
         // string set to the empty string. 
@@ -36,26 +37,26 @@ namespace System
         // Creates a new ArgumentException with its message 
         // string set to message. 
         // 
-        public ArgumentException(string message)
+        public ArgumentException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_ARGUMENT;
         }
 
-        public ArgumentException(string message, Exception innerException)
+        public ArgumentException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_ARGUMENT;
         }
 
-        public ArgumentException(string message, string paramName, Exception innerException)
+        public ArgumentException(string? message, string? paramName, Exception? innerException)
             : base(message, innerException)
         {
             _paramName = paramName;
             HResult = HResults.COR_E_ARGUMENT;
         }
 
-        public ArgumentException(string message, string paramName)
+        public ArgumentException(string? message, string? paramName)
             : base(message)
         {
             _paramName = paramName;
@@ -89,7 +90,7 @@ namespace System
             }
         }
 
-        public virtual string ParamName
+        public virtual string? ParamName
         {
             get { return _paramName; }
         }

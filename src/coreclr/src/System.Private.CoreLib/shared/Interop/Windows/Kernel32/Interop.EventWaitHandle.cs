@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
@@ -20,7 +21,7 @@ internal static partial class Interop
         internal static extern bool ResetEvent(SafeWaitHandle handle);
 
         [DllImport(Interop.Libraries.Kernel32, EntryPoint = "CreateEventExW", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static extern SafeWaitHandle CreateEventEx(IntPtr lpSecurityAttributes, string name, uint flags, uint desiredAccess);
+        internal static extern SafeWaitHandle CreateEventEx(IntPtr lpSecurityAttributes, string? name, uint flags, uint desiredAccess);
 
         [DllImport(Interop.Libraries.Kernel32, EntryPoint = "OpenEventW", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern SafeWaitHandle OpenEvent(uint desiredAccess, bool inheritHandle, string name);

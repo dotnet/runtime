@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System;
 using System.Runtime.Serialization;
 
@@ -26,13 +27,13 @@ namespace System
             HResult = HResults.COR_E_ENTRYPOINTNOTFOUND;
         }
 
-        public EntryPointNotFoundException(string message)
+        public EntryPointNotFoundException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_ENTRYPOINTNOTFOUND;
         }
 
-        public EntryPointNotFoundException(string message, Exception inner)
+        public EntryPointNotFoundException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_ENTRYPOINTNOTFOUND;
