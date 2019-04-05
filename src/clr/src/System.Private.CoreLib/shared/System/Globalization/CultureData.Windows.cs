@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -153,7 +154,7 @@ namespace System.Globalization
 
         // Wrappers around the GetLocaleInfoEx APIs which handle marshalling the returned
         // data as either and Int or string.
-        internal static unsafe string GetLocaleInfoEx(string localeName, uint field)
+        internal static unsafe string? GetLocaleInfoEx(string localeName, uint field)
         {
             // REVIEW: Determine the maximum size for the buffer
             const int BUFFER_SIZE = 530;
@@ -211,16 +212,18 @@ namespace System.Globalization
             // Ask OS for data, note that we presume it returns success, so we have to know that
             // sWindowsName is valid before calling.
             Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
-            return  GetLocaleInfoExInt(_sWindowsName, lctype);
+            return GetLocaleInfoExInt(_sWindowsName, lctype);
         }
 
         private int[] GetLocaleInfo(LocaleGroupingData type)
         {
+            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, UseUserOverride));
         }
 
-        private string GetTimeFormatString()
+        private string? GetTimeFormatString()
         {
+            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             return ReescapeWin32String(GetLocaleInfoFromLCType(_sWindowsName, Interop.Kernel32.LOCALE_STIMEFORMAT, UseUserOverride));
         }
 
@@ -234,27 +237,27 @@ namespace System.Globalization
             return ConvertFirstDayOfWeekMonToSun(result);
         }
 
-        private string[] GetTimeFormats()
+        private string[]? GetTimeFormats()
         {
             // Note that this gets overrides for us all the time
             Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumTimeFormats] Expected _sWindowsName to be populated by already");
-            string[] result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, 0, UseUserOverride));
+            string[]? result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, 0, UseUserOverride));
 
             return result;
         }
 
-        private string[] GetShortTimeFormats()
+        private string[]? GetShortTimeFormats()
         {
             // Note that this gets overrides for us all the time
             Debug.Assert(_sWindowsName != null, "[CultureData.DoEnumShortTimeFormats] Expected _sWindowsName to be populated by already");
-            string[] result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, Interop.Kernel32.TIME_NOSECONDS, UseUserOverride));
+            string[]? result = ReescapeWin32Strings(nativeEnumTimeFormats(_sWindowsName, Interop.Kernel32.TIME_NOSECONDS, UseUserOverride));
 
             return result;
         }
 
         // Enumerate all system cultures and then try to find out which culture has
         // region name match the requested region name
-        private static CultureData GetCultureDataFromRegionName(string regionName)
+        private static CultureData? GetCultureDataFromRegionName(string regionName)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(regionName != null);
@@ -284,7 +287,7 @@ namespace System.Globalization
 #else
             // Usually the UI culture shouldn't be different than what we got from WinRT except
             // if DefaultThreadCurrentUICulture was set
-            CultureInfo ci;
+            CultureInfo? ci;
 
             if (CultureInfo.DefaultThreadCurrentUICulture != null &&
                 ((ci = GetUserDefaultCulture()) != null) &&
@@ -337,14 +340,8 @@ namespace System.Globalization
             }
 
             // Ask OS for data
-            string result = GetLocaleInfoEx(localeName, lctype);
-            if (result == null)
-            {
-                // Failed, just use empty string
-                result = string.Empty;
-            }
-
-            return result;
+            // Failed? Just use empty string
+            return GetLocaleInfoEx(localeName, lctype) ?? string.Empty;
         }
 
         /// <summary>
@@ -360,7 +357,7 @@ namespace System.Globalization
         ///
         /// We don't build the stringbuilder unless we find something to change
         /// </summary>
-        internal static string ReescapeWin32String(string str)
+        internal static string? ReescapeWin32String(string? str)
         {
             // If we don't have data, then don't try anything
             if (str == null)
@@ -368,7 +365,7 @@ namespace System.Globalization
                 return null;
             }
 
-            StringBuilder result = null;
+            StringBuilder? result = null;
 
             bool inQuote = false;
             for (int i = 0; i < str.Length; i++)
@@ -428,13 +425,14 @@ namespace System.Globalization
             return result.ToString();
         }
 
-        internal static string[] ReescapeWin32Strings(string[] array)
+        internal static string[]? ReescapeWin32Strings(string[]? array)
         {
             if (array != null)
             {
                 for (int i = 0; i < array.Length; i++)
                 {
-                    array[i] = ReescapeWin32String(array[i]);
+                    // only returns null when null is passed
+                    array[i] = ReescapeWin32String(array[i])!;
                 }
             }
 
@@ -503,7 +501,7 @@ namespace System.Globalization
         private struct EnumLocaleData
         {
             public string regionName;
-            public string cultureName;
+            public string? cultureName;
         }
 
         // EnumSystemLocaleEx callback.
@@ -514,7 +512,7 @@ namespace System.Globalization
             try
             {
                 string cultureName = new string(lpLocaleString);
-                string regionName = GetLocaleInfoEx(cultureName, Interop.Kernel32.LOCALE_SISO3166CTRYNAME);
+                string? regionName = GetLocaleInfoEx(cultureName, Interop.Kernel32.LOCALE_SISO3166CTRYNAME);
                 if (regionName != null && regionName.Equals(context.regionName, StringComparison.OrdinalIgnoreCase))
                 {
                     context.cultureName = cultureName;
@@ -567,7 +565,7 @@ namespace System.Globalization
             }
         }
 
-        private static unsafe string[] nativeEnumTimeFormats(string localeName, uint dwFlags, bool useUserOverride)
+        private static unsafe string[]? nativeEnumTimeFormats(string localeName, uint dwFlags, bool useUserOverride)
         {
             EnumData data = new EnumData();
             data.strings = new List<string>();
@@ -614,7 +612,7 @@ namespace System.Globalization
             return Interop.Kernel32.LocaleNameToLCID(cultureName, Interop.Kernel32.LOCALE_ALLOW_NEUTRAL_NAMES);
         }
 
-        private static unsafe string LCIDToLocaleName(int culture)
+        private static unsafe string? LCIDToLocaleName(int culture)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 

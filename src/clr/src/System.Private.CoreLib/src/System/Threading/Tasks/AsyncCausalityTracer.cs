@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security;
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
 using System.Runtime.InteropServices.WindowsRuntime;
-
 using WFD = Windows.Foundation.Diagnostics;
-
 
 namespace System.Threading.Tasks
 {
@@ -64,7 +60,7 @@ namespace System.Threading.Tasks
             //COM Interface GUID  {50850B26-267E-451B-A890-AB6A370245EE}
             Guid guid = new Guid(0x50850B26, 0x267E, 0x451B, 0xA8, 0x90, 0XAB, 0x6A, 0x37, 0x02, 0x45, 0xEE);
 
-            object factory = null;
+            object? factory = null;
 
             try
             {

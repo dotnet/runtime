@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Threading
@@ -15,11 +15,11 @@ namespace System.Threading
         {
         }
 
-        public SemaphoreFullException(string message) : base(message)
+        public SemaphoreFullException(string? message) : base(message)
         {
         }
 
-        public SemaphoreFullException(string message, Exception innerException) : base(message, innerException)
+        public SemaphoreFullException(string? message, Exception? innerException) : base(message, innerException)
         {
         }
 

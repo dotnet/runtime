@@ -8,6 +8,7 @@
 // access, due to it being removed, private or something similar.
 ////////////////////////////////////////////////////////////////////////////////
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -31,13 +32,13 @@ namespace System
         // message, its HRESULT set to COR_E_ACCESS, 
         // and its ExceptionInfo reference set to null. 
         // 
-        public MemberAccessException(string message)
+        public MemberAccessException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_MEMBERACCESS;
         }
 
-        public MemberAccessException(string message, Exception inner)
+        public MemberAccessException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_MEMBERACCESS;

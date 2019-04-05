@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
+using System.Diagnostics;
 using System.IO;
 
 namespace System.Threading
@@ -14,12 +15,12 @@ namespace System.Threading
         {
         }
 
-        public EventWaitHandle(bool initialState, EventResetMode mode, string name) :
+        public EventWaitHandle(bool initialState, EventResetMode mode, string? name) :
             this(initialState, mode, name, out _)
         {
         }
 
-        public EventWaitHandle(bool initialState, EventResetMode mode, string name, out bool createdNew)
+        public EventWaitHandle(bool initialState, EventResetMode mode, string? name, out bool createdNew)
         {
             if (mode != EventResetMode.AutoReset && mode != EventResetMode.ManualReset)
                 throw new ArgumentException(SR.Argument_InvalidFlag, nameof(mode));
@@ -29,7 +30,7 @@ namespace System.Threading
 
         public static EventWaitHandle OpenExisting(string name)
         {
-            EventWaitHandle result;
+            EventWaitHandle? result;
             switch (OpenExistingWorker(name, out result))
             {
                 case OpenExistingResult.NameNotFound:
@@ -39,11 +40,12 @@ namespace System.Threading
                 case OpenExistingResult.PathNotFound:
                     throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, name));
                 default:
+                    Debug.Assert(result != null, "result should be non-null on success");
                     return result;
             }
         }
 
-        public static bool TryOpenExisting(string name, out EventWaitHandle result)
+        public static bool TryOpenExisting(string name, out EventWaitHandle? result) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
             return OpenExistingWorker(name, out result) == OpenExistingResult.Success;
         }

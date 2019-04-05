@@ -14,6 +14,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -51,9 +52,9 @@ namespace System.Threading.Tasks
         private int m_processingCount;
         /// <summary>Completion state for a task representing the completion of this pair.</summary>
         /// <remarks>Lazily-initialized only if the scheduler pair is shutting down or if the Completion is requested.</remarks>
-        private CompletionState m_completionState;
+        private CompletionState? m_completionState;
         /// <summary>Lazily-initialized work item for processing when targeting the default scheduler.</summary>
-        private SchedulerWorkItem m_threadPoolWorkItem;
+        private SchedulerWorkItem? m_threadPoolWorkItem;
 
         /// <summary>A constant value used to signal unlimited processing.</summary>
         private const int UNLIMITED_PROCESSING = -1;
@@ -152,7 +153,7 @@ namespace System.Threading.Tasks
         private CompletionState EnsureCompletionStateInitialized()
         {
             // ValueLock not needed, but it's ok if it's held
-            return LazyInitializer.EnsureInitialized(ref m_completionState, () => new CompletionState());
+            return LazyInitializer.EnsureInitialized<CompletionState>(ref m_completionState!, () => new CompletionState()); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         }
 
         /// <summary>Gets whether completion has been requested.</summary>
@@ -211,10 +212,11 @@ namespace System.Threading.Tasks
                 cs.m_completionQueued = true;
                 ThreadPool.QueueUserWorkItem(state =>
                 {
+                    Debug.Assert(state is ConcurrentExclusiveSchedulerPair);
                     var localThis = (ConcurrentExclusiveSchedulerPair)state;
-                    Debug.Assert(!localThis.m_completionState.IsCompleted, "Completion should only happen once.");
+                    Debug.Assert(!localThis.m_completionState!.IsCompleted, "Completion should only happen once.");
 
-                    List<Exception> exceptions = localThis.m_completionState.m_exceptions;
+                    List<Exception>? exceptions = localThis.m_completionState.m_exceptions;
                     bool success = (exceptions != null && exceptions.Count > 0) ?
                         localThis.m_completionState.TrySetException(exceptions) :
                         localThis.m_completionState.TrySetResult();
@@ -229,7 +231,7 @@ namespace System.Threading.Tasks
         /// <param name="faultedTask">The faulted worker task that's initiating the shutdown.</param>
         private void FaultWithTask(Task faultedTask)
         {
-            Debug.Assert(faultedTask != null && faultedTask.IsFaulted && faultedTask.Exception.InnerExceptions.Count > 0,
+            Debug.Assert(faultedTask != null && faultedTask.IsFaulted && faultedTask.Exception!.InnerExceptions.Count > 0,
                 "Needs a task in the faulted state and thus with exceptions.");
             ContractAssertMonitorStatus(ValueLock, held: true);
 
@@ -287,7 +289,7 @@ namespace System.Threading.Tasks
 
                 // If there's no processing currently happening but there are waiting exclusive tasks,
                 // let's start processing those exclusive tasks.
-                Task processingTask = null;
+                Task? processingTask = null;
                 if (m_processingCount == 0 && exclusiveTasksAreWaiting)
                 {
                     // Launch exclusive task processing
@@ -296,17 +298,17 @@ namespace System.Threading.Tasks
                     {
                         try
                         {
-                            processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair).ProcessExclusiveTasks(), this,
+                            processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair!).ProcessExclusiveTasks(), this, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                                 default, GetCreationOptionsForTask(fairly));
                             processingTask.Start(m_underlyingTaskScheduler);
                             // When we call Start, if the underlying scheduler throws in QueueTask, TPL will fault the task and rethrow
                             // the exception.  To deal with that, we need a reference to the task object, so that we can observe its exception.
                             // Hence, we separate creation and starting, so that we can store a reference to the task before we attempt QueueTask.
                         }
-                        catch
+                        catch (Exception e)
                         {
                             m_processingCount = 0;
-                            FaultWithTask(processingTask);
+                            FaultWithTask(processingTask ?? Task.FromException(e));
                         }
                     }
                 }
@@ -326,14 +328,14 @@ namespace System.Threading.Tasks
                             {
                                 try
                                 {
-                                    processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair).ProcessConcurrentTasks(), this,
+                                    processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair!).ProcessConcurrentTasks(), this, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                                         default, GetCreationOptionsForTask(fairly));
                                     processingTask.Start(m_underlyingTaskScheduler); // See above logic for why we use new + Start rather than StartNew
                                 }
-                                catch
+                                catch (Exception e)
                                 {
                                     --m_processingCount;
-                                    FaultWithTask(processingTask);
+                                    FaultWithTask(processingTask ?? Task.FromException(e));
                                 }
                             }
                         }
@@ -485,7 +487,7 @@ namespace System.Threading.Tasks
             /// <summary>Whether completion processing has been queued.</summary>
             internal bool m_completionQueued;
             /// <summary>Unrecoverable exceptions incurred while processing.</summary>
-            internal List<Exception> m_exceptions;
+            internal List<Exception>? m_exceptions;
         }
 
         /// <summary>Reusable immutable work item that can be scheduled to the thread pool to run processing.</summary>
@@ -516,7 +518,7 @@ namespace System.Threading.Tasks
         private sealed class ConcurrentExclusiveTaskScheduler : TaskScheduler
         {
             /// <summary>Cached delegate for invoking TryExecuteTaskShim.</summary>
-            private static readonly Func<object, bool> s_tryExecuteTaskShim = new Func<object, bool>(TryExecuteTaskShim);
+            private static readonly Func<object?, bool> s_tryExecuteTaskShim = new Func<object?, bool>(TryExecuteTaskShim);
             /// <summary>The parent pair.</summary>
             private readonly ConcurrentExclusiveSchedulerPair m_pair;
             /// <summary>The maximum concurrency level for the scheduler.</summary>
@@ -666,8 +668,9 @@ namespace System.Threading.Tasks
             /// This method is separated out not because of performance reasons but so that
             /// the SecuritySafeCritical attribute may be employed.
             /// </remarks>
-            private static bool TryExecuteTaskShim(object state)
+            private static bool TryExecuteTaskShim(object? state)
             {
+                Debug.Assert(state is Tuple<ConcurrentExclusiveTaskScheduler, Task>);
                 var tuple = (Tuple<ConcurrentExclusiveTaskScheduler, Task>)state;
                 return tuple.Item1.TryExecuteTask(tuple.Item2);
             }

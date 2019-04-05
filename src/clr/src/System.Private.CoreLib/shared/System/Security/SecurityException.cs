@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Reflection;
 using System.Runtime.Serialization;
 
@@ -24,26 +25,26 @@ namespace System.Security
             HResult = HResults.COR_E_SECURITY;
         }
 
-        public SecurityException(string message)
+        public SecurityException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_SECURITY;
         }
 
-        public SecurityException(string message, Exception inner)
+        public SecurityException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_SECURITY;
         }
 
-        public SecurityException(string message, Type type)
+        public SecurityException(string? message, Type? type)
             : base(message)
         {
             HResult = HResults.COR_E_SECURITY;
             PermissionType = type;
         }
 
-        public SecurityException(string message, Type type, string state)
+        public SecurityException(string? message, Type? type, string? state)
             : base(message)
         {
             HResult = HResults.COR_E_SECURITY;
@@ -66,7 +67,7 @@ namespace System.Security
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            base.GetObjectData(info, context); 
+            base.GetObjectData(info, context);
             info.AddValue(DemandedName, Demanded, typeof(string));
             info.AddValue(GrantedSetName, GrantedSet, typeof(string));
             info.AddValue(RefusedSetName, RefusedSet, typeof(string));
@@ -75,15 +76,15 @@ namespace System.Security
             info.AddValue(UrlName, Url, typeof(string));
         }
 
-        public object Demanded { get; set; }
-        public object DenySetInstance { get; set; }
-        public AssemblyName FailedAssemblyInfo { get; set; }
-        public string GrantedSet { get; set; }
-        public MethodInfo Method { get; set; }
-        public string PermissionState { get; set; }
-        public Type PermissionType { get; set; }
-        public object PermitOnlySetInstance { get; set; }
-        public string RefusedSet { get; set; }
-        public string Url { get; set; }
+        public object? Demanded { get; set; }
+        public object? DenySetInstance { get; set; }
+        public AssemblyName? FailedAssemblyInfo { get; set; }
+        public string? GrantedSet { get; set; }
+        public MethodInfo? Method { get; set; }
+        public string? PermissionState { get; set; }
+        public Type? PermissionType { get; set; }
+        public object? PermitOnlySetInstance { get; set; }
+        public string? RefusedSet { get; set; }
+        public string? Url { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -24,7 +25,7 @@ namespace System.IO
             private const long CompletedCallback = (long)8 << 32;
             private const ulong ResultMask = ((ulong)uint.MaxValue) << 32;
 
-            private static Action<object> s_cancelCallback;
+            private static Action<object?> s_cancelCallback;
 
             private readonly FileStream _stream;
             private readonly int _numBufferedBytes;
@@ -36,7 +37,7 @@ namespace System.IO
             private long _result; // Using long since this needs to be used in Interlocked APIs
 
             // Using RunContinuationsAsynchronously for compat reasons (old API used Task.Factory.StartNew for continuations)
-            protected FileStreamCompletionSource(FileStream stream, int numBufferedBytes, byte[] bytes)
+            protected FileStreamCompletionSource(FileStream stream, int numBufferedBytes, byte[]? bytes)
                 : base(TaskCreationOptions.RunContinuationsAsynchronously)
             {
                 _numBufferedBytes = numBufferedBytes;
@@ -48,12 +49,12 @@ namespace System.IO
                 // thus is already pinned) and if no one else is currently using the preallocated overlapped.  This is the fast-path
                 // for cases where the user-provided buffer is smaller than the FileStream's buffer (such that the FileStream's
                 // buffer is used) and where operations on the FileStream are not being performed concurrently.
-                Debug.Assert((bytes == null || ReferenceEquals(bytes, _stream._buffer)));
+                Debug.Assert(bytes == null || ReferenceEquals(bytes, _stream._buffer));
 
                 // The _preallocatedOverlapped is null if the internal buffer was never created, so we check for 
                 // a non-null bytes before using the stream's _preallocatedOverlapped
                 _overlapped = bytes != null && _stream.CompareExchangeCurrentOverlappedOwner(this, null) == null ?
-                    _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(_stream._preallocatedOverlapped) :
+                    _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(_stream._preallocatedOverlapped!) : // allocated when buffer was created, and buffer is non-null
                     _stream._fileHandle.ThreadPoolBinding.AllocateNativeOverlapped(s_ioCallback, this, bytes);
                 Debug.Assert(_overlapped != null, "AllocateNativeOverlapped returned null");
             }
@@ -132,14 +133,16 @@ namespace System.IO
             internal static unsafe void IOCallback(uint errorCode, uint numBytes, NativeOverlapped* pOverlapped)
             {
                 // Extract the completion source from the overlapped.  The state in the overlapped
-                // will either be a Win32FileStream (in the case where the preallocated overlapped was used),
+                // will either be a FileStream (in the case where the preallocated overlapped was used),
                 // in which case the operation being completed is its _currentOverlappedOwner, or it'll
-                // be directly the FileStreamCompletion that's completing (in the case where the preallocated
+                // be directly the FileStreamCompletionSource that's completing (in the case where the preallocated
                 // overlapped was already in use by another operation).
-                object state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                object? state = ThreadPoolBoundHandle.GetNativeOverlappedState(pOverlapped);
+                Debug.Assert(state is FileStream || state is FileStreamCompletionSource);
                 FileStreamCompletionSource completionSource = state is FileStream fs ?
-                    fs._currentOverlappedOwner :
-                    (FileStreamCompletionSource)state;
+                    fs._currentOverlappedOwner! : // must be owned
+                    (FileStreamCompletionSource)state!;
+                Debug.Assert(completionSource != null);
                 Debug.Assert(completionSource._overlapped == pOverlapped, "Overlaps don't match");
 
                 // Handle reading from & writing to closed pipes.  While I'm not sure
@@ -198,12 +201,12 @@ namespace System.IO
                 }
             }
 
-            private static void Cancel(object state)
+            private static void Cancel(object? state)
             {
                 // WARNING: This may potentially be called under a lock (during cancellation registration)
 
-                FileStreamCompletionSource completionSource = state as FileStreamCompletionSource;
-                Debug.Assert(completionSource != null, "Unknown state passed to cancellation");
+                Debug.Assert(state is FileStreamCompletionSource, "Unknown state passed to cancellation");
+                FileStreamCompletionSource completionSource = (FileStreamCompletionSource)state;
                 Debug.Assert(completionSource._overlapped != null && !completionSource.Task.IsCompleted, "IO should not have completed yet");
 
                 // If the handle is still valid, attempt to cancel the IO

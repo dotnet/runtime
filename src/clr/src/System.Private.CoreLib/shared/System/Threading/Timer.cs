@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading.Tasks;
 
 namespace System.Threading
 {
-    public delegate void TimerCallback(object state);
+    public delegate void TimerCallback(object? state);
 
     // TimerQueue maintains a list of active timers.  We use a single native timer to schedule all managed timers
     // in the process.
@@ -109,8 +110,8 @@ namespace System.Threading
         // process the long list if the current time is greater than _currentAbsoluteThreshold (or
         // if the short list is now empty and we need to process the long list to know when to next
         // invoke FireNextTimers).
-        private TimerQueueTimer _shortTimers;
-        private TimerQueueTimer _longTimers;
+        private TimerQueueTimer? _shortTimers;
+        private TimerQueueTimer? _longTimers;
 
         // The current threshold, an absolute time where any timers scheduled to go off at or
         // before this time must be queued to the short list.
@@ -135,7 +136,7 @@ namespace System.Threading
         {
             // We fire the first timer on this thread; any other timers that need to be fired
             // are queued to the ThreadPool.
-            TimerQueueTimer timerToFireOnThisThread = null;
+            TimerQueueTimer? timerToFireOnThisThread = null;
 
             lock (this)
             {
@@ -151,7 +152,7 @@ namespace System.Threading
                 // of sweeping the long timers, move anything that'll fire within the next threshold
                 // to the short list.  It's functionally ok if more timers end up in the short list
                 // than is truly necessary (but not the opposite).
-                TimerQueueTimer timer = _shortTimers;
+                TimerQueueTimer? timer = _shortTimers;
                 for (int listNum = 0; listNum < 2; listNum++) // short == 0, long == 1
                 {
                     while (timer != null)
@@ -160,7 +161,7 @@ namespace System.Threading
 
                         // Save off the next timer to examine, in case our examination of this timer results
                         // in our deleting or moving it; we'll continue after with this saved next timer.
-                        TimerQueueTimer next = timer._next;
+                        TimerQueueTimer? next = timer._next;
 
                         uint elapsed = (uint)(nowTicks - timer._startTicks);
                         int remaining = (int)timer._dueTime - (int)elapsed;
@@ -334,7 +335,7 @@ namespace System.Threading
         private void LinkTimer(TimerQueueTimer timer)
         {
             // Use timer._short to decide to which list to add.
-            ref TimerQueueTimer listHead = ref timer._short ? ref _shortTimers : ref _longTimers;
+            ref TimerQueueTimer? listHead = ref timer._short ? ref _shortTimers : ref _longTimers;
             timer._next = listHead;
             if (timer._next != null)
             {
@@ -346,7 +347,7 @@ namespace System.Threading
 
         private void UnlinkTimer(TimerQueueTimer timer)
         {
-            TimerQueueTimer t = timer._next;
+            TimerQueueTimer? t = timer._next;
             if (t != null)
             {
                 t._prev = timer._prev;
@@ -402,8 +403,8 @@ namespace System.Threading
         // The first six fields are maintained by TimerQueue.
 
         // Links to the next and prev timers in the list.
-        internal TimerQueueTimer _next;
-        internal TimerQueueTimer _prev;
+        internal TimerQueueTimer? _next;
+        internal TimerQueueTimer? _prev;
 
         // true if on the short list; otherwise, false.
         internal bool _short;
@@ -419,8 +420,8 @@ namespace System.Threading
 
         // Info about the user's callback
         private readonly TimerCallback _timerCallback;
-        private readonly object _state;
-        private readonly ExecutionContext _executionContext;
+        private readonly object? _state;
+        private readonly ExecutionContext? _executionContext;
 
         // When Timer.Dispose(WaitHandle) is used, we need to signal the wait handle only
         // after all pending callbacks are complete.  We set _canceled to prevent any callbacks that
@@ -430,10 +431,10 @@ namespace System.Threading
         // instead of with a provided WaitHandle.
         private int _callbacksRunning;
         private volatile bool _canceled;
-        private volatile object _notifyWhenNoCallbacksRunning; // may be either WaitHandle or Task<bool>
+        private volatile object? _notifyWhenNoCallbacksRunning; // may be either WaitHandle or Task<bool>
 
 
-        internal TimerQueueTimer(TimerCallback timerCallback, object state, uint dueTime, uint period, bool flowExecutionContext)
+        internal TimerQueueTimer(TimerCallback timerCallback, object? state, uint dueTime, uint period, bool flowExecutionContext)
         {
             _timerCallback = timerCallback;
             _state = state;
@@ -529,7 +530,7 @@ namespace System.Threading
         {
             lock (_associatedTimerQueue)
             {
-                object notifyWhenNoCallbacksRunning = _notifyWhenNoCallbacksRunning;
+                object? notifyWhenNoCallbacksRunning = _notifyWhenNoCallbacksRunning;
 
                 // Mark the timer as canceled if it's not already.
                 if (_canceled)
@@ -571,7 +572,7 @@ namespace System.Threading
                 // there wasn't a previous CloseAsync call that did.
                 if (notifyWhenNoCallbacksRunning == null)
                 {
-                    var t = new Task<bool>((object)null, TaskCreationOptions.RunContinuationsAsynchronously);
+                    var t = new Task<bool>((object?)null, TaskCreationOptions.RunContinuationsAsynchronously);
                     _notifyWhenNoCallbacksRunning = t;
                     return new ValueTask(t);
                 }
@@ -613,12 +614,12 @@ namespace System.Threading
 
         internal void SignalNoCallbacksRunning()
         {
-            object toSignal = _notifyWhenNoCallbacksRunning;
+            object? toSignal = _notifyWhenNoCallbacksRunning;
             Debug.Assert(toSignal is WaitHandle || toSignal is Task<bool>);
 
             if (toSignal is WaitHandle wh)
             {
-                EventWaitHandle.Set(wh.SafeWaitHandle);
+                EventWaitHandle.Set(wh.SafeWaitHandle!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
             }
             else
             {
@@ -632,7 +633,7 @@ namespace System.Threading
                 FrameworkEventSource.Log.ThreadTransferReceiveObj(this, 1, string.Empty);
 
             // Call directly if EC flow is suppressed
-            ExecutionContext context = _executionContext;
+            ExecutionContext? context = _executionContext;
             if (context == null)
             {
                 _timerCallback(_state);
@@ -652,7 +653,8 @@ namespace System.Threading
 
         private static readonly ContextCallback s_callCallbackInContext = state =>
         {
-            TimerQueueTimer t = (TimerQueueTimer)state;
+            Debug.Assert(state is TimerQueueTimer);
+            var t = (TimerQueueTimer)state;
             t._timerCallback(t._state);
         };
     }
@@ -667,7 +669,7 @@ namespace System.Threading
     // unwittingly be changing the lifetime of those timers.
     internal sealed class TimerHolder
     {
-        internal TimerQueueTimer _timer;
+        internal readonly TimerQueueTimer _timer;
 
         public TimerHolder(TimerQueueTimer timer)
         {
@@ -716,10 +718,10 @@ namespace System.Threading
     {
         private const uint MAX_SUPPORTED_TIMEOUT = (uint)0xfffffffe;
 
-        private TimerHolder _timer;
+        private TimerHolder _timer = null!; // initialized in helper called by ctors
 
         public Timer(TimerCallback callback,
-                     object state,
+                     object? state,
                      int dueTime,
                      int period) :
                      this(callback, state, dueTime, period, flowExecutionContext: true)
@@ -727,7 +729,7 @@ namespace System.Threading
         }
 
         internal Timer(TimerCallback callback,
-                       object state,
+                       object? state,
                        int dueTime,
                        int period,
                        bool flowExecutionContext)
@@ -741,7 +743,7 @@ namespace System.Threading
         }
 
         public Timer(TimerCallback callback,
-                     object state,
+                     object? state,
                      TimeSpan dueTime,
                      TimeSpan period)
         {
@@ -762,7 +764,7 @@ namespace System.Threading
 
         [CLSCompliant(false)]
         public Timer(TimerCallback callback,
-                     object state,
+                     object? state,
                      uint dueTime,
                      uint period)
         {
@@ -770,7 +772,7 @@ namespace System.Threading
         }
 
         public Timer(TimerCallback callback,
-                     object state,
+                     object? state,
                      long dueTime,
                      long period)
         {
@@ -787,7 +789,7 @@ namespace System.Threading
 
         public Timer(TimerCallback callback)
         {
-            int dueTime = -1;    // we want timer to be registered, but not activated.  Requires caller to call
+            int dueTime = -1;   // We want timer to be registered, but not activated.  Requires caller to call
             int period = -1;    // Change after a timer instance is created.  This is to avoid the potential
                                 // for a timer to be fired before the returned value is assigned to the variable,
                                 // potentially causing the callback to reference a bogus value (if passing the timer to the callback). 
@@ -796,7 +798,7 @@ namespace System.Threading
         }
 
         private void TimerSetup(TimerCallback callback,
-                                object state,
+                                object? state,
                                 uint dueTime,
                                 uint period,
                                 bool flowExecutionContext = true)

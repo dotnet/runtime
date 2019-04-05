@@ -11,6 +11,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Collections.Generic;
@@ -81,7 +82,7 @@ namespace System.Threading.Tasks
         /// </summary>
         /// <param name="state">The state to use as the underlying 
         /// <see cref="T:System.Threading.Tasks.Task{TResult}"/>'s AsyncState.</param>
-        public TaskCompletionSource(object state)
+        public TaskCompletionSource(object? state)
             : this(state, TaskCreationOptions.None)
         {
         }
@@ -98,7 +99,7 @@ namespace System.Threading.Tasks
         /// The <paramref name="creationOptions"/> represent options invalid for use
         /// with a <see cref="TaskCompletionSource{TResult}"/>.
         /// </exception>
-        public TaskCompletionSource(object state, TaskCreationOptions creationOptions)
+        public TaskCompletionSource(object? state, TaskCreationOptions creationOptions)
         {
             _task = new Task<TResult>(state, creationOptions);
         }
@@ -150,7 +151,7 @@ namespace System.Threading.Tasks
         {
             if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
 
-            bool rval = _task.TrySetException(exception);
+            bool rval = _task.TrySetException(exception!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             if (!rval && !_task.IsCompleted) SpinUntilCompleted();
             return rval;
         }
@@ -180,11 +181,11 @@ namespace System.Threading.Tasks
             if (exceptions == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exceptions);
 
             List<Exception> defensiveCopy = new List<Exception>();
-            foreach (Exception e in exceptions)
+            foreach (Exception e in exceptions!) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 if (e == null)
                     ThrowHelper.ThrowArgumentException(ExceptionResource.TaskCompletionSourceT_TrySetException_NullException, ExceptionArgument.exceptions);
-                defensiveCopy.Add(e);
+                defensiveCopy.Add(e!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
 
             if (defensiveCopy.Count == 0)
@@ -216,7 +217,7 @@ namespace System.Threading.Tasks
         {
             if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
 
-            if (!TrySetException(exception))
+            if (!TrySetException(exception!)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
             }

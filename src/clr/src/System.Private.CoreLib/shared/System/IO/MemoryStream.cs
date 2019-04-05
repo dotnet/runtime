@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -32,7 +33,7 @@ namespace System.IO
         private bool _exposable;   // Whether the array can be returned to the user.
         private bool _isOpen;      // Is this stream open or closed?
 
-        private Task<int> _lastReadTask; // The last successful task returned from ReadAsync
+        private Task<int>? _lastReadTask; // The last successful task returned from ReadAsync
 
         private const int MemStreamMaxLength = int.MaxValue;
 

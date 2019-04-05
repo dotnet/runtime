@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Threading
@@ -35,10 +36,10 @@ namespace System.Threading
         // These are the default spin counts we use on single-proc and MP machines.
         private const int DEFAULT_SPIN_SP = 1;
 
-        private volatile object m_lock;
+        private volatile object? m_lock;
         // A lock used for waiting and pulsing. Lazily initialized via EnsureLockObjectCreated()
 
-        private volatile ManualResetEvent m_eventObj; // A true Win32 event used for waiting.
+        private volatile ManualResetEvent? m_eventObj; // A true Win32 event used for waiting.
 
         // -- State -- //
         //For a packed word a uint would seem better, but Interlocked.* doesn't support them as uint isn't CLS-compliant.
@@ -89,6 +90,7 @@ namespace System.Threading
                 {
                     // Lazily initialize the event object if needed.
                     LazyInitializeEvent();
+                    Debug.Assert(m_eventObj != null);
                 }
 
                 return m_eventObj;
@@ -318,7 +320,7 @@ namespace System.Threading
                 }
             }
 
-            ManualResetEvent eventObj = m_eventObj;
+            ManualResetEvent? eventObj = m_eventObj;
 
             //Design-decision: do not set the event if we are in cancellation -> better to deadlock than to wake up waiters incorrectly
             //It would be preferable to wake up the event and have it throw OCE. This requires MRE to implement cancellation logic
@@ -562,13 +564,14 @@ namespace System.Threading
                         cancellationToken.ThrowIfCancellationRequested();
                 }
 
-                // Now enter the lock and wait.
+                // Now enter the lock and wait. Must be created before registering the cancellation callback,
+                // which will try to take this lock.
                 EnsureLockObjectCreated();
 
                 // We must register and unregister the token outside of the lock, to avoid deadlocks.
                 using (cancellationToken.UnsafeRegister(s_cancellationTokenCallback, this))
                 {
-                    lock (m_lock)
+                    lock (m_lock!)
                     {
                         // Loop to cope with spurious wakeups from other waits being canceled
                         while (!IsSet)
@@ -656,7 +659,7 @@ namespace System.Threading
             {
                 // We will dispose of the event object.  We do this under a lock to protect
                 // against the race condition outlined in the Set method above.
-                ManualResetEvent eventObj = m_eventObj;
+                ManualResetEvent? eventObj = m_eventObj;
                 if (eventObj != null)
                 {
                     lock (eventObj)
@@ -680,11 +683,11 @@ namespace System.Threading
         /// <summary>
         /// Private helper method to wake up waiters when a cancellationToken gets canceled.
         /// </summary>
-        private static Action<object> s_cancellationTokenCallback = new Action<object>(CancellationTokenCallback);
-        private static void CancellationTokenCallback(object obj)
+        private static readonly Action<object?> s_cancellationTokenCallback = new Action<object?>(CancellationTokenCallback);
+        private static void CancellationTokenCallback(object? obj)
         {
-            ManualResetEventSlim mre = obj as ManualResetEventSlim;
-            Debug.Assert(mre != null, "Expected a ManualResetEventSlim");
+            Debug.Assert(obj is ManualResetEventSlim, "Expected a ManualResetEventSlim");
+            ManualResetEventSlim mre = (ManualResetEventSlim)obj;
             Debug.Assert(mre.m_lock != null); //the lock should have been created before this callback is registered for use.
             lock (mre.m_lock)
             {
