@@ -111,6 +111,14 @@ namespace System.Drawing.Primitives.Tests
             Assert.Equal((KnownColor)0, color.ToKnownColor());
         }
 
+        [Fact]
+        public void IsSystemColor()
+        {
+            Assert.True(Color.FromName("ActiveBorder").IsSystemColor);
+            Assert.True(Color.FromName("WindowText").IsSystemColor);
+            Assert.False(Color.FromName("AliceBlue").IsSystemColor);
+        }
+
         [Theory, MemberData(nameof(SystemColors))]
         public void IsSystemColorTrue(KnownColor known) => Assert.True(Color.FromKnownColor(known).IsSystemColor);
 

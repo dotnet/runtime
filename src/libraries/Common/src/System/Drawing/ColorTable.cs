@@ -14,13 +14,18 @@ namespace System.Drawing
         private static Dictionary<string, Color> GetColors()
         {
             var colors = new Dictionary<string, Color>(StringComparer.OrdinalIgnoreCase);
-            foreach (PropertyInfo prop in typeof(Color).GetProperties(BindingFlags.Public | BindingFlags.Static))
+            FillWithProperties(colors, typeof(Color));
+            FillWithProperties(colors, typeof(SystemColors));
+            return colors;
+        }
+
+        private static void FillWithProperties(Dictionary<string, Color> dictionary, Type typeWithColors)
+        {
+            foreach (PropertyInfo prop in typeWithColors.GetProperties(BindingFlags.Public | BindingFlags.Static))
             {
                 if (prop.PropertyType == typeof(Color))
-                    colors[prop.Name] = (Color)prop.GetValue(null, null);
+                    dictionary[prop.Name] = (Color)prop.GetValue(null, null);
             }
-
-            return colors;
         }
 
         internal static Dictionary<string, Color> Colors => s_colorConstants.Value;
