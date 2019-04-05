@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -28,7 +29,7 @@ namespace System
         // The highest order bit of _index is used to discern whether _object is a pre-pinned array.
         // (_index < 0) => _object is a pre-pinned array, so Pin() will not allocate a new GCHandle
         //       (else) => Pin() needs to allocate a new GCHandle to pin the object.
-        private readonly object _object;
+        private readonly object? _object;
         private readonly int _index;
         private readonly int _length;
 
@@ -41,7 +42,7 @@ namespace System
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlyMemory(T[] array)
+        public ReadOnlyMemory(T[]? array)
         {
             if (array == null)
             {
@@ -67,7 +68,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ReadOnlyMemory(T[] array, int start, int length)
+        public ReadOnlyMemory(T[]? array, int start, int length)
         {
             if (array == null)
             {
@@ -95,7 +96,7 @@ namespace System
         /// <param name="start">The index at which to begin the memory.</param>
         /// <param name="length">The number of items in the memory.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal ReadOnlyMemory(object obj, int start, int length)
+        internal ReadOnlyMemory(object? obj, int start, int length)
         {
             // No validation performed in release builds; caller must provide any necessary validation.
 
@@ -116,7 +117,7 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="ReadOnlyMemory{T}"/>
         /// </summary>
-        public static implicit operator ReadOnlyMemory<T>(T[] array) => new ReadOnlyMemory<T>(array);
+        public static implicit operator ReadOnlyMemory<T>(T[]? array) => new ReadOnlyMemory<T>(array);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="ReadOnlyMemory{T}"/>
@@ -244,7 +245,7 @@ namespace System
 
                 // Copy this field into a local so that it can't change out from under us mid-operation.
 
-                object tmpObject = _object;
+                object? tmpObject = _object;
                 if (tmpObject != null)
                 {
                     if (typeof(T) == typeof(char) && tmpObject.GetType() == typeof(string))
@@ -355,7 +356,7 @@ namespace System
             // is torn. This is ok since the caller is expecting to use raw pointers,
             // and we're not required to keep this as safe as the other Span-based APIs.
 
-            object tmpObject = _object;
+            object? tmpObject = _object;
             if (tmpObject != null)
             {
                 if (typeof(T) == typeof(char) && tmpObject is string s)
@@ -409,7 +410,7 @@ namespace System
 
         /// <summary>Determines whether the specified object is equal to the current object.</summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is ReadOnlyMemory<T> readOnlyMemory)
             {
@@ -451,7 +452,7 @@ namespace System
         /// <param name="length">The count.</param>
         /// <returns>The object.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object GetObjectStartLength(out int start, out int length)
+        internal object? GetObjectStartLength(out int start, out int length)
         {
             start = _index;
             length = _length;

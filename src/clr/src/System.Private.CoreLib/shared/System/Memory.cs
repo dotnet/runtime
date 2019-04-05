@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -28,7 +29,7 @@ namespace System
         // The highest order bit of _index is used to discern whether _object is a pre-pinned array.
         // (_index < 0) => _object is a pre-pinned array, so Pin() will not allocate a new GCHandle
         //       (else) => Pin() needs to allocate a new GCHandle to pin the object.
-        private readonly object _object;
+        private readonly object? _object;
         private readonly int _index;
         private readonly int _length;
 
@@ -39,14 +40,14 @@ namespace System
         /// <remarks>Returns default when <paramref name="array"/> is null.</remarks>
         /// <exception cref="System.ArrayTypeMismatchException">Thrown when <paramref name="array"/> is covariant and array's type is not exactly T[].</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Memory(T[] array)
+        public Memory(T[]? array)
         {
             if (array == null)
             {
                 this = default;
                 return; // returns default
             }
-            if (default(T) == null && array.GetType() != typeof(T[]))
+            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
                 ThrowHelper.ThrowArrayTypeMismatchException();
 
             _object = array;
@@ -55,7 +56,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Memory(T[] array, int start)
+        internal Memory(T[]? array, int start)
         {
             if (array == null)
             {
@@ -64,7 +65,7 @@ namespace System
                 this = default;
                 return; // returns default
             }
-            if (default(T) == null && array.GetType() != typeof(T[]))
+            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
                 ThrowHelper.ThrowArrayTypeMismatchException();
             if ((uint)start > (uint)array.Length)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -87,7 +88,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Memory(T[] array, int start, int length)
+        public Memory(T[]? array, int start, int length)
         {
             if (array == null)
             {
@@ -96,7 +97,7 @@ namespace System
                 this = default;
                 return; // returns default
             }
-            if (default(T) == null && array.GetType() != typeof(T[]))
+            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
                 ThrowHelper.ThrowArrayTypeMismatchException();
 #if BIT64
             // See comment in Span<T>.Slice for how this works.
@@ -160,7 +161,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal Memory(object obj, int start, int length)
+        internal Memory(object? obj, int start, int length)
         {
             // No validation performed in release builds; caller must provide any necessary validation.
 
@@ -181,7 +182,7 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="Memory{T}"/>
         /// </summary>
-        public static implicit operator Memory<T>(T[] array) => new Memory<T>(array);
+        public static implicit operator Memory<T>(T[]? array) => new Memory<T>(array);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="Memory{T}"/>
@@ -322,7 +323,7 @@ namespace System
 
                 // Copy this field into a local so that it can't change out from under us mid-operation.
 
-                object tmpObject = _object;
+                object? tmpObject = _object;
                 if (tmpObject != null)
                 {
                     if (typeof(T) == typeof(char) && tmpObject.GetType() == typeof(string))
@@ -440,7 +441,7 @@ namespace System
             // is torn. This is ok since the caller is expecting to use raw pointers,
             // and we're not required to keep this as safe as the other Span-based APIs.
 
-            object tmpObject = _object;
+            object? tmpObject = _object;
             if (tmpObject != null)
             {
                 if (typeof(T) == typeof(char) && tmpObject is string s)
@@ -497,7 +498,7 @@ namespace System
         /// Returns true if the object is Memory or ReadOnlyMemory and if both objects point to the same array and have the same length.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is ReadOnlyMemory<T>)
             {
