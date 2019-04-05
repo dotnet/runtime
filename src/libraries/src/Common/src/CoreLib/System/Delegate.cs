@@ -11,10 +11,6 @@ namespace System
 {
     public abstract partial class Delegate : ICloneable, ISerializable
     {
-        private Delegate()
-        {
-        }
-
         public virtual object Clone() => MemberwiseClone();
 
         public static Delegate? Combine(Delegate? a, Delegate? b)
@@ -37,8 +33,6 @@ namespace System
             return d;
         }
 
-        protected virtual Delegate CombineImpl(Delegate? d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
-
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed. 
         public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method) => CreateDelegate(type, firstArgument, method, throwOnBindFailure: true)!;
 
@@ -53,18 +47,22 @@ namespace System
         public static Delegate CreateDelegate(Type type, Type target, string method) => CreateDelegate(type, target, method, ignoreCase: false, throwOnBindFailure: true)!;
         public static Delegate CreateDelegate(Type type, Type target, string method, bool ignoreCase) => CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure: true)!;
 
+#if !CORERT
+        protected virtual Delegate CombineImpl(Delegate? d) => throw new MulticastNotSupportedException(SR.Multicast_Combine);
+
+        protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
+
+        public virtual Delegate[] GetInvocationList() => new Delegate[] { this };
+
         public object? DynamicInvoke(params object?[]? args)
         {
             return DynamicInvokeImpl(args);
         }
-
-        public virtual Delegate[] GetInvocationList() => new Delegate[] { this };
+#endif
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) => throw new PlatformNotSupportedException();
 
         public MethodInfo Method => GetMethodImpl();
-
-        protected virtual Delegate? RemoveImpl(Delegate d) => d.Equals(this) ? null : this;
 
         public static Delegate? Remove(Delegate? source, Delegate? value)
         {
