@@ -38,6 +38,15 @@
 	} 								\
 } while (0)
 
+#define MONO_CHECK_ARG_NULL_NAMED(arg, argname, retval) do {	\
+	if (G_UNLIKELY (!(arg)))				\
+	{							\
+		ERROR_DECL (error);				\
+		mono_error_set_argument_null (error, (argname), "");	\
+		mono_error_set_pending_exception (error);	\
+		return retval;					\
+	}							\
+} while (0)
 /* Use this as MONO_CHECK_ARG_NULL (arg,) in functions returning void */
 #define MONO_CHECK_ARG_NULL(arg, retval) do { 			\
 	if (G_UNLIKELY (!(arg)))				\
@@ -54,6 +63,14 @@
 	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg)))		\
 	{							\
 		mono_error_set_argument_null (error, #arg, "");	\
+		return retval;					\
+	}							\
+} while (0)
+
+#define MONO_CHECK_ARG_NULL_HANDLE_NAMED(arg, argname, retval) do { \
+	if (G_UNLIKELY (MONO_HANDLE_IS_NULL (arg)))		\
+	{							\
+		mono_error_set_argument_null (error, (argname), "");	\
 		return retval;					\
 	}							\
 } while (0)

@@ -174,4 +174,18 @@ m_class_is_runtime_type (MonoClass *klass)
 	return klass == mono_defaults.runtimetype_class;
 }
 
+static inline gboolean
+m_class_is_auto_layout (MonoClass *klass)
+{
+	guint32 layout = (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK);
+
+	return layout == TYPE_ATTRIBUTE_AUTO_LAYOUT;
+}
+
+static inline gboolean
+m_class_is_ginst (MonoClass *klass)
+{
+	return mono_class_is_ginst (klass);
+}
+
 #endif

@@ -2850,11 +2850,10 @@ init_com_provider_ms (void)
 #endif // WIN32
 #endif // DISABLE_COM
 
+/* PTR can be NULL */
 mono_bstr
 mono_ptr_to_bstr (const gunichar2* ptr, int slen)
 {
-	if (!ptr)
-		return NULL;
 #ifdef HOST_WIN32
 	return SysAllocStringLen (ptr, slen);
 #else
@@ -2867,14 +2866,15 @@ mono_ptr_to_bstr (const gunichar2* ptr, int slen)
 			return NULL;
 		mono_bstr const s = (mono_bstr)(ret + 1);
 		*ret = slen * sizeof (gunichar2);
-		memcpy (s, ptr, slen * sizeof (gunichar2));
+		if (ptr)
+			memcpy (s, ptr, slen * sizeof (gunichar2));
 		s [slen] = 0;
 		return s;
 #ifndef DISABLE_COM
 	}
 	else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
 		guint32 const len = slen;
-		gunichar* const str = g_utf16_to_ucs4 (ptr, len, NULL, NULL, NULL);
+		gunichar* const str = ptr ? g_utf16_to_ucs4 (ptr, len, NULL, NULL, NULL) : NULL;
 		mono_bstr const ret = sys_alloc_string_len_ms (str, len);
 		g_free (str);
 		return ret;
@@ -3649,6 +3649,10 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUn
 MonoStringHandle
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringBSTR (mono_bstr_const ptr, MonoError *error)
 {
+	if (ptr == NULL) {
+		mono_error_set_argument_null (error, "ptr", NULL);
+		return NULL_HANDLE_STRING;
+	}
 	return mono_string_from_bstr_checked (ptr, error);
 }
 

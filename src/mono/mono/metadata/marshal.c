@@ -5166,8 +5166,20 @@ ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper (MonoReflectionTyp
 void
 ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObjectHandle obj, gpointer dst, MonoBoolean delete_old, MonoError *error)
 {
-	MONO_CHECK_ARG_NULL_HANDLE (obj,);
-	MONO_CHECK_ARG_NULL (dst,);
+	MONO_CHECK_ARG_NULL_HANDLE_NAMED (obj, "structure",);
+	MONO_CHECK_ARG_NULL_NAMED (dst, "ptr",);
+
+#ifdef ENABLE_NETCORE
+	MonoClass *klass = mono_handle_class (obj);
+	if (m_class_is_auto_layout (klass)) {
+		mono_error_set_argument (error, "structure", "The specified structure must be blittable or have layout information.");
+		return;
+	}
+	if (m_class_is_ginst (klass)) {
+		mono_error_set_argument (error, "structure", "The specified object must not be an instance of a generic type.");
+		return;
+	}
+#endif
 
 	MonoMethod *method = mono_marshal_get_struct_to_ptr (mono_handle_class (obj));
 
@@ -5186,6 +5198,31 @@ ptr_to_structure (gconstpointer src, MonoObjectHandle dst, MonoError *error)
 	// FIXMEcoop? mono_runtime_invoke_handle causes a GC assertion failure in marshal2 with interpreter
 	mono_runtime_invoke_checked (method, NULL, pa, error);
 }
+
+#ifdef ENABLE_NETCORE
+
+void
+ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureInternal (gconstpointer src, MonoObjectHandle dst, MonoBoolean allow_vtypes, MonoError *error)
+{
+	MonoType *t;
+	MonoClass *klass;
+
+	t = m_class_get_byval_arg (mono_handle_class (dst));
+	if (!allow_vtypes && MONO_TYPE_ISSTRUCT (t)) {
+		mono_error_set_argument (error, "structure", "The structure must not be a value class.");
+		return;
+	}
+
+	klass = mono_class_from_mono_type_internal (t);
+	if (m_class_is_auto_layout (klass)) {
+		mono_error_set_argument (error, "structure", "The specified structure must be blittable or have layout information.");
+		return;
+	}
+
+	ptr_to_structure (src, dst, error);
+}
+
+#else
 
 void
 ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure (gconstpointer src, MonoObjectHandle dst, MonoError *error)
@@ -5225,13 +5262,14 @@ ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructure_type (gconstpoin
 
 	return res;
 }
+#endif // !NETCORE
 
 int
 ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHandle ref_type, MonoStringHandle field_name, MonoError *error)
 {
 	error_init (error);
 	if (MONO_HANDLE_IS_NULL (ref_type)) {
-		mono_error_set_argument_null (error, "type", "");
+		mono_error_set_argument_null (error, "t", "");
 		return 0;
 	}
 	if (MONO_HANDLE_IS_NULL (field_name)) {
@@ -5251,7 +5289,12 @@ ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf (MonoReflectionTypeHan
 	MonoClass *klass = mono_class_from_mono_type_internal (type);
 	if (!mono_class_init_checked (klass, error))
 		return 0;
-
+#ifdef ENABLE_NETCORE
+	if (m_class_is_auto_layout (klass)) {
+		mono_error_set_argument (error, NULL, "");
+		return 0;
+	}
+#endif
 	int match_index = -1;
 	while (klass && match_index == -1) {
 		MonoClassField* field;
@@ -5372,17 +5415,24 @@ mono_struct_delete_old (MonoClass *klass, char *ptr)
 void
 ves_icall_System_Runtime_InteropServices_Marshal_DestroyStructure (gpointer src, MonoReflectionTypeHandle type, MonoError *error)
 {
-	MONO_CHECK_ARG_NULL (src,);
-	MONO_CHECK_ARG_NULL_HANDLE (type,);
+	MONO_CHECK_ARG_NULL_NAMED (src, "ptr",);
+	MONO_CHECK_ARG_NULL_HANDLE_NAMED (type, "structureType",);
 
 	if (!m_class_is_runtime_type (MONO_HANDLE_GET_CLASS (type))) {
-		mono_error_set_argument (error, "type", "");
+		mono_error_set_argument (error, "structureType", "");
 		return;
 	}
 
 	MonoClass *klass = mono_class_from_mono_type_handle (type);
 	if (!mono_class_init_checked (klass, error))
 		return;
+#ifdef ENABLE_NETCORE
+	if (m_class_is_auto_layout (klass)) {
+		mono_error_set_argument (error, "structureType", "The specified structure must be blittable or have layout information.");
+		return;
+	}
+
+#endif
 
 	mono_struct_delete_old (klass, (char *)src);
 }
@@ -5503,6 +5553,32 @@ gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegateHandle delegate, MonoError *error)
 {
 	return mono_delegate_to_ftnptr_impl (delegate, error);
+}
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_GetArrayElementSize (MonoReflectionTypeHandle type_h, MonoError *error)
+{
+	MonoClass *eklass = mono_type_get_class (MONO_HANDLE_GETVAL (type_h, type));
+
+	mono_class_init_internal (eklass);
+
+	if (m_class_has_references (eklass)) {
+		mono_error_set_argument (error, NULL, NULL);
+		return 0;
+	}
+	return mono_class_array_element_size (eklass);
+}
+
+MonoBoolean
+ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoReflectionTypeHandle type_h, MonoError *error)
+{
+	MonoClass *klass = mono_class_from_mono_type_internal (MONO_HANDLE_GETVAL (type_h, type));
+
+	if (m_class_get_rank (klass)) {
+		MonoClass *eklass = m_class_get_element_class (klass);
+		return eklass != mono_defaults.object_class && m_class_is_blittable (eklass);
+	} else
+		return m_class_is_blittable (klass);
 }
 
 /**

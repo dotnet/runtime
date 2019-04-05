@@ -649,7 +649,7 @@ ves_icall_System_GC_get_ephemeron_tombstone (MonoError *error)
 #if ENABLE_NETCORE
 
 gpointer
-ves_icall_System_GCHandle_Alloc (MonoObjectHandle obj, gint32 type, MonoError *error)
+ves_icall_System_GCHandle_InternalAlloc (MonoObjectHandle obj, gint32 type, MonoError *error)
 {
 	guint32 handle = 0;
 
@@ -674,19 +674,19 @@ ves_icall_System_GCHandle_Alloc (MonoObjectHandle obj, gint32 type, MonoError *e
 }
 
 void
-ves_icall_System_GCHandle_Free (gpointer handle, MonoError *error)
+ves_icall_System_GCHandle_InternalFree (gpointer handle, MonoError *error)
 {
 	mono_gchandle_free_internal (GPOINTER_TO_UINT (handle) >> 1);
 }
 
 MonoObjectHandle
-ves_icall_System_GCHandle_Get (gpointer handle, MonoError *error)
+ves_icall_System_GCHandle_InternalGet (gpointer handle, MonoError *error)
 {
 	return mono_gchandle_get_target_handle (GPOINTER_TO_UINT (handle) >> 1);
 }
 
 void
-ves_icall_System_GCHandle_Set (gpointer handle, MonoObjectHandle obj, MonoError *error)
+ves_icall_System_GCHandle_InternalSet (gpointer handle, MonoObjectHandle obj, MonoError *error)
 {
 	mono_gchandle_set_target_handle (GPOINTER_TO_UINT (handle) >> 1, obj);
 }
