@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -184,6 +185,52 @@ namespace System.IO.Pipelines.Tests
         {
             PipeWriter buffer = Pipe.Writer;
             Assert.Throws<ArgumentOutOfRangeException>(() => buffer.Advance(1));
+        }
+
+        [Fact]
+        public async Task WritesUsingGetSpanWorks()
+        {
+            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            var pipe = new Pipe(new PipeOptions(pool: new HeapBufferPool(), minimumSegmentSize: 1));
+            PipeWriter writer = pipe.Writer;
+
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                writer.GetSpan()[0] = bytes[i];
+                writer.Advance(1);
+            }
+
+            await writer.FlushAsync();
+            writer.Complete();
+
+            ReadResult readResult = await pipe.Reader.ReadAsync();
+            Assert.Equal(bytes, readResult.Buffer.ToArray());
+            pipe.Reader.AdvanceTo(readResult.Buffer.End);
+
+            pipe.Reader.Complete();
+        }
+
+        [Fact]
+        public async Task WritesUsingGetMemoryWorks()
+        {
+            var bytes = Encoding.ASCII.GetBytes("abcdefghijklmnopqrstuvwzyz");
+            var pipe = new Pipe(new PipeOptions(pool: new HeapBufferPool(), minimumSegmentSize: 1));
+            PipeWriter writer = pipe.Writer;
+
+            for (int i = 0; i < bytes.Length; i++)
+            {
+                writer.GetMemory().Span[0] = bytes[i];
+                writer.Advance(1);
+            }
+
+            await writer.FlushAsync();
+            writer.Complete();
+
+            ReadResult readResult = await pipe.Reader.ReadAsync();
+            Assert.Equal(bytes, readResult.Buffer.ToArray());
+            pipe.Reader.AdvanceTo(readResult.Buffer.End);
+
+            pipe.Reader.Complete();
         }
     }
 }

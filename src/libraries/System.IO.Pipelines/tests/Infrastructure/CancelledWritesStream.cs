@@ -11,6 +11,8 @@ namespace System.IO.Pipelines.Tests
     {
         public TaskCompletionSource<object> WaitForWriteTask = new TaskCompletionSource<object>(TaskContinuationOptions.RunContinuationsAsynchronously);
 
+        public TaskCompletionSource<object> WaitForFlushTask = new TaskCompletionSource<object>(TaskContinuationOptions.RunContinuationsAsynchronously);
+
         public override void Write(byte[] buffer, int offset, int count)
         {
             throw new NotImplementedException();
@@ -31,5 +33,12 @@ namespace System.IO.Pipelines.Tests
             cancellationToken.ThrowIfCancellationRequested();
         }
 #endif
+
+        public override async Task FlushAsync(CancellationToken cancellationToken)
+        {
+            await WaitForFlushTask.Task;
+
+            cancellationToken.ThrowIfCancellationRequested();
+        }
     }
 }
