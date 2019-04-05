@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -29,10 +30,10 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
 
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
+            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // https://github.com/dotnet/csharplang/issues/538
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-            return InternalCreate((void*)t.TypeHandle.Value, 1, &length, null);
+            return InternalCreate((void*)t!.TypeHandle.Value, 1, &length, null); // https://github.com/dotnet/csharplang/issues/538
         }
 
         public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
@@ -44,13 +45,13 @@ namespace System
             if (length2 < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
+            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // https://github.com/dotnet/csharplang/issues/538
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
             int* pLengths = stackalloc int[2];
             pLengths[0] = length1;
             pLengths[1] = length2;
-            return InternalCreate((void*)t.TypeHandle.Value, 2, pLengths, null);
+            return InternalCreate((void*)t!.TypeHandle.Value, 2, pLengths, null); // https://github.com/dotnet/csharplang/issues/538
         }
 
         public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
@@ -64,14 +65,14 @@ namespace System
             if (length3 < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length3, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
+            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // https://github.com/dotnet/csharplang/issues/538
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
             int* pLengths = stackalloc int[3];
             pLengths[0] = length1;
             pLengths[1] = length2;
             pLengths[2] = length3;
-            return InternalCreate((void*)t.TypeHandle.Value, 3, pLengths, null);
+            return InternalCreate((void*)t!.TypeHandle.Value, 3, pLengths, null); // https://github.com/dotnet/csharplang/issues/538
         }
 
         public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
@@ -80,10 +81,10 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
             if (lengths == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lengths.Length == 0)
+            if (lengths!.Length == 0) // https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
+            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // https://github.com/dotnet/csharplang/issues/538
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
@@ -96,7 +97,7 @@ namespace System
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             fixed (int* pLengths = &lengths[0])
-                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, null);
+                return InternalCreate((void*)t!.TypeHandle.Value, lengths.Length, pLengths, null); // https://github.com/dotnet/csharplang/issues/538
         }
 
         public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
@@ -107,12 +108,12 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
             if (lowerBounds == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lowerBounds);
-            if (lengths.Length != lowerBounds.Length)
+            if (lengths!.Length != lowerBounds!.Length) // https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
             if (lengths.Length == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
-            RuntimeType t = elementType.UnderlyingSystemType as RuntimeType;
+            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // https://github.com/dotnet/csharplang/issues/538
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
@@ -126,7 +127,7 @@ namespace System
 
             fixed (int* pLengths = &lengths[0])
             fixed (int* pLowerBounds = &lowerBounds[0])
-                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, pLowerBounds);
+                return InternalCreate((void*)t!.TypeHandle.Value, lengths.Length, pLengths, pLowerBounds); // https://github.com/dotnet/csharplang/issues/538
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -142,7 +143,7 @@ namespace System
             if (destinationArray == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
 
-            Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length, false);
+            Copy(sourceArray!, sourceArray!.GetLowerBound(0), destinationArray!, destinationArray!.GetLowerBound(0), length, false); // https://github.com/dotnet/csharplang/issues/538
         }
 
         // Copies length elements from sourceArray, starting at sourceIndex, to
@@ -178,7 +179,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            ref byte p = ref GetRawArrayGeometry(array, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers);
+            ref byte p = ref GetRawArrayGeometry(array!, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers); // https://github.com/dotnet/csharplang/issues/538
 
             int offset = index - lowerBound;
 
@@ -198,11 +199,11 @@ namespace System
         private static extern ref byte GetRawArrayGeometry(Array array, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers);
 
         // The various Get values...
-        public unsafe object GetValue(params int[] indices)
+        public unsafe object? GetValue(params int[] indices)
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices.Length)
+            if (Rank != indices!.Length) // https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
             TypedReference elemref = new TypedReference();
@@ -211,7 +212,7 @@ namespace System
             return TypedReference.InternalToObject(&elemref);
         }
 
-        public unsafe object GetValue(int index)
+        public unsafe object? GetValue(int index)
         {
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
@@ -221,7 +222,7 @@ namespace System
             return TypedReference.InternalToObject(&elemref);
         }
 
-        public unsafe object GetValue(int index1, int index2)
+        public unsafe object? GetValue(int index1, int index2)
         {
             if (Rank != 2)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
@@ -235,7 +236,7 @@ namespace System
             return TypedReference.InternalToObject(&elemref);
         }
 
-        public unsafe object GetValue(int index1, int index2, int index3)
+        public unsafe object? GetValue(int index1, int index2, int index3)
         {
             if (Rank != 3)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
@@ -250,7 +251,7 @@ namespace System
             return TypedReference.InternalToObject(&elemref);
         }
 
-        public unsafe void SetValue(object value, int index)
+        public unsafe void SetValue(object? value, int index)
         {
             if (Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need1DArray);
@@ -260,7 +261,7 @@ namespace System
             InternalSetValue(&elemref, value);
         }
 
-        public unsafe void SetValue(object value, int index1, int index2)
+        public unsafe void SetValue(object? value, int index1, int index2)
         {
             if (Rank != 2)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need2DArray);
@@ -274,7 +275,7 @@ namespace System
             InternalSetValue(&elemref, value);
         }
 
-        public unsafe void SetValue(object value, int index1, int index2, int index3)
+        public unsafe void SetValue(object? value, int index1, int index2, int index3)
         {
             if (Rank != 3)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_Need3DArray);
@@ -289,11 +290,11 @@ namespace System
             InternalSetValue(&elemref, value);
         }
 
-        public unsafe void SetValue(object value, params int[] indices)
+        public unsafe void SetValue(object? value, params int[] indices)
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices.Length)
+            if (Rank != indices!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
             TypedReference elemref = new TypedReference();
@@ -302,8 +303,10 @@ namespace System
             InternalSetValue(&elemref, value);
         }
 
-        private static void SortImpl(Array keys, Array items, int index, int length, IComparer comparer)
+        private static void SortImpl(Array keys, Array? items, int index, int length, IComparer comparer)
         {
+            Debug.Assert(comparer != null);
+
             if (comparer == Comparer.Default)
             {
                 bool r = TrySZSort(keys, items, index, index + length - 1);
@@ -311,8 +314,8 @@ namespace System
                     return;
             }
 
-            object[] objKeys = keys as object[];
-            object[] objItems = null;
+            object[]? objKeys = keys as object[];
+            object[]? objItems = null;
             if (objKeys != null)
                 objItems = items as object[];
             if (objKeys != null && (items == null || objItems != null))
@@ -334,7 +337,7 @@ namespace System
         // Ideally, we would like to use TypedReference.SetValue instead. Unfortunately, TypedReference.SetValue
         // always throws not-supported exception
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern unsafe void InternalSetValue(void* target, object value);
+        private static extern unsafe void InternalSetValue(void* target, object? value);
 
         public extern int Length
         {
@@ -370,19 +373,19 @@ namespace System
         internal extern int GetElementSize();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZBinarySearch(Array sourceArray, int sourceIndex, int count, object value, out int retVal);
+        private static extern bool TrySZBinarySearch(Array sourceArray, int sourceIndex, int count, object? value, out int retVal);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZIndexOf(Array sourceArray, int sourceIndex, int count, object value, out int retVal);
+        private static extern bool TrySZIndexOf(Array sourceArray, int sourceIndex, int count, object? value, out int retVal);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZLastIndexOf(Array sourceArray, int sourceIndex, int count, object value, out int retVal);
+        private static extern bool TrySZLastIndexOf(Array sourceArray, int sourceIndex, int count, object? value, out int retVal);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool TrySZReverse(Array array, int index, int count);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool TrySZSort(Array keys, Array items, int left, int right);
+        private static extern bool TrySZSort(Array keys, Array? items, int left, int right);
 
         // if this is an array of value classes and that value class has a default constructor 
         // then this calls this default constructor on every element in the value class array.
