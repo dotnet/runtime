@@ -2003,16 +2003,27 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 
-                if (m_ms == MARSHAL_SCENARIO_WINRT && COMDelegate::IsDelegate(m_pMT))
+                if (COMDelegate::IsDelegate(m_pMT))
                 {
-                    // In WinRT scenarios delegates must be WinRT delegates
-                    if (!m_pMT->IsProjectedFromWinRT() && !WinRTTypeNameConverter::IsRedirectedType(m_pMT))
+                    if (m_ms == MARSHAL_SCENARIO_WINRT)
                     {
-                        m_resID = IDS_EE_BADMARSHAL_WINRT_DELEGATE;
+                        // In WinRT scenarios delegates must be WinRT delegates
+                        if (!m_pMT->IsProjectedFromWinRT() && !WinRTTypeNameConverter::IsRedirectedType(m_pMT))
+                        {
+                            m_resID = IDS_EE_BADMARSHAL_WINRT_DELEGATE;
+                            IfFailGoto(E_FAIL, lFail);
+                        }
+                    }
+                    else
+                    {
+                        // UnmanagedType.Interface for delegates used to mean the .NET Framework _Delegate interface.
+                        // We don't support that interface in .NET Core, so we disallow marshalling as it here.
+                        // The user can specify UnmanagedType.IDispatch and use the delegate through the IDispatch interface
+                        // if they need an interface pointer.
+                        m_resID = IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE;
                         IfFailGoto(E_FAIL, lFail);
                     }
                 }
-
                 m_type = MARSHAL_TYPE_INTERFACE;
             }
             else if (pDefaultMT != NULL && nativeType == NATIVE_TYPE_DEFAULT)
@@ -2291,17 +2302,29 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                         case NATIVE_TYPE_DEFAULT:
 #ifdef FEATURE_COMINTEROP
-                            if (m_ms != MARSHAL_SCENARIO_NDIRECT)
+                            if (m_ms == MARSHAL_SCENARIO_WINRT)
                             {
-                                _ASSERTE(m_ms == MARSHAL_SCENARIO_COMINTEROP || m_ms == MARSHAL_SCENARIO_WINRT);
                                 m_type = MARSHAL_TYPE_INTERFACE;
+                            }
+                            else if (m_ms == MARSHAL_SCENARIO_COMINTEROP)
+                            {
+                                // Default for COM marshalling for delegates used to mean the .NET Framework _Delegate interface.
+                                // We don't support that interface in .NET Core, so we disallow marshalling as it here.
+                                // The user can specify UnmanagedType.IDispatch and use the delegate through the IDispatch interface
+                                // if they need an interface pointer.
+                                m_resID = IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE;
+                                IfFailGoto(E_FAIL, lFail);
                             }
                             else
 #endif // FEATURE_COMINTEROP
                                 m_type = MARSHAL_TYPE_DELEGATE;
 
                             break;
-
+#ifdef FEATURE_COMINTEROP
+                        case NATIVE_TYPE_IDISPATCH:
+                            m_type = MARSHAL_TYPE_INTERFACE;
+                            break;
+#endif
                         default:
                         m_resID = IDS_EE_BADMARSHAL_DELEGATE;
                         IfFailGoto(E_FAIL, lFail);

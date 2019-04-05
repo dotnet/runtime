@@ -107,7 +107,7 @@ public struct Struct3_InterfacePtrAsField1_Seq
 {
     public bool verification;
 
-    [MarshalAs(UnmanagedType.Interface)]
+    [MarshalAs(UnmanagedType.IDispatch)]
     public Dele2 dele;
 }
 
@@ -121,7 +121,7 @@ public struct Struct3_InterfacePtrAsField2_Exp
     public Int32 Padding;
 
     [FieldOffset(8)]
-    [MarshalAs(UnmanagedType.Interface)]
+    [MarshalAs(UnmanagedType.IDispatch)]
     public Dele2 dele;
 }
 
@@ -130,7 +130,7 @@ public class Class3_InterfacePtrAsField3_Seq
 {
     public bool verification;
 
-    [MarshalAs(UnmanagedType.Interface)]
+    [MarshalAs(UnmanagedType.IDispatch)]
     public Dele2 dele;
 }
 
@@ -144,7 +144,7 @@ public class Class3_InterfacePtrAsField4_Exp
     public Int32 Padding;
 
     [FieldOffset(8)]
-    [MarshalAs(UnmanagedType.Interface)]
+    [MarshalAs(UnmanagedType.IDispatch)]
     public Dele2 dele;
 }
 #endregion
