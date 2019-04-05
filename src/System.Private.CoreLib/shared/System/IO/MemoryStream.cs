@@ -299,7 +299,7 @@ namespace System.IO
                     }
                     else
                     {
-                        _buffer = null;
+                        _buffer = Array.Empty<byte>();
                     }
                     _capacity = value;
                 }

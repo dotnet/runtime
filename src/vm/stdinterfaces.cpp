@@ -3121,7 +3121,7 @@ HRESULT __stdcall IStringable_ToString(IUnknown* pStringable,
 
         // Get the MethodTable for Windows.Foundation.IStringable.
         StackSString strIStringable(SString::Utf8, W("Windows.Foundation.IStringable"));
-        MethodTable *pMTIStringable = GetWinRTType(&strIStringable, /* bThrowIfNotFound = */ FALSE).GetMethodTable();
+        MethodTable *pMTIStringable = LoadWinRTType(&strIStringable, /* bThrowIfNotFound = */ FALSE).GetMethodTable();
 
         if (pMT != NULL && pMTIStringable != NULL && pMT->ImplementsInterface(pMTIStringable))
         {

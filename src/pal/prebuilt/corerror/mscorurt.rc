@@ -325,5 +325,7 @@ BEGIN
 	MSG_FOR_URT_HR(CLR_E_BIND_NI_SECURITY_FAILURE) "Native image was generated in a different trust level than present at runtime"
 	MSG_FOR_URT_HR(CLR_E_BIND_NI_DEP_IDENTITY_MISMATCH) "Native image identity mismatch with respect to its dependencies"
 	MSG_FOR_URT_HR(CLR_E_GC_OOM) "Failfast due to an OOM during a GC"
+	MSG_FOR_URT_HR(CLR_E_GC_BAD_AFFINITY_CONFIG) "GCHeapAffinitizeMask or GCHeapAffinitizeRanges didn't specify any CPUs the current process is affinitized to."
+	MSG_FOR_URT_HR(CLR_E_GC_BAD_AFFINITY_CONFIG_FORMAT) "GCHeapAffinitizeRanges configuration string has invalid format."
 	MSG_FOR_URT_HR(COR_E_BADIMAGEFORMAT) "The format of a DLL or executable being loaded is invalid."
 END
