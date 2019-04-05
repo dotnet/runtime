@@ -6,7 +6,7 @@ namespace System.Net.Security
 {
     internal partial class SslConnectionInfo 
     {
-        public SslConnectionInfo(SecPkgContext_ConnectionInfo interopConnectionInfo)
+        public SslConnectionInfo(SecPkgContext_ConnectionInfo interopConnectionInfo, TlsCipherSuite cipherSuite)
         {
             Protocol = interopConnectionInfo.Protocol;
             DataCipherAlg = interopConnectionInfo.DataCipherAlg;
@@ -15,6 +15,8 @@ namespace System.Net.Security
             DataHashKeySize = interopConnectionInfo.DataHashKeySize;
             KeyExchangeAlg = interopConnectionInfo.KeyExchangeAlg;
             KeyExchKeySize = interopConnectionInfo.KeyExchKeySize;
+
+            TlsCipherSuite = cipherSuite;
         }
     }
 }

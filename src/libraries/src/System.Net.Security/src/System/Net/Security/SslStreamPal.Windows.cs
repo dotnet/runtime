@@ -356,9 +356,23 @@ namespace System.Net.Security
         public static void QueryContextConnectionInfo(SafeDeleteContext securityContext, out SslConnectionInfo connectionInfo)
         {
             SecPkgContext_ConnectionInfo interopConnectionInfo = default;
-            bool success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPISecureChannel, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CONNECTION_INFO, ref interopConnectionInfo);
+            bool success = SSPIWrapper.QueryBlittableContextAttributes(
+                GlobalSSPI.SSPISecureChannel,
+                securityContext,
+                Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CONNECTION_INFO,
+                ref interopConnectionInfo);
             Debug.Assert(success);
-            connectionInfo = new SslConnectionInfo(interopConnectionInfo);
+
+            TlsCipherSuite cipherSuite = default;
+            SecPkgContext_CipherInfo cipherInfo = default;
+
+            success = SSPIWrapper.QueryBlittableContextAttributes(GlobalSSPI.SSPISecureChannel, securityContext, Interop.SspiCli.ContextAttribute.SECPKG_ATTR_CIPHER_INFO, ref cipherInfo);
+            if (success)
+            {
+                cipherSuite = (TlsCipherSuite)cipherInfo.dwCipherSuite;
+            }
+
+            connectionInfo = new SslConnectionInfo(interopConnectionInfo, cipherSuite);
         }
 
         private static int GetProtocolFlagsFromSslProtocols(SslProtocols protocols, bool isServer)

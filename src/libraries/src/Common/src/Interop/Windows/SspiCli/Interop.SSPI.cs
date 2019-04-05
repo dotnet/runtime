@@ -62,6 +62,7 @@ internal static partial class Interop
             SECPKG_ATTR_ROOT_STORE = 0x55,             // returns HCERTCONTEXT to the root store
             SECPKG_ATTR_ISSUER_LIST_EX = 0x59,         // returns SecPkgContext_IssuerListInfoEx
             SECPKG_ATTR_CONNECTION_INFO = 0x5A,        // returns SecPkgContext_ConnectionInfo
+            SECPKG_ATTR_CIPHER_INFO = 0x64,            // returns SecPkgContext_CipherInfo
             SECPKG_ATTR_UI_INFO = 0x68, // sets SEcPkgContext_UiInfo  
         }
 

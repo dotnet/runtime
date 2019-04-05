@@ -131,6 +131,10 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetClientCAList")]
         private static extern SafeSharedX509NameStackHandle SslGetClientCAList_private(SafeSslHandle ssl);
 
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetCurrentCipherId")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool SslGetCurrentCipherId(SafeSslHandle ssl, out int cipherId);
+
         internal static SafeSharedX509NameStackHandle SslGetClientCAList(SafeSslHandle ssl)
         {
             Crypto.CheckValidOpenSslHandle(ssl);

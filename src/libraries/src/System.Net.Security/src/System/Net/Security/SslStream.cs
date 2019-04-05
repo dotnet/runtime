@@ -542,6 +542,16 @@ namespace System.Net.Security
             }
         }
 
+        [CLSCompliant(false)]
+        public virtual TlsCipherSuite NegotiatedCipherSuite
+        {
+            get
+            {
+                CheckThrow(true);
+                return _context.ConnectionInfo?.TlsCipherSuite ?? default(TlsCipherSuite);
+            }
+        }
+
         public virtual CipherAlgorithmType CipherAlgorithm
         {
             get
