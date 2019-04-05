@@ -1779,7 +1779,7 @@ ValueNum ValueNumStore::VNForDoubleCon(double cnsVal)
     }
 }
 
-ValueNum ValueNumStore::VNForByrefCon(INT64 cnsVal)
+ValueNum ValueNumStore::VNForByrefCon(size_t cnsVal)
 {
     ValueNum res;
     if (GetByrefCnsMap()->Lookup(cnsVal, &res))
@@ -2777,8 +2777,8 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
         }
         else // both args are TYP_REF or both args are TYP_BYREF
         {
-            INT64 arg0Val = ConstantValue<size_t>(arg0VN); // We represent ref/byref constants as size_t's.
-            INT64 arg1Val = ConstantValue<size_t>(arg1VN); // Also we consider null to be zero.
+            size_t arg0Val = ConstantValue<size_t>(arg0VN); // We represent ref/byref constants as size_t's.
+            size_t arg1Val = ConstantValue<size_t>(arg1VN); // Also we consider null to be zero.
 
             if (VNFuncIsComparison(func))
             {
@@ -2787,14 +2787,14 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             }
             else if (typ == TYP_INT) // We could see GT_OR of a constant ByRef and Null
             {
-                int resultVal = (int)EvalOp<INT64>(func, arg0Val, arg1Val);
+                int resultVal = (int)EvalOp<size_t>(func, arg0Val, arg1Val);
                 result        = VNForIntCon(resultVal);
             }
             else // We could see GT_OR of a constant ByRef and Null
             {
                 assert((typ == TYP_BYREF) || (typ == TYP_LONG));
-                INT64 resultVal = EvalOp<INT64>(func, arg0Val, arg1Val);
-                result          = VNForByrefCon(resultVal);
+                size_t resultVal = EvalOp<size_t>(func, arg0Val, arg1Val);
+                result           = VNForByrefCon(resultVal);
             }
         }
     }
@@ -2824,7 +2824,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
             switch (typ)
             {
                 case TYP_BYREF:
-                    result = VNForByrefCon(resultVal);
+                    result = VNForByrefCon((size_t)resultVal);
                     break;
                 case TYP_LONG:
                     result = VNForLongCon(resultVal);
@@ -2981,14 +2981,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                     else
                     {
                         assert(typ == TYP_BYREF);
-                        if (srcIsUnsigned)
-                        {
-                            return VNForByrefCon(INT64(unsigned(arg0Val)));
-                        }
-                        else
-                        {
-                            return VNForByrefCon(INT64(arg0Val));
-                        }
+                        return VNForByrefCon(size_t(arg0Val));
                     }
 #else // TARGET_32BIT
                     if (srcIsUnsigned)
@@ -2998,7 +2991,8 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
 #endif
                 case TYP_BYREF:
                     assert(typ == TYP_BYREF);
-                    return VNForByrefCon((INT64)arg0Val);
+                    return VNForByrefCon(size_t(arg0Val));
+
                 case TYP_FLOAT:
                     assert(typ == TYP_FLOAT);
                     if (srcIsUnsigned)
@@ -3059,7 +3053,7 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
                             return arg0VN;
                         case TYP_BYREF:
                             assert(typ == TYP_BYREF);
-                            return VNForByrefCon((INT64)arg0Val);
+                            return VNForByrefCon((size_t)arg0Val);
                         case TYP_FLOAT:
                             assert(typ == TYP_FLOAT);
                             if (srcIsUnsigned)
