@@ -51,6 +51,9 @@
       <HostFiles Include="ijwhost">
         <FileDescription>.NET Core IJW Host</FileDescription>
       </HostFiles>
+      <HostFiles Include="winrthost">
+        <FileDescription>.NET Core WinRT Host</FileDescription>
+      </HostFiles>
       <HostFiles Include="nethost">
         <FileDescription>.NET Core Component Host</FileDescription>
       </HostFiles>

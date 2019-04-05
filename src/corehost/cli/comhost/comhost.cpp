@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "comhost.h"
+#include "redirected_error_writer.h"
 #include "hostfxr.h"
 #include "fxr_resolver.h"
 #include "pal.h"
@@ -45,69 +46,48 @@ using com_activation_fn = int(*)(com_activation_context*);
 
 namespace
 {
-    pal::stringstream_t & get_comhost_error_stream()
-    {
-        thread_local static pal::stringstream_t comhost_errors;
-
-        return comhost_errors;
-    }
-
-    void reset_comhost_error_stream()
-    {
-        pal::stringstream_t newstream;
-        get_comhost_error_stream().swap(newstream);
-    }
-
-    void comhost_error_writer(const pal::char_t* msg)
-    {
-        get_comhost_error_stream() << msg;
-    }
-
     int get_com_activation_delegate(pal::string_t *app_path, com_activation_fn *delegate)
     {
-        pal::string_t host_path;
-        if (!pal::get_own_module_path(&host_path) || !pal::realpath(&host_path))
+        return load_fxr_and_get_delegate(
+            hostfxr_delegate_type::com_activation,
+            [](const pal::string_t& host_path, pal::string_t* app_path_out)
+            {
+                pal::string_t app_path_local{ host_path };
+
+                // Strip the comhost suffix to get the 'app'
+                size_t idx = app_path_local.rfind(_X(".comhost.dll"));
+                assert(idx != pal::string_t::npos);
+                app_path_local.replace(app_path_local.begin() + idx, app_path_local.end(), _X(".dll"));
+
+                *app_path_out = std::move(app_path_local);
+
+                return StatusCode::Success;
+            },
+            delegate,
+            app_path
+        );
+    }
+    
+    void report_com_error_info(const GUID& guid, pal::string_t errs)
+    {
+        ICreateErrorInfo *cei;
+        if (!errs.empty() && SUCCEEDED(::CreateErrorInfo(&cei)))
         {
-            trace::error(_X("Failed to resolve full path of the current host module [%s]"), host_path.c_str());
-            return StatusCode::CoreHostCurHostFindFailure;
+            if (SUCCEEDED(cei->SetGUID(guid)))
+            {
+                if (SUCCEEDED(cei->SetDescription((LPOLESTR)errs.c_str())))
+                {
+                    IErrorInfo *ei;
+                    if (SUCCEEDED(cei->QueryInterface(__uuidof(ei), (void**)&ei)))
+                    {
+                        ::SetErrorInfo(0, ei);
+                        ei->Release();
+                    }
+                }
+            }
+
+            cei->Release();
         }
-
-        pal::string_t dotnet_root;
-        pal::string_t fxr_path;
-        if (!fxr_resolver::try_get_path(get_directory(host_path), &dotnet_root, &fxr_path))
-        {
-            return StatusCode::CoreHostLibMissingFailure;
-        }
-
-        // Load library
-        pal::dll_t fxr;
-        if (!pal::load_library(&fxr_path, &fxr))
-        {
-            trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
-            trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem."));
-            trace::error(_X("     %s"), DOTNET_CORE_INSTALL_PREREQUISITES_URL);
-            return StatusCode::CoreHostLibLoadFailure;
-        }
-
-        // Leak fxr
-
-        auto get_runtime_delegate = (hostfxr_get_delegate_fn)pal::get_symbol(fxr, "hostfxr_get_runtime_delegate");
-        if (get_runtime_delegate == nullptr)
-            return StatusCode::CoreHostEntryPointFailure;
-
-        pal::string_t app_path_local{ host_path };
-
-        // Strip the comhost suffix to get the 'app'
-        size_t idx = app_path_local.rfind(_X(".comhost.dll"));
-        assert(idx != pal::string_t::npos);
-        app_path_local.replace(app_path_local.begin() + idx, app_path_local.end(), _X(".dll"));
-
-        *app_path = std::move(app_path_local);
-
-        auto set_error_writer_fn = (hostfxr_set_error_writer_fn)pal::get_symbol(fxr, "hostfxr_set_error_writer");
-        propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
-
-        return get_runtime_delegate(host_path.c_str(), dotnet_root.c_str(), app_path->c_str(), hostfxr_delegate_type::com_activation, (void**)delegate);
     }
 }
 
@@ -129,35 +109,14 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
     com_activation_fn act;
     {
         trace::setup();
-        reset_comhost_error_stream();
-
-        error_writer_scope_t writer_scope(comhost_error_writer);
+        reset_redirected_error_writer();
+        
+        error_writer_scope_t writer_scope(redirected_error_writer);
 
         int ec = get_com_activation_delegate(&app_path, &act);
         if (ec != StatusCode::Success)
         {
-            // Create an IErrorInfo instance with the failure data.
-            pal::string_t errs = get_comhost_error_stream().str();
-
-            ICreateErrorInfo *cei;
-            if (!errs.empty() && SUCCEEDED(::CreateErrorInfo(&cei)))
-            {
-                if (SUCCEEDED(cei->SetGUID(rclsid)))
-                {
-                    if (SUCCEEDED(cei->SetDescription((LPOLESTR)errs.c_str())))
-                    {
-                        IErrorInfo *ei;
-                        if (SUCCEEDED(cei->QueryInterface(__uuidof(ei), (void**)&ei)))
-                        {
-                            ::SetErrorInfo(0, ei);
-                            ei->Release();
-                        }
-                    }
-                }
-
-                cei->Release();
-            }
-
+            report_com_error_info(rclsid, std::move(get_redirected_error_string()));
             return __HRESULT_FROM_WIN32(ec);
         }
     }

@@ -19,7 +19,8 @@ using hostfxr_main_startupinfo_fn = int32_t(*)(
 enum class hostfxr_delegate_type
 {
     com_activation,
-    load_in_memory_assembly
+    load_in_memory_assembly,
+    winrt_activation
 };
 
 using hostfxr_get_delegate_fn = int32_t(*)(

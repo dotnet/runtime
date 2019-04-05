@@ -16,6 +16,7 @@ set(SOURCES
     comhost.cpp
     ../fxr_resolver.cpp
     clsidmap.cpp
+    ../redirected_error_writer.cpp
     ../fxr/fx_ver.cpp
     ../json/casablanca/src/json/json.cpp
     ../json/casablanca/src/json/json_parsing.cpp
