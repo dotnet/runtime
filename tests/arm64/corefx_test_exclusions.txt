@@ -5,5 +5,4 @@ System.IO.FileSystem.Tests                              # https://github.com/dot
 System.Management.Tests                                 # https://github.com/dotnet/corefx/issues/34030
 System.Net.HttpListener.Tests                           # https://github.com/dotnet/coreclr/issues/17584
 System.Net.Sockets.Tests                                # https://github.com/dotnet/coreclr/issues/23378
-System.Runtime.Tests                                    # https://github.com/dotnet/coreclr/issues/18914
 System.Text.RegularExpressions.Tests                    # https://github.com/dotnet/coreclr/issues/18912 -- timeout -- JitMinOpts only
