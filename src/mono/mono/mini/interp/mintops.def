@@ -687,3 +687,4 @@ OPDEF(MINT_INTRINS_BYREFERENCE_CTOR, "intrins_byreference_ctor", 2, MintOpClassT
 OPDEF(MINT_INTRINS_BYREFERENCE_GET_VALUE, "intrins_byreference_get_value", 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET, "intrins_unsafe_add_byte_offset", 1, MintOpNoArgs)
 OPDEF(MINT_INTRINS_UNSAFE_BYTE_OFFSET, "intrins_unsafe_byte_offset", 1, MintOpNoArgs)
+OPDEF(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE, "intrins_runtimehelpers_object_has_component_size", 1, MintOpNoArgs)

@@ -1242,7 +1242,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			*op = MINT_INTRINS_UNSAFE_ADD_BYTE_OFFSET;
 		else if (!strcmp (tm, "ByteOffset"))
 			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
-		else if (!strcmp (tm, "As"))
+		else if (!strcmp (tm, "As") || !strcmp (tm, "AsRef"))
 			*op = MINT_NOP;
 		else if (!strcmp (tm, "SizeOf")) {
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
@@ -1257,6 +1257,26 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 			PUSH_SIMPLE_TYPE (td, STACK_TYPE_I4);
 			td->ip += 5;
 			return TRUE;
+		} else if (!strcmp (tm, "AreSame")) {
+			*op = MINT_CEQ_P;
+		}
+#endif
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Runtime.CompilerServices") && !strcmp (klass_name, "RuntimeHelpers")) {
+#ifdef ENABLE_NETCORE
+		if (!strcmp (tm, "IsBitwiseEquatable")) {
+			g_assert (csignature->param_count == 0);
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+			MonoType *t = mini_get_underlying_type (ctx->method_inst->type_argv [0]);
+
+			if (MONO_TYPE_IS_PRIMITIVE (t) && t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8)
+				*op = MINT_LDC_I4_1;
+			else
+				*op = MINT_LDC_I4_0;
+		} else if (!strcmp (tm, "ObjectHasComponentSize")) {
+			*op = MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE;
 		}
 #endif
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {

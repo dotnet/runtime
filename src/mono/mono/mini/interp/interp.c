@@ -4490,6 +4490,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			++ip;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_INTRINS_RUNTIMEHELPERS_OBJECT_HAS_COMPONENT_SIZE) {
+			sp -= 1;
+			MonoObject *obj = sp [0].data.o;
+			sp [0].data.i = (obj->vtable->flags & MONO_VT_FLAG_ARRAY_OR_STRING) != 0;
+			sp ++;
+			++ip;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CASTCLASS_INTERFACE)
 		MINT_IN_CASE(MINT_ISINST_INTERFACE) {
 			gboolean isinst_instr = *ip == MINT_ISINST_INTERFACE;
