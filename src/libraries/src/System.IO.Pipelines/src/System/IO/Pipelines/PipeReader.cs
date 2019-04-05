@@ -76,6 +76,17 @@ namespace System.IO.Pipelines
         public abstract void OnWriterCompleted(Action<Exception, object> callback, object state);
 
         /// <summary>
+        /// Creates a <see cref="PipeReader"/> wrapping the specified <see cref="Stream"/>.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="readerOptions">The options.</param>
+        /// <returns></returns>
+        public static PipeReader Create(Stream stream, StreamPipeReaderOptions readerOptions = null)
+        {
+            return new StreamPipeReader(stream, readerOptions ?? StreamPipeReaderOptions.s_default);
+        }
+
+        /// <summary>
         /// Asynchronously reads the bytes from the <see cref="PipeReader"/> and writes them to the specified stream, using a specified buffer size and cancellation token.
         /// </summary>
         /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
