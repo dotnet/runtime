@@ -13,7 +13,7 @@ namespace System.IO.Pipelines.Tests
 {
     public class CopyToAsyncTests
     {
-        private static readonly PipeOptions s_testOptions = new PipeOptions(readerScheduler: PipeScheduler.Inline);
+        private static readonly PipeOptions s_testOptions = new PipeOptions(readerScheduler: PipeScheduler.Inline, useSynchronizationContext: false);
 
         [Fact]
         public async Task CopyToAsyncThrowsArgumentNullExceptionForNullDestination()
@@ -71,7 +71,7 @@ namespace System.IO.Pipelines.Tests
         {
             using (var pool = new TestMemoryPool())
             {
-                var pipe = new Pipe(new PipeOptions(pool: pool, readerScheduler: PipeScheduler.Inline));
+                var pipe = new Pipe(s_testOptions);
                 pipe.Writer.WriteEmpty(4096);
                 pipe.Writer.WriteEmpty(4096);
                 pipe.Writer.WriteEmpty(4096);
