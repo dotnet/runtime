@@ -343,7 +343,6 @@
     <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
 
     <RuntimePath Condition="'$(RuntimePath)' == ''">$(ArtifactsBinDir)runtime/$(BuildConfiguration)/</RuntimePath>
-    <ShimsTargetRuntimeRoot>$(ArtifactsBinDir)shimsTargetRuntime/</ShimsTargetRuntimeRoot>
     <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'tests'))</TestWorkingDir>
     <TestPath Condition="'$(TestPath)' == ''">$([MSBuild]::NormalizeDirectory('$(TestWorkingDir)', '$(MSBuildProjectName)', '$(BuildConfiguration)'))</TestPath>
     <RefRootPath>$(ArtifactsBinDir)ref/</RefRootPath>

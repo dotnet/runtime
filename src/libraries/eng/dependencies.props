@@ -99,10 +99,6 @@
     </XmlUpdateStep>
   </ItemGroup>
 
-  <PropertyGroup>
-    <CompatibilityShimsPackageVersion>2.1.0</CompatibilityShimsPackageVersion>
-  </PropertyGroup>
-
   <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
   <ItemGroup>
     <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.5" />
