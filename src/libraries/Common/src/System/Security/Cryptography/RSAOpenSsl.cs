@@ -130,6 +130,54 @@ namespace System.Security.Cryptography
             SafeRsaHandle key = _key.Value;
             CheckInvalidKey(key);
 
+            int keySizeBytes = Interop.Crypto.RsaSize(key);
+
+            // OpenSSL does not take a length value for the destination, so it can write out of bounds.
+            // To prevent the OOB write, decrypt into a temporary buffer.
+            if (destination.Length < keySizeBytes)
+            {
+                Span<byte> tmp = stackalloc byte[0];
+                byte[] rent = null;
+
+                // RSA up through 4096 stackalloc
+                if (keySizeBytes <= 512)
+                {
+                    tmp = stackalloc byte[keySizeBytes];
+                }
+                else
+                {
+                    rent = ArrayPool<byte>.Shared.Rent(keySizeBytes);
+                    tmp = rent;
+                }
+
+                bool ret = TryDecrypt(key, data, tmp, rsaPadding, oaepProcessor, out bytesWritten);
+
+                if (ret)
+                {
+                    tmp = tmp.Slice(0, bytesWritten);
+
+                    if (bytesWritten > destination.Length)
+                    {
+                        ret = false;
+                        bytesWritten = 0;
+                    }
+                    else
+                    {
+                        tmp.CopyTo(destination);
+                    }
+
+                    CryptographicOperations.ZeroMemory(tmp);
+                }
+
+                if (rent != null)
+                {
+                    // Already cleared
+                    ArrayPool<byte>.Shared.Return(rent);
+                }
+
+                return ret;
+            }
+
             return TryDecrypt(key, data, destination, rsaPadding, oaepProcessor, out bytesWritten);
         }
 
