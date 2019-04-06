@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
@@ -50,7 +51,7 @@ namespace System.Text.Unicode
         /// <paramref name="value"/> but where all invalid UTF-8 sequences have been replaced
         /// with U+FFD.
         /// </summary>
-        public static Utf8String ValidateAndFixupUtf8String(Utf8String value)
+        public static Utf8String? ValidateAndFixupUtf8String(Utf8String? value)
         {
             if (Utf8String.IsNullOrEmpty(value))
             {

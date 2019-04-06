@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Text;
 using System;
 using System.Diagnostics;
@@ -22,16 +23,16 @@ namespace System.Text
     //
     public abstract class Decoder
     {
-        internal DecoderFallback _fallback = null;
+        internal DecoderFallback? _fallback = null;
 
-        internal DecoderFallbackBuffer _fallbackBuffer = null;
+        internal DecoderFallbackBuffer? _fallbackBuffer = null;
 
         protected Decoder()
         {
             // We don't call default reset because default reset probably isn't good if we aren't initialized.
         }
 
-        public DecoderFallback Fallback
+        public DecoderFallback? Fallback
         {
             get
             {
