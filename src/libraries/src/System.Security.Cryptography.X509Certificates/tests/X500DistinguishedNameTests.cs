@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Test.Cryptography;
 using Xunit;
 
@@ -181,6 +182,23 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             const string rname = "C=US, O=\"RSA Data Security, Inc.\", OU=Secure Server Certification Authority";
             X500DistinguishedName dn = new X500DistinguishedName(rname, X500DistinguishedNameFlags.None);
             Assert.Equal(rname, dn.Decode(X500DistinguishedNameFlags.UseCommas | X500DistinguishedNameFlags.UseNewLines));
+        }
+
+        [Fact]
+        public static void TpmIdentifiers()
+        {
+            // On Windows the X.500 name pretty printer is in crypt32, so it doesn't use our OidLookup.
+            // Windows 7 doesn't have the TPM OIDs mapped, so they come back as (e.g.) OID.2.23.133.2.3 still.
+            //
+            // Just skip this test there.
+            if (PlatformDetection.IsWindows7)
+            {
+                return;
+            }
+
+            X500DistinguishedName dn = new X500DistinguishedName("OID.2.23.133.2.3=id:0020065,OID.2.23.133.2.2=,OID.2.23.133.2.1=id:564D5700");
+            X500DistinguishedName dn2 = new X500DistinguishedName(dn.RawData);
+            Assert.Equal("TPMManufacturer=id:564D5700, TPMModel=\"\", TPMVersion=id:0020065", dn2.Decode(X500DistinguishedNameFlags.None));
         }
 
         public static readonly object[][] WhitespaceBeforeCases =
