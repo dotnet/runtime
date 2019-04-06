@@ -168,6 +168,9 @@ parse_properties (int propertyCount, const char** propertyKeys, const char** pro
 			parse_trusted_platform_assemblies (propertyValues[i]);
 		} else if (!strcmp (propertyKeys[i], "NATIVE_DLL_SEARCH_DIRECTORIES")) {
 			parse_native_dll_search_directories (propertyValues[i]);
+		} else if (!strcmp (propertyKeys[i], "System.Globalization.Invariant")) {
+			// TODO: Ideally we should propagate this through AppContext options
+			setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues[i], TRUE);
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.
