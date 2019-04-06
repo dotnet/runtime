@@ -1618,6 +1618,7 @@ pinvoke_probe_for_module_in_directory (const char *mdirname, const char *file_na
 		}
 		g_free (full_name);
 	}
+	g_free (full_name);
 
 	return module;
 }
