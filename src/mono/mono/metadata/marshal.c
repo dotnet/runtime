@@ -5576,6 +5576,8 @@ ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoReflectionT
 
 	if (m_class_get_rank (klass)) {
 		MonoClass *eklass = m_class_get_element_class (klass);
+		if (m_class_is_primitive (eklass))
+			return TRUE;		
 		return eklass != mono_defaults.object_class && m_class_is_blittable (eklass);
 	} else
 		return m_class_is_blittable (klass);
