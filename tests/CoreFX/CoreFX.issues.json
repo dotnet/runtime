@@ -1335,6 +1335,10 @@
                     "name": "System.Tests.TimeSpanTests.Total_Days_Hours_Minutes_Seconds_Milliseconds",
                     "reason" : "https://github.com/dotnet/coreclr/pull/22040"
                 },
+                {
+                    "name": "System.Tests.BufferTests.BlockCopy_Invalid",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/23636"
+                },
             ]
         }
     },
