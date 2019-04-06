@@ -181,6 +181,15 @@ mono_pagesize (void)
 	saved_pagesize = getpagesize ();
 #endif
 
+
+	// While this could not happen in any of the Mono supported
+	// systems, this ensures this function never returns -1, and
+	// reduces the number of false positives
+	// that Coverity finds in consumer code.
+
+	if (saved_pagesize == -1)
+		return 64*1024;
+
 	return saved_pagesize;
 }
 
