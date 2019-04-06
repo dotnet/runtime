@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Text;
 using System;
 using System.Diagnostics;
@@ -22,16 +23,16 @@ namespace System.Text
     //
     public abstract class Encoder
     {
-        internal EncoderFallback _fallback = null;
+        internal EncoderFallback? _fallback = null;
 
-        internal EncoderFallbackBuffer _fallbackBuffer = null;
+        internal EncoderFallbackBuffer? _fallbackBuffer = null;
 
         protected Encoder()
         {
             // We don't call default reset because default reset probably isn't good if we aren't initialized.
         }
 
-        public EncoderFallback Fallback
+        public EncoderFallback? Fallback
         {
             get
             {

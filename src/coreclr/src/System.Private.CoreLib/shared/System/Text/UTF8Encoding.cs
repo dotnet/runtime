@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 // The worker functions in this file was optimized for performance. If you make changes
 // you should use care to consider all of the interesting cases.
 
@@ -155,8 +156,8 @@ namespace System.Text
         public override unsafe int GetByteCount(string chars)
         {
             // Validate input
-            if (chars==null)
-                throw new ArgumentNullException("s");
+            if (chars == null)
+                throw new ArgumentNullException(nameof(chars));
 
             fixed (char* pChars = chars)
                 return GetByteCount(pChars, chars.Length, null);
@@ -429,11 +430,11 @@ namespace System.Text
 
         // To simplify maintenance, the structure of GetByteCount and GetBytes should be
         // kept the same as much as possible
-        internal sealed override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
+        internal sealed override unsafe int GetByteCount(char* chars, int count, EncoderNLS? baseEncoder)
         {
             // For fallback we may need a fallback buffer.
             // We wait to initialize it though in case we don't have any broken input unicode
-            EncoderFallbackBuffer fallbackBuffer = null;
+            EncoderFallbackBuffer? fallbackBuffer = null;
             char* pSrcForFallback;
 
             char* pSrc = chars;
@@ -454,7 +455,7 @@ namespace System.Text
                 {
                     fallbackBuffer = encoder.FallbackBuffer;
                     if (fallbackBuffer.Remaining > 0)
-                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
+                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback!.GetType())); // TODO-NULLABLE: NullReferenceException
 
                     // Set our internal fallback interesting things.
                     fallbackBuffer.InternalInitialize(chars, pEnd, encoder, false);
@@ -839,18 +840,18 @@ namespace System.Text
         // Our workhorse
         // Note:  We ignore mismatched surrogates, unless the exception flag is set in which case we throw
         internal sealed override unsafe int GetBytes(
-            char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS baseEncoder)
+            char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS? baseEncoder)
         {
             Debug.Assert(chars != null, "[UTF8Encoding.GetBytes]chars!=null");
             Debug.Assert(byteCount >= 0, "[UTF8Encoding.GetBytes]byteCount >=0");
             Debug.Assert(charCount >= 0, "[UTF8Encoding.GetBytes]charCount >=0");
             Debug.Assert(bytes != null, "[UTF8Encoding.GetBytes]bytes!=null");
 
-            UTF8Encoder encoder = null;
+            UTF8Encoder? encoder = null;
 
             // For fallback we may need a fallback buffer.
             // We wait to initialize it though in case we don't have any broken input unicode
-            EncoderFallbackBuffer fallbackBuffer = null;
+            EncoderFallbackBuffer? fallbackBuffer = null;
             char* pSrcForFallback;
 
             char* pSrc = chars;
@@ -874,7 +875,7 @@ namespace System.Text
                     // We always need the fallback buffer in get bytes so we can flush any remaining ones if necessary
                     fallbackBuffer = encoder.FallbackBuffer;
                     if (fallbackBuffer.Remaining > 0 && encoder._throwOnOverflow)
-                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback.GetType()));
+                        throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, this.EncodingName, encoder.Fallback!.GetType())); // TODO-NULLABLE: NullReferenceException
 
                     // Set our internal fallback interesting things.
                     fallbackBuffer.InternalInitialize(chars, pEnd, encoder, true);
@@ -1327,7 +1328,7 @@ namespace System.Text
         //
         // To simplify maintenance, the structure of GetCharCount and GetChars should be
         // kept the same as much as possible
-        internal sealed override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
+        internal sealed override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS? baseDecoder)
         {
             Debug.Assert(count >= 0, "[UTF8Encoding.GetCharCount]count >=0");
             Debug.Assert(bytes != null, "[UTF8Encoding.GetCharCount]bytes!=null");
@@ -1340,7 +1341,7 @@ namespace System.Text
             // for the character being decoded
             int charCount = count;
             int ch = 0;
-            DecoderFallbackBuffer fallback = null;
+            DecoderFallbackBuffer? fallback = null;
 
             if (baseDecoder != null)
             {
@@ -1766,7 +1767,7 @@ namespace System.Text
         // To simplify maintenance, the structure of GetCharCount and GetChars should be
         // kept the same as much as possible
         internal sealed override unsafe int GetChars(
-            byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS baseDecoder)
+            byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS? baseDecoder)
         {
             Debug.Assert(chars != null, "[UTF8Encoding.GetChars]chars!=null");
             Debug.Assert(byteCount >= 0, "[UTF8Encoding.GetChars]count >=0");
@@ -1781,7 +1782,7 @@ namespace System.Text
 
             int ch = 0;
 
-            DecoderFallbackBuffer fallback = null;
+            DecoderFallbackBuffer? fallback = null;
             byte* pSrcForFallback;
             char* pTargetForFallback;
             if (baseDecoder != null)
@@ -2413,7 +2414,7 @@ namespace System.Text
         private unsafe byte[] GetBytesUnknown(ref byte* pSrc, int ch)
         {
             // Get our byte[]
-            byte[] bytesUnknown = null;
+            byte[] bytesUnknown;
 
             // See if it was a plain char
             // (have to check >= 0 because we have all sorts of wierd bit flags)
@@ -2553,7 +2554,7 @@ namespace System.Text
             _emitUTF8Identifier ? PreambleSpan :
             default;
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (value is UTF8Encoding that)
             {
@@ -2561,7 +2562,7 @@ namespace System.Text
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
             }
-            return (false);
+            return false;
         }
 
 
@@ -2596,7 +2597,7 @@ namespace System.Text
             {
                 get
                 {
-                    return (this.surrogateChar != 0);
+                    return this.surrogateChar != 0;
                 }
             }
         }
@@ -2624,7 +2625,7 @@ namespace System.Text
             {
                 get
                 {
-                    return (this.bits != 0);
+                    return this.bits != 0;
                 }
             }
         }
