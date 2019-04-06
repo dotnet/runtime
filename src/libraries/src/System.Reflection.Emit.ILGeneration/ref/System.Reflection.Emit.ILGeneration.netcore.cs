@@ -12,4 +12,7 @@ namespace System.Reflection.Emit
     {
         public virtual void EmitCalli(System.Reflection.Emit.OpCode opcode, System.Runtime.InteropServices.CallingConvention unmanagedCallConv, Type returnType, Type[] parameterTypes) { }
     }
+
+    public partial struct Label : IEquatable<System.Reflection.Emit.Label>
+    { }
 }
