@@ -1093,6 +1093,26 @@
                     "reason": "https://github.com/dotnet/coreclr/pull/23664"
                 },
                 {
+                    "name": "System.Runtime.InteropServices.Tests.PtrToStringUTF8.PtrToStringUTF8_NegativeLength_ThrowsArgumentOutOfRangeExeption",
+                    "reason": "https://github.com/dotnet/coreclr/pull/23731"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.PtrToStringUTF8.PtrToStringUTF8_ZeroPointer_ReturnsNull",
+                    "reason": "https://github.com/dotnet/coreclr/pull/23731"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.PtrToStringUTF8.PtrToStringUTF8_Win32AtomPointer_ReturnsNull",
+                    "reason": "https://github.com/dotnet/coreclr/pull/23731"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.PtrToStringAnsiTests.PtrToStringAnsi_NegativeLength_ThrowsArgumentExeption",
+                    "reason": "https://github.com/dotnet/coreclr/pull/23731"
+                },
+                {
+                    "name": "System.Runtime.InteropServices.Tests.PtrToStringUniTests.PtrToStringUni_NegativeLength_ThrowsArgumentExeption",
+                    "reason": "https://github.com/dotnet/coreclr/pull/23731"
+                },
+                {
                     "name": "System.Runtime.InteropServices.Tests.ThrowExceptionForHRTests.ThrowExceptionForHR_NoErrorInfo_ReturnsValidException",
                     "reason": "outdated"
                 },
