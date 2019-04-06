@@ -81,9 +81,6 @@
     <PackageReference Include="System.ComponentModel.Composition">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
-    <PackageReference Include="System.Data.DataSetExtensions">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
     <PackageReference Include="System.Data.Odbc">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
