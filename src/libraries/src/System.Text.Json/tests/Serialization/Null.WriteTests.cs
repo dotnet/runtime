@@ -36,9 +36,15 @@ namespace System.Text.Json.Serialization.Tests
             obj.List = null;
             obj.NullableInt = null;
             obj.NullableIntArray = null;
+            obj.Object = null;
 
             string json = JsonSerializer.ToString(obj);
-            Assert.Equal(ObjectWithObjectProperties.ExpectedJsonAllNulls, json);
+            Assert.Contains(@"""Address"":null", json);
+            Assert.Contains(@"""List"":null", json);
+            Assert.Contains(@"""Array"":null", json);
+            Assert.Contains(@"""NullableInt"":null", json);
+            Assert.Contains(@"""Object"":null", json);
+            Assert.Contains(@"""NullableIntArray"":null", json);
         }
 
         [Fact]
@@ -46,6 +52,26 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = JsonSerializer.ToString(new ObjectWithObjectProperties[]{ null });
             Assert.Equal("[null]", json);
+        }
+
+        [Fact]
+        public static void NullArgumentFail()
+        {
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.ToString("", (Type)null));
+        }
+
+        [Fact]
+        public static void NullObjectOutput()
+        {
+            {
+                string output = JsonSerializer.ToString<string>(null);
+                Assert.Equal("null", output);
+            }
+
+            {
+                string output = JsonSerializer.ToString<string>(null, null);
+                Assert.Equal("null", output);
+            }
         }
     }
 }

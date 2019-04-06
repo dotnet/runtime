@@ -29,6 +29,15 @@ namespace System.Text.Json.Serialization
         // The current JSON data for a property does not match a given POCO, so ignore the property (recursively for enumerables or object).
         internal bool Drain;
 
+        internal void Initialize(Type type, JsonSerializerOptions options)
+        {
+            JsonClassInfo = options.GetOrAddClass(type);
+            if (JsonClassInfo.ClassType == ClassType.Value || JsonClassInfo.ClassType == ClassType.Enumerable)
+            {
+                JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
+            }
+        }
+
         internal void Reset()
         {
             ReturnValue = null;

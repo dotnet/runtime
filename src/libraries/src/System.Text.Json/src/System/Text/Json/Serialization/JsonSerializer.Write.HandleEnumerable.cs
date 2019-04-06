@@ -48,20 +48,11 @@ namespace System.Text.Json.Serialization
 
             if (state.Current.Enumerator != null && state.Current.Enumerator.MoveNext())
             {
-                // If the enumerator contains typeof(object), get the run-time type
-                if (elementClassInfo.ClassType == ClassType.Object && jsonPropertyInfo.ElementClassInfo.Type == typeof(object))
+                // Check for polymorphism.
+                if (elementClassInfo.ClassType == ClassType.Unknown)
                 {
                     object currentValue = state.Current.Enumerator.Current;
-                    if (currentValue != null)
-                    {
-                        Type runtimeType = currentValue.GetType();
-                        
-                        // Ignore object() instances since they are handled as an empty object.
-                        if (runtimeType != typeof(object))
-                        {
-                            elementClassInfo = options.GetOrAddClass(runtimeType);
-                        }
-                    }
+                    GetRuntimeClassInfo(currentValue, ref elementClassInfo, options);
                 }
 
                 if (elementClassInfo.ClassType == ClassType.Value)

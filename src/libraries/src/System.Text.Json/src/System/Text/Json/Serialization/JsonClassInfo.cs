@@ -102,12 +102,15 @@ namespace System.Text.Json.Serialization
                 Type elementType = GetElementType(type);
                 ElementClassInfo = options.GetOrAddClass(elementType);
             }
-            else
+            else if (ClassType == ClassType.Value)
             {
-                Debug.Assert(ClassType == ClassType.Value);
-
                 // Add a single property that maps to the class type so we can have policies applied.
                 AddProperty(type, propertyInfo: null, type, options);
+            }
+            else
+            {
+                Debug.Assert(ClassType == ClassType.Unknown);
+                // Do nothing. The type is typeof(object).
             }
         }
 
@@ -313,6 +316,11 @@ namespace System.Text.Json.Serialization
             if (typeof(IEnumerable).IsAssignableFrom(type))
             {
                 return ClassType.Enumerable;
+            }
+
+            if (type == typeof(object))
+            {
+                return ClassType.Unknown;
             }
 
             return ClassType.Object;

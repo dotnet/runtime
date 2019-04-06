@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                Debug.Assert(nextClassInfo.ClassType == ClassType.Object);
+                Debug.Assert(nextClassInfo.ClassType == ClassType.Object || nextClassInfo.ClassType == ClassType.Unknown);
                 Current.PopStackOnEndObject = true;
             }
         }

@@ -9,10 +9,24 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class NullTests
     {
         [Fact]
-        public static void ClassWithNull()
+        public static void ClassWithNullProperty()
         {
             TestClassWithNull obj = JsonSerializer.Parse<TestClassWithNull>(TestClassWithNull.s_json);
             obj.Verify();
+        }
+
+        [Fact]
+        public static void RootObjectIsNull()
+        {
+            {
+                TestClassWithNull obj = JsonSerializer.Parse<TestClassWithNull>("null");
+                Assert.Null(obj);
+            }
+
+            {
+                object obj = JsonSerializer.Parse<object>("null");
+                Assert.Null(obj);
+            }
         }
 
         [Fact]
@@ -32,6 +46,27 @@ namespace System.Text.Json.Serialization.Tests
             TestClassWithNullButInitialized obj = JsonSerializer.Parse<TestClassWithNullButInitialized>(TestClassWithNullButInitialized.s_json, options);
             Assert.Equal("Hello", obj.MyString);
             Assert.Equal(1, obj.MyInt);
+        }
+
+        [Fact]
+        public static void ParseNullArgumentFail()
+        {
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Parse<string>((string)null));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Parse("1", (Type)null));
+        }
+
+        [Fact]
+        public static void NullLiteralObjectInput()
+        {
+            {
+                string obj = JsonSerializer.Parse<string>("null");
+                Assert.Null(obj);
+            }
+
+            {
+                string obj = JsonSerializer.Parse<string>(@"""null""");
+                Assert.Equal("null", obj);
+            }
         }
     }
 }

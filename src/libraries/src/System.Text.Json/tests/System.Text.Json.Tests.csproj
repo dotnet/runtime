@@ -29,14 +29,14 @@
     <Compile Include="Serialization\EnumTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />
+    <Compile Include="Serialization\Object.ReadTests.cs" />
+    <Compile Include="Serialization\Object.WriteTests.cs" />
     <Compile Include="Serialization\OptionsTests.cs" />
     <Compile Include="Serialization\PolymorphicTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />
     <Compile Include="Serialization\SpanTests.cs" />
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
-    <Compile Include="Serialization\String.ReadTests.cs" />
-    <Compile Include="Serialization\String.WriteTests.cs" />
     <Compile Include="Serialization\TestClasses.cs" />
     <Compile Include="Serialization\TestClasses.Polymorphic.cs" />
     <Compile Include="Serialization\TestData.cs" />

@@ -7,32 +7,12 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public static partial class StringTests
+    public static partial class ObjectTests
     {
-        [Fact]
-        public static void ToStringNullArgumentFail()
-        {
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.ToString("", (Type)null));
-        }
-
         [Fact]
         public static void VerifyTypeFail()
         {
             Assert.Throws<ArgumentException>(() => JsonSerializer.ToString(1, typeof(string)));
-        }
-
-        [Fact]
-        public static void NullObjectOutput()
-        {
-            {
-                string output = JsonSerializer.ToString<string>(null);
-                Assert.Equal("null", output);
-            }
-
-            {
-                string output = JsonSerializer.ToString<string>(null, null);
-                Assert.Equal("null", output);
-            }
         }
 
         [Theory]
