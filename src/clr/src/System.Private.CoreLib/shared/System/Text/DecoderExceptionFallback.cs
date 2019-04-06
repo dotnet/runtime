@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Globalization;
 using System.Runtime.Serialization;
@@ -29,7 +30,7 @@ namespace System.Text
             }
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (value is DecoderExceptionFallback that)
             {
@@ -75,6 +76,8 @@ namespace System.Text
 
         private void Throw(byte[] bytesUnknown, int index)
         {
+            bytesUnknown = bytesUnknown ?? Array.Empty<byte>();
+
             // Create a string representation of our bytes.            
             StringBuilder strBytes = new StringBuilder(bytesUnknown.Length * 3);
 
@@ -102,7 +105,7 @@ namespace System.Text
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed class DecoderFallbackException : ArgumentException
     {
-        private byte[] _bytesUnknown = null;
+        private byte[]? _bytesUnknown = null;
         private int _index = 0;
 
         public DecoderFallbackException()
@@ -111,19 +114,19 @@ namespace System.Text
             HResult = HResults.COR_E_ARGUMENT;
         }
 
-        public DecoderFallbackException(string message)
+        public DecoderFallbackException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_ARGUMENT;
         }
 
-        public DecoderFallbackException(string message, Exception innerException)
+        public DecoderFallbackException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_ARGUMENT;
         }
 
-        public DecoderFallbackException(string message, byte[] bytesUnknown, int index)
+        public DecoderFallbackException(string? message, byte[]? bytesUnknown, int index)
             : base(message)
         {
             _bytesUnknown = bytesUnknown;
@@ -135,11 +138,11 @@ namespace System.Text
         {
         }
 
-        public byte[] BytesUnknown
+        public byte[]? BytesUnknown
         {
             get
             {
-                return (_bytesUnknown);
+                return _bytesUnknown;
             }
         }
 

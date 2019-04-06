@@ -2218,6 +2218,7 @@ namespace System
 
             if (nMaxDigits > 0)
             {
+                Debug.Assert(sDecimal != null);
                 sb.Append(sDecimal);
                 if ((digPos < 0) && (nMaxDigits > 0))
                 {
