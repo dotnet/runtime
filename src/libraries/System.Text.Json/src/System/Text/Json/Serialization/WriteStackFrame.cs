@@ -26,6 +26,15 @@ namespace System.Text.Json.Serialization
         internal bool PopStackOnEndArray;
         internal bool PopStackOnEndObject;
 
+        internal void Initialize(Type type, JsonSerializerOptions options)
+        {
+            JsonClassInfo = options.GetOrAddClass(type);
+            if (JsonClassInfo.ClassType == ClassType.Value || JsonClassInfo.ClassType == ClassType.Enumerable)
+            {
+                JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
+            }
+        }
+
         internal void Reset()
         {
             CurrentValue = null;

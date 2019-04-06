@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
 {
@@ -48,11 +49,17 @@ namespace System.Text.Json.Serialization
                     case ClassType.Enumerable:
                         finishedSerializing = WriteEnumerable(options, ref writer, ref state);
                         break;
+                    case ClassType.Value:
+                        finishedSerializing = WriteValue(options, ref writer, ref state.Current);
+                        break;
                     case ClassType.Object:
                         finishedSerializing = WriteObject(options, ref writer, ref state);
                         break;
                     default:
-                        finishedSerializing = WriteValue(options, ref writer, ref state.Current);
+                        Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Unknown);
+
+                        // Treat typeof(object) as an empty object.
+                        finishedSerializing = WriteObject(options, ref writer, ref state);
                         break;
                 }
 

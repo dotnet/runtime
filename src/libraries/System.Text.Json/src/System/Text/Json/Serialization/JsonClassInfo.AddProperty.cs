@@ -88,13 +88,17 @@ namespace System.Text.Json.Serialization
 
         internal JsonPropertyInfo CreatePolymorphicProperty(JsonPropertyInfo property, Type runtimePropertyType, JsonSerializerOptions options)
         {
-            // For now we only support typeof(object) for polymorphism.
-            Debug.Assert(property?.DeclaredPropertyType == typeof(object));
-            Debug.Assert(runtimePropertyType != typeof(object));
+            if (property == null)
+            {
+                // Used with root objects which are not really a property.
+                return CreateProperty(runtimePropertyType, runtimePropertyType, null, runtimePropertyType, options);
+            }
 
             JsonPropertyInfo runtimeProperty = CreateProperty(property.DeclaredPropertyType, runtimePropertyType, property?.PropertyInfo, Type, options);
+
             runtimeProperty._name = property._name;
             runtimeProperty._escapedName = property._escapedName;
+            // Copy other settings here as they are added as features.
 
             return runtimeProperty;
         }
