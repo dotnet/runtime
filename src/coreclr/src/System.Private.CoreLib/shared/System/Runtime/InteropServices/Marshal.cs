@@ -57,7 +57,7 @@ namespace System.Runtime.InteropServices
             }
             if (len < 0)
             {
-                throw new ArgumentException(null, nameof(len));
+                throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             return new string((sbyte*)ptr, 0, len);
@@ -81,7 +81,7 @@ namespace System.Runtime.InteropServices
             }
             if (len < 0)
             {
-                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(len));
+                throw new ArgumentOutOfRangeException(nameof(len), len, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             return new string((char*)ptr, 0, len);
@@ -89,7 +89,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string PtrToStringUTF8(IntPtr ptr)
         {
-            if (ptr == IntPtr.Zero)
+            if (ptr == IntPtr.Zero || IsWin32Atom(ptr))
             {
                 return null;
             }
@@ -100,14 +100,13 @@ namespace System.Runtime.InteropServices
 
         public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
+            if (ptr == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(ptr));
+            }
             if (byteLen < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(byteLen), SR.ArgumentOutOfRange_NeedNonNegNum);
-            }
-            
-            if (ptr == IntPtr.Zero || IsWin32Atom(ptr))
-            {
-                return null;
+                throw new ArgumentOutOfRangeException(nameof(byteLen), byteLen, SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
             return string.CreateStringFromEncoding((byte*)ptr, byteLen, Encoding.UTF8);
