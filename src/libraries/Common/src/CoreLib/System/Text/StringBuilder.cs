@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Text;
 using System.Runtime;
 using System.Runtime.Serialization;
@@ -41,7 +42,7 @@ namespace System.Text
         /// <summary>
         /// The chunk that logically precedes this chunk.
         /// </summary>
-        internal StringBuilder m_ChunkPrevious;
+        internal StringBuilder? m_ChunkPrevious;
 
         /// <summary>
         /// The number of characters in this chunk.
@@ -98,7 +99,7 @@ namespace System.Text
         /// Initializes a new instance of the <see cref="StringBuilder"/> class.
         /// </summary>
         /// <param name="value">The initial contents of this builder.</param>
-        public StringBuilder(string value)
+        public StringBuilder(string? value)
             : this(value, DefaultCapacity)
         {
         }
@@ -108,7 +109,7 @@ namespace System.Text
         /// </summary>
         /// <param name="value">The initial contents of this builder.</param>
         /// <param name="capacity">The initial capacity of this builder.</param>
-        public StringBuilder(string value, int capacity)
+        public StringBuilder(string? value, int capacity)
             : this(value, 0, value?.Length ?? 0, capacity)
         {
         }
@@ -120,7 +121,7 @@ namespace System.Text
         /// <param name="startIndex">The index to start in <paramref name="value"/>.</param>
         /// <param name="length">The number of characters to read in <paramref name="value"/>.</param>
         /// <param name="capacity">The initial capacity of this builder.</param>
-        public StringBuilder(string value, int startIndex, int length, int capacity)
+        public StringBuilder(string? value, int startIndex, int length, int capacity)
         {
             if (capacity < 0)
             {
@@ -200,7 +201,7 @@ namespace System.Text
             }
 
             int persistedCapacity = 0;
-            string persistedString = null;
+            string? persistedString = null;
             int persistedMaxCapacity = int.MaxValue;
             bool capacityPresent = false;
 
@@ -288,7 +289,7 @@ namespace System.Text
                 Debug.Assert(currentBlock.m_ChunkLength >= 0);
                 Debug.Assert(currentBlock.m_ChunkOffset >= 0);
 
-                StringBuilder prevBlock = currentBlock.m_ChunkPrevious;
+                StringBuilder? prevBlock = currentBlock.m_ChunkPrevious;
                 if (prevBlock == null)
                 {
                     Debug.Assert(currentBlock.m_ChunkOffset == 0);
@@ -363,7 +364,7 @@ namespace System.Text
             }
 
             string result = string.FastAllocateString(Length);
-            StringBuilder chunk = this;
+            StringBuilder? chunk = this;
             unsafe
             {
                 fixed (char* destinationPtr = result)
@@ -514,7 +515,7 @@ namespace System.Text
         {
             get
             {
-                StringBuilder chunk = this;
+                StringBuilder? chunk = this;
                 for (;;)
                 {
                     int indexInBlock = index - chunk.m_ChunkOffset;
@@ -535,7 +536,7 @@ namespace System.Text
             }
             set
             {
-                StringBuilder chunk = this;
+                StringBuilder? chunk = this;
                 for (;;)
                 {
                     int indexInBlock = index - chunk.m_ChunkOffset;
@@ -595,8 +596,8 @@ namespace System.Text
         public struct ChunkEnumerator
         {
             private readonly StringBuilder _firstChunk; // The first Stringbuilder chunk (which is the end of the logical string)
-            private StringBuilder _currentChunk;        // The chunk that this enumerator is currently returning (Current).  
-            private readonly ManyChunkInfo _manyChunks; // Only used for long string builders with many chunks (see constructor)
+            private StringBuilder? _currentChunk;        // The chunk that this enumerator is currently returning (Current).  
+            private readonly ManyChunkInfo? _manyChunks; // Only used for long string builders with many chunks (see constructor)
 
             /// <summary>
             /// Implement IEnumerable.GetEnumerator() to return  'this' as the IEnumerator  
@@ -617,7 +618,10 @@ namespace System.Text
 
                 StringBuilder next = _firstChunk;
                 while (next.m_ChunkPrevious != _currentChunk)
+                {
+                    Debug.Assert(next.m_ChunkPrevious != null);
                     next = next.m_ChunkPrevious;
+                }
                 _currentChunk = next;
                 return true;
             }
@@ -625,7 +629,7 @@ namespace System.Text
             /// <summary>
             /// Implements the IEnumerator pattern.
             /// </summary>
-            public ReadOnlyMemory<char> Current => new ReadOnlyMemory<char>(_currentChunk.m_ChunkChars, 0, _currentChunk.m_ChunkLength);
+            public ReadOnlyMemory<char> Current => new ReadOnlyMemory<char>(_currentChunk!.m_ChunkChars, 0, _currentChunk.m_ChunkLength); // TODO-NULLABLE: NullReferenceException if called before calling MoveNext
 
             #region private
             internal ChunkEnumerator(StringBuilder stringBuilder)
@@ -646,7 +650,7 @@ namespace System.Text
                     _manyChunks = new ManyChunkInfo(stringBuilder, chunkCount);
             }
 
-            private static int ChunkCount(StringBuilder stringBuilder)
+            private static int ChunkCount(StringBuilder? stringBuilder)
             {
                 int ret = 0;
                 while (stringBuilder != null)
@@ -665,7 +669,7 @@ namespace System.Text
                 private readonly StringBuilder[] _chunks;    // These are in normal order (first chunk first) 
                 private int _chunkPos;
 
-                public bool MoveNext(ref StringBuilder current)
+                public bool MoveNext(ref StringBuilder? current)
                 {
                     int pos = ++_chunkPos;
                     if (_chunks.Length <= pos)
@@ -674,7 +678,7 @@ namespace System.Text
                     return true;
                 }
 
-                public ManyChunkInfo(StringBuilder stringBuilder, int chunkCount)
+                public ManyChunkInfo(StringBuilder? stringBuilder, int chunkCount)
                 {
                     _chunks = new StringBuilder[chunkCount];
                     while (0 <= --chunkCount)
@@ -742,7 +746,7 @@ namespace System.Text
         /// <param name="value">The characters to append.</param>
         /// <param name="startIndex">The index to start in <paramref name="value"/>.</param>
         /// <param name="charCount">The number of characters to read in <paramref name="value"/>.</param>
-        public StringBuilder Append(char[] value, int startIndex, int charCount)
+        public StringBuilder Append(char[]? value, int startIndex, int charCount)
         {
             if (startIndex < 0)
             {
@@ -787,7 +791,7 @@ namespace System.Text
         /// Appends a string to the end of this builder.
         /// </summary>
         /// <param name="value">The string to append.</param>
-        public StringBuilder Append(string value)
+        public StringBuilder Append(string? value)
         {
             if (value != null)
             {
@@ -848,7 +852,7 @@ namespace System.Text
         /// <param name="value">The string to append.</param>
         /// <param name="startIndex">The index to start in <paramref name="value"/>.</param>
         /// <param name="count">The number of characters to read in <paramref name="value"/>.</param>
-        public StringBuilder Append(string value, int startIndex, int count)
+        public StringBuilder Append(string? value, int startIndex, int count)
         {
             if (startIndex < 0)
             {
@@ -888,7 +892,7 @@ namespace System.Text
             }
         }
 
-        public StringBuilder Append(StringBuilder value)
+        public StringBuilder Append(StringBuilder? value)
         {
             if (value != null && value.Length != 0)
             {
@@ -897,7 +901,7 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Append(StringBuilder value, int startIndex, int count)
+        public StringBuilder Append(StringBuilder? value, int startIndex, int count)
         {
             if (startIndex < 0)
             {
@@ -963,7 +967,7 @@ namespace System.Text
 
         public StringBuilder AppendLine() => Append(Environment.NewLine);
 
-        public StringBuilder AppendLine(string value)
+        public StringBuilder AppendLine(string? value)
         {
             Append(value);
             return Append(Environment.NewLine);
@@ -1008,11 +1012,12 @@ namespace System.Text
 
             AssertInvariants();
 
-            StringBuilder chunk = this;
+            StringBuilder? chunk = this;
             int sourceEndIndex = sourceIndex + count;
             int curDestIndex = count;
             while (count > 0)
             {
+                Debug.Assert(chunk != null);
                 int chunkEndIndex = sourceEndIndex - chunk.m_ChunkOffset;
                 if (chunkEndIndex >= 0)
                 {
@@ -1042,7 +1047,7 @@ namespace System.Text
         /// <param name="index">The index to insert in this builder.</param>
         /// <param name="value">The string to insert.</param>
         /// <param name="count">The number of times to insert the string.</param>
-        public StringBuilder Insert(int index, string value, int count)
+        public StringBuilder Insert(int index, string? value, int count)
         {
             if (count < 0)
             {
@@ -1179,7 +1184,7 @@ namespace System.Text
             return Append(value.ToString());
         }
 
-        internal StringBuilder AppendSpanFormattable<T>(T value, string format, IFormatProvider provider) where T : ISpanFormattable, IFormattable
+        internal StringBuilder AppendSpanFormattable<T>(T value, string? format, IFormatProvider? provider) where T : ISpanFormattable, IFormattable
         {
             if (value.TryFormat(RemainingCurrentChunk, out int charsWritten, format, provider))
             {
@@ -1190,9 +1195,9 @@ namespace System.Text
             return Append(value.ToString(format, provider));
         }
 
-        public StringBuilder Append(object value) => (value == null) ? this : Append(value.ToString());
+        public StringBuilder Append(object? value) => (value == null) ? this : Append(value.ToString());
 
-        public StringBuilder Append(char[] value)
+        public StringBuilder Append(char[]? value)
         {
             if (value?.Length > 0)
             {
@@ -1226,7 +1231,7 @@ namespace System.Text
 
         #region AppendJoin
 
-        public unsafe StringBuilder AppendJoin(string separator, params object[] values)
+        public unsafe StringBuilder AppendJoin(string? separator, params object?[] values)
         {
             separator = separator ?? string.Empty;
             fixed (char* pSeparator = separator)
@@ -1235,7 +1240,7 @@ namespace System.Text
             }
         }
 
-        public unsafe StringBuilder AppendJoin<T>(string separator, IEnumerable<T> values)
+        public unsafe StringBuilder AppendJoin<T>(string? separator, IEnumerable<T> values)
         {
             separator = separator ?? string.Empty;
             fixed (char* pSeparator = separator)
@@ -1244,7 +1249,7 @@ namespace System.Text
             }
         }
 
-        public unsafe StringBuilder AppendJoin(string separator, params string[] values)
+        public unsafe StringBuilder AppendJoin(string? separator, params string?[] values)
         {
             separator = separator ?? string.Empty;
             fixed (char* pSeparator = separator)
@@ -1253,7 +1258,7 @@ namespace System.Text
             }
         }
 
-        public unsafe StringBuilder AppendJoin(char separator, params object[] values)
+        public unsafe StringBuilder AppendJoin(char separator, params object?[] values)
         {
             return AppendJoinCore(&separator, 1, values);
         }
@@ -1263,7 +1268,7 @@ namespace System.Text
             return AppendJoinCore(&separator, 1, values);
         }
 
-        public unsafe StringBuilder AppendJoin(char separator, params string[] values)
+        public unsafe StringBuilder AppendJoin(char separator, params string?[] values)
         {
             return AppendJoinCore(&separator, 1, values);
         }
@@ -1278,6 +1283,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
+            Debug.Assert(values != null);
             using (IEnumerator<T> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
@@ -1311,6 +1317,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
             }
 
+            Debug.Assert(values != null);
             if (values.Length == 0)
             {
                 return this;
@@ -1318,7 +1325,7 @@ namespace System.Text
 
             if (values[0] != null)
             {
-                Append(values[0].ToString());
+                Append(values[0]!.ToString()); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
             }
 
             for (int i = 1; i < values.Length; i++)
@@ -1326,7 +1333,7 @@ namespace System.Text
                 Append(separator, separatorLength);
                 if (values[i] != null)
                 {
-                    Append(values[i].ToString());
+                    Append(values[i]!.ToString()); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                 }
             }
             return this;
@@ -1334,7 +1341,7 @@ namespace System.Text
 
         #endregion
 
-        public StringBuilder Insert(int index, string value)
+        public StringBuilder Insert(int index, string? value)
         {
             if ((uint)index > (uint)Length)
             {
@@ -1370,7 +1377,7 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Insert(int index, char[] value)
+        public StringBuilder Insert(int index, char[]? value)
         {
             if ((uint)index > (uint)Length)
             {
@@ -1382,7 +1389,7 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder Insert(int index, char[] value, int startIndex, int charCount)
+        public StringBuilder Insert(int index, char[]? value, int startIndex, int charCount)
         {
             int currentLength = Length;
             if ((uint)index > (uint)currentLength)
@@ -1444,7 +1451,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public StringBuilder Insert(int index, ulong value) => Insert(index, value.ToString(), 1);
 
-        public StringBuilder Insert(int index, object value) => (value == null) ? this : Insert(index, value.ToString(), 1);
+        public StringBuilder Insert(int index, object? value) => (value == null) ? this : Insert(index, value.ToString(), 1);
 
         public StringBuilder Insert(int index, ReadOnlySpan<char> value)
         {
@@ -1464,13 +1471,13 @@ namespace System.Text
             return this;
         }
 
-        public StringBuilder AppendFormat(string format, object arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(string format, object? arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
 
-        public StringBuilder AppendFormat(string format, object arg0, object arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(string format, object? arg0, object? arg1) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1));
 
-        public StringBuilder AppendFormat(string format, object arg0, object arg1, object arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
 
-        public StringBuilder AppendFormat(string format, params object[] args)
+        public StringBuilder AppendFormat(string format, params object?[] args)
         {
             if (args == null)
             {
@@ -1483,13 +1490,13 @@ namespace System.Text
             return AppendFormatHelper(null, format, new ParamsArray(args));
         }
 
-        public StringBuilder AppendFormat(IFormatProvider provider, string format, object arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, object? arg0) => AppendFormatHelper(provider, format, new ParamsArray(arg0));
 
-        public StringBuilder AppendFormat(IFormatProvider provider, string format, object arg0, object arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, object? arg0, object? arg1) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1));
 
-        public StringBuilder AppendFormat(IFormatProvider provider, string format, object arg0, object arg1, object arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, object? arg0, object? arg1, object? arg2) => AppendFormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
 
-        public StringBuilder AppendFormat(IFormatProvider provider, string format, params object[] args)
+        public StringBuilder AppendFormat(IFormatProvider provider, string format, params object?[] args)
         {
             if (args == null)
             {
@@ -1511,7 +1518,7 @@ namespace System.Text
         private const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
         private const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider provider, string format, ParamsArray args)
+        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format, ParamsArray args)
         {
             if (format == null)
             {
@@ -1521,9 +1528,9 @@ namespace System.Text
             int pos = 0;
             int len = format.Length;
             char ch = '\x0';
-            StringBuilder unescapedItemFormat = null;
+            StringBuilder? unescapedItemFormat = null;
 
-            ICustomFormatter cf = null;
+            ICustomFormatter? cf = null;
             if (provider != null)
             {
                 cf = (ICustomFormatter)provider.GetFormat(typeof(ICustomFormatter));
@@ -1648,7 +1655,7 @@ namespace System.Text
                 // Start of parsing of optional formatting parameter.
                 //
                 object arg = args[index];
-                string itemFormat = null;
+                string? itemFormat = null;
                 ReadOnlySpan<char> itemFormatSpan = default; // used if itemFormat is null
                 // Is current character a colon? which indicates start of formatting parameter.
                 if (ch == ':')
@@ -1718,7 +1725,7 @@ namespace System.Text
                 if (ch != '}') FormatError();
                 // Construct the output for this arg hole.
                 pos++;
-                string s = null;
+                string? s = null;
                 if (cf != null)
                 {
                     if (itemFormatSpan.Length != 0 && itemFormat == null)
@@ -1780,13 +1787,13 @@ namespace System.Text
         /// If <paramref name="newValue"/> is <c>null</c>, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
-        public StringBuilder Replace(string oldValue, string newValue) => Replace(oldValue, newValue, 0, Length);
+        public StringBuilder Replace(string oldValue, string? newValue) => Replace(oldValue, newValue, 0, Length);
 
         /// <summary>
         /// Determines if the contents of this builder are equal to the contents of another builder.
         /// </summary>
         /// <param name="sb">The other builder.</param>
-        public bool Equals(StringBuilder sb)
+        public bool Equals(StringBuilder? sb)
         {
             if (sb == null)
                 return false;
@@ -1795,9 +1802,9 @@ namespace System.Text
             if (sb == this)
                 return true;
 
-            StringBuilder thisChunk = this;
+            StringBuilder? thisChunk = this;
             int thisChunkIndex = thisChunk.m_ChunkLength;
-            StringBuilder sbChunk = sb;
+            StringBuilder? sbChunk = sb;
             int sbChunkIndex = sbChunk.m_ChunkLength;
             for (;;)
             {
@@ -1824,6 +1831,8 @@ namespace System.Text
                     return sbChunkIndex < 0;
                 if (sbChunkIndex < 0)
                     return false;
+
+                Debug.Assert(thisChunk != null && sbChunk != null);
                 if (thisChunk.m_ChunkChars[thisChunkIndex] != sbChunk.m_ChunkChars[sbChunkIndex])
                     return false;
             }
@@ -1851,6 +1860,7 @@ namespace System.Text
                 if (!chunk.EqualsOrdinal(span.Slice(span.Length - offset, chunk_length)))
                     return false;
 
+                Debug.Assert(sbChunk.m_ChunkPrevious != null);
                 sbChunk = sbChunk.m_ChunkPrevious;
             } while (sbChunk != null);
 
@@ -1869,7 +1879,7 @@ namespace System.Text
         /// If <paramref name="newValue"/> is <c>null</c>, instances of <paramref name="oldValue"/>
         /// are removed from this builder.
         /// </remarks>
-        public StringBuilder Replace(string oldValue, string newValue, int startIndex, int count)
+        public StringBuilder Replace(string oldValue, string? newValue, int startIndex, int count)
         {
             int currentLength = Length;
             if ((uint)startIndex > (uint)currentLength)
@@ -1893,7 +1903,7 @@ namespace System.Text
 
             int deltaLength = newValue.Length - oldValue.Length;
 
-            int[] replacements = null; // A list of replacement positions in a chunk to apply
+            int[]? replacements = null; // A list of replacement positions in a chunk to apply
             int replacementsCount = 0;
 
             // Find the chunk, indexInChunk for the starting point
@@ -1901,6 +1911,7 @@ namespace System.Text
             int indexInChunk = startIndex - chunk.m_ChunkOffset;
             while (count > 0)
             {
+                Debug.Assert(chunk != null);
                 // Look for a match in the chunk,indexInChunk pointer
                 if (StartsWith(chunk, indexInChunk, count, oldValue))
                 {
@@ -1932,6 +1943,7 @@ namespace System.Text
                     int indexBeforeAdjustment = index;
 
                     // See if we accumulated any replacements, if so apply them.
+                    Debug.Assert(replacements != null);
                     ReplaceAllInChunk(replacements, replacementsCount, chunk, oldValue.Length, newValue);
                     // The replacement has affected the logical index.  Adjust it.
                     index += ((newValue.Length - oldValue.Length) * replacementsCount);
@@ -1997,6 +2009,8 @@ namespace System.Text
                 }
                 if (startIndexInChunk >= 0)
                     break;
+
+                Debug.Assert(chunk.m_ChunkPrevious != null);
                 chunk = chunk.m_ChunkPrevious;
             }
 
@@ -2167,7 +2181,7 @@ namespace System.Text
 
                 if (indexInChunk >= chunk.m_ChunkLength)
                 {
-                    chunk = Next(chunk);
+                    chunk = Next(chunk)!;
                     if (chunk == null)
                         return false;
                     indexInChunk = 0;
@@ -2215,7 +2229,9 @@ namespace System.Text
                     indexInChunk += lengthToCopy;
                     if (indexInChunk >= chunk.m_ChunkLength)
                     {
-                        chunk = Next(chunk);
+                        StringBuilder? nextChunk = Next(chunk);
+                        Debug.Assert(nextChunk != null, "we should never get past last chunk because range should already be validated before calling");
+                        chunk = nextChunk;
                         indexInChunk = 0;
                     }
                     count -= lengthToCopy;
@@ -2283,6 +2299,7 @@ namespace System.Text
             StringBuilder result = this;
             while (result.m_ChunkOffset > index)
             {
+                Debug.Assert(result.m_ChunkPrevious != null);
                 result = result.m_ChunkPrevious;
             }
 
@@ -2301,6 +2318,7 @@ namespace System.Text
             StringBuilder result = this;
             while (result.m_ChunkOffset * sizeof(char) > byteIndex)
             {
+                Debug.Assert(result.m_ChunkPrevious != null);
                 result = result.m_ChunkPrevious;
             }
 
@@ -2325,7 +2343,7 @@ namespace System.Text
         /// way down until it finds the specified chunk (which is O(n)). Thus, it is more expensive than
         /// a field fetch.
         /// </remarks>
-        private StringBuilder Next(StringBuilder chunk) => chunk == this ? null : FindChunkForIndex(chunk.m_ChunkOffset + chunk.m_ChunkLength);
+        private StringBuilder? Next(StringBuilder chunk) => chunk == this ? null : FindChunkForIndex(chunk.m_ChunkOffset + chunk.m_ChunkLength);
 
         /// <summary>
         /// Transfers the character buffer from this chunk to a new chunk, and allocates a new buffer with a minimum size for this chunk.
@@ -2438,6 +2456,7 @@ namespace System.Text
             while (chunk.m_ChunkOffset > index)
             {
                 chunk.m_ChunkOffset += count;
+                Debug.Assert(chunk.m_ChunkPrevious != null);
                 chunk = chunk.m_ChunkPrevious;
             }
             indexInChunk = index - chunk.m_ChunkOffset;
@@ -2498,7 +2517,7 @@ namespace System.Text
         /// <param name="size">The size of the character buffer for this chunk.</param>
         /// <param name="maxCapacity">The maximum capacity, to be stored in this chunk.</param>
         /// <param name="previousBlock">The predecessor of this chunk.</param>
-        private StringBuilder(int size, int maxCapacity, StringBuilder previousBlock)
+        private StringBuilder(int size, int maxCapacity, StringBuilder? previousBlock)
         {
             Debug.Assert(size > 0);
             Debug.Assert(maxCapacity > 0);
@@ -2532,7 +2551,7 @@ namespace System.Text
 
             // Find the chunks for the start and end of the block to delete.
             chunk = this;
-            StringBuilder endChunk = null;
+            StringBuilder? endChunk = null;
             int endIndexInChunk = 0;
             for (;;)
             {
@@ -2553,6 +2572,8 @@ namespace System.Text
                 {
                     chunk.m_ChunkOffset -= count;
                 }
+
+                Debug.Assert(chunk.m_ChunkPrevious != null);
                 chunk = chunk.m_ChunkPrevious;
             }
             Debug.Assert(chunk != null, "We fell off the beginning of the string!");
