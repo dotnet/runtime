@@ -36,7 +36,6 @@
     <MicrosoftDotNetBuildTasksConfigurationPackageVersion>1.0.0-beta.19202.3</MicrosoftDotNetBuildTasksConfigurationPackageVersion>
     <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19202.3</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19202.3</MicrosoftDotNetVersionToolsTasksPackageVersion>
-    <MicrosoftNetCompilersToolsetVersion>3.1.0-beta1-19172-05</MicrosoftNetCompilersToolsetVersion>
     <!-- Core-setup dependencies -->
     <MicrosoftNETCoreAppPackageVersion>3.0.0-preview5-27606-01</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview5-27606-01</MicrosoftNETCoreDotNetHostPackageVersion>
