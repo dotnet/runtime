@@ -55,38 +55,26 @@ namespace System.Text.Json.Serialization
                 ref Utf8JsonWriter writer,
                 ref WriteStack state)
         {
-            Debug.Assert(state.Current.JsonClassInfo.ClassType == ClassType.Object);
+            Debug.Assert(
+                state.Current.JsonClassInfo.ClassType == ClassType.Object ||
+                state.Current.JsonClassInfo.ClassType == ClassType.Unknown);
 
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(state.Current.PropertyIndex);
-            ClassType propertyClassType = jsonPropertyInfo.ClassType;
 
             bool obtainedValue = false;
             object currentValue = null;
 
             // Check for polymorphism.
-            if (jsonPropertyInfo.RuntimePropertyType == typeof(object))
+            if (jsonPropertyInfo.ClassType == ClassType.Unknown)
             {
-                Debug.Assert(propertyClassType == ClassType.Object);
-
                 currentValue = jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue, options);
                 obtainedValue = true;
-
-                if (currentValue != null)
-                {
-                    Type runtimeType = currentValue.GetType();
-
-                    // Ignore object() instances since they are handled as an empty object.
-                    if (runtimeType != typeof(object))
-                    {
-                        propertyClassType = JsonClassInfo.GetClassType(runtimeType);
-                        jsonPropertyInfo = state.Current.JsonClassInfo.CreatePolymorphicProperty(jsonPropertyInfo, runtimeType, options);
-                    }
-                }
+                GetRuntimePropertyInfo(currentValue, state.Current.JsonClassInfo, ref jsonPropertyInfo, options);
             }
 
             state.Current.JsonPropertyInfo = jsonPropertyInfo;
 
-            if (propertyClassType == ClassType.Value)
+            if (jsonPropertyInfo.ClassType == ClassType.Value)
             {
                 jsonPropertyInfo.Write(options, ref state.Current, ref writer);
                 state.Current.NextProperty();
@@ -94,7 +82,7 @@ namespace System.Text.Json.Serialization
             }
 
             // A property that returns an enumerator keeps the same stack frame.
-            if (propertyClassType == ClassType.Enumerable)
+            if (jsonPropertyInfo.ClassType == ClassType.Enumerable)
             {
                 bool endOfEnumerable = HandleEnumerable(jsonPropertyInfo.ElementClassInfo, options, ref writer, ref state);
                 if (endOfEnumerable)

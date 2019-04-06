@@ -69,14 +69,9 @@ namespace System.Text.Json.Serialization
                     type = value.GetType();
                 }
 
-                JsonClassInfo classInfo = options.GetOrAddClass(type);
                 WriteStack state = default;
-                state.Current.JsonClassInfo = classInfo;
+                state.Current.Initialize(type, options);
                 state.Current.CurrentValue = value;
-                if (classInfo.ClassType != ClassType.Object)
-                {
-                    state.Current.JsonPropertyInfo = classInfo.GetPolicyProperty();
-                }
 
                 bool isFinalBlock;
 

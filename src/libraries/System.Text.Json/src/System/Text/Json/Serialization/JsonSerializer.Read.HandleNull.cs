@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Text.Json.Serialization
 {
     public static partial class JsonSerializer
@@ -11,6 +13,14 @@ namespace System.Text.Json.Serialization
             if (state.Current.Skip())
             {
                 return false;
+            }
+
+            // If we don't have a valid property, that means we read "null" for a root object so just return.
+            if (state.Current.JsonPropertyInfo == null)
+            {
+                Debug.Assert(state.IsLastFrame);
+                Debug.Assert(state.Current.ReturnValue == null);
+                return true;
             }
 
             JsonPropertyInfo propertyInfo = state.Current.JsonPropertyInfo;
@@ -27,6 +37,7 @@ namespace System.Text.Json.Serialization
 
             if (state.Current.ReturnValue == null)
             {
+                Debug.Assert(state.IsLastFrame);
                 return true;
             }
 

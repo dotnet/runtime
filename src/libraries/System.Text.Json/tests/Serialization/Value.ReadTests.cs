@@ -18,6 +18,9 @@ namespace System.Text.Json.Serialization.Tests
             int i2 = JsonSerializer.Parse<int>("2");
             Assert.Equal(2, i2);
 
+            int? i3 = JsonSerializer.Parse<int?>("null");
+            Assert.Null(i3);
+
             long l = JsonSerializer.Parse<long>(Encoding.UTF8.GetBytes(long.MaxValue.ToString()));
             Assert.Equal(long.MaxValue, l);
 
@@ -36,6 +39,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<int>(Encoding.UTF8.GetBytes(@"a")));
             Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<int[]>(Encoding.UTF8.GetBytes(@"[1,a]")));
+            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<int>(@"null"));
+            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<int>(@""""""));
         }
 
         [Fact]
@@ -52,6 +57,13 @@ namespace System.Text.Json.Serialization.Tests
             SampleEnum[] i = JsonSerializer.Parse<SampleEnum[]>(Encoding.UTF8.GetBytes(@"[1,2]"));
             Assert.Equal(SampleEnum.One, i[0]);
             Assert.Equal(SampleEnum.Two, i[1]);
+        }
+
+        [Fact]
+        public static void EmptyStringInput()
+        {
+            string obj = JsonSerializer.Parse<string>(@"""""");
+            Assert.Equal(string.Empty, obj);
         }
 
         [Fact]
@@ -137,61 +149,39 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void RangePass()
         {
-            Assert.Equal(byte.MinValue, JsonSerializer.Parse<byte>(byte.MinValue.ToString()));
             Assert.Equal(byte.MaxValue, JsonSerializer.Parse<byte>(byte.MaxValue.ToString()));
-            Assert.Equal(byte.MinValue, JsonSerializer.Parse<byte?>(byte.MinValue.ToString()));
             Assert.Equal(byte.MaxValue, JsonSerializer.Parse<byte?>(byte.MaxValue.ToString()));
 
-            Assert.Equal(sbyte.MinValue, JsonSerializer.Parse<sbyte>(sbyte.MinValue.ToString()));
             Assert.Equal(sbyte.MaxValue, JsonSerializer.Parse<sbyte>(sbyte.MaxValue.ToString()));
-            Assert.Equal(sbyte.MinValue, JsonSerializer.Parse<sbyte?>(sbyte.MinValue.ToString()));
             Assert.Equal(sbyte.MaxValue, JsonSerializer.Parse<sbyte?>(sbyte.MaxValue.ToString()));
 
-            Assert.Equal(short.MinValue, JsonSerializer.Parse<short>(short.MinValue.ToString()));
             Assert.Equal(short.MaxValue, JsonSerializer.Parse<short>(short.MaxValue.ToString()));
-            Assert.Equal(short.MinValue, JsonSerializer.Parse<short?>(short.MinValue.ToString()));
             Assert.Equal(short.MaxValue, JsonSerializer.Parse<short?>(short.MaxValue.ToString()));
 
-            Assert.Equal(ushort.MinValue, JsonSerializer.Parse<ushort>(ushort.MinValue.ToString()));
             Assert.Equal(ushort.MaxValue, JsonSerializer.Parse<ushort>(ushort.MaxValue.ToString()));
-            Assert.Equal(ushort.MinValue, JsonSerializer.Parse<ushort?>(ushort.MinValue.ToString()));
             Assert.Equal(ushort.MaxValue, JsonSerializer.Parse<ushort?>(ushort.MaxValue.ToString()));
 
             // todo: these fail due to double->float conversion
-            //Assert.Equal(float.MinValue, JsonSerializer.Parse<float>(float.MinValue.ToString()));
             //Assert.Equal(float.MaxValue, JsonSerializer.Parse<float>(float.MaxValue.ToString()));
-            //Assert.Equal(float.MinValue, JsonSerializer.Parse<float?>(float.MinValue.ToString()));
             //Assert.Equal(float.MaxValue, JsonSerializer.Parse<float?>(float.MaxValue.ToString()));
 
-            Assert.Equal(int.MinValue, JsonSerializer.Parse<int>(int.MinValue.ToString()));
             Assert.Equal(int.MaxValue, JsonSerializer.Parse<int>(int.MaxValue.ToString()));
-            Assert.Equal(int.MinValue, JsonSerializer.Parse<int?>(int.MinValue.ToString()));
             Assert.Equal(int.MaxValue, JsonSerializer.Parse<int?>(int.MaxValue.ToString()));
 
-            Assert.Equal(uint.MinValue, JsonSerializer.Parse<uint>(uint.MinValue.ToString()));
             Assert.Equal(uint.MaxValue, JsonSerializer.Parse<uint>(uint.MaxValue.ToString()));
-            Assert.Equal(uint.MinValue, JsonSerializer.Parse<uint?>(uint.MinValue.ToString()));
             Assert.Equal(uint.MaxValue, JsonSerializer.Parse<uint?>(uint.MaxValue.ToString()));
 
-            Assert.Equal(long.MinValue, JsonSerializer.Parse<long>(long.MinValue.ToString()));
             Assert.Equal(long.MaxValue, JsonSerializer.Parse<long>(long.MaxValue.ToString()));
-            Assert.Equal(long.MinValue, JsonSerializer.Parse<long?>(long.MinValue.ToString()));
             Assert.Equal(long.MaxValue, JsonSerializer.Parse<long?>(long.MaxValue.ToString()));
 
-            Assert.Equal(ulong.MinValue, JsonSerializer.Parse<ulong>(ulong.MinValue.ToString()));
             Assert.Equal(ulong.MaxValue, JsonSerializer.Parse<ulong>(ulong.MaxValue.ToString()));
-            Assert.Equal(ulong.MinValue, JsonSerializer.Parse<ulong?>(ulong.MinValue.ToString()));
             Assert.Equal(ulong.MaxValue, JsonSerializer.Parse<ulong?>(ulong.MaxValue.ToString()));
 
-            Assert.Equal(decimal.MinValue, JsonSerializer.Parse<decimal>(decimal.MinValue.ToString()));
             Assert.Equal(decimal.MaxValue, JsonSerializer.Parse<decimal>(decimal.MaxValue.ToString()));
-            Assert.Equal(decimal.MinValue, JsonSerializer.Parse<decimal?>(decimal.MinValue.ToString()));
             Assert.Equal(decimal.MaxValue, JsonSerializer.Parse<decimal?>(decimal.MaxValue.ToString()));
 
             // todo: these are failing; do we need round-trip format "R"?
-            //Assert.Equal(double.MinValue, JsonSerializer.Parse<double>(double.MinValue.ToString()));
             //Assert.Equal(double.MaxValue, JsonSerializer.Parse<double>(double.MaxValue.ToString()));
-            //Assert.Equal(double.MinValue, JsonSerializer.Parse<double?>(double.MinValue.ToString()));
             //Assert.Equal(double.MaxValue, JsonSerializer.Parse<double?>(double.MaxValue.ToString()));
         }
 

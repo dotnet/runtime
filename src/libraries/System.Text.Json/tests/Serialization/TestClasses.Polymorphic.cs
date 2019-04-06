@@ -107,19 +107,11 @@ namespace System.Text.Json.Serialization.Tests
 
     public class ObjectWithObjectProperties
     {
-        public const string ExpectedJson = 
-            @"{""Address"":{""City"":""MyCity""},""List"":[""Hello"",""World""],""Array"":[""Hello"",""Again""],""NullableInt"":42,""NullableIntArray"":[null,42,null]}";
-        public const string ExpectedJsonNullInt =
-            @"{""Address"":{""City"":""MyCity""},""List"":[""Hello"",""World""],""Array"":[""Hello"",""Again""],""NullableInt"":null,""NullableIntArray"":[null,42,null]}";
-        public const string ExpectedJsonNullIntIgnoreNulls = 
-            @"{""Address"":{""City"":""MyCity""},""List"":[""Hello"",""World""],""Array"":[""Hello"",""Again""],""NullableIntArray"":[null,42,null]}";
-        public const string ExpectedJsonAllNulls =
-            @"{""Address"":null,""List"":null,""Array"":null,""NullableInt"":null,""NullableIntArray"":null}";
-
         public object /*Address*/ Address { get; set; }
         public object /*List<string>*/ List { get; set; }
         public object /*string[]*/ Array { get; set; }
         public object /*int?*/ NullableInt { get; set; }
+        public object /*object*/ Object { get; set; }
         public object /*int?[]*/ NullableIntArray { get; set; }
 
         public ObjectWithObjectProperties()
@@ -138,7 +130,7 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             NullableInt = new int?(42);
-
+            Object = new object();
             NullableIntArray = new int?[] { null, 42, null };
         }
     }
