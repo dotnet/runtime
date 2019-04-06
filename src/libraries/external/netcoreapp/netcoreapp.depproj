@@ -9,16 +9,6 @@
     <BinPlaceRef>true</BinPlaceRef>
   </PropertyGroup>
 
-  <!-- The windows specific configuration provides the implementation assemblies to create shims
-    and the non-OS the ref assemblies. -->
-  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
-    <!-- We use the win implementation to create the shims shipped inside the compat pack -->
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <BinPlaceRuntime>true</BinPlaceRuntime>
-    <BinPlaceRef>false</BinPlaceRef>
-    <NuGetDeploySourceItem>ReferenceCopyLocalPaths</NuGetDeploySourceItem>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.App">
       <Version>$(NETCoreAppPackageVersion)</Version>
@@ -28,8 +18,7 @@
   <ItemGroup>
     <!-- for all configurations this project provides refs for that configuration -->
     <BinPlaceConfiguration Include="$(Configuration)">
-      <RefPath Condition="'$(BinPlaceRef)' == 'true'">$(RefPath)</RefPath>
-      <RuntimePath Condition="'$(BinPlaceRuntime)' == 'true'">$(ShimsTargetRuntimeRoot)$(TargetGroup)/</RuntimePath>
+      <RefPath>$(RefPath)</RefPath>
     </BinPlaceConfiguration>
 
     <FileToExclude Include="System.ComponentModel.Composition" />

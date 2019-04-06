@@ -89,7 +89,7 @@
     </Dependency>
     <!-- Include dependency to shims package -->
     <Dependency Include="Microsoft.Windows.Compatibility.Shims">
-      <Version>$(CompatibilityShimsPackageVersion)</Version>
+      <Version>2.0.1</Version>
       <TargetFramework>netcoreapp2.0</TargetFramework>
     </Dependency>
   </ItemGroup>
