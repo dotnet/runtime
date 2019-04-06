@@ -3,17 +3,34 @@
 #
 
 # Extracted MicrosoftPrivateCoreFxNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L11
-NETCORETESTS_VERSION := 4.6.0-preview4.19202.4
+NETCORETESTS_VERSION := 4.6.0-preview5.19205.9
 
 # Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L13
-NETCOREAPP_VERSION := 3.0.0-preview4-27529-11
+NETCOREAPP_VERSION := 3.0.0-preview5-27606-02
 
 NETCORESDK_FILE := dotnet-runtime-$(NETCOREAPP_VERSION)-osx-x64.tar.gz
 URL := https://dotnetcli.blob.core.windows.net/dotnet/Runtime/$(NETCOREAPP_VERSION)/$(NETCORESDK_FILE)
+FEED_BASE_URL := https://dotnetfeed.blob.core.windows.net/dotnet-core
+TEST_ASSETS_URL = $(FEED_BASE_URL)/corefx-tests/$(NETCORETESTS_VERSION)/OSX.x64/netcoreapp/corefx-test-assets.xml
 
 $(NETCORESDK_FILE):
 	curl $(URL) --output $(NETCORESDK_FILE)
 	tar -xvf $(NETCORESDK_FILE)
+
+update-corefx: corefx/.stamp-dl-corefx-$(NETCORETESTS_VERSION)
+
+corefx/.stamp-dl-corefx-$(NETCORETESTS_VERSION):
+	nuget install runtime.@RID@.Microsoft.Private.CoreFx.NETCoreApp -source https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json -version $(NETCORETESTS_VERSION) -outputdirectory corefx/Microsoft.Private.CoreFx.NETCoreApp
+	cp corefx/Microsoft.Private.CoreFx.NETCoreApp/runtime.@RID@.Microsoft.Private.CoreFx.NETCoreApp.$(NETCORETESTS_VERSION)/runtimes/@RID@/lib/netcoreapp3.0/* shared/Microsoft.NETCore.App/$(NETCOREAPP_VERSION)/
+	cp corefx/Microsoft.Private.CoreFx.NETCoreApp/runtime.@RID@.Microsoft.Private.CoreFx.NETCoreApp.$(NETCORETESTS_VERSION)/runtimes/@RID@/native/* shared/Microsoft.NETCore.App/$(NETCOREAPP_VERSION)/
+	touch $@
+
+update-corefx-tests: corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION)
+
+corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
+	curl $(TEST_ASSETS_URL) --output corefx-test-assets.xml
+	python dl-test-assets.py corefx-test-assets.xml $(FEED_BASE_URL) corefx/tests
+	touch $@
 
 build-sample:
 	dotnet build sample/HelloWorld
@@ -36,7 +53,7 @@ link-mono:
 	cp ../mono/mini/.libs/libmonosgen-2.0.dylib $(SHAREDRUNTIME)/libcoreclr.dylib
 	cp ../mcs/class/System.Private.CoreLib/bin/x64/System.Private.CoreLib.{dll,pdb} $(SHAREDRUNTIME)
 
-prepare: $(NETCORESDK_FILE) link-mono
+prepare: $(NETCORESDK_FILE) update-corefx link-mono
 
 nupkg:
 	nuget pack runtime.nuspec -properties VERSION=@VERSION@\;RID=@RID@\;PLATFORM_AOT_SUFFIX=@PLATFORM_AOT_SUFFIX@
@@ -59,17 +76,16 @@ clean:
 # e.g. `make xtest-System.Collections.Tests COREFX_ROOT=/prj/corefx`
 # '-parallel none -verbose' for debug, `-parallel all` to run all tests in parallel
 # we need COREFX_ROOT only for xunit.console.deps.json and CoreFx.Private.TestUtilities.dll
-xtest-%: prepare check-env dl-test-assets
+xtest-%: prepare check-env update-corefx-tests
 	echo -n "***************** $* *********************"
-	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/Newtonsoft.Json.dll assets/extracted/$*/
-	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/xunit.console.deps.json assets/extracted/$*/
-	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/CoreFx.Private.TestUtilities.dll assets/extracted/$*/
-	sed -i -e 's/9.9.9/$(NETCOREAPP_VERSION)/g' assets/extracted/$*/*.runtimeconfig.json
-	cd assets/extracted/$* && \
+	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/Newtonsoft.Json.dll corefx/tests/extracted/$*/
+	cp $(COREFX_BINDIR)/runtime/netcoreapp-OSX-Debug-x64/xunit.console.deps.json corefx/tests/extracted/$*/
+	sed -i -e 's/9.9.9/$(NETCOREAPP_VERSION)/g' corefx/tests/extracted/$*/*.runtimeconfig.json
+	cd corefx/tests/extracted/$* && \
 	COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet --fx-version "$(NETCOREAPP_VERSION)" xunit.console.dll $*.dll \
 		-notrait category=outerloop -notrait category=nonosxtests -notrait category=failing \
 		-notrait category=nonnetcoreapptests \
-		-html ../../../TestResult-$*.html -nunit ../../TestResult-$*-netcore-xunit.xml \
+		-html ../../TestResult-$*.html -nunit ../../TestResult-$*-netcore-xunit.xml \
 		$(shell if [ -a $(CURDIR)/excludes-$*.rsp ]; then grep -v '^#\|^$$' $(CURDIR)/excludes-$*.rsp; fi;) \
 		$(FIXTURE) || true
 
@@ -89,22 +105,11 @@ PASSING_COREFX_TESTS = \
 	System.Runtime.CompilerServices.VisualC.Tests \
 	System.Runtime.InteropServices.RuntimeInformation.Tests
 
-xtestall: dl-test-assets $(foreach workingtest, $(foreach test, $(wildcard assets/extracted/*), \
+xtestall: update-corefx-tests $(foreach workingtest, $(foreach test, $(wildcard corefx/tests/extracted/*), \
 		$(filter-out $(EXCLUDED_COREFX_TESTS), $(notdir $(test)))), $(addprefix xtest-, $(workingtest)))
 
-xtestpass: dl-test-assets $(foreach workingtest, $(foreach test, $(wildcard assets/extracted/*), \
+xtestpass: update-corefx-tests $(foreach workingtest, $(foreach test, $(wildcard corefx/tests/extracted/*), \
 		$(filter $(PASSING_COREFX_TESTS), $(notdir $(test)))), $(addprefix xtest-, $(workingtest)))
-
-FEED_BASE_URL := https://dotnetfeed.blob.core.windows.net/dotnet-core
-TEST_ASSETS_URL = $(FEED_BASE_URL)/corefx-tests/$(NETCORETESTS_VERSION)/OSX.x64/netcoreapp/corefx-test-assets.xml
-corefx-test-assets.xml:
-	curl $(TEST_ASSETS_URL) --output corefx-test-assets.xml
-
-dl-test-assets: corefx-test-assets.xml .stamp-dl-test-assets
-
-.stamp-dl-test-assets:
-	python dl-test-assets.py corefx-test-assets.xml $(FEED_BASE_URL) assets
-	touch $@
 
 #
 # console test runner (obsolete)
