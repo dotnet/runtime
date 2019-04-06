@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 //
 // This is used internally to create best fit behavior as per the original windows best fit behavior.
 //
@@ -15,8 +16,8 @@ namespace System.Text
     internal class InternalEncoderBestFitFallback : EncoderFallback
     {
         // Our variables
-        internal Encoding _encoding = null;
-        internal char[] _arrayBestFit = null;
+        internal Encoding _encoding;
+        internal char[]? _arrayBestFit = null;
 
         internal InternalEncoderBestFitFallback(Encoding encoding)
         {
@@ -38,13 +39,13 @@ namespace System.Text
             }
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (value is InternalEncoderBestFitFallback that)
             {
-                return (_encoding.CodePage == that._encoding.CodePage);
+                return _encoding.CodePage == that._encoding.CodePage;
             }
-            return (false);
+            return false;
         }
 
         public override int GetHashCode()
@@ -62,7 +63,7 @@ namespace System.Text
         private int _iSize;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static object s_InternalSyncObject;
+        private static object? s_InternalSyncObject;
         private static object InternalSyncObject
         {
             get
@@ -70,9 +71,9 @@ namespace System.Text
                 if (s_InternalSyncObject == null)
                 {
                     object o = new object();
-                    Interlocked.CompareExchange<object>(ref s_InternalSyncObject, o, null);
+                    Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
                 }
-                return s_InternalSyncObject;
+                return s_InternalSyncObject!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             }
         }
 
@@ -190,6 +191,7 @@ namespace System.Text
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;
+            Debug.Assert(_oFallback._arrayBestFit != null);
             int highBound = _oFallback._arrayBestFit.Length;
             int index;
 

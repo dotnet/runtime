@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -33,12 +34,6 @@ namespace System.Text
         {
             _encoding = encoding;
             _fallback = _encoding.EncoderFallback;
-            this.Reset();
-        }
-
-        internal EncoderNLS()
-        {
-            _encoding = null;
             this.Reset();
         }
 
@@ -86,6 +81,7 @@ namespace System.Text
 
             _mustFlush = flush;
             _throwOnOverflow = true;
+            Debug.Assert(_encoding != null);
             return _encoding.GetByteCount(chars, count, this);
         }
 
@@ -133,6 +129,7 @@ namespace System.Text
 
             _mustFlush = flush;
             _throwOnOverflow = true;
+            Debug.Assert(_encoding != null);
             return _encoding.GetBytes(chars, charCount, bytes, byteCount, this);
         }
 
@@ -194,6 +191,7 @@ namespace System.Text
             _charsUsed = 0;
 
             // Do conversion
+            Debug.Assert(_encoding != null);
             bytesUsed = _encoding.GetBytes(chars, charCount, bytes, byteCount, this);
             charsUsed = _charsUsed;
 
@@ -212,6 +210,7 @@ namespace System.Text
         {
             get
             {
+                Debug.Assert(_encoding != null);
                 return _encoding;
             }
         }
@@ -296,6 +295,7 @@ namespace System.Text
                 {
                     charsConsumed = 1; // consumed the leftover high surrogate + the first char in the input buffer
 
+                    Debug.Assert(_encoding != null);
                     if (_encoding.TryGetByteCount(rune, out int byteCount))
                     {
                         Debug.Assert(byteCount >= 0, "Encoding shouldn't have returned a negative byte count.");
@@ -312,7 +312,7 @@ namespace System.Text
                 }
 
                 // Now tally the number of bytes that would've been emitted as part of fallback.
-
+                Debug.Assert(_fallbackBuffer != null);
                 return _fallbackBuffer.DrainRemainingDataForGetByteCount();
             }
         }
@@ -355,6 +355,7 @@ namespace System.Text
                 if (Rune.TryCreate(_charLeftOver, secondChar, out Rune rune))
                 {
                     charsConsumed = 1; // at the very least, we consumed 1 char from the input
+                    Debug.Assert(_encoding != null);
                     switch (_encoding.EncodeRune(rune, bytes, out bytesWritten))
                     {
                         case OperationStatus.Done:
