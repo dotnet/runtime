@@ -938,6 +938,13 @@ ves_icall_System_Runtime_RuntimeImports_Memmove (guint8 *destination, guint8 *so
 	mono_gc_memmove_atomic (destination, source, byte_count);
 }
 
+#if ENABLE_NETCORE
+void
+ves_icall_System_Runtime_RuntimeImports_RhBulkMoveWithWriteBarrier (guint8 *destination, guint8 *source, size_t byte_count)
+{
+	mono_gc_wbarrier_range_copy (destination, source, byte_count);
+}
+#else
 void
 ves_icall_System_Runtime_RuntimeImports_Memmove_wbarrier (guint8 *destination, guint8 *source, guint len, MonoType *type)
 {
@@ -946,6 +953,7 @@ ves_icall_System_Runtime_RuntimeImports_Memmove_wbarrier (guint8 *destination, g
 	else
 		mono_gc_wbarrier_value_copy_internal (destination, source, len, mono_class_from_mono_type_internal (type));
 }
+#endif
 
 void
 #if ENABLE_NETCORE
