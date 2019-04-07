@@ -746,6 +746,7 @@ mono_compile_create_var_for_vreg (MonoCompile *cfg, MonoType *type, int opcode, 
 	cfg->num_varinfo++;
 	if (cfg->verbose_level > 2)
 		g_print ("created temp %d (R%d) of type %s\n", num, vreg, mono_type_get_name (type));
+
 	return inst;
 }
 
@@ -753,6 +754,17 @@ MonoInst*
 mono_compile_create_var (MonoCompile *cfg, MonoType *type, int opcode)
 {
 	int dreg;
+
+#ifdef ENABLE_NETCORE
+	if (type->type == MONO_TYPE_VALUETYPE && !type->byref) {
+		MonoClass *klass = mono_class_from_mono_type_internal (type);
+		if (m_class_is_enumtype (klass) && m_class_get_image (klass) == mono_get_corlib () && !strcmp (m_class_get_name (klass), "StackCrawlMark")) {
+			if (!(cfg->method->flags & METHOD_ATTRIBUTE_REQSECOBJ))
+				g_error ("Method '%s' which contains a StackCrawlMark local variable must be decorated with [System.Security.DynamicSecurityMethod].", mono_method_get_full_name (cfg->method));
+		}
+	}
+#endif
+
 	type = mini_get_underlying_type (type);
 
 	if (mono_type_is_long (type))

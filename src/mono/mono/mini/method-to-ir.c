@@ -3760,6 +3760,10 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	    header.has_clauses)
 		return FALSE;
 
+	if (cfg->method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+		/* Used to mark methods containing StackCrawlMark locals */
+		return FALSE;
+
 	/* also consider num_locals? */
 	/* Do the size check early to avoid creating vtables */
 	if (!inline_limit_inited) {
