@@ -4,16 +4,16 @@
 
 #nullable enable
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
-    /// <devdoc>
-    ///    <para> The exception that is thrown when accessing an object that was
-    ///       disposed.</para>
-    /// </devdoc>
+    /// <summary>
+    /// The exception that is thrown when accessing an object that was disposed.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ObjectDisposedException : InvalidOperationException
     {
         private string? _objectName;
@@ -53,16 +53,18 @@ namespace System
             info.AddValue("ObjectName", ObjectName, typeof(string));
         }
 
-        /// <devdoc>
-        ///    <para>Gets the text for the message for this exception.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Gets the text for the message for this exception.
+        /// </summary>
         public override string Message
         {
             get
             {
                 string name = ObjectName;
                 if (string.IsNullOrEmpty(name))
+                {
                     return base.Message;
+                }
 
                 string objectDisposed = SR.Format(SR.ObjectDisposed_ObjectName_Name, name);
                 return base.Message + Environment.NewLine + objectDisposed;
