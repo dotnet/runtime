@@ -130,6 +130,7 @@ namespace System.Net.Sockets
             public SocketError ErrorCode;
             public byte[] SocketAddress;
             public int SocketAddressLen;
+            public CancellationTokenRegistration CancellationRegistration;
 
             public ManualResetEventSlim Event
             {
@@ -194,6 +195,11 @@ namespace System.Net.Sockets
             public bool TryCancel()
             {
                 Trace("Enter");
+
+                // We're already canceling, so we don't need to still be hooked up to listen to cancellation.
+                // The cancellation request could also be caused by something other than the token, so it's
+                // important we clean it up, regardless.
+                CancellationRegistration.Dispose();
 
                 // Try to transition from Waiting to Cancelled
                 var spinWait = new SpinWait();
@@ -739,7 +745,7 @@ namespace System.Net.Sockets
             }
 
             // Return true for pending, false for completed synchronously (including failure and abort)
-            public bool StartAsyncOperation(SocketAsyncContext context, TOperation operation, int observedSequenceNumber)
+            public bool StartAsyncOperation(SocketAsyncContext context, TOperation operation, int observedSequenceNumber, CancellationToken cancellationToken = default)
             {
                 Trace(context, $"Enter");
 
@@ -781,8 +787,16 @@ namespace System.Net.Sockets
                                 }
 
                                 _tail = operation;
-
                                 Trace(context, $"Leave, enqueued {IdOf(operation)}");
+
+                                // Now that the object is enqueued, hook up cancellation.
+                                // Note that it's possible the call to register itself could
+                                // call TryCancel, so we do this after the op is fully enqueued.
+                                if (cancellationToken.CanBeCanceled)
+                                {
+                                    operation.CancellationRegistration = cancellationToken.UnsafeRegister(s => ((TOperation)s).TryCancel(), operation);
+                                }
+
                                 return true;
 
                             case QueueState.Stopped:
@@ -866,7 +880,12 @@ namespace System.Net.Sockets
                 {
                     // At this point, the operation has completed and it's no longer
                     // in the queue / no one else has a reference to it.  We can invoke
-                    // the callback and let it pool the object if appropriate.
+                    // the callback and let it pool the object if appropriate. This is
+                    // also a good time to unregister from cancellation; we must do
+                    // so before the object is returned to the pool (or else a cancellation
+                    // request for a previous operation could affect a subsequent one)
+                    // and here we know the operation has completed.
+                    op.CancellationRegistration.Dispose();
                     op.InvokeCallback(allowPooling: true);
                 }
             }
@@ -1410,10 +1429,10 @@ namespace System.Net.Sockets
             return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
         }
 
-        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[], int, SocketFlags, SocketError> callback)
+        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[], int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
         {
             int socketAddressLen = 0;
-            return ReceiveFromAsync(buffer, flags, null, ref socketAddressLen, out bytesReceived, out receivedFlags, callback);
+            return ReceiveFromAsync(buffer, flags, null, ref socketAddressLen, out bytesReceived, out receivedFlags, callback, cancellationToken);
         }
 
         public SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
@@ -1478,7 +1497,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError ReceiveFromAsync(Memory<byte> buffer,  SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[], int, SocketFlags, SocketError> callback)
+        public SocketError ReceiveFromAsync(Memory<byte> buffer,  SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[], int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetNonBlocking();
 
@@ -1497,7 +1516,7 @@ namespace System.Net.Sockets
             operation.SocketAddress = socketAddress;
             operation.SocketAddressLen = socketAddressLen;
 
-            if (!_receiveQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
+            if (!_receiveQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
                 receivedFlags = operation.ReceivedFlags;
                 bytesReceived = operation.BytesTransferred;
@@ -1673,10 +1692,10 @@ namespace System.Net.Sockets
             return SendTo(buffer, offset, count, flags, null, 0, timeout, out bytesSent);
         }
 
-        public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback)
+        public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
         {
             int socketAddressLen = 0;
-            return SendToAsync(buffer, offset, count, flags, null, ref socketAddressLen, out bytesSent, callback);
+            return SendToAsync(buffer, offset, count, flags, null, ref socketAddressLen, out bytesSent, callback, cancellationToken);
         }
 
         public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, int timeout, out int bytesSent)
@@ -1745,7 +1764,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback)
+        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[], int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetNonBlocking();
 
@@ -1768,7 +1787,7 @@ namespace System.Net.Sockets
             operation.SocketAddressLen = socketAddressLen;
             operation.BytesTransferred = bytesSent;
 
-            if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
+            if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
                 bytesSent = operation.BytesTransferred;
                 errorCode = operation.ErrorCode;

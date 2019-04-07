@@ -4038,7 +4038,9 @@ namespace System.Net.Sockets
             return retval;
         }
 
-        public bool ReceiveAsync(SocketAsyncEventArgs e)
+        public bool ReceiveAsync(SocketAsyncEventArgs e) => ReceiveAsync(e, default(CancellationToken));
+
+        private bool ReceiveAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
 
@@ -4057,7 +4059,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationReceive(_handle);
+                socketError = e.DoOperationReceive(_handle, cancellationToken);
             }
             catch
             {
@@ -4179,7 +4181,9 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public bool SendAsync(SocketAsyncEventArgs e)
+        public bool SendAsync(SocketAsyncEventArgs e) => SendAsync(e, default(CancellationToken));
+
+        private bool SendAsync(SocketAsyncEventArgs e, CancellationToken cancellationToken)
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, e);
 
@@ -4198,7 +4202,7 @@ namespace System.Net.Sockets
             SocketError socketError;
             try
             {
-                socketError = e.DoOperationSend(_handle);
+                socketError = e.DoOperationSend(_handle, cancellationToken);
             }
             catch
             {

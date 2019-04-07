@@ -368,6 +368,33 @@ namespace System.Net.Sockets.Tests
             });
         }
 
+        [Fact]
+        public async Task ReadAsync_CancelPendingRead_DoesntImpactSubsequentReads()
+        {
+            await RunWithConnectedNetworkStreamsAsync(async (server, client) =>
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => client.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)));
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => { await client.ReadAsync(new Memory<byte>(new byte[1]), new CancellationToken(true)); });
+
+                CancellationTokenSource cts = new CancellationTokenSource();
+                Task<int> t = client.ReadAsync(new byte[1], 0, 1, cts.Token);
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+
+                cts = new CancellationTokenSource();
+                ValueTask<int> vt = client.ReadAsync(new Memory<byte>(new byte[1]), cts.Token);
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await vt);
+
+                byte[] buffer = new byte[1];
+                vt = client.ReadAsync(new Memory<byte>(buffer));
+                Assert.False(vt.IsCompleted);
+                await server.WriteAsync(new ReadOnlyMemory<byte>(new byte[1] { 42 }));
+                Assert.Equal(1, await vt);
+                Assert.Equal(42, buffer[0]);
+            });
+        }
+
         private sealed class CustomSynchronizationContext : SynchronizationContext
         {
             public override void Post(SendOrPostCallback d, object state)
