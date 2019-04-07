@@ -2492,7 +2492,6 @@ gpointer mono_get_rethrow_exception             (void);
 gpointer mono_get_rethrow_preserve_exception             (void);
 gpointer mono_get_call_filter                   (void);
 gpointer mono_get_restore_context               (void);
-gpointer mono_get_throw_exception_by_name       (void);
 gpointer mono_get_throw_corlib_exception        (void);
 gpointer mono_get_throw_exception_addr          (void);
 gpointer mono_get_rethrow_preserve_exception_addr          (void);

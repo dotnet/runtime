@@ -5387,10 +5387,6 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 					target = (gpointer)mono_thread_force_interruption_checkpoint_noraise;
 				} else if (!strcmp (ji->data.name, "mono_exception_from_token")) {
 					target = (gpointer)mono_exception_from_token;
-				} else if (!strcmp (ji->data.name, "mono_throw_exception")) {
-					target = (gpointer)mono_get_throw_exception ();
-				} else if (!strcmp (ji->data.name, "mono_rethrow_preserve_exception")) {
-					target = (gpointer)mono_get_rethrow_preserve_exception ();
 				} else if (!strcmp (ji->data.name, "debugger_agent_single_step_from_context")) {
 					target = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
 				} else if (!strcmp (ji->data.name, "debugger_agent_breakpoint_from_context")) {
