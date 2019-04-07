@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Sockets
@@ -1554,7 +1555,7 @@ namespace System.Net.Sockets
         public static SocketError SendAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
             int bytesSent;
-            SocketError socketError = handle.AsyncContext.SendAsync(buffer, offset, count, socketFlags, out bytesSent, asyncResult.CompletionCallback);
+            SocketError socketError = handle.AsyncContext.SendAsync(buffer, offset, count, socketFlags, out bytesSent, asyncResult.CompletionCallback, CancellationToken.None);
             if (socketError == SocketError.Success)
             {
                 asyncResult.CompletionCallback(bytesSent, null, 0, SocketFlags.None, SocketError.Success);
@@ -1678,7 +1679,7 @@ namespace System.Net.Sockets
         {
             int bytesReceived;
             SocketFlags receivedFlags;
-            SocketError socketError = handle.AsyncContext.ReceiveAsync(new Memory<byte>(buffer, offset, count), socketFlags, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback);
+            SocketError socketError = handle.AsyncContext.ReceiveAsync(new Memory<byte>(buffer, offset, count), socketFlags, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback, CancellationToken.None);
             if (socketError == SocketError.Success)
             {
                 asyncResult.CompletionCallback(bytesReceived, null, 0, receivedFlags, SocketError.Success);
