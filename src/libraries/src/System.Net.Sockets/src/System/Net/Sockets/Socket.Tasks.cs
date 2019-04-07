@@ -201,7 +201,7 @@ namespace System.Net.Sockets
                 saea.SetBuffer(buffer);
                 saea.SocketFlags = socketFlags;
                 saea.WrapExceptionsInIOExceptions = fromNetworkStream;
-                return saea.ReceiveAsync(this);
+                return saea.ReceiveAsync(this, cancellationToken);
             }
             else
             {
@@ -350,7 +350,7 @@ namespace System.Net.Sockets
                 saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
                 saea.SocketFlags = socketFlags;
                 saea.WrapExceptionsInIOExceptions = false;
-                return saea.SendAsync(this);
+                return saea.SendAsync(this, cancellationToken);
             }
             else
             {
@@ -828,6 +828,8 @@ namespace System.Net.Sockets
             /// it's already being reused by someone else.
             /// </remarks>
             private short _token;
+            /// <summary>The cancellation token used for the current operation.</summary>
+            private CancellationToken _cancellationToken;
 
             /// <summary>Initializes the event args.</summary>
             public AwaitableSocketAsyncEventArgs() :
@@ -842,6 +844,7 @@ namespace System.Net.Sockets
 
             private void Release()
             {
+                _cancellationToken = default;
                 _token++;
                 Volatile.Write(ref _continuation, s_availableSentinel);
             }
@@ -882,12 +885,13 @@ namespace System.Net.Sockets
 
             /// <summary>Initiates a receive operation on the associated socket.</summary>
             /// <returns>This instance.</returns>
-            public ValueTask<int> ReceiveAsync(Socket socket)
+            public ValueTask<int> ReceiveAsync(Socket socket, CancellationToken cancellationToken)
             {
                 Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
 
-                if (socket.ReceiveAsync(this))
+                if (socket.ReceiveAsync(this, cancellationToken))
                 {
+                    _cancellationToken = cancellationToken;
                     return new ValueTask<int>(this, _token);
                 }
 
@@ -903,12 +907,13 @@ namespace System.Net.Sockets
 
             /// <summary>Initiates a send operation on the associated socket.</summary>
             /// <returns>This instance.</returns>
-            public ValueTask<int> SendAsync(Socket socket)
+            public ValueTask<int> SendAsync(Socket socket, CancellationToken cancellationToken)
             {
                 Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
 
-                if (socket.SendAsync(this))
+                if (socket.SendAsync(this, cancellationToken))
                 {
+                    _cancellationToken = cancellationToken;
                     return new ValueTask<int>(this, _token);
                 }
 
@@ -1059,12 +1064,13 @@ namespace System.Net.Sockets
 
                 SocketError error = SocketError;
                 int bytes = BytesTransferred;
+                CancellationToken cancellationToken = _cancellationToken;
 
                 Release();
 
                 if (error != SocketError.Success)
                 {
-                    ThrowException(error);
+                    ThrowException(error, cancellationToken);
                 }
                 return bytes;
             }
@@ -1077,12 +1083,13 @@ namespace System.Net.Sockets
                 }
 
                 SocketError error = SocketError;
+                CancellationToken cancellationToken = _cancellationToken;
 
                 Release();
 
                 if (error != SocketError.Success)
                 {
-                    ThrowException(error);
+                    ThrowException(error, cancellationToken);
                 }
             }
 
@@ -1090,7 +1097,15 @@ namespace System.Net.Sockets
 
             private void ThrowMultipleContinuationsException() => throw new InvalidOperationException(SR.InvalidOperation_MultipleContinuations);
 
-            private void ThrowException(SocketError error) => throw CreateException(error);
+            private void ThrowException(SocketError error, CancellationToken cancellationToken)
+            {
+                if (error == SocketError.OperationAborted)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                throw CreateException(error);
+            }
 
             private Exception CreateException(SocketError error)
             {
