@@ -2,20 +2,8 @@
 -nomethod *IndexOf_ArrayOfPointers_ThrowsNotSupportedException
 -nomethod *LastIndexOf_ArrayOfPointers_ThrowsNotSupportedException
 -nomethod *Reverse_ArrayOfPointers_ThrowsNotSupportedException
-# No SRE yet
--nomethod System.Tests.EnumTests.GetName_MultipleMatches
+
 -nomethod System.Tests.EnumTests.GetName_Invalid
--nomethod System.Tests.EnumTests.GetName_NonIntegralTypes
--nomethod System.Tests.EnumTests.GetTypeCode_Enum_ReturnsExpected
--nomethod System.Tests.EnumTests.IsDefined_Invalid
--nomethod System.Tests.EnumTests.HasFlag_Invalid
--nomethod System.Tests.EnumTests.CompareTo_ObjectNotEnum_ThrowsArgumentException
--nomethod System.Tests.EnumTests.GetUnderlyingType_Invalid
--nomethod System.Tests.EnumTests.GetNames_Invalid
--nomethod System.Tests.EnumTests.GetValues_Invalid
--nomethod System.Tests.EnumTests.ToString_Format_MultipleMatches
--nomethod System.Tests.EnumTests.ToString_InvalidFormat_ThrowsFormatException
--nomethod System.Tests.EnumTests.Format_Invalid
 
 # Depends on coreclr behavior
 -nomethod System.Tests.GCTests.GetTotalMemoryTest_ForceCollection
