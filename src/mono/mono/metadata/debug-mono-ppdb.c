@@ -80,10 +80,10 @@ get_pe_debug_guid (MonoImage *image, guint8 *out_guid, gint32 *out_age, gint32 *
 		return FALSE;
 
 	int offset = mono_cli_rva_image_map (image, debug_dir_entry->rva);
-	debug_dir = (ImageDebugDirectory*)(image->raw_data + offset);
+	debug_dir = (ImageDebugDirectory*)(m_image_get_raw_data (image) + offset);
 	if (debug_dir->type == 2 && debug_dir->major_version == 0x100 && debug_dir->minor_version == 0x504d) {
 		/* This is a 'CODEVIEW' debug directory */
-		CodeviewDebugDirectory *dir = (CodeviewDebugDirectory*)(image->raw_data + debug_dir->pointer);
+		CodeviewDebugDirectory *dir = (CodeviewDebugDirectory*)(m_image_get_raw_data (image) + debug_dir->pointer);
 
 		if (dir->signature == 0x53445352) {
 			memcpy (out_guid, dir->guid, 16);

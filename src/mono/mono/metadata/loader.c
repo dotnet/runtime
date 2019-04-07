@@ -1943,7 +1943,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 #ifdef TARGET_WIN32
 		/* IJW is P/Invoke with a predefined function pointer. */
-		if (image->is_module_handle && (cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+		if (m_image_is_module_handle (image) && (cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 			piinfo->addr = mono_image_rva_map (image, cols [0]);
 			g_assert (piinfo->addr);
 		}

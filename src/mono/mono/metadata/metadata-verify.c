@@ -951,11 +951,11 @@ get_metadata_stream (VerifyContext *ctx, MonoStreamHeader *header)
 static gboolean
 is_valid_string_full_with_image (MonoImage *image, guint32 offset, gboolean allow_empty)
 {
-	guint32 heap_offset = (char*)image->heap_strings.data - image->raw_data;
+	guint32 heap_offset = (char*)image->heap_strings.data - m_image_get_raw_data (image);
 	guint32 heap_size = image->heap_strings.size;
 
 	glong length;
-	const char *data = image->raw_data + heap_offset;
+	const char *data = m_image_get_raw_data (image) + heap_offset;
 
 	if (offset >= heap_size)
 		return FALSE;
@@ -3944,8 +3944,8 @@ init_verify_context (VerifyContext *ctx, MonoImage *image)
 	ctx->report_error = TRUE;
 	ctx->report_warning = FALSE; //export this setting in the API
 	ctx->valid = 1;
-	ctx->size = image->raw_data_len;
-	ctx->data = image->raw_data;
+	ctx->size = m_image_get_raw_data_len (image);
+	ctx->data = m_image_get_raw_data (image);
 }
 
 static gboolean
