@@ -1317,12 +1317,8 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 	locals_arr = mono_array_new_handle (domain, mono_class_get_local_variable_info_class (), header->num_locals, error);
 	goto_if_nok (error, fail);
 	for (i = 0; i < header->num_locals; ++i) {
-#ifdef ENABLE_NETCORE
-		/* FIXME: LocalVariable in netcore has no fields */
-#else
 		if (!add_local_var_info_to_array (domain, header, i, locals_arr, error))
 			goto fail;
-#endif
 	}
 
 	/* Exceptions */
