@@ -277,6 +277,74 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
+        public static void TestUdtParameterSetSqlByteValue()
+        {
+            const string ExpectedPointValue = "POINT (1 1)";
+            SqlBytes geometrySqlBytes = null;
+            string actualtPointValue = null;
+
+            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            {
+                connection.Open();
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = $"SELECT geometry::Parse('{ExpectedPointValue}')";
+                    using (var reader = command.ExecuteReader())
+                    {
+                        reader.Read();
+                        geometrySqlBytes = reader.GetSqlBytes(0);
+                    }
+                }
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = "SELECT @geometry.STAsText()";
+                    var parameter = command.Parameters.AddWithValue("@geometry", geometrySqlBytes);
+                    parameter.SqlDbType = SqlDbType.Udt;
+                    parameter.UdtTypeName = "geometry";
+                    actualtPointValue = Convert.ToString(command.ExecuteScalar());
+                }
+
+                Assert.Equal(ExpectedPointValue, actualtPointValue);
+            }
+        }
+
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
+        public static void TestUdtParameterSetRawByteValue()
+        {
+            const string ExpectedPointValue = "POINT (1 1)";
+            byte[] geometryBytes = null;
+            string actualtPointValue = null;
+
+            using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            {
+                connection.Open();
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = $"SELECT geometry::Parse('{ExpectedPointValue}')";
+                    using (var reader = command.ExecuteReader())
+                    {
+                        reader.Read();
+                        geometryBytes = reader.GetSqlBytes(0).Buffer;
+                    }
+                }
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = "SELECT @geometry.STAsText()";
+                    var parameter = command.Parameters.AddWithValue("@geometry", geometryBytes);
+                    parameter.SqlDbType = SqlDbType.Udt;
+                    parameter.UdtTypeName = "geometry";
+                    actualtPointValue = Convert.ToString(command.ExecuteScalar());
+                }
+
+                Assert.Equal(ExpectedPointValue, actualtPointValue);
+            }
+        }
+
         private static void AssertSqlUdtAssemblyQualifiedName(string assemblyQualifiedName, string expectedType)
         {
             List<string> parts = assemblyQualifiedName.Split(',').Select(x => x.Trim()).ToList();
