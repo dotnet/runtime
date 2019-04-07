@@ -9,8 +9,7 @@
   <!-- Default configurations to help VS understand the options -->
   <!-- Platform agnostic files -->
   <ItemGroup>
-    <Compile Include="Interop\Interop.Brotli.Encoder.cs" />
-    <Compile Include="Interop\Interop.Brotli.Decoder.cs" />
+    <Compile Include="$(CommonPath)\Interop\Interop.Brotli.cs" />
     <Compile Include="System\IO\Compression\enc\BrotliStream.Compress.cs" />
     <Compile Include="System\IO\Compression\dec\BrotliStream.Decompress.cs" />
     <Compile Include="System\IO\Compression\BrotliUtils.cs" />
