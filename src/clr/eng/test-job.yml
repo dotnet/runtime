@@ -68,12 +68,6 @@ jobs:
       - name: clangArg
         value: '-clang5.0'
 
-    # TODO: Enable crossgen in build-test.sh. It currently doesn't
-    # accept a crossgen arg, so disable the macos/linux crossgen test
-    # build jobs.
-    ${{ if and(eq(parameters.readyToRun, true), in(parameters.osGroup, 'Linux', 'OSX')) }}:
-      condition: false
-
     # FreeBSD test jobs are disabled since we don't have any FreeBSD helix queues.
     ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
       condition: false
