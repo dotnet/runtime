@@ -1,8 +1,13 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
+      netcoreapp-Windows_NT;
+      netcoreapp-Unix;
       uap-Windows_NT;
-      netcoreapp;
+      uapaot-Windows_NT;
+      netcoreappaot-Windows_NT;
+      netcoreappaot-WebAssembly;
+      $(PackageConfigurations);
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -4,7 +4,7 @@
     <SkipIncludeNewtonsoftJson>true</SkipIncludeNewtonsoftJson>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BinaryFormatterTestData.cs" />
@@ -17,6 +17,7 @@
     <Compile Include="FormatterTests.cs" />
     <Compile Include="PlatformExtensions.cs" />
     <Compile Include="SerializationBinderTests.cs" />
+    <Compile Include="SerializationGuardTests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="SerializationInfoTests.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SurrogateSelectorTests.cs" />
