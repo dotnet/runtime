@@ -96,8 +96,13 @@ MembersMustExist : Member 'System.Runtime.CompilerServices.RuntimeHelpers.Prepar
 MembersMustExist : Member 'System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(System.RuntimeMethodHandle, System.RuntimeTypeHandle[])' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Runtime.Handles:
 TypeCannotChangeClassification : Type 'System.IO.HandleInheritability' is a 'class' in the implementation but is a 'struct' in the contract.
+Compat issues with assembly System.Security.Cryptography.OpenSsl:
+TypesMustExist : Type 'System.Security.Cryptography.DSAOpenSsl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.ECDsaOpenSsl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.RSAOpenSsl' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Security.Cryptography.SafeEvpPKeyHandle' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Cryptography.Pkcs:
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.Certificates.set(System.Security.Cryptography.X509Certificates.X509Certificate2Collection)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.SignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.UnsignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 88
+Total Issues: 92
