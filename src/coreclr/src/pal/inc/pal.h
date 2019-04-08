@@ -2558,6 +2558,7 @@ SetErrorMode(
 #define MEM_MAPPED                      0x40000
 #define MEM_TOP_DOWN                    0x100000
 #define MEM_WRITE_WATCH                 0x200000
+#define MEM_LARGE_PAGES                 0x20000000
 #define MEM_RESERVE_EXECUTABLE          0x40000000 // reserve memory using executable memory allocator
 
 PALIMPORT
