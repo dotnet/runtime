@@ -119,6 +119,7 @@ namespace System.Text.Json
         private int _dummyPrimitive;
         public System.Text.Json.JsonCommentHandling CommentHandling { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
+        public bool AllowTrailingCommas { get { throw null; } set { } }
     }
     public partial struct JsonReaderState
     {

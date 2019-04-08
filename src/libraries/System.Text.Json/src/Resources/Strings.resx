@@ -312,4 +312,13 @@
   <data name="FormatGuid" xml:space="preserve">
     <value>The JSON value is not in a supported Guid format.</value>
   </data>
+  <data name="ExpectedStartOfPropertyOrValueAfterComment" xml:space="preserve">
+    <value>'{0}' is an invalid start of a property name or value, after a comment.</value>
+  </data>
+  <data name="TrailingCommaNotAllowedBeforeArrayEnd" xml:space="preserve">
+    <value>The JSON array contains a trailing comma at the end which is not supported in this mode. Change the reader options.</value>
+  </data>
+  <data name="TrailingCommaNotAllowedBeforeObjectEnd" xml:space="preserve">
+    <value>The JSON object contains a trailing comma at the end which is not supported in this mode. Change the reader options.</value>
+  </data>
 </root>

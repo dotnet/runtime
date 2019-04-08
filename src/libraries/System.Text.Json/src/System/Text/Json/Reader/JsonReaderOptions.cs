@@ -34,5 +34,12 @@ namespace System.Text.Json
                 _maxDepth = value;
             }
         }
+
+        /// <summary>
+        /// Defines whether an extra comma at the end of a list of JSON values in an object or array
+        /// are allowed (and ignored) within the JSON payload being read.
+        /// By default, it's set to false, and the reader will throw a <exception cref="JsonReaderException"/> if it encounters a trailing comma.
+        /// </summary>
+        public bool AllowTrailingCommas { get; set; }
     }
 }
