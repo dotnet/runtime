@@ -7610,7 +7610,21 @@ emit_method_inner (EmitContext *ctx)
 
 	if (!cfg->llvm_only)
 		LLVMSetFunctionCallConv (method, LLVMMono1CallConv);
-	if (!cfg->llvm_only && cfg->compile_aot && mono_threads_are_safepoints_enabled ())
+
+	/* if the method doesn't contain
+	 *  (1) a call (so it's a leaf method)
+	 *  (2) and no loops
+	 * we can skip the GC safepoint on method entry. */
+	gboolean requires_safepoint = cfg->has_calls;
+	if (!requires_safepoint) {
+		for (bb = cfg->bb_entry->next_bb; bb; bb = bb->next_bb) {
+			if (bb->loop_body_start || (bb->flags & BB_EXCEPTION_HANDLER)) {
+				requires_safepoint = TRUE;
+			}
+		}
+	}
+
+	if (!cfg->llvm_only && cfg->compile_aot && mono_threads_are_safepoints_enabled () && requires_safepoint)
 		LLVMSetGC (method, "mono");
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
