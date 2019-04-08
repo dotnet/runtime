@@ -105,9 +105,8 @@ Pre-release version is a version which has a pre-release part, for example `3.0.
 Note that due to the above described ordering, application which refers framework version `3.0.0` will NOT run on `3.0.0-preview`.
 
 ### Behavior before 3.0
-Before .NET Core 3.0 (so 2.2 and older) the roll-forward behavior for pre-release versions ignored any of the roll-forward related settings, that is both `rollForwardOnNoCandidateFx` as well as `applyPatches`.
-The behavior was that:
-* Release version will prefer to roll forward to release. If no matching release version is available, release will roll forward to pre-release. (AP = ApplyPatches)
+#### Release
+Release version will prefer to roll forward to release. If no matching release version is available, release will roll forward to pre-release. (AP = ApplyPatches)
 
 | Framework reference       | Available versions             | Resolved framework | Notes                                             |
 | ------------------------- | ------------------------------ | ------------------ | ------------------------------------------------- |
@@ -119,10 +118,12 @@ The behavior was that:
 | 2.1.0 Disabled, AP=true   | 2.1.1-preview                  | failure            | For some reason we prevent roll forward on patch only to pre-release |
 | 2.1.0 Minor, AP=true      | 2.1.1-preview1, 2.1.1-preview2 | 2.1.1-preview2     | Roll forward to latest patch including latest pre-release |
 
-* Pre-release version will never roll forward to release version. So for example `3.0.0-preview4-27415-15` will not roll forward to `3.0.0`. Also pre-release will only roll forward to the same `major.minor.patch`. So for example `3.0.0-preview4-27415-15` will not roll forward to `3.0.1-preview1-29000-0`. Both `rollForwardOnNoCandidateFx` and `applyPatches` are completely ignored.
+#### Pre-release
+Pre-release version will never roll forward to release version. So for example `3.0.0-preview4-27415-15` will not roll forward to `3.0.0`. Also pre-release will only roll forward to the same `major.minor.patch`. So for example `3.0.0-preview4-27415-15` will not roll forward to `3.0.1-preview1-29000-0`. Pre-release only rolls forward if exact match is not available (unlike release, which will roll forward on patches by default). Finally pre-release only rolls forward to the closest higher pre-release (similar to release behavior for minor version). Both `rollForwardOnNoCandidateFx` and `applyPatches` are completely ignored for pre-release versions.
 
 | Framework reference       | Available versions             | Resolved framework | Notes                                             |
 | ------------------------- | ------------------------------ | ------------------ | ------------------------------------------------- |
+| 2.1.0-preview2            | 2.1.0-preview2, 2.1.0-preview3 | 2.1.0-preview2     | Pre-release doesn't roll forward if exact match is available  |
 | 2.1.0-preview             | 2.1.0-preview2, 2.1.0-preview3 | 2.1.0-preview2     | Pre-release only rolls forward to closest higher  |
 | 2.1.0-preview             | 2.1.0                          | failure            | Pre-release never rolls forward to release        |
 | 2.1.0-preview             | 2.1.1-preview                  | failure            | Pre-release never rolls to different `major.minor.patch` |
@@ -227,6 +228,8 @@ If `applyPatches` is set to `false` then for effective roll-forward setting:
 
 It is illegal to specify both `applyPatches` and `rollForward` in `.runtimeconfig.json` (counting both per-config and per-framework reference scopes together). It is OK to specify `applyPatches` in `.runtimeconfig.json` and `rollForward` through either CLI or env. variable.
 
+In addition to the above any framework reference with a pre-release version will allow roll forward over pre-release (so same `major.minor.patch` but different pre-release part) even if `applyPatches=false`.
+*This is to maintain backward compatibility. In 2.\* pre-release never rolled forward to a different `major.minor.patch` and completely ignored `applyPatches`. Starting to honor `applyPatches` would introduce potentially breaking behavior in some corner cases where the resolution might fail when previously it didn't.*
 
 ## Framework resolution
 The above described format and handling of settings on framework references will in the end produce a graph where the application is the first node and each dependent framework is a node. Each edge in the graph is a framework reference which has two attributes: the `version` and the `rollForward` setting.
@@ -283,7 +286,7 @@ Steps
      * The resolution may fail if it's not possible to roll forward from one reference to the other.
      * Update the `newest fx references` with the resolved reference.
    * Probe for the framework on disk  
-   *Term "hard roll-forward" is used for this in the code*
+   *Term "hard resolve" is used for this in the code*
      * This follows the roll-forward rules as describe above.
    * If success add it to `resolved frameworks`
      * Parse the `.runtimeconfig.json` of the resolved framework and create a new `config fx references`. Make a recursive call back to Step 2 with this new `config fx references`.
@@ -314,3 +317,38 @@ There should not be any circular dependencies between frameworks.
 A newer version of a shared framework should keep or increase the version to another shared framework (never decrease the version number).
 
 By following these best practices we have optimal run-time performance (less processing and probing) and less chance of incompatible framework references.
+
+
+## Changes to existing apps
+The above proposal will impact behavior of existing apps (because framework resolution is in `hostfxr` which is global on the machine for all frameworks). This is a description of the changes as they apply to apps using either default settings, `rollForwardOnNoCandidateFx` or `applyPatches`.
+
+### Roll on patches-only will now roll from release to pre-release if no release is available
+When `rollForwardOnNoCandidateFx` is disabled (set to `0` which is not the default) the existing behavior is to never roll forward to a pre-release version. If the setting is any other value (Minor/Major) it would roll forward to pre-release version if there's no available matching release version.
+
+For example, if the machine has only `3.0.1-preview.1` installed and the application has a reference to `3.0.0`, the existing behavior is:
+* Default behavior is to roll forward to the `3.0.1-preview.1` since there's no matching release version, and run the app.
+* If `rollForwardOnNoCandidateFx=0` (and only then), the app will fail to run (as it won't roll forward to pre-release version).
+
+The new behavior will be to treat all settings of `rollForwardOnNoCandidateFx` the same with regard to pre-release. That is release version will roll forward to pre-release if there's no release version available. In the above sample, the app would run using the `3.0.1-preview.1` framework.
+
+| Reference                                     | Available versions | Existing behavior | New behavior      |
+| --------------------------------------------- | ------------------ | ----------------- | ----------------- |
+| 3.0.0                                         | 3.0.1-preview.1    | 3.0.1-preview.1   | 3.0.1-preview.1   |
+| 3.0.0 rollForwardOnNoCandidateFx=0            | 3.0.1-preview.1    | failure           | 3.0.1-preview.1   |
+
+
+### Pre-release will roll forward
+The existing behavior is that pre-release only rolls forward to the closest higher pre-release of the same `major.minor.patch`. This also means that if there's an exact match available, pre-release doesn't roll forward. Pre-release also never rolls forward to release.
+
+With the proposed behavior pre-release will be treated the same way as release: roll forward on patches, minor or major based on the settings. The only difference is that it will always consider both release and pre-release versions (unlike release which prefers to roll forward to release).  
+For backward compatibility reasons `applyPatches=false` will still allow roll forward over pre-release.
+
+| Reference                                     | Available versions                                | Existing behavior | New behavior      | Notes   |
+| --------------------------------------------- | ------------------------------------------------- | ----------------- | ----------------- | ------- |
+| 2.1.0-preview.2                               | 2.1.0-preview.2, 2.1.0-preview.3, 2.1.1-preview.1 | 2.1.0-preview.2   | 2.1.1-preview.1   | Pre-release will roll forward to latest patch |
+| 2.1.0-preview.1                               | 2.1.0-preview.2, 2.1.0-preview.3                  | 2.1.0-preview.2   | 2.1.0-preview.3   | Pre-release will roll forward to latest pre-release (just like latest patch) |
+| 2.1.0-preview.1 `rollForwardOnNoCandidateFx=0, applyPatches=false` | 2.1.0-preview.2, 2.1.0-preview.3 | 2.1.0-preview.2   | 2.1.0-preview.3 | Pre-release ignores `applyPatches=false` when rolling forward over pre-release and rolls to the latest pre-release. |
+| 2.1.0-preview.1                               | 2.1.0                                             | failure           | 2.1.0             | Pre-release will roll forward to release |
+| 2.1.0-preview.1                               | 2.1.1-preview.1                                   | failure           | 2.1.1-preview.1   | Pre-release will roll forward on patches |
+| 2.1.0-preview.1                               | 2.2.0-preview.1                                   | failure           | 2.2.0-preview.1   | Pre-release will roll forward on minor by default |
+| 2.1.0-preview.1 `rollForwardOnNoCandidateFx=2`  | 3.0.0                                             | failure           | 3.0.0             | Pre-release will roll forward on major if enabled |
