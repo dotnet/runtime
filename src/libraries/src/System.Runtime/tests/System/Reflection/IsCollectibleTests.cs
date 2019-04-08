@@ -53,9 +53,7 @@ namespace System.Reflection.Tests
                 Assert.Contains("\"Default\"", alc.ToString());
                 Assert.Contains("System.Runtime.Loader.DefaultAssemblyLoadContext", alc.ToString());
                 Assert.Contains(alc, AssemblyLoadContext.All);
-#if CoreCLR_23583
                 Assert.Contains(asm, alc.Assemblies);
-#endif
 
                 return RemoteExecutor.SuccessExitCode;
             }).Dispose();
@@ -78,9 +76,7 @@ namespace System.Reflection.Tests
                 Assert.Contains("Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext", alc.ToString());
                 Assert.Contains("System.Runtime.Loader.AssemblyLoadContext", alc.ToString());
                 Assert.Contains(alc, AssemblyLoadContext.All);
-#if CoreCLR_23583
                 Assert.Contains(asm, alc.Assemblies);
-#endif
 
                 return RemoteExecutor.SuccessExitCode;
             }).Dispose();
@@ -103,9 +99,7 @@ namespace System.Reflection.Tests
                 Assert.Contains("\"\"", alc.ToString());
                 Assert.Contains("System.Reflection.Tests.TestAssemblyLoadContext", alc.ToString());
                 Assert.Contains(alc, AssemblyLoadContext.All);
-#if CoreCLR_23583
                 Assert.Contains(asm, alc.Assemblies);
-#endif
 
                 return RemoteExecutor.SuccessExitCode;
             }).Dispose();
