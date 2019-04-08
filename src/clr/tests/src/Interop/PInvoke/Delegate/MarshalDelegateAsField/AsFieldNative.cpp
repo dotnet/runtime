@@ -113,9 +113,6 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE TakeDelegateAsFieldInClass_Exp(Clas
 *					For MarshalDelegateAsField_AsInterface.cs                  *
 *																			   *
 *-----------------------------------------------------------------------------*/
-
-#import "mscorlib.tlb" no_namespace named_guids raw_interfaces_only rename("ReportEvent","ReportEventNew")
-
 typedef struct{
     int result1;
     int result2;
@@ -167,7 +164,7 @@ bool STDMETHODCALLTYPE Verify(Result expectedR, Result resultR)
 
 typedef struct _Struct3_InterfacePtrAsField1_Seq{
     BOOL  verification;
-    _Delegate * p_dele;
+    IDispatch * p_dele;
 }Struct3_InterfacePtrAsField1_Seq;
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInStruct_Seq(Struct3_InterfacePtrAsField1_Seq sis)
@@ -183,14 +180,6 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInStruct_Seq
     }
     else 
     {
-        hr = sis.p_dele->DynamicInvoke( NULL, NULL);
-        if(FAILED(hr))
-        {
-            return FALSE;
-        }
-        bool tempBool = sis.verification && Verify( expected, result);
-
-
         //IDispatch::Invoke
         ResetToZero();
 
@@ -234,14 +223,14 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInStruct_Seq
             return FALSE;
         }
 
-        return tempBool && Verify(expected, result);
+        return Verify(expected, result);
     }
 }
 
 typedef struct _Struct3_InterfacePtrAsField2_Exp{
     bool verification;
     int  Padding;
-    _Delegate * p_dele;
+    IDispatch * p_dele;
 }Struct3_InterfacePtrAsField2_Exp;
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInStruct_Exp(Struct3_InterfacePtrAsField2_Exp sie)
@@ -255,18 +244,9 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInStruct_Exp
         printf("NULL field member.\n");
         return FALSE;
     }
-    else 
+    else
     {
-        hr = sie.p_dele->DynamicInvoke(NULL, NULL);
-        if(FAILED(hr))
-        {
-            return FALSE;
-        }
-        bool tempBool = sie.verification && Verify( expected, result);
-
-
         //IDispatch::Invoke
-        ResetToZero();
 
         BSTR bstrNames[1];
         bstrNames[0] = SysAllocString(L"DynamicInvoke");
@@ -307,7 +287,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInStruct_Exp
             return FALSE;
         }
 
-        return tempBool && Verify(expected, result);
+        return Verify(expected, result);
     }
 }
 
@@ -315,7 +295,7 @@ class Class3_InterfacePtrAsField3_Seq
 {
 public:
     bool verification;
-    _Delegate * p_dele;
+    IDispatch * p_dele;
 };
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInClass_Seq(Class3_InterfacePtrAsField3_Seq *cis)
@@ -331,14 +311,6 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInClass_Seq(
     }
     else 
     {
-        hr = (cis->p_dele)->DynamicInvoke(NULL, NULL);
-        if(FAILED(hr))
-        {
-            return FALSE;
-        }
-        bool tempBool = cis->verification && Verify( expected, result);
-
-
         //IDispatch::Invoke
         BSTR bstrNames[1];
         bstrNames[0] = SysAllocString(L"DynamicInvoke");
@@ -380,7 +352,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInClass_Seq(
             return FALSE;
         }
 
-        return tempBool && Verify(expected, result);
+        return Verify(expected, result);
     }
 
 }
@@ -389,7 +361,7 @@ class Class3_InterfacePtrAsField4_Exp{
 public:
     bool verification;
     int  Padding;
-    _Delegate * p_dele;
+    IDispatch * p_dele;
 };
 
 extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInClass_Exp(Class3_InterfacePtrAsField4_Exp *cie)
@@ -405,14 +377,6 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInClass_Exp(
     }
     else 
     {
-        hr = (cie->p_dele)->DynamicInvoke(NULL, NULL);
-        if(FAILED(hr))
-        {
-            return FALSE;
-        }
-        bool tempBool = cie->verification && Verify( expected, result);
-
-
         //IDispatch::Invoke
         BSTR bstrNames[1];
         bstrNames[0] = SysAllocString(L"DynamicInvoke");
@@ -453,7 +417,11 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrAsFieldInClass_Exp(
             return FALSE;
         }
 
-        return tempBool && Verify(expected, result);
+        return Verify(expected, result);
     }
+}
+
+extern "C" DLL_EXPORT void STDMETHODCALLTYPE TakeDelegateAsInterface(void* illegal)
+{
 }
 #endif

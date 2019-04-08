@@ -602,37 +602,42 @@ public:
                 nativeSize = wNativeSize;
             }
 
-#if defined(_TARGET_X86_) || (defined(_TARGET_AMD64_) && defined(_WIN32))
+#if defined(PLATFORM_WINDOWS)
             // JIT32 and JIT64 (which is only used on the Windows Desktop CLR) has a problem generating
             // code for the pinvoke ILStubs which do a return using a struct type.  Therefore, we
             // change the signature of calli to return void and make the return buffer as first argument. 
 
-            // For Windows AMD64 and x86, we need to use a return buffer for native member functions returning structures.
+            // For Windows, we need to use a return buffer for native member functions returning structures.
+            // On Windows arm we need to respect HFAs and not use a return buffer if the return type is an HFA
             // for X86 Windows non-member functions we bash the return type from struct to U1, U2, U4 or U8
             // and use byrefNativeReturn for all other structs.
-            // for UNIX_X86_ABI, we always need a return buffer argument for any size of structs.
-#if defined(_WIN32)
             if (nativeMethodIsMemberFunction)
             {
+#ifdef _TARGET_ARM_
+                byrefNativeReturn = !nativeType.InternalToken.GetMethodTable()->IsNativeHFA();
+#else
                 byrefNativeReturn = true;
+#endif
             }
             else
-#endif // _WIN32
             {
-#ifndef _TARGET_AMD64_
+#ifdef _TARGET_X86_
                 switch (nativeSize)
                 {
-#ifndef UNIX_X86_ABI
                     case 1: typ = ELEMENT_TYPE_U1; break;
                     case 2: typ = ELEMENT_TYPE_U2; break;
                     case 4: typ = ELEMENT_TYPE_U4; break;
                     case 8: typ = ELEMENT_TYPE_U8; break;
-#endif // UNIX_X86_ABI
                     default: byrefNativeReturn = true; break;
                 }
-#endif // _TARGET_AMD64_
+#endif // _TARGET_X86_
             }
-#endif // defined(_TARGET_X86_) || (defined(_TARGET_AMD64_) && defined(_WIN32))
+#endif // defined(PLATFORM_WINDOWS)
+
+            // for UNIX_X86_ABI, we always need a return buffer argument for any size of structs.
+#ifdef UNIX_X86_ABI
+            byrefNativeReturn = true;
+#endif
         }
 
         if (IsHresultSwap(dwMarshalFlags) || (byrefNativeReturn && (IsCLRToNative(m_dwMarshalFlags) || nativeMethodIsMemberFunction)))

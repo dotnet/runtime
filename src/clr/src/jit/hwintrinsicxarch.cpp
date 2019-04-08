@@ -43,27 +43,31 @@ const HWIntrinsicInfo& HWIntrinsicInfo::lookup(NamedIntrinsic id)
 //
 // Return Value:
 //    The NamedIntrinsic associated with methodName and isa
-NamedIntrinsic HWIntrinsicInfo::lookupId(const char* className, const char* methodName, const char* enclosingClassName)
+NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*   comp,
+                                         const char* className,
+                                         const char* methodName,
+                                         const char* enclosingClassName)
 {
     // TODO-Throughput: replace sequential search by binary search
-
     InstructionSet isa = lookupIsa(className, enclosingClassName);
-    JITDUMP("HW Intrinsic ");
-    if (enclosingClassName != nullptr)
-    {
-        JITDUMP("%s.", enclosingClassName);
-    }
-    JITDUMP("%s.%s: ", className, methodName);
 
     if (isa == InstructionSet_ILLEGAL)
     {
         // There are several platform-agnostic intrinsics (e.g., Vector64) that
         // are not supported in x86, so early return NI_Illegal
-        JITDUMP("Not supported");
         return NI_Illegal;
     }
 
-    assert(methodName != nullptr);
+    bool isIsaSupported = comp->compSupports(isa) && comp->compSupportsHWIntrinsic(isa);
+
+    if (strcmp(methodName, "get_IsSupported") == 0)
+    {
+        return isIsaSupported ? NI_IsSupported_True : NI_IsSupported_False;
+    }
+    else if (!isIsaSupported)
+    {
+        return NI_Throw_PlatformNotSupportedException;
+    }
 
     for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
     {
@@ -74,14 +78,12 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(const char* className, const char* meth
 
         if (strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
         {
-            JITDUMP("Supported");
             return hwIntrinsicInfoArray[i].id;
         }
     }
 
     // There are several helper intrinsics that are implemented in managed code
     // Those intrinsics will hit this code path and need to return NI_Illegal
-    JITDUMP("Not supported");
     return NI_Illegal;
 }
 
@@ -772,20 +774,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         assert(sizeBytes != 0);
     }
 
-    // This intrinsic is supported if
-    // - the ISA is available on the underlying hardware (compSupports returns true)
-    // - the compiler supports this hardware intrinsics (compSupportsHWIntrinsic returns true)
-    bool issupported = compSupports(isa) && compSupportsHWIntrinsic(isa);
-
-    if (category == HW_Category_IsSupportedProperty)
-    {
-        return gtNewIconNode(issupported);
-    }
-    // - calling to unsupported intrinsics must throw PlatforNotSupportedException
-    else if (!issupported)
-    {
-        return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-    }
     // Avoid checking stacktop for 0-op intrinsics
     if (sig->numArgs > 0 && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
     {

@@ -11,32 +11,35 @@ class AsInterfaceTest
     public delegate void Dele();
 
     [DllImport("PInvoke_Delegate_AsParam")]
-    extern static bool Take_DelegatePtrByValParam([MarshalAs(UnmanagedType.Interface)] Dele dele);
+    extern static bool Take_DelegatePtrByValParam([MarshalAs(UnmanagedType.IDispatch)] Dele dele);
 
     [DllImport("PInvoke_Delegate_AsParam")]
-    extern static bool Take_DelegatePtrByRefParam([MarshalAs(UnmanagedType.Interface)] ref Dele dele);
+    extern static bool Take_DelegatePtrByRefParam([MarshalAs(UnmanagedType.IDispatch)] ref Dele dele);
 
     [DllImport("PInvoke_Delegate_AsParam")]
-    extern static bool Take_DelegatePtrByInValParam([In, MarshalAs(UnmanagedType.Interface)] Dele dele);
+    extern static bool Take_DelegatePtrByInValParam([In, MarshalAs(UnmanagedType.IDispatch)] Dele dele);
 
     [DllImport("PInvoke_Delegate_AsParam")]
-    extern static bool Take_DelegatePtrByInRefParam([In, MarshalAs(UnmanagedType.Interface)] ref Dele dele);
+    extern static bool Take_DelegatePtrByInRefParam([In, MarshalAs(UnmanagedType.IDispatch)] ref Dele dele);
 
     [DllImport("PInvoke_Delegate_AsParam")]
-    extern static bool Take_DelegatePtrByOutValParam([Out, MarshalAs(UnmanagedType.Interface)] Dele dele);
+    extern static bool Take_DelegatePtrByOutValParam([Out, MarshalAs(UnmanagedType.IDispatch)] Dele dele);
 
     [DllImport("PInvoke_Delegate_AsParam")]
-    extern static bool Take_DelegatePtrByOutRefParam([Out, MarshalAs(UnmanagedType.Interface)]out Dele dele, [MarshalAs(UnmanagedType.Interface)] Dele deleHelper);
+    extern static bool Take_DelegatePtrByOutRefParam([Out, MarshalAs(UnmanagedType.IDispatch)]out Dele dele, [MarshalAs(UnmanagedType.IDispatch)] Dele deleHelper);
 
     [DllImport("PInvoke_Delegate_AsParam")]
-    extern static bool Take_DelegatePtrByInOutValParam([In, Out, MarshalAs(UnmanagedType.Interface)] Dele dele);
+    extern static bool Take_DelegatePtrByInOutValParam([In, Out, MarshalAs(UnmanagedType.IDispatch)] Dele dele);
 
     [DllImport("PInvoke_Delegate_AsParam")]
-    extern static bool Take_DelegatePtrByInOutRefParam([In, Out, MarshalAs(UnmanagedType.Interface)] ref Dele dele);
+    extern static bool Take_DelegatePtrByInOutRefParam([In, Out, MarshalAs(UnmanagedType.IDispatch)] ref Dele dele);
 
     [DllImport("PInvoke_Delegate_AsParam")]
-    [return: MarshalAs(UnmanagedType.Interface)]
-    extern static Dele ReturnDelegatePtrByVal([MarshalAs(UnmanagedType.Interface)] Dele dele);
+    [return: MarshalAs(UnmanagedType.IDispatch)]
+    extern static Dele ReturnDelegatePtrByVal([MarshalAs(UnmanagedType.IDispatch)] Dele dele);
+
+    [DllImport("PInvoke_Delegate_AsParam")]
+    extern static void TakeDelegateAsInterface([MarshalAs(UnmanagedType.Interface)] Dele dele);
 
     [DllImport("PInvoke_Delegate_AsParam")]
     extern static int RetFieldResult1();
@@ -63,40 +66,40 @@ class AsInterfaceTest
     static int Main()
     {
         try{
-            Console.WriteLine("Scenario 1 : Delegate marshaled by val with attribute [MarshalAs(UnmanagedType.Interface)].");
+            Console.WriteLine("Scenario 1 : Delegate marshaled by val with attribute [MarshalAs(UnmanagedType.IDispatch)].");
             Dele dele1 = new Dele(CommonMethod1);
             dele1 += CommonMethod2;
             dele1 += CommonMethod3;
             Assert.IsTrue(Take_DelegatePtrByValParam(dele1), "Take_DelegatePtrByValParam");
 
-            Console.WriteLine("\n\nScenario 2 : Delegate marshaled by ref with attribute [MarshalAs(MarshalAs(UnmanagedType.Interface)].");
+            Console.WriteLine("\n\nScenario 2 : Delegate marshaled by ref with attribute [MarshalAs(MarshalAs(UnmanagedType.IDispatch)].");
             Dele dele2 = new Dele(CommonMethod1);
             dele2 += CommonMethod2;
             dele2 += CommonMethod3;
             Assert.IsTrue(Take_DelegatePtrByRefParam(ref dele2), "Take_DelegatePtrByRefParam");
             Assert.IsNull( dele2, "dele2 should equal to null");
 
-            Console.WriteLine("\n\nScenario 3 : Delegate marshaled by val with attribute [In,MarshalAs(UnmanagedType.Interface)].");
+            Console.WriteLine("\n\nScenario 3 : Delegate marshaled by val with attribute [In,MarshalAs(UnmanagedType.IDispatch)].");
             Dele dele3 = new Dele(CommonMethod1);
             dele3 += CommonMethod2;
             dele3 += CommonMethod3;
             Assert.IsTrue(Take_DelegatePtrByInValParam(dele3), "Take_DelegatePtrByInValParam");
 
-            Console.WriteLine("\n\nScenario 4 : Delegate marshaled by ref with attribute [In,MarshalAs(UnmanagedType.Interface)].");
+            Console.WriteLine("\n\nScenario 4 : Delegate marshaled by ref with attribute [In,MarshalAs(UnmanagedType.IDispatch)].");
             Dele dele4 = new Dele(CommonMethod1);
             dele4 += CommonMethod2;
             dele4 += CommonMethod3;
             Assert.IsTrue(Take_DelegatePtrByInRefParam(ref dele4), "Take_DelegatePtrByInRefParam");
             Assert.IsNotNull(dele4, "dele4 does't set to null correctly.");
 
-            Console.WriteLine("\n\nScenario 5 : Delegate marshaled by val with attribute [Out,MarshalAs(UnmanagedType.Interface)].");
+            Console.WriteLine("\n\nScenario 5 : Delegate marshaled by val with attribute [Out,MarshalAs(UnmanagedType.IDispatch)].");
             Dele dele5 = new Dele(CommonMethod1);
             dele5 += CommonMethod2;
             dele5 += CommonMethod3;
             Assert.IsTrue(Take_DelegatePtrByOutValParam(dele5), "Take_DelegatePtrByOutValParam");
             Assert.IsNotNull(dele5, "dele5 does't set to null correctly");
 
-            Console.WriteLine("\n\nScenario 6 : Delegate marshaled by ref with attribute [Out,MarshalAs(UnmanagedType.Interface)].");
+            Console.WriteLine("\n\nScenario 6 : Delegate marshaled by ref with attribute [Out,MarshalAs(UnmanagedType.IDispatch)].");
             Dele dele6 = null;
             Dele deleHelper = new Dele(CommonMethod1);
             deleHelper += CommonMethod2;
@@ -105,20 +108,20 @@ class AsInterfaceTest
             Assert.AreEqual(COMMONMETHOD1_RESULT, RetFieldResult1(), "RetFieldResult1 return value is wrong");
             Assert.AreEqual(COMMONMETHOD2_RESULT, RetFieldResult2(), "RetFieldResult2 return value is wrong ");
 
-            Console.WriteLine("\n\nScenario 7 : Delegate marshaled by val with attribute [In,OutMarshalAs(UnmanagedType.Interface)].");
+            Console.WriteLine("\n\nScenario 7 : Delegate marshaled by val with attribute [In,OutMarshalAs(UnmanagedType.IDispatch)].");
             Dele dele7 = new Dele(CommonMethod1);
             dele7 += CommonMethod2;
             dele7 += CommonMethod3;
             Assert.IsTrue(Take_DelegatePtrByInOutValParam(dele7), "Take_DelegatePtrByInOutValParam");
 
-            Console.WriteLine("\n\nScenario 8 : Delegate marshaled by ref with attribute [In,OutMarshalAs(MarshalAs(UnmanagedType.Interface)].");
+            Console.WriteLine("\n\nScenario 8 : Delegate marshaled by ref with attribute [In,OutMarshalAs(MarshalAs(UnmanagedType.IDispatch)].");
             Dele dele8 = new Dele(CommonMethod1);
             dele8 += CommonMethod2;
             dele8 += CommonMethod3;
             Assert.IsTrue(Take_DelegatePtrByInOutRefParam(ref dele8), "Take_DelegatePtrByInOutRefParam");
             Assert.IsTrue(dele8 == null, "dele8 does't set to null correctly.");
 
-            Console.WriteLine("\n\nScenario 9 : return Delegate marshaled by val with attribute [return:MarshalAs(UnmanagedType.Interface)].");
+            Console.WriteLine("\n\nScenario 9 : return Delegate marshaled by val with attribute [return:MarshalAs(UnmanagedType.IDispatch)].");
             Dele dele9 = new Dele(CommonMethod1);
             dele9 += CommonMethod2;
             dele9 += CommonMethod3;
@@ -127,6 +130,8 @@ class AsInterfaceTest
             Assert.AreEqual(COMMONMETHOD1_RESULT, RetFieldResult1(), "RetFieldResult1() return value is wrong");
             Assert.AreEqual(COMMONMETHOD2_RESULT, RetFieldResult2(), "RetFieldResult2() return value is wrong");
             Assert.AreEqual(COMMONMETHOD3_RESULT, RetFieldResult3(), "RetFieldResult3() return value is wrong");
+
+            Assert.Throws<MarshalDirectiveException>(() => TakeDelegateAsInterface(new Dele(CommonMethod1)));
 
             return 100;
         } catch (Exception e){
