@@ -33,13 +33,6 @@ Flag flag(InstructionSet isa)
 
 // clang-format off
 static const HWIntrinsicInfo hwIntrinsicInfoArray[] = {
-    // Add lookupHWIntrinsic special cases see lookupHWIntrinsic() below
-    //     NI_ARM64_IsSupported_True is used to expand get_IsSupported to const true
-    //     NI_ARM64_IsSupported_False is used to expand get_IsSupported to const false
-    //     NI_ARM64_PlatformNotSupported to throw PlatformNotSupported exception for every intrinsic not supported on the running platform
-    {NI_ARM64_IsSupported_True,     "get_IsSupported",                 IsaFlag::EveryISA, HWIntrinsicInfo::IsSupported, HWIntrinsicInfo::None, {}},
-    {NI_ARM64_IsSupported_False,    "::NI_ARM64_IsSupported_False",    IsaFlag::EveryISA, HWIntrinsicInfo::IsSupported, HWIntrinsicInfo::None, {}},
-    {NI_ARM64_PlatformNotSupported, "::NI_ARM64_PlatformNotSupported", IsaFlag::EveryISA, HWIntrinsicInfo::Unsupported, HWIntrinsicInfo::None, {}},
 #define HARDWARE_INTRINSIC(id, isa, name, form, i0, i1, i2, flags) \
     {id,                            #name,                             IsaFlag::isa,      HWIntrinsicInfo::form,        HWIntrinsicInfo::flags, { i0, i1, i2 }},
 #include "hwintrinsiclistArm64.h"
@@ -101,45 +94,45 @@ InstructionSet Compiler::lookupHWIntrinsicISA(const char* className)
 //
 // Return Value:
 //    Id for the hardware intrinsic.
-//
-// TODO-Throughput: replace sequential search by hash lookup
 NamedIntrinsic Compiler::lookupHWIntrinsic(const char* className, const char* methodName)
 {
-    InstructionSet isa    = lookupHWIntrinsicISA(className);
-    NamedIntrinsic result = NI_Illegal;
-    if (isa != InstructionSet_NONE)
-    {
-        JITDUMP("HW Intrinsic %s.%s: ", className, methodName);
-        IsaFlag::Flag isaFlag = IsaFlag::flag(isa);
-        for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
-        {
-            if ((isaFlag & hwIntrinsicInfoArray[i].isaflags) && strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
-            {
-                if (compSupportsHWIntrinsic(isa))
-                {
-                    // Intrinsic is supported on platform
-                    result = hwIntrinsicInfoArray[i].id;
-                    JITDUMP("Supported\n");
-                }
-                else
-                {
-                    // When the intrinsic class is not supported
-                    // Return NI_ARM64_PlatformNotSupported for all intrinsics
-                    // Return NI_ARM64_IsSupported_False for the IsSupported property
-                    result = (hwIntrinsicInfoArray[i].id != NI_ARM64_IsSupported_True) ? NI_ARM64_PlatformNotSupported
-                                                                                       : NI_ARM64_IsSupported_False;
+    // TODO-Throughput: replace sequential search by binary search
+    InstructionSet isa = lookupHWIntrinsicISA(className);
 
-                    JITDUMP("Not Supported\n");
-                }
-                break;
-            }
-        }
-        if (result == NI_Illegal)
+    if (isa == InstructionSet_NONE)
+    {
+        // There are several platform-agnostic intrinsics (e.g., Vector256) that
+        // are not supported in Arm64, so early return NI_Illegal
+        return NI_Illegal;
+    }
+
+    bool isIsaSupported = compSupports(isa) && compSupportsHWIntrinsic(isa);
+
+    if (strcmp(methodName, "get_IsSupported") == 0)
+    {
+        return isIsaSupported ? NI_IsSupported_True : NI_IsSupported_False;
+    }
+    else if (!isIsaSupported)
+    {
+        return NI_Throw_PlatformNotSupportedException;
+    }
+
+    for (int i = 0; i < (NI_HW_INTRINSIC_END - NI_HW_INTRINSIC_START - 1); i++)
+    {
+        if ((IsaFlag::flag(isa) & hwIntrinsicInfoArray[i].isaflags) == 0)
         {
-            JITDUMP("Not recognized\n");
+            continue;
+        }
+
+        if (strcmp(methodName, hwIntrinsicInfoArray[i].name) == 0)
+        {
+            return hwIntrinsicInfoArray[i].id;
         }
     }
-    return result;
+
+    // There are several helper intrinsics that are implemented in managed code
+    // Those intrinsics will hit this code path and need to return NI_Illegal
+    return NI_Illegal;
 }
 
 //------------------------------------------------------------------------
@@ -434,12 +427,6 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (HWIntrinsicInfo::lookup(intrinsic).form)
     {
-        case HWIntrinsicInfo::IsSupported:
-            return gtNewIconNode((intrinsic == NI_ARM64_IsSupported_True) ? 1 : 0);
-
-        case HWIntrinsicInfo::Unsupported:
-            return impUnsupportedHWIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
-
         case HWIntrinsicInfo::UnaryOp:
             op1 = impPopStack().val;
 

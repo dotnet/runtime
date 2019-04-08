@@ -14,9 +14,6 @@ struct HWIntrinsicInfo
     // identically by the Importer, LSRA, Lowering, and CodeGen
     enum Form
     {
-        // Shared forms
-        IsSupported, // The IsSupported property will use this form
-        Unsupported, // Any intrisic which is unsupported and must throw PlatformNotSupportException will use this form
         // Non SIMD forms
         UnaryOp,      // Non SIMD intrinsics which take a single argument
         CrcOp,        // Crc intrinsics.

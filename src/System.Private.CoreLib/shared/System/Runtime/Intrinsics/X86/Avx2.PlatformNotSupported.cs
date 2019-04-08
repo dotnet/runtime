@@ -4,6 +4,7 @@
 
 #nullable enable
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -16,7 +17,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Avx2() { }
 
-        public new static bool IsSupported { get { return false; } }
+        public new static bool IsSupported { [Intrinsic] get { return false; } }
 
         /// <summary>
         /// __m256i _mm256_abs_epi8 (__m256i a)

@@ -19,7 +19,7 @@ namespace System
         {
             ReadOnlySpan<T> span = memory.Span;
             int start = ClampStart(span, trimElement);
-            int length = ClampEnd(span, start + 1, trimElement);
+            int length = ClampEnd(span, start, trimElement);
             return memory.Slice(start, length);
         }
 
@@ -51,7 +51,7 @@ namespace System
         {
             ReadOnlySpan<T> span = memory.Span;
             int start = ClampStart(span, trimElement);
-            int length = ClampEnd(span, start + 1, trimElement);
+            int length = ClampEnd(span, start, trimElement);
             return memory.Slice(start, length);
         }
 
@@ -82,7 +82,7 @@ namespace System
             where T : IEquatable<T>
         {
             int start = ClampStart(span, trimElement);
-            int length = ClampEnd(span, start + 1, trimElement);
+            int length = ClampEnd(span, start, trimElement);
             return span.Slice(start, length);
         }
 
@@ -113,7 +113,7 @@ namespace System
             where T : IEquatable<T>
         {
             int start = ClampStart(span, trimElement);
-            int length = ClampEnd(span, start + 1, trimElement);
+            int length = ClampEnd(span, start, trimElement);
             return span.Slice(start, length);
         }
 
@@ -221,7 +221,7 @@ namespace System
             {
                 ReadOnlySpan<T> span = memory.Span;
                 int start = ClampStart(span, trimElements);
-                int length = ClampEnd(span, start + 1, trimElements);
+                int length = ClampEnd(span, start, trimElements);
                 return memory.Slice(start, length);
             }
 
@@ -293,7 +293,7 @@ namespace System
             {
                 ReadOnlySpan<T> span = memory.Span;
                 int start = ClampStart(span, trimElements);
-                int length = ClampEnd(span, start + 1, trimElements);
+                int length = ClampEnd(span, start, trimElements);
                 return memory.Slice(start, length);
             }
 
@@ -365,7 +365,7 @@ namespace System
             if (trimElements.Length > 1)
             {
                 int start = ClampStart(span, trimElements);
-                int length = ClampEnd(span, start + 1, trimElements);
+                int length = ClampEnd(span, start, trimElements);
                 return span.Slice(start, length);
             }
 
@@ -436,7 +436,7 @@ namespace System
             if (trimElements.Length > 1)
             {
                 int start = ClampStart(span, trimElements);
-                int length = ClampEnd(span, start + 1, trimElements);
+                int length = ClampEnd(span, start, trimElements);
                 return span.Slice(start, length);
             }
 
@@ -548,7 +548,7 @@ namespace System
         {
             ReadOnlySpan<char> span = memory.Span;
             int start = ClampStart(span);
-            int length = ClampEnd(span, start + 1);
+            int length = ClampEnd(span, start);
             return memory.Slice(start, length);
         }
 
@@ -574,7 +574,7 @@ namespace System
         {
             ReadOnlySpan<char> span = memory.Span;
             int start = ClampStart(span);
-            int length = ClampEnd(span, start + 1);
+            int length = ClampEnd(span, start);
             return memory.Slice(start, length);
         }
 
@@ -804,7 +804,7 @@ namespace System
         public static Span<char> Trim(this Span<char> span)
         {
             int start = ClampStart(span);
-            int length = ClampEnd(span, start + 1);
+            int length = ClampEnd(span, start);
             return span.Slice(start, length);
         }
 
