@@ -98,6 +98,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\ReleaseComObjectTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStructureTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringAnsiTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringAutoTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringBSTR.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUniTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUTF8Tests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
