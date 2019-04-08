@@ -15,97 +15,239 @@ namespace System.Tests
     public partial class DecimalTests
     {
         [Fact]
-        public static void MaxValue()
+        public void MaxValue_Get_ReturnsExpected()
         {
             Assert.Equal(79228162514264337593543950335m, decimal.MaxValue);
         }
 
         [Fact]
-        public static void MinusOne()
+        public void MinusOne_Get_ReturnsExpected()
         {
             Assert.Equal(-1, decimal.MinusOne);
         }
 
         [Fact]
-        public static void MinValue()
+        public void MinValue_GetReturnsExpected()
         {
             Assert.Equal(-79228162514264337593543950335m, decimal.MinValue);
         }
 
         [Fact]
-        public static void One()
+        public static void One_Get_ReturnsExpected()
         {
             Assert.Equal(1, decimal.One);
         }
 
         [Fact]
-        public static void Zero()
+        public static void Zero_Get_ReturnsExpected()
         {
             Assert.Equal(0, decimal.Zero);
         }
 
-        [Fact]
-        public static void Ctor_ULong()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(ulong.MaxValue)]
+        public static void Ctor_ULong(ulong value)
         {
-            Assert.Equal(ulong.MaxValue, new decimal(ulong.MaxValue));
+            Assert.Equal(value, new decimal(value));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(uint.MaxValue)]
+        public static void Ctor_UInt(uint value)
+        {
+            Assert.Equal(value, new decimal(value));
+        }
+
+        public static IEnumerable<object[]> Ctor_Float_TestData()
+        {
+            yield return new object[] { 123456789.123456f, new int[] { 123456800, 0, 0, 0 } };
+            yield return new object[] { 2.0123456789123456f, new int[] { 2012346, 0, 0, 393216 } };
+            yield return new object[] { 2E-28f, new int[] { 2, 0, 0, 1835008 } };
+            yield return new object[] { 2E-29f, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { 2E28f, new int[] { 536870912, 2085225666, 1084202172, 0 } };
+            yield return new object[] { 1.5f, new int[] { 15, 0, 0, 65536 } };
+            yield return new object[] { 0f, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { float.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, 0 } };
+
+            yield return new object[] { 1000000.1f, new int[] { 1000000, 0, 0, 0 } };
+            yield return new object[] { 100000.1f, new int[] { 1000001, 0, 0, 65536 } };
+            yield return new object[] { 10000.1f, new int[] { 100001, 0, 0, 65536 } };
+            yield return new object[] { 1000.1f, new int[] { 10001, 0, 0, 65536 } };
+            yield return new object[] { 100.1f, new int[] { 1001, 0, 0, 65536 } };
+            yield return new object[] { 10.1f, new int[] { 101, 0, 0, 65536 } };
+            yield return new object[] { 1.1f, new int[] { 11, 0, 0, 65536 } };
+            yield return new object[] { 1f, new int[] { 1, 0, 0, 0 } };
+            yield return new object[] { 0.1f, new int[] { 1, 0, 0, 65536 } };
+            yield return new object[] { 0.01f, new int[] { 10, 0, 0, 196608 } };
+            yield return new object[] { 0.001f, new int[] { 1, 0, 0, 196608 } };
+            yield return new object[] { 0.0001f, new int[] { 10, 0, 0, 327680 } };
+            yield return new object[] { 0.00001f, new int[] { 10, 0, 0, 393216 } };
+            yield return new object[] { 0.0000000000000000000000000001f, new int[] { 1, 0, 0, 1835008 } };
+            yield return new object[] { 0.00000000000000000000000000001f, new int[] { 0, 0, 0, 0 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Float_TestData))]
+        public void Ctor_Float(float value, int[] bits)
+        {
+            var d = new decimal(value);
+            Assert.Equal((decimal)value, d);
+            Assert.Equal(bits, Decimal.GetBits(d));
+        }
+
+        [Theory]
+        [InlineData(2E29)]
+        [InlineData(float.NaN)]
+        [InlineData(float.MaxValue)]
+        [InlineData(float.MinValue)]
+        [InlineData(float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity)]
+        public void Ctor_InvalidFloat_ThrowsOverlowException(float value)
+        {
+            Assert.Throws<OverflowException>(() => new decimal(value));
+        }
+
+        [Theory]
+        [InlineData(long.MinValue)]
+        [InlineData(0)]
+        [InlineData(long.MaxValue)]
+        public void Ctor_Long(long value)
+        {
+            Assert.Equal(value, new decimal(value));
+        }
+
+        public static IEnumerable<object[]> Ctor_IntArray_TestData()
+        {
+            decimal expected = 3;
+            expected += uint.MaxValue;
+            expected += ulong.MaxValue;
+            yield return new object[] { new int[] { 1, 1, 1, 0 }, expected };
+            yield return new object[] { new int[] { 1, 0, 0, 0 }, decimal.One };
+            yield return new object[] { new int[] { 1000, 0, 0, 0x30000 }, decimal.One };
+            yield return new object[] { new int[] { 1000, 0, 0, unchecked((int)0x80030000) }, -decimal.One };
+            yield return new object[] { new int[] { 0, 0, 0, 0x1C0000 }, decimal.Zero };
+            yield return new object[] { new int[] { 1000, 0, 0, 0x1C0000 }, 0.0000000000000000000000001 };
+            yield return new object[] { new int[] { 0, 0, 0, 0 }, decimal.Zero };
+            yield return new object[] { new int[] { 0, 0, 0, unchecked((int)0x80000000) }, decimal.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_IntArray_TestData))]
+        public void Ctor_IntArray(int[] value, decimal expected)
+        {
+            Assert.Equal(expected, new decimal(value));
         }
 
         [Fact]
-        public static void Ctor_UInt()
+        public void Ctor_NullBits_ThrowsArgumentNullException()
         {
-            Assert.Equal(uint.MaxValue, new decimal(uint.MaxValue));
+            AssertExtensions.Throws<ArgumentNullException>("bits", () => new decimal(null));
+        }
+
+        [Theory]
+        [InlineData(new int[] { 0, 0, 0 })]
+        [InlineData(new int[] { 0, 0, 0, 0, 0 })]
+        [InlineData(new int[] { 0, 0, 0, 1 })]
+        [InlineData(new int[] { 0, 0, 0, 0x00001 })]
+        [InlineData(new int[] { 0, 0, 0, 0x1D0000 })]
+        [InlineData(new int[] { 0, 0, 0, unchecked((int)0x40000000) })]
+        public void Ctor_InvalidBits_ThrowsArgumentException(int[] bits)
+        {
+            AssertExtensions.Throws<ArgumentException>(null, () => new decimal(bits));
+        }
+
+        [InlineData(int.MinValue)]
+        [InlineData(0)]
+        [InlineData(int.MaxValue)]
+        public void Ctor_Int(int value)
+        {
+            Assert.Equal(value, new decimal(value));
+        }
+
+        public static IEnumerable<object[]> Ctor_Double_TestData()
+        {
+            yield return new object[] { 123456789.123456, new int[] { -2045800064, 28744, 0, 393216 } };
+            yield return new object[] { 2.0123456789123456, new int[] { -1829795549, 46853, 0, 917504 } };
+            yield return new object[] { 2E-28, new int[] { 2, 0, 0, 1835008 } };
+            yield return new object[] { 2E-29, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { 2E28, new int[] { 536870912, 2085225666, 1084202172, 0 } };
+            yield return new object[] { 1.5, new int[] { 15, 0, 0, 65536 } };
+            yield return new object[] { 0, new int[] { 0, 0, 0, 0 } };
+            yield return new object[] { double.Parse("-0.0", CultureInfo.InvariantCulture), new int[] { 0, 0, 0, 0 } };
+
+            yield return new object[] { 100000000000000.1, new int[] { 276447232, 23283, 0, 0 } };
+            yield return new object[] { 10000000000000.1, new int[] { 276447233, 23283, 0, 65536 } };
+            yield return new object[] { 1000000000000.1, new int[] { 1316134913, 2328, 0, 65536 } };
+            yield return new object[] { 100000000000.1, new int[] { -727379967, 232, 0, 65536 } };
+            yield return new object[] { 10000000000.1, new int[] { 1215752193, 23, 0, 65536 } };
+            yield return new object[] { 1000000000.1, new int[] { 1410065409, 2, 0, 65536 } };
+            yield return new object[] { 100000000.1, new int[] { 1000000001, 0, 0, 65536 } };
+            yield return new object[] { 10000000.1, new int[] { 100000001, 0, 0, 65536 } };
+            yield return new object[] { 1000000.1, new int[] { 10000001, 0, 0, 65536 } };
+            yield return new object[] { 100000.1, new int[] { 1000001, 0, 0, 65536 } };
+            yield return new object[] { 10000.1, new int[] { 100001, 0, 0, 65536 } };
+            yield return new object[] { 1000.1, new int[] { 10001, 0, 0, 65536 } };
+            yield return new object[] { 100.1, new int[] { 1001, 0, 0, 65536 } };
+            yield return new object[] { 10.1, new int[] { 101, 0, 0, 65536 } };
+            yield return new object[] { 1.1, new int[] { 11, 0, 0, 65536 } };
+            yield return new object[] { 1, new int[] { 1, 0, 0, 0 } };
+            yield return new object[] { 0.1, new int[] { 1, 0, 0, 65536 } };
+            yield return new object[] { 0.01, new int[] { 1, 0, 0, 131072 } };
+            yield return new object[] { 0.001, new int[] { 1, 0, 0, 196608 } };
+            yield return new object[] { 0.0001, new int[] { 1, 0, 0, 262144 } };
+            yield return new object[] { 0.00001, new int[] { 1, 0, 0, 327680 } };
+            yield return new object[] { 0.0000000000000000000000000001, new int[] { 1, 0, 0, 1835008 } };
+            yield return new object[] { 0.00000000000000000000000000001, new int[] { 0, 0, 0, 0 } };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Double_TestData))]
+        public void Ctor_Double(double value, int[] bits)
+        {
+            var d = new decimal(value);
+            Assert.Equal((decimal)value, d);
+            Assert.Equal(bits, Decimal.GetBits(d));
+        }
+
+        [Theory]
+        [InlineData(double.NaN)]
+        [InlineData(double.MaxValue)]
+        [InlineData(double.MinValue)]
+        [InlineData(double.PositiveInfinity)]
+        [InlineData(double.NegativeInfinity)]
+        public void Ctor_LargeDouble_ThrowsOverlowException(double value)
+        {
+            Assert.Throws<OverflowException>(() => new decimal(value));
+        }
+
+        public static IEnumerable<object[]> Ctor_Int_Int_Int_Bool_Byte_TestData()
+        {
+            decimal expected = 3;
+            expected += uint.MaxValue;
+            expected += ulong.MaxValue;
+            yield return new object[] { 1, 1, 1, false, 0, expected };
+            yield return new object[] { 1, 0, 0, false, 0, decimal.One };
+            yield return new object[] { 1000, 0, 0, false, 3, decimal.One };
+            yield return new object[] { 1000, 0, 0, true, 3, -decimal.One };
+            yield return new object[] { 0, 0, 0, false, 28, decimal.Zero };
+            yield return new object[] { 1000, 0, 0, false, 28, 0.0000000000000000000000001 };
+            yield return new object[] { 0, 0, 0, false, 0, decimal.Zero };
+            yield return new object[] { 0, 0, 0, true, 0, decimal.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Int_Int_Int_Bool_Byte_TestData))]
+        public void Ctor_Int_Int_Int_Bool_Byte(int lo, int mid, int hi, bool isNegative, byte scale, decimal expected)
+        {
+            Assert.Equal(expected, new decimal(lo, mid, hi, isNegative, scale));
         }
 
         [Fact]
-        public static void Ctor_Float()
+        public void Ctor_LargeScale_ThrowsArgumentOutOfRangeException()
         {
-            Assert.Equal((decimal)((float)123456789.123456), new decimal((float)123456789.123456));
-        }
-
-        [Fact]
-        public static void Ctor_Long()
-        {
-            Assert.Equal(long.MaxValue, new decimal(long.MaxValue));
-        }
-
-        [Fact]
-        public static void Ctor_IntArray()
-        {
-            var d1 = new decimal(new int[] { 1, 1, 1, 0 });
-            decimal d2 = 3;
-            d2 += uint.MaxValue;
-            d2 += ulong.MaxValue;
-            Assert.Equal(d2, d1);
-        }
-
-        [Fact]
-        public static void Ctor_IntArray_Invalid()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("bits", () => new decimal(null)); // Bits is null
-            AssertExtensions.Throws<ArgumentException>(null, () => new decimal(new int[3])); // Bits.Length is not 4
-            AssertExtensions.Throws<ArgumentException>(null, () => new decimal(new int[5])); // Bits.Length is not 4
-        }
-
-        [Fact]
-        public static void Ctor_Int()
-        {
-            Assert.Equal(int.MaxValue, new decimal(int.MaxValue));
-        }
-
-        [Fact]
-        public static void Ctor_Double()
-        {
-            Assert.Equal((decimal)123456789.123456, new decimal(123456789.123456));
-        }
-
-        [Fact]
-        public static void Ctor_Int_Int_Int_Bool_Byte()
-        {
-            var d1 = new decimal(1, 1, 1, false, 0);
-            decimal d2 = 3;
-            d2 += uint.MaxValue;
-            d2 += ulong.MaxValue;
-            Assert.Equal(d2, d1);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("scale", () => new Decimal(1, 2, 3, false, 29));
         }
 
         public static IEnumerable<object[]> Add_Valid_TestData()
@@ -140,7 +282,7 @@ namespace System.Tests
             Assert.Equal(expected, d3);
         }
 
-        public static IEnumerable<object[]> Add_Invalid_TestData()
+        public static IEnumerable<object[]> Add_Overflows_TestData()
         {
             yield return new object[] { decimal.MaxValue, decimal.MaxValue };
             yield return new object[] { 79228162514264337593543950330m, 6 };
@@ -148,8 +290,8 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(Add_Invalid_TestData))]
-        public static void Add_Invalid(decimal d1, decimal d2)
+        [MemberData(nameof(Add_Overflows_TestData))]
+        public void Add_Overflows_ThrowsOverflowException(decimal d1, decimal d2)
         {
             Assert.Throws<OverflowException>(() => d1 + d2);
             Assert.Throws<OverflowException>(() => decimal.Add(d1, d2));
@@ -315,49 +457,59 @@ namespace System.Tests
             Assert.Equal(expected, decimal.Divide(d1, d2));
         }
 
-        public static IEnumerable<object[]> Divide_Invalid_TestData()
+        public static IEnumerable<object[]> Divide_ZeroDenominator_TestData()
         {
-            yield return new object[] { decimal.One, decimal.Zero, typeof(DivideByZeroException) };
-            yield return new object[] { decimal.Zero, decimal.Zero, typeof(DivideByZeroException) };
-            yield return new object[] { 0.0m, 0.0m, typeof(DivideByZeroException) };
-
-            yield return new object[] { 79228162514264337593543950335m, -0.9999999999999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 792281625142643.37593543950335m, -0.0000000000000079228162514264337593543950335m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.1m, typeof(OverflowException) };
-            yield return new object[] { 7922816251426433759354395034m, 0.1m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.9m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.99m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.9999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.99999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.9999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.99999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.9999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.99999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.99999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.99999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.99999999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.99999999999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.999999999999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.999999999999999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999999999999999999m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, -0.1m, typeof(OverflowException) };
-            yield return new object[] { 79228162514264337593543950335m, -0.9999999999999999999999999m, typeof(OverflowException) };
-            yield return new object[] { decimal.MaxValue / 2m, 0.5m, typeof(OverflowException) };
+            yield return new object[] { decimal.One, decimal.Zero };
+            yield return new object[] { decimal.Zero, decimal.Zero };
+            yield return new object[] { 0.0m, 0.0m };
         }
 
         [Theory]
-        [MemberData(nameof(Divide_Invalid_TestData))]
-        public static void Divide_Invalid(decimal d1, decimal d2, Type exceptionType)
+        [MemberData(nameof(Divide_ZeroDenominator_TestData))]
+        public void Divide_ZeroDenominator_ThrowsDivideByZeroException(decimal d1, decimal d2)
         {
-            Assert.Throws(exceptionType, () => d1 / d2);
-            Assert.Throws(exceptionType, () => decimal.Divide(d1, d2));
+            Assert.Throws<DivideByZeroException>(() => d1 / d2);
+            Assert.Throws<DivideByZeroException>(() => decimal.Divide(d1, d2));
+        }
+        public static IEnumerable<object[]> Divide_Overflows_TestData()
+        {
+            yield return new object[] { 79228162514264337593543950335m, -0.9999999999999999999999999m };
+            yield return new object[] { 792281625142643.37593543950335m, -0.0000000000000079228162514264337593543950335m };
+            yield return new object[] { 79228162514264337593543950335m, 0.1m };
+            yield return new object[] { 7922816251426433759354395034m, 0.1m };
+            yield return new object[] { 79228162514264337593543950335m, 0.9m };
+            yield return new object[] { 79228162514264337593543950335m, 0.99m };
+            yield return new object[] { 79228162514264337593543950335m, 0.9999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.99999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.9999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.99999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.9999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.99999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.99999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.99999999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.99999999999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.99999999999999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.999999999999999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.999999999999999999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, 0.9999999999999999999999999999m };
+            yield return new object[] { 79228162514264337593543950335m, -0.1m };
+            yield return new object[] { 79228162514264337593543950335m, -0.9999999999999999999999999m };
+            yield return new object[] { decimal.MaxValue / 2m, 0.5m };
+        }
+
+        [Theory]
+        [MemberData(nameof(Divide_Overflows_TestData))]
+        public void Divide_Overflows_ThrowsOverflowException(decimal d1, decimal d2)
+        {
+            Assert.Throws<OverflowException>(() => d1 / d2);
+            Assert.Throws<OverflowException>(() => decimal.Divide(d1, d2));
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -794,15 +946,15 @@ namespace System.Tests
 
         public static IEnumerable<object[]> Remainder_Invalid_TestData()
         {
-            yield return new object[] { 5m, 0m, typeof(DivideByZeroException) };
+            yield return new object[] { 5m, 0m };
         }
 
         [Theory]
         [MemberData(nameof(Remainder_Invalid_TestData))]
-        public static void Remainder_Invalid(decimal d1, decimal d2, Type exceptionType)
+        public static void Remainder_ZeroDenominator_ThrowsDivideByZeroException(decimal d1, decimal d2)
         {
-            Assert.Throws(exceptionType, () => d1 % d2);
-            Assert.Throws(exceptionType, () => decimal.Remainder(d1, d2));
+            Assert.Throws<DivideByZeroException>(() => d1 % d2);
+            Assert.Throws<DivideByZeroException>(() => decimal.Remainder(d1, d2));
         }
 
         public static IEnumerable<object[]> Round_Valid_TestData()
@@ -1280,8 +1432,8 @@ namespace System.Tests
         public static void ToString_InvalidFormat_ThrowsFormatException()
         {
             decimal f = 123;
-            Assert.Throws<FormatException>(() => f.ToString("Y")); // Invalid format
-            Assert.Throws<FormatException>(() => f.ToString("Y", null)); // Invalid format
+            Assert.Throws<FormatException>(() => f.ToString("Y"));
+            Assert.Throws<FormatException>(() => f.ToString("Y", null));
         }
 
         public static IEnumerable<object[]> Truncate_TestData()
