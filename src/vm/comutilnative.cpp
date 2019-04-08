@@ -780,7 +780,7 @@ FCIMPL5(VOID, Buffer::BlockCopy, ArrayBase *src, int srcOffset, ArrayBase *dst, 
         {
             const CorElementType dstET = dst->GetArrayElementType();
             if (!CorTypeInfo::IsPrimitiveType_NoThrow(dstET))
-                FCThrowArgumentVoid(W("dest"), W("Arg_MustBePrimArray"));
+                FCThrowArgumentVoid(W("dst"), W("Arg_MustBePrimArray"));
         }
     }
 

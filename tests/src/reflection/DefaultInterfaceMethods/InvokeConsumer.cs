@@ -38,6 +38,15 @@ class Program
         if (!((RuntimeTypeHandle)typeof(IFoo<Fooer>).GetMethod("InstanceMethod").Invoke(new ValueFooer(), new object[] { })).Equals(typeof(Fooer[]).TypeHandle))
             return 33;
 
+        try
+        {
+            typeof(IFoo).GetMethod("DefaultMethod").Invoke(new Reabstractor(), new object[] { 1 });
+            return 501;
+        }
+        catch (EntryPointNotFoundException)
+        {
+        }
+
         return 100;
     }
 }
