@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
@@ -10,9 +11,9 @@ namespace System
     public partial class TypeLoadException : SystemException
     {
         // This is called from inside the EE. 
-        private TypeLoadException(string className,
-            string assemblyName,
-            string messageArg,
+        private TypeLoadException(string? className,
+            string? assemblyName,
+            string? messageArg,
             int resourceId)
             : base(null)
         {
@@ -40,7 +41,7 @@ namespace System
                     if (_className == null)
                         _className = SR.IO_UnknownFileName;
 
-                    string format = null;
+                    string? format = null;
                     GetTypeLoadExceptionMessage(_resourceId, JitHelpers.GetStringHandleOnStack(ref format));
                     _message = string.Format(format, _className, _assemblyName, _messageArg);
                 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -20,7 +21,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
         /// IsSupported property indicates whether any method provided
         /// by this class is supported by the current runtime.
         /// </summary>
-        public static bool IsSupported { get { return false; }}
+        public static bool IsSupported { [Intrinsic] get { return false; }}
 
         /// <summary>
         /// Vector abs

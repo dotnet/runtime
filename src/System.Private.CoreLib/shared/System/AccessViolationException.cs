@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System;
 using System.Runtime.Serialization;
 
@@ -26,13 +27,13 @@ namespace System
             HResult = HResults.E_POINTER;
         }
 
-        public AccessViolationException(string message)
+        public AccessViolationException(string? message)
             : base(message)
         {
             HResult = HResults.E_POINTER;
         }
 
-        public AccessViolationException(string message, Exception innerException)
+        public AccessViolationException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.E_POINTER;

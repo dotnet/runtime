@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -25,13 +26,13 @@ namespace System
             HResult = HResults.COR_E_INVALIDPROGRAM;
         }
 
-        public InvalidProgramException(string message)
+        public InvalidProgramException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_INVALIDPROGRAM;
         }
 
-        public InvalidProgramException(string message, Exception inner)
+        public InvalidProgramException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_INVALIDPROGRAM;

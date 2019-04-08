@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
@@ -19,13 +20,13 @@ namespace System.Runtime.InteropServices
             HResult = HResults.E_FAIL;
         }
 
-        public SEHException(string message)
+        public SEHException(string? message)
             : base(message)
         {
             HResult = HResults.E_FAIL;
         }
 
-        public SEHException(string message, Exception inner)
+        public SEHException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.E_FAIL;
