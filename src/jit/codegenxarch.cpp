@@ -2611,7 +2611,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         //  loop:
         //       test  ESP, [ESP+0]     // tickle the page
         //       mov   REGTMP, ESP
-        //       sub   REGTMP, GetOsPageSize()
+        //       sub   REGTMP, eeGetPageSize()
         //       mov   ESP, REGTMP
         //       cmp   ESP, REGCNT
         //       jae   loop
