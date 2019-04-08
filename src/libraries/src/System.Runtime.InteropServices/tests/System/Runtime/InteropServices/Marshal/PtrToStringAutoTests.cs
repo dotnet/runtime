@@ -21,13 +21,13 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void PtrToStringAuto_NegativeLength_ThrowsArgumentException()
+        public void PtrToStringAuto_NegativeLength_ThrowsArgumentOutOfRangeException()
         {
             string s = "Hello World";
             IntPtr ptr = Marshal.StringToCoTaskMemAuto(s);
             try
             {
-                AssertExtensions.Throws<ArgumentException>("len", null, () => Marshal.PtrToStringAuto(ptr, -1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>(() => Marshal.PtrToStringAuto(ptr, -1));
             }
             finally
             {

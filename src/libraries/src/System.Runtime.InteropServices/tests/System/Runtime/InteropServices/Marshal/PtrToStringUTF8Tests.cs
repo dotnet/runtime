@@ -31,8 +31,6 @@ namespace System.Runtime.InteropServices.Tests
         public void PtrToStringUTF8_ZeroPointer_ReturnsNull()
         {
             Assert.Null(Marshal.PtrToStringUTF8(IntPtr.Zero));
-            Assert.Null(Marshal.PtrToStringUTF8(IntPtr.Zero, 0));
-            Assert.Null(Marshal.PtrToStringUTF8(IntPtr.Zero, 1));
         }
 
         [Fact]
@@ -41,14 +39,21 @@ namespace System.Runtime.InteropServices.Tests
         {
             // Windows Marshal has specific checks that does not do
             // anything if the ptr is less than 64K.
-            Assert.Null(Marshal.PtrToStringUTF8((IntPtr)1, 10));
+            Assert.Null(Marshal.PtrToStringUTF8((IntPtr)1));
         }
 
         [Fact]
-        public void PtrToStringUTF8_NegativeLength_ThrowsArgumentOutOfRangeExeption()
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void PtrToStringUTF8_ZeroPointer_ThrowsArgumentNullException()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("byteLen", null, () => Marshal.PtrToStringUTF8(new IntPtr(123), -77));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("byteLen", null, () => Marshal.PtrToStringUTF8(IntPtr.Zero, -77));
+            AssertExtensions.Throws<ArgumentNullException>("ptr", () => Marshal.PtrToStringUTF8(IntPtr.Zero, 123));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
+        public void PtrToStringUTF8_NegativeLength_ThrowsArgumentExeption()
+        {
+            AssertExtensions.Throws<ArgumentException>("byteLen", null, () => Marshal.PtrToStringUTF8(new IntPtr(123), -77));
         }
     }
 }

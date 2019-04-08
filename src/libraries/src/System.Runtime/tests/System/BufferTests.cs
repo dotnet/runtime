@@ -38,7 +38,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => Buffer.BlockCopy(new byte[3], 0, new byte[3], 0, -1)); // Count < 0
 
             AssertExtensions.Throws<ArgumentException>("src", () => Buffer.BlockCopy(new string[3], 0, new byte[3], 0, 0)); // Src is not a byte array
-            AssertExtensions.Throws<ArgumentException>("dest", () => Buffer.BlockCopy(new byte[3], 0, new string[3], 0, 0)); // Dst is not a byte array
+            AssertExtensions.Throws<ArgumentException>("dst", "dest", () => Buffer.BlockCopy(new byte[3], 0, new string[3], 0, 0)); // Dst is not a byte array
 
             AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 3, new byte[3], 0, 1)); // SrcOffset + count >= src.length
             AssertExtensions.Throws<ArgumentException>("", () => Buffer.BlockCopy(new byte[3], 4, new byte[3], 0, 0)); // SrcOffset >= src.Length
