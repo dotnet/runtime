@@ -354,7 +354,7 @@ namespace System.Globalization
             return HijriEra;
         }
 
-        public override int[]? Eras => new int[] { HijriEra };
+        public override int[] Eras => new int[] { HijriEra };
 
         public override int GetMonth(DateTime time)
         {
@@ -422,7 +422,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
             }
-            
+
             return new DateTime(lDate * GregorianCalendar.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 

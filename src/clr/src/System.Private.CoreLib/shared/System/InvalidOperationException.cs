@@ -12,6 +12,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -26,13 +27,13 @@ namespace System
             HResult = HResults.COR_E_INVALIDOPERATION;
         }
 
-        public InvalidOperationException(string message)
+        public InvalidOperationException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_INVALIDOPERATION;
         }
 
-        public InvalidOperationException(string message, Exception innerException)
+        public InvalidOperationException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_INVALIDOPERATION;

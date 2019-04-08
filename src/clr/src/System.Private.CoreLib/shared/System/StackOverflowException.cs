@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -25,13 +26,13 @@ namespace System
             HResult = HResults.COR_E_STACKOVERFLOW;
         }
 
-        public StackOverflowException(string message)
+        public StackOverflowException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_STACKOVERFLOW;
         }
 
-        public StackOverflowException(string message, Exception innerException)
+        public StackOverflowException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_STACKOVERFLOW;

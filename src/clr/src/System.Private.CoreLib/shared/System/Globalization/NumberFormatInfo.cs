@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Globalization
 {
     /// <remarks>
@@ -163,7 +164,7 @@ namespace System.Globalization
             _hasInvariantNumberSigns = _positiveSign == "+" && _negativeSign == "-";
         }
 
-        internal NumberFormatInfo(CultureData cultureData)
+        internal NumberFormatInfo(CultureData? cultureData)
         {
             if (cultureData != null)
             {
@@ -205,7 +206,7 @@ namespace System.Globalization
             }
         }
 
-        public static NumberFormatInfo GetInstance(IFormatProvider formatProvider)
+        public static NumberFormatInfo GetInstance(IFormatProvider? formatProvider)
         {
             return formatProvider == null ?
                 CurrentInfo : // Fast path for a null provider
@@ -384,13 +385,14 @@ namespace System.Globalization
                 System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
-                    NumberFormatInfo info = culture._numInfo;
+                    NumberFormatInfo? info = culture._numInfo;
                     if (info != null)
                     {
                         return info;
                     }
                 }
-                return ((NumberFormatInfo)culture.GetFormat(typeof(NumberFormatInfo)));
+                // returns non-nullable when passed typeof(NumberFormatInfo)
+                return (NumberFormatInfo)culture.GetFormat(typeof(NumberFormatInfo))!;
             }
         }
 
@@ -700,7 +702,7 @@ namespace System.Globalization
             }
         }
 
-        public object GetFormat(Type formatType)
+        public object? GetFormat(Type? formatType)
         {
             return formatType == typeof(NumberFormatInfo) ? this : null;
         }

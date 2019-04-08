@@ -13,6 +13,7 @@
 ** 
 ===========================================================*/
 
+#nullable enable
 namespace Microsoft.Win32
 {
     using System;
@@ -33,7 +34,7 @@ namespace Microsoft.Win32
         public const int CalendarHijri = 0x08;
         public const int LocalBool = 0x10;
 
-        internal static readonly Type[] ClassTypes = {
+        internal static readonly Type?[] ClassTypes = {
             typeof(Empty),
             typeof(void),
             typeof(bool),

@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -25,13 +26,13 @@ namespace System
             HResult = HResults.COR_E_INDEXOUTOFRANGE;
         }
 
-        public IndexOutOfRangeException(string message)
+        public IndexOutOfRangeException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_INDEXOUTOFRANGE;
         }
 
-        public IndexOutOfRangeException(string message, Exception innerException)
+        public IndexOutOfRangeException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_INDEXOUTOFRANGE;

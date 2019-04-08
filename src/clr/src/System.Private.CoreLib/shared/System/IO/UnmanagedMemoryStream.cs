@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -39,7 +40,7 @@ namespace System.IO
     /// </summary>
     public class UnmanagedMemoryStream : Stream
     {
-        private SafeBuffer _buffer;
+        private SafeBuffer? _buffer;
         private unsafe byte* _mem;
         private long _length;
         private long _capacity;
@@ -47,7 +48,7 @@ namespace System.IO
         private long _offset;
         private FileAccess _access;
         private bool _isOpen;
-        private Task<int> _lastReadTask; // The last successful task returned from ReadAsync 
+        private Task<int>? _lastReadTask; // The last successful task returned from ReadAsync 
 
         /// <summary>
         /// Creates a closed stream.
@@ -473,7 +474,7 @@ namespace System.IO
             try
             {
                 int n = Read(buffer, offset, count);
-                Task<int> t = _lastReadTask;
+                Task<int>? t = _lastReadTask;
                 return (t != null && t.Result == n) ? t : (_lastReadTask = Task.FromResult<Int32>(n));
             }
             catch (Exception ex)

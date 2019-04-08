@@ -27,7 +27,7 @@ namespace System.Globalization
         public override DateTime MinSupportedDateTime => s_minDate;
 
         public override DateTime MaxSupportedDateTime => s_maxDate;
-        
+
         protected override int DaysInYearBeforeMinSupportedYear
         {
             get
@@ -217,6 +217,6 @@ namespace System.Globalization
 
         internal override CalendarId ID => CalendarId.JAPANESELUNISOLAR;
 
-        public override int[]? Eras => _helper.Eras;
+        public override int[] Eras => _helper.Eras;
     }
 }

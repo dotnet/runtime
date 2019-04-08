@@ -11,6 +11,8 @@
 **
 =============================================================================*/
 
+#nullable enable
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
@@ -32,7 +34,7 @@ namespace System.Threading
     {
         private static IntPtr InvalidHandle => new IntPtr(-1);
         private IntPtr registeredWaitHandle = InvalidHandle;
-        private WaitHandle m_internalWaitObject;
+        private WaitHandle? m_internalWaitObject;
         private bool bReleaseNeeded = false;
         private volatile int m_lock = 0;
 
@@ -51,12 +53,12 @@ namespace System.Threading
             m_internalWaitObject = waitObject;
             if (waitObject != null)
             {
-                m_internalWaitObject.SafeWaitHandle.DangerousAddRef(ref bReleaseNeeded);
+                m_internalWaitObject.SafeWaitHandle!.DangerousAddRef(ref bReleaseNeeded); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
             }
         }
 
         internal bool Unregister(
-             WaitHandle waitObject          // object to be notified when all callbacks to delegates have completed
+             WaitHandle? waitObject          // object to be notified when all callbacks to delegates have completed
              )
         {
             bool result = false;
@@ -80,7 +82,8 @@ namespace System.Threading
                             {
                                 if (bReleaseNeeded)
                                 {
-                                    m_internalWaitObject.SafeWaitHandle.DangerousRelease();
+                                    Debug.Assert(m_internalWaitObject != null, "Must be non-null for bReleaseNeeded to be true");
+                                    m_internalWaitObject.SafeWaitHandle!.DangerousRelease(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
                                     bReleaseNeeded = false;
                                 }
                                 // if result not true don't release/suppress here so finalizer can make another attempt
@@ -141,7 +144,8 @@ namespace System.Threading
                         WaitHandleCleanupNative(registeredWaitHandle);
                         if (bReleaseNeeded)
                         {
-                            m_internalWaitObject.SafeWaitHandle.DangerousRelease();
+                            Debug.Assert(m_internalWaitObject != null, "Must be non-null for bReleaseNeeded to be true");
+                            m_internalWaitObject.SafeWaitHandle!.DangerousRelease(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
                             bReleaseNeeded = false;
                         }
                         SetHandle(InvalidHandle);
@@ -159,7 +163,7 @@ namespace System.Threading
         private static extern void WaitHandleCleanupNative(IntPtr handle);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle waitObject);
+        private static extern bool UnregisterWaitNative(IntPtr handle, SafeHandle? waitObject);
     }
 
     public sealed class RegisteredWaitHandle : MarshalByRefObject
@@ -181,9 +185,8 @@ namespace System.Threading
             internalRegisteredWait.SetWaitObject(waitObject);
         }
 
-        // This is the only public method on this class
         public bool Unregister(
-             WaitHandle waitObject          // object to be notified when all callbacks to delegates have completed
+             WaitHandle? waitObject          // object to be notified when all callbacks to delegates have completed
              )
         {
             return internalRegisteredWait.Unregister(waitObject);
@@ -231,7 +234,7 @@ namespace System.Threading
         private static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,
-             object state,
+             object? state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce,   // NOTE: we do not allow other options that allow the callback to be queued as an APC
              bool compressStack

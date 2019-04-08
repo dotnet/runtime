@@ -28,7 +28,7 @@ namespace System.Globalization
         //  So yearOffset = 1911
         private static EraInfo[] s_taiwanEraInfo = new EraInfo[]
         {
-            new EraInfo( 1, 1912, 1, 1, 1911, 1, GregorianCalendar.MaxYear - 1911)    // era #, start year/month/day, yearOffset, minEraYear 
+            new EraInfo( 1, 1912, 1, 1, 1911, 1, GregorianCalendar.MaxYear - 1911)    // era #, start year/month/day, yearOffset, minEraYear
         };
 
         private static volatile Calendar s_defaultInstance;
@@ -149,7 +149,7 @@ namespace System.Globalization
             return _helper.ToDateTime(year, month, day, hour, minute, second, millisecond, era);
         }
 
-        public override int[]? Eras => _helper.Eras;
+        public override int[] Eras => _helper.Eras;
 
         private const int DefaultTwoDigitYearMax = 99;
 

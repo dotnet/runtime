@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,15 +17,15 @@ namespace System.IO
         private const bool DefaultIsAsync = false;
         internal const int DefaultBufferSize = 4096;
 
-        private byte[] _buffer;
+        private byte[]? _buffer;
         private int _bufferLength;
-        private readonly SafeFileHandle _fileHandle;
+        private readonly SafeFileHandle _fileHandle; // only ever null if ctor throws
 
         /// <summary>Whether the file is opened for reading, writing, or both.</summary>
         private readonly FileAccess _access;
 
         /// <summary>The path to the opened file.</summary>
-        private readonly string _path;
+        private readonly string? _path;
 
         /// <summary>The next available byte to be read from the _buffer.</summary>
         private int _readPos;
@@ -53,7 +54,7 @@ namespace System.IO
         private readonly bool _useAsyncIO;
 
         /// <summary>cached task for read ops that complete synchronously</summary>
-        private Task<int> _lastSynchronouslyCompletedTask = null;
+        private Task<int>? _lastSynchronouslyCompletedTask = null;
 
         /// <summary>
         /// Currently cached position in the stream.  This should always mirror the underlying file's actual position,
@@ -191,7 +192,7 @@ namespace System.IO
 
             // don't include inheritable in our bounds check for share
             FileShare tempshare = share & ~FileShare.Inheritable;
-            string badArg = null;
+            string? badArg = null;
 
             if (mode < FileMode.CreateNew || mode > FileMode.Append)
                 badArg = nameof(mode);
@@ -248,7 +249,7 @@ namespace System.IO
                 // If anything goes wrong while setting up the stream, make sure we deterministically dispose
                 // of the opened handle.
                 _fileHandle.Dispose();
-                _fileHandle = null;
+                _fileHandle = null!;
                 throw;
             }
         }
@@ -377,7 +378,7 @@ namespace System.IO
                 throw Error.GetFileNotOpen();
             }
 
-            Task<int> t = ReadAsyncInternal(buffer, cancellationToken, out int synchronousResult);
+            Task<int>? t = ReadAsyncInternal(buffer, cancellationToken, out int synchronousResult);
             return t != null ?
                 new ValueTask<int>(t) :
                 new ValueTask<int>(synchronousResult);
@@ -385,7 +386,7 @@ namespace System.IO
 
         private Task<int> ReadAsyncTask(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
-            Task<int> t = ReadAsyncInternal(new Memory<byte>(array, offset, count), cancellationToken, out int synchronousResult);
+            Task<int>? t = ReadAsyncInternal(new Memory<byte>(array, offset, count), cancellationToken, out int synchronousResult);
 
             if (t == null)
             {
@@ -818,7 +819,7 @@ namespace System.IO
             Dispose(false);
         }
 
-        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback callback, object state)
+        public override IAsyncResult BeginRead(byte[] array, int offset, int numBytes, AsyncCallback callback, object? state)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -838,7 +839,7 @@ namespace System.IO
                 return TaskToApm.Begin(ReadAsyncTask(array, offset, numBytes, CancellationToken.None), callback, state);
         }
 
-        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback callback, object state)
+        public override IAsyncResult BeginWrite(byte[] array, int offset, int numBytes, AsyncCallback callback, object? state)
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));

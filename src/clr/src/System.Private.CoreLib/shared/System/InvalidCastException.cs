@@ -8,6 +8,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -22,19 +23,19 @@ namespace System
             HResult = HResults.COR_E_INVALIDCAST;
         }
 
-        public InvalidCastException(string message)
+        public InvalidCastException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_INVALIDCAST;
         }
 
-        public InvalidCastException(string message, Exception innerException)
+        public InvalidCastException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_INVALIDCAST;
         }
 
-        public InvalidCastException(string message, int errorCode)
+        public InvalidCastException(string? message, int errorCode)
             : base(message)
         {
             HResult = errorCode;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Globalization
@@ -13,9 +14,9 @@ namespace System.Globalization
     /// </summary>
     public class StringInfo
     {
-        private string _str;
+        private string _str = null!; // initialized in helper called by ctors
 
-        private int[] _indexes;
+        private int[]? _indexes;
 
         public StringInfo() : this(string.Empty)
         {
@@ -26,7 +27,7 @@ namespace System.Globalization
             this.String = value;
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             return value is StringInfo otherStringInfo
                 && _str.Equals(otherStringInfo._str);
@@ -35,10 +36,10 @@ namespace System.Globalization
         public override int GetHashCode() => _str.GetHashCode();
 
         /// <summary>
-        /// Our zero-based array of index values into the string. Initialize if 
+        /// Our zero-based array of index values into the string. Initialize if
         /// our private array is not yet, in fact, initialized.
         /// </summary>
-        private int[] Indexes
+        private int[]? Indexes
         {
             get
             {
@@ -65,7 +66,7 @@ namespace System.Globalization
 
         public string SubstringByTextElements(int startingTextElement)
         {
-            // If the string is empty, no sense going further. 
+            // If the string is empty, no sense going further.
             if (Indexes == null)
             {
                 if (startingTextElement < 0)
@@ -87,7 +88,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(startingTextElement), startingTextElement, SR.ArgumentOutOfRange_NeedPosNum);
             }
-            if (String.Length == 0 || startingTextElement >= Indexes.Length)
+            if (String.Length == 0 || startingTextElement >= Indexes!.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(startingTextElement), startingTextElement, SR.Arg_ArgumentOutOfRangeException);
             }
@@ -126,7 +127,7 @@ namespace System.Globalization
         ///      * EnclosingMark (e.g. U+20DD COMBINING ENCLOSING CIRCLE)
         ///
         /// In the context of GetNextTextElement() and ParseCombiningCharacters(), a text element is defined as:
-        ///  1. If a character/surrogate is in the following category, it is a text element.  
+        ///  1. If a character/surrogate is in the following category, it is a text element.
         ///     It can NOT further combine with characters in the combinging class to form a text element.
         ///      * one of the Unicode category in the combinging class
         ///      * UnicodeCategory.Format
@@ -196,9 +197,9 @@ namespace System.Globalization
         }
 
         /// <summary>
-        /// Returns the str containing the next text element in str starting at 
-        /// index index. If index is not supplied, then it will start at the beginning 
-        /// of str. It recognizes a base character plus one or more combining 
+        /// Returns the str containing the next text element in str starting at
+        /// index index. If index is not supplied, then it will start at the beginning
+        /// of str. It recognizes a base character plus one or more combining
         /// characters or a properly formed surrogate pair as a text element.
         /// See also the ParseCombiningCharacters() and the ParseSurrogates() methods.
         /// </summary>

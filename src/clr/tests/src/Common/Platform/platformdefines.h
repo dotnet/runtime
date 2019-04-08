@@ -27,6 +27,7 @@
 #endif
 
 #include <wchar.h>
+#define static_assert_no_msg(x) static_assert((x), #x)
 
 //
 // types and constants

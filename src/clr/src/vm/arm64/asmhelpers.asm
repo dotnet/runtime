@@ -24,7 +24,6 @@
     IMPORT UMEntryPrestubUnwindFrameChainHandler
     IMPORT UMThunkStubUnwindFrameChainHandler
     IMPORT TheUMEntryPrestubWorker
-    IMPORT GetThread
     IMPORT CreateThreadBlockThrow
     IMPORT UMThunkStubRareDisableWorker
     IMPORT GetCurrentSavedRedirectContext
@@ -935,8 +934,8 @@ UMThunkStub_StackArgs SETA 112
     ; save UMEntryThunk*
     str                 x12, [sp, #UMThunkStub_HiddenArg]
 
-    ; assuming GetThread does not clobber FP Args
-    bl                  GetThread
+    ; x0 = GetThread(). Trashes x19
+    INLINE_GETTHREAD    x0, x19
     cbz                 x0, UMThunkStub_DoThreadSetup
 
 UMThunkStub_HaveThread
@@ -1025,6 +1024,8 @@ UMThunkStub_DoTrapReturningThreads
 
     NESTED_END
 
+    INLINE_GETTHREAD_CONSTANT_POOL
+    
 #ifdef FEATURE_HIJACK
 ; ------------------------------------------------------------------
 ; Hijack function for functions which return a scalar type or a struct (value type)

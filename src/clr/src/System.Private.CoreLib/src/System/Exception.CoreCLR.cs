@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Diagnostics;
 using System.Reflection;
@@ -89,7 +90,7 @@ namespace System
             string restrictedError,
             string restrictedErrorReference,
             string restrictedCapabilitySid,
-            object restrictedErrorObject,
+            object? restrictedErrorObject,
             bool hasrestrictedLanguageErrorObject = false)
         {
             IDictionary dict = Data;
@@ -106,7 +107,7 @@ namespace System
             }
         }
 
-        internal bool TryGetRestrictedLanguageErrorObject(out object restrictedErrorObject)
+        internal bool TryGetRestrictedLanguageErrorObject(out object? restrictedErrorObject)
         {
             restrictedErrorObject = null;
             if (Data != null && Data.Contains("__HasRestrictedLanguageErrorObject"))
@@ -126,9 +127,10 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         static private extern IRuntimeMethodInfo GetMethodFromStackTrace(object stackTrace);
 
-        private MethodBase GetExceptionMethodFromStackTrace()
+        private MethodBase? GetExceptionMethodFromStackTrace()
         {
-            IRuntimeMethodInfo method = GetMethodFromStackTrace(_stackTrace);
+            Debug.Assert(_stackTrace != null, "_stackTrace shouldn't be null when this method is called");
+            IRuntimeMethodInfo method = GetMethodFromStackTrace(_stackTrace!);
 
             // Under certain race conditions when exceptions are re-used, this can be null
             if (method == null)
@@ -137,7 +139,7 @@ namespace System
             return RuntimeType.GetMethodBase(method);
         }
 
-        public MethodBase TargetSite
+        public MethodBase? TargetSite
         {
             get
             {
@@ -157,7 +159,7 @@ namespace System
 
         // Returns the stack trace as a string.  If no stack trace is
         // available, null is returned.
-        public virtual string StackTrace
+        public virtual string? StackTrace
         {
             get
             {
@@ -171,10 +173,10 @@ namespace System
         // is true.  Note that this requires FileIOPermission(PathDiscovery), and so
         // will usually fail in CoreCLR.  To avoid the demand and resulting
         // SecurityException we can explicitly not even try to get fileinfo.
-        private string GetStackTrace(bool needFileInfo)
+        private string? GetStackTrace(bool needFileInfo)
         {
-            string stackTraceString = _stackTraceString;
-            string remoteStackTraceString = _remoteStackTraceString;
+            string? stackTraceString = _stackTraceString;
+            string? remoteStackTraceString = _remoteStackTraceString;
 
             // if no stack trace, try to get one
             if (stackTraceString != null)
@@ -199,7 +201,7 @@ namespace System
             return new StackTrace(e, needFileInfo).ToString(System.Diagnostics.StackTrace.TraceFormat.Normal);
         }
 
-        private string CreateSourceName()
+        private string? CreateSourceName()
         {
             StackTrace st = new StackTrace(this, fNeedFileInfo: false);
             if (st.FrameCount > 0)
@@ -209,12 +211,9 @@ namespace System
 
                 Module module = method.Module;
 
-                RuntimeModule rtModule = module as RuntimeModule;
-
-                if (rtModule == null)
+                if (!(module is RuntimeModule rtModule))
                 {
-                    System.Reflection.Emit.ModuleBuilder moduleBuilder = module as System.Reflection.Emit.ModuleBuilder;
-                    if (moduleBuilder != null)
+                    if (module is System.Reflection.Emit.ModuleBuilder moduleBuilder)
                         rtModule = moduleBuilder.InternalModule;
                     else
                         throw new ArgumentException(SR.Argument_MustBeRuntimeReflectionObject);
@@ -246,7 +245,7 @@ namespace System
         //  copy the stack trace to _remoteStackTraceString.
         internal void InternalPreserveStackTrace()
         {
-            string tmpStackTraceString;
+            string? tmpStackTraceString;
 
 #if FEATURE_APPX
             if (ApplicationModel.IsUap)
@@ -258,13 +257,13 @@ namespace System
 
                 // Make sure that the _source field is initialized if Source is not overriden.
                 // We want it to contain the original faulting point.
-                string source = Source;
+                string? source = Source;
             }
             else
 #else // FEATURE_APPX
             // Preinitialize _source on CoreSystem as well. The legacy behavior is not ideal and
             // we keep it for back compat but we can afford to make the change on the Phone.
-            string source = Source;
+            string? source = Source;
 #endif // FEATURE_APPX
             {
                 // Call the StackTrace getter in classic for compat.
@@ -296,7 +295,7 @@ namespace System
         private static extern void GetStackTracesDeepCopy(Exception exception, out object currentStackTrace, out object dynamicMethodArray);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SaveStackTracesFromDeepCopy(Exception exception, object currentStackTrace, object dynamicMethodArray);
+        internal static extern void SaveStackTracesFromDeepCopy(Exception exception, object? currentStackTrace, object? dynamicMethodArray);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern object CopyStackTrace(object currentStackTrace);
@@ -307,7 +306,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern uint GetExceptionCount();
 
-        internal object DeepCopyStackTrace(object currentStackTrace)
+        internal object? DeepCopyStackTrace(object? currentStackTrace)
         {
             if (currentStackTrace != null)
             {
@@ -319,7 +318,7 @@ namespace System
             }
         }
 
-        internal object DeepCopyDynamicMethods(object currentDynamicMethods)
+        internal object? DeepCopyDynamicMethods(object? currentDynamicMethods)
         {
             if (currentDynamicMethods != null)
             {
@@ -355,8 +354,8 @@ namespace System
                     //
                     // Since deep copying can throw on OOM, try to get the copies
                     // outside the lock.
-                    object _stackTraceCopy = (dispatchState.StackTrace == null) ? null : DeepCopyStackTrace(dispatchState.StackTrace);
-                    object _dynamicMethodsCopy = (dispatchState.DynamicMethods == null) ? null : DeepCopyDynamicMethods(dispatchState.DynamicMethods);
+                    object? _stackTraceCopy = (dispatchState.StackTrace == null) ? null : DeepCopyStackTrace(dispatchState.StackTrace);
+                    object? _dynamicMethodsCopy = (dispatchState.DynamicMethods == null) ? null : DeepCopyDynamicMethods(dispatchState.DynamicMethods);
 
                     // Finally, restore the information. 
                     //
@@ -378,24 +377,24 @@ namespace System
             }
         }
 
-        private MethodBase _exceptionMethod;  //Needed for serialization.  
-        internal string _message;
-        private IDictionary _data;
-        private Exception _innerException;
-        private string _helpURL;
-        private object _stackTrace;
-        private object _watsonBuckets;
-        private string _stackTraceString; //Needed for serialization.  
-        private string _remoteStackTraceString;
+        private MethodBase? _exceptionMethod;  //Needed for serialization.  
+        internal string? _message;
+        private IDictionary? _data;
+        private Exception? _innerException;
+        private string? _helpURL;
+        private object? _stackTrace;
+        private object? _watsonBuckets;
+        private string? _stackTraceString; //Needed for serialization.  
+        private string? _remoteStackTraceString;
 #pragma warning disable 414  // Field is not used from managed.        
         // _dynamicMethods is an array of System.Resolver objects, used to keep
         // DynamicMethodDescs alive for the lifetime of the exception. We do this because
         // the _stackTrace field holds MethodDescs, and a DynamicMethodDesc can be destroyed
         // unless a System.Resolver object roots it.
-        private object _dynamicMethods;
+        private object? _dynamicMethods;
 #pragma warning restore 414
 
-        private string _source;         // Mainly used by VB.
+        private string? _source;         // Mainly used by VB.
         private UIntPtr _ipForWatsonBuckets; // Used to persist the IP for Watson Bucketing
         private IntPtr _xptrs;             // Internal EE stuff 
 #pragma warning disable 414  // Field is not used from managed.
@@ -423,15 +422,15 @@ namespace System
             }
         }
 
-        private string SerializationRemoteStackTraceString => _remoteStackTraceString;
+        private string? SerializationRemoteStackTraceString => _remoteStackTraceString;
 
-        private object SerializationWatsonBuckets => _watsonBuckets;
+        private object? SerializationWatsonBuckets => _watsonBuckets;
 
-        private string SerializationStackTraceString
+        private string? SerializationStackTraceString
         {
             get
             {
-                string stackTraceString = _stackTraceString;
+                string? stackTraceString = _stackTraceString;
 
                 if (stackTraceString == null && _stackTrace != null)
                 {
@@ -464,7 +463,7 @@ namespace System
         // See comment on ExceptionMessageKind
         internal static string GetMessageFromNativeResources(ExceptionMessageKind kind)
         {
-            string retMesg = null;
+            string? retMesg = null;
             GetMessageFromNativeResources(kind, JitHelpers.GetStringHandleOnStack(ref retMesg));
             return retMesg;
         }
@@ -474,18 +473,18 @@ namespace System
 
         internal readonly struct DispatchState
         {
-            public readonly object StackTrace;
-            public readonly object DynamicMethods;
-            public readonly string RemoteStackTrace;
+            public readonly object? StackTrace;
+            public readonly object? DynamicMethods;
+            public readonly string? RemoteStackTrace;
             public readonly UIntPtr IpForWatsonBuckets;
-            public readonly object WatsonBuckets;
+            public readonly object? WatsonBuckets;
 
             public DispatchState(
-                object stackTrace,
-                object dynamicMethods,
-                string remoteStackTrace,
+                object? stackTrace,
+                object? dynamicMethods,
+                string? remoteStackTrace,
                 UIntPtr ipForWatsonBuckets,
-                object watsonBuckets)
+                object? watsonBuckets)
             {
                 StackTrace = stackTrace;
                 DynamicMethods = dynamicMethods;
@@ -497,7 +496,7 @@ namespace System
 
         internal DispatchState CaptureDispatchState()
         {
-            GetStackTracesDeepCopy(this, out object stackTrace, out object dynamicMethods);
+            GetStackTracesDeepCopy(this, out object? stackTrace, out object? dynamicMethods);
 
             return new DispatchState(stackTrace, dynamicMethods,
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);
