@@ -696,7 +696,7 @@ namespace System.Globalization
 
         public override int GetEra(DateTime time) => HebrewEra;
 
-        public override int[]? Eras => new int[] { HebrewEra };
+        public override int[] Eras => new int[] { HebrewEra };
 
         public override int GetMonth(DateTime time)
         {
@@ -907,4 +907,3 @@ namespace System.Globalization
         }
     }
 }
-

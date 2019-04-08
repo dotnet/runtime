@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.InteropServices;
 
 namespace System.IO
@@ -15,14 +16,14 @@ namespace System.IO
         /// Converts, resetting it, the last Win32 error into a corresponding <see cref="Exception"/> object, optionally
         /// including the specified path in the error message.
         /// </summary>
-        internal static Exception GetExceptionForLastWin32Error(string path = "")
+        internal static Exception GetExceptionForLastWin32Error(string? path = "")
             => GetExceptionForWin32Error(Marshal.GetLastWin32Error(), path);
 
         /// <summary>
         /// Converts the specified Win32 error into a corresponding <see cref="Exception"/> object, optionally
         /// including the specified path in the error message.
         /// </summary>
-        internal static Exception GetExceptionForWin32Error(int errorCode, string path = "")
+        internal static Exception GetExceptionForWin32Error(int errorCode, string? path = "")
         {
             switch (errorCode)
             {

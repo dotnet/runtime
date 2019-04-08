@@ -15,7 +15,7 @@
 **
 ===========================================================*/
 
-using System;
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Resources
@@ -24,7 +24,7 @@ namespace System.Resources
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class MissingSatelliteAssemblyException : SystemException
     {
-        private string _cultureName;
+        private string? _cultureName;
 
         public MissingSatelliteAssemblyException()
             : base(SR.MissingSatelliteAssembly_Default)
@@ -32,20 +32,20 @@ namespace System.Resources
             HResult = System.HResults.COR_E_MISSINGSATELLITEASSEMBLY;
         }
 
-        public MissingSatelliteAssemblyException(string message)
+        public MissingSatelliteAssemblyException(string? message)
             : base(message)
         {
             HResult = System.HResults.COR_E_MISSINGSATELLITEASSEMBLY;
         }
 
-        public MissingSatelliteAssemblyException(string message, string cultureName)
+        public MissingSatelliteAssemblyException(string? message, string? cultureName)
             : base(message)
         {
             HResult = System.HResults.COR_E_MISSINGSATELLITEASSEMBLY;
             _cultureName = cultureName;
         }
 
-        public MissingSatelliteAssemblyException(string message, Exception inner)
+        public MissingSatelliteAssemblyException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = System.HResults.COR_E_MISSINGSATELLITEASSEMBLY;
@@ -56,9 +56,6 @@ namespace System.Resources
         {
         }
 
-        public string CultureName
-        {
-            get { return _cultureName; }
-        }
+        public string? CultureName => _cultureName;
     }
 }

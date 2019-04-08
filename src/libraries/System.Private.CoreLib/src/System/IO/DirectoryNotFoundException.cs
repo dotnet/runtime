@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.IO
@@ -22,13 +23,13 @@ namespace System.IO
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
-        public DirectoryNotFoundException(string message)
+        public DirectoryNotFoundException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;
         }
 
-        public DirectoryNotFoundException(string message, Exception innerException)
+        public DirectoryNotFoundException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_DIRECTORYNOTFOUND;

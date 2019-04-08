@@ -281,7 +281,7 @@ public:
     ValueNum VNForLongCon(INT64 cnsVal);
     ValueNum VNForFloatCon(float cnsVal);
     ValueNum VNForDoubleCon(double cnsVal);
-    ValueNum VNForByrefCon(INT64 byrefVal);
+    ValueNum VNForByrefCon(size_t byrefVal);
 
 #ifdef _TARGET_64BIT_
     ValueNum VNForPtrSizeIntCon(INT64 cnsVal)
@@ -1250,12 +1250,13 @@ private:
         return m_doubleCnsMap;
     }
 
-    LongToValueNumMap* m_byrefCnsMap;
-    LongToValueNumMap* GetByrefCnsMap()
+    typedef VNMap<size_t> ByrefToValueNumMap;
+    ByrefToValueNumMap*   m_byrefCnsMap;
+    ByrefToValueNumMap*   GetByrefCnsMap()
     {
         if (m_byrefCnsMap == nullptr)
         {
-            m_byrefCnsMap = new (m_alloc) LongToValueNumMap(m_alloc);
+            m_byrefCnsMap = new (m_alloc) ByrefToValueNumMap(m_alloc);
         }
         return m_byrefCnsMap;
     }
@@ -1401,8 +1402,8 @@ struct ValueNumStore::VarTypConv<TYP_DOUBLE>
 template <>
 struct ValueNumStore::VarTypConv<TYP_BYREF>
 {
-    typedef INT64 Type;
-    typedef void* Lang;
+    typedef size_t Type;
+    typedef void*  Lang;
 };
 template <>
 struct ValueNumStore::VarTypConv<TYP_REF>

@@ -12,6 +12,14 @@ using EditorBrowsableState = System.ComponentModel.EditorBrowsableState;
 
 using Internal.Runtime.CompilerServices;
 
+#if BIT64
+using nint = System.Int64;
+using nuint = System.UInt64;
+#else // BIT64
+using nint = System.Int32;
+using nuint = System.UInt32;
+#endif // BIT64
+
 namespace System
 {
     /// <summary>
@@ -372,12 +380,12 @@ namespace System
                     // least to be in-bounds when compared with the original Memory<T> instance, so using the span won't
                     // AV the process.
 
-                    int desiredStartIndex = _index & ReadOnlyMemory<T>.RemoveFlagsBitMask;
+                    nuint desiredStartIndex = (uint)_index & (uint)ReadOnlyMemory<T>.RemoveFlagsBitMask;
                     int desiredLength = _length;
 
 #if BIT64
                     // See comment in Span<T>.Slice for how this works.
-                    if ((ulong)(uint)desiredStartIndex + (ulong)(uint)desiredLength > (ulong)(uint)lengthOfUnderlyingSpan)
+                    if ((ulong)desiredStartIndex + (ulong)(uint)desiredLength > (ulong)(uint)lengthOfUnderlyingSpan)
                     {
                         ThrowHelper.ThrowArgumentOutOfRangeException();
                     }
@@ -388,7 +396,7 @@ namespace System
                     }
 #endif
 
-                    refToReturn = ref Unsafe.Add(ref refToReturn, desiredStartIndex);
+                    refToReturn = ref Unsafe.Add(ref refToReturn, (IntPtr)(void*)desiredStartIndex);
                     lengthOfUnderlyingSpan = desiredLength;
                 }
 

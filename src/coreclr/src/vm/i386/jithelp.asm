@@ -16,6 +16,7 @@
         .model  flat
 
         include asmconstants.inc
+        include asmmacros.inc
 
         option  casemap:none
         .code
@@ -65,7 +66,6 @@ endif
 EXTERN _g_TailCallFrameVptr:DWORD
 EXTERN @JIT_FailFast@0:PROC
 EXTERN _s_gsCookie:DWORD
-EXTERN _GetThread@0:PROC
 EXTERN @JITutil_IsInstanceOfInterface@8:PROC
 EXTERN @JITutil_ChkCastInterface@8:PROC
 EXTERN @JITutil_IsInstanceOfAny@8:PROC
@@ -970,7 +970,9 @@ ExtraSpace      = 0
         push    ecx
         push    edx
 
-        call    _GetThread@0; eax = Thread*
+        ; eax = GetThread(). Trashes edx
+        INLINE_GETTHREAD eax, edx
+
         mov     [esp + 8], eax
 
 ExtraSpace      = 12    ; pThread, ecx, edx

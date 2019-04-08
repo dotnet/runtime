@@ -240,8 +240,6 @@ extern "C" DLL_EXPORT DelegateParam STDMETHODCALLTYPE ReturnDelegateByVal()
 *				                                                                *
 * -----------------------------------------------------------------------------*/
 
-#import "mscorlib.tlb" no_namespace named_guids raw_interfaces_only rename("ReportEvent","ReportEventNew")
-
 typedef struct{
     int result1;
     int result2;
@@ -290,24 +288,60 @@ BOOL STDMETHODCALLTYPE Verify(Result expectedR, Result resultR)
         && expectedR.result3 == resultR.result3;
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByValParam(_Delegate * p_dele)
+HRESULT InvokeDelegate(IDispatch* dele)
+{
+    HRESULT hr;
+    BSTR bstrNames[1];
+    bstrNames[0] = SysAllocString(L"DynamicInvoke");
+    DISPID dispid = 0;
+    hr = dele->GetIDsOfNames(
+        IID_NULL,
+        bstrNames,
+        sizeof(bstrNames) / sizeof(bstrNames[0]),
+        GetUserDefaultLCID(),
+        &dispid);
+
+    SysFreeString(bstrNames[0]);
+
+    if (FAILED(hr))
+    {
+        printf("\nERROR: Invoke failed: 0x%x\n", (unsigned int)hr);
+        return hr;
+    }
+
+    DISPPARAMS params = { NULL, NULL, 0, 0 };
+
+    hr = dele->Invoke(
+        dispid,
+        IID_NULL,
+        GetUserDefaultLCID(),
+        DISPATCH_METHOD,
+        &params,
+        NULL,
+        NULL,
+        NULL);
+
+    return hr;
+}
+
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByValParam(IDispatch * p_dele)
 {
     ResetToZero();
 
     HRESULT hr;
-    hr = p_dele->DynamicInvoke(NULL, NULL);
+    hr = InvokeDelegate(p_dele);
     if(FAILED(hr))
         return FALSE;
     else
         return Verify(expected, result);
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByRefParam(_Delegate **pp_dele)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByRefParam(IDispatch **pp_dele)
 {
     ResetToZero();
 
     HRESULT hr;
-    hr = (*pp_dele)->DynamicInvoke(NULL, NULL);
+    hr = InvokeDelegate(*pp_dele);
     if(FAILED(hr))
     {
         return FALSE;
@@ -319,12 +353,12 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByRefParam(_Delegat
     }
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInValParam(_Delegate * p_dele)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInValParam(IDispatch * p_dele)
 {
     ResetToZero();
 
     HRESULT hr;
-    hr = p_dele->DynamicInvoke(NULL, NULL);
+    hr = InvokeDelegate(p_dele);
     if(FAILED(hr))
     {
         return FALSE;
@@ -335,12 +369,12 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInValParam(_Deleg
     }
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInRefParam(_Delegate **pp_dele)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInRefParam(IDispatch **pp_dele)
 {
     ResetToZero();
 
     HRESULT hr;
-    hr = (*pp_dele)->DynamicInvoke(NULL, NULL);
+    hr = InvokeDelegate(*pp_dele);
     if(FAILED(hr))
     {
         return FALSE;
@@ -352,12 +386,12 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInRefParam(_Deleg
     }
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByOutValParam(_Delegate * p_dele)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByOutValParam(IDispatch * p_dele)
 {
     ResetToZero();
 
     HRESULT hr;
-    hr = p_dele->DynamicInvoke(NULL, NULL);
+    hr = InvokeDelegate(p_dele);
     if(FAILED(hr))
     {
         return FALSE;
@@ -385,7 +419,7 @@ extern "C" DLL_EXPORT int STDMETHODCALLTYPE RetFieldResult3()
     return result.result3;
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByOutRefParam(_Delegate ** pp_dele, _Delegate * pdeleHelper)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByOutRefParam(IDispatch ** pp_dele, IDispatch * pdeleHelper)
 {
     printf("In Take_DelegatePtrByOutRefParam native side \n");
     ResetToZero();
@@ -402,12 +436,12 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByOutRefParam(_Dele
     }
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInOutValParam(_Delegate * p_dele)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInOutValParam(IDispatch * p_dele)
 {
     ResetToZero();
 
     HRESULT hr;
-    hr = p_dele->DynamicInvoke(NULL, NULL);
+    hr = InvokeDelegate(p_dele);
     if(FAILED(hr))
     {
         return FALSE;
@@ -418,12 +452,12 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInOutValParam(_De
     }
 }
 
-extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInOutRefParam(_Delegate **pp_dele)
+extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInOutRefParam(IDispatch **pp_dele)
 {
     ResetToZero();
 
     HRESULT hr;
-    hr = (*pp_dele)->DynamicInvoke(NULL, NULL);
+    hr = InvokeDelegate(*pp_dele);
     if(FAILED(hr))
     {
         return FALSE;
@@ -435,7 +469,7 @@ extern "C" DLL_EXPORT BOOL STDMETHODCALLTYPE Take_DelegatePtrByInOutRefParam(_De
     }
 }
 
-extern "C" DLL_EXPORT _Delegate* ReturnDelegatePtrByVal(_Delegate * pdeleHelper)
+extern "C" DLL_EXPORT IDispatch* ReturnDelegatePtrByVal(IDispatch * pdeleHelper)
 {
     pdeleHelper->AddRef();
     return pdeleHelper;

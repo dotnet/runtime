@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Threading
 {
     /// <summary>
@@ -12,13 +13,13 @@ namespace System.Threading
         private static readonly unsafe IOCompletionCallback s_completionCallback = CompletionCallback;
 
         private readonly IOCompletionCallback _userCallback;
-        internal readonly object _userState;
-        internal PreAllocatedOverlapped _preAllocated;
+        internal readonly object? _userState;
+        internal PreAllocatedOverlapped? _preAllocated;
         internal unsafe NativeOverlapped* _nativeOverlapped;
-        internal ThreadPoolBoundHandle _boundHandle;
+        internal ThreadPoolBoundHandle? _boundHandle;
         internal bool _completed;
 
-        public unsafe ThreadPoolBoundHandleOverlapped(IOCompletionCallback callback, object state, object pinData, PreAllocatedOverlapped preAllocated)
+        public unsafe ThreadPoolBoundHandleOverlapped(IOCompletionCallback callback, object? state, object? pinData, PreAllocatedOverlapped? preAllocated)
         {
             _userCallback = callback;
             _userState = state;

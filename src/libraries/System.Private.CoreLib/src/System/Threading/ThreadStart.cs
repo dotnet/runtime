@@ -12,6 +12,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 namespace System.Threading
 {
     public delegate void ThreadStart();

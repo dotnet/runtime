@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -16,7 +17,8 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     [CLSCompliant(false)]
     public static class Aes
     {
-        public static bool IsSupported {  get { return false; } }
+        public static bool IsSupported { [Intrinsic] get { return false; } }
+
         /// <summary>
         /// Performs AES single round decryption
         /// vaesdq_u8 (uint8x16_t data, uint8x16_t key)

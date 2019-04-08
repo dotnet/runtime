@@ -268,7 +268,7 @@ namespace System.Globalization
 
         public override int GetEra(DateTime time) => ADEra;
 
-        public override int[]? Eras => new int[] { ADEra };
+        public override int[] Eras => new int[] { ADEra };
 
         /// <summary>
         /// Returns the month part of the specified DateTime.

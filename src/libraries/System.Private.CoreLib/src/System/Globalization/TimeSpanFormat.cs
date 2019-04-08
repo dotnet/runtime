@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -39,7 +40,7 @@ namespace System.Globalization
 
 
         /// <summary>Main method called from TimeSpan.ToString.</summary>
-        internal static string Format(TimeSpan value, string format, IFormatProvider formatProvider)
+        internal static string Format(TimeSpan value, string? format, IFormatProvider? formatProvider)
         {
             if (string.IsNullOrEmpty(format))
             {
@@ -67,7 +68,7 @@ namespace System.Globalization
         }
 
         /// <summary>Main method called from TimeSpan.TryFormat.</summary>
-        internal static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider formatProvider)
+        internal static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? formatProvider)
         {
             if (format.Length == 0)
             {
@@ -126,7 +127,7 @@ namespace System.Globalization
 
         private enum StandardFormat { C, G, g }
 
-        private static bool TryFormatStandard(TimeSpan value, StandardFormat format, string decimalSeparator, Span<char> destination, out int charsWritten)
+        private static bool TryFormatStandard(TimeSpan value, StandardFormat format, string? decimalSeparator, Span<char> destination, out int charsWritten)
         {
             Debug.Assert(format == StandardFormat.C || format == StandardFormat.G || format == StandardFormat.g);
 
@@ -281,11 +282,12 @@ namespace System.Globalization
             // Write fraction and separator, if necessary
             if (fractionDigits != 0)
             {
+                Debug.Assert(format == StandardFormat.C || decimalSeparator != null);
                 if (format == StandardFormat.C)
                 {
                     destination[idx++] = '.';
                 }
-                else if (decimalSeparator.Length == 1)
+                else if (decimalSeparator!.Length == 1)
                 {
                     destination[idx++] = decimalSeparator[0];
                 }
@@ -330,7 +332,7 @@ namespace System.Globalization
         }
 
         /// <summary>Format the TimeSpan instance using the specified format.</summary>
-        private static StringBuilder FormatCustomized(TimeSpan value, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, StringBuilder result = null)
+        private static StringBuilder FormatCustomized(TimeSpan value, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, StringBuilder? result = null)
         {
             Debug.Assert(dtfi != null);
 
@@ -390,7 +392,7 @@ namespace System.Globalization
                         break;
                     case 'f':
                         //
-                        // The fraction of a second in single-digit precision. The remaining digits are truncated. 
+                        // The fraction of a second in single-digit precision. The remaining digits are truncated.
                         //
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > DateTimeFormat.MaxSecondsFractionDigits)
@@ -451,7 +453,7 @@ namespace System.Globalization
                         break;
                     case '%':
                         // Optional format character.
-                        // For example, format string "%d" will print day 
+                        // For example, format string "%d" will print day
                         // Most of the cases, "%" can be ignored.
                         nextChar = DateTimeFormat.ParseNextChar(format, i);
                         // nextChar will be -1 if we already reach the end of the format string.
@@ -532,7 +534,7 @@ namespace System.Globalization
                 x._literals[3] = ":";
                 x._literals[4] = ".";
                 x._literals[5] = string.Empty;
-                x.AppCompatLiteral = ":."; // MinuteSecondSep+SecondFractionSep;       
+                x.AppCompatLiteral = ":."; // MinuteSecondSep+SecondFractionSep;
                 x.dd = 2;
                 x.hh = 2;
                 x.mm = 2;

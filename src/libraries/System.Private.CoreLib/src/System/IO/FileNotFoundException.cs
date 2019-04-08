@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+using System.Diagnostics;
 using System.Runtime.Serialization;
 
 namespace System.IO
@@ -17,26 +19,26 @@ namespace System.IO
             HResult = HResults.COR_E_FILENOTFOUND;
         }
 
-        public FileNotFoundException(string message)
+        public FileNotFoundException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_FILENOTFOUND;
         }
 
-        public FileNotFoundException(string message, Exception innerException)
+        public FileNotFoundException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_FILENOTFOUND;
         }
 
-        public FileNotFoundException(string message, string fileName) 
+        public FileNotFoundException(string? message, string? fileName) 
             : base(message)
         {
             HResult = HResults.COR_E_FILENOTFOUND;
             FileName = fileName;
         }
 
-        public FileNotFoundException(string message, string fileName, Exception innerException)
+        public FileNotFoundException(string? message, string? fileName, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_FILENOTFOUND;
@@ -48,6 +50,7 @@ namespace System.IO
             get
             {
                 SetMessageField();
+                Debug.Assert(_message != null, "_message was null after calling SetMessageField");
                 return _message;
             }
         }
@@ -65,8 +68,8 @@ namespace System.IO
             }
         }
 
-        public string FileName { get; }
-        public string FusionLog { get; }
+        public string? FileName { get; }
+        public string? FusionLog { get; }
 
         public override string ToString()
         {
