@@ -820,6 +820,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(36683)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToLogFont_DisposedGraphics_ThrowsArgumentException()
         {
