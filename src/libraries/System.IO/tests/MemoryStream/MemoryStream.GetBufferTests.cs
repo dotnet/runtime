@@ -31,6 +31,15 @@ namespace System.IO.Tests
             Assert.Equal(500, buffer.Length);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/coreclr/pull/23700")]
+        [Fact]
+        public void MemoryStream_GetBuffer_AfterCapacityReset()
+        {
+            var ms = new MemoryStream(100);
+            ms.Capacity = 0;
+            Assert.NotNull(ms.GetBuffer());
+        }
+
         [Fact]
         public void MemoryStream_GetBuffer()
         {
