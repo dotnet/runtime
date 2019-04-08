@@ -1412,6 +1412,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                          BOOL BestFit,
                          BOOL ThrowOnUnmappableChar,
                          BOOL fEmitsIL,
+                         BOOL onInstanceMethod,
                          MethodDesc* pMD,
                          BOOL fLoadCustomMarshal
 #ifdef _DEBUG
@@ -1514,8 +1515,9 @@ MarshalInfo::MarshalInfo(Module* pModule,
     }
    
     nativeType = ParamInfo.m_NativeType;
+
     corElemType = sig.PeekElemTypeNormalized(pModule, pTypeContext); 
-    mtype       = corElemType;
+    mtype = corElemType;
 
 #ifdef FEATURE_COMINTEROP
     if (IsWinRTScenario() && nativeType != NATIVE_TYPE_DEFAULT)
@@ -1643,8 +1645,15 @@ MarshalInfo::MarshalInfo(Module* pModule,
     // "un-normalized" signature type. It has to be verified that all the value types
     // that have been normalized away have default marshaling or MarshalAs(Struct).
     // In addition, the nativeType must be updated with the type of the real primitive inside.
-    // 
-    VerifyAndAdjustNormalizedType(pModule, sig, pTypeContext, &mtype, &nativeType);
+    // We don't normalize on return values of member functions since struct return values need to be treated as structures.
+    if (isParam || !onInstanceMethod)
+    {
+        VerifyAndAdjustNormalizedType(pModule, sig, pTypeContext, &mtype, &nativeType);
+    }
+    else
+    {
+        mtype = sig.PeekElemTypeClosed(pModule, pTypeContext);
+    }
 #endif // _TARGET_X86_
 
 
@@ -2003,16 +2012,27 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     IfFailGoto(E_FAIL, lFail);
                 }
 
-                if (m_ms == MARSHAL_SCENARIO_WINRT && COMDelegate::IsDelegate(m_pMT))
+                if (COMDelegate::IsDelegate(m_pMT))
                 {
-                    // In WinRT scenarios delegates must be WinRT delegates
-                    if (!m_pMT->IsProjectedFromWinRT() && !WinRTTypeNameConverter::IsRedirectedType(m_pMT))
+                    if (m_ms == MARSHAL_SCENARIO_WINRT)
                     {
-                        m_resID = IDS_EE_BADMARSHAL_WINRT_DELEGATE;
+                        // In WinRT scenarios delegates must be WinRT delegates
+                        if (!m_pMT->IsProjectedFromWinRT() && !WinRTTypeNameConverter::IsRedirectedType(m_pMT))
+                        {
+                            m_resID = IDS_EE_BADMARSHAL_WINRT_DELEGATE;
+                            IfFailGoto(E_FAIL, lFail);
+                        }
+                    }
+                    else
+                    {
+                        // UnmanagedType.Interface for delegates used to mean the .NET Framework _Delegate interface.
+                        // We don't support that interface in .NET Core, so we disallow marshalling as it here.
+                        // The user can specify UnmanagedType.IDispatch and use the delegate through the IDispatch interface
+                        // if they need an interface pointer.
+                        m_resID = IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE;
                         IfFailGoto(E_FAIL, lFail);
                     }
                 }
-
                 m_type = MARSHAL_TYPE_INTERFACE;
             }
             else if (pDefaultMT != NULL && nativeType == NATIVE_TYPE_DEFAULT)
@@ -2291,17 +2311,29 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                         case NATIVE_TYPE_DEFAULT:
 #ifdef FEATURE_COMINTEROP
-                            if (m_ms != MARSHAL_SCENARIO_NDIRECT)
+                            if (m_ms == MARSHAL_SCENARIO_WINRT)
                             {
-                                _ASSERTE(m_ms == MARSHAL_SCENARIO_COMINTEROP || m_ms == MARSHAL_SCENARIO_WINRT);
                                 m_type = MARSHAL_TYPE_INTERFACE;
+                            }
+                            else if (m_ms == MARSHAL_SCENARIO_COMINTEROP)
+                            {
+                                // Default for COM marshalling for delegates used to mean the .NET Framework _Delegate interface.
+                                // We don't support that interface in .NET Core, so we disallow marshalling as it here.
+                                // The user can specify UnmanagedType.IDispatch and use the delegate through the IDispatch interface
+                                // if they need an interface pointer.
+                                m_resID = IDS_EE_BADMARSHAL_DELEGATE_TLB_INTERFACE;
+                                IfFailGoto(E_FAIL, lFail);
                             }
                             else
 #endif // FEATURE_COMINTEROP
                                 m_type = MARSHAL_TYPE_DELEGATE;
 
                             break;
-
+#ifdef FEATURE_COMINTEROP
+                        case NATIVE_TYPE_IDISPATCH:
+                            m_type = MARSHAL_TYPE_INTERFACE;
+                            break;
+#endif
                         default:
                         m_resID = IDS_EE_BADMARSHAL_DELEGATE;
                         IfFailGoto(E_FAIL, lFail);
@@ -2730,6 +2762,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
                         // (returning small value types by value in registers) is already done in JIT64.
                         if (        !m_byref   // Permit register-sized structs as return values
                                  && !isParam
+                                 && !onInstanceMethod
                                  && CorIsPrimitiveType(m_pMT->GetInternalCorElementType())
                                  && !IsUnmanagedValueTypeReturnedByRef(nativeSize)
                                  && managedSize <= sizeof(void*)

@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -15,13 +17,13 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Sse42() { }
 
-        public new static bool IsSupported { get { return false; } }
+        public new static bool IsSupported { [Intrinsic] get { return false; } }
 
         public new abstract class X64 : Sse41.X64
         {
             internal X64() { }
 
-            public new static bool IsSupported { get { return false; } }
+            public new static bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
             /// unsigned __int64 _mm_crc32_u64 (unsigned __int64 crc, unsigned __int64 v)

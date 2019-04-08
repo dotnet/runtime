@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -15,12 +17,12 @@ namespace System.Threading
         // Win32 only takes maximum count of int.MaxValue
         public Semaphore(int initialCount, int maximumCount) : this(initialCount, maximumCount, null) { }
 
-        public Semaphore(int initialCount, int maximumCount, string name) :
+        public Semaphore(int initialCount, int maximumCount, string? name) :
             this(initialCount, maximumCount, name, out _)
         {
         }
 
-        public Semaphore(int initialCount, int maximumCount, string name, out bool createdNew)
+        public Semaphore(int initialCount, int maximumCount, string? name, out bool createdNew)
         {
             if (initialCount < 0)
                 throw new ArgumentOutOfRangeException(nameof(initialCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -36,7 +38,7 @@ namespace System.Threading
 
         public static Semaphore OpenExisting(string name)
         {
-            Semaphore result;
+            Semaphore? result;
             switch (OpenExistingWorker(name, out result))
             {
                 case OpenExistingResult.NameNotFound:
@@ -46,11 +48,12 @@ namespace System.Threading
                 case OpenExistingResult.PathNotFound:
                     throw new IOException(SR.Format(SR.IO_PathNotFound_Path, name));
                 default:
+                    Debug.Assert(result != null, "result should be non-null on success");
                     return result;
             }
         }
 
-        public static bool TryOpenExisting(string name, out Semaphore result) =>
+        public static bool TryOpenExisting(string name, out Semaphore? result) => // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             OpenExistingWorker(name, out result) == OpenExistingResult.Success;
 
         public int Release() => ReleaseCore(1);

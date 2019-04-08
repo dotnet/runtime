@@ -30,6 +30,10 @@ public:
         static BOOL IsDevice(SString & path);
 
         static HRESULT NormalizePath(SString& path);
+
+#ifndef FEATURE_PAL
+        static void NormalizeDirectorySeparators(SString& path);
+#endif
 };
 
 HMODULE
@@ -59,6 +63,7 @@ LoadLibraryExWrapper(
 #ifndef FEATURE_PAL
             //Adding the assert to ensure relative paths which are not just filenames are not used for LoadLibrary Calls
             _ASSERTE(!LongFile::IsPathNotFullyQualified(path) || !LongFile::ContainsDirectorySeparator(path));
+            LongFile::NormalizeDirectorySeparators(path);
 #endif //FEATURE_PAL
 
             ret = LoadLibraryExW(path.GetUnicode(), hFile, dwFlags);
@@ -1172,6 +1177,17 @@ const WCHAR* LongFile::ExtendedPrefix = W("\\\\?\\");
 const WCHAR* LongFile::DevicePathPrefix = W("\\\\.\\");
 const WCHAR* LongFile::UNCExtendedPathPrefix = W("\\\\?\\UNC\\");
 const WCHAR* LongFile::UNCPathPrefix = UNCPATHPREFIX;
+
+void LongFile::NormalizeDirectorySeparators(SString& path)
+{
+    for(SString::Iterator i = path.Begin(); i < path.End(); ++i)
+    {
+        if (*i == AltDirectorySeparatorChar)
+        {
+            path.Replace(i, DirectorySeparatorChar);
+        }
+    }
+}
 
 BOOL LongFile::IsExtended(SString & path)
 {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security;
@@ -35,22 +36,25 @@ namespace System.Globalization
         private bool LoadCalendarDataFromSystem(string localeName, CalendarId calendarId)
         {
             bool result = true;
-            result &= GetCalendarInfo(localeName, calendarId, CalendarDataType.NativeName, out this.sNativeName);
-            result &= GetCalendarInfo(localeName, calendarId, CalendarDataType.MonthDay, out this.sMonthDay);
+            // TODO-NULLABLE: these can return null but are later replaced with String.Empty or other non-nullable value
+            result &= GetCalendarInfo(localeName, calendarId, CalendarDataType.NativeName, out this.sNativeName!);
+            result &= GetCalendarInfo(localeName, calendarId, CalendarDataType.MonthDay, out this.sMonthDay!);
             this.sMonthDay = NormalizeDatePattern(this.sMonthDay);
 
-            result &= EnumDatePatterns(localeName, calendarId, CalendarDataType.ShortDates, out this.saShortDates);
-            result &= EnumDatePatterns(localeName, calendarId, CalendarDataType.LongDates, out this.saLongDates);
-            result &= EnumDatePatterns(localeName, calendarId, CalendarDataType.YearMonths, out this.saYearMonths);
-            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.DayNames, out this.saDayNames);
-            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.AbbrevDayNames, out this.saAbbrevDayNames);
-            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.SuperShortDayNames, out this.saSuperShortDayNames);
+            result &= EnumDatePatterns(localeName, calendarId, CalendarDataType.ShortDates, out this.saShortDates!);
+            result &= EnumDatePatterns(localeName, calendarId, CalendarDataType.LongDates, out this.saLongDates!);
+            result &= EnumDatePatterns(localeName, calendarId, CalendarDataType.YearMonths, out this.saYearMonths!);
+            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.DayNames, out this.saDayNames!);
+            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.AbbrevDayNames, out this.saAbbrevDayNames!);
+            result &= EnumCalendarInfo(localeName, calendarId, CalendarDataType.SuperShortDayNames, out this.saSuperShortDayNames!);
 
-            string leapHebrewMonthName = null;
-            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthNames, out this.saMonthNames, ref leapHebrewMonthName);
+            string? leapHebrewMonthName = null;
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthNames, out this.saMonthNames!, ref leapHebrewMonthName);
             if (leapHebrewMonthName != null)
-            {              
-                // In Hebrew calendar, get the leap month name Adar II and override the non-leap month 7              
+            {
+                Debug.Assert(this.saMonthNames != null);
+
+                // In Hebrew calendar, get the leap month name Adar II and override the non-leap month 7
                 Debug.Assert(calendarId == CalendarId.HEBREW && saMonthNames.Length == 13);
                 saLeapYearMonthNames = (string[]) saMonthNames.Clone();
                 saLeapYearMonthNames[6] = leapHebrewMonthName;
@@ -62,12 +66,12 @@ namespace System.Globalization
                 saMonthNames[6] = leapHebrewMonthName;
 
             }
-            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthNames, out this.saAbbrevMonthNames, ref leapHebrewMonthName);
-            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthGenitiveNames, out this.saMonthGenitiveNames, ref leapHebrewMonthName);
-            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthGenitiveNames, out this.saAbbrevMonthGenitiveNames, ref leapHebrewMonthName);
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthNames, out this.saAbbrevMonthNames!, ref leapHebrewMonthName);
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthGenitiveNames, out this.saMonthGenitiveNames!, ref leapHebrewMonthName);
+            result &= EnumMonthNames(localeName, calendarId, CalendarDataType.AbbrevMonthGenitiveNames, out this.saAbbrevMonthGenitiveNames!, ref leapHebrewMonthName);
 
-            result &= EnumEraNames(localeName, calendarId, CalendarDataType.EraNames, out this.saEraNames);
-            result &= EnumEraNames(localeName, calendarId, CalendarDataType.AbbrevEraNames, out this.saAbbrevEraNames);
+            result &= EnumEraNames(localeName, calendarId, CalendarDataType.EraNames, out this.saEraNames!);
+            result &= EnumEraNames(localeName, calendarId, CalendarDataType.AbbrevEraNames, out this.saAbbrevEraNames!);
 
             return result;
         }
@@ -122,7 +126,7 @@ namespace System.Globalization
                 out calendarString);
         }
 
-        private static bool EnumDatePatterns(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] datePatterns)
+        private static bool EnumDatePatterns(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? datePatterns)
         {
             datePatterns = null;
 
@@ -171,14 +175,14 @@ namespace System.Globalization
             {
                 if (s[index] == '\'')
                 {
-                    do 
+                    do
                     {
                         modifiedPattern[index] = s[index];
                         index++;
                     } while (index < s.Length && s[index] != '\'');
 
                     if (index >= s.Length)
-                        return;                 
+                        return;
                 }
                 else if (s[index] == 'y')
                 {
@@ -347,7 +351,7 @@ namespace System.Globalization
             return index - startIndex;
         }
 
-        private static bool EnumMonthNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] monthNames, ref string leapHebrewMonthName)
+        private static bool EnumMonthNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? monthNames, ref string? leapHebrewMonthName)
         {
             monthNames = null;
 
@@ -366,13 +370,13 @@ namespace System.Globalization
                 if (callbackContext.Results.Count > 13)
                 {
                     Debug.Assert(calendarId == CalendarId.HEBREW && callbackContext.Results.Count == 14);
-                    
+
                     if (calendarId == CalendarId.HEBREW)
                     {
                         leapHebrewMonthName = callbackContext.Results[13];
                     }
                     callbackContext.Results.RemoveRange(13, callbackContext.Results.Count - 13);
-                }                
+                }
 
                 monthNames = callbackContext.Results.ToArray();
             }
@@ -380,22 +384,22 @@ namespace System.Globalization
             return result;
         }
 
-        private static bool EnumEraNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] eraNames)
+        private static bool EnumEraNames(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? eraNames)
         {
             bool result = EnumCalendarInfo(localeName, calendarId, dataType, out eraNames);
 
             // .NET expects that only the Japanese calendars have more than 1 era.
             // So for other calendars, only return the latest era.
-            if (calendarId != CalendarId.JAPAN && calendarId != CalendarId.JAPANESELUNISOLAR && eraNames.Length > 0)
+            if (calendarId != CalendarId.JAPAN && calendarId != CalendarId.JAPANESELUNISOLAR && eraNames?.Length > 0)
             {
-                string[] latestEraName = new string[] { eraNames[eraNames.Length - 1] };
+                string[] latestEraName = new string[] { eraNames![eraNames.Length - 1] };
                 eraNames = latestEraName;
             }
 
             return result;
         }
 
-        internal static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[] calendarData)
+        internal static bool EnumCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string[]? calendarData)
         {
             calendarData = null;
 

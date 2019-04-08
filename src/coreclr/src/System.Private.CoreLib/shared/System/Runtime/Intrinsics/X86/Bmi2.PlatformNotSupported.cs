@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -15,13 +17,13 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Bmi2() { }
 
-        public static bool IsSupported { get { return false; } }
+        public static bool IsSupported { [Intrinsic] get { return false; } }
 
         public abstract class X64
         {
             internal X64() { }
 
-            public static bool IsSupported { get { return false; } }
+            public static bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
             /// unsigned __int64 _bzhi_u64 (unsigned __int64 a, unsigned int index)

@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -25,19 +26,19 @@ namespace System
             HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
-        public MissingMethodException(string message)
+        public MissingMethodException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
-        public MissingMethodException(string message, Exception inner)
+        public MissingMethodException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_MISSINGMETHOD;
         }
 
-        public MissingMethodException(string className, string methodName)
+        public MissingMethodException(string? className, string? methodName)
         {
             ClassName = className;
             MemberName = methodName;

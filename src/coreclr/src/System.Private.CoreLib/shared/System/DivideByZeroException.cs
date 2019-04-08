@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -25,13 +26,13 @@ namespace System
             HResult = HResults.COR_E_DIVIDEBYZERO;
         }
 
-        public DivideByZeroException(string message)
+        public DivideByZeroException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_DIVIDEBYZERO;
         }
 
-        public DivideByZeroException(string message, Exception innerException)
+        public DivideByZeroException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = HResults.COR_E_DIVIDEBYZERO;

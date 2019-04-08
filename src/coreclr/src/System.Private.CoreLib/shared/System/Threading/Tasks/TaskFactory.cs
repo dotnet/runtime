@@ -12,6 +12,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Security;
@@ -40,18 +41,18 @@ namespace System.Threading.Tasks
     {
         // member variables
         private readonly CancellationToken m_defaultCancellationToken;
-        private readonly TaskScheduler m_defaultScheduler;
+        private readonly TaskScheduler? m_defaultScheduler;
         private readonly TaskCreationOptions m_defaultCreationOptions;
         private readonly TaskContinuationOptions m_defaultContinuationOptions;
 
         private TaskScheduler DefaultScheduler => m_defaultScheduler ?? TaskScheduler.Current;
 
         // sister method to above property -- avoids a TLS lookup
-        private TaskScheduler GetDefaultScheduler(Task currTask)
+        private TaskScheduler GetDefaultScheduler(Task? currTask)
         {
             return
                 m_defaultScheduler ??
-                (currTask != null && (currTask.CreationOptions & TaskCreationOptions.HideScheduler) == 0 ? currTask.ExecutingTaskScheduler :
+                (currTask != null && (currTask.CreationOptions & TaskCreationOptions.HideScheduler) == 0 ? currTask.ExecutingTaskScheduler! : // a "current" task must be executing, which means it must have a scheduler
                  TaskScheduler.Default);
         }
 
@@ -119,7 +120,7 @@ namespace System.Threading.Tasks
         /// initialized to the current scheduler (see <see
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
-        public TaskFactory(TaskScheduler scheduler) // null means to use TaskScheduler.Current
+        public TaskFactory(TaskScheduler? scheduler) // null means to use TaskScheduler.Current
             : this(default, TaskCreationOptions.None, TaskContinuationOptions.None, scheduler)
         {
         }
@@ -190,7 +191,7 @@ namespace System.Threading.Tasks
         /// current scheduler (see <see
         /// cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see>).
         /// </remarks>
-        public TaskFactory(CancellationToken cancellationToken, TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions, TaskScheduler scheduler)
+        public TaskFactory(CancellationToken cancellationToken, TaskCreationOptions creationOptions, TaskContinuationOptions continuationOptions, TaskScheduler? scheduler)
         {
             CheckMultiTaskContinuationOptions(continuationOptions);
             CheckCreationOptions(creationOptions);
@@ -239,7 +240,7 @@ namespace System.Threading.Tasks
         /// If null, <see cref="System.Threading.Tasks.TaskScheduler.Current">TaskScheduler.Current</see> 
         /// will be used.
         /// </remarks>
-        public TaskScheduler Scheduler { get { return m_defaultScheduler; } }
+        public TaskScheduler? Scheduler { get { return m_defaultScheduler; } }
 
         /// <summary>
         /// Gets the <see cref="System.Threading.Tasks.TaskCreationOptions">TaskCreationOptions
@@ -281,7 +282,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public Task StartNew(Action action)
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task.InternalStartNew(currTask, action, null, m_defaultCancellationToken, GetDefaultScheduler(currTask),
                 m_defaultCreationOptions, InternalTaskOptions.None);
         }
@@ -306,7 +307,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public Task StartNew(Action action, CancellationToken cancellationToken)
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task.InternalStartNew(currTask, action, null, cancellationToken, GetDefaultScheduler(currTask),
                 m_defaultCreationOptions, InternalTaskOptions.None);
         }
@@ -334,7 +335,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public Task StartNew(Action action, TaskCreationOptions creationOptions)
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task.InternalStartNew(currTask, action, null, m_defaultCancellationToken, GetDefaultScheduler(currTask), creationOptions,
                 InternalTaskOptions.None);
         }
@@ -396,9 +397,9 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task StartNew(Action<object> action, object state)
+        public Task StartNew(Action<object?> action, object? state) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task.InternalStartNew(currTask, action, state, m_defaultCancellationToken, GetDefaultScheduler(currTask),
                 m_defaultCreationOptions, InternalTaskOptions.None);
         }
@@ -425,9 +426,9 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task StartNew(Action<object> action, object state, CancellationToken cancellationToken)
+        public Task StartNew(Action<object?> action, object? state, CancellationToken cancellationToken) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task.InternalStartNew(currTask, action, state, cancellationToken, GetDefaultScheduler(currTask),
                 m_defaultCreationOptions, InternalTaskOptions.None);
         }
@@ -455,9 +456,9 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task StartNew(Action<object> action, object state, TaskCreationOptions creationOptions)
+        public Task StartNew(Action<object?> action, object? state, TaskCreationOptions creationOptions) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task.InternalStartNew(currTask, action, state, m_defaultCancellationToken, GetDefaultScheduler(currTask),
                 creationOptions, InternalTaskOptions.None);
         }
@@ -496,7 +497,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task StartNew(Action<object> action, object state, CancellationToken cancellationToken,
+        public Task StartNew(Action<object?> action, object? state, CancellationToken cancellationToken, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                             TaskCreationOptions creationOptions, TaskScheduler scheduler)
         {
             return Task.InternalStartNew(
@@ -525,7 +526,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public Task<TResult> StartNew<TResult>(Func<TResult> function)
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, m_defaultCancellationToken,
                 m_defaultCreationOptions, InternalTaskOptions.None, GetDefaultScheduler(currTask));
         }
@@ -556,7 +557,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public Task<TResult> StartNew<TResult>(Func<TResult> function, CancellationToken cancellationToken)
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, cancellationToken,
                 m_defaultCreationOptions, InternalTaskOptions.None, GetDefaultScheduler(currTask));
         }
@@ -588,7 +589,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public Task<TResult> StartNew<TResult>(Func<TResult> function, TaskCreationOptions creationOptions)
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, m_defaultCancellationToken,
                 creationOptions, InternalTaskOptions.None, GetDefaultScheduler(currTask));
         }
@@ -657,9 +658,9 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew<TResult>(Func<object, TResult> function, object state)
+        public Task<TResult> StartNew<TResult>(Func<object?, TResult> function, object? state) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, state, m_defaultCancellationToken,
                 m_defaultCreationOptions, InternalTaskOptions.None, GetDefaultScheduler(currTask));
         }
@@ -690,9 +691,9 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew<TResult>(Func<object, TResult> function, object state, CancellationToken cancellationToken)
+        public Task<TResult> StartNew<TResult>(Func<object?, TResult> function, object? state, CancellationToken cancellationToken) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, state, cancellationToken,
                 m_defaultCreationOptions, InternalTaskOptions.None, GetDefaultScheduler(currTask));
         }
@@ -724,9 +725,9 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew<TResult>(Func<object, TResult> function, object state, TaskCreationOptions creationOptions)
+        public Task<TResult> StartNew<TResult>(Func<object?, TResult> function, object? state, TaskCreationOptions creationOptions) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
-            Task currTask = Task.InternalCurrent;
+            Task? currTask = Task.InternalCurrent;
             return Task<TResult>.StartNew(currTask, function, state, m_defaultCancellationToken,
                 creationOptions, InternalTaskOptions.None, GetDefaultScheduler(currTask));
         }
@@ -769,7 +770,7 @@ namespace System.Threading.Tasks
         /// However, unless creation and scheduling must be separated, StartNew is the recommended approach
         /// for both simplicity and performance.
         /// </remarks>
-        public Task<TResult> StartNew<TResult>(Func<object, TResult> function, object state, CancellationToken cancellationToken,
+        public Task<TResult> StartNew<TResult>(Func<object?, TResult> function, object? state, CancellationToken cancellationToken, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             TaskCreationOptions creationOptions, TaskScheduler scheduler)
         {
             return Task<TResult>.StartNew(
@@ -879,9 +880,9 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task FromAsync(
-            Func<AsyncCallback, object, IAsyncResult> beginMethod,
+            Func<AsyncCallback, object?, IAsyncResult> beginMethod,
             Action<IAsyncResult> endMethod,
-            object state)
+            object? state)
         {
             return FromAsync(beginMethod, endMethod, state, m_defaultCreationOptions);
         }
@@ -909,8 +910,8 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task FromAsync(
-            Func<AsyncCallback, object, IAsyncResult> beginMethod,
-            Action<IAsyncResult> endMethod, object state, TaskCreationOptions creationOptions)
+            Func<AsyncCallback, object?, IAsyncResult> beginMethod,
+            Action<IAsyncResult> endMethod, object? state, TaskCreationOptions creationOptions)
         {
             return TaskFactory<VoidTaskResult>.FromAsyncImpl(beginMethod, null, endMethod, state, creationOptions);
         }
@@ -938,10 +939,10 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task FromAsync<TArg1>(
-            Func<TArg1, AsyncCallback, object, IAsyncResult> beginMethod,
+            Func<TArg1, AsyncCallback, object?, IAsyncResult> beginMethod,
             Action<IAsyncResult> endMethod,
             TArg1 arg1,
-            object state)
+            object? state)
         {
             return FromAsync(beginMethod, endMethod, arg1, state, m_defaultCreationOptions);
         }
@@ -974,9 +975,9 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task FromAsync<TArg1>(
-            Func<TArg1, AsyncCallback, object, IAsyncResult> beginMethod,
+            Func<TArg1, AsyncCallback, object?, IAsyncResult> beginMethod,
             Action<IAsyncResult> endMethod,
-            TArg1 arg1, object state, TaskCreationOptions creationOptions)
+            TArg1 arg1, object? state, TaskCreationOptions creationOptions)
         {
             return TaskFactory<VoidTaskResult>.FromAsyncImpl(beginMethod, null, endMethod, arg1, state, creationOptions);
         }
@@ -1008,9 +1009,9 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task FromAsync<TArg1, TArg2>(
-            Func<TArg1, TArg2, AsyncCallback, object, IAsyncResult> beginMethod,
+            Func<TArg1, TArg2, AsyncCallback, object?, IAsyncResult> beginMethod,
             Action<IAsyncResult> endMethod,
-            TArg1 arg1, TArg2 arg2, object state)
+            TArg1 arg1, TArg2 arg2, object? state)
         {
             return FromAsync(beginMethod, endMethod, arg1, arg2, state, m_defaultCreationOptions);
         }
@@ -1047,9 +1048,9 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task FromAsync<TArg1, TArg2>(
-            Func<TArg1, TArg2, AsyncCallback, object, IAsyncResult> beginMethod,
+            Func<TArg1, TArg2, AsyncCallback, object?, IAsyncResult> beginMethod,
             Action<IAsyncResult> endMethod,
-            TArg1 arg1, TArg2 arg2, object state, TaskCreationOptions creationOptions)
+            TArg1 arg1, TArg2 arg2, object? state, TaskCreationOptions creationOptions)
         {
             return TaskFactory<VoidTaskResult>.FromAsyncImpl(beginMethod, null, endMethod, arg1, arg2, state, creationOptions);
         }
@@ -1085,9 +1086,9 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task FromAsync<TArg1, TArg2, TArg3>(
-            Func<TArg1, TArg2, TArg3, AsyncCallback, object, IAsyncResult> beginMethod,
+            Func<TArg1, TArg2, TArg3, AsyncCallback, object?, IAsyncResult> beginMethod,
             Action<IAsyncResult> endMethod,
-            TArg1 arg1, TArg2 arg2, TArg3 arg3, object state)
+            TArg1 arg1, TArg2 arg2, TArg3 arg3, object? state)
         {
             return FromAsync(beginMethod, endMethod, arg1, arg2, arg3, state, m_defaultCreationOptions);
         }
@@ -1128,9 +1129,9 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task FromAsync<TArg1, TArg2, TArg3>(
-            Func<TArg1, TArg2, TArg3, AsyncCallback, object, IAsyncResult> beginMethod,
+            Func<TArg1, TArg2, TArg3, AsyncCallback, object?, IAsyncResult> beginMethod,
             Action<IAsyncResult> endMethod,
-            TArg1 arg1, TArg2 arg2, TArg3 arg3, object state, TaskCreationOptions creationOptions)
+            TArg1 arg1, TArg2 arg2, TArg3 arg3, object? state, TaskCreationOptions creationOptions)
         {
             return TaskFactory<VoidTaskResult>.FromAsyncImpl<TArg1, TArg2, TArg3>(beginMethod, null, endMethod, arg1, arg2, arg3, state, creationOptions);
         }
@@ -1243,8 +1244,8 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task<TResult> FromAsync<TResult>(
-            Func<AsyncCallback, object, IAsyncResult> beginMethod,
-            Func<IAsyncResult, TResult> endMethod, object state)
+            Func<AsyncCallback, object?, IAsyncResult> beginMethod,
+            Func<IAsyncResult, TResult> endMethod, object? state)
         {
             return TaskFactory<TResult>.FromAsyncImpl(beginMethod, endMethod, null, state, m_defaultCreationOptions);
         }
@@ -1275,8 +1276,8 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task<TResult> FromAsync<TResult>(
-            Func<AsyncCallback, object, IAsyncResult> beginMethod,
-            Func<IAsyncResult, TResult> endMethod, object state, TaskCreationOptions creationOptions)
+            Func<AsyncCallback, object?, IAsyncResult> beginMethod,
+            Func<IAsyncResult, TResult> endMethod, object? state, TaskCreationOptions creationOptions)
         {
             return TaskFactory<TResult>.FromAsyncImpl(beginMethod, endMethod, null, state, creationOptions);
         }
@@ -1306,8 +1307,8 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task<TResult> FromAsync<TArg1, TResult>(
-            Func<TArg1, AsyncCallback, object, IAsyncResult> beginMethod,
-            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, object state)
+            Func<TArg1, AsyncCallback, object?, IAsyncResult> beginMethod,
+            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, object? state)
         {
             return TaskFactory<TResult>.FromAsyncImpl(beginMethod, endMethod, null, arg1, state, m_defaultCreationOptions);
         }
@@ -1341,8 +1342,8 @@ namespace System.Threading.Tasks
         /// <remarks>
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
-        public Task<TResult> FromAsync<TArg1, TResult>(Func<TArg1, AsyncCallback, object, IAsyncResult> beginMethod,
-            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, object state, TaskCreationOptions creationOptions)
+        public Task<TResult> FromAsync<TArg1, TResult>(Func<TArg1, AsyncCallback, object?, IAsyncResult> beginMethod,
+            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, object? state, TaskCreationOptions creationOptions)
         {
             return TaskFactory<TResult>.FromAsyncImpl(beginMethod, endMethod, null, arg1, state, creationOptions);
         }
@@ -1375,8 +1376,8 @@ namespace System.Threading.Tasks
         /// <remarks>
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
-        public Task<TResult> FromAsync<TArg1, TArg2, TResult>(Func<TArg1, TArg2, AsyncCallback, object, IAsyncResult> beginMethod,
-            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, TArg2 arg2, object state)
+        public Task<TResult> FromAsync<TArg1, TArg2, TResult>(Func<TArg1, TArg2, AsyncCallback, object?, IAsyncResult> beginMethod,
+            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, TArg2 arg2, object? state)
         {
             return TaskFactory<TResult>.FromAsyncImpl(beginMethod, endMethod, null, arg1, arg2, state, m_defaultCreationOptions);
         }
@@ -1415,8 +1416,8 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task<TResult> FromAsync<TArg1, TArg2, TResult>(
-            Func<TArg1, TArg2, AsyncCallback, object, IAsyncResult> beginMethod,
-            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, TArg2 arg2, object state, TaskCreationOptions creationOptions)
+            Func<TArg1, TArg2, AsyncCallback, object?, IAsyncResult> beginMethod,
+            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, TArg2 arg2, object? state, TaskCreationOptions creationOptions)
         {
             return TaskFactory<TResult>.FromAsyncImpl(beginMethod, endMethod, null, arg1, arg2, state, creationOptions);
         }
@@ -1454,8 +1455,8 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task<TResult> FromAsync<TArg1, TArg2, TArg3, TResult>(
-            Func<TArg1, TArg2, TArg3, AsyncCallback, object, IAsyncResult> beginMethod,
-            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, TArg2 arg2, TArg3 arg3, object state)
+            Func<TArg1, TArg2, TArg3, AsyncCallback, object?, IAsyncResult> beginMethod,
+            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, TArg2 arg2, TArg3 arg3, object? state)
         {
             return TaskFactory<TResult>.FromAsyncImpl(beginMethod, endMethod, null, arg1, arg2, arg3, state, m_defaultCreationOptions);
         }
@@ -1498,8 +1499,8 @@ namespace System.Threading.Tasks
         /// This method throws any exceptions thrown by the <paramref name="beginMethod"/>.
         /// </remarks>
         public Task<TResult> FromAsync<TArg1, TArg2, TArg3, TResult>(
-            Func<TArg1, TArg2, TArg3, AsyncCallback, object, IAsyncResult> beginMethod,
-            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, TArg2 arg2, TArg3 arg3, object state, TaskCreationOptions creationOptions)
+            Func<TArg1, TArg2, TArg3, AsyncCallback, object?, IAsyncResult> beginMethod,
+            Func<IAsyncResult, TResult> endMethod, TArg1 arg1, TArg2 arg2, TArg3 arg3, object? state, TaskCreationOptions creationOptions)
         {
             return TaskFactory<TResult>.FromAsyncImpl(beginMethod, endMethod, null, arg1, arg2, arg3, state, creationOptions);
         }
@@ -2284,7 +2285,7 @@ namespace System.Threading.Tasks
             private const int CompletedFlag = 0b_01;
             private const int SyncBlockingFlag = 0b_10;
 
-            private IList<Task> _tasks; // must track this for cleanup
+            private IList<Task>? _tasks; // must track this for cleanup
             private int _stateFlags;
 
             public CompleteOnInvokePromise(IList<Task> tasks, bool isSyncBlocking) : base()
@@ -2331,7 +2332,8 @@ namespace System.Threading.Tasks
                     // This may also help to avoided unnecessary invocations of this whenComplete delegate.
                     // Note that we may be attempting to remove a continuation from a task that hasn't had it
                     // added yet; while there's overhead there, the operation won't hurt anything.
-                    var tasks = _tasks;
+                    IList<Task>? tasks = _tasks;
+                    Debug.Assert(tasks != null, "Should not have been nulled out yet.");
                     int numTasks = tasks.Count;
                     for (int i = 0; i < numTasks; i++)
                     {
@@ -2411,8 +2413,8 @@ namespace System.Threading.Tasks
         internal static void CommonCWAnyLogicCleanup(Task<Task> continuation)
         {
             // Force cleanup of the promise (e.g. removing continuations from each
-            // constituent task), by completing the promise with any value.
-            ((CompleteOnInvokePromise)continuation).Invoke(null);
+            // constituent task), by completing the promise with any value (it's not observable).
+            ((CompleteOnInvokePromise)continuation).Invoke(null!);
         }
 
         /// <summary>

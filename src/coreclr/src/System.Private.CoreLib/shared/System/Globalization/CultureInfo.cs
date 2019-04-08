@@ -26,6 +26,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -59,11 +60,11 @@ namespace System.Globalization
         // We use the _cultureData to get the data for our object
 
         private bool _isReadOnly;
-        private CompareInfo _compareInfo;
-        private TextInfo _textInfo;
-        internal NumberFormatInfo _numInfo;
-        internal DateTimeFormatInfo _dateTimeInfo;
-        private Calendar _calendar;
+        private CompareInfo? _compareInfo;
+        private TextInfo? _textInfo;
+        internal NumberFormatInfo? _numInfo;
+        internal DateTimeFormatInfo? _dateTimeInfo;
+        private Calendar? _calendar;
         //
         // The CultureData instance that we are going to read data from.
         // For supported culture, this will be the CultureData instance that read data from mscorlib assembly.
@@ -73,7 +74,7 @@ namespace System.Globalization
 
         internal bool _isInherited;
 
-        private CultureInfo _consoleFallbackCulture;
+        private CultureInfo? _consoleFallbackCulture;
 
         // Names are confusing.  Here are 3 names we have:
         //
@@ -91,18 +92,18 @@ namespace System.Globalization
 
         // This will hold the non sorting name to be returned from CultureInfo.Name property.
         // This has a de-DE style name even for de-DE_phoneb type cultures
-        private string _nonSortName;
+        private string? _nonSortName;
 
         // This will hold the sorting name to be returned from CultureInfo.SortName property.
         // This might be completely unrelated to the culture name if a custom culture.  Ie en-US for fj-FJ.
         // Otherwise its the sort name, ie: de-DE or de-DE_phoneb
-        private string _sortName;
+        private string? _sortName;
 
         // Get the current user default culture. This one is almost always used, so we create it by default.
-        private static volatile CultureInfo s_userDefaultCulture;
+        private static volatile CultureInfo? s_userDefaultCulture;
 
         //The culture used in the user interface. This is mostly used to load correct localized resources.
-        private static volatile CultureInfo s_userDefaultUICulture;
+        private static volatile CultureInfo? s_userDefaultUICulture;
 
         // WARNING: We allow diagnostic tools to directly inspect these three members (s_InvariantCultureInfo, s_DefaultThreadCurrentUICulture and s_DefaultThreadCurrentCulture)
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
@@ -113,16 +114,16 @@ namespace System.Globalization
         private static readonly CultureInfo s_InvariantCultureInfo = new CultureInfo(CultureData.Invariant, isReadOnly: true);
 
         // These are defaults that we use if a thread has not opted into having an explicit culture
-        private static volatile CultureInfo s_DefaultThreadCurrentUICulture;
-        private static volatile CultureInfo s_DefaultThreadCurrentCulture;
+        private static volatile CultureInfo? s_DefaultThreadCurrentUICulture;
+        private static volatile CultureInfo? s_DefaultThreadCurrentCulture;
 
         [ThreadStatic]
         private static CultureInfo s_currentThreadCulture;
         [ThreadStatic]
         private static CultureInfo s_currentThreadUICulture;
 
-        private static AsyncLocal<CultureInfo> s_asyncLocalCurrentCulture;
-        private static AsyncLocal<CultureInfo> s_asyncLocalCurrentUICulture;
+        private static AsyncLocal<CultureInfo>? s_asyncLocalCurrentCulture;
+        private static AsyncLocal<CultureInfo>? s_asyncLocalCurrentUICulture;
 
         private static void AsyncLocalSetCurrentCulture(AsyncLocalValueChangedArgs<CultureInfo> args)
         {
@@ -135,11 +136,11 @@ namespace System.Globalization
         }
 
         private static readonly object _lock = new object();
-        private static volatile Dictionary<string, CultureInfo> s_NameCachedCultures;
-        private static volatile Dictionary<int, CultureInfo> s_LcidCachedCultures;
+        private static volatile Dictionary<string, CultureInfo>? s_NameCachedCultures;
+        private static volatile Dictionary<int, CultureInfo>? s_LcidCachedCultures;
 
         // The parent culture.
-        private CultureInfo _parent;
+        private CultureInfo? _parent;
 
         // LOCALE constants of interest to us internally and privately for LCID functions
         // (ie: avoid using these and use names if possible)
@@ -153,13 +154,13 @@ namespace System.Globalization
         private static CultureInfo InitializeUserDefaultCulture()
         {
             Interlocked.CompareExchange(ref s_userDefaultCulture, GetUserDefaultCulture(), null);
-            return s_userDefaultCulture;
+            return s_userDefaultCulture!;
         }
 
         private static CultureInfo InitializeUserDefaultUICulture()
         {
             Interlocked.CompareExchange(ref s_userDefaultUICulture, GetUserDefaultUICulture(), null);
-            return s_userDefaultUICulture;
+            return s_userDefaultUICulture!;
         }
 
         public CultureInfo(string name) : this(name, true)
@@ -174,13 +175,14 @@ namespace System.Globalization
             }
 
             // Get our data providing record
-            _cultureData = CultureData.GetCultureData(name, useUserOverride);
+            CultureData? cultureData = CultureData.GetCultureData(name, useUserOverride);
 
-            if (_cultureData == null)
+            if (cultureData == null)
             {
                 throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
             }
 
+            _cultureData = cultureData;
             _name = _cultureData.CultureName;
             _isInherited = GetType() != typeof(CultureInfo);
         }
@@ -194,10 +196,10 @@ namespace System.Globalization
             _isReadOnly = isReadOnly;
         }
 
-        private static CultureInfo CreateCultureInfoNoThrow(string name, bool useUserOverride)
+        private static CultureInfo? CreateCultureInfoNoThrow(string name, bool useUserOverride)
         {
             Debug.Assert(name != null);
-            CultureData cultureData = CultureData.GetCultureData(name, useUserOverride);
+            CultureData? cultureData = CultureData.GetCultureData(name, useUserOverride);
             if (cultureData == null)
             {
                 return null;
@@ -252,11 +254,13 @@ namespace System.Globalization
                 throw new ArgumentNullException(nameof(cultureName), SR.ArgumentNull_String);
             }
 
-            _cultureData = CultureData.GetCultureData(cultureName, false);
-            if (_cultureData == null)
+            CultureData? cultureData = CultureData.GetCultureData(cultureName, false);
+            if (cultureData == null)
             {
                 throw new CultureNotFoundException(nameof(cultureName), cultureName, SR.Argument_CultureNotSupported);
             }
+
+            _cultureData = cultureData;
 
             _name = _cultureData.CultureName;
 
@@ -295,7 +299,7 @@ namespace System.Globalization
         /// </summary>
         public static CultureInfo CreateSpecificCulture(string name)
         {
-            CultureInfo culture;
+            CultureInfo? culture;
 
             try
             {
@@ -403,24 +407,16 @@ namespace System.Globalization
 #if FEATURE_APPX
                 if (ApplicationModel.IsUap)
                 {
-                    CultureInfo culture = GetCultureInfoForUserPreferredLanguageInAppX();
+                    CultureInfo? culture = GetCultureInfoForUserPreferredLanguageInAppX();
                     if (culture != null)
                         return culture;
                 }
 #endif
 
-                if (s_currentThreadCulture != null)
-                {
-                    return s_currentThreadCulture;
-                }
-
-                CultureInfo ci = s_DefaultThreadCurrentCulture;
-                if (ci != null)
-                {
-                    return ci;
-                }
-
-                return s_userDefaultCulture ?? InitializeUserDefaultCulture();
+                return s_currentThreadCulture ??
+                    s_DefaultThreadCurrentCulture ??
+                    s_userDefaultCulture ??
+                    InitializeUserDefaultCulture();
             }
             set
             {
@@ -452,7 +448,7 @@ namespace System.Globalization
                 {
                     Interlocked.CompareExchange(ref s_asyncLocalCurrentCulture, new AsyncLocal<CultureInfo>(AsyncLocalSetCurrentCulture), null);
                 }
-                s_asyncLocalCurrentCulture.Value = value;
+                s_asyncLocalCurrentCulture!.Value = value;
             }
         }
 
@@ -470,24 +466,15 @@ namespace System.Globalization
 #if FEATURE_APPX
                 if (ApplicationModel.IsUap)
                 {
-                    CultureInfo culture = GetCultureInfoForUserPreferredLanguageInAppX();
+                    CultureInfo? culture = GetCultureInfoForUserPreferredLanguageInAppX();
                     if (culture != null)
                         return culture;
                 }
 #endif
 
-                if (s_currentThreadUICulture != null)
-                {
-                    return s_currentThreadUICulture;
-                }
-
-                CultureInfo ci = s_DefaultThreadCurrentUICulture;
-                if (ci != null)
-                {
-                    return ci;
-                }
-
-                return UserDefaultUICulture;
+                return s_currentThreadUICulture ??
+                    s_DefaultThreadCurrentUICulture ??
+                    UserDefaultUICulture;
             }
             set
             {
@@ -523,7 +510,7 @@ namespace System.Globalization
                 }
 
                 // this one will set s_currentThreadUICulture too
-                s_asyncLocalCurrentUICulture.Value = value;
+                s_asyncLocalCurrentUICulture!.Value = value;
             }
         }
 
@@ -531,7 +518,7 @@ namespace System.Globalization
 
         public static CultureInfo InstalledUICulture => s_userDefaultCulture ?? InitializeUserDefaultCulture();
 
-        public static CultureInfo DefaultThreadCurrentCulture
+        public static CultureInfo? DefaultThreadCurrentCulture
         {
             get => s_DefaultThreadCurrentCulture;
             set
@@ -542,7 +529,7 @@ namespace System.Globalization
             }
         }
 
-        public static CultureInfo DefaultThreadCurrentUICulture
+        public static CultureInfo? DefaultThreadCurrentUICulture
         {
             get => s_DefaultThreadCurrentUICulture;
             set
@@ -588,7 +575,7 @@ namespace System.Globalization
             {
                 if (_parent == null)
                 {
-                    CultureInfo culture = null;
+                    CultureInfo culture;
                     string parentName = _cultureData.ParentName;
 
                     if (string.IsNullOrEmpty(parentName))
@@ -597,19 +584,16 @@ namespace System.Globalization
                     }
                     else
                     {
-                        culture = CreateCultureInfoNoThrow(parentName, _cultureData.UseUserOverride);
-                        if (culture == null)
-                        {
+                        culture = CreateCultureInfoNoThrow(parentName, _cultureData.UseUserOverride) ??
                             // For whatever reason our IPARENT or SPARENT wasn't correct, so use invariant
                             // We can't allow ourselves to fail.  In case of custom cultures the parent of the
                             // current custom culture isn't installed.
-                            culture = InvariantCulture;
-                        }
+                            InvariantCulture;
                     }
 
-                    Interlocked.CompareExchange<CultureInfo>(ref _parent, culture, null);
+                    Interlocked.CompareExchange<CultureInfo?>(ref _parent, culture, null);
                 }
-                return _parent;
+                return _parent!;
             }
         }
 
@@ -760,7 +744,7 @@ namespace System.Globalization
             }
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (object.ReferenceEquals(this, value))
             {
@@ -789,7 +773,7 @@ namespace System.Globalization
         /// </summary>
         public override string ToString() => _name;
 
-        public virtual object GetFormat(Type formatType)
+        public virtual object? GetFormat(Type? formatType)
         {
             if (formatType == typeof(NumberFormatInfo))
             {
@@ -844,7 +828,7 @@ namespace System.Globalization
                     temp._isReadOnly = _isReadOnly;
                     Interlocked.CompareExchange(ref _numInfo, temp, null);
                 }
-                return _numInfo;
+                return _numInfo!;
             }
             set
             {
@@ -873,7 +857,7 @@ namespace System.Globalization
                     temp._isReadOnly = _isReadOnly;
                     Interlocked.CompareExchange(ref _dateTimeInfo, temp, null);
                 }
-                return _dateTimeInfo;
+                return _dateTimeInfo!;
             }
 
             set
@@ -1005,7 +989,7 @@ namespace System.Globalization
 
         public CultureInfo GetConsoleFallbackUICulture()
         {
-            CultureInfo temp = _consoleFallbackCulture;
+            CultureInfo? temp = _consoleFallbackCulture;
             if (temp == null)
             {
                 temp = CreateSpecificCulture(_cultureData.SCONSOLEFALLBACKNAME);
@@ -1129,13 +1113,13 @@ namespace System.Globalization
         /// Helper function overloads of GetCachedReadOnlyCulture.  If lcid is 0, we use the name.
         /// If lcid is -1, use the altName and create one of those special SQL cultures.
         /// </summary>
-        internal static CultureInfo GetCultureInfoHelper(int lcid, string name, string altName)
+        internal static CultureInfo? GetCultureInfoHelper(int lcid, string? name, string? altName)
         {
             // retval is our return value.
-            CultureInfo retval;
+            CultureInfo? retval;
 
             // Temporary hashtable for the names.
-            Dictionary<string, CultureInfo> tempNameHT = s_NameCachedCultures;
+            Dictionary<string, CultureInfo>? tempNameHT = s_NameCachedCultures;
 
             if (name != null)
             {
@@ -1157,10 +1141,11 @@ namespace System.Globalization
                 // If we are called by name, check if the object exists in the hashtable.  If so, return it.
                 if (lcid == -1 || lcid == 0)
                 {
+                    Debug.Assert(name != null && (lcid != -1 || altName != null));
                     bool ret;
                     lock (_lock)
                     {
-                        ret = tempNameHT.TryGetValue(lcid == 0 ? name : name + '\xfffd' + altName, out retval);
+                        ret = tempNameHT.TryGetValue(lcid == 0 ? name! : name! + '\xfffd' + altName!, out retval);
                     }
 
                     if (ret && retval != null)
@@ -1171,7 +1156,7 @@ namespace System.Globalization
             }
 
             // Next, the Lcid table.
-            Dictionary<int, CultureInfo> tempLcidHT = s_LcidCachedCultures;
+            Dictionary<int, CultureInfo>? tempLcidHT = s_LcidCachedCultures;
 
             if (tempLcidHT == null)
             {
@@ -1203,11 +1188,13 @@ namespace System.Globalization
                 {
                     case -1:
                         // call the private constructor
-                        retval = new CultureInfo(name, altName);
+                        Debug.Assert(name != null && altName != null);
+                        retval = new CultureInfo(name!, altName!);
                         break;
 
                     case 0:
-                        retval = new CultureInfo(name, false);
+                        Debug.Assert(name != null);
+                        retval = new CultureInfo(name!, false);
                         break;
 
                     default:
@@ -1280,7 +1267,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(nameof(culture), SR.ArgumentOutOfRange_NeedPosNum);
             }
-            CultureInfo retval = GetCultureInfoHelper(culture, null, null);
+            CultureInfo? retval = GetCultureInfoHelper(culture, null, null);
             if (null == retval)
             {
                 throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
@@ -1300,7 +1287,7 @@ namespace System.Globalization
                 throw new ArgumentNullException(nameof(name));
             }
 
-            CultureInfo retval = GetCultureInfoHelper(0, name, null);
+            CultureInfo? retval = GetCultureInfoHelper(0, name, null);
             if (retval == null)
             {
                 throw new CultureNotFoundException(
@@ -1324,7 +1311,7 @@ namespace System.Globalization
                 throw new ArgumentNullException(nameof(altName));
             }
 
-            CultureInfo retval = GetCultureInfoHelper(-1, name, altName);
+            CultureInfo? retval = GetCultureInfoHelper(-1, name, altName);
             if (retval == null)
             {
                 throw new CultureNotFoundException("name or altName",

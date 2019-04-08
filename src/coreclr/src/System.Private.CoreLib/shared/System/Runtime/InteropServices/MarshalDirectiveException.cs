@@ -11,8 +11,7 @@
 **
 =============================================================================*/
 
-
-using System;
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Runtime.InteropServices
@@ -27,13 +26,13 @@ namespace System.Runtime.InteropServices
             HResult = HResults.COR_E_MARSHALDIRECTIVE;
         }
 
-        public MarshalDirectiveException(string message)
+        public MarshalDirectiveException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_MARSHALDIRECTIVE;
         }
 
-        public MarshalDirectiveException(string message, Exception inner)
+        public MarshalDirectiveException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_MARSHALDIRECTIVE;

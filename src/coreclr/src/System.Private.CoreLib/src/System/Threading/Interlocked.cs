@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -59,7 +60,7 @@ namespace System.Threading
         public static extern double Exchange(ref double location1, double value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern object Exchange(ref object location1, object value);
+        public static extern object? Exchange(ref object? location1, object? value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern IntPtr Exchange(ref IntPtr location1, IntPtr value);
@@ -67,9 +68,9 @@ namespace System.Threading
         // This whole method reduces to a single call to Exchange(ref object, object) but
         // the JIT thinks that it will generate more native code than it actually does.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static T Exchange<T>(ref T location1, T value) where T : class
+        public static T Exchange<T>(ref T location1, T value) where T : class?
         {
-            return Unsafe.As<T>(Exchange(ref Unsafe.As<T, object>(ref location1), value));
+            return Unsafe.As<T>(Exchange(ref Unsafe.As<T, object?>(ref location1), value));
         }
 
         /// <summary>
@@ -88,7 +89,7 @@ namespace System.Threading
         public static extern double CompareExchange(ref double location1, double value, double comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern object CompareExchange(ref object location1, object value, object comparand);
+        public static extern object? CompareExchange(ref object? location1, object? value, object? comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern IntPtr CompareExchange(ref IntPtr location1, IntPtr value, IntPtr comparand);
@@ -102,9 +103,9 @@ namespace System.Threading
         //     ret
         // The workaround is no longer strictly necessary now that we have Unsafe.As but it does
         // have the advantage of being less sensitive to JIT's inliner decisions.
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class
+        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class?
         {
-            return Unsafe.As<T>(CompareExchange(ref Unsafe.As<T, object>(ref location1), value, comparand));
+            return Unsafe.As<T>(CompareExchange(ref Unsafe.As<T, object?>(ref location1), value, comparand));
         }
 
         // BCL-internal overload that returns success via a ref bool param, useful for reliable spin locks.
