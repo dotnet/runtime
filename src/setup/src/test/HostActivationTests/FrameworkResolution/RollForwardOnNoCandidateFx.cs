@@ -112,6 +112,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 });
         }
 
+        [Theory]
+        [InlineData(0, null)]
+        [InlineData(0, false)]
+        [InlineData(1, null)]
+        [InlineData(1, false)]
+        [InlineData(2, null)]
+        [InlineData(2, false)]
+        public void NeverRollBackOnRelease(int? rollForwardOnNoCandidateFx, bool? applyPatches)
+        {
+            RunTestWithOneFramework(
+                runtimeConfig => runtimeConfig
+                    .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
+                    .WithApplyPatches(applyPatches)
+                    .WithFramework(MicrosoftNETCoreApp, "5.1.4"),
+                commandResult => commandResult.Should().Fail()
+                    .And.DidNotFindCompatibleFrameworkVersion());
+        }
+
         [Fact]
         public void RollForwardDisabledOnCandidateFxAndDisabledApplyPatches_FailsToRollPatches()
         {
@@ -293,6 +311,24 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                             .And.DidNotFindCompatibleFrameworkVersion();
                     }
                 });
+        }
+
+        [Theory]
+        [InlineData(0, null)]
+        [InlineData(0, false)]
+        [InlineData(1, null)]
+        [InlineData(1, false)]
+        [InlineData(2, null)]
+        [InlineData(2, false)]
+        public void NeverRollBackOnPreRelease(int? rollForwardOnNoCandidateFx, bool? applyPatches)
+        {
+            RunTestWithPreReleaseFramework(
+                runtimeConfig => runtimeConfig
+                    .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
+                    .WithApplyPatches(applyPatches)
+                    .WithFramework(MicrosoftNETCoreApp, "5.1.3-preview.9"),
+                commandResult => commandResult.Should().Fail()
+                    .And.DidNotFindCompatibleFrameworkVersion());
         }
 
         private void RunTestWithPreReleaseFramework(
@@ -583,6 +619,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                             .And.DidNotFindCompatibleFrameworkVersion();
                     }
                 });
+        }
+
+        [Theory]
+        // Pre-release with exact match will not try to roll forward at all
+        [InlineData(null, null)]
+        [InlineData(null, false)]
+        [InlineData(0, false)]
+        [InlineData(1, null)]
+        [InlineData(2, null)]
+        public void RollForwardToPreRelease_ExactPreReleaseMatch(int? rollForwardOnNoCandidateFx, bool? applyPatches)
+        {
+            RunTestWithManyVersions(
+                runtimeConfig => runtimeConfig
+                    .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
+                    .WithApplyPatches(applyPatches)
+                    .WithFramework(MicrosoftNETCoreApp, "5.1.3-preview.1"),
+                commandResult =>
+                    commandResult.Should().Pass()
+                        .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3-preview.1")
+                        .And.HaveStdErrContaining("Did not roll forward"));
         }
 
         [Theory]
