@@ -2902,7 +2902,7 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 	mono_assemblies_unlock ();
 
 #ifdef HOST_WIN32
-	if (m_image_is_module_handle (image))
+	if (image->is_module_handle)
 		mono_image_fixup_vtable (image);
 #endif
 

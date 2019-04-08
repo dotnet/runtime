@@ -1260,7 +1260,7 @@ method_body_object_construct (MonoDomain *domain, MonoClass *unused_class, MonoM
 	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) ||
 		(method->flags & METHOD_ATTRIBUTE_ABSTRACT) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
-	    (!image_is_dynamic (image) && m_image_get_raw_data (image) && m_image_get_raw_data (image) [1] != 'Z') ||
+	    (image->raw_data && image->raw_data [1] != 'Z') ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME))
 		return MONO_HANDLE_CAST (MonoReflectionMethodBody, NULL_HANDLE);
 

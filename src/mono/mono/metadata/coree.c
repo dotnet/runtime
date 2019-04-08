@@ -103,7 +103,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 
 			image = mono_image_open (file_name, NULL);
 			if (image) {
-				image->storage->has_entry_point = TRUE;
+				image->has_entry_point = TRUE;
 				mono_close_exe_image ();
 				/* Decrement reference count to zero. (Image will not be closed.) */
 				mono_image_close (image);
@@ -954,8 +954,8 @@ mono_load_coree (const char* exe_file_name)
 void
 mono_fixup_exe_image (MonoImage* image)
 {
-	if (!init_from_coree && image && m_image_is_module_handle (image))
-		MonoFixupExe ((HMODULE) m_image_get_raw_data (image));
+	if (!init_from_coree && image && image->is_module_handle)
+		MonoFixupExe ((HMODULE) image->raw_data);
 }
 
 #endif /* HOST_WIN32 */

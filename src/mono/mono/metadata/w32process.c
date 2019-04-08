@@ -461,7 +461,7 @@ get_domain_assemblies (MonoDomain *domain)
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
-		if (m_image_is_fileio_used (ass->image))
+		if (ass->image->fileio_used)
 			continue;
 		g_ptr_array_add (assemblies, ass);
 	}
@@ -547,8 +547,8 @@ process_get_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *er
 	goto_if_nok (error, return_null);
 	process_set_field_object (item, "version_info", filever);
 
-	process_set_field_intptr (item, "baseaddr", m_image_get_raw_data (assembly->image));
-	process_set_field_int (item, "memory_size", m_image_get_raw_data_len (assembly->image));
+	process_set_field_intptr (item, "baseaddr", assembly->image->raw_data);
+	process_set_field_int (item, "memory_size", assembly->image->raw_data_len);
 	process_set_field_string_char (item, "filename", filename, error);
 	goto_if_nok (error, return_null);
 	process_set_field_string_char (item, "modulename", modulename, error);

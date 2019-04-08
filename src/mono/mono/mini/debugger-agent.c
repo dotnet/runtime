@@ -7348,7 +7348,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
         if (ass->dynamic) {
             return ERR_NOT_IMPLEMENTED;
         }
-        buffer_add_byte_array (buf, (guint8*)m_image_get_raw_data (image), m_image_get_raw_data_len (image));
+        buffer_add_byte_array (buf, (guint8*)image->raw_data, image->raw_data_len);
         break;
     }
     case CMD_ASSEMBLY_GET_IS_DYNAMIC: {
@@ -7364,7 +7364,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
         MonoPPDBFile* ppdb = handle->ppdb;
         if (ppdb) {
             image = mono_ppdb_get_image (ppdb);
-            buffer_add_byte_array (buf, (guint8*)m_image_get_raw_data (image), m_image_get_raw_data_len (image));
+            buffer_add_byte_array (buf, (guint8*)image->raw_data, image->raw_data_len);
         } else {
             buffer_add_byte_array (buf, NULL, 0);
         }
