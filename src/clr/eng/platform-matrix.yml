@@ -35,7 +35,7 @@ jobs:
         # Ubuntu.1404.Arm32.Open is used only by CI while Ubuntu.1604.Arm32.Open serves PRs and scheduled builds.
         - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
           - Ubuntu.1404.Arm32.Open
-        - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
           - (Ubuntu.1804.Arm32.Open)Ubuntu.1604.Arm32.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-0a0ebdd-20190312215532
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - (Debian.9.Arm32)Ubuntu.1604.Arm32@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-0a0ebdd-20190312215452
@@ -94,7 +94,8 @@ jobs:
         osIdentifier: Linux_musl
         containerName: musl_arm64_build_image
         helixQueues:
-        # TODO: enable (Alpine.38.Arm64.Open) once https://github.com/dotnet/coreclr/issues/23621 is resolved
+        - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          - (Alpine.38.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-46e69dd-20190313223330
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - (Alpine.38.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-46e69dd-20190313223330
         crossrootfsDir: '/crossrootfs/arm64'
@@ -140,7 +141,7 @@ jobs:
           - Ubuntu.1604.Amd64
           - Ubuntu.1804.Amd64
           - Centos.7.Amd64
-          - Fedora.28.Amd64
+          - (Fedora.28.Amd64)Ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-28-helix-45b1fa2-20190327215722
           - RedHat.7.Amd64
         ${{ insert }}: ${{ parameters.jobParameters }}
 

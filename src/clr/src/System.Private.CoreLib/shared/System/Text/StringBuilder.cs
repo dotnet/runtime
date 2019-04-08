@@ -1924,9 +1924,9 @@ namespace System.Text
                     }
                     else if (replacementsCount >= replacements.Length)
                     {
-                        Array.Resize(ref replacements, replacements.Length * 3 / 2 + 4); // Grow by ~1.5x, but more in the begining
+                        Array.Resize(ref replacements!, replacements.Length * 3 / 2 + 4); // Grow by ~1.5x, but more in the begining
                     }
-                    replacements[replacementsCount++] = indexInChunk;
+                    replacements![replacementsCount++] = indexInChunk; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     indexInChunk += oldValue.Length;
                     count -= oldValue.Length;
                 }

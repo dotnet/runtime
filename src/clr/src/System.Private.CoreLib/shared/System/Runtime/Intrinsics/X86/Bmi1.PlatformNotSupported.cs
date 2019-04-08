@@ -4,6 +4,7 @@
 
 #nullable enable
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -16,13 +17,13 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Bmi1() { }
 
-        public static bool IsSupported { get { return false; } }
+        public static bool IsSupported { [Intrinsic] get { return false; } }
 
         public abstract class X64
         {
             internal X64() { }
 
-            public static bool IsSupported { get { return false; } }
+            public static bool IsSupported { [Intrinsic] get { return false; } }
 
             /// <summary>
             /// unsigned __int64 _andn_u64 (unsigned __int64 a, unsigned __int64 b)

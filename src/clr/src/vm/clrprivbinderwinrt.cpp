@@ -985,7 +985,8 @@ CLRPrivAssemblyWinRT::CLRPrivAssemblyWinRT(
       m_pIResourceNI(nullptr),
       m_pIBindResult(nullptr),
       m_fShareable(fShareable),
-      m_dwImageTypes(0)
+      m_dwImageTypes(0),
+      m_FallbackBinder(nullptr)
 {
     STANDARD_VM_CONTRACT;
     VALIDATE_ARG_THROW((pBinder != nullptr) && (pResourceIL != nullptr) && (pIBindResult != nullptr));

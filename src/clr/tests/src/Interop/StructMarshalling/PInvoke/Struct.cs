@@ -313,6 +313,50 @@ public struct HFA
     public float f4;
 }
 
+[StructLayout(LayoutKind.Explicit)]
+public struct ExplicitHFA
+{
+    [FieldOffset(0)]
+    public float f1;
+    [FieldOffset(4)]
+    public float f2;
+    [FieldOffset(8)]
+    public float f3;
+    [FieldOffset(12)]
+    public float f4;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public unsafe struct ExplicitFixedHFA
+{
+    [FieldOffset(0)]
+    public float f1;
+    [FieldOffset(4)]
+    public float f2;
+    [FieldOffset(8)]
+    public fixed float fs[2];
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct OverlappingHFA
+{
+    [FieldOffset(0)]
+    public HFA hfa;
+
+    [FieldOffset(0)]
+    public ExplicitHFA explicitHfa;
+
+    [FieldOffset(0)]
+    public ExplicitFixedHFA explicitFixedHfa;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct DoubleHFA
+{
+    public double d1;
+    public double d2;
+}
+
 [StructLayout(LayoutKind.Sequential)]
 public struct ManyInts
 {
@@ -368,4 +412,76 @@ public struct MultipleBool
 {
     public bool b1;
     public bool b2;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct OverlappingLongFloat
+{
+    [FieldOffset(0)]
+    public long l;
+
+    [FieldOffset(4)]
+    public float f;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct OverlappingLongFloat2
+{
+    [FieldOffset(4)]
+    public float f;
+    [FieldOffset(0)]
+    public long l;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public struct OverlappingMultipleEightbyte
+{
+    [FieldOffset(8)]
+    public int i;
+    [FieldOffset(0), MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
+    public float[] arr;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct FixedBufferClassificationTestBlittable
+{
+    public fixed int arr[3];
+    public float f;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct FixedBufferClassificationTest
+{
+    public fixed int arr[3];
+    public NonBlittableFloat f;
+}
+
+// A non-blittable wrapper for a float value.
+// Used to force a type with a float field to be non-blittable
+// and take a different code path.
+[StructLayout(LayoutKind.Sequential)]
+public struct NonBlittableFloat
+{
+    public NonBlittableFloat(float f)
+    {
+        arr = new []{f};
+    }
+
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
+    private float[] arr;
+    
+    public float F => arr[0];
+}
+
+public struct Int32Wrapper
+{
+    public int i;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public unsafe struct FixedArrayClassificationTest
+{
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 3)]
+    public Int32Wrapper[] arr;
+    public float f;
 }

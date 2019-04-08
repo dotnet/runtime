@@ -12,6 +12,16 @@ struct SizeF
     float height;
 };
 
+struct Width
+{
+    float width;
+};
+
+struct IntWrapper
+{
+    int i;
+};
+
 class C
 {
     int dummy = 0xcccccccc;
@@ -27,6 +37,16 @@ public:
     virtual SizeF GetSize()
     {
         return {width, height};
+    }
+
+    virtual Width GetWidth()
+    {
+        return {width};
+    }
+
+    virtual IntWrapper GetHeightAsInt()
+    {
+        return {(int)height};
     }
 };
 
