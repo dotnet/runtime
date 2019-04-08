@@ -73,7 +73,7 @@ namespace System.Text.Unicode
 
                     do
                     {
-                        Vector128<ushort> utf16Data = Sse2.LoadVector128((ushort*)pInputBuffer);
+                        Vector128<ushort> utf16Data = Sse2.LoadVector128((ushort*)pInputBuffer); // unaligned
 
                         uint mask = (uint)Sse2.MoveMask(
                             Sse2.Or(
