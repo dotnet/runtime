@@ -755,6 +755,8 @@ MembersMustExist : Member 'System.Security.Cryptography.IncrementalHash.AppendDa
 MembersMustExist : Member 'System.Security.Cryptography.IncrementalHash.TryGetHashAndReset(System.Span<System.Byte>, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.RandomNumberGenerator.Fill(System.Span<System.Byte>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.RandomNumberGenerator.GetBytes(System.Span<System.Byte>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.RandomNumberGenerator.GetInt32(System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Security.Cryptography.RandomNumberGenerator.GetInt32(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.RandomNumberGenerator.GetNonZeroBytes(System.Span<System.Byte>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.Rfc2898DeriveBytes.HashAlgorithm.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.RSA.TryDecrypt(System.ReadOnlySpan<System.Byte>, System.Span<System.Byte>, System.Security.Cryptography.RSAEncryptionPadding, System.Int32)' does not exist in the implementation but it does exist in the contract.
@@ -865,4 +867,4 @@ MembersMustExist : Member 'System.Xml.Linq.XText.WriteToAsync(System.Xml.XmlWrit
 TypesMustExist : Type 'System.Xml.Serialization.SchemaImporter' does not exist in the implementation but it does exist in the contract.
 CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xml.Serialization.XmlAnyAttributeAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]' in the implementation.
 CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xml.Serialization.XmlNamespaceDeclarationsAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]' in the implementation.
-Total Issues: 866
+Total Issues: 868
