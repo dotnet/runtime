@@ -104,9 +104,7 @@ namespace System.Runtime.Loader.Tests
 
             // We should have successfully loaded the assembly in secondary load context.
             Assert.NotNull(slcLoadedAssembly);
-#if CoreCLR_23583
             Assert.Contains(slcLoadedAssembly, slc.Assemblies);
-#endif
 
             // And make sure the simple name matches
             Assert.Equal(TestAssemblyName, slcLoadedAssembly.GetName().Name);
@@ -129,9 +127,7 @@ namespace System.Runtime.Loader.Tests
 
             // We should have successfully loaded the assembly in default context.
             Assert.NotNull(assemblyExpectedFromLoad);
-#if CoreCLR_23583
             Assert.Contains(assemblyExpectedFromLoad, AssemblyLoadContext.Default.Assemblies);
-#endif
 
             // We should have only invoked non-Null returning handler once
             Assert.Equal(1, _numNonNullResolutions);
