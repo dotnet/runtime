@@ -36,17 +36,19 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <!-- We need to add this for now because these three types exist in System.Private.Interop.dll and Windows.winmd. -->
     <SeedTypePreference Include="Windows.Foundation.Point">
-      <Assembly>System.Private.Interop</Assembly>
+      <Aliases>Alias_System_Private_Interop</Aliases>
     </SeedTypePreference>
     <SeedTypePreference Include="Windows.Foundation.Rect">
-      <Assembly>System.Private.Interop</Assembly>
+      <Aliases>Alias_System_Private_Interop</Aliases>
     </SeedTypePreference>
     <SeedTypePreference Include="Windows.Foundation.Size">
-      <Assembly>System.Private.Interop</Assembly>
+      <Aliases>Alias_System_Private_Interop</Aliases>
     </SeedTypePreference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <ReferenceFromRuntime Include="System.Private.Interop" />
+    <ReferenceFromRuntime Include="System.Private.Interop" >
+      <Aliases>Alias_System_Private_Interop</Aliases>
+    </ReferenceFromRuntime>
     <ReferenceFromRuntime Include="System.Private.Corelib" />
     <Reference Include="Windows" />
     <Reference Include="mscorlib" />

@@ -20,3 +20,5 @@
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.OrdinalComparer))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.UnitySerializationHolder))]
 [assembly:System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Diagnostics.Contracts.ContractException))]
+// System.void typeforward requires a special C# syntax that we choose to handle here.
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(void))]

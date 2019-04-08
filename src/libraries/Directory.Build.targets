@@ -127,6 +127,11 @@
                            Include="@(_TargetGroupsWithIsAot->WithMetadataValue('IsAot', 'false'))">
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceConfiguration>
+    <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
+    <_VerticalTargetGroups Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp;netcoreappaot;uap;uapaot" />
+    <BinPlaceConfiguration Include="@(_VerticalTargetGroups->'%(Identity)-$(_bc_OSGroup)')">
+      <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(_bc_ConfigurationGroup)-$(ArchGroup)</RuntimePath>
+    </BinPlaceConfiguration>
 
     <BinPlaceConfiguration Include="@(AdditionalBinPlaceConfiguration)" />
   </ItemGroup>
