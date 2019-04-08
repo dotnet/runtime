@@ -10491,11 +10491,14 @@ extern const BYTE genActualTypes[];
 
 // VERY_LARGE_FRAME_SIZE_REG_MASK is the set of registers we need to use for
 // the probing loop generated for very large stack frames (see `getVeryLargeFrameSize`).
+// We only use this to ensure that if we need to reserve a callee-saved register,
+// it will be reserved. For ARM32, only R12 and LR are non-callee-saved, non-argument
+// registers, so we save at least one more callee-saved register. For ARM64, however,
+// we already know we have at least three non-callee-saved, non-argument integer registers,
+// so we don't need to save any more.
 
 #ifdef _TARGET_ARM_
-#define VERY_LARGE_FRAME_SIZE_REG_MASK (RBM_R4 | RBM_R5 | RBM_R6)
-#elif defined(_TARGET_ARM64_)
-#define VERY_LARGE_FRAME_SIZE_REG_MASK (RBM_R9 | RBM_R10 | RBM_R11)
+#define VERY_LARGE_FRAME_SIZE_REG_MASK (RBM_R4)
 #endif
 
 /*****************************************************************************/

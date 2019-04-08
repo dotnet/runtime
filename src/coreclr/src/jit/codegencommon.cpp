@@ -7385,17 +7385,15 @@ void CodeGen::genFinalizeFrame()
     }
 #endif // _TARGET_X86_
 
-#if defined(_TARGET_ARMARCH_)
+#if defined(_TARGET_ARM_)
     // We need to determine if we will change SP larger than a specific amount to determine if we want to use a loop
     // to touch stack pages, that will require multiple registers. See genAllocLclFrame() for details.
     if (compiler->compLclFrameSize >= compiler->getVeryLargeFrameSize())
     {
         regSet.rsSetRegsModified(VERY_LARGE_FRAME_SIZE_REG_MASK);
     }
-#endif // defined(_TARGET_ARMARCH_)
 
-#if defined(_TARGET_ARM_)
-    // If there are any reserved registers, add them to the
+    // If there are any reserved registers, add them to the modified set.
     if (regSet.rsMaskResvd != RBM_NONE)
     {
         regSet.rsSetRegsModified(regSet.rsMaskResvd);
