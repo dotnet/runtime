@@ -2148,18 +2148,21 @@ check_method_sharing (MonoCompile *cfg, MonoMethod *cmethod, gboolean *out_pass_
 }
 
 static gboolean
-direct_icalls_enabled (MonoCompile *cfg)
+direct_icalls_enabled (MonoCompile *cfg, MonoMethod *method)
 {
-	return FALSE;
+	if (cfg->gen_sdb_seq_points || cfg->disable_direct_icalls)
+		return FALSE;
+
+	if (method && mono_aot_direct_icalls_enabled_for_method (cfg, method))
+		return TRUE;
 
 	/* LLVM on amd64 can't handle calls to non-32 bit addresses */
 #ifdef TARGET_AMD64
 	if (cfg->compile_llvm && !cfg->llvm_only)
 		return FALSE;
 #endif
-	if (cfg->gen_sdb_seq_points || cfg->disable_direct_icalls)
-		return FALSE;
-	return TRUE;
+
+	return FALSE;
 }
 
 MonoInst*
@@ -2170,7 +2173,7 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *
 	 * The wrapper is needed to be able to do stack walks for asynchronously suspended
 	 * threads when debugging.
 	 */
-	if (direct_icalls_enabled (cfg)) {
+	if (direct_icalls_enabled (cfg, NULL)) {
 		int costs;
 
 		if (!info->wrapper_method) {
@@ -7047,7 +7050,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL &&
 				mini_class_is_system_array (cmethod->klass)) {
 				array_rank = m_class_get_rank (cmethod->klass);
-			} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && direct_icalls_enabled (cfg)) {
+			} else if ((cmethod->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) && direct_icalls_enabled (cfg, cmethod)) {
 				direct_icall = TRUE;
 			} else if (fsig->pinvoke) {
 				MonoMethod *wrapper = mono_marshal_get_native_wrapper (cmethod, TRUE, cfg->compile_aot);
