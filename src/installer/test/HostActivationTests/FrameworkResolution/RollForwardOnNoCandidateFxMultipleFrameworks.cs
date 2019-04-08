@@ -9,9 +9,9 @@ using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
-    public class MultipleFrameworks :
+    public class RollForwardOnNoCandidateFxMultipleFrameworks :
         FrameworkResolutionBase,
-        IClassFixture<MultipleFrameworks.SharedTestState>
+        IClassFixture<RollForwardOnNoCandidateFxMultipleFrameworks.SharedTestState>
     {
         private const string MiddleWare = "MiddleWare";
         private const string AnotherMiddleWare = "AnotherMiddleWare";
@@ -19,12 +19,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         private SharedTestState SharedState { get; }
 
-        public MultipleFrameworks(SharedTestState sharedState)
+        public RollForwardOnNoCandidateFxMultipleFrameworks(SharedTestState sharedState)
         {
             SharedState = sharedState;
         }
 
-        // Soft roll forward from app's 5.1.1 (defaults) to inner framework reference with [specified version]
+        // Soft roll forward from the inner framework reference [specified] to app's 5.1.1 (defaults)
         [Theory]
         [InlineData("5.0.0", 0,    null,  null)]
         [InlineData("5.1.0", 0,    null,  "5.1.3")]
@@ -32,65 +32,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [InlineData("5.1.1", 0,    false, "5.1.1")]
         [InlineData("5.0.0", null, null,  "5.1.3")]
         [InlineData("5.0.0", 1,    null,  "5.1.3")]
+        [InlineData("5.1.0", 1,    false, "5.1.1")]
         [InlineData("1.0.0", 1,    null,  null)]
         [InlineData("1.0.0", 2,    null,  "5.1.3")]
-        public void SoftRollForward_InnerFrameworkReference_ToLower(
-            string versionReference,
-            int? rollForwardOnNoCandidateFx,
-            bool? applyPatches,
-            string resolvedFramework)
-        {
-            RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(MiddleWare, "2.1.0")
-                    .WithFramework(MicrosoftNETCoreApp, "5.1.1"),
-                dotnetCustomizer => dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
-                    runtimeConfig.GetFramework(MicrosoftNETCoreApp)
-                        .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
-                        .WithApplyPatches(applyPatches)
-                        .Version = versionReference),
-                resolvedFramework: resolvedFramework,
-                resultValidator: resolvedFramework != null ? null : new Action<CommandResult>(
-                    commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "5.1.1")));
-        }
-
-        // Soft roll forward from app's 5.1.1 (defaults) to inner framework reference with [specified version]
-        // In this case the direct reference from app is first, so the framework reference from app
-        // is actually resolved against the disk - and the resolved framework is than compared to
-        // the inner framework reference .
-        [Theory]
-        [InlineData("5.0.0", 0, null, null)]
-        [InlineData("5.1.0", 0, null, "5.1.3")]
-        [InlineData("5.1.0", 0, false, null)]
-        [InlineData("5.1.3", 0, false, "5.1.3")]
-        [InlineData("5.0.0", null, null, "5.1.3")]
-        [InlineData("5.0.0", 1, null, "5.1.3")]
-        [InlineData("1.0.0", 1, null, null)]
-        [InlineData("1.0.0", 2, null, "5.1.3")]
-        public void SoftRollForward_InnerFrameworkReference_ToLower_HardResolve(
-            string versionReference,
-            int? rollForwardOnNoCandidateFx,
-            bool? applyPatches,
-            string resolvedFramework)
-        {
-            RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(MicrosoftNETCoreApp, "5.1.1")
-                    .WithFramework(MiddleWare, "2.1.0"),
-                dotnetCustomizer => dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
-                    runtimeConfig.GetFramework(MicrosoftNETCoreApp)
-                        .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
-                        .WithApplyPatches(applyPatches)
-                        .Version = versionReference),
-                resolvedFramework: resolvedFramework,
-                resultValidator: resolvedFramework != null ? null : new Action<CommandResult>(
-                    commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "5.1.3")));
-        }
-
-        // Soft roll forward from app's 5.1.1 (defaults) to inner framework reference with [specified version]
-        [Theory]
-        [InlineData("5.4.0", null, null, "5.4.1")]
-        [InlineData("6.0.0", null, null, null)]
         public void SoftRollForward_InnerFrameworkReference_ToHigher(
             string versionReference,
             int? rollForwardOnNoCandidateFx,
@@ -106,18 +50,25 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                         .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
                         .WithApplyPatches(applyPatches)
                         .Version = versionReference),
-                resolvedFramework: resolvedFramework,
-                resultValidator: resolvedFramework != null ? null : new Action<CommandResult>(
-                    commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, "5.1.1", versionReference)));
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "5.1.1"));
         }
 
-        // Soft roll forward from app's 5.1.1 (defaults) to inner framework reference with [specified version]
-        // In this case the app reference to core framework comes first, which means it's going to be hard resolved
-        // and only then the soft roll forward to the inner reference is performed. So the hard resolved version
-        // is use in the soft roll forward.
+        // Soft roll forward from the inner framework reference [specified] to app's 5.1.1 (defaults)
+        // In this case the direct reference from app is first, so the framework reference from app
+        // is actually resolved against the disk - and the resolved framework is than compared to
+        // the inner framework reference .
         [Theory]
-        [InlineData("5.4.0", null, null, "5.4.1")]
-        [InlineData("6.0.0", null, null, null)]
+        [InlineData("5.0.0", 0, null, null)]
+        [InlineData("5.1.0", 0, null, "5.1.3")]
+        [InlineData("5.1.0", 0, false, null)]
+        [InlineData("5.1.3", 0, false, "5.1.3")]
+        [InlineData("5.0.0", null, null, "5.1.3")]
+        [InlineData("5.0.0", 1, null, "5.1.3")]
+        // Ordering issue - if the order of FX references in app is swapped, the output would be 5.1.1
+        [InlineData("5.1.0", 1, false, "5.1.3")]
+        [InlineData("1.0.0", 1, null, null)]
+        [InlineData("1.0.0", 2, null, "5.1.3")]
         public void SoftRollForward_InnerFrameworkReference_ToHigher_HardResolve(
             string versionReference,
             int? rollForwardOnNoCandidateFx,
@@ -133,40 +84,96 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                         .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
                         .WithApplyPatches(applyPatches)
                         .Version = versionReference),
-                resolvedFramework: resolvedFramework,
-                resultValidator: resolvedFramework != null ? null : new Action<CommandResult>(
-                    commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, "5.1.3", versionReference)));
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "5.1.3"));
         }
 
-        // Soft roll forward from app's 5.1.1 (defaults) to inner framework reference with [specified version]
+        // Soft roll forward from inner framework reference [specified] to  app's 5.1.1 (defaults)
         [Theory]
-        [InlineData("6.0.0", null, null)]    // Can't roll forward from release to pre-release
-        [InlineData("6.0.1-preview.0", null, "6.0.1-preview.1")]
-        public void SoftRollForward_InnerFrameworkReference_PreRelease(
+        [InlineData("5.4.0", null, null, "5.4.1")]
+        [InlineData("6.0.0", null, null, null)]
+        public void SoftRollForward_InnerFrameworkReference_ToLower(
             string versionReference,
             int? rollForwardOnNoCandidateFx,
+            bool? applyPatches,
             string resolvedFramework)
         {
             RunTest(
                 runtimeConfig => runtimeConfig
-                    .WithFramework(MicrosoftNETCoreApp, "6.0.1-preview.0")
+                    .WithFramework(MiddleWare, "2.1.0")
+                    .WithFramework(MicrosoftNETCoreApp, "5.1.1"),
+                dotnetCustomizer => dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
+                    runtimeConfig.GetFramework(MicrosoftNETCoreApp)
+                        .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
+                        .WithApplyPatches(applyPatches)
+                        .Version = versionReference),
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, "5.1.1", versionReference));
+        }
+
+        // Soft roll forward from inner framework reference [specified] to  app's 5.1.1 (defaults)
+        // In this case the app reference to core framework comes first, which means it's going to be hard resolved
+        // and only then the soft roll forward to the inner reference is performed. So the hard resolved version
+        // is use in the soft roll forward.
+        [Theory]
+        [InlineData("5.4.0", null, null, "5.4.1")]
+        [InlineData("6.0.0", null, null, null)]
+        public void SoftRollForward_InnerFrameworkReference_ToLower_HardResolve(
+            string versionReference,
+            int? rollForwardOnNoCandidateFx,
+            bool? applyPatches,
+            string resolvedFramework)
+        {
+            RunTest(
+                runtimeConfig => runtimeConfig
+                    .WithFramework(MicrosoftNETCoreApp, "5.1.1")
                     .WithFramework(MiddleWare, "2.1.0"),
                 dotnetCustomizer => dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
                     runtimeConfig.GetFramework(MicrosoftNETCoreApp)
                         .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
+                        .WithApplyPatches(applyPatches)
                         .Version = versionReference),
-                resolvedFramework: resolvedFramework,
-                resultValidator: resolvedFramework != null ? null : new Action<CommandResult>(
-                    commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "6.0.1-preview.1")));
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, "5.1.3", versionReference));
         }
 
-        // Soft roll forward from app [specified version] to inner framework reference 5.1.1
+        // Soft roll forward from inner framework reference [specified] to app's 6.1.1-preview.0 (defaults)
+        [Theory]
+        [InlineData("6.0.0", null, null, null)]    // Can't roll forward from release to pre-release
+        [InlineData("6.0.1-preview.0", null, null, "6.1.1-preview.1")]
+        [InlineData("6.1.1-preview.0", null, null, "6.1.1-preview.1")]
+        [InlineData("6.1.0-preview.0", 0, null, "6.1.1-preview.1")] // This is effectively a bug, the design was that pre-release should never roll on patches
+        [InlineData("6.1.1-preview.0", 0, null, "6.1.1-preview.1")]
+        [InlineData("6.1.1-preview.0", 0, false, "6.1.1-preview.1")]
+        [InlineData("6.1.1-preview.1", 0, null, "6.1.1-preview.1")]
+        public void SoftRollForward_InnerFrameworkReference_PreRelease(
+            string versionReference,
+            int? rollForwardOnNoCandidateFx,
+            bool? applyPatches,
+            string resolvedFramework)
+        {
+            RunTest(
+                runtimeConfig => runtimeConfig
+                    .WithFramework(MicrosoftNETCoreApp, "6.1.1-preview.0")
+                    .WithFramework(MiddleWare, "2.1.0"),
+                dotnetCustomizer => dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
+                    runtimeConfig.GetFramework(MicrosoftNETCoreApp)
+                        .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
+                        .WithApplyPatches(applyPatches)
+                        .Version = versionReference),
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "6.1.1-preview.1"));
+        }
+
+        // Soft roll forward from inner framework reference 5.1.1 to app [specified version]
         [Theory]
         [InlineData("5.0.0", 0, null, null)]
         [InlineData("5.1.0", 0, null, "5.1.3")]
         [InlineData("5.1.0", 0, false, null)]
         [InlineData("5.1.1", 0, false, "5.1.1")]
         [InlineData("5.0.0", null, null, "5.1.3")]
+        [InlineData("5.1.0", 1, null, "5.1.3")]
+        [InlineData("5.1.0", 1, false, "5.1.1")]
         [InlineData("5.0.0", 1, null, "5.1.3")]
         [InlineData("1.0.0", 1, null, null)]
         [InlineData("1.0.0", 2, null, "5.1.3")]
@@ -185,12 +192,42 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 dotnetCustomizer => dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
                     runtimeConfig.GetFramework(MicrosoftNETCoreApp)
                         .Version = "5.1.1"),
-                resolvedFramework: resolvedFramework,
-                resultValidator: resolvedFramework != null ? null : new Action<CommandResult>(
-                    commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "5.1.1")));
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "5.1.1"));
         }
 
         // Soft roll forward from app [specified version] to inner framework reference 5.1.1
+        [Theory]
+        [InlineData("5.0.0", 0, null, null)]
+        [InlineData("5.1.0", 0, null, "5.1.3")]
+        [InlineData("5.1.0", 0, false, null)]
+        [InlineData("5.1.1", 0, false, "5.1.1")]
+        [InlineData("5.0.0", null, null, "5.1.3")]
+        [InlineData("5.1.0", 1, null, "5.1.3")]
+        [InlineData("5.1.0", 1, false, "5.1.1")]
+        [InlineData("5.0.0", 1, null, "5.1.3")]
+        [InlineData("1.0.0", 1, null, null)]
+        [InlineData("1.0.0", 2, null, "5.1.3")]
+        public void SoftRollForward_AppFrameworkReference_ToLower_HardResolve(
+            string versionReference,
+            int? rollForwardOnNoCandidateFx,
+            bool? applyPatches,
+            string resolvedFramework)
+        {
+            RunTest(
+                runtimeConfig => runtimeConfig
+                    .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, versionReference)
+                        .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
+                        .WithApplyPatches(applyPatches))
+                    .WithFramework(MiddleWare, "2.1.0"),
+                dotnetCustomizer => dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
+                    runtimeConfig.GetFramework(MicrosoftNETCoreApp)
+                        .Version = "5.1.1"),
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.DidNotFindCompatibleFrameworkVersion());
+        }
+
+        // Soft roll forward from inner framework reference 5.1.1 to app [specified version]
         [Theory]
         [InlineData("5.4.0", null, null, "5.4.1")]
         [InlineData("6.0.0", null, null, null)]
@@ -209,9 +246,31 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 dotnetCustomizer => dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
                     runtimeConfig.GetFramework(MicrosoftNETCoreApp)
                         .Version = "5.1.1"),
-                resolvedFramework: resolvedFramework,
-                resultValidator: resolvedFramework != null ? null : new Action<CommandResult>(
-                    commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, "5.1.1", versionReference)));
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, "5.1.1", versionReference));
+        }
+
+        // Soft roll forward from inner framework reference 5.1.1 to app [specified version]
+        [Theory]
+        [InlineData("5.4.0", null, null, "5.4.1")]
+        [InlineData("6.0.0", null, null, null)]
+        public void SoftRollForward_AppFrameworkReference_ToHigher_HardResolve(
+            string versionReference,
+            int? rollForwardOnNoCandidateFx,
+            bool? applyPatches,
+            string resolvedFramework)
+        {
+            RunTest(
+                runtimeConfig => runtimeConfig
+                    .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, versionReference)
+                        .WithRollForwardOnNoCandidateFx(rollForwardOnNoCandidateFx)
+                        .WithApplyPatches(applyPatches))
+                    .WithFramework(MiddleWare, "2.1.0"),
+                dotnetCustomizer => dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
+                    runtimeConfig.GetFramework(MicrosoftNETCoreApp)
+                        .Version = "5.1.1"),
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, "5.1.1", versionReference));
         }
 
         // Soft roll forward inner framework reference (defaults) to inner framework reference with [specified version]
@@ -243,9 +302,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                             .WithApplyPatches(applyPatches)
                             .Version = versionReference);
                 },
-                resolvedFramework: resolvedFramework,
-                resultValidator: resolvedFramework != null ? null : new Action<CommandResult>(
-                    commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "5.1.3")));
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, versionReference, "5.1.3"));
         }
 
         // Soft roll forward inner framework reference (defaults) to inner framework reference with [specified version]
@@ -272,9 +330,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                             .WithApplyPatches(applyPatches)
                             .Version = versionReference);
                 },
-                resolvedFramework: resolvedFramework,
-                resultValidator: resolvedFramework != null ? null : new Action<CommandResult>(
-                    commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, "5.1.3", versionReference)));
+                resolvedFramework,
+                commandResult => commandResult.Should().Fail().And.FailedToSoftRollForward(MicrosoftNETCoreApp, "5.1.3", versionReference));
         }
 
         // This test does:
@@ -351,7 +408,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 RunTest(
                     SharedState.DotNetWithMultipleFrameworks,
                     SharedState.FrameworkReferenceApp,
-                    runtimeConfig,
+                    new TestSettings().WithRuntimeConfigCustomizer(runtimeConfig),
                     commandResult =>
                     {
                         if (resolvedFramework != null)
@@ -380,7 +437,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .AddMicrosoftNETCoreAppFramework("5.1.3")
                     .AddMicrosoftNETCoreAppFramework("5.4.1")
                     .AddMicrosoftNETCoreAppFramework("5.6.0")
-                    .AddMicrosoftNETCoreAppFramework("6.0.1-preview.1")
+                    .AddMicrosoftNETCoreAppFramework("6.0.0")
+                    .AddMicrosoftNETCoreAppFramework("6.1.1-preview.1")
                     .AddFramework(MiddleWare, "2.1.2", runtimeConfig =>
                         runtimeConfig.WithFramework(MicrosoftNETCoreApp, "5.1.3"))
                     .AddFramework(AnotherMiddleWare, "3.0.0", runtimeConfig =>
