@@ -4003,13 +4003,17 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 
 	/* We might be called for threads started before we registered the start callback */
 	if (thread) {
-		DEBUG_PRINTF (1, "[%p] Thread terminated, obj=%p, tls=%p.\n", (gpointer)tid, thread, tls);
+		DEBUG_PRINTF (1, "[%p] Thread terminated, obj=%p, tls=%p (domain=%p).\n", (gpointer)tid, thread, tls, (gpointer)mono_domain_get ());
 
-		if (mono_thread_internal_is_current (thread) && !mono_native_tls_get_value (debugger_tls_id)
+		if (mono_thread_internal_is_current (thread) &&
+		    (!mono_native_tls_get_value (debugger_tls_id) ||
+		     !mono_domain_get ())
 		) {
 			/*
-			 * This can happen on darwin since we deregister threads using pthread dtors.
-			 * process_profiler_event () and the code it calls cannot handle a null TLS value.
+			 * This can happen on darwin and android since we
+			 * deregister threads using pthread dtors.
+			 * process_profiler_event () and the code it calls
+			 * cannot handle a null TLS value.
 			 */
 			return;
 		}
