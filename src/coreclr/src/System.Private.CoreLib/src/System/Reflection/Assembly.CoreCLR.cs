@@ -65,7 +65,7 @@ namespace System.Reflection
         }
 
         // Get the assembly that the current code is running from.
-        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod 
+        [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly GetExecutingAssembly()
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -76,7 +76,7 @@ namespace System.Reflection
         public static Assembly GetCallingAssembly()
         {
             // LookForMyCallersCaller is not guaranteed to return the correct stack frame
-            // because of inlining, tail calls, etc. As a result GetCallingAssembly is not 
+            // because of inlining, tail calls, etc. As a result GetCallingAssembly is not
             // guaranteed to return the correct result. It's also documented as such.
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCallersCaller;
             return GetExecutingAssembly(ref stackMark);

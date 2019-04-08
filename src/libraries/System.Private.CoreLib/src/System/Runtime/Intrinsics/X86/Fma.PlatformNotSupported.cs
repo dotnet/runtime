@@ -4,6 +4,7 @@
 
 #nullable enable
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -16,7 +17,7 @@ namespace System.Runtime.Intrinsics.X86
     {
         internal Fma() { }
 
-        public new static bool IsSupported { get { return false; } }
+        public new static bool IsSupported { [Intrinsic] get { return false; } }
 
         /// <summary>
         /// __m128 _mm_fmadd_ps (__m128 a, __m128 b, __m128 c)

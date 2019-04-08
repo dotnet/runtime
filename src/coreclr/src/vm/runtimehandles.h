@@ -160,8 +160,10 @@ public:
 
 #ifdef FEATURE_COMINTEROP
     static FCDECL1(FC_BOOL_RET, IsWindowsRuntimeObjectType, ReflectClassBaseObject *rtTypeUNSAFE);
+#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
     static FCDECL1(FC_BOOL_RET, IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE);
-#endif // FEATURE_COMINTEROP
+#endif
+#endif //FEATURE_COMINTEROP
 
     static
     void QCALLTYPE PrepareMemberInfoCache(EnregisteredTypeHandle pMemberInfoCache);

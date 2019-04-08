@@ -426,6 +426,26 @@ void QCALLTYPE AssemblyNative::GetLocation(QCall::AssemblyHandle pAssembly, QCal
     END_QCALL;
 }
 
+
+#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
+void QCALLTYPE AssemblyNative::LoadTypeForWinRTTypeNameInContext(INT_PTR ptrAssemblyLoadContext, LPCWSTR pwzTypeName, QCall::ObjectHandleOnStack retType)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    TypeHandle loadedType = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(pwzTypeName, (ICLRPrivBinder*)ptrAssemblyLoadContext, /* pbIsPrimitive */ nullptr);
+
+    if (!loadedType.IsNull())
+    {
+         GCX_COOP();
+         retType.Set(loadedType.GetManagedClassObject());
+    }
+
+    END_QCALL;
+}
+#endif
+
 void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
 {
     CONTRACTL

@@ -5298,6 +5298,9 @@ PEAssembly * AppDomain::BindAssemblySpec(
             hr = BindAssemblySpecForHostedBinder(pSpec, pAssemblyName, m_pWinRtBinder, &pAssembly);
             if (FAILED(hr))
                 goto EndTry2; // Goto end of try block.
+
+            PTR_CLRPrivAssemblyWinRT assem = dac_cast<PTR_CLRPrivAssemblyWinRT>(pAssembly->GetHostAssembly());
+            assem->SetFallbackBinder(pSpec->GetHostBinder());
 EndTry2:;
         }
         // The combination of this conditional catch/ the following if statement which will throw reduces the count of exceptions 

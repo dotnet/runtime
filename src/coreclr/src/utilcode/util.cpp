@@ -1160,6 +1160,20 @@ found:
     m_CPUGroupInfoArray[group].activeThreadWeight -= m_CPUGroupInfoArray[group].groupWeight;
 #endif
 }
+
+BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* group_size)
+{
+    if (group_number >= m_nGroups)
+    {
+        return FALSE;
+    }
+
+    *group_begin = m_CPUGroupInfoArray[group_number].begin;
+    *group_size = m_CPUGroupInfoArray[group_number].nr_active;
+
+    return TRUE;
+}
+
 #endif
 
 /*static*/ BOOL CPUGroupInfo::CanEnableGCCPUGroups()
