@@ -2410,7 +2410,7 @@ HRESULT STDMETHODCALLTYPE DllGetActivationFactoryImpl(LPCWSTR wszAssemblyName,
         GCX_COOP();
 
         bool bIsPrimitive;
-        TypeHandle typeHandle = WinRTTypeNameConverter::GetManagedTypeFromWinRTTypeName(wszTypeName, &bIsPrimitive);
+        TypeHandle typeHandle = WinRTTypeNameConverter::LoadManagedTypeForWinRTTypeName(wszTypeName, /* pLoadBinder */ nullptr, &bIsPrimitive);
         if (!bIsPrimitive && !typeHandle.IsNull() && !typeHandle.IsTypeDesc() && typeHandle.AsMethodTable()->IsExportedToWinRT())
         {
             struct _gc {
