@@ -55,6 +55,48 @@ public:
     uint16_t GetCombinedValue() { return m_groupProc; }
 };
 
+#if !defined(FEATURE_PAL)
+
+static bool g_SeLockMemoryPrivilegeAcquired = false;
+
+bool InitLargePagesPrivilege()
+{
+    TOKEN_PRIVILEGES tp;
+    LUID luid;
+    if (!LookupPrivilegeValueW(nullptr, SE_LOCK_MEMORY_NAME, &luid))
+    {
+        return false;
+    }
+
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Luid = luid;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    HANDLE token;
+    if (!OpenProcessToken(::GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &token))
+    {
+        return false;
+    }
+
+    BOOL retVal = AdjustTokenPrivileges(token, FALSE, &tp, 0, nullptr, 0);
+    DWORD gls = GetLastError();
+    CloseHandle(token);
+
+    if (!retVal)
+    {
+        return false;
+    }
+
+    if (gls != 0)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+#endif // FEATURE_PAL
+
 // Initialize the interface implementation
 // Return:
 //  true if it has succeeded, false if it has failed
@@ -269,6 +311,33 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 
     UNREFERENCED_PARAMETER(size);
     return !!::ClrVirtualFree(address, 0, MEM_RELEASE);
+}
+
+// Commit virtual memory range.
+// Parameters:
+//  size      - size of the virtual memory range
+// Return:
+//  Starting virtual address of the committed range
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if !defined(FEATURE_PAL)
+    if (!g_SeLockMemoryPrivilegeAcquired)
+    {
+        if (!InitLargePagesPrivilege())
+        {
+            return nullptr;
+        }
+
+        g_SeLockMemoryPrivilegeAcquired = true;
+    }
+
+    SIZE_T largePageMinimum = GetLargePageMinimum();
+    size = (size + (largePageMinimum - 1)) & ~(largePageMinimum - 1);
+#endif
+
+    return ::ClrVirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
 }
 
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
