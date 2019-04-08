@@ -744,5 +744,119 @@ namespace System.Text.Json.Tests
                 }
             });
         }
+
+        [Theory]
+        [MemberData(nameof(JsonWithValidTrailingCommas))]
+        public static void JsonWithTrailingCommasMultiSegment_Valid(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
+
+            {
+                JsonReaderState state = default;
+                TrailingCommasHelper(sequence, state, allow: false, expectThrow: true);
+            }
+
+            {
+                var state = new JsonReaderState(options: default);
+                TrailingCommasHelper(sequence, state, allow: false, expectThrow: true);
+            }
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                TrailingCommasHelper(sequence, state, allow: false, expectThrow: true);
+
+                bool allowTrailingCommas = true;
+                state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = allowTrailingCommas });
+                TrailingCommasHelper(sequence, state, allowTrailingCommas, expectThrow: false);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonWithInvalidTrailingCommas))]
+        public static void JsonWithTrailingCommasMultiSegment_Invalid(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                TrailingCommasHelper(sequence, state, allow: false, expectThrow: true);
+
+                bool allowTrailingCommas = true;
+                state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = allowTrailingCommas });
+                TrailingCommasHelper(sequence, state, allowTrailingCommas, expectThrow: true);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonWithValidTrailingCommasAndComments))]
+        public static void JsonWithTrailingCommasAndCommentsMultiSegment_Valid(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                if (commentHandling == JsonCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                TrailingCommasHelper(sequence, state, allow: false, expectThrow: true);
+
+                bool allowTrailingCommas = true;
+                state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = allowTrailingCommas });
+                TrailingCommasHelper(sequence, state, allowTrailingCommas, expectThrow: false);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonWithInvalidTrailingCommasAndComments))]
+        public static void JsonWithTrailingCommasAndCommentsMultiSegment_Invalid(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+            ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(utf8, 1);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                if (commentHandling == JsonCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                TrailingCommasHelper(sequence, state, allow: false, expectThrow: true);
+
+                bool allowTrailingCommas = true;
+                state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = allowTrailingCommas });
+                TrailingCommasHelper(sequence, state, allowTrailingCommas, expectThrow: true);
+            }
+        }
+
+        private static void TrailingCommasHelper(ReadOnlySequence<byte> utf8, JsonReaderState state, bool allow, bool expectThrow)
+        {
+            var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+
+            Assert.Equal(allow, state.Options.AllowTrailingCommas);
+            Assert.Equal(allow, reader.CurrentState.Options.AllowTrailingCommas);
+
+            if (expectThrow)
+            {
+                JsonTestHelper.AssertThrows<JsonReaderException>(reader, (jsonReader) =>
+                {
+                    while (jsonReader.Read())
+                        ;
+                });
+            }
+            else
+            {
+                while (reader.Read())
+                    ;
+            }
+        }
     }
 }

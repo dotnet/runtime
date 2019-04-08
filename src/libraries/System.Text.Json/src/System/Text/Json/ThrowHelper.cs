@@ -258,6 +258,12 @@ namespace System.Text.Json
                 case ExceptionResource.MismatchedObjectArray:
                     message = SR.Format(SR.MismatchedObjectArray, character);
                     break;
+                case ExceptionResource.TrailingCommaNotAllowedBeforeArrayEnd:
+                    message = SR.TrailingCommaNotAllowedBeforeArrayEnd;
+                    break;
+                case ExceptionResource.TrailingCommaNotAllowedBeforeObjectEnd:
+                    message = SR.TrailingCommaNotAllowedBeforeObjectEnd;
+                    break;
                 case ExceptionResource.EndOfStringNotFound:
                     message = SR.EndOfStringNotFound;
                     break;
@@ -287,6 +293,9 @@ namespace System.Text.Json
                     break;
                 case ExceptionResource.ExpectedStartOfPropertyOrValueNotFound:
                     message = SR.ExpectedStartOfPropertyOrValueNotFound;
+                    break;
+                case ExceptionResource.ExpectedStartOfPropertyOrValueAfterComment:
+                    message = SR.Format(SR.ExpectedStartOfPropertyOrValueAfterComment, character);
                     break;
                 case ExceptionResource.ExpectedStartOfValueNotFound:
                     message = SR.Format(SR.ExpectedStartOfValueNotFound, character);
@@ -506,6 +515,7 @@ namespace System.Text.Json
         ExpectedSeparatorAfterPropertyNameNotFound,
         ExpectedStartOfPropertyNotFound,
         ExpectedStartOfPropertyOrValueNotFound,
+        ExpectedStartOfPropertyOrValueAfterComment,
         ExpectedStartOfValueNotFound,
         ExpectedTrue,
         ExpectedValueAfterPropertyNameNotFound,
@@ -525,7 +535,9 @@ namespace System.Text.Json
         FailedToGetMinimumSizeSpan,
         FailedToGetLargerSpan,
         CannotWritePropertyWithinArray,
-        ExpectedJsonTokens
+        ExpectedJsonTokens,
+        TrailingCommaNotAllowedBeforeArrayEnd,
+        TrailingCommaNotAllowedBeforeObjectEnd,
     }
 
     internal enum NumericType
