@@ -27,6 +27,8 @@ static size_t g_RestrictedPhysicalMemoryLimit = (size_t)UINTPTR_MAX;
 // memory on the machine/in the container, we need to restrict by the VM.
 static bool g_UseRestrictedVirtualMemory = false;
 
+static bool g_SeLockMemoryPrivilegeAcquired = false;
+
 static AffinitySet g_processAffinitySet;
 
 typedef BOOL (WINAPI *PIS_PROCESS_IN_JOB)(HANDLE processHandle, HANDLE jobHandle, BOOL* result);
@@ -113,6 +115,42 @@ DWORD LCM(DWORD u, DWORD v)
     return u / GCD(u, v) * v;
 }
 #endif
+
+bool InitLargePagesPrivilege()
+{
+    TOKEN_PRIVILEGES tp;
+    LUID luid;
+    if (!LookupPrivilegeValueW(nullptr, SE_LOCK_MEMORY_NAME, &luid))
+    {
+        return false;
+    }
+
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Luid = luid;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    HANDLE token;
+    if (!OpenProcessToken(::GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &token))
+    {
+        return false;
+    }
+
+    BOOL retVal = AdjustTokenPrivileges(token, FALSE, &tp, 0, nullptr, 0);
+    DWORD gls = GetLastError();
+    CloseHandle(token);
+
+    if (!retVal)
+    {
+        return false;
+    }
+
+    if (gls != 0)
+    {
+        return false;
+    }
+
+    return true;
+}
 
 bool InitCPUGroupInfoArray()
 {
@@ -697,6 +735,31 @@ void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t fl
 bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 {
     return !!::VirtualFree(address, 0, MEM_RELEASE);
+}
+
+// Commit virtual memory range.
+// Parameters:
+//  size      - size of the virtual memory range
+// Return:
+//  Starting virtual address of the committed range
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+{
+    void* pRetVal = nullptr;
+
+    if (!g_SeLockMemoryPrivilegeAcquired)
+    {
+        if (!InitLargePagesPrivilege())
+        {
+            return nullptr;
+        }
+
+        g_SeLockMemoryPrivilegeAcquired = true;
+    }
+
+    SIZE_T largePageMinimum = GetLargePageMinimum();
+    size = (size + (largePageMinimum - 1)) & ~(largePageMinimum - 1);
+
+    return ::VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
 }
 
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
