@@ -20,10 +20,15 @@ void CryptoNative_DsaDestroy(DSA* dsa)
 
 int32_t CryptoNative_DsaGenerateKey(DSA** dsa, int32_t bits)
 {
-    *dsa = DSA_new();
     if (!dsa)
     {
         assert(false);
+        return 0;
+    }
+
+    *dsa = DSA_new();
+    if (!(*dsa))
+    {
         return 0;
     }
 
