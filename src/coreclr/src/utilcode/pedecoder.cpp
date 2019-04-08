@@ -1822,7 +1822,7 @@ DWORD PEDecoder::ReadResourceDictionary(DWORD rvaOfResourceSection, DWORD rva, L
         if (((UINT_PTR)name) <= 0xFFFF)
         {
             // name is id
-            if (pDirectoryEntries[iEntry].Name == (DWORD)name)
+            if (pDirectoryEntries[iEntry].Name == (DWORD)(SIZE_T)name)
                 foundEntry = TRUE;
         }
         else

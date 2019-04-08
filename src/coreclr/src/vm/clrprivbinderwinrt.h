@@ -323,6 +323,16 @@ public:
         DWORD               dwImageType, 
         DWORD *             pdwImageType, 
         ICLRPrivResource ** ppIResource);
+
+    void SetFallbackBinder(ICLRPrivBinder* fallbackBinder)
+    {
+        m_FallbackBinder = clr::SafeAddRef(fallbackBinder);
+    }
+
+    ICLRPrivBinder* GetFallbackBinder()
+    {
+        return m_FallbackBinder;
+    }
     
 private:
     //=============================================================================================
@@ -336,4 +346,5 @@ private:
     ReleaseHolder<IBindResult> m_pIBindResult;
     BOOL m_fShareable;
     Volatile<DWORD> m_dwImageTypes;
+    ReleaseHolder<ICLRPrivBinder> m_FallbackBinder;
 };  // class CLRPrivAssemblyWinRT

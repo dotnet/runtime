@@ -15,10 +15,6 @@ enum HWIntrinsicCategory : unsigned int
     // - the codegen of overloads can be determined by intrinsicID and base type of returned vector
     HW_Category_SimpleSIMD,
 
-    // IsSupported Property
-    // - each ISA class has an "IsSupported" property
-    HW_Category_IsSupportedProperty,
-
     // IMM intrinsics
     // - some SIMD intrinsics requires immediate value (i.e. imm8) to generate instruction
     HW_Category_IMM,
@@ -129,7 +125,10 @@ struct HWIntrinsicInfo
 
     static const HWIntrinsicInfo& lookup(NamedIntrinsic id);
 
-    static NamedIntrinsic lookupId(const char* className, const char* methodName, const char* enclosingClassName);
+    static NamedIntrinsic lookupId(Compiler*   comp,
+                                   const char* className,
+                                   const char* methodName,
+                                   const char* enclosingClassName);
     static InstructionSet lookupIsa(const char* className, const char* enclosingClassName);
 
     static unsigned lookupSimdSize(Compiler* comp, NamedIntrinsic id, CORINFO_SIG_INFO* sig);

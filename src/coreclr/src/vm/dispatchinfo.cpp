@@ -906,7 +906,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
 
             MarshalInfo Info(msig.GetModule(), msig.GetArgProps(), msig.GetSigTypeContext(), paramDef, MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                              (CorNativeLinkType)0, (CorNativeLinkFlags)0,
-                             TRUE, iParam, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, pMD, TRUE
+                             TRUE, iParam, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE
     #ifdef _DEBUG
                      , pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName, iParam
     #endif
@@ -943,7 +943,7 @@ void DispatchMemberInfo::SetUpMethodMarshalerInfo(MethodDesc *pMD, BOOL bReturnV
     {
         MarshalInfo Info(msig.GetModule(), msig.GetReturnProps(), msig.GetSigTypeContext(), returnParamDef, MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
                          (CorNativeLinkType)0, (CorNativeLinkFlags)0,
-                         FALSE, 0, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, pMD, TRUE
+                         FALSE, 0, numArgs, BestFit, ThrowOnUnmappableChar, FALSE, TRUE, pMD, TRUE
 #ifdef _DEBUG
                          , pMD->m_pszDebugMethodName, pMD->m_pszDebugClassName, 0
 #endif

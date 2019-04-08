@@ -384,6 +384,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsWindowsRuntimeObjectType, ReflectClass
 }
 FCIMPLEND
 
+#ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
 FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsTypeExportedToWindowsRuntime, ReflectClassBaseObject *rtTypeUNSAFE)
 {
     FCALL_CONTRACT;
@@ -401,6 +402,7 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsTypeExportedToWindowsRuntime, ReflectC
     FC_RETURN_BOOL(isExportedToWinRT);
 }
 FCIMPLEND
+#endif
 #endif // FEATURE_COMINTEROP
 
 NOINLINE static MethodDesc * RestoreMethodHelper(MethodDesc * pMethod, LPVOID __me)
@@ -1163,7 +1165,7 @@ MethodDesc* QCALLTYPE RuntimeTypeHandle::GetInterfaceMethodImplementation(Enregi
         // with at least an abstract method. b19897_GetInterfaceMap_Abstract.exe tests this case.
         //@TODO:STUBDISPATCH: Don't need to track down the implementation, just the declaration, and this can
         //@TODO:              be done faster - just need to make a function FindDispatchDecl.
-        DispatchSlot slot(typeHandle.GetMethodTable()->FindDispatchSlotForInterfaceMD(thOwnerOfMD, pMD, TRUE /* throwOnConflict */));
+        DispatchSlot slot(typeHandle.GetMethodTable()->FindDispatchSlotForInterfaceMD(thOwnerOfMD, pMD, FALSE /* throwOnConflict */));
     if (!slot.IsNull())
             pResult = slot.GetMethodDesc();
 

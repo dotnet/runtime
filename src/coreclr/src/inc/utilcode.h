@@ -1402,6 +1402,7 @@ public:
     static BOOL GetSystemTimes(FILETIME *idleTime, FILETIME *kernelTime, FILETIME *userTime);
     static void ChooseCPUGroupAffinity(GROUP_AFFINITY *gf);
     static void ClearCPUGroupAffinity(GROUP_AFFINITY *gf);
+    static BOOL GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* group_size);
 #endif
 
 public:
