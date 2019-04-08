@@ -214,7 +214,7 @@ namespace System.Text.Unicode
                         Vector<ushort> utf16Data = Unsafe.ReadUnaligned<Vector<ushort>>(pInputBuffer);
                         Vector<ushort> twoOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0080);
                         Vector<ushort> threeOrMoreUtf8Bytes = Vector.GreaterThanOrEqual(utf16Data, vector0800);
-                        Vector<nuint> sumVector = (Vector<nuint>)(-Vector.Add(twoOrMoreUtf8Bytes, threeOrMoreUtf8Bytes));
+                        Vector<nuint> sumVector = (Vector<nuint>)(Vector<ushort>.Zero - twoOrMoreUtf8Bytes - threeOrMoreUtf8Bytes);
 
                         // We'll try summing by a natural word (rather than a 16-bit word) at a time,
                         // which should halve the number of operations we must perform.
@@ -260,7 +260,7 @@ namespace System.Text.Unicode
                             ushort surrogatePairsCount = 0;
                             for (int i = 0; i < Vector<ushort>.Count - 1; i++)
                             {
-                                surrogatePairsCount -= highSurrogateChars[i];
+                                surrogatePairsCount -= highSurrogateChars[i]; // turns into +1 or +0
                                 if (highSurrogateChars[i] != lowSurrogateChars[i + 1])
                                 {
                                     goto NonVectorizedLoop; // error: mismatched surrogate pair; break out of vectorized logic
@@ -275,7 +275,6 @@ namespace System.Text.Unicode
                                 pInputBuffer--;
                                 inputLength++;
                                 popcnt32 -= 2;
-                                tempScalarCountAdjustment--;
                             }
 
                             nint surrogatePairsCountNint = (nint)surrogatePairsCount; // zero-extend to native int size
