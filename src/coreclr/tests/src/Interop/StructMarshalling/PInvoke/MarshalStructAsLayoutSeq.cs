@@ -27,7 +27,10 @@ public class Managed
         IntWithInnerSequentialId,
         SequentialWrapperId,
         SequentialDoubleWrapperId,
-        AggregateSequentialWrapperId
+        AggregateSequentialWrapperId,
+        FixedBufferClassificationTestId,
+        HFAId,
+        DoubleHFAId
     }
 
     private static void InitialArray(int[] iarr, int[] icarr)
@@ -318,10 +321,22 @@ public class Managed
     static extern bool MarshalStructAsParam_AsSeqByValSequentialAggregateSequentialWrapper(AggregateSequentialWrapper wrapper);
 
     [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(FixedBufferClassificationTest str, float f);
+    [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(FixedBufferClassificationTestBlittable str, float f);
+    [DllImport("MarshalStructAsParam")]
+    static extern bool MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(FixedArrayClassificationTest str, float f);
+    [DllImport("MarshalStructAsParam")]
     static extern int GetStringLength(AutoString str);
 
     [DllImport("MarshalStructAsParam")]
     static extern HFA GetHFA(float f1, float f2, float f3, float f4);
+    
+    [DllImport("MarshalStructAsParam")]
+    static extern float ProductHFA(HFA hfa);
+
+    [DllImport("MarshalStructAsParam")]
+    static extern double ProductDoubleHFA(DoubleHFA hfa);
 
     [DllImport("MarshalStructAsParam")]
     static extern ManyInts GetMultiplesOf(int i);
@@ -617,6 +632,96 @@ public class Managed
                         failures++;
                     }
                     break; 
+                case StructID.FixedBufferClassificationTestId:
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest with nonblittable struct...");
+                    unsafe
+                    {
+                        FixedBufferClassificationTest str = new FixedBufferClassificationTest();
+                        str.arr[0] = 123456;
+                        str.arr[1] = 78910;
+                        str.arr[2] = 1234;
+                        str.f = new NonBlittableFloat(56.789f);
+                        if (!MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(str, str.f.F))
+                        {
+                            Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
+                            failures++;
+                        }
+                    }
+
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest with blittable struct...");
+                    unsafe
+                    {
+                        FixedBufferClassificationTestBlittable str = new FixedBufferClassificationTestBlittable();
+                        str.arr[0] = 123456;
+                        str.arr[1] = 78910;
+                        str.arr[2] = 1234;
+                        str.f = 56.789f;
+                        if (!MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(str, str.f))
+                        {
+                            Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
+                            failures++;
+                        }
+                    }
+
+                    Console.WriteLine("\tCalling MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest with fixed array...");
+                    FixedArrayClassificationTest fixedArrayTest = new FixedArrayClassificationTest
+                    {
+                        arr = new Int32Wrapper[3]
+                        {
+                            new Int32Wrapper { i = 123456 },
+                            new Int32Wrapper { i = 78910 },
+                            new Int32Wrapper { i = 1234 }
+                        },
+                        f = 56.789f
+                    };
+                    if (!MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest(fixedArrayTest, fixedArrayTest.f))
+                    {
+                        Console.WriteLine("\tFAILED! Managed to Native failed in MarshalStructAsParam_AsSeqByValFixedBufferClassificationTest. Expected:True;Actual:False");
+                        failures++;
+                    }
+                    break;
+                case StructID.HFAId:
+                {
+                    HFA hfa = new HFA
+                    {
+                        f1 = 2.0f,
+                        f2 = 10.5f,
+                        f3 = 15.2f,
+                        f4 = 0.12f
+                    };
+
+                    float expected = hfa.f1 * hfa.f2 * hfa.f3 * hfa.f4;
+                    float actual;
+
+                    Console.WriteLine("\tCalling ProductHFA with HFA.");
+                    actual = ProductHFA(hfa);
+                    if (expected != actual)
+                    {
+                        Console.WriteLine($"\tFAILED! Expected {expected}. Actual {actual}");
+                        failures++;
+                    }
+                    break;
+                }
+                case StructID.DoubleHFAId:
+                {
+                    DoubleHFA doubleHFA = new DoubleHFA
+                    {
+                        d1 = 123.456,
+                        d2 = 456.789
+                    };
+
+                    double expected = doubleHFA.d1 * doubleHFA.d2;
+                    double actual;
+
+                    Console.WriteLine("\tCalling ProductDoubleHFA.");
+                    actual = ProductDoubleHFA(doubleHFA);
+                    if (expected != actual)
+                    {
+                        Console.WriteLine($"\tFAILED! Expected {expected}. Actual {actual}");
+                        failures++;
+                    }
+                    break;
+                }
                 default:
                     Console.WriteLine("\tThere is not the struct id");
                     failures++;
@@ -2239,6 +2344,9 @@ public class Managed
         MarshalStructAsParam_AsSeqByVal(StructID.SequentialWrapperId);
         MarshalStructAsParam_AsSeqByVal(StructID.SequentialDoubleWrapperId);
         MarshalStructAsParam_AsSeqByVal(StructID.AggregateSequentialWrapperId);
+        MarshalStructAsParam_AsSeqByVal(StructID.FixedBufferClassificationTestId);
+        MarshalStructAsParam_AsSeqByVal(StructID.HFAId);
+        MarshalStructAsParam_AsSeqByVal(StructID.DoubleHFAId);
     }
 
     [SecuritySafeCritical]

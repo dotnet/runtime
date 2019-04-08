@@ -17,7 +17,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     [CLSCompliant(false)]
     public static class Sha256
     {
-        public static bool IsSupported { get { return false; } }
+        public static bool IsSupported { [Intrinsic] get { return false; } }
 
         /// <summary>
         /// Performs SHA256 hash update (part 1).

@@ -33,6 +33,14 @@
   }
 }
 
+.class interface public abstract auto ansi IReabstractor implements IFoo
+{
+  .method public hidebysig newslot virtual abstract final instance int32 DefaultMethod(int32) cil managed
+  {
+    .override IFoo::DefaultMethod
+  }
+}
+
 .class interface public abstract auto ansi IFoo`1<T>
 {
   .method public hidebysig newslot virtual instance valuetype [mscorlib]System.RuntimeTypeHandle DefaultMethod() cil managed
@@ -57,6 +65,19 @@
 .class public auto ansi beforefieldinit Fooer
        extends [mscorlib]System.Object
        implements IFoo, class IFoo`1<class Fooer>
+{
+  .method public hidebysig specialname rtspecialname 
+          instance void .ctor() cil managed
+  {
+    ldarg.0
+    call instance void [mscorlib]System.Object::.ctor()
+    ret
+  }
+}
+
+.class public auto ansi beforefieldinit Reabstractor
+       extends [mscorlib]System.Object
+       implements IReabstractor
 {
   .method public hidebysig specialname rtspecialname 
           instance void .ctor() cil managed
