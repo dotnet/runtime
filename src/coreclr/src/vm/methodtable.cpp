@@ -6944,6 +6944,39 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
     RETURN (FALSE);
 }
 
+#ifndef DACCESS_COMPILE
+
+void ThrowExceptionForAbstractOverride(
+    MethodTable *pTargetClass,
+    MethodTable *pInterfaceMT,
+    MethodDesc *pInterfaceMD)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SString assemblyName;
+
+    pTargetClass->GetAssembly()->GetDisplayName(assemblyName);
+
+    SString strInterfaceName;
+    TypeString::AppendType(strInterfaceName, TypeHandle(pInterfaceMT));
+
+    SString strMethodName;
+    TypeString::AppendMethod(strMethodName, pInterfaceMD, pInterfaceMD->GetMethodInstantiation());
+
+    SString strTargetClassName;
+    TypeString::AppendType(strTargetClassName, pTargetClass);
+
+    COMPlusThrow(
+        kEntryPointNotFoundException,
+        IDS_CLASSLOAD_METHOD_NOT_IMPLEMENTED,
+        strMethodName,
+        strInterfaceName,
+        strTargetClassName,
+        assemblyName);
+}
+
+#endif // !DACCESS_COMPILE
+
 //==========================================================================================
 // Possible cases:
 //      1. Typed (interface) contract
@@ -7063,15 +7096,32 @@ MethodTable::FindDispatchImpl(
 
                 if (foundDefaultInterfaceImplementation)
                 {
-                    // Now, construct a DispatchSlot to return in *pImplSlot
-                    DispatchSlot ds(pDefaultMethod->GetMethodEntryPoint());
-
-                    if (pImplSlot != NULL)
+                    //
+                    // If the default implementation we found is abstract, we hit a reabstraction.
+                    //
+                    // interface IFoo { void Frob() { ... } }
+                    // interface IBar { abstract void IFoo.Frob() }
+                    // class Foo : IBar { /* IFoo.Frob not implemented here */ }
+                    //
+                    if (pDefaultMethod->IsAbstract())
                     {
-                        *pImplSlot = ds;
+                        if (throwOnConflict)
+                        {
+                            ThrowExceptionForAbstractOverride(this, pIfcMT, pIfcMD);
+                        }
                     }
+                    else
+                    {
+                        // Now, construct a DispatchSlot to return in *pImplSlot
+                        DispatchSlot ds(pDefaultMethod->GetMethodEntryPoint());
 
-                    RETURN(TRUE);
+                        if (pImplSlot != NULL)
+                        {
+                            *pImplSlot = ds;
+                        }
+
+                        RETURN(TRUE);
+                    }
                 }
             }
 
