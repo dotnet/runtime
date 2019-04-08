@@ -69,12 +69,12 @@
                       return result;
                   }
 
-                  string [] GetDisabledConfigFeatures (string path)
+                  List<string> GetConfigFeatures (string path, string featuresRegex)
                   {
-                      var disabledFeatures = new List<string> ();
+                      var features = new List<string> ();
                       if (File.Exists (path))
                       {
-                          var regex = new Regex (".*#define.*DISABLE_.*1");
+                          var regex = new Regex (featuresRegex);
                           using (StreamReader reader = new StreamReader (path))
                           {
                               string line;
@@ -92,7 +92,7 @@
                                               if (configItems != null && configItems.Length == 3)
                                               {
                                                   // Second item should be the define.
-                                                  disabledFeatures.Add (configItems[1]);
+                                                  features.Add (configItems[1]);
                                               }
                                           }
                                       }
@@ -100,7 +100,30 @@
                               }
                           }
                       }
-                      return disabledFeatures.ToArray ();
+                      return features;
+                  }
+
+                  string [] GetEnabledConfigFeatures (string path, string enableDefines)
+                  {
+                      string [] supportedFeatures = { "ENABLE_ICALL_SYMBOL_MAP",
+                                                      "ENABLE_LLVM",
+                                                      "ENABLE_LLVM_RUNTIME" };
+
+                      var enableFeatures = GetConfigFeatures(path, ".*#define.*ENABLE_.*1");
+                      if (enableDefines != null)
+                          enableFeatures.AddRange (enableDefines.Split (';'));
+
+                      // Only keep supported features on Windows platforms using MSVC.
+                      var features = new List<string> ();
+                      foreach (var feature in enableFeatures)
+                          if (Array.Exists(supportedFeatures, s => String.CompareOrdinal (s,feature) == 0))
+                              features.Add(feature);
+                      return features.ToArray ();
+                  }
+
+                  string [] GetDisabledConfigFeatures (string path)
+                  {
+                      return GetConfigFeatures(path, ".*#define.*DISABLE_.*1").ToArray ();
                   }
 
                   void CreateConfigUsingTemplate (string templatePath, string targetPath, string [] disabledDefines, string [] enabledDefines, string [] haveDefines, string monoVersion, string monoCorlibVersion)
@@ -290,7 +313,7 @@
                     }
 
                     var disableDefines = GetDisabledConfigFeatures (cygConfigFile);
-                    var enableDefines = (EnableDefines != null) ? EnableDefines.Split (';') : null;
+                    var enableDefines = GetEnabledConfigFeatures (cygConfigFile, EnableDefines);
                     var haveDefines = (HaveDefines != null) ? HaveDefines.Split (';') : null;
                     CreateConfigUsingTemplate (winConfigFile, configFile, disableDefines, enableDefines, haveDefines, monoVersion, monoCorlibVersion);
 
