@@ -87,7 +87,6 @@ namespace System.Diagnostics.Tracing
         private uint m_circularBufferSizeInMB;
         private List<EventPipeProviderConfiguration> m_providers;
         private TimeSpan m_minTimeBetweenSamples = TimeSpan.FromMilliseconds(1);
-        private ulong m_multiFileTraceLengthInSeconds = 0;
 
         internal EventPipeConfiguration(
             string outputFile,
@@ -114,11 +113,6 @@ namespace System.Diagnostics.Tracing
         internal uint CircularBufferSizeInMB
         {
             get { return m_circularBufferSizeInMB; }
-        }
-
-        internal ulong MultiFileTraceLengthInSeconds
-        {
-            get { return m_multiFileTraceLengthInSeconds; }
         }
 
         internal EventPipeProviderConfiguration[] Providers
@@ -168,11 +162,6 @@ namespace System.Diagnostics.Tracing
 
             m_minTimeBetweenSamples = minTimeBetweenSamples;
         }
-
-        internal void SetMultiFileTraceLength(ulong traceLengthInSeconds)
-        {
-            m_multiFileTraceLengthInSeconds = traceLengthInSeconds;
-        }
     }
 
     internal static class EventPipe
@@ -198,8 +187,7 @@ namespace System.Diagnostics.Tracing
                 configuration.CircularBufferSizeInMB,
                 (ulong)configuration.ProfilerSamplingRateInNanoseconds,
                 providers,
-                (uint)providers.Length,
-                configuration.MultiFileTraceLengthInSeconds);
+                (uint)providers.Length);
         }
 
         internal static void Disable()
@@ -219,8 +207,7 @@ namespace System.Diagnostics.Tracing
             uint circularBufferSizeInMB,
             ulong profilerSamplingRateInNanoseconds,
             EventPipeProviderConfiguration[] providers,
-            uint numProviders,
-            ulong multiFileTraceLengthInSeconds);
+            uint numProviders);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern void Disable(UInt64 sessionID);
