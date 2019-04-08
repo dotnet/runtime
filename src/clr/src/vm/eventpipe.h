@@ -255,8 +255,7 @@ public:
         uint32_t circularBufferSizeInMB,
         uint64_t profilerSamplingRateInNanoseconds,
         const EventPipeProviderConfiguration *pProviders,
-        uint32_t numProviders,
-        uint64_t multiFileTraceLengthInSeconds);
+        uint32_t numProviders);
 
     static EventPipeSessionID Enable(
         IpcStream *pStream,
@@ -313,27 +312,15 @@ private:
     // Enable the specified EventPipe session.
     static EventPipeSessionID Enable(
         EventPipeSession *const pSession,
-        WAITORTIMERCALLBACK callback,
-        DWORD dueTime,
-        DWORD period);
+        WAITORTIMERCALLBACK callback = nullptr,
+        DWORD dueTime = 0,
+        DWORD period = 0);
 
     static void CreateFlushTimerCallback(WAITORTIMERCALLBACK Callback, DWORD DueTime, DWORD Period);
 
     static void DeleteFlushTimerCallback();
 
-    // Performs one polling operation to determine if it is necessary to switch to a new file.
-    // If the polling operation decides it is time, it will perform the switch.
-    // Called directly from the timer when the timer is triggered.
-    static void WINAPI SwitchToNextFileTimerCallback(PVOID parameter, BOOLEAN timerFired);
-
     static void WINAPI FlushTimer(PVOID parameter, BOOLEAN timerFired);
-
-    // If event pipe has been configured to write multiple files, switch to the next file.
-    static void SwitchToNextFile();
-
-    // Generate the file path for the next trace file.
-    // This is used when event pipe has been configured to create multiple trace files with a specified maximum length of time.
-    static void GetNextFilePath(SString &nextTraceFilePath);
 
     // Callback function for the stack walker.  For each frame walked, this callback is invoked.
     static StackWalkAction StackWalkCallback(CrawlFrame *pCf, StackContents *pData);
@@ -358,14 +345,11 @@ private:
     static EventPipeConfiguration *s_pConfig;
     static EventPipeSession *s_pSession;
     static EventPipeBufferManager *s_pBufferManager;
-    static LPCWSTR s_pOutputPath;
-    static unsigned long s_nextFileIndex;
     static EventPipeFile *s_pFile;
     static EventPipeEventSource *s_pEventSource;
     static LPCWSTR s_pCommandLine;
     static HANDLE s_fileSwitchTimerHandle;
     static ULONGLONG s_lastFlushSwitchTime;
-    static uint64_t s_multiFileTraceLengthInSeconds;
 };
 
 struct EventPipeProviderConfiguration
