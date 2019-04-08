@@ -48,7 +48,9 @@
 
       <!-- intersect with ReferenceFromRuntime -->
       <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileName)"
-          Condition="'@(_referencePathFromRuntimeByFileName)' == '@(ReferenceFromRuntime)' AND '%(Identity)' != ''" />
+          Condition="'@(_referencePathFromRuntimeByFileName)' == '@(ReferenceFromRuntime)' AND '%(Identity)' != ''">
+        <Aliases>@(ReferenceFromRuntime->'%(Aliases)')</Aliases>
+      </_filteredReferencePathFromRuntimeByFileName>
 
       <_remainingReferenceFromRuntime Include="@(ReferenceFromRuntime)" Exclude="@(_filteredReferencePathFromRuntimeByFileName)" />
 
@@ -58,12 +60,16 @@
       </_remainingReferenceFromRuntimeWithNI>
 
       <_filteredReferencePathFromRuntimeByFileName Include="@(_referencePathFromRuntimeByFileName)"
-          Condition="'@(_referencePathFromRuntimeByFileName)' == '@(_remainingReferenceFromRuntimeWithNI)' AND '%(Identity)' != ''" />
+          Condition="'@(_referencePathFromRuntimeByFileName)' == '@(_remainingReferenceFromRuntimeWithNI)' AND '%(Identity)' != ''">
+        <Aliases>@(_remainingReferenceFromRuntimeWithNI->'%(Aliases)')</Aliases>
+      </_filteredReferencePathFromRuntimeByFileName>
 
       <_missingReferenceFromRuntime Include="@(_remainingReferenceFromRuntimeWithNI)" Exclude="@(_filteredReferencePathFromRuntimeByFileName)" />
 
       <!-- transform back to path -->
+      <!-- We are adding two items(with and without aliases) for references having Aliases. The major reason behind this to not use the Aliases for all the types in that reference.  -->
       <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" />
+      <ReferencePath Include="@(_filteredReferencePathFromRuntimeByFileName->'%(ReferencePath)')" Condition="'%(Aliases)' != ''" Aliases="" />
     </ItemGroup>
 
     <Error Condition="'@(_missingReferenceFromRuntime)' != ''"

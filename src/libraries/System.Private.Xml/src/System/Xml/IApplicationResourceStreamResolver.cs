@@ -8,7 +8,8 @@ using System.ComponentModel;
 
 namespace System.Xml
 {
-    [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
+    // we must specify the error flag as false so that we can typeforward this type without hitting a compile error.
+    [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", false)]
     [EditorBrowsable(EditorBrowsableState.Never)]
     public interface IApplicationResourceStreamResolver
     {

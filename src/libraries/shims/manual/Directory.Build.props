@@ -2,8 +2,13 @@
   <PropertyGroup>
     <BuildConfigurations>
       netcoreapp;
-      netcoreappaot;
       uap;
+      uapaot;
+    </BuildConfigurations>
+    <!-- System.Private.CoreLib version is different in some projects for netcoreappaot builds. -->
+    <BuildConfigurations Condition="'$(BuildAllConfigurations)' != 'true'">
+      $(BuildConfigurations);
+      netcoreappaot;
     </BuildConfigurations>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
@@ -21,11 +26,13 @@
     <IncludeDefaultReferences>false</IncludeDefaultReferences>
     <ContractAssemblyPath>$(NetFxRefPath)$(MSBuildProjectName).dll</ContractAssemblyPath>
     <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);netcoreapp</DefineConstants>
+    <!-- Use runtime assemblies for the TargetGroup, using build configuration OSGroup -->
+    <RefPath>$(ArtifactsBinDir)runtime/$(TargetGroup)-$(_bc_OSGroup)-$(_bc_ConfigurationGroup)-$(ArchGroup)/</RefPath>
   </PropertyGroup>
 
   <ItemGroup>
     <ReferencePath
-      Include="$(RuntimePath)System.*.dll;$(RuntimePath)Microsoft.Win32.*.dll"
-      Exclude="$(RuntimePath)System.dll;$(RuntimePath)System.Data.dll" />
+      Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
+      Exclude="$(RefPath)System.dll;$(RefPath)System.Data.dll" />
   </ItemGroup>
 </Project>
