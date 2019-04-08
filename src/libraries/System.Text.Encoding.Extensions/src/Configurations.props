@@ -2,6 +2,7 @@
   <PropertyGroup>
     <BuildConfigurations>
       uap-Windows_NT;
+      uapaot-Windows_NT;
       netcoreapp-Windows_NT;
       netcoreappaot-Windows_NT;
       netcoreappaot-WebAssembly;
