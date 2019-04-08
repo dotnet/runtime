@@ -21,6 +21,7 @@ namespace System.Text.Json
         internal bool _isNotPrimitive;
         internal char _numberFormat;
         internal bool _stringHasEscaping;
+        internal bool _trailingCommaBeforeComment;
         internal JsonTokenType _tokenType;
         internal JsonTokenType _previousTokenType;
         internal JsonReaderOptions _readerOptions;
@@ -64,6 +65,7 @@ namespace System.Text.Json
             _isNotPrimitive = default;
             _numberFormat = default;
             _stringHasEscaping = default;
+            _trailingCommaBeforeComment = default;
             _tokenType = default;
             _previousTokenType = default;
             _readerOptions = options;
