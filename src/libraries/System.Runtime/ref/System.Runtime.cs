@@ -7111,6 +7111,12 @@ namespace System.Runtime.Remoting
 }
 namespace System.Runtime.Serialization
 {
+    public sealed partial class DeserializationBlockedException : System.Exception
+    {
+        public DeserializationBlockedException() { }
+        public DeserializationBlockedException(String message) { }
+        public DeserializationBlockedException(Exception innerException) { }
+    }
     public partial interface IDeserializationCallback
     {
         void OnDeserialization(object sender);
