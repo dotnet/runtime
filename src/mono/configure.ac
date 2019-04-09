@@ -159,12 +159,15 @@ case "$host" in
 		fi
 		HOST_CC="gcc"
 		RID="win-x86"
+		CORETARGETS="/p:TargetsWindows=true"
+		COREARCH="x86"
 		# Boehm not supported on 64-bit Windows.
 		case "$host" in
 		x86_64-*-* | amd64-*-*)
 			support_boehm=no
 			with_gc=sgen
 			RID="win-x64"
+			COREARCH="x64"
 			;;
 		esac
 
@@ -306,6 +309,7 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT"
 		libdl="-ldl"
 		libgc_threads=pthreads
+		CORETARGETS="/p:TargetsUnix=true"
 		use_sigposix=yes
 		if test "x$cross_compiling" != "xno"; then
                 	# to bypass the underscore linker check, not
@@ -329,9 +333,11 @@ case "$host" in
 			;;
 		x86-*)
 			RID="linux-x86"
+			COREARCH="x86"
 			;;
 		x86_64-*)
 			RID="linux-x64"
+			COREARCH="x64"
 			;;
 		arm-*)
 			# deal with this in the FPU detection section, since
@@ -342,6 +348,7 @@ case "$host" in
 			support_boehm=no
 			with_gc=sgen
 			RID="linux-arm64"
+			COREARCH="arm64"
 			;;
 		powerpc*-*-linux*)
 			# https://bugzilla.novell.com/show_bug.cgi?id=504411
@@ -394,6 +401,7 @@ case "$host" in
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA, 1, [...])
+		CORETARGETS="/p:TargetsUnix=true /p:TargetsOSX=true"
 		libdl=
 		libgc_threads=pthreads
 		has_dtrace=yes
@@ -416,10 +424,12 @@ case "$host" in
 				CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC $BROKEN_DARWIN_FLAGS"
 				with_sgen_default_concurrent=yes
 				RID="osx-x86"
+				COREARCH="x86"
 				;;
 			x*64-*-darwin*)
 				with_sgen_default_concurrent=yes
 				RID="osx-x64"
+				COREARCH="x64"
 				;;
 			arm*-darwin*)
 				platform_ios=yes
@@ -479,6 +489,7 @@ case "$host" in
 		dnl ppc Linux is the same? test further
 		disable_munmap=yes
 		RID="aix-ppc64"
+		CORETARGETS="/p:TargetsUnix=true"
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.ac checks!])
@@ -5233,13 +5244,17 @@ if test ${TARGET} = ARM; then
 
 	if test x$host_linux = xyes; then
 		RID="linux-arm"
+		COREARCH="arm"
 		if test x$fpu = xNONE; then
 			RID="linux-armel"
+			COREARCH="armel"
 		fi
 	fi
 fi
 
 AC_SUBST(RID)
+AC_SUBST(COREARCH)
+AC_SUBST(CORETARGETS)
 
 if test ${TARGET} = RISCV32 -o ${TARGET} = RISCV64; then
 	AC_ARG_WITH([riscv-fpabi], [  --with-riscv-fpabi=auto,double,soft   Select RISC-V floating point ABI (auto)], [fpabi=$withval], [fpabi=double])
@@ -6396,6 +6411,7 @@ acceptance-tests/Makefile
 llvm/Makefile
 scripts/mono-find-provides
 scripts/mono-find-requires
+mcs/class/System.Private.CoreLib/Makefile
 mk/Makefile
 mono/Makefile
 mono/btls/Makefile
