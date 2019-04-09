@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Runtime.CompilerServices
 {
     //=========================================================================================
@@ -32,7 +33,7 @@ namespace System.Runtime.CompilerServices
     {
         private IntPtr _handle;
 
-        public DependentHandle(object primary, object secondary) =>
+        public DependentHandle(object primary, object? secondary) =>
             // no need to check for null result: nInitialize expected to throw OOM.
             _handle = nInitialize(primary, secondary);
 
@@ -41,15 +42,15 @@ namespace System.Runtime.CompilerServices
         // Getting the secondary object is more expensive than getting the first so
         // we provide a separate primary-only accessor for those times we only want the
         // primary.
-        public object GetPrimary() => nGetPrimary(_handle);
+        public object? GetPrimary() => nGetPrimary(_handle);
 
-        public object GetPrimaryAndSecondary(out object secondary) =>
+        public object? GetPrimaryAndSecondary(out object? secondary) =>
             nGetPrimaryAndSecondary(_handle, out secondary);
 
-        public void SetPrimary(object primary) =>
+        public void SetPrimary(object? primary) =>
             nSetPrimary(_handle, primary);
 
-        public void SetSecondary(object secondary) =>
+        public void SetSecondary(object? secondary) =>
             nSetSecondary(_handle, secondary);
 
         // Forces dependentHandle back to non-allocated state (if not already there)
@@ -65,19 +66,19 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern IntPtr nInitialize(object primary, object secondary);
+        private static extern IntPtr nInitialize(object primary, object? secondary);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object nGetPrimary(IntPtr dependentHandle);
+        private static extern object? nGetPrimary(IntPtr dependentHandle);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object nGetPrimaryAndSecondary(IntPtr dependentHandle, out object secondary);
+        private static extern object? nGetPrimaryAndSecondary(IntPtr dependentHandle, out object? secondary);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void nSetPrimary(IntPtr dependentHandle, object primary);
+        private static extern void nSetPrimary(IntPtr dependentHandle, object? primary);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void nSetSecondary(IntPtr dependentHandle, object secondary);
+        private static extern void nSetSecondary(IntPtr dependentHandle, object? secondary);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void nFree(IntPtr dependentHandle);
