@@ -14,7 +14,6 @@
       netcoreapp-Linux;
       netcoreapp-OSX;
       netcoreapp-Windows_NT;
-      netcoreappaot-WebAssembly;
       netfx-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>

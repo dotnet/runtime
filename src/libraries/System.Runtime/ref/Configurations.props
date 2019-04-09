@@ -2,7 +2,6 @@
   <PropertyGroup>
     <BuildConfigurations>
       netcoreapp;
-      netcoreappaot;
       uap;
     </BuildConfigurations>
   </PropertyGroup>

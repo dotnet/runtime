@@ -166,20 +166,6 @@
       <Imports>netcoreapp3.0</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
-    <TargetGroups Include="netcoreapp3.0aot">
-      <NETCoreAppMaximumVersion>3.0</NETCoreAppMaximumVersion>
-      <TargetFramework>netcoreapp3.0</TargetFramework>
-      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
-      <Imports>netcoreapp;netcoreapp2.1</Imports>
-      <CompatibleWith>netstandard</CompatibleWith>
-    </TargetGroups>
-    <TargetGroups Include="netcoreappaot">
-      <NETCoreAppMaximumVersion>3.0</NETCoreAppMaximumVersion>
-      <TargetFramework>netcoreapp3.0</TargetFramework>
-      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
-      <Imports>netcoreapp;netcoreapp3.0aot</Imports>
-      <CompatibleWith>netstandard</CompatibleWith>
-    </TargetGroups>
     <TargetGroups Include="net45">
       <TargetFramework>net45</TargetFramework>
       <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.5</TargetingPackNugetPackageId>
