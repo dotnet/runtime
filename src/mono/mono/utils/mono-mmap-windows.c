@@ -63,6 +63,20 @@ mono_mmap_win_prot_from_flags (int flags)
 	return prot;
 }
 
+/**
+ * mono_setmmapjit:
+ * \param flag indicating whether to enable or disable the use of MAP_JIT in mmap
+ *
+ * Call this method to enable or disable the use of MAP_JIT to create the pages
+ * for the JIT to use.   This is only needed for scenarios where Mono is bundled
+ * as an App in MacOS
+ */
+void
+mono_setmmapjit (int flag)
+{
+	/* Ignored on HOST_WIN32 */
+}
+
 void*
 mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 {
