@@ -314,7 +314,7 @@ namespace System.Numerics
         /// <param name="other">The Plane to compare this instance to.</param>
         /// <returns>True if the other Plane is equal to this instance; False otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(Plane other)
+        public readonly bool Equals(Plane other)
         {
             if (Vector.IsHardwareAccelerated)
             {
@@ -335,7 +335,7 @@ namespace System.Numerics
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this Plane; False otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals(object obj)
+        public override readonly bool Equals(object obj)
         {
             if (obj is Plane)
             {
@@ -349,7 +349,7 @@ namespace System.Numerics
         /// Returns a String representing this Plane instance.
         /// </summary>
         /// <returns>The string representation.</returns>
-        public override string ToString()
+        public override readonly string ToString()
         {
             CultureInfo ci = CultureInfo.CurrentCulture;
 
@@ -360,7 +360,7 @@ namespace System.Numerics
         /// Returns the hash code for this instance.
         /// </summary>
         /// <returns>The hash code.</returns>
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return Normal.GetHashCode() + D.GetHashCode();
         }
