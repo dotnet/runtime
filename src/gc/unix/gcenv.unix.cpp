@@ -573,7 +573,7 @@ bool GCToOSInterface::VirtualCommit(void* address, size_t size, uint16_t node)
     {
         if ((int)node <= g_highestNumaNode)
         {
-            int nodeMaskLength = (g_highestNumaNode + 1 + sizeof(unsigned long) - 1) / sizeof(unsigned long);
+            int nodeMaskLength = (g_highestNumaNode + sizeof(unsigned long) - 1) / sizeof(unsigned long);
             unsigned long *nodeMask = (unsigned long*)alloca(nodeMaskLength * sizeof(unsigned long));
             memset(nodeMask, 0, nodeMaskLength);
 
@@ -916,13 +916,14 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
             if (availableProcNumber == heap_number)
             {
                 *proc_no = procNumber;
-
+#if HAVE_NUMA_H
                 if (GCToOSInterface::CanEnableGCNumaAware())
                 {
                     int result = numa_node_of_cpu(procNumber);
                     *node_no = (result >= 0) ? (uint16_t)result : NUMA_NODE_UNDEFINED;
                 }
                 else
+#endif // HAVE_NUMA_H
                 {
                     *node_no = NUMA_NODE_UNDEFINED;
                 }

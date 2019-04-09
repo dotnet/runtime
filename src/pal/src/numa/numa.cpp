@@ -25,11 +25,6 @@ SET_DEFAULT_DEBUG_CHANNEL(NUMA);
 #include "pal/corunix.hpp"
 #include "pal/thread.hpp"
 
-#if HAVE_PTHREAD_NP_H
-#include <pthread_np.h>
-#endif
-
-#include <pthread.h>
 #include <dlfcn.h>
 #ifdef __FreeBSD__
 #include <stdlib.h>
@@ -42,10 +37,6 @@ SET_DEFAULT_DEBUG_CHANNEL(NUMA);
 #include "numashim.h"
 
 using namespace CorUnix;
-
-#if HAVE_CPUSET_T
-typedef cpuset_t cpu_set_t;
-#endif
 
 // The highest NUMA node available
 int g_highestNumaNode = 0;
@@ -213,7 +204,7 @@ VirtualAllocExNuma(
 #if HAVE_NUMA_H
             if (result != NULL && g_numaAvailable)
             {
-                int nodeMaskLength = (g_highestNumaNode + 1 + sizeof(unsigned long) - 1) / sizeof(unsigned long);
+                int nodeMaskLength = (g_highestNumaNode + sizeof(unsigned long) - 1) / sizeof(unsigned long);
                 unsigned long *nodeMask = (unsigned long*)alloca(nodeMaskLength * sizeof(unsigned long));
                 memset(nodeMask, 0, nodeMaskLength);
 

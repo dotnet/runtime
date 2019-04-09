@@ -1228,7 +1228,7 @@ HRESULT EEConfig::sync()
         CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_StartupTier_CallCountingDelayMs);
 
 #ifndef FEATURE_PAL
-    bool hadSingleProcessorAtStartup = g_SystemInfo.dwNumberOfProcessors == 1;//CPUGroupInfo::HadSingleProcessorAtStartup();
+    bool hadSingleProcessorAtStartup = CPUGroupInfo::HadSingleProcessorAtStartup();
 #else // !FEATURE_PAL
     bool hadSingleProcessorAtStartup = g_SystemInfo.dwNumberOfProcessors == 1;
 #endif // !FEATURE_PAL
