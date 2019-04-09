@@ -17,8 +17,8 @@ namespace System.Numerics
         public float M32;
         public Matrix3x2(float m11, float m12, float m21, float m22, float m31, float m32) { throw null; }
         public static System.Numerics.Matrix3x2 Identity { get { throw null; } }
-        public bool IsIdentity { get { throw null; } }
-        public System.Numerics.Vector2 Translation { get { throw null; } set { } }
+        public readonly bool IsIdentity { get { throw null; } }
+        public System.Numerics.Vector2 Translation { readonly get { throw null; } set { } }
         public static System.Numerics.Matrix3x2 Add(System.Numerics.Matrix3x2 value1, System.Numerics.Matrix3x2 value2) { throw null; }
         public static System.Numerics.Matrix3x2 CreateRotation(float radians) { throw null; }
         public static System.Numerics.Matrix3x2 CreateRotation(float radians, System.Numerics.Vector2 centerPoint) { throw null; }
@@ -32,10 +32,10 @@ namespace System.Numerics
         public static System.Numerics.Matrix3x2 CreateSkew(float radiansX, float radiansY, System.Numerics.Vector2 centerPoint) { throw null; }
         public static System.Numerics.Matrix3x2 CreateTranslation(System.Numerics.Vector2 position) { throw null; }
         public static System.Numerics.Matrix3x2 CreateTranslation(float xPosition, float yPosition) { throw null; }
-        public bool Equals(System.Numerics.Matrix3x2 other) { throw null; }
-        public override bool Equals(object obj) { throw null; }
-        public float GetDeterminant() { throw null; }
-        public override int GetHashCode() { throw null; }
+        public readonly bool Equals(System.Numerics.Matrix3x2 other) { throw null; }
+        public override readonly bool Equals(object obj) { throw null; }
+        public readonly float GetDeterminant() { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool Invert(System.Numerics.Matrix3x2 matrix, out System.Numerics.Matrix3x2 result) { throw null; }
         public static System.Numerics.Matrix3x2 Lerp(System.Numerics.Matrix3x2 matrix1, System.Numerics.Matrix3x2 matrix2, float amount) { throw null; }
         public static System.Numerics.Matrix3x2 Multiply(System.Numerics.Matrix3x2 value1, System.Numerics.Matrix3x2 value2) { throw null; }
@@ -49,7 +49,7 @@ namespace System.Numerics
         public static System.Numerics.Matrix3x2 operator -(System.Numerics.Matrix3x2 value1, System.Numerics.Matrix3x2 value2) { throw null; }
         public static System.Numerics.Matrix3x2 operator -(System.Numerics.Matrix3x2 value) { throw null; }
         public static System.Numerics.Matrix3x2 Subtract(System.Numerics.Matrix3x2 value1, System.Numerics.Matrix3x2 value2) { throw null; }
-        public override string ToString() { throw null; }
+        public override readonly string ToString() { throw null; }
     }
     public partial struct Matrix4x4 : System.IEquatable<System.Numerics.Matrix4x4>
     {
@@ -72,8 +72,8 @@ namespace System.Numerics
         public Matrix4x4(System.Numerics.Matrix3x2 value) { throw null; }
         public Matrix4x4(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44) { throw null; }
         public static System.Numerics.Matrix4x4 Identity { get { throw null; } }
-        public bool IsIdentity { get { throw null; } }
-        public System.Numerics.Vector3 Translation { get { throw null; } set { } }
+        public readonly bool IsIdentity { get { throw null; } }
+        public System.Numerics.Vector3 Translation { readonly get { throw null; } set { } }
         public static System.Numerics.Matrix4x4 Add(System.Numerics.Matrix4x4 value1, System.Numerics.Matrix4x4 value2) { throw null; }
         public static System.Numerics.Matrix4x4 CreateBillboard(System.Numerics.Vector3 objectPosition, System.Numerics.Vector3 cameraPosition, System.Numerics.Vector3 cameraUpVector, System.Numerics.Vector3 cameraForwardVector) { throw null; }
         public static System.Numerics.Matrix4x4 CreateConstrainedBillboard(System.Numerics.Vector3 objectPosition, System.Numerics.Vector3 cameraPosition, System.Numerics.Vector3 rotateAxis, System.Numerics.Vector3 cameraForwardVector, System.Numerics.Vector3 objectForwardVector) { throw null; }
@@ -104,10 +104,10 @@ namespace System.Numerics
         public static System.Numerics.Matrix4x4 CreateTranslation(float xPosition, float yPosition, float zPosition) { throw null; }
         public static System.Numerics.Matrix4x4 CreateWorld(System.Numerics.Vector3 position, System.Numerics.Vector3 forward, System.Numerics.Vector3 up) { throw null; }
         public static bool Decompose(System.Numerics.Matrix4x4 matrix, out System.Numerics.Vector3 scale, out System.Numerics.Quaternion rotation, out System.Numerics.Vector3 translation) { throw null; }
-        public bool Equals(System.Numerics.Matrix4x4 other) { throw null; }
-        public override bool Equals(object obj) { throw null; }
-        public float GetDeterminant() { throw null; }
-        public override int GetHashCode() { throw null; }
+        public readonly bool Equals(System.Numerics.Matrix4x4 other) { throw null; }
+        public override readonly bool Equals(object obj) { throw null; }
+        public readonly float GetDeterminant() { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static bool Invert(System.Numerics.Matrix4x4 matrix, out System.Numerics.Matrix4x4 result) { throw null; }
         public static System.Numerics.Matrix4x4 Lerp(System.Numerics.Matrix4x4 matrix1, System.Numerics.Matrix4x4 matrix2, float amount) { throw null; }
         public static System.Numerics.Matrix4x4 Multiply(System.Numerics.Matrix4x4 value1, System.Numerics.Matrix4x4 value2) { throw null; }
@@ -121,7 +121,7 @@ namespace System.Numerics
         public static System.Numerics.Matrix4x4 operator -(System.Numerics.Matrix4x4 value1, System.Numerics.Matrix4x4 value2) { throw null; }
         public static System.Numerics.Matrix4x4 operator -(System.Numerics.Matrix4x4 value) { throw null; }
         public static System.Numerics.Matrix4x4 Subtract(System.Numerics.Matrix4x4 value1, System.Numerics.Matrix4x4 value2) { throw null; }
-        public override string ToString() { throw null; }
+        public override readonly string ToString() { throw null; }
         public static System.Numerics.Matrix4x4 Transform(System.Numerics.Matrix4x4 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Matrix4x4 Transpose(System.Numerics.Matrix4x4 matrix) { throw null; }
     }
@@ -136,13 +136,13 @@ namespace System.Numerics
         public static float Dot(System.Numerics.Plane plane, System.Numerics.Vector4 value) { throw null; }
         public static float DotCoordinate(System.Numerics.Plane plane, System.Numerics.Vector3 value) { throw null; }
         public static float DotNormal(System.Numerics.Plane plane, System.Numerics.Vector3 value) { throw null; }
-        public bool Equals(System.Numerics.Plane other) { throw null; }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public readonly bool Equals(System.Numerics.Plane other) { throw null; }
+        public override readonly bool Equals(object obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Numerics.Plane Normalize(System.Numerics.Plane value) { throw null; }
         public static bool operator ==(System.Numerics.Plane value1, System.Numerics.Plane value2) { throw null; }
         public static bool operator !=(System.Numerics.Plane value1, System.Numerics.Plane value2) { throw null; }
-        public override string ToString() { throw null; }
+        public override readonly string ToString() { throw null; }
         public static System.Numerics.Plane Transform(System.Numerics.Plane plane, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Plane Transform(System.Numerics.Plane plane, System.Numerics.Quaternion rotation) { throw null; }
     }
@@ -155,7 +155,7 @@ namespace System.Numerics
         public Quaternion(System.Numerics.Vector3 vectorPart, float scalarPart) { throw null; }
         public Quaternion(float x, float y, float z, float w) { throw null; }
         public static System.Numerics.Quaternion Identity { get { throw null; } }
-        public bool IsIdentity { get { throw null; } }
+        public readonly bool IsIdentity { get { throw null; } }
         public static System.Numerics.Quaternion Add(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static System.Numerics.Quaternion Concatenate(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static System.Numerics.Quaternion Conjugate(System.Numerics.Quaternion value) { throw null; }
@@ -164,12 +164,12 @@ namespace System.Numerics
         public static System.Numerics.Quaternion CreateFromYawPitchRoll(float yaw, float pitch, float roll) { throw null; }
         public static System.Numerics.Quaternion Divide(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static float Dot(System.Numerics.Quaternion quaternion1, System.Numerics.Quaternion quaternion2) { throw null; }
-        public bool Equals(System.Numerics.Quaternion other) { throw null; }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
+        public readonly bool Equals(System.Numerics.Quaternion other) { throw null; }
+        public override readonly bool Equals(object obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
         public static System.Numerics.Quaternion Inverse(System.Numerics.Quaternion value) { throw null; }
-        public float Length() { throw null; }
-        public float LengthSquared() { throw null; }
+        public readonly float Length() { throw null; }
+        public readonly float LengthSquared() { throw null; }
         public static System.Numerics.Quaternion Lerp(System.Numerics.Quaternion quaternion1, System.Numerics.Quaternion quaternion2, float amount) { throw null; }
         public static System.Numerics.Quaternion Multiply(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
         public static System.Numerics.Quaternion Multiply(System.Numerics.Quaternion value1, float value2) { throw null; }
@@ -185,7 +185,7 @@ namespace System.Numerics
         public static System.Numerics.Quaternion operator -(System.Numerics.Quaternion value) { throw null; }
         public static System.Numerics.Quaternion Slerp(System.Numerics.Quaternion quaternion1, System.Numerics.Quaternion quaternion2, float amount) { throw null; }
         public static System.Numerics.Quaternion Subtract(System.Numerics.Quaternion value1, System.Numerics.Quaternion value2) { throw null; }
-        public override string ToString() { throw null; }
+        public override readonly string ToString() { throw null; }
     }
     public static partial class Vector
     {
@@ -307,18 +307,18 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Abs(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Add(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Clamp(System.Numerics.Vector2 value1, System.Numerics.Vector2 min, System.Numerics.Vector2 max) { throw null; }
-        public void CopyTo(float[] array) { }
-        public void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(float[] array) { }
+        public readonly void CopyTo(float[] array, int index) { }
         public static float Distance(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
         public static System.Numerics.Vector2 Divide(System.Numerics.Vector2 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
-        public bool Equals(System.Numerics.Vector2 other) { throw null; }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
-        public float Length() { throw null; }
-        public float LengthSquared() { throw null; }
+        public readonly bool Equals(System.Numerics.Vector2 other) { throw null; }
+        public override readonly bool Equals(object obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
+        public readonly float Length() { throw null; }
+        public readonly float LengthSquared() { throw null; }
         public static System.Numerics.Vector2 Lerp(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2, float amount) { throw null; }
         public static System.Numerics.Vector2 Max(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
         public static System.Numerics.Vector2 Min(System.Numerics.Vector2 value1, System.Numerics.Vector2 value2) { throw null; }
@@ -340,9 +340,9 @@ namespace System.Numerics
         public static System.Numerics.Vector2 Reflect(System.Numerics.Vector2 vector, System.Numerics.Vector2 normal) { throw null; }
         public static System.Numerics.Vector2 SquareRoot(System.Numerics.Vector2 value) { throw null; }
         public static System.Numerics.Vector2 Subtract(System.Numerics.Vector2 left, System.Numerics.Vector2 right) { throw null; }
-        public override string ToString() { throw null; }
-        public string ToString(string format) { throw null; }
-        public string ToString(string format, System.IFormatProvider formatProvider) { throw null; }
+        public override readonly string ToString() { throw null; }
+        public readonly string ToString(string format) { throw null; }
+        public readonly string ToString(string format, System.IFormatProvider formatProvider) { throw null; }
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 position, System.Numerics.Matrix3x2 matrix) { throw null; }
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector2 Transform(System.Numerics.Vector2 value, System.Numerics.Quaternion rotation) { throw null; }
@@ -365,19 +365,19 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Abs(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Add(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 Clamp(System.Numerics.Vector3 value1, System.Numerics.Vector3 min, System.Numerics.Vector3 max) { throw null; }
-        public void CopyTo(float[] array) { }
-        public void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(float[] array) { }
+        public readonly void CopyTo(float[] array, int index) { }
         public static System.Numerics.Vector3 Cross(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
         public static float Distance(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static System.Numerics.Vector3 Divide(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
         public static System.Numerics.Vector3 Divide(System.Numerics.Vector3 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector3 vector1, System.Numerics.Vector3 vector2) { throw null; }
-        public bool Equals(System.Numerics.Vector3 other) { throw null; }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
-        public float Length() { throw null; }
-        public float LengthSquared() { throw null; }
+        public readonly bool Equals(System.Numerics.Vector3 other) { throw null; }
+        public override readonly bool Equals(object obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
+        public readonly float Length() { throw null; }
+        public readonly float LengthSquared() { throw null; }
         public static System.Numerics.Vector3 Lerp(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2, float amount) { throw null; }
         public static System.Numerics.Vector3 Max(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
         public static System.Numerics.Vector3 Min(System.Numerics.Vector3 value1, System.Numerics.Vector3 value2) { throw null; }
@@ -399,9 +399,9 @@ namespace System.Numerics
         public static System.Numerics.Vector3 Reflect(System.Numerics.Vector3 vector, System.Numerics.Vector3 normal) { throw null; }
         public static System.Numerics.Vector3 SquareRoot(System.Numerics.Vector3 value) { throw null; }
         public static System.Numerics.Vector3 Subtract(System.Numerics.Vector3 left, System.Numerics.Vector3 right) { throw null; }
-        public override string ToString() { throw null; }
-        public string ToString(string format) { throw null; }
-        public string ToString(string format, System.IFormatProvider formatProvider) { throw null; }
+        public override readonly string ToString() { throw null; }
+        public readonly string ToString(string format) { throw null; }
+        public readonly string ToString(string format, System.IFormatProvider formatProvider) { throw null; }
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector3 Transform(System.Numerics.Vector3 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector3 TransformNormal(System.Numerics.Vector3 normal, System.Numerics.Matrix4x4 matrix) { throw null; }
@@ -425,18 +425,18 @@ namespace System.Numerics
         public static System.Numerics.Vector4 Abs(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Add(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Clamp(System.Numerics.Vector4 value1, System.Numerics.Vector4 min, System.Numerics.Vector4 max) { throw null; }
-        public void CopyTo(float[] array) { }
-        public void CopyTo(float[] array, int index) { }
+        public readonly void CopyTo(float[] array) { }
+        public readonly void CopyTo(float[] array, int index) { }
         public static float Distance(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static float DistanceSquared(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
         public static System.Numerics.Vector4 Divide(System.Numerics.Vector4 left, float divisor) { throw null; }
         public static float Dot(System.Numerics.Vector4 vector1, System.Numerics.Vector4 vector2) { throw null; }
-        public bool Equals(System.Numerics.Vector4 other) { throw null; }
-        public override bool Equals(object obj) { throw null; }
-        public override int GetHashCode() { throw null; }
-        public float Length() { throw null; }
-        public float LengthSquared() { throw null; }
+        public readonly bool Equals(System.Numerics.Vector4 other) { throw null; }
+        public override readonly bool Equals(object obj) { throw null; }
+        public override readonly int GetHashCode() { throw null; }
+        public readonly float Length() { throw null; }
+        public readonly float LengthSquared() { throw null; }
         public static System.Numerics.Vector4 Lerp(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2, float amount) { throw null; }
         public static System.Numerics.Vector4 Max(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
         public static System.Numerics.Vector4 Min(System.Numerics.Vector4 value1, System.Numerics.Vector4 value2) { throw null; }
@@ -457,9 +457,9 @@ namespace System.Numerics
         public static System.Numerics.Vector4 operator -(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 SquareRoot(System.Numerics.Vector4 value) { throw null; }
         public static System.Numerics.Vector4 Subtract(System.Numerics.Vector4 left, System.Numerics.Vector4 right) { throw null; }
-        public override string ToString() { throw null; }
-        public string ToString(string format) { throw null; }
-        public string ToString(string format, System.IFormatProvider formatProvider) { throw null; }
+        public override readonly string ToString() { throw null; }
+        public readonly string ToString(string format) { throw null; }
+        public readonly string ToString(string format, System.IFormatProvider formatProvider) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector2 position, System.Numerics.Matrix4x4 matrix) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector2 value, System.Numerics.Quaternion rotation) { throw null; }
         public static System.Numerics.Vector4 Transform(System.Numerics.Vector3 position, System.Numerics.Matrix4x4 matrix) { throw null; }

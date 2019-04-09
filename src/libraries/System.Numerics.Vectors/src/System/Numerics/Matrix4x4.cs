@@ -110,7 +110,7 @@ namespace System.Numerics
         /// <summary>
         /// Returns whether the matrix is the identity matrix.
         /// </summary>
-        public bool IsIdentity
+        public readonly bool IsIdentity
         {
             get
             {
@@ -127,7 +127,7 @@ namespace System.Numerics
         /// </summary>
         public Vector3 Translation
         {
-            get
+            readonly get
             {
                 return new Vector3(M41, M42, M43);
             }
@@ -1260,7 +1260,7 @@ namespace System.Numerics
         /// Calculates the determinant of the matrix.
         /// </summary>
         /// <returns>The determinant of the matrix.</returns>
-        public float GetDeterminant()
+        public readonly float GetDeterminant()
         {
             // | a b c d |     | f g h |     | e g h |     | e f h |     | e f g |
             // | e f g h | = a | j k l | - b | i k l | + c | i j l | - d | i j k |
@@ -2179,20 +2179,20 @@ namespace System.Numerics
         /// </summary>
         /// <param name="other">The matrix to compare this instance to.</param>
         /// <returns>True if the matrices are equal; False otherwise.</returns>
-        public bool Equals(Matrix4x4 other) => this == other;
+        public readonly bool Equals(Matrix4x4 other) => this == other;
 
         /// <summary>
         /// Returns a boolean indicating whether the given Object is equal to this matrix instance.
         /// </summary>
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this matrix; False otherwise.</returns>
-        public override bool Equals(object obj) => (obj is Matrix4x4 other) && (this == other);
+        public override readonly bool Equals(object obj) => (obj is Matrix4x4 other) && (this == other);
 
         /// <summary>
         /// Returns a String representing this matrix instance.
         /// </summary>
         /// <returns>The string representation.</returns>
-        public override string ToString()
+        public override readonly string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "{{ {{M11:{0} M12:{1} M13:{2} M14:{3}}} {{M21:{4} M22:{5} M23:{6} M24:{7}}} {{M31:{8} M32:{9} M33:{10} M34:{11}}} {{M41:{12} M42:{13} M43:{14} M44:{15}}} }}",
                                  M11, M12, M13, M14,
@@ -2205,7 +2205,7 @@ namespace System.Numerics
         /// Returns the hash code for this instance.
         /// </summary>
         /// <returns>The hash code.</returns>
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             unchecked
             {

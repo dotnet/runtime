@@ -60,7 +60,7 @@ namespace System.Numerics
         /// Returns the hash code for this instance.
         /// </summary>
         /// <returns>The hash code.</returns>
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             int hash = this.X.GetHashCode();
             hash = HashHelpers.Combine(hash, this.Y.GetHashCode());
@@ -75,7 +75,7 @@ namespace System.Numerics
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this Vector4; False otherwise.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals(object obj)
+        public override readonly bool Equals(object obj)
         {
             if (!(obj is Vector4))
                 return false;
@@ -86,7 +86,7 @@ namespace System.Numerics
         /// Returns a String representing this Vector4 instance.
         /// </summary>
         /// <returns>The string representation.</returns>
-        public override string ToString()
+        public override readonly string ToString()
         {
             return ToString("G", CultureInfo.CurrentCulture);
         }
@@ -96,7 +96,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="format">The format of individual elements.</param>
         /// <returns>The string representation.</returns>
-        public string ToString(string format)
+        public readonly string ToString(string format)
         {
             return ToString(format, CultureInfo.CurrentCulture);
         }
@@ -108,7 +108,7 @@ namespace System.Numerics
         /// <param name="format">The format of individual elements.</param>
         /// <param name="formatProvider">The format provider to use when formatting elements.</param>
         /// <returns>The string representation.</returns>
-        public string ToString(string format, IFormatProvider formatProvider)
+        public readonly string ToString(string format, IFormatProvider formatProvider)
         {
             StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
@@ -132,7 +132,7 @@ namespace System.Numerics
         /// </summary>
         /// <returns>The vector's length.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float Length()
+        public readonly float Length()
         {
             if (Vector.IsHardwareAccelerated)
             {
@@ -152,7 +152,7 @@ namespace System.Numerics
         /// </summary>
         /// <returns>The vector's length squared.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public float LengthSquared()
+        public readonly float LengthSquared()
         {
             if (Vector.IsHardwareAccelerated)
             {

@@ -42,7 +42,7 @@ namespace System.Numerics
         /// <summary>
         /// Returns whether the Quaternion is the identity Quaternion.
         /// </summary>
-        public bool IsIdentity
+        public readonly bool IsIdentity
         {
             get { return X == 0f && Y == 0f && Z == 0f && W == 1f; }
         }
@@ -79,7 +79,7 @@ namespace System.Numerics
         /// Calculates the length of the Quaternion.
         /// </summary>
         /// <returns>The computed length of the Quaternion.</returns>
-        public float Length()
+        public readonly float Length()
         {
             float ls = X * X + Y * Y + Z * Z + W * W;
 
@@ -90,7 +90,7 @@ namespace System.Numerics
         /// Calculates the length squared of the Quaternion. This operation is cheaper than Length().
         /// </summary>
         /// <returns>The length squared of the Quaternion.</returns>
-        public float LengthSquared()
+        public readonly float LengthSquared()
         {
             return X * X + Y * Y + Z * Z + W * W;
         }
@@ -748,7 +748,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="other">The Quaternion to compare this instance to.</param>
         /// <returns>True if the other Quaternion is equal to this instance; False otherwise.</returns>
-        public bool Equals(Quaternion other)
+        public readonly bool Equals(Quaternion other)
         {
             return (X == other.X &&
                     Y == other.Y &&
@@ -761,7 +761,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this Quaternion; False otherwise.</returns>
-        public override bool Equals(object obj)
+        public override readonly bool Equals(object obj)
         {
             if (obj is Quaternion)
             {
@@ -775,7 +775,7 @@ namespace System.Numerics
         /// Returns a String representing this Quaternion instance.
         /// </summary>
         /// <returns>The string representation.</returns>
-        public override string ToString()
+        public override readonly string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "{{X:{0} Y:{1} Z:{2} W:{3}}}", X, Y, Z, W);
         }
@@ -784,7 +784,7 @@ namespace System.Numerics
         /// Returns the hash code for this instance.
         /// </summary>
         /// <returns>The hash code.</returns>
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             return unchecked(X.GetHashCode() + Y.GetHashCode() + Z.GetHashCode() + W.GetHashCode());
         }

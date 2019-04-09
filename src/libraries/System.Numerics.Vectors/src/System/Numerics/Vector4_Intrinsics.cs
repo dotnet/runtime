@@ -93,7 +93,7 @@ namespace System.Numerics
         /// </summary>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(float[] array)
+        public readonly void CopyTo(float[] array)
         {
             CopyTo(array, 0);
         }
@@ -107,7 +107,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array.</exception>
         [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void CopyTo(float[] array, int index)
+        public readonly void CopyTo(float[] array, int index)
         {
             if (array == null)
             {
@@ -134,7 +134,7 @@ namespace System.Numerics
         /// <param name="other">The Vector4 to compare this instance to.</param>
         /// <returns>True if the other Vector4 is equal to this instance; False otherwise.</returns>
         [Intrinsic]
-        public bool Equals(Vector4 other)
+        public readonly bool Equals(Vector4 other)
         {
             return this.X == other.X
                 && this.Y == other.Y
