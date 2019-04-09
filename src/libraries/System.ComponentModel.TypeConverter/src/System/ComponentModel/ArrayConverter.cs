@@ -17,11 +17,6 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
-
             if (destinationType == typeof(string) && value is Array)
             {
                 return SR.Format(SR.Array, value.GetType().Name);
@@ -39,22 +34,20 @@ namespace System.ComponentModel
             {
                 return null;
             }
-
-            PropertyDescriptor[] props = null;
-
-            if (value.GetType().IsArray)
+            if (!(value is Array valueArray))
             {
-                Array valueArray = (Array)value;
-                int length = valueArray.GetLength(0);
-                props = new PropertyDescriptor[length];
+                return new PropertyDescriptorCollection(null);
+            }
 
-                Type arrayType = value.GetType();
-                Type elementType = arrayType.GetElementType();
+            int length = valueArray.GetLength(0);
+            PropertyDescriptor[] props = new PropertyDescriptor[length];
 
-                for (int i = 0; i < length; i++)
-                {
-                    props[i] = new ArrayPropertyDescriptor(arrayType, elementType, i);
-                }
+            Type arrayType = value.GetType();
+            Type elementType = arrayType.GetElementType();
+
+            for (int i = 0; i < length; i++)
+            {
+                props[i] = new ArrayPropertyDescriptor(arrayType, elementType, i);
             }
 
             return new PropertyDescriptorCollection(props);
