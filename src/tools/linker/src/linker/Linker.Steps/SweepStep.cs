@@ -398,13 +398,13 @@ namespace Mono.Linker.Steps {
 				SweepDebugInfo (methods);
 
 			foreach (var method in methods) {
+				SweepCustomAttributes (method.MethodReturnType);
+
 				if (!method.HasParameters)
 					continue;
 
 				foreach (var parameter in method.Parameters)
 					SweepCustomAttributes (parameter);
-
-				SweepCustomAttributes (method.MethodReturnType);
 			}
 		}
 

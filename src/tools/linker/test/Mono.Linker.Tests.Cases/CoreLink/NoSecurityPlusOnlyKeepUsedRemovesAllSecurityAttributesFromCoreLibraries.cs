@@ -5,9 +5,6 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink {
-#if NETCOREAPP
-	[IgnoreTestCase ("Needs investigation")]
-#endif
 	[SetupLinkerCoreAction ("link")]
 	[SetupLinkerArgument ("--strip-security", "true")]
 	[SetupLinkerArgument ("--used-attrs-only", "true")]
