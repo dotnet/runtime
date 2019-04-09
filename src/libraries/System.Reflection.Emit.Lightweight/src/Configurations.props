@@ -9,8 +9,6 @@
     <BuildConfigurations>
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
-      netcoreappaot-Windows_NT;
-      netcoreappaot-WebAssembly;
       uap-Windows_NT;
       uapaot-Windows_NT;
       $(PackageConfigurations);
