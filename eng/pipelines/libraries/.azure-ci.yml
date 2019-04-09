@@ -69,7 +69,6 @@ jobs:
           - WindowsNoTest
           - AllConfigurations
           - LinuxTest
-          - LinuxNoTest
           - MacOS
           - RedHat6
           # - FreeBSD
