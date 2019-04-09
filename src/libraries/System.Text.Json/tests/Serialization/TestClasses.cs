@@ -58,8 +58,10 @@ namespace System.Text.Json.Serialization.Tests
         public DateTimeOffset[] MyDateTimeOffsetArray { get; set; }
         public SampleEnum[] MyEnumArray { get; set; }
 
-        public static readonly string s_json =
-                @"{" +
+        public static readonly string s_json = $"{{{s_partialJsonProperties},{s_partialJsonArrays}}}";
+        public static readonly string s_json_flipped = $"{{{s_partialJsonArrays},{s_partialJsonProperties}}}";
+
+        private const string s_partialJsonProperties =
                 @"""MyInt16"" : 1," +
                 @"""MyInt32"" : 2," +
                 @"""MyInt64"" : 3," +
@@ -77,7 +79,9 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDecimal"" : 3.3," +
                 @"""MyDateTime"" : ""2019-01-30T12:01:02.0000000Z""," +
                 @"""MyDateTimeOffset"" : ""2019-01-30T12:01:02.0000000+01:00""," +
-                @"""MyEnum"" : 2," + // int by default
+                @"""MyEnum"" : 2"; // int by default
+
+        private const string s_partialJsonArrays =
                 @"""MyInt16Array"" : [1]," +
                 @"""MyInt32Array"" : [2]," +
                 @"""MyInt64Array"" : [3]," +
@@ -95,8 +99,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDecimalArray"" : [3.3]," +
                 @"""MyDateTimeArray"" : [""2019-01-30T12:01:02.0000000Z""]," +
                 @"""MyDateTimeOffsetArray"" : [""2019-01-30T12:01:02.0000000+01:00""]," +
-                @"""MyEnumArray"" : [2]" + // int by default
-                @"}";
+                @"""MyEnumArray"" : [2]"; // int by default
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 

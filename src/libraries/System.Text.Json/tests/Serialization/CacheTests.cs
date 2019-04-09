@@ -9,42 +9,40 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static class CacheTests
     {
+        // Use a new type that is not used in other tests so we can attempt race conditions on cached global state.
+        public class TestClassForCachingTest : SimpleTestClass { }
+
         [Fact]
-        [ActiveIssue(36618)]
         public static void MultipleThreads()
         {
-            // Ensure no exceptions are thrown due to caching or other issues.
-            void SerializeAndDeserializeObject(bool useEmptyJson)
+            void DeserializeObjectFlipped()
             {
-                // Use localized caching
-                // Todo: localized caching not implemented yet. When implemented, add a run-time attribute to JsonSerializerOptions as that will create a separate cache held by JsonSerializerOptions.
-                var options = new JsonSerializerOptions();
-
-                string json;
-
-                if (useEmptyJson)
-                {
-                    json = "{}";
-                }
-                else
-                {
-                    SimpleTestClass testObj = new SimpleTestClass();
-                    testObj.Initialize();
-                    testObj.Verify();
-
-                    json = JsonSerializer.ToString(testObj, options);
-                }
-
-                SimpleTestClass testObjDeserialized = JsonSerializer.Parse<SimpleTestClass>(json, options);
-                testObjDeserialized.Verify();
+                TestClassForCachingTest obj = JsonSerializer.Parse<TestClassForCachingTest>(SimpleTestClass.s_json_flipped);
+                obj.Verify();
             };
 
-            Task[] tasks = new Task[8];
-            bool useEmptyJson = false;
-            for (int i = 0; i < tasks.Length; i++)
+            void DeserializeObjectNormal()
             {
-                tasks[i] = Task.Run(() => SerializeAndDeserializeObject(useEmptyJson));
-                useEmptyJson = !useEmptyJson;
+                TestClassForCachingTest obj = JsonSerializer.Parse<TestClassForCachingTest>(SimpleTestClass.s_json);
+                obj.Verify();
+            };
+
+            void SerializeObject()
+            {
+                var obj = new TestClassForCachingTest();
+                obj.Initialize();
+                JsonSerializer.ToString(obj);
+            };
+
+            Task[] tasks = new Task[4 * 3];
+            for (int i = 0; i < tasks.Length; i += 3)
+            {
+                // Create race condition to populate the sorted property cache with different json ordering.
+                tasks[i + 0] = Task.Run(() => DeserializeObjectFlipped());
+                tasks[i + 1] = Task.Run(() => DeserializeObjectNormal());
+
+                // Ensure no exceptions on serialization
+                tasks[i + 2] = Task.Run(() => SerializeObject());
             };
 
             Task.WaitAll(tasks);
