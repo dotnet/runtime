@@ -298,18 +298,26 @@ namespace System.Data.SqlClient
         }
     }
 
+    /// <summary>
+    /// this class implements a static pool of SqlEnvChange objects to help reduce memory churn in low resource 
+    /// situations. For low frequency querying behaviour most env change objects will be sourced and returned
+    /// to the pool. In higher frequency situations the pool will create and discard any additional objects that
+    /// are needed without blocking the caller so that it doesn't become a bottleneck, overall memory consumption
+    /// should still be lower than without the pool
+    /// </summary>
     internal static class SqlEnvChangePool
     {
-        private protected struct SqlEnvChangeWrapper
+        // the conatiner struct allows avoidance of array variance checks on assignment
+        private protected struct SqlEnvChangeContainer
         {
             public SqlEnvChange Item;
         }
 
-        private static readonly SqlEnvChangeWrapper[] _items = new SqlEnvChangeWrapper[Environment.ProcessorCount * 2];
+        private static readonly SqlEnvChangeContainer[] _items = new SqlEnvChangeContainer[Environment.ProcessorCount * 2];
 
         internal static SqlEnvChange Allocate()
         {
-            SqlEnvChangeWrapper[] items = _items;
+            SqlEnvChangeContainer[] items = _items;
             for (int index = 0; index < items.Length; index++)
             {
                 SqlEnvChange item = items[index].Item;
@@ -318,6 +326,8 @@ namespace System.Data.SqlClient
                     return item;
                 }
             }
+            // if we didn't find an item in the pool we've either never craete any or we're under pressure 
+            // so just create a new one and let the caller get on with their work
             return new SqlEnvChange();
         }
 
@@ -325,14 +335,19 @@ namespace System.Data.SqlClient
         {
             if (item is null)
             {
-                Debug.Fail("attenpting to release null item");
+                Debug.Fail("attempting to release null item");
                 return;
             }
             item.Clear();
-            SqlEnvChangeWrapper[] items = _items;
-            for (int index = 0; index < items.Length && Interlocked.CompareExchange(ref items[index].Item, item, null) != null; index++)
+            SqlEnvChangeContainer[] items = _items;
+            for (int index = 0; index < items.Length; index++)
             {
+                if (Interlocked.CompareExchange(ref items[index].Item, item, null) is null)
+                {
+                    break;
+                }
             }
+            // if we didn't add the item to the cache just let the go to the GC
         }
     }
 
