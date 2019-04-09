@@ -5,11 +5,6 @@
       uap;
       uapaot;
     </BuildConfigurations>
-    <!-- System.Private.CoreLib version is different in some projects for netcoreappaot builds. -->
-    <BuildConfigurations Condition="'$(BuildAllConfigurations)' != 'true'">
-      $(BuildConfigurations);
-      netcoreappaot;
-    </BuildConfigurations>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
   </PropertyGroup>

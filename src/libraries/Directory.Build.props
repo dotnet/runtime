@@ -164,7 +164,7 @@
     <OutputType>Library</OutputType>
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <RunApiCompat Condition="'$(TargetGroup)' != 'netcoreappaot'">true</RunApiCompat>
+    <RunApiCompat>true</RunApiCompat>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
     <!-- Build as portable by default -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
@@ -215,7 +215,7 @@
 
   <!-- set properties for each vertical -->
   <PropertyGroup>
-    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' AND ('$(_bc_TargetGroup)'=='netcoreapp' OR '$(_bc_TargetGroup)'=='netcoreappaot' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
+    <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' AND ('$(_bc_TargetGroup)'=='netcoreapp' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
     <BuildingNETStandardVertical Condition="'$(BuildingNETStandardVertical)' == '' AND ('$(_bc_TargetGroup)'=='netstandard' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETStandardVertical>
     <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' AND ('$(_bc_TargetGroup)'=='netfx' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
     <BuildingUAPVertical Condition="'$(BuildingUAPVertical)' == '' AND ('$(_bc_TargetGroup)'=='uap' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPVertical>
@@ -374,7 +374,6 @@
     <!-- Paths to binplace package content -->
     <NETCoreAppPackageRefPath>$(ArtifactsBinDir)pkg\netcoreapp\ref</NETCoreAppPackageRefPath>
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\netcoreapp\lib</NETCoreAppPackageRuntimePath>
-    <NETCoreAppAotPackageRuntimePath>$(ArtifactsBinDir)pkg\netcoreappaot\lib</NETCoreAppAotPackageRuntimePath>
     <UAPPackageRefPath>$(ArtifactsBinDir)pkg\uap\ref</UAPPackageRefPath>
     <UAPPackageRuntimePath>$(ArtifactsBinDir)pkg\uap\lib</UAPPackageRuntimePath>
     <UAPAOTPackageRuntimePath>$(ArtifactsBinDir)pkg\uapaot\lib</UAPAOTPackageRuntimePath>

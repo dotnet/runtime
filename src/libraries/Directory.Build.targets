@@ -68,11 +68,6 @@
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' AND '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreappaot-$(_bc_OSGroup)">
-      <PackageFileRuntimePath>$(NETCoreAppAotPackageRuntimePath)</PackageFileRuntimePath>
-      <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
-      <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' AND '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
-    </BinPlaceConfiguration>
     <BinPlaceConfiguration Condition="'$(IsUAPRef)'=='true' AND ('$(BuildingUAPVertical)' == 'true' OR '$(BuildingUAPAOTVertical)' == 'true')" Include="uap-$(_bc_OSGroup)">
       <PackageFileRefPath>$(UAPPackageRefPath)</PackageFileRefPath>
     </BinPlaceConfiguration>
@@ -89,9 +84,6 @@
     </BinPlaceConfiguration>
     <!-- Setup the ILCInputFolder directory for testing aot -->
     <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
-      <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="netcoreappaot-$(_bc_OSGroup)">
       <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
     </BinPlaceConfiguration>
     <!-- And the UAP folder for the F5 (CoreCLR UAP-debugging) scenario -->
@@ -128,7 +120,7 @@
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceConfiguration>
     <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
-    <_VerticalTargetGroups Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp;netcoreappaot;uap;uapaot" />
+    <_VerticalTargetGroups Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp;uap;uapaot" />
     <BinPlaceConfiguration Include="@(_VerticalTargetGroups->'%(Identity)-$(_bc_OSGroup)')">
       <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(_bc_ConfigurationGroup)-$(ArchGroup)</RuntimePath>
     </BinPlaceConfiguration>

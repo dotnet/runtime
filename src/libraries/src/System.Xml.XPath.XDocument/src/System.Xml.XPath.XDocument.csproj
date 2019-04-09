@@ -9,7 +9,7 @@
   <ItemGroup>
     <Compile Include="System\Xml\XPath\XDocumentExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='netcoreappaot' or '$(TargetGroup)'=='uap'">
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' or '$(TargetGroup)'=='uap'">
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
     <ProjectReference Include="..\..\System.Private.Xml.Linq\src\System.Private.Xml.Linq.csproj" />
   </ItemGroup>

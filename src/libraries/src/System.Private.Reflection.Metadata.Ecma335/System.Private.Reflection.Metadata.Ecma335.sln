@@ -12,10 +12,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Debug|Any CPU.ActiveCfg = netcoreappaot-Windows_NT-Debug|Any CPU
-		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Debug|Any CPU.Build.0 = netcoreappaot-Windows_NT-Debug|Any CPU
-		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Release|Any CPU.ActiveCfg = netcoreappaot-Windows_NT-Release|Any CPU
-		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Release|Any CPU.Build.0 = netcoreappaot-Windows_NT-Release|Any CPU
+		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Debug|Any CPU.ActiveCfg = uapaot-Windows_NT-Debug|Any CPU
+		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Debug|Any CPU.Build.0 = uapaot-Windows_NT-Debug|Any CPU
+		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Release|Any CPU.ActiveCfg = uapaot-Windows_NT-Release|Any CPU
+		{3A8B2CAD-6FFD-4A37-A53A-0F2D5EF99164}.Release|Any CPU.Build.0 = uapaot-Windows_NT-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

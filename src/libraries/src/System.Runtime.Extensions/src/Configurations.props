@@ -3,8 +3,6 @@
     <BuildConfigurations>
       netcoreapp-Unix;
       netcoreapp-Windows_NT;
-      netcoreappaot-Windows_NT;
-      netcoreappaot-WebAssembly;
       uapaot-Windows_NT;
       uap-Windows_NT;
     </BuildConfigurations>

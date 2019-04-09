@@ -19,7 +19,7 @@
     
   <ItemGroup Condition="'$(TargetsAOT)'=='true'">
     <PackageReference Include="Microsoft.TargetingPack.Private.NETNative">
-      <Version Condition="'$(TargetGroup)'=='uapaot' OR '$(TargetGroup)'=='netcoreappaot'">1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>
+      <Version Condition="'$(TargetGroup)'=='uapaot'">1.1.0-$(ProjectNTfsExpectedPrerelease)</Version>
       <!-- Following is version used in release/uwp6.0 -->
       <Version Condition="'$(TargetGroup)'=='uap10.0.16299aot'">1.1.0-rel-25728-00</Version>
     </PackageReference>
