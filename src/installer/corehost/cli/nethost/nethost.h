@@ -35,14 +35,14 @@
 // Get the path to the hostfxr library
 //
 // Parameters:
-//   result_buffer
+//   buffer
 //     Buffer that will be populated with the hostfxr path, including a null terminator.
 //
 //   buffer_size
-//     Size of result_buffer in char_t units
-//
-//   out_buffer_required_size
-//     Minimum required size in char_t units for a buffer to hold the hostfxr path
+//     [in] Size of buffer in char_t units.
+//     [out] Size of buffer used in char_t units. If the input value is too small
+//           or buffer is nullptr, this is populated with the minimum required size
+//           in char_t units for a buffer to hold the hostfxr path
 //
 //   assembly_path
 //     Optional. Path to the compenent's assembly. Whether or not this is specified
@@ -52,16 +52,15 @@
 //
 // Return value:
 //   0 on success, otherwise failure
-//   0x80008098 - result_buffer is too small (HostApiBufferTooSmall)
+//   0x80008098 - buffer is too small (HostApiBufferTooSmall)
 //
 // Remarks:
 //   The full search for the hostfxr library is done on every call. To minimize the need
-//   to call this function multiple times, pass a large result_buffer (e.g. PATH_MAX).
+//   to call this function multiple times, pass a large buffer (e.g. PATH_MAX).
 //
-extern "C" NETHOST_API int NETHOST_CALLTYPE nethost_get_hostfxr_path(
-    char_t * result_buffer,
-    size_t buffer_size,
-    size_t * out_buffer_required_size,
+extern "C" NETHOST_API int NETHOST_CALLTYPE get_hostfxr_path(
+    char_t * buffer,
+    size_t * buffer_size,
     const char_t * assembly_path);
 
 #endif // __NETHOST_H__

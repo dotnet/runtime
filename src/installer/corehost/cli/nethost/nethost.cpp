@@ -18,13 +18,12 @@ namespace
     }
 }
 
-NETHOST_API int NETHOST_CALLTYPE nethost_get_hostfxr_path(
-    char_t * result_buffer,
-    size_t buffer_size,
-    size_t * out_buffer_required_size,
+NETHOST_API int NETHOST_CALLTYPE get_hostfxr_path(
+    char_t * buffer,
+    size_t * buffer_size,
     const char_t * assembly_path)
 {
-    if (out_buffer_required_size == nullptr)
+    if (buffer_size == nullptr)
         return StatusCode::InvalidArgFailure;
 
     trace::setup();
@@ -42,11 +41,12 @@ NETHOST_API int NETHOST_CALLTYPE nethost_get_hostfxr_path(
     size_t len = fxr_path.length();
     size_t required_size = len + 1; // null terminator
 
-    *out_buffer_required_size = required_size;
-    if (result_buffer == nullptr || buffer_size < required_size)
+    size_t input_buffer_size = *buffer_size;
+    *buffer_size = required_size;
+    if (buffer == nullptr || input_buffer_size < required_size)
         return StatusCode::HostApiBufferTooSmall;
 
-    fxr_path.copy(result_buffer, len);
-    result_buffer[len] = '\0';
+    fxr_path.copy(buffer, len);
+    buffer[len] = '\0';
     return StatusCode::Success;
 }
