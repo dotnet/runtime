@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
+#nullable enable
 namespace System.Runtime.CompilerServices
 {
     
@@ -14,7 +13,7 @@ namespace System.Runtime.CompilerServices
     /// </summary>
     internal class ICastableHelpers
     {
-        internal static bool IsInstanceOfInterface(ICastable castable, RuntimeType type, out Exception castError)
+        internal static bool IsInstanceOfInterface(ICastable castable, RuntimeType type, out Exception? castError) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
             return castable.IsInstanceOfInterface(new RuntimeTypeHandle(type), out castError);
         }

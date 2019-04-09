@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -24,6 +25,6 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Optional. If omitted, then the method is native callable, but no EAT is emitted.
         /// </summary>
-        public string EntryPoint;
+        public string? EntryPoint;
     }
 }
