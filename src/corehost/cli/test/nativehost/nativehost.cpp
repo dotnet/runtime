@@ -30,7 +30,7 @@ int main(const int argc, const pal::char_t *argv[])
     }
 
     const pal::char_t *command = argv[1];
-    if (pal::strcmp(command, _X("nethost_get_hostfxr_path")) == 0)
+    if (pal::strcmp(command, _X("get_hostfxr_path")) == 0)
     {
         const pal::char_t *assembly_path = nullptr;
         if (argc >= 3)
@@ -47,23 +47,23 @@ int main(const int argc, const pal::char_t *argv[])
 #endif
 
         pal::string_t fxr_path;
-        size_t len = 0;
-        int res = nethost_get_hostfxr_path(nullptr, 0, &len, assembly_path);
+        size_t len = fxr_path.size();
+        int res = get_hostfxr_path(nullptr, &len, assembly_path);
         if (res == StatusCode::HostApiBufferTooSmall)
         {
             fxr_path.resize(len);
-            res = nethost_get_hostfxr_path(&fxr_path[0], fxr_path.size(), &len, assembly_path);
+            res = get_hostfxr_path(&fxr_path[0], &len, assembly_path);
         }
 
         if (res == StatusCode::Success)
         {
-            std::cout << "nethost_get_hostfxr_path succeeded" << std::endl;
+            std::cout << "get_hostfxr_path succeeded" << std::endl;
             std::cout << "hostfxr_path: " << tostr(pal::to_lower(fxr_path)).data() << std::endl;
             return 0;
         }
         else
         {
-            std::cout << "nethost_get_hostfxr_path failed: " << std::hex << std::showbase << res << std::endl;
+            std::cout << "get_hostfxr_path failed: " << std::hex << std::showbase << res << std::endl;
             return 1;
         }
     }
