@@ -291,6 +291,8 @@ convert_to_absolute_path(JIT_ARM_SOURCES ${JIT_ARM_SOURCES})
 convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
 convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 
+set (CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
+
 if(WIN32)
   add_precompiled_header(jitpch.h ../jitpch.cpp SOURCES)
 
@@ -299,7 +301,7 @@ if(WIN32)
   # massage it into the correct format here to create "ClrJit.exports.def".
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   set(JIT_EXPORTS_FILE_TEMP ${JIT_EXPORTS_FILE}.txt)
-  file(READ "ClrJit.exports" exports_list)
+  file(READ ${CLRJIT_EXPORTS} exports_list)
   file(WRITE ${JIT_EXPORTS_FILE_TEMP} "LIBRARY CLRJIT\n")
   file(APPEND ${JIT_EXPORTS_FILE_TEMP} "EXPORTS\n")
   file(APPEND ${JIT_EXPORTS_FILE_TEMP} ${exports_list})
@@ -311,11 +313,14 @@ if(WIN32)
   set(SHARED_LIB_SOURCES ${SOURCES} ${JIT_EXPORTS_FILE})
 else()
   set(JIT_EXPORTS_IN_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports.in)
-  file(READ "${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports" jit_exports)
-  file(READ "${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports" pal_exports)
-  file(WRITE ${JIT_EXPORTS_IN_FILE} ${jit_exports})
-  file(APPEND ${JIT_EXPORTS_IN_FILE} "\n")
-  file(APPEND ${JIT_EXPORTS_IN_FILE} ${pal_exports})
+  set (CLRJIT_PAL_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports)
+
+  find_program(CAT cat)
+  add_custom_command(
+    OUTPUT ${JIT_EXPORTS_IN_FILE}
+    COMMAND ${CAT} ${CLRJIT_EXPORTS} ${CLRJIT_PAL_EXPORTS} > ${JIT_EXPORTS_IN_FILE}
+    DEPENDS ${CLRJIT_EXPORTS} ${CLRJIT_PAL_EXPORTS}
+  )
 
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports)
   generate_exports_file(${JIT_EXPORTS_IN_FILE} ${JIT_EXPORTS_FILE})
