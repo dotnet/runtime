@@ -4,12 +4,14 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>NETClientAggregation</AssemblyName>
+    <AssemblyName>ConsumeNETServer</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{85C57688-DA98-4DE3-AC9B-526E4747434C}</ProjectGuid>
+    <ProjectGuid>{4BDB75BD-30D8-4603-98DB-C6CFDC5F6F0E}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <ProjectTypeGuids>{209912F9-0DA1-4184-9CC1-8D583BAF4A28};{87799F5D-CEBD-499D-BDBA-B2C6105CD766}</ProjectTypeGuids>
     <ApplicationManifest>App.manifest</ApplicationManifest>
+    <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
+    <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
 
     <!-- Blocked on ILAsm supporting embedding resources. See https://github.com/dotnet/coreclr/issues/20819 -->
     <IlrtTestKind>BuildOnly</IlrtTestKind>
@@ -22,6 +24,11 @@
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
     <!-- This test would require the runincontext.exe to include App.manifest describing the COM interfaces -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+
+    <!--  Suppress warning about conflicting type names. This occurs because of the reference to NETServer.
+          The reference is only to ensure the project is built and properly copied. The test itself uses
+          COM to activate the server rather than typical class activation via 'new' -->
+    <NoWarn>$(NoWarn),0436</NoWarn>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -35,8 +42,13 @@
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../NativeServer/CMakeLists.txt" />
+    <ProjectReference Include="../../NETServer/NETServer.csproj" />
     <ProjectReference Include="../../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="CoreShim.X.manifest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
