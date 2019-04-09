@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Runtime.Serialization;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -13,22 +14,39 @@ namespace System.Runtime.CompilerServices
         public delegate void CleanupCode(object userData, bool exceptionThrown);
 
         /// <summary>
-        /// GetSubArray helper method for the compiler to slice an array using a range.
+        /// Slices the specified array using the specified range.
         /// </summary>
         public static T[] GetSubArray<T>(T[] array, Range range)
         {
-            Type elementType = array.GetType().GetElementType();
-            Span<T> source = array.AsSpan(range);
-
-            if (elementType.IsValueType)
+            if (array == null)
             {
-                return source.ToArray();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            }
+
+            Range.OffsetAndLength offLen = range.GetOffsetAndLength(array.Length);
+
+            if (default(T) != null || typeof(T[]) == array.GetType())
+            {
+                // We know the type of the array to be exactly T[].
+
+                if (offLen.Length == 0)
+                {
+                    return Array.Empty<T>();
+                }
+
+                var dest = new T[offLen.Length];
+                Buffer.Memmove(
+                    ref Unsafe.As<byte, T>(ref dest.GetRawSzArrayData()),
+                    ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), offLen.Offset),
+                    (uint)offLen.Length);
+                return dest;
             }
             else
             {
-                T[] newArray = (T[])Array.CreateInstance(elementType, source.Length);
-                source.CopyTo(newArray);
-                return newArray;
+                // The array is actually a U[] where U:T.
+                T[] dest = (T[])Array.CreateInstance(array.GetType().GetElementType(), offLen.Length);
+                Array.Copy(array, offLen.Offset, dest, 0, offLen.Length);
+                return dest;
             }
         }
 
