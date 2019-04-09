@@ -820,7 +820,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(36683)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ToLogFont_DisposedGraphics_ThrowsArgumentException()
         {
@@ -835,7 +834,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public class LOGFONT
         {
             public int lfHeight;

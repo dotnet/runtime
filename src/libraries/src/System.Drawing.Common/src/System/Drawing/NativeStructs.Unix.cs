@@ -34,7 +34,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     internal struct LOGFONT
     {
         internal int lfHeight;
