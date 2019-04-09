@@ -203,7 +203,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			var parseOptions = new CSharpParseOptions (preprocessorSymbols: options.Defines);
 			var compilationOptions = new CSharpCompilationOptions (
-				outputKind: options.OutputPath.FileName.EndsWith (".exe") ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary
+				outputKind: options.OutputPath.FileName.EndsWith (".exe") ? OutputKind.ConsoleApplication : OutputKind.DynamicallyLinkedLibrary,
+				assemblyIdentityComparer: DesktopAssemblyIdentityComparer.Default
 			);
 			// Default debug info format for the current platform.
 			DebugInformationFormat debugType = RuntimeInformation.IsOSPlatform (OSPlatform.Windows) ? DebugInformationFormat.Pdb : DebugInformationFormat.PortablePdb;
