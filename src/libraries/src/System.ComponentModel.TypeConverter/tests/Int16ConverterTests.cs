@@ -32,7 +32,7 @@ namespace System.ComponentModel.Tests
             yield return ConvertTest.Throws<ArgumentException, Exception>("32768");
             yield return ConvertTest.Throws<ArgumentException, Exception>("-32769");
 
-            yield return ConvertTest.CantConvert(new object());
+            yield return ConvertTest.CantConvertFrom(new object());
         }
     }
 }

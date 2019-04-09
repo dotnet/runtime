@@ -196,12 +196,24 @@ namespace System.ComponentModel.Tests
                 };
             }
 
-            public static ConvertTest CantConvert(object source, Type destinationType = null, CultureInfo culture = null)
+            public static ConvertTest CantConvertTo(object source, Type destinationType = null, CultureInfo culture = null)
             {
                 return new ConvertTest
                 {
                     Source = source,
                     DestinationType = destinationType,
+                    Culture = culture,
+                    NetCoreExceptionType = typeof(NotSupportedException),
+                    NetFrameworkExceptionType = typeof(NotSupportedException),
+                    CanConvert = false
+                };
+            }
+
+            public static ConvertTest CantConvertFrom(object source,  CultureInfo culture = null)
+            {
+                return new ConvertTest
+                {
+                    Source = source,
                     Culture = culture,
                     NetCoreExceptionType = typeof(NotSupportedException),
                     NetFrameworkExceptionType = typeof(NotSupportedException),
