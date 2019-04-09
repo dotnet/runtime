@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -70,7 +71,7 @@ namespace System.IO
             return ((value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z'));
         }
 
-        internal static bool EndsWithPeriodOrSpace(string path)
+        internal static bool EndsWithPeriodOrSpace(string? path)
         {
             if (string.IsNullOrEmpty(path))
                 return false;
@@ -86,7 +87,7 @@ namespace System.IO
         /// away from paths during normalization, but if we see such a path at this point it should be
         /// normalized and has retained the final characters. (Typically from one of the *Info classes)
         /// </summary>
-        internal static string EnsureExtendedPrefixIfNeeded(string path)
+        internal static string? EnsureExtendedPrefixIfNeeded(string? path)
         {
             if (path != null && (path.Length >= MaxShortPath || EndsWithPeriodOrSpace(path)))
             {
@@ -103,7 +104,7 @@ namespace System.IO
         /// Adds the extended path prefix (\\?\) if not already a device path, IF the path is not relative,
         /// AND the path is more than 259 characters. (> MAX_PATH + null)
         /// </summary>
-        internal static string EnsureExtendedPrefixOverMaxPath(string path)
+        internal static string? EnsureExtendedPrefixOverMaxPath(string? path)
         {
             if (path != null && path.Length >= MaxShortPath)
             {
