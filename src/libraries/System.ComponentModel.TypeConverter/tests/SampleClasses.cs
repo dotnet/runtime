@@ -60,35 +60,6 @@ namespace System.ComponentModel.Tests
         public const string Token = "Formatted class.";
     }
 
-    [Serializable]
-    public class Collection1 : ICollection
-    {
-        public void CopyTo(Array array, int index)
-        {
-            throw new NotImplementedException();
-        }
-
-        public int Count
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public bool IsSynchronized
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public object SyncRoot
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public IEnumerator GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     public class MyTypeListConverter : TypeListConverter
     {
         public MyTypeListConverter(Type[] types)

@@ -8,7 +8,8 @@ using System.Globalization;
 namespace System.ComponentModel
 {
     /// <summary>
-    /// Provides a type converter to convert collection objects to and from various other representations.
+    /// Provides a type converter to convert collection objects to and from various other
+    /// representations.
     /// </summary>
     public class CollectionConverter : TypeConverter
     {
@@ -17,11 +18,6 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
-
             if (destinationType == typeof(string) && value is ICollection)
             {
                 return SR.Collection;
@@ -31,17 +27,12 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Gets a collection of properties for the type of array specified by the value parameter using
-        /// the specified context and attributes.
+        /// Gets a collection of properties for the type of array specified by the value
+        /// parameter using the specified context and attributes.
         /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
             return new PropertyDescriptorCollection(null);
         }
-
-        /// <summary>
-        /// Gets a value indicating whether this object supports properties.
-        /// </summary>
-        public override bool GetPropertiesSupported(ITypeDescriptorContext context) => false;
     }
 }
