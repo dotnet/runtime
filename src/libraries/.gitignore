@@ -3,9 +3,9 @@ syntax: glob
 ### VisualStudio ###
 
 # Tool Runtime Dir
-/[Tt]ools/
 .dotnet/
 .packages/
+.tools/
 
 # User-specific files
 *.suo

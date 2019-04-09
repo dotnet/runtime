@@ -90,7 +90,8 @@
   <Target Name="InitGlobalTools" Condition="'@(RepoTool)' != ''" AfterTargets="Restore">
 
     <PropertyGroup>
-      <GlobalToolsDir>$(ArtifactsDir)tools</GlobalToolsDir>
+      <!-- Keep in sync with property in RepoRoot\Directory.Build.props. -->
+      <GlobalToolsDir>$([MSBuild]::NormalizePath('$(RepoRoot)', '.tools', 'globaltools'))</GlobalToolsDir>
     </PropertyGroup>
 
     <!-- List all global tools and save the output. -->
