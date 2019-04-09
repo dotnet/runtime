@@ -300,102 +300,39 @@ namespace System.Data.SqlClient
 
     internal static class SqlEnvChangePool
     {
-        private static int _count;
-        private static int _capacity;
-        private static SqlEnvChange[] _items;
-#if DEBUG
-        private static string[] _stacks;
-#endif 
-
-        static SqlEnvChangePool()
+        private protected struct SqlEnvChangeWrapper
         {
-            _capacity = 10;
-            _items = new SqlEnvChange[_capacity];
-            _count = 1;
-#if DEBUG
-            _stacks = new string[_capacity];
-#endif 
+            public SqlEnvChange Item;
         }
+
+        private static readonly SqlEnvChangeWrapper[] _items = new SqlEnvChangeWrapper[Environment.ProcessorCount * 2];
 
         internal static SqlEnvChange Allocate()
         {
-            SqlEnvChange retval = null;
-            lock (_items)
+            SqlEnvChangeWrapper[] items = _items;
+            for (int index = 0; index < items.Length; index++)
             {
-                while (_count > 0 && retval is null)
+                SqlEnvChange item = items[index].Item;
+                if (item != null && Interlocked.CompareExchange(ref items[index].Item, null, item) == item)
                 {
-                    int count = _count; // copy the count we think we have
-                    int newCount = count - 1; // work out the new value we want
-                                              // exchange _count for newCount only if _count is the same as our cached copy
-                    if (count == Interlocked.CompareExchange(ref _count, newCount, count))
-                    {
-                        // count is now the previous value, we're the only thread that has it, so count-1 is safe to access
-                        Interlocked.Exchange(ref retval, _items[count - 1]);
-                    }
-                    else
-                    {
-                        // otherwise the count wasn't what we expected, spin the while and try again.
-                    }
+                    return item;
                 }
             }
-            if (retval is null)
-            {
-                retval = new SqlEnvChange();
-            }
-            return retval;
+            return new SqlEnvChange();
         }
 
-        internal static void Release(SqlEnvChange item, [Runtime.CompilerServices.CallerMemberName] string caller = null)
+        internal static void Release(SqlEnvChange item)
         {
             if (item is null)
             {
-                Debug.Fail("attenpting to release null packet");
+                Debug.Fail("attenpting to release null item");
                 return;
             }
             item.Clear();
+            SqlEnvChangeWrapper[] items = _items;
+            for (int index = 0; index < items.Length && Interlocked.CompareExchange(ref items[index].Item, item, null) != null; index++)
             {
-#if DEBUG
-                if (_count > 0)
-                {
-                    for (int index = 0; index < _count; index += 1)
-                    {
-                        if (object.ReferenceEquals(item, _items[index]))
-                        {
-                            Debug.Assert(false,$"releasing an item which already exists in the pool, count={_count}, index={index}, caller={caller}, released at={_stacks[index]}");
-                        }
-                    }
-                }
-#endif
-                int tries = 0;
-
-                while (!(item is null) && tries < 3 && _count < _capacity)
-                {
-                    int count = _count;
-                    int newCount = count + 1;
-                    if (count == Interlocked.CompareExchange(ref _count, newCount, count))
-                    {
-                        _items[count] = item;
-#if DEBUG
-                        _stacks[count] = caller;
-#endif
-                        item = null;
-                    }
-                    else
-                    {
-                        tries += 1;
-                    }
-                }
             }
-        }
-
-        internal static int Count => _count;
-
-        internal static int Capacity => _capacity;
-
-        internal static void Clear()
-        {
-            Array.Clear(_items, 0, _capacity);
-            _count = 0;
         }
     }
 
