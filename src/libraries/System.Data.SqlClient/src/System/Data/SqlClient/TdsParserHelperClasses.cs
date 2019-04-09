@@ -298,59 +298,6 @@ namespace System.Data.SqlClient
         }
     }
 
-    /// <summary>
-    /// this class implements a static pool of SqlEnvChange objects to help reduce memory churn in low resource 
-    /// situations. For low frequency querying behaviour most env change objects will be sourced and returned
-    /// to the pool. In higher frequency situations the pool will create and discard any additional objects that
-    /// are needed without blocking the caller so that it doesn't become a bottleneck, overall memory consumption
-    /// should still be lower than without the pool
-    /// </summary>
-    internal static class SqlEnvChangePool
-    {
-        // the conatiner struct allows avoidance of array variance checks on assignment
-        private protected struct SqlEnvChangeContainer
-        {
-            public SqlEnvChange Item;
-        }
-
-        private static readonly SqlEnvChangeContainer[] _items = new SqlEnvChangeContainer[Environment.ProcessorCount * 2];
-
-        internal static SqlEnvChange Allocate()
-        {
-            SqlEnvChangeContainer[] items = _items;
-            for (int index = 0; index < items.Length; index++)
-            {
-                SqlEnvChange item = items[index].Item;
-                if (item != null && Interlocked.CompareExchange(ref items[index].Item, null, item) == item)
-                {
-                    return item;
-                }
-            }
-            // if we didn't find an item in the pool we've either never create any or we're under pressure 
-            // so just create a new one and let the caller get on with their work
-            return new SqlEnvChange();
-        }
-
-        internal static void Release(SqlEnvChange item)
-        {
-            if (item is null)
-            {
-                Debug.Fail("attempting to release null item");
-                return;
-            }
-            item.Clear();
-            SqlEnvChangeContainer[] items = _items;
-            for (int index = 0; index < items.Length; index++)
-            {
-                if (Interlocked.CompareExchange(ref items[index].Item, item, null) is null)
-                {
-                    break;
-                }
-            }
-            // if we didn't add the item to the cache just let it go to the GC
-        }
-    }
-
     internal sealed class SqlLogin
     {
         internal int timeout;                                                       // login timeout
