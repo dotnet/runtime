@@ -1654,7 +1654,7 @@ namespace System.Text
                 //
                 // Start of parsing of optional formatting parameter.
                 //
-                object arg = args[index];
+                object? arg = args[index];
                 string? itemFormat = null;
                 ReadOnlySpan<char> itemFormatSpan = default; // used if itemFormat is null
                 // Is current character a colon? which indicates start of formatting parameter.
