@@ -18,6 +18,7 @@ set(SOURCES
     ./coreclr.cpp
     ./deps_resolver.cpp
     ./hostpolicy.cpp
+    ./hostpolicy_context.cpp
     ./hostpolicy_init.cpp
     ../runtime_config.cpp
     ../json/casablanca/src/json/json.cpp
@@ -38,6 +39,7 @@ set(HEADERS
     ./breadcrumbs.h
     ./coreclr.h
     ./deps_resolver.h
+    ./hostpolicy_context.h
     ./hostpolicy_init.h
     ../runtime_config.h
     ../json/casablanca/include/cpprest/json.h
