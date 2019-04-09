@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 {
     public class Nethost : IClassFixture<Nethost.SharedTestState>
     {
-        private const string GetHostFxrPath = "nethost_get_hostfxr_path";
+        private const string GetHostFxrPath = "get_hostfxr_path";
         private const int CoreHostLibMissingFailure = unchecked((int)0x80008083);
 
         private static readonly string HostFxrName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr");
