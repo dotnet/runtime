@@ -3518,8 +3518,16 @@ ves_icall_InternalInvoke (MonoReflectionMethod *method, MonoObject *this_arg, Mo
 	}
 
 	if (sig->ret->byref) {
+#if ENABLE_NETCORE
+		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
+		if (ret_byval->byref) {
+			mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method returning ByRef to ByRefLike type via reflection"));
+			return NULL;
+		}
+#else
 		mono_gc_wbarrier_generic_store_internal (exc, (MonoObject*) mono_exception_from_name_msg (mono_defaults.corlib, "System", "NotSupportedException", "Cannot invoke method returning ByRef type via reflection"));
 		return NULL;
+#endif
 	}
 
 	pcount = params? mono_array_length_internal (params): 0;

@@ -1489,6 +1489,7 @@ handle_enum:
 		int ldind_op;
 		MonoType* ret_byval = m_class_get_byval_arg (mono_class_from_mono_type_internal (sig->ret));
 		g_assert (!ret_byval->byref);
+		// TODO: Handle null references
 		ldind_op = mono_type_to_ldind (ret_byval);
 		/* taken from similar code in mini-generic-sharing.c
 		 * we need to use mono_mb_emit_op to add method data when loading
