@@ -77,6 +77,10 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 extern "C" int _lwp_self ();
 #endif
 
+#if HAVE_CPUSET_T
+typedef cpuset_t cpu_set_t;
+#endif
+
 using namespace CorUnix;
 
 
@@ -2977,16 +2981,16 @@ BOOL
 PALAPI
 PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data)
 {
+#if HAVE_PTHREAD_GETAFFINITY_NP
     cpu_set_t cpuSet;
     CPU_ZERO(&cpuSet);
 
-#if HAVE_PTHREAD_GETAFFINITY_NP
     int st = pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
 
     if (st == 0)
     {
         const SIZE_T BitsPerBitsetEntry = 8 * sizeof(UINT_PTR);
-        int nrcpus = GetTotalCpuCount();
+        int nrcpus = PAL_GetTotalCpuCount();
 
         // Get info for as much processors as it is possible to fit into the resulting set
         SIZE_T remainingCount = std::min(size * BitsPerBitsetEntry, (SIZE_T)nrcpus);

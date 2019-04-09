@@ -2450,6 +2450,11 @@ PALAPI
 PAL_GetLogicalCpuCountFromOS(VOID);
 
 PALIMPORT
+DWORD
+PALAPI
+PAL_GetTotalCpuCount(VOID);
+
+PALIMPORT
 size_t
 PALAPI
 PAL_GetRestrictedPhysicalMemoryLimit(VOID);
