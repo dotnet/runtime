@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -13,7 +14,7 @@ namespace System
 {
     internal static partial class SR
     {
-        private static ResourceManager ResourceManager
+        private static ResourceManager? ResourceManager
         {
             get;
             set;
@@ -33,9 +34,9 @@ namespace System
             return GetResourceString(resourceKey, string.Empty);
         }
 
-        internal static string GetResourceString(string resourceKey, string defaultString)
+        internal static string GetResourceString(string resourceKey, string? defaultString)
         {
-            string resourceString = null;
+            string? resourceString = null;
             try { resourceString = InternalGetResourceString(resourceKey); }
             catch (MissingManifestResourceException) { }
 
@@ -44,11 +45,11 @@ namespace System
                 return defaultString;
             }
 
-            return resourceString;
+            return resourceString!; // only null if missing resource
         }
 
-        private static object _lock = new object();
-        private static List<string> _currentlyLoading;
+        private static readonly object _lock = new object();
+        private static List<string>? _currentlyLoading;
         private static int _infinitelyRecursingCount;
         private static bool _resourceManagerInited = false;
 
@@ -57,7 +58,7 @@ namespace System
             if (key == null || key.Length == 0)
             {
                 Debug.Fail("SR::GetResourceString with null or empty key.  Bug in caller, or weird recursive loading problem?");
-                return key;
+                return key!;
             }
 
             // We have a somewhat common potential for infinite 
@@ -149,7 +150,7 @@ namespace System
             }
         }
 
-        internal static string Format(IFormatProvider provider, string resourceFormat, params object[] args)
+        internal static string Format(IFormatProvider provider, string resourceFormat, params object?[]? args)
         {
             if (args != null)
             {
@@ -164,7 +165,7 @@ namespace System
             return resourceFormat;
         }
 
-        internal static string Format(string resourceFormat, params object[] args)
+        internal static string Format(string resourceFormat, params object?[]? args)
         {
             if (args != null)
             {
@@ -179,7 +180,7 @@ namespace System
             return resourceFormat;
         }
 
-        internal static string Format(string resourceFormat, object p1)
+        internal static string Format(string resourceFormat, object? p1)
         {
             if (UsingResourceKeys())
             {
@@ -189,7 +190,7 @@ namespace System
             return string.Format(resourceFormat, p1);
         }
 
-        internal static string Format(string resourceFormat, object p1, object p2)
+        internal static string Format(string resourceFormat, object? p1, object? p2)
         {
             if (UsingResourceKeys())
             {
@@ -199,7 +200,7 @@ namespace System
             return string.Format(resourceFormat, p1, p2);
         }
 
-        internal static string Format(string resourceFormat, object p1, object p2, object p3)
+        internal static string Format(string resourceFormat, object? p1, object? p2, object? p3)
         {
             if (UsingResourceKeys())
             {

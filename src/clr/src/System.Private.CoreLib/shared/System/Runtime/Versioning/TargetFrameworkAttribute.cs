@@ -12,15 +12,14 @@
 **
 ===========================================================*/
 
-using System;
-
+#nullable enable
 namespace System.Runtime.Versioning
 {
     [AttributeUsageAttribute(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed class TargetFrameworkAttribute : Attribute
     {
         private string _frameworkName;  // A target framework moniker
-        private string _frameworkDisplayName;
+        private string? _frameworkDisplayName;
 
         // The frameworkName parameter is intended to be the string form of a FrameworkName instance.
         public TargetFrameworkAttribute(string frameworkName)
@@ -37,7 +36,7 @@ namespace System.Runtime.Versioning
             get { return _frameworkName; }
         }
 
-        public string FrameworkDisplayName
+        public string? FrameworkDisplayName
         {
             get { return _frameworkDisplayName; }
             set { _frameworkDisplayName = value; }

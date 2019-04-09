@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
     // Event registration tokens are 64 bit opaque structures returned from WinRT style event adders, in order
@@ -23,7 +24,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public static bool operator !=(EventRegistrationToken left, EventRegistrationToken right) =>
             !left.Equals(right);
 
-        public override bool Equals(object obj) =>
+        public override bool Equals(object? obj) =>
             obj is EventRegistrationToken &&
             ((EventRegistrationToken)obj)._value == _value;
 
