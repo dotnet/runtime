@@ -1336,7 +1336,7 @@ namespace System.Text
             // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
 
             Vector128<byte> asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
-            Unsafe.WriteUnaligned<ulong>(pAsciiBuffer, asciiVector.AsUInt64().GetElement(0));
+            Sse2.StoreLow((ulong*)pAsciiBuffer, asciiVector.AsUInt64()); // ulong* calculated here is UNALIGNED
 
             nuint currentOffsetInElements = SizeOfVector128 / 2; // we processed 8 elements so far
 
@@ -1375,7 +1375,7 @@ namespace System.Text
 
                 // Turn the 8 ASCII chars we just read into 8 ASCII bytes, then copy it to the destination.
                 asciiVector = Sse2.PackUnsignedSaturate(utf16VectorFirst, utf16VectorFirst);
-                Unsafe.WriteUnaligned<ulong>(pAsciiBuffer + currentOffsetInElements, asciiVector.AsUInt64().GetElement(0));
+                Sse2.StoreLow((ulong*)(pAsciiBuffer + currentOffsetInElements), asciiVector.AsUInt64()); // ulong* calculated here is UNALIGNED
             }
 
             // Calculate how many elements we wrote in order to get pAsciiBuffer to its next alignment
@@ -1451,7 +1451,7 @@ namespace System.Text
 
             Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
 
-            *(ulong*)(pAsciiBuffer + currentOffsetInElements) = asciiVector.AsUInt64().GetElement(0);
+            Sse2.StoreLow((ulong*)(pAsciiBuffer + currentOffsetInElements), asciiVector.AsUInt64()); // ulong* calculated here is aligned
             currentOffsetInElements += SizeOfVector128 / 2;
 
             goto Finish;
