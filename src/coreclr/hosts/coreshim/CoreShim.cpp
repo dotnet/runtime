@@ -334,6 +334,7 @@ HRESULT coreclr::CreateTpaList(_Inout_ std::string &tpaList, _In_opt_z_ const WC
 
 coreclr::coreclr(_Inout_ AutoModule hmod)
     : _hmod{ std::move(hmod) }
+    , _attached{ false }
     , _clrInst{ nullptr }
     , _appDomainId{ std::numeric_limits<uint32_t>::max() }
 {
@@ -349,7 +350,7 @@ coreclr::coreclr(_Inout_ AutoModule hmod)
 
 coreclr::~coreclr()
 {
-    if (_clrInst != nullptr)
+    if (_clrInst != nullptr && !_attached)
     {
         HRESULT hr = _shutdown(_clrInst, _appDomainId);
         assert(SUCCEEDED(hr));
@@ -370,6 +371,21 @@ HRESULT coreclr::Initialize(
         appDomainName = "CoreShim";
 
     HRESULT hr;
+
+    // Check if this is hosted scenario - launched via CoreRun.exe
+    HMODULE mod = ::GetModuleHandleW(W("CoreRun.exe"));
+    if (mod != NULL)
+    {
+        using GetCurrentClrDetailsFunc = HRESULT(*)(void **clrInstance, unsigned int *appDomainId);
+        auto getCurrentClrDetails = (GetCurrentClrDetailsFunc)::GetProcAddress(mod, "GetCurrentClrDetails");
+        RETURN_IF_FAILED(getCurrentClrDetails(&_clrInst, &_appDomainId));
+        if (_clrInst != nullptr)
+        {
+            _attached = true;
+            return S_OK;
+        }
+    }
+
     try
     {
         const std::wstring exePathW = GetExePath();

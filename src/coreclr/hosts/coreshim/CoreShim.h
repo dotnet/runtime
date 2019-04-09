@@ -174,6 +174,7 @@ public:
 private:
     AutoModule _hmod;
 
+    bool _attached;
     void *_clrInst;
     uint32_t _appDomainId;
 

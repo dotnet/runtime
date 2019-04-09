@@ -183,6 +183,31 @@ namespace Server.Contract.Servers
     {
     }
 */
+
+    /// <summary>
+    /// Managed definition of CoClass
+    /// </summary>
+    /// <remarks>
+    /// This interface is used to test consumption of the NET server from a NET client only.
+    /// </remarks>
+    [ComImport]
+    [CoClass(typeof(ConsumeNETServerTestingClass))]
+    [Guid("CCBC1915-3252-4F6B-98AA-411CE6213D94")]
+    internal interface ConsumeNETServerTesting : Server.Contract.IConsumeNETServer
+    {
+    }
+
+    /// <summary>
+    /// Managed activation for CoClass
+    /// </summary>
+    /// <remarks>
+    /// This interface is used to test consumption of the NET server from a NET client only.
+    /// </remarks>
+    [ComImport]
+    [Guid(Server.Contract.Guids.ConsumeNETServerTesting)]
+    internal class ConsumeNETServerTestingClass
+    {
+    }
 }
 
 #pragma warning restore 618 // Must test deprecated features
