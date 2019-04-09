@@ -53,6 +53,8 @@
     <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="Newtonsoft.Json" />
+    <ReferenceFromRuntime Include="Newtonsoft.Json" />    
+    <!-- Copy external dependency into the test output directory. -->
+    <SupplementalTestData Include="$(RuntimePath)Newtonsoft.Json.dll" />
   </ItemGroup>
 </Project>
