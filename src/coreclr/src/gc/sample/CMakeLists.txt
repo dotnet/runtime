@@ -25,6 +25,14 @@ set(SOURCES
 )
 
 if(WIN32)
+  set (GC_LINK_LIBRARIES
+    ${STATIC_MT_CRT_LIB}
+    ${STATIC_MT_VCRT_LIB}
+    kernel32.lib
+    advapi32.lib)
+endif(WIN32)
+
+if(WIN32)
     list(APPEND SOURCES
         ../windows/gcenv.windows.cpp)
     add_definitions(-DUNICODE=1)
@@ -36,3 +44,7 @@ endif()
 _add_executable(gcsample
     ${SOURCES}
 )
+
+if(WIN32)
+    target_link_libraries(gcsample ${GC_LINK_LIBRARIES})
+endif()
