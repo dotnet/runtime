@@ -372,8 +372,6 @@ namespace System.Tests
 
             yield return new object[] { new object[] { 1 }, "1" };
             yield return new object[] { new object[] { null }, "" };
-            // dotnet/coreclr#6785, this will be null for the Concat(object) overload but "" for the object[]/IEnumerable<object> overload
-            // yield return new object[] { new object[] { new ObjectWithNullToString() }, "" };
 
             yield return new object[] { new object[] { 1, 2 }, "12" };
             yield return new object[] { new object[] { null, 1 }, "1" };
@@ -400,6 +398,11 @@ namespace System.Tests
 
             // Concat should ignore objects that have a null ToString() value
             yield return new object[] { new object[] { new ObjectWithNullToString(), "Foo", new ObjectWithNullToString(), "Bar", new ObjectWithNullToString() }, "FooBar" };
+
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { new object[] { new ObjectWithNullToString() }, "" };
+            }
         }
 
         [Theory]
