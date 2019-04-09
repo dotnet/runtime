@@ -4971,6 +4971,14 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			CompRelation rel;
 			LLVMValueRef cmp, args [16];
 			gboolean likely = (ins->flags & MONO_INST_LIKELY) != 0;
+			gboolean unlikely = FALSE;
+
+			if (MONO_IS_COND_BRANCH_OP (ins->next)) {
+				if (ins->next->inst_false_bb->out_of_line)
+					likely = TRUE;
+				else if (ins->next->inst_true_bb->out_of_line)
+					unlikely = TRUE;
+			}
 
 			if (ins->next->opcode == OP_NOP)
 				break;
@@ -5026,9 +5034,9 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			} else
 				cmp = LLVMBuildICmp (builder, cond_to_llvm_cond [rel], lhs, rhs, "");
 
-			if (likely) {
+			if (likely || unlikely) {
 				args [0] = cmp;
-				args [1] = LLVMConstInt (LLVMInt1Type (), 1, FALSE);
+				args [1] = LLVMConstInt (LLVMInt1Type (), likely ? 1 : 0, FALSE);
 				cmp = LLVMBuildCall (ctx->builder, get_intrinsic (ctx, "llvm.expect.i1"), args, 2, "");
 			}
 
