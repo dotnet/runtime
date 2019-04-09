@@ -1742,17 +1742,9 @@ emit_push_lmf (MonoCompile *cfg)
 	if (!cfg->lmf_addr_var)
 		cfg->lmf_addr_var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
 
-#ifdef HOST_WIN32
-	ins = mono_create_tls_get (cfg, TLS_KEY_JIT_TLS);
-	g_assert (ins);
-	int jit_tls_dreg = ins->dreg;
-
-	lmf_reg = alloc_preg (cfg);
-	EMIT_NEW_BIALU_IMM (cfg, lmf_ins, OP_PADD_IMM, lmf_reg, jit_tls_dreg, MONO_STRUCT_OFFSET (MonoJitTlsData, lmf));
-#else
 	lmf_ins = mono_create_tls_get (cfg, TLS_KEY_LMF_ADDR);
 	g_assert (lmf_ins);
-#endif
+
 	lmf_ins->dreg = cfg->lmf_addr_var->dreg;
 
 	EMIT_NEW_VARLOADA (cfg, ins, cfg->lmf_var, NULL);
