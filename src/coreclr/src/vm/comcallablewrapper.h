@@ -997,27 +997,20 @@ private:
     };
     
 public:
-    VOID ResetHandleStrength();
-    VOID MarkHandleWeak();
-
     BOOL IsHandleWeak();
+    VOID MarkHandleWeak();
+    VOID ResetHandleStrength();
 
-    OBJECTHANDLE GetObjectHandle();
-    OBJECTHANDLE GetRawObjectHandle() { LIMITED_METHOD_CONTRACT; return m_ppThis; } // no NULL check
+    BOOL IsComActivated();
+    VOID MarkComActivated();
+
+    OBJECTHANDLE GetObjectHandle() { LIMITED_METHOD_CONTRACT; return m_ppThis; }
+
+    // don't instantiate this class directly
+    ComCallWrapper() = delete;
+    ~ComCallWrapper() = delete;
 
 protected:
-    // don't instantiate this class directly
-    ComCallWrapper()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-    ~ComCallWrapper()
-    {
-        LIMITED_METHOD_CONTRACT;
-    }
-    
-    void Init();
-
 #ifndef DACCESS_COMPILE
     inline static void SetNext(ComCallWrapper* pWrap, ComCallWrapper* pNextWrapper)
     {
@@ -1438,7 +1431,7 @@ private:
         enum_IsAggregated                      = 0x1,
         enum_IsExtendsCom                      = 0x2,
         enum_IsHandleWeak                      = 0x4,
-        // unused                              = 0x8,
+        enum_IsComActivated                    = 0x8,
         // unused                              = 0x10,
         enum_IsPegged                          = 0x80,
         // unused                              = 0x100,
@@ -1620,6 +1613,18 @@ public:
         LIMITED_METHOD_CONTRACT;
         
         return m_flags & enum_IsExtendsCom;
+    }
+
+    BOOL IsComActivated()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_flags & enum_IsComActivated;
+    }
+
+    void MarkComActivated()
+    {
+        LIMITED_METHOD_CONTRACT;
+        FastInterlockOr((ULONG*)&m_flags, enum_IsComActivated);
     }
 
     inline BOOL IsPegged()
@@ -2060,20 +2065,6 @@ private:
     LONGLONG                        m_llRefCount;
  };
 
-inline OBJECTHANDLE ComCallWrapper::GetObjectHandle()
-{
-    CONTRACT (OBJECTHANDLE)
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_TRIGGERS);
-        MODE_COOPERATIVE;
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-    
-    RETURN m_ppThis;
-}
-
 //--------------------------------------------------------------------------------
 // ComCallWrapper* ComCallWrapper::InlineGetWrapper(OBJECTREF* ppObj, ComCallWrapperTemplate *pTemplate)
 // returns the wrapper for the object, if not yet created, creates one
@@ -2275,8 +2266,6 @@ inline ULONG ComCallWrapper::GetJupiterRefCount()
     return m_pSimpleWrapper->GetJupiterRefCount();
 }
 
-
-
 inline PTR_ComCallWrapper ComCallWrapper::GetWrapperFromIP(PTR_IUnknown pUnk)
 {
     CONTRACT (PTR_ComCallWrapper)
@@ -2340,27 +2329,6 @@ inline PTR_ComCallWrapperTemplate ComCallWrapper::GetComCallWrapperTemplate()
     return GetSimpleWrapper()->GetComCallWrapperTemplate();
 }
 
-//--------------------------------------------------------------------------
-//  BOOL ComCallWrapper::BOOL IsHandleWeak()
-// check if the wrapper has been deactivated
-// Moved here to make DAC build happy and hopefully get it inlined
-//--------------------------------------------------------------------------
-inline BOOL ComCallWrapper::IsHandleWeak()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    
-    SimpleComCallWrapper* pSimpleWrap = GetSimpleWrapper();
-    _ASSERTE(pSimpleWrap);
-    
-    return pSimpleWrap->IsHandleWeak();
-}
-
 inline BOOL ComCallWrapper::IsWrapperActive()
 {
     CONTRACTL
@@ -2384,12 +2352,12 @@ inline BOOL ComCallWrapper::IsWrapperActive()
         
     BOOL bHasStrongCOMRefCount = ((cbRef > 0) || bHasJupiterStrongRefCount);
 
-    BOOL bIsWrapperActive = (bHasStrongCOMRefCount && !IsHandleWeak());
+    BOOL bIsWrapperActive = (bHasStrongCOMRefCount && !m_pSimpleWrapper->IsHandleWeak());
 
     LOG((LF_INTEROP, LL_INFO1000, 
          "CCW 0x%p: cbRef = 0x%x, cbJupiterRef = 0x%x, IsPegged = %d, GlobalPegging = %d, IsHandleWeak = %d\n", 
          this, 
-         cbRef, cbJupiterRef, IsPegged(), RCWWalker::IsGlobalPeggingOn(), IsHandleWeak()));
+         cbRef, cbJupiterRef, m_pSimpleWrapper->IsPegged(), RCWWalker::IsGlobalPeggingOn(), m_pSimpleWrapper->IsHandleWeak()));
     LOG((LF_INTEROP, LL_INFO1000, "CCW 0x%p: IsWrapperActive returned %d\n", this, bIsWrapperActive));
     
     return bIsWrapperActive;    
