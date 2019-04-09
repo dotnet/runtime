@@ -14,6 +14,7 @@
 **
 ===========================================================*/
 
+#nullable enable
 namespace System.Resources
 {
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]
