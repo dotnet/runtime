@@ -1652,7 +1652,19 @@ MarshalInfo::MarshalInfo(Module* pModule,
     }
     else
     {
-        mtype = sig.PeekElemTypeClosed(pModule, pTypeContext);
+        SigPointer sigtmp = sig;
+        CorElementType closedElemType = sigtmp.PeekElemTypeClosed(pModule, pTypeContext);
+        if (closedElemType == ELEMENT_TYPE_VALUETYPE)
+        {
+            TypeHandle th = sigtmp.GetTypeHandleThrowing(pModule, pTypeContext); 
+            // If the return type of an instance method is a value-type we need the actual return type.
+            // However, if the return type is an enum, we can normalize it.
+            if (!th.IsEnum())
+            {
+                mtype = closedElemType;
+            }
+        }
+
     }
 #endif // _TARGET_X86_
 
