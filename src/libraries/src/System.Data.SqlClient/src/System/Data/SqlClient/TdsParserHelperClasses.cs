@@ -326,7 +326,7 @@ namespace System.Data.SqlClient
                     return item;
                 }
             }
-            // if we didn't find an item in the pool we've either never craete any or we're under pressure 
+            // if we didn't find an item in the pool we've either never create any or we're under pressure 
             // so just create a new one and let the caller get on with their work
             return new SqlEnvChange();
         }
@@ -347,7 +347,7 @@ namespace System.Data.SqlClient
                     break;
                 }
             }
-            // if we didn't add the item to the cache just let the go to the GC
+            // if we didn't add the item to the cache just let it go to the GC
         }
     }
 
