@@ -337,7 +337,9 @@ mono_de_add_pending_breakpoints (MonoMethod *method, MonoJitInfo *ji)
 				}
 			}
 
-			g_assert (seq_points);
+			if (!seq_points)
+				/* Could be AOT code, or above "search_all_backends" call could have failed */
+				continue;
 
 			insert_breakpoint (seq_points, domain, ji, bp, NULL);
 		}
