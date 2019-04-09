@@ -24,7 +24,9 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllBytesInUInt64AreAscii(ulong value)
         {
-            return ((value & 0x80808080_80808080ul) == 0);
+            // If the high bit of any byte is set, that byte is non-ASCII.
+
+            return ((value & UInt64HighBitsOnlyMask) == 0);
         }
 
         /// <summary>
@@ -402,7 +404,7 @@ namespace System.Text
                         // Clear everything but the high bit of each byte, then tzcnt.
                         // Remember the / 8 at the end to convert bit count to byte count.
 
-                        candidateUInt64 &= 0x80808080_80808080ul;
+                        candidateUInt64 &= UInt64HighBitsOnlyMask;
                         pBuffer += (nuint)(Bmi1.X64.TrailingZeroCount(candidateUInt64) / 8);
                         goto Finish;
                     }
@@ -1456,12 +1458,6 @@ namespace System.Text
 
             goto Finish;
         }
-
-        /// <summary>
-        /// Rotates a <see cref="uint"/> left. The JIT is smart enough to turn this into a ROL / ROR instruction.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint ROL32(uint value, int shift) => (value << shift) | (value >> (32 - shift));
 
         /// <summary>
         /// Copies as many ASCII bytes (00..7F) as possible from <paramref name="pAsciiBuffer"/>
