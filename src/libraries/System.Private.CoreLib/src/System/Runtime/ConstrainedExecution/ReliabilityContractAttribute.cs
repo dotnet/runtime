@@ -16,6 +16,7 @@
 **
 ===========================================================*/
 
+#nullable enable
 namespace System.Runtime.ConstrainedExecution
 {
     [AttributeUsage(AttributeTargets.Assembly | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Interface /* | AttributeTargets.Delegate*/, Inherited = false)]

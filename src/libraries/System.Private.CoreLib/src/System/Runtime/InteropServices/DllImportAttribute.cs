@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Runtime.InteropServices
 {
     [AttributeUsage(AttributeTargets.Method, Inherited = false)]
@@ -14,7 +15,7 @@ namespace System.Runtime.InteropServices
 
         public string Value { get; }
 
-        public string EntryPoint;
+        public string? EntryPoint;
         public CharSet CharSet;
         public bool SetLastError;
         public bool ExactSpelling;

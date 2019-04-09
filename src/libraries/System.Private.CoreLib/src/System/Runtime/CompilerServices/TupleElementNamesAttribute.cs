@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 
 namespace System.Runtime.CompilerServices
@@ -13,7 +14,7 @@ namespace System.Runtime.CompilerServices
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue | AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Event)]
     public sealed class TupleElementNamesAttribute : Attribute
     {
-        private readonly string[] _transformNames;
+        private readonly string?[] _transformNames;
 
         /// <summary>
         /// Initializes a new instance of the <see
@@ -37,7 +38,7 @@ namespace System.Runtime.CompilerServices
         /// <c>transformNames</c> value of <c>{ "name1", "name2", null, null,
         /// null }</c>.
         /// </remarks>
-        public TupleElementNamesAttribute(string[] transformNames)
+        public TupleElementNamesAttribute(string?[] transformNames)
         {
             if (transformNames == null)
             {
@@ -52,6 +53,6 @@ namespace System.Runtime.CompilerServices
         /// construction, which <see cref="System.ValueTuple"/> elements are
         /// meant to carry element names.
         /// </summary>
-        public IList<string> TransformNames => _transformNames;
+        public IList<string?> TransformNames => _transformNames;
     }
 }

@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
-        public delegate void TryCode(object userData);
+        public delegate void TryCode(object? userData);
 
-        public delegate void CleanupCode(object userData, bool exceptionThrown);
+        public delegate void CleanupCode(object? userData, bool exceptionThrown);
 
         /// <summary>
         /// GetSubArray helper method for the compiler to slice an array using a range.
