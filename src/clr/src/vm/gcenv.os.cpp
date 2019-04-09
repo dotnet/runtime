@@ -928,7 +928,7 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
         return g_SystemInfo.dwNumberOfProcessors;
     }
 #else // !FEATURE_PAL
-    return g_currentProcessCpuCount;
+    return PAL_GetTotalCpuCount();
 #endif // !FEATURE_PAL
 }
 

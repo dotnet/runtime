@@ -95,7 +95,9 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #endif
 #endif // __APPLE__
 
-DWORD GetTotalCpuCount()
+DWORD
+PALAPI
+PAL_GetTotalCpuCount()
 {
     int nrcpus = 0;
 
@@ -150,7 +152,7 @@ PAL_GetLogicalCpuCountFromOS()
 
     nrcpus = CPU_COUNT(&cpuSet);
 #else // HAVE_SCHED_GETAFFINITY
-    nrcpus = GetTotalCpuCount();
+    nrcpus = PAL_GetTotalCpuCount();
 #endif // HAVE_SCHED_GETAFFINITY
 
     return nrcpus;
