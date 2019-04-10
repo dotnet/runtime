@@ -25,9 +25,8 @@ DIST_SUBDIRS = $(build_with_msvc) m4 mk po $(libgc_dir) llvm mono ikvm-native su
 
 all: update_submodules
 
-SUBMODULE_ERROR='Could not recursively update all git submodules. You may experience compilation problems if some submodules are out of date'
 update_submodules:
-	@$(srcdir)/scripts/update_submodules.sh
+	@cd $(srcdir) && scripts/update_submodules.sh
 
 .PHONY: update_submodules
 
