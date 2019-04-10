@@ -647,6 +647,8 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
                 files.push_back(filepath);
             }
         }
+
+        closedir(dir);
     }
 }
 
