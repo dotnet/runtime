@@ -62,23 +62,36 @@ namespace System.Text.Unicode
             long tempUtf8CodeUnitCountAdjustment = 0;
             int tempScalarCountAdjustment = 0;
 
-            if (Sse41.IsSupported)
+            if (Sse2.IsSupported)
             {
                 if (inputLength >= Vector128<ushort>.Count)
                 {
                     Vector128<ushort> vector0080 = Vector128.Create((ushort)0x80);
-                    Vector128<ushort> vector0800 = Sse2.ShiftLeftLogical(vector0080, 4); // = 0x0800
                     Vector128<ushort> vectorA800 = Vector128.Create((ushort)0xA800);
                     Vector128<short> vector8800 = Vector128.Create(unchecked((short)0x8800));
+                    Vector128<ushort> vectorZero = Vector128<ushort>.Zero;
 
                     do
                     {
                         Vector128<ushort> utf16Data = Sse2.LoadVector128((ushort*)pInputBuffer); // unaligned
+                        uint mask;
 
-                        uint mask = (uint)Sse2.MoveMask(
-                            Sse2.Or(
-                                Sse2.ShiftLeftLogical(Sse41.Min(utf16Data, vector0080), 8),
-                                Sse2.ShiftRightLogical(Sse41.Min(utf16Data, vector0800), 4)).AsByte());
+                        Vector128<ushort> charIsNonAscii;
+                        if (Sse41.IsSupported)
+                        {
+                            // sets 0x0080 bit if corresponding char element is >= 0x0080
+                            charIsNonAscii = Sse41.Min(utf16Data, vector0080);
+                        }
+                        else
+                        {
+                            // sets 0x8000 bit if corresponding char element is >= 0x0080
+                            charIsNonAscii = Sse2.AndNot(vector0080, Sse2.Subtract(vectorZero, Sse2.ShiftRightLogical(utf16Data, 7)));
+                        }
+
+                        // sets 0x8080 bits if corresponding char element is >= 0x0800
+                        Vector128<ushort> charIsThreeByteUtf8Encoded = Sse2.Subtract(vectorZero, Sse2.ShiftRightLogical(utf16Data, 11));
+
+                        mask = (uint)Sse2.MoveMask(Sse2.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte());
 
                         // Each odd bit of mask will be 1 only if the char was >= 0x0080,
                         // and each even bit of mask will be 1 only if the char was >= 0x0800.
@@ -89,8 +102,11 @@ namespace System.Text.Unicode
                         //            |   ,-- set if char[0] is non-ASCII
                         //            v   v
                         // mask = ... 1 1 1 0
-                        //              ^   ^-- set if char[0] is >= 0x800
-                        //              `-- set if char[1] is >= 0x800
+                        //              ^   ^-- set if char[0] is >= 0x0800
+                        //              `-- set if char[1] is >= 0x0800
+                        //
+                        // (If the SSE4.1 code path is taken above, the meaning of the odd and even
+                        // bits are swapped, but the logic below otherwise holds.)
                         //
                         // This means we can popcnt the number of set bits, and the result is the
                         // number of *additional* UTF-8 bytes that each UTF-16 code unit requires as
@@ -208,7 +224,7 @@ namespace System.Text.Unicode
                         // We'll negate them to produce a value 0..2 for each element, then sum all the
                         // elements together to produce the number of *additional* UTF-8 code units
                         // required to represent this UTF-16 data. This is similar to the popcnt step
-                        // performed by the SSE41 code path. This will overcount surrogates, but we'll
+                        // performed by the SSE2 code path. This will overcount surrogates, but we'll
                         // handle that shortly.
 
                         Vector<ushort> utf16Data = Unsafe.ReadUnaligned<Vector<ushort>>(pInputBuffer);
