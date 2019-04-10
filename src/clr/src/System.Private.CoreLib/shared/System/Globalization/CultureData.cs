@@ -11,6 +11,7 @@ using System.Threading;
 namespace System.Globalization
 {
 #if CORERT
+    #pragma warning restore nullable
     using StringStringDictionary = LowLevelDictionary<string, string>;
     using StringCultureDataDictionary = LowLevelDictionary<string, CultureData>;
     using LcidToCultureNameDictionary = LowLevelDictionary<int, string>;
