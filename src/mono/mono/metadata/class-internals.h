@@ -1302,7 +1302,7 @@ mono_class_has_failure (const MonoClass *klass);
 
 /* Kind specific accessors */
 MonoGenericClass*
-mono_class_get_generic_class (MonoClass *klass);
+mono_class_get_generic_class (MonoClass *klass) MONO_LLVM_INTERNAL;
 
 MonoGenericClass*
 mono_class_try_get_generic_class (MonoClass *klass);
