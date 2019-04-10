@@ -471,10 +471,13 @@ mono_runtime_class_init_full (MonoVTable *vtable, MonoError *error)
 		return TRUE;
 	}
 	if (vtable->init_failed) {
-		mono_type_initialization_unlock ();
-
 		/* The type initialization already failed once, rethrow the same exception */
-		mono_error_set_exception_instance (error, get_type_init_exception_for_vtable (vtable));
+		MonoException *exp = get_type_init_exception_for_vtable (vtable);
+		/* Reset the stack_trace and trace_ips because the exception is reused */
+		exp->stack_trace = NULL;
+		exp->trace_ips = NULL;
+		mono_type_initialization_unlock ();
+		mono_error_set_exception_instance (error, exp);
 		return FALSE;
 	}
 	lock = (TypeInitializationLock *)g_hash_table_lookup (type_initialization_hash, vtable);
