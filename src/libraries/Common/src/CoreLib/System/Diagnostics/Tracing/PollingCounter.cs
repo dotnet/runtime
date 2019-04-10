@@ -23,7 +23,7 @@ namespace System.Diagnostics.Tracing
     /// function to collect metrics on its own rather than the user having to call WriteMetric() 
     /// every time.
     /// </summary>
-    internal partial class PollingCounter : BaseCounter
+    public partial class PollingCounter : DiagnosticCounter
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="PollingCounter"/> class.
@@ -32,41 +32,42 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="eventSource">The event source.</param>
-        public PollingCounter(string name, EventSource eventSource, Func<float> getMetricFunction) : base(name, eventSource)
+        public PollingCounter(string name, EventSource eventSource, Func<double> metricProvider) : base(name, eventSource)
         {
-            _getMetricFunction = getMetricFunction;
+            _metricProvider = metricProvider;
         }
 
-        public override string ToString() => $"PollingCounter '{_name}' Count {1} Mean {_lastVal.ToString("n3")}";
+        public override string ToString() => $"PollingCounter '{Name}' Count {1} Mean {_lastVal.ToString("n3")}";
 
-        private Func<float> _getMetricFunction;
-        private float _lastVal;
+        private Func<double> _metricProvider;
+        private double _lastVal;
 
         internal override void WritePayload(float intervalSec)
         {
             lock (MyLock)
             {
-                float value = 0;
+                double value = 0;
                 try 
                 {
-                    value = _getMetricFunction();
+                    value = _metricProvider();
                 }
                 catch (Exception ex)
                 {
-                    ReportOutOfBandMessage($"ERROR: Exception during EventCounter {_name} getMetricFunction callback: " + ex.Message);
+                    ReportOutOfBandMessage($"ERROR: Exception during EventCounter {Name} metricProvider callback: " + ex.Message);
                 }
 
                 CounterPayload payload = new CounterPayload();
-                payload.Name = _name;
+                payload.Name = Name;
                 payload.DisplayName = DisplayName ?? "";
                 payload.Count = 1; // NOTE: These dumb-looking statistics is intentional
                 payload.IntervalSec = intervalSec;
                 payload.Mean = value;
                 payload.Max = value;
                 payload.Min = value;
+                payload.Metadata = GetMetadataString();
                 payload.StandardDeviation = 0;
                 _lastVal = value;
-                _eventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new PollingPayloadType(payload));
+                EventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new PollingPayloadType(payload));
             }
         }
     }
