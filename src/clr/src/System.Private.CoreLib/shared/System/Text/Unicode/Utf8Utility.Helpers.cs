@@ -18,13 +18,13 @@ namespace System.Text.Unicode
         /// returns <see langword="true"/> iff the first two bytes of the buffer are
         /// an overlong representation of a sequence that should be represented as one byte.
         /// This method *does not* validate that the sequence matches the appropriate
-        /// 2-byte sequence mask (see <see cref="DWordBeginsWithUtf8TwoByteMask"/>).
+        /// 2-byte sequence mask (see <see cref="UInt32BeginsWithUtf8TwoByteMask"/>).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordBeginsWithOverlongUtf8TwoByteSequence(uint value)
+        private static bool UInt32BeginsWithOverlongUtf8TwoByteSequence(uint value)
         {
             // ASSUMPTION: Caller has already checked the '110yyyyy 10xxxxxx' mask of the input.
-            Debug.Assert(DWordBeginsWithUtf8TwoByteMask(value));
+            Debug.Assert(UInt32BeginsWithUtf8TwoByteMask(value));
 
             // Per Table 3-7, first byte of two-byte sequence must be within range C2 .. DF.
             // Since we already validated it's 80 <= ?? <= DF (per mask check earlier), now only need
@@ -44,7 +44,7 @@ namespace System.Text.Unicode
         /// still perform overlong form or out-of-range checking.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordBeginsWithUtf8FourByteMask(uint value)
+        private static bool UInt32BeginsWithUtf8FourByteMask(uint value)
         {
             // The code in this method is equivalent to the code
             // below but is slightly more optimized.
@@ -76,7 +76,7 @@ namespace System.Text.Unicode
         /// overlong form or surrogate checking.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordBeginsWithUtf8ThreeByteMask(uint value)
+        private static bool UInt32BeginsWithUtf8ThreeByteMask(uint value)
         {
             // The code in this method is equivalent to the code
             // below but is slightly more optimized.
@@ -108,7 +108,7 @@ namespace System.Text.Unicode
         /// overlong form checking.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordBeginsWithUtf8TwoByteMask(uint value)
+        private static bool UInt32BeginsWithUtf8TwoByteMask(uint value)
         {
             // The code in this method is equivalent to the code
             // below but is slightly more optimized.
@@ -137,13 +137,13 @@ namespace System.Text.Unicode
         /// returns <see langword="true"/> iff the first two bytes of the buffer are
         /// an overlong representation of a sequence that should be represented as one byte.
         /// This method *does not* validate that the sequence matches the appropriate
-        /// 2-byte sequence mask (see <see cref="DWordBeginsWithUtf8TwoByteMask"/>).
+        /// 2-byte sequence mask (see <see cref="UInt32BeginsWithUtf8TwoByteMask"/>).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordEndsWithOverlongUtf8TwoByteSequence(uint value)
+        private static bool UInt32EndsWithOverlongUtf8TwoByteSequence(uint value)
         {
             // ASSUMPTION: Caller has already checked the '110yyyyy 10xxxxxx' mask of the input.
-            Debug.Assert(DWordEndsWithUtf8TwoByteMask(value));
+            Debug.Assert(UInt32EndsWithUtf8TwoByteMask(value));
 
             // Per Table 3-7, first byte of two-byte sequence must be within range C2 .. DF.
             // We already validated that it's 80 .. DF (per mask check earlier).
@@ -166,7 +166,7 @@ namespace System.Text.Unicode
         /// overlong form checking.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordEndsWithUtf8TwoByteMask(uint value)
+        private static bool UInt32EndsWithUtf8TwoByteMask(uint value)
         {
             // The code in this method is equivalent to the code
             // below but is slightly more optimized.
@@ -197,7 +197,7 @@ namespace System.Text.Unicode
         /// single operation. Returns <see langword="false"/> if running on a big-endian machine.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordBeginsWithValidUtf8TwoByteSequenceLittleEndian(uint value)
+        private static bool UInt32BeginsWithValidUtf8TwoByteSequenceLittleEndian(uint value)
         {
             // Per Table 3-7, valid 2-byte sequences are [ C2..DF ] [ 80..BF ].
             // In little-endian, that would be represented as:
@@ -222,9 +222,9 @@ namespace System.Text.Unicode
         /// single operation. Returns <see langword="false"/> if running on a big-endian machine.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordEndsWithValidUtf8TwoByteSequenceLittleEndian(uint value)
+        private static bool UInt32EndsWithValidUtf8TwoByteSequenceLittleEndian(uint value)
         {
-            // See comments in DWordBeginsWithValidUtf8TwoByteSequenceLittleEndian.
+            // See comments in UInt32BeginsWithValidUtf8TwoByteSequenceLittleEndian.
 
             Debug.Assert(BitConverter.IsLittleEndian);
 
@@ -239,7 +239,7 @@ namespace System.Text.Unicode
         /// returns <see langword="true"/> iff the first byte of the buffer is ASCII.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordFirstByteIsAscii(uint value)
+        private static bool UInt32FirstByteIsAscii(uint value)
         {
             // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
 
@@ -252,7 +252,7 @@ namespace System.Text.Unicode
         /// returns <see langword="true"/> iff the fourth byte of the buffer is ASCII.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordFourthByteIsAscii(uint value)
+        private static bool UInt32FourthByteIsAscii(uint value)
         {
             // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
 
@@ -265,7 +265,7 @@ namespace System.Text.Unicode
         /// returns <see langword="true"/> iff the second byte of the buffer is ASCII.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordSecondByteIsAscii(uint value)
+        private static bool UInt32SecondByteIsAscii(uint value)
         {
             // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
 
@@ -278,7 +278,7 @@ namespace System.Text.Unicode
         /// returns <see langword="true"/> iff the third byte of the buffer is ASCII.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DWordThirdByteIsAscii(uint value)
+        private static bool UInt32ThirdByteIsAscii(uint value)
         {
             // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
 
@@ -316,7 +316,7 @@ namespace System.Text.Unicode
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint ExtractCharFromFirstTwoByteSequence(uint value)
         {
-            Debug.Assert(DWordBeginsWithUtf8TwoByteMask(value) && !DWordBeginsWithOverlongUtf8TwoByteSequence(value));
+            Debug.Assert(UInt32BeginsWithUtf8TwoByteMask(value) && !UInt32BeginsWithOverlongUtf8TwoByteSequence(value));
 
             if (BitConverter.IsLittleEndian)
             {
