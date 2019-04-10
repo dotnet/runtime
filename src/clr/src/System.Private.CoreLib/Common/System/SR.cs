@@ -125,7 +125,7 @@ namespace System
                 {
                     ResourceManager = new ResourceManager(SR.ResourceType);
                 }
-                string s = ResourceManager.GetString(key, null);
+                string? s = ResourceManager.GetString(key, null);
                 _currentlyLoading.RemoveAt(_currentlyLoading.Count - 1); // Pop
 
                 Debug.Assert(s != null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called SR.GetResourceString.  Resource name was: \"" + key + "\"");
