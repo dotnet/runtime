@@ -30,7 +30,7 @@ namespace System.Text.Unicode
         public static byte* GetPointerToFirstInvalidByte(byte* pInputBuffer, int inputLength, out int utf16CodeUnitCountAdjustment, out int scalarCountAdjustment)
         {
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
-            Debug.Assert(pInputBuffer != null || inputLength > 0, "Input length cannot be zero if input buffer is null.");
+            Debug.Assert(pInputBuffer != null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
 
             // First, try to drain off as many ASCII bytes as we can from the beginning.
 
