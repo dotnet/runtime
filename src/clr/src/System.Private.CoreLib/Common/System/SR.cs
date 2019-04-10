@@ -29,7 +29,7 @@ namespace System
         }
 
         // Needed for debugger integration
-        internal static string GetResourceString(string resourceKey)
+        internal static string? GetResourceString(string resourceKey)
         {
             return GetResourceString(resourceKey, string.Empty);
         }
@@ -53,7 +53,7 @@ namespace System
         private static int _infinitelyRecursingCount;
         private static bool _resourceManagerInited = false;
 
-        private static string InternalGetResourceString(string key)
+        private static string? InternalGetResourceString(string? key)
         {
             if (key == null || key.Length == 0)
             {
@@ -150,7 +150,7 @@ namespace System
             }
         }
 
-        internal static string Format(IFormatProvider provider, string resourceFormat, params object?[]? args)
+        internal static string Format(IFormatProvider? provider, string resourceFormat, params object?[]? args)
         {
             if (args != null)
             {

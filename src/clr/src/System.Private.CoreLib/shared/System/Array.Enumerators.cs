@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -81,7 +82,7 @@ namespace System
             return !_complete;
         }
 
-        public object Current
+        public object? Current
         {
             get
             {
@@ -136,7 +137,7 @@ namespace System
             return false;
         }
 
-        public object Current
+        public object? Current
         {
             get
             {
@@ -199,7 +200,7 @@ namespace System
             }
         }
 
-        object IEnumerator.Current => Current;
+        object? IEnumerator.Current => Current;
 
         void IEnumerator.Reset() => _index = -1;
 

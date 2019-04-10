@@ -185,7 +185,7 @@ namespace System.Text
 
         private static string GetDisplayName(int codePage, int englishNameIndex)
         {
-            string displayName = SR.GetResourceString("Globalization_cp_" + codePage.ToString());
+            string? displayName = SR.GetResourceString("Globalization_cp_" + codePage.ToString());
             if (string.IsNullOrEmpty(displayName))
                 displayName = s_englishNames.Substring(s_englishNameIndices[englishNameIndex], s_englishNameIndices[englishNameIndex + 1] - s_englishNameIndices[englishNameIndex]);
 

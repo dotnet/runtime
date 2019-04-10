@@ -9,6 +9,7 @@
 **
 ===========================================================*/
 
+#nullable enable
 using System;
 using System.Runtime.Serialization;
 using System.Security;
@@ -37,14 +38,14 @@ namespace System
         // Creates a new WeakReference that keeps track of target.
         // Assumes a Short Weak Reference (ie TrackResurrection is false.)
         //
-        public WeakReference(object target)
+        public WeakReference(object? target)
             : this(target, false)
         {
         }
 
         //Creates a new WeakReference that keeps track of target.
         //
-        public WeakReference(object target, bool trackResurrection)
+        public WeakReference(object? target, bool trackResurrection)
         {
             Create(target, trackResurrection);
         }
@@ -83,7 +84,7 @@ namespace System
         //Gets the Object stored in the handle if it's accessible.
         // Or sets it.
         //
-        public extern virtual object Target
+        public extern virtual object? Target
         {
             [MethodImplAttribute(MethodImplOptions.InternalCall)]
             get;
@@ -111,7 +112,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern void Create(object target, bool trackResurrection);
+        private extern void Create(object? target, bool trackResurrection);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern bool IsTrackResurrection();

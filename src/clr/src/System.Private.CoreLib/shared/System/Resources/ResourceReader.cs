@@ -1177,7 +1177,7 @@ namespace System.Resources
                 }
             }
 
-            public object Current
+            public object? Current // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
             {
                 get
                 {

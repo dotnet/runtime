@@ -363,7 +363,7 @@ namespace System.Runtime.CompilerServices
                 }
             }
 
-            object IEnumerator.Current => Current;
+            object? IEnumerator.Current => Current; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
 
             public void Reset() { }
         }
