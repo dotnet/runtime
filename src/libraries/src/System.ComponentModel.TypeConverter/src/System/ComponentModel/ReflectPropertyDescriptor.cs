@@ -70,9 +70,7 @@ namespace System.ComponentModel
         private MethodInfo _shouldSerializeMethod;      // the should serialize method
         private MethodInfo _resetMethod;                // the reset property method
         private EventDescriptor _realChangedEvent;           // <propertyname>Changed event handler on object
-#if FEATURE_INOTIFYPROPERTYCHANGED
         private EventDescriptor _realIPropChangedEvent;      // INotifyPropertyChanged.PropertyChanged event handler on object
-#endif
         private readonly Type _receiverType;               // Only set if we are an extender
 
         /// <summary>
@@ -239,7 +237,6 @@ namespace System.ComponentModel
         {
             get
             {
-#if FEATURE_INOTIFYPROPERTYCHANGED
                 if (!_state[s_bitIPropChangedQueried])
                 {
                     if (typeof(INotifyPropertyChanged).IsAssignableFrom(ComponentType))
@@ -251,9 +248,6 @@ namespace System.ComponentModel
                 }
 
                 return _realIPropChangedEvent;
-#else
-                return null;
-#endif
             }
         }
 
