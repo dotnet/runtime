@@ -23,7 +23,7 @@ namespace System.Diagnostics.Tracing
     /// It does not calculate statistics like mean, standard deviation, etc. because it only accumulates
     /// the counter value.
     /// </summary>
-    internal partial class IncrementingEventCounter : BaseCounter
+    public partial class IncrementingEventCounter : DiagnosticCounter
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="IncrementingEventCounter"/> class.
@@ -41,7 +41,7 @@ namespace System.Diagnostics.Tracing
         /// be logged on the next timer interval.  
         /// </summary>
         /// <param name="increment">The value to increment by.</param>
-        public void Increment(float increment = 1)
+        public void Increment(double increment = 1)
         {
             lock(MyLock)
             {
@@ -49,25 +49,25 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal TimeSpan DisplayRateTimeScale { get; set; }
-        private float _increment;
-        private float _prevIncrement;
+        public TimeSpan DisplayRateTimeScale { get; set; }
+        private double _increment;
+        private double _prevIncrement;
 
-        public override string ToString() => $"IncrementingEventCounter '{_name}' Increment {_increment}";
+        public override string ToString() => $"IncrementingEventCounter '{Name}' Increment {_increment}";
 
         internal override void WritePayload(float intervalSec)
         {
             lock (MyLock)     // Lock the counter
             {
                 IncrementingCounterPayload payload = new IncrementingCounterPayload();
-                payload.Name = _name;
+                payload.Name = Name;
                 payload.IntervalSec = intervalSec;
                 payload.DisplayName = DisplayName ?? "";
                 payload.DisplayRateTimeScale = (DisplayRateTimeScale == TimeSpan.Zero) ? "" : DisplayRateTimeScale.ToString("c");
-                payload.MetaData = GetMetaDataString();
+                payload.Metadata = GetMetadataString();
                 payload.Increment = _increment - _prevIncrement;
                 _prevIncrement = _increment;
-                _eventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new IncrementingEventCounterPayloadType(payload));
+                EventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new IncrementingEventCounterPayloadType(payload));
             }
         }
     }
