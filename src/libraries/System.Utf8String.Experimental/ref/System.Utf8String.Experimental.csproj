@@ -4,7 +4,7 @@
     <ProjectGuid>{7AF57E6B-2CED-45C9-8BCA-5BBA60D018E0}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(IsPrerelease)' != 'false'">
     <Compile Include="System.Utf8String.cs" />
   </ItemGroup>
   <ItemGroup>
