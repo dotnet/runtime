@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -74,7 +75,7 @@ namespace System
         {
             Debug.Assert(count > 0);
 
-            char[] borrowedArr = null;
+            char[]? borrowedArr = null;
             Span<char> scratch = (uint)count <= 64 ? stackalloc char[64] : (borrowedArr = ArrayPool<char>.Shared.Rent(count));
 
             int charsWritten = new ReadOnlySpan<char>(ref data, count).ToUpperInvariant(scratch);

@@ -51,7 +51,7 @@ namespace System.Globalization
             return true;
         }
 
-        public object Current => GetTextElement();
+        public object? Current => GetTextElement(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
 
         public string GetTextElement()
         {

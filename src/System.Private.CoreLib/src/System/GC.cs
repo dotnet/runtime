@@ -13,8 +13,8 @@
 **
 ===========================================================*/
 
+#nullable enable
 using System.Runtime.CompilerServices;
-using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
@@ -236,7 +236,7 @@ namespace System
         // If we insert a call to GC.KeepAlive(this) at the end of Problem(), then
         // Foo doesn't get finalized and the stream stays open.
         [MethodImplAttribute(MethodImplOptions.NoInlining)] // disable optimizations
-        public static void KeepAlive(object obj)
+        public static void KeepAlive(object? obj)
         {
         }
 

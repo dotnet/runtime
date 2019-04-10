@@ -35,6 +35,7 @@
 // multiple times for different instantiation.
 //
 
+#nullable enable
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -120,16 +121,16 @@ namespace System
         internal static void ThrowWrongKeyTypeArgumentException<T>(T key, Type targetType)
         {
             // Generic key to move the boxing to the right hand side of throw
-            throw GetWrongKeyTypeArgumentException((object)key, targetType);
+            throw GetWrongKeyTypeArgumentException((object?)key, targetType);
         }
 
         internal static void ThrowWrongValueTypeArgumentException<T>(T value, Type targetType)
         {
             // Generic key to move the boxing to the right hand side of throw
-            throw GetWrongValueTypeArgumentException((object)value, targetType);
+            throw GetWrongValueTypeArgumentException((object?)value, targetType);
         }
 
-        private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object key)
+        private static ArgumentException GetAddingDuplicateWithKeyArgumentException(object? key)
         {
             return new ArgumentException(SR.Format(SR.Argument_AddingDuplicateWithKey, key));
         }
@@ -137,13 +138,13 @@ namespace System
         internal static void ThrowAddingDuplicateWithKeyArgumentException<T>(T key)
         {
             // Generic key to move the boxing to the right hand side of throw
-            throw GetAddingDuplicateWithKeyArgumentException((object)key);
+            throw GetAddingDuplicateWithKeyArgumentException((object?)key);
         }
 
         internal static void ThrowKeyNotFoundException<T>(T key)
         {
             // Generic key to move the boxing to the right hand side of throw
-            throw GetKeyNotFoundException((object)key);
+            throw GetKeyNotFoundException((object?)key);
         }
 
         internal static void ThrowArgumentException(ExceptionResource resource)
@@ -311,7 +312,7 @@ namespace System
             throw new InvalidOperationException(SR.InvalidOperation_HandleIsNotPinned);
         }
 
-        internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array array, int offset, int count)
+        internal static void ThrowArraySegmentCtorValidationFailedExceptions(Array? array, int offset, int count)
         {
             throw GetArraySegmentCtorValidationFailedException(array, offset, count);
         }
@@ -331,7 +332,7 @@ namespace System
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
         }
 
-        private static Exception GetArraySegmentCtorValidationFailedException(Array array, int offset, int count)
+        private static Exception GetArraySegmentCtorValidationFailedException(Array? array, int offset, int count)
         {
             if (array == null)
                 return new ArgumentNullException(nameof(array));
@@ -354,17 +355,17 @@ namespace System
             return new InvalidOperationException(GetResourceString(resource));
         }
 
-        private static ArgumentException GetWrongKeyTypeArgumentException(object key, Type targetType)
+        private static ArgumentException GetWrongKeyTypeArgumentException(object? key, Type targetType)
         {
             return new ArgumentException(SR.Format(SR.Arg_WrongType, key, targetType), nameof(key));
         }
 
-        private static ArgumentException GetWrongValueTypeArgumentException(object value, Type targetType)
+        private static ArgumentException GetWrongValueTypeArgumentException(object? value, Type targetType)
         {
             return new ArgumentException(SR.Format(SR.Arg_WrongType, value, targetType), nameof(value));
         }
 
-        private static KeyNotFoundException GetKeyNotFoundException(object key)
+        private static KeyNotFoundException GetKeyNotFoundException(object? key)
         {
             return new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key));
         }
@@ -399,7 +400,7 @@ namespace System
         internal static void IfNullAndNullsAreIllegalThenThrow<T>(object value, ExceptionArgument argName)
         {
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
-            if (!(default(T) == null) && value == null)
+            if (!(default(T)! == null) && value == null) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
                 ThrowHelper.ThrowArgumentNullException(argName);
         }
 

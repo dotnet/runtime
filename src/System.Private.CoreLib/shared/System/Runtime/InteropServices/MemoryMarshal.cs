@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices
                     Debug.Assert(obj is MemoryManager<T>);
                     if (Unsafe.As<MemoryManager<T>>(obj).TryGetArray(out ArraySegment<T> tempArraySegment))
                     {
-                        segment = new ArraySegment<T>(tempArraySegment.Array, tempArraySegment.Offset + index, length);
+                        segment = new ArraySegment<T>(tempArraySegment.Array!, tempArraySegment.Offset + index, length); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                         return true;
                     }
                 }

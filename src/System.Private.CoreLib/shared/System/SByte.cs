@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -29,7 +30,7 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type SByte, this method throws an ArgumentException.
         // 
-        public int CompareTo(object obj)
+        public int CompareTo(object? obj)
         {
             if (obj == null)
             {
@@ -48,7 +49,7 @@ namespace System
         }
 
         // Determines whether two Byte objects are equal.
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is sbyte))
             {
@@ -76,17 +77,17 @@ namespace System
             return Number.FormatInt32(m_value, null, null);
         }
 
-        public string ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider? provider)
         {
             return Number.FormatInt32(m_value, null, provider);
         }
 
-        public string ToString(string format)
+        public string ToString(string? format)
         {
             return ToString(format, null);
         }
 
-        public string ToString(string format, IFormatProvider provider)
+        public string ToString(string? format, IFormatProvider? provider)
         {
             if (m_value < 0 && format != null && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
             {
@@ -96,7 +97,7 @@ namespace System
             return Number.FormatInt32(m_value, format, provider);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             if (m_value < 0 && format.Length > 0 && (format[0] == 'X' || format[0] == 'x'))
             {
@@ -122,7 +123,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static sbyte Parse(string s, IFormatProvider provider)
+        public static sbyte Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Parse((ReadOnlySpan<char>)s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
@@ -133,7 +134,7 @@ namespace System
         // NumberFormatInfo is assumed.
         // 
         [CLSCompliant(false)]
-        public static sbyte Parse(string s, NumberStyles style, IFormatProvider provider)
+        public static sbyte Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
@@ -141,7 +142,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static sbyte Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        public static sbyte Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Parse(s, style, NumberFormatInfo.GetInstance(provider));
@@ -171,7 +172,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static bool TryParse(string s, out sbyte result)
+        public static bool TryParse(string? s, out sbyte result)
         {
             if (s == null)
             {
@@ -189,7 +190,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out sbyte result)
+        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
 
@@ -203,7 +204,7 @@ namespace System
         }
 
         [CLSCompliant(false)]
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out sbyte result)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out sbyte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
@@ -233,77 +234,77 @@ namespace System
         }
 
 
-        bool IConvertible.ToBoolean(IFormatProvider provider)
+        bool IConvertible.ToBoolean(IFormatProvider? provider)
         {
             return Convert.ToBoolean(m_value);
         }
 
-        char IConvertible.ToChar(IFormatProvider provider)
+        char IConvertible.ToChar(IFormatProvider? provider)
         {
             return Convert.ToChar(m_value);
         }
 
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
+        sbyte IConvertible.ToSByte(IFormatProvider? provider)
         {
             return m_value;
         }
 
-        byte IConvertible.ToByte(IFormatProvider provider)
+        byte IConvertible.ToByte(IFormatProvider? provider)
         {
             return Convert.ToByte(m_value);
         }
 
-        short IConvertible.ToInt16(IFormatProvider provider)
+        short IConvertible.ToInt16(IFormatProvider? provider)
         {
             return Convert.ToInt16(m_value);
         }
 
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
+        ushort IConvertible.ToUInt16(IFormatProvider? provider)
         {
             return Convert.ToUInt16(m_value);
         }
 
-        int IConvertible.ToInt32(IFormatProvider provider)
+        int IConvertible.ToInt32(IFormatProvider? provider)
         {
             return m_value;
         }
 
-        uint IConvertible.ToUInt32(IFormatProvider provider)
+        uint IConvertible.ToUInt32(IFormatProvider? provider)
         {
             return Convert.ToUInt32(m_value);
         }
 
-        long IConvertible.ToInt64(IFormatProvider provider)
+        long IConvertible.ToInt64(IFormatProvider? provider)
         {
             return Convert.ToInt64(m_value);
         }
 
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
+        ulong IConvertible.ToUInt64(IFormatProvider? provider)
         {
             return Convert.ToUInt64(m_value);
         }
 
-        float IConvertible.ToSingle(IFormatProvider provider)
+        float IConvertible.ToSingle(IFormatProvider? provider)
         {
             return Convert.ToSingle(m_value);
         }
 
-        double IConvertible.ToDouble(IFormatProvider provider)
+        double IConvertible.ToDouble(IFormatProvider? provider)
         {
             return Convert.ToDouble(m_value);
         }
 
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider? provider)
         {
             return Convert.ToDecimal(m_value);
         }
 
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
         {
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "SByte", "DateTime"));
         }
 
-        object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider? provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

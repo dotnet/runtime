@@ -1533,7 +1533,7 @@ namespace System.Text
             ICustomFormatter? cf = null;
             if (provider != null)
             {
-                cf = (ICustomFormatter)provider.GetFormat(typeof(ICustomFormatter));
+                cf = (ICustomFormatter?)provider.GetFormat(typeof(ICustomFormatter));
             }
 
             while (true)

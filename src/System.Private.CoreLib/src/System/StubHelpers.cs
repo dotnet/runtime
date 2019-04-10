@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
+#nullable enable
 namespace System.StubHelpers
 {
     using System.Text;
@@ -103,7 +103,7 @@ namespace System.StubHelpers
             return (IntPtr)pbNativeBuffer;
         }
 
-        internal static unsafe string ConvertToManaged(IntPtr cstr)
+        internal static unsafe string? ConvertToManaged(IntPtr cstr)
         {
             if (IntPtr.Zero == cstr)
                 return null;
@@ -155,7 +155,7 @@ namespace System.StubHelpers
             return (IntPtr)pbNativeBuffer;
         }
 
-        internal static unsafe string ConvertToManaged(IntPtr cstr)
+        internal static unsafe string? ConvertToManaged(IntPtr cstr)
         {
             if (IntPtr.Zero == cstr)
                 return null;
@@ -277,7 +277,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe string ConvertToManaged(IntPtr bstr)
+        internal static unsafe string? ConvertToManaged(IntPtr bstr)
         {
             if (IntPtr.Zero == bstr)
             {
@@ -371,7 +371,7 @@ namespace System.StubHelpers
             return new IntPtr(pNative);
         }
 
-        internal static unsafe string ConvertToManaged(IntPtr pNative, int cch)
+        internal static unsafe string? ConvertToManaged(IntPtr pNative, int cch)
         {
             if (IntPtr.Zero == pNative)
             {
@@ -399,7 +399,7 @@ namespace System.StubHelpers
                 return IntPtr.Zero;
             }
 
-            byte[] bytes = null;
+            byte[]? bytes = null;
             int nb = 0;
 
             if (strManaged.Length > 0)
@@ -410,7 +410,7 @@ namespace System.StubHelpers
             return Interop.OleAut32.SysAllocStringByteLen(bytes, (uint)nb);
         }
 
-        internal static unsafe string ConvertToManaged(IntPtr bstr)
+        internal static unsafe string? ConvertToManaged(IntPtr bstr)
         {
             if (IntPtr.Zero == bstr)
             {
@@ -442,7 +442,7 @@ namespace System.StubHelpers
             return IntPtr.Zero;
         }
 
-        internal static string ConvertToManaged(IntPtr bstr)
+        internal static string? ConvertToManaged(IntPtr bstr)
         {
             Debug.Fail("NYI");
             return null;
@@ -695,7 +695,7 @@ namespace System.StubHelpers
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void ConvertContentsToNative(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
 
-        internal static unsafe void ConvertContentsToNative_DateTime(ref DateTimeOffset[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToNative_DateTime(ref DateTimeOffset[]? managedArray, IntPtr pNativeHome)
         {
             if (managedArray != null)
             {
@@ -707,7 +707,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertContentsToNative_Type(ref System.Type[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToNative_Type(ref System.Type[]? managedArray, IntPtr pNativeHome)
         {
             if (managedArray != null)
             {
@@ -719,7 +719,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertContentsToNative_Exception(ref Exception[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToNative_Exception(ref Exception[]? managedArray, IntPtr pNativeHome)
         {
             if (managedArray != null)
             {
@@ -731,7 +731,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertContentsToNative_Nullable<T>(ref Nullable<T>[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToNative_Nullable<T>(ref Nullable<T>[]? managedArray, IntPtr pNativeHome)
             where T : struct
         {
             if (managedArray != null)
@@ -744,7 +744,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertContentsToNative_KeyValuePair<K, V>(ref KeyValuePair<K, V>[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToNative_KeyValuePair<K, V>(ref KeyValuePair<K, V>[]? managedArray, IntPtr pNativeHome)
         {
             if (managedArray != null)
             {
@@ -762,7 +762,7 @@ namespace System.StubHelpers
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void ConvertContentsToManaged(IntPtr pMarshalState, ref object pManagedHome, IntPtr pNativeHome);
 
-        internal static unsafe void ConvertContentsToManaged_DateTime(ref DateTimeOffset[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToManaged_DateTime(ref DateTimeOffset[]? managedArray, IntPtr pNativeHome)
         {
             if (managedArray != null)
             {
@@ -774,7 +774,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertContentsToManaged_Type(ref System.Type[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToManaged_Type(ref System.Type?[]? managedArray, IntPtr pNativeHome)
         {
             if (managedArray != null)
             {
@@ -786,7 +786,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertContentsToManaged_Exception(ref Exception[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToManaged_Exception(ref Exception?[]? managedArray, IntPtr pNativeHome)
         {
             if (managedArray != null)
             {
@@ -798,7 +798,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertContentsToManaged_Nullable<T>(ref Nullable<T>[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToManaged_Nullable<T>(ref Nullable<T>[]? managedArray, IntPtr pNativeHome)
             where T : struct
         {
             if (managedArray != null)
@@ -811,7 +811,7 @@ namespace System.StubHelpers
             }
         }
 
-        internal static unsafe void ConvertContentsToManaged_KeyValuePair<K, V>(ref KeyValuePair<K, V>[] managedArray, IntPtr pNativeHome)
+        internal static unsafe void ConvertContentsToManaged_KeyValuePair<K, V>(ref KeyValuePair<K, V>[]? managedArray, IntPtr pNativeHome)
         {
             if (managedArray != null)
             {
@@ -883,10 +883,10 @@ namespace System.StubHelpers
         private BackPropAction backPropAction;
 
         // The managed layout type for BackPropAction.Layout.
-        private Type layoutType;
+        private Type? layoutType;
 
         // Cleanup list to be destroyed when clearing the native view (for layouts with SafeHandles).
-        private CleanupWorkListElement cleanupWorkList;
+        private CleanupWorkListElement? cleanupWorkList;
 
         [Flags]
         internal enum AsAnyFlags
@@ -1129,8 +1129,8 @@ namespace System.StubHelpers
             }
             else
             {
-                string strValue;
-                StringBuilder sbValue;
+                string? strValue;
+                StringBuilder? sbValue;
 
                 if ((strValue = pManagedHome as string) != null)
                 {
@@ -1333,7 +1333,7 @@ namespace System.StubHelpers
             Marshal.ThrowExceptionForHR(hrCreate, new IntPtr(-1));
         }
 
-        internal static unsafe void ConvertToManaged(TypeNameNative* pNativeType, ref System.Type managedType)
+        internal static unsafe void ConvertToManaged(TypeNameNative* pNativeType, ref System.Type? managedType)
         {
             if (!Environment.IsWinRTSupported)
             {
@@ -1389,14 +1389,14 @@ namespace System.StubHelpers
             return ex.HResult;
         }
 
-        internal static Exception ConvertToManaged(int hr)
+        internal static Exception? ConvertToManaged(int hr)
         {
             if (!Environment.IsWinRTSupported)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_WinRT);
             }
 
-            Exception e = null;
+            Exception? e = null;
             if (hr < 0)
             {
                 e = StubHelpers.InternalGetCOMHRExceptionObject(hr, IntPtr.Zero, null, /* fForWinRT */ true);
@@ -1458,13 +1458,13 @@ namespace System.StubHelpers
 
     internal abstract class CleanupWorkListElement
     {
-        private CleanupWorkListElement m_Next;
+        private CleanupWorkListElement? m_Next;
         protected abstract void DestroyCore();
 
         public void Destroy()
         {
             DestroyCore();
-            CleanupWorkListElement next = m_Next;
+            CleanupWorkListElement? next = m_Next;
             while (next != null)
             {
                 next.DestroyCore();
@@ -1569,7 +1569,7 @@ namespace System.StubHelpers
             CleanupWorkListElement.AddToCleanupList(ref pCleanupWorkList, element);
         }
 
-        internal static void DestroyCleanupList(ref CleanupWorkListElement pCleanupWorkList)
+        internal static void DestroyCleanupList(ref CleanupWorkListElement? pCleanupWorkList)
         {
             if (pCleanupWorkList != null)
             {
@@ -1604,7 +1604,7 @@ namespace System.StubHelpers
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Exception InternalGetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object pThis, bool fForWinRT);
+        internal static extern Exception InternalGetCOMHRExceptionObject(int hr, IntPtr pCPCMD, object? pThis, bool fForWinRT);
 
 #endif // FEATURE_COMINTEROP
 
@@ -1623,7 +1623,7 @@ namespace System.StubHelpers
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pHandle, ExceptionResource.ArgumentNull_SafeHandle);
             }
 
-            pHandle.DangerousAddRef(ref success);
+            pHandle!.DangerousAddRef(ref success); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             return pHandle.DangerousGetHandle();
         }
 
@@ -1637,7 +1637,7 @@ namespace System.StubHelpers
 
             try
             {
-                pHandle.DangerousRelease();
+                pHandle!.DangerousRelease(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
             catch
             {
@@ -1725,7 +1725,7 @@ namespace System.StubHelpers
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement pCleanupWorkList);
+        internal static extern unsafe void FmtClassUpdateNativeInternal(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe void FmtClassUpdateCLRInternal(object obj, byte* pNative);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
