@@ -86,11 +86,9 @@ namespace System.Reflection
         // is returned.
         public override AssemblyName GetName(bool copiedName)
         {
-            AssemblyName an = new AssemblyName();
-
             string codeBase = GetCodeBase(copiedName);
 
-            an.Init(GetSimpleName(),
+            var an = new AssemblyName(GetSimpleName(),
                     GetPublicKey(),
                     null, // public key token
                     GetVersion(),

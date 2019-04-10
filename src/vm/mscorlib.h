@@ -120,7 +120,7 @@ DEFINE_FIELD_U(_hashAlgorithmForControl, AssemblyNameBaseObject, _hashAlgorithmF
 DEFINE_FIELD_U(_versionCompatibility,      AssemblyNameBaseObject, _versionCompatibility)
 DEFINE_FIELD_U(_flags,                     AssemblyNameBaseObject, _flags)
 DEFINE_CLASS(ASSEMBLY_NAME,         Reflection,             AssemblyName)
-DEFINE_METHOD(ASSEMBLY_NAME,        INIT,                   Init,                      IM_Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_SNKP_RetV)
+DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_SNKP_RetV)
 DEFINE_METHOD(ASSEMBLY_NAME,        SET_PROC_ARCH_INDEX,    SetProcArchIndex,          IM_PEK_IFM_RetV)
 
 DEFINE_CLASS_U(System,                 Version,                    VersionBaseObject)
