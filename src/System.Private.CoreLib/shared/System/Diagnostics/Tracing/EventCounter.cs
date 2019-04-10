@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tracing
     /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
     /// which shows tests, which are also useful in seeing actual use.  
     /// </summary>
-    public partial class EventCounter : BaseCounter
+    public partial class EventCounter : DiagnosticCounter
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="EventCounter"/> class.
@@ -37,8 +37,8 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventSource">The event source.</param>
         public EventCounter(string name, EventSource eventSource) : base(name, eventSource)
         {
-            _min = float.PositiveInfinity;
-            _max = float.NegativeInfinity;
+            _min = double.PositiveInfinity;
+            _max = double.NegativeInfinity;
 
             InitializeBuffer();
         }
@@ -50,21 +50,26 @@ namespace System.Diagnostics.Tracing
         /// <param name="value">The value.</param>
         public void WriteMetric(float value)
         {
+            Enqueue((double)value);
+        }
+
+        public void WriteMetric(double value)
+        {
             Enqueue(value);
         }
 
-        public override string ToString() => $"EventCounter '{_name}' Count {_count} Mean {(((double)_sum) / _count).ToString("n3")}";
+        public override string ToString() => $"EventCounter '{Name}' Count {_count} Mean {(_sum / _count).ToString("n3")}";
 
         #region Statistics Calculation
 
         // Statistics
         private int _count;
-        private float _sum;
-        private float _sumSquared;
-        private float _min;
-        private float _max;
+        private double _sum;
+        private double _sumSquared;
+        private double _min;
+        private double _max;
 
-        internal void OnMetricWritten(float value)
+        internal void OnMetricWritten(double value)
         {
             Debug.Assert(Monitor.IsEntered(MyLock));
             _sum += value;
@@ -83,14 +88,13 @@ namespace System.Diagnostics.Tracing
             lock (MyLock)
             {
                 Flush();
-                EventCounterPayload payload = new EventCounterPayload();
-                payload.Name = _name;
+                CounterPayload payload = new CounterPayload();
                 payload.Count = _count;
                 payload.IntervalSec = intervalSec;
                 if (0 < _count)
                 {
                     payload.Mean = _sum / _count;
-                    payload.StandardDeviation = (float)Math.Sqrt(_sumSquared / _count - _sum * _sum / _count / _count);
+                    payload.StandardDeviation = Math.Sqrt(_sumSquared / _count - _sum * _sum / _count / _count);
                 }
                 else
                 {
@@ -99,8 +103,12 @@ namespace System.Diagnostics.Tracing
                 }
                 payload.Min = _min;
                 payload.Max = _max;
+                
+                payload.Metadata = GetMetadataString();
+                payload.DisplayName = DisplayName;
+                payload.Name = Name;
                 ResetStatistics();
-                _eventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new EventCounterPayloadType(payload));
+                EventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new CounterPayloadType(payload));
             }
         }
         private void ResetStatistics()
@@ -109,35 +117,35 @@ namespace System.Diagnostics.Tracing
             _count = 0;
             _sum = 0;
             _sumSquared = 0;
-            _min = float.PositiveInfinity;
-            _max = float.NegativeInfinity;
+            _min = double.PositiveInfinity;
+            _max = double.NegativeInfinity;
         }
 
         #endregion // Statistics Calculation
 
         // Values buffering
         private const int BufferedSize = 10;
-        private const float UnusedBufferSlotValue = float.NegativeInfinity;
+        private const double UnusedBufferSlotValue = double.NegativeInfinity;
         private const int UnsetIndex = -1;
-        private volatile float[] _bufferedValues;
+        private volatile double[] _bufferedValues;
         private volatile int _bufferedValuesIndex;
 
         private void InitializeBuffer()
         {
-            _bufferedValues = new float[BufferedSize];
+            _bufferedValues = new double[BufferedSize];
             for (int i = 0; i < _bufferedValues.Length; i++)
             {
                 _bufferedValues[i] = UnusedBufferSlotValue;
             }
         }
 
-        protected void Enqueue(float value)
+        private void Enqueue(double value)
         {
             // It is possible that two threads read the same bufferedValuesIndex, but only one will be able to write the slot, so that is okay.
             int i = _bufferedValuesIndex;
             while (true)
             {
-                float result = Interlocked.CompareExchange(ref _bufferedValues[i], value, UnusedBufferSlotValue);
+                double result = Interlocked.CompareExchange(ref _bufferedValues[i], value, UnusedBufferSlotValue);
                 i++;
                 if (_bufferedValues.Length <= i)
                 {
@@ -178,10 +186,10 @@ namespace System.Diagnostics.Tracing
     /// This is the payload that is sent in the with EventSource.Write
     /// </summary>
     [EventData]
-    class EventCounterPayloadType
+    class CounterPayloadType
     {
-        public EventCounterPayloadType(EventCounterPayload payload) { Payload = payload; }
-        public EventCounterPayload Payload { get; set; }
+        public CounterPayloadType(CounterPayload payload) { Payload = payload; }
+        public CounterPayload Payload { get; set; }
     }
 
 }
