@@ -1582,10 +1582,10 @@ namespace System
         private readonly struct SorterObjectArray
         {
             private readonly object[] keys;
-            private readonly object[]? items;
+            private readonly object?[]? items;
             private readonly IComparer comparer;
 
-            internal SorterObjectArray(object[] keys, object[]? items, IComparer comparer)
+            internal SorterObjectArray(object[] keys, object?[]? items, IComparer comparer)
             {
                 this.keys = keys;
                 this.items = items;
@@ -1737,7 +1737,7 @@ namespace System
             private void DownHeap(int i, int n, int lo)
             {
                 object d = keys[lo + i - 1];
-                object dt = (items != null) ? items[lo + i - 1] : null!;
+                object? dt = (items != null) ? items[lo + i - 1] : null;
                 int child;
                 while (i <= n / 2)
                 {
@@ -1761,12 +1761,13 @@ namespace System
             private void InsertionSort(int lo, int hi)
             {
                 int i, j;
-                object t, ti;
+                object t;
+                object? ti;
                 for (i = lo; i < hi; i++)
                 {
                     j = i;
                     t = keys[i + 1];
-                    ti = (items != null) ? items[i + 1] : null!;
+                    ti = (items != null) ? items[i + 1] : null;
                     while (j >= lo && comparer.Compare(t, keys[j]) < 0)
                     {
                         keys[j + 1] = keys[j];
