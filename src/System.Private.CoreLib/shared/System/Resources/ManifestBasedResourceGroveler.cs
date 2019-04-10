@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 /*============================================================
 **
 ** 
@@ -51,14 +52,14 @@ namespace System.Resources
             _mediator = mediator;
         }
 
-        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
+        public ResourceSet? GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
             Debug.Assert(localResourceSets != null, "localResourceSets shouldn't be null; check caller");
 
-            ResourceSet rs = null;
-            Stream stream = null;
-            Assembly satellite = null;
+            ResourceSet? rs = null;
+            Stream? stream = null;
+            Assembly? satellite = null;
 
             // 1. Fixups for ultimate fallbacks
             CultureInfo lookForCulture = UltimateFallbackFixup(culture);
@@ -106,6 +107,7 @@ namespace System.Resources
             // 4a. Found a stream; create a ResourceSet if possible
             if (createIfNotExists && stream != null && rs == null)
             {
+                Debug.Assert(satellite != null, "satellite should not be null when stream is set");
                 rs = CreateResourceSet(stream, satellite);
             }
             else if (stream == null && tryParents)
@@ -127,6 +129,7 @@ namespace System.Resources
 
             // If our neutral resources were written in this culture AND we know the main assembly
             // does NOT contain neutral resources, don't probe for this satellite.
+            Debug.Assert(_mediator.NeutralResourcesCulture != null);
             if (lookForCulture.Name == _mediator.NeutralResourcesCulture.Name &&
                 _mediator.FallbackLoc == UltimateResourceFallbackLocation.MainAssembly)
             {
@@ -197,7 +200,7 @@ namespace System.Resources
                 if (bytes == ResourceManager.MagicNumber)
                 {
                     int resMgrHeaderVersion = br.ReadInt32();
-                    string readerTypeName = null, resSetTypeName = null;
+                    string? readerTypeName = null, resSetTypeName = null;
                     if (resMgrHeaderVersion == ResourceManager.HeaderVersionNumber)
                     {
                         br.ReadInt32();  // We don't want the number of bytes to skip.
@@ -222,7 +225,7 @@ namespace System.Resources
                     {
                         // resMgrHeaderVersion is older than this ResMgr version.
                         // We should add in backwards compatibility support here.
-
+                        Debug.Assert(_mediator.MainAssembly != null);
                         throw new NotSupportedException(SR.Format(SR.NotSupported_ObsoleteResourcesFile, _mediator.MainAssembly.GetName().Name));
                     }
 
@@ -292,7 +295,7 @@ namespace System.Resources
                 args[1] = assembly;
                 try
                 {
-                    ResourceSet rs = null;
+                    ResourceSet? rs = null;
                     // Add in a check for a constructor taking in an assembly first.
                     try
                     {
@@ -314,12 +317,12 @@ namespace System.Resources
             }
         }
 
-        private Stream GetManifestResourceStream(Assembly satellite, string fileName)
+        private Stream? GetManifestResourceStream(Assembly satellite, string fileName)
         {
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
 
-            Stream stream = satellite.GetManifestResourceStream(_mediator.LocationInfo, fileName);
+            Stream? stream = satellite.GetManifestResourceStream(_mediator.LocationInfo, fileName);
             if (stream == null)
             {
                 stream = CaseInsensitiveManifestResourceStreamLookup(satellite, fileName);
@@ -332,19 +335,19 @@ namespace System.Resources
         // case-insensitive lookup rules.  Yes, this is slow.  The metadata
         // dev lead refuses to make all assembly manifest resource lookups case-insensitive,
         // even optionally case-insensitive.
-        private Stream CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
+        private Stream? CaseInsensitiveManifestResourceStreamLookup(Assembly satellite, string name)
         {
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(name != null, "name shouldn't be null; check caller");
 
-            string nameSpace = _mediator.LocationInfo?.Namespace;
+            string? nameSpace = _mediator.LocationInfo?.Namespace;
 
             char c = Type.Delimiter;
             string resourceName = nameSpace != null && name != null ?
                 string.Concat(nameSpace, new ReadOnlySpan<char>(ref c, 1), name) :
                 string.Concat(nameSpace, name);
 
-            string canonicalName = null;
+            string? canonicalName = null;
             foreach (string existingName in satellite.GetManifestResourceNames())
             {
                 if (string.Equals(existingName, resourceName, StringComparison.InvariantCultureIgnoreCase))
@@ -368,15 +371,16 @@ namespace System.Resources
             return satellite.GetManifestResourceStream(canonicalName);
         }
 
-        private Assembly GetSatelliteAssembly(CultureInfo lookForCulture)
+        private Assembly? GetSatelliteAssembly(CultureInfo lookForCulture)
         {
+            Debug.Assert(_mediator.MainAssembly != null);
             if (!_mediator.LookedForSatelliteContractVersion)
             {
                 _mediator.SatelliteContractVersion = _mediator.ObtainSatelliteContractVersion(_mediator.MainAssembly);
                 _mediator.LookedForSatelliteContractVersion = true;
             }
 
-            Assembly satellite = null;
+            Assembly? satellite = null;
 
             // Look up the satellite assembly, but don't let problems
             // like a partially signed satellite assembly stop us from
@@ -431,6 +435,7 @@ namespace System.Resources
 
         private void HandleSatelliteMissing()
         {
+            Debug.Assert(_mediator.MainAssembly != null);
             string satAssemName = _mediator.MainAssembly.GetName().Name + ".resources.dll";
             if (_mediator.SatelliteContractVersion != null)
             {
@@ -447,6 +452,7 @@ namespace System.Resources
             }
             satAssemName += ", PublicKeyToken=" + publicKeyTok;
 
+            Debug.Assert(_mediator.NeutralResourcesCulture != null);
             string missingCultureName = _mediator.NeutralResourcesCulture.Name;
             if (missingCultureName.Length == 0)
             {
@@ -457,6 +463,7 @@ namespace System.Resources
 
         private void HandleResourceStreamMissing(string fileName)
         {
+            Debug.Assert(_mediator.BaseName != null);
             // Keep people from bothering me about resources problems
             if (_mediator.MainAssembly == typeof(object).Assembly && _mediator.BaseName.Equals(System.CoreLib.Name))
             {
@@ -473,6 +480,7 @@ namespace System.Resources
             if (_mediator.LocationInfo != null && _mediator.LocationInfo.Namespace != null)
                 resName = _mediator.LocationInfo.Namespace + Type.Delimiter;
             resName += fileName;
+            Debug.Assert(_mediator.MainAssembly != null);
             throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_NoNeutralAsm, resName, _mediator.MainAssembly.GetName().Name));
         }
     }
