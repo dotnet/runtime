@@ -961,10 +961,10 @@ namespace System
         public static TimeZoneInfo CreateCustomTimeZone(
             string id,
             TimeSpan baseUtcOffset,
-            string displayName,
-            string standardDisplayName,
-            string daylightDisplayName,
-            AdjustmentRule[] adjustmentRules)
+            string? displayName,
+            string? standardDisplayName,
+            string? daylightDisplayName,
+            AdjustmentRule[]? adjustmentRules)
         {
             return CreateCustomTimeZone(
                 id,

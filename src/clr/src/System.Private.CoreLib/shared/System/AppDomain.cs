@@ -364,10 +364,10 @@ namespace System
             return Activator.CreateInstanceFrom(assemblyFile, typeName, activationAttributes);
         }
 
-        public object CreateInstanceFromAndUnwrap(string assemblyFile, string typeName)
+        public object? CreateInstanceFromAndUnwrap(string assemblyFile, string typeName)
         {
             ObjectHandle? oh = CreateInstanceFrom(assemblyFile, typeName);
-            return oh?.Unwrap()!; 
+            return oh?.Unwrap();
         }
 
         public object? CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
@@ -380,13 +380,13 @@ namespace System
                                                  args, 
                                                  culture, 
                                                  activationAttributes);
-            return oh?.Unwrap()!;
+            return oh?.Unwrap();
         }
 
         public object? CreateInstanceFromAndUnwrap(string assemblyFile, string typeName, object?[]? activationAttributes)
         {
             ObjectHandle? oh = CreateInstanceFrom(assemblyFile, typeName, activationAttributes);            
-            return oh?.Unwrap()!;
+            return oh?.Unwrap();
         }
 
         public IPrincipal? GetThreadPrincipal()
