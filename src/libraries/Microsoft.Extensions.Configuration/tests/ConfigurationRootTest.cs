@@ -55,6 +55,27 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Empty(changeToken.Callbacks);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ChainedConfigurationIsDisposed(bool shouldDispose)
+        {
+            var provider = new DisposableTestConfigurationProvider("foo", "foo-value");
+            var chainedConfig = new ConfigurationRoot(new IConfigurationProvider[] {
+                provider
+            });
+
+            var config = new ConfigurationBuilder()
+                .AddConfiguration(chainedConfig, shouldDisposeConfiguration: shouldDispose)
+                .Build();
+
+            Assert.False(provider.IsDisposed);
+
+            (config as IDisposable).Dispose();
+
+            Assert.Equal(shouldDispose, provider.IsDisposed);
+        }
+
         private class TestConfigurationProvider : ConfigurationProvider
         {
             public TestConfigurationProvider(string key, string value)
