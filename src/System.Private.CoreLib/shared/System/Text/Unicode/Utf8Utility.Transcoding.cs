@@ -161,7 +161,7 @@ namespace System.Text.Unicode
                 // Next, try stripping off ASCII bytes one at a time.
                 // We only handle up to three ASCII bytes here since we handled the four ASCII byte case above.
 
-                if (DWordFirstByteIsAscii(thisDWord))
+                if (UInt32FirstByteIsAscii(thisDWord))
                 {
                     if (outputCharsRemaining >= 3)
                     {
@@ -173,13 +173,13 @@ namespace System.Text.Unicode
                         nuint adjustment = 1;
                         pOutputBuffer[0] = (char)(byte)thisDWordLittleEndian;
 
-                        if (DWordSecondByteIsAscii(thisDWord))
+                        if (UInt32SecondByteIsAscii(thisDWord))
                         {
                             adjustment++;
                             thisDWordLittleEndian >>= 8;
                             pOutputBuffer[1] = (char)(byte)thisDWordLittleEndian;
 
-                            if (DWordThirdByteIsAscii(thisDWord))
+                            if (UInt32ThirdByteIsAscii(thisDWord))
                             {
                                 adjustment++;
                                 thisDWordLittleEndian >>= 8;
@@ -207,7 +207,7 @@ namespace System.Text.Unicode
                         *pOutputBuffer++ = (char)(byte)thisDWordLittleEndian;
                         outputCharsRemaining--;
 
-                        if (DWordSecondByteIsAscii(thisDWord))
+                        if (UInt32SecondByteIsAscii(thisDWord))
                         {
                             if (outputCharsRemaining == 0)
                             {
@@ -230,7 +230,7 @@ namespace System.Text.Unicode
 
                             Debug.Assert(outputCharsRemaining == 1);
 
-                            if (DWordThirdByteIsAscii(thisDWord))
+                            if (UInt32ThirdByteIsAscii(thisDWord))
                             {
                                 goto OutputBufferTooSmall;
                             }
@@ -263,12 +263,12 @@ namespace System.Text.Unicode
 
                 // Check the 2-byte case.
 
-                if (DWordBeginsWithUtf8TwoByteMask(thisDWord))
+                if (UInt32BeginsWithUtf8TwoByteMask(thisDWord))
                 {
                     // Per Table 3-7, valid sequences are:
                     // [ C2..DF ] [ 80..BF ]
 
-                    if (DWordBeginsWithOverlongUtf8TwoByteSequence(thisDWord))
+                    if (UInt32BeginsWithOverlongUtf8TwoByteSequence(thisDWord))
                     {
                         goto Error;
                     }
@@ -283,8 +283,8 @@ namespace System.Text.Unicode
                     // the value isn't overlong using a single comparison. On big-endian platforms, we'll need
                     // to validate the mask and validate that the sequence isn't overlong as two separate comparisons.
 
-                    if ((BitConverter.IsLittleEndian && DWordEndsWithValidUtf8TwoByteSequenceLittleEndian(thisDWord))
-                        || (!BitConverter.IsLittleEndian && (DWordEndsWithUtf8TwoByteMask(thisDWord) && !DWordEndsWithOverlongUtf8TwoByteSequence(thisDWord))))
+                    if ((BitConverter.IsLittleEndian && UInt32EndsWithValidUtf8TwoByteSequenceLittleEndian(thisDWord))
+                        || (!BitConverter.IsLittleEndian && (UInt32EndsWithUtf8TwoByteMask(thisDWord) && !UInt32EndsWithOverlongUtf8TwoByteSequence(thisDWord))))
                     {
                         // We have two runs of two bytes each.
 
@@ -308,7 +308,7 @@ namespace System.Text.Unicode
 
                             if (BitConverter.IsLittleEndian)
                             {
-                                if (DWordBeginsWithValidUtf8TwoByteSequenceLittleEndian(thisDWord))
+                                if (UInt32BeginsWithValidUtf8TwoByteSequenceLittleEndian(thisDWord))
                                 {
                                     // The next sequence is a valid two-byte sequence.
                                     goto ProcessTwoByteSequenceSkipOverlongFormCheck;
@@ -316,9 +316,9 @@ namespace System.Text.Unicode
                             }
                             else
                             {
-                                if (DWordBeginsWithUtf8TwoByteMask(thisDWord))
+                                if (UInt32BeginsWithUtf8TwoByteMask(thisDWord))
                                 {
-                                    if (DWordBeginsWithOverlongUtf8TwoByteSequence(thisDWord))
+                                    if (UInt32BeginsWithOverlongUtf8TwoByteSequence(thisDWord))
                                     {
                                         goto Error; // The next sequence purports to be a 2-byte sequence but is overlong.
                                     }
@@ -343,9 +343,9 @@ namespace System.Text.Unicode
 
                     uint charToWrite = ExtractCharFromFirstTwoByteSequence(thisDWord); // optimistically compute this now, but don't store until we know dest is large enough
 
-                    if (DWordThirdByteIsAscii(thisDWord))
+                    if (UInt32ThirdByteIsAscii(thisDWord))
                     {
-                        if (DWordFourthByteIsAscii(thisDWord))
+                        if (UInt32FourthByteIsAscii(thisDWord))
                         {
                             if (outputCharsRemaining < 3)
                             {
@@ -426,7 +426,7 @@ namespace System.Text.Unicode
 
             BeforeProcessThreeByteSequence:
 
-                if (DWordBeginsWithUtf8ThreeByteMask(thisDWord))
+                if (UInt32BeginsWithUtf8ThreeByteMask(thisDWord))
                 {
                 ProcessThreeByteSequenceWithCheck:
 
@@ -524,7 +524,7 @@ namespace System.Text.Unicode
                     // in to the text. If this happens strip it off now before seeing if the next character
                     // consists of three code units.
 
-                    if (DWordFourthByteIsAscii(thisDWord))
+                    if (UInt32FourthByteIsAscii(thisDWord))
                     {
                         if (outputCharsRemaining == 0)
                         {
@@ -554,7 +554,7 @@ namespace System.Text.Unicode
                         // marker now and jump directly to three-byte sequence processing if we see one, skipping
                         // all of the logic at the beginning of the loop.
 
-                        if (DWordBeginsWithUtf8ThreeByteMask(thisDWord))
+                        if (UInt32BeginsWithUtf8ThreeByteMask(thisDWord))
                         {
                             goto ProcessThreeByteSequenceWithCheck; // found a three-byte sequence marker; validate and consume
                         }
@@ -579,7 +579,7 @@ namespace System.Text.Unicode
                     // [ F1..F3 ] [ 80..BF ] [ 80..BF ] [ 80..BF ]
                     // [   F4   ] [ 80..8F ] [ 80..BF ] [ 80..BF ]
 
-                    if (!DWordBeginsWithUtf8FourByteMask(thisDWord))
+                    if (!UInt32BeginsWithUtf8FourByteMask(thisDWord))
                     {
                         goto Error;
                     }
