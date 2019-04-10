@@ -2864,11 +2864,13 @@ public:
 #ifdef DEBUG
     void gtDispNode(GenTree* tree, IndentStack* indentStack, __in_z const char* msg, bool isLIR);
 
-    void gtDispVN(GenTree* tree);
     void gtDispConst(GenTree* tree);
     void gtDispLeaf(GenTree* tree, IndentStack* indentStack);
     void gtDispNodeName(GenTree* tree);
     void gtDispRegVal(GenTree* tree);
+    void gtDispZeroFieldSeq(GenTree* tree);
+    void gtDispVN(GenTree* tree);
+    void gtDispCommonEndLine(GenTree* tree);
 
     enum IndentInfo
     {
