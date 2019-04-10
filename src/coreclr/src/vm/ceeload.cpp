@@ -6353,6 +6353,11 @@ static HMODULE GetIJWHostForModule(Module* module)
 
     IMAGE_IMPORT_DESCRIPTOR* importDescriptor = (IMAGE_IMPORT_DESCRIPTOR*)pe->GetDirectoryData(pe->GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_IMPORT));
 
+    if (importDescriptor == nullptr)
+    {
+        return nullptr;
+    }
+
     for(; importDescriptor->Characteristics != 0; importDescriptor++)
     {
         IMAGE_THUNK_DATA* importNameTable = (IMAGE_THUNK_DATA*)pe->GetRvaData(importDescriptor->OriginalFirstThunk);
