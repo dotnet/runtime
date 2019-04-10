@@ -2485,13 +2485,10 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         case TYP_REF:
         {
             assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
+            // Support onle ref(ref(0)), do not support other forms (e.g byref(ref(0)).
             if (tree->TypeGet() == TYP_REF)
             {
                 conValTree = gtNewIconNode(0, TYP_REF);
-            }
-            else
-            {
-                // Do not support such optimization (e.g byref(ref(0)).
             }
         }
         break;
