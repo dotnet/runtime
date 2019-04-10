@@ -422,6 +422,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyKeyFileAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyKeyNameAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyMetadataAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyName.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFlags.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyNameFormatter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\AssemblyProductAttribute.cs" />
