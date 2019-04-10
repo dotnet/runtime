@@ -9244,7 +9244,7 @@ void Compiler::gtDispZeroFieldSeq(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtDispVN: Utility function that prints a tree's ValueNumber: gtVNPair 
+// gtDispVN: Utility function that prints a tree's ValueNumber: gtVNPair
 //
 void Compiler::gtDispVN(GenTree* tree)
 {
@@ -11041,7 +11041,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 
         case GT_CMPXCHG:
             gtDispCommonEndLine(tree);
-\
+
             if (!topOnly)
             {
                 gtDispChild(tree->gtCmpXchg.gtOpLocation, indentStack, IIArc, nullptr, topOnly);
