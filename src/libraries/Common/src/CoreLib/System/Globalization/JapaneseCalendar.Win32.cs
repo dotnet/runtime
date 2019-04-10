@@ -37,7 +37,7 @@ namespace System.Globalization
             try
             {
                 // Need to access registry
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(JapaneseErasHive))
+                using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(JapaneseErasHive))
                 {
                     // Abort if we didn't find anything
                     if (key == null) return null;
@@ -52,7 +52,7 @@ namespace System.Globalization
                         for (int i = 0; i < valueNames.Length; i++)
                         {
                             // See if the era is a valid date
-                            EraInfo? era = GetEraFromValue(valueNames[i], key.GetValue(valueNames[i]).ToString());
+                            EraInfo? era = GetEraFromValue(valueNames[i], key.GetValue(valueNames[i])?.ToString());
 
                             // continue if not valid
                             if (era == null) continue;
