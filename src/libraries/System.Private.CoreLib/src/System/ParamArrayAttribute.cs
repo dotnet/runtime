@@ -11,6 +11,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 namespace System
 {
     [AttributeUsage(AttributeTargets.Parameter, Inherited = true, AllowMultiple = false)]

@@ -150,11 +150,11 @@ namespace System
             }
         }
 
-        internal static object CreateViaDefaultConstructor(Type type)
+        internal static T CreateViaDefaultConstructor<T>()
         {
             try
             {
-                return Activator.CreateInstance(type);
+                return Activator.CreateInstance<T>();
             }
             catch (MissingMethodException)
             {
@@ -183,10 +183,7 @@ namespace System
     [DebuggerDisplay("ThreadSafetyMode={Mode}, IsValueCreated={IsValueCreated}, IsValueFaulted={IsValueFaulted}, Value={ValueForDebugDisplay}")]
     public class Lazy<T>
     {
-        private static T CreateViaDefaultConstructor()
-        {
-            return (T)LazyHelper.CreateViaDefaultConstructor(typeof(T));
-        }
+        private static T CreateViaDefaultConstructor() => LazyHelper.CreateViaDefaultConstructor<T>();
 
         // _state, a volatile reference, is set to null after _value has been set
         private volatile LazyHelper? _state;

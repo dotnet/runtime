@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System
 {
     // The IComparable interface is implemented by classes that support an
@@ -18,7 +19,7 @@ namespace System
         // if this is equal to object, or a value greater than zero
         // if this is greater than object.
         // 
-        int CompareTo(object obj);
+        int CompareTo(object? obj);
     }
 
     // Generic version of IComparable.

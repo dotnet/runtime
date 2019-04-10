@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System
 {
     /// <summary>
@@ -59,7 +60,7 @@ namespace System
 
         public int CompareTo(Char8 other) => this._value.CompareTo(other._value);
 
-        public override bool Equals(object obj) => (obj is Char8 other) && (this == other);
+        public override bool Equals(object? obj) => (obj is Char8 other) && (this == other);
         public bool Equals(Char8 other) => this == other;
 
         public override int GetHashCode() => _value;

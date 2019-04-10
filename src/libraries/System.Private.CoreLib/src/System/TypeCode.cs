@@ -21,6 +21,7 @@
 // of an object is TypeCode.Object, a further instance-of check can be used to
 // determine if the object is one of these values.
 
+#nullable enable
 namespace System
 {
     public enum TypeCode

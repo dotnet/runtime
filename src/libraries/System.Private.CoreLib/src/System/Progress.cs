@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 using System.Threading;
 using System.Diagnostics;
 
@@ -24,7 +24,7 @@ namespace System
         /// <summary>The synchronization context captured upon construction.  This will never be null.</summary>
         private readonly SynchronizationContext _synchronizationContext;
         /// <summary>The handler specified to the constructor.  This may be null.</summary>
-        private readonly Action<T> _handler;
+        private readonly Action<T>? _handler;
         /// <summary>A cached delegate used to post invocation to the synchronization context.</summary>
         private readonly SendOrPostCallback _invokeHandlers;
 
@@ -49,8 +49,7 @@ namespace System
         /// <exception cref="System.ArgumentNullException">The <paramref name="handler"/> is null (Nothing in Visual Basic).</exception>
         public Progress(Action<T> handler) : this()
         {
-            if (handler == null) throw new ArgumentNullException(nameof(handler));
-            _handler = handler;
+            _handler = handler ?? throw new ArgumentNullException(nameof(handler));
         }
 
         /// <summary>Raised for each reported progress value.</summary>
@@ -67,7 +66,7 @@ namespace System
             // If there's no handler, don't bother going through the sync context.
             // Inside the callback, we'll need to check again, in case 
             // an event handler is removed between now and then.
-            Action<T> handler = _handler;
+            Action<T>? handler = _handler;
             EventHandler<T> changedEvent = ProgressChanged;
             if (handler != null || changedEvent != null)
             {
@@ -87,7 +86,7 @@ namespace System
         {
             T value = (T)state;
 
-            Action<T> handler = _handler;
+            Action<T>? handler = _handler;
             EventHandler<T> changedEvent = ProgressChanged;
 
             if (handler != null) handler(value);

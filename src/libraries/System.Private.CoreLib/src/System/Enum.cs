@@ -664,7 +664,7 @@ namespace System
                 Type underlyingType = GetUnderlyingType(enumType);
                 try
                 {
-                    result = ToObject(enumType, Convert.ChangeType(value.ToString(), underlyingType, CultureInfo.InvariantCulture));
+                    result = ToObject(enumType, Convert.ChangeType(value.ToString(), underlyingType, CultureInfo.InvariantCulture)!);
                     return true;
                 }
                 catch (FormatException)

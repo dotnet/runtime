@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Globalization;
@@ -345,7 +346,7 @@ namespace System
         // null is considered to be less than any instance.
         // If object is not of type Decimal, this method throws an ArgumentException.
         // 
-        public int CompareTo(object value)
+        public int CompareTo(object? value)
         {
             if (value == null)
                 return 1;
@@ -373,7 +374,7 @@ namespace System
         // if the given object is a boxed Decimal and its value is equal to the
         // value of this Decimal. Returns false otherwise.
         //
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (value is decimal)
             {
@@ -421,22 +422,22 @@ namespace System
             return Number.FormatDecimal(this, null, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(string format)
+        public string ToString(string? format)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.CurrentInfo);
         }
 
-        public string ToString(IFormatProvider provider)
+        public string ToString(IFormatProvider? provider)
         {
             return Number.FormatDecimal(this, null, NumberFormatInfo.GetInstance(provider));
         }
 
-        public string ToString(string format, IFormatProvider provider)
+        public string ToString(string? format, IFormatProvider? provider)
         {
             return Number.FormatDecimal(this, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatDecimal(this, format, NumberFormatInfo.GetInstance(provider), destination, out charsWritten);
         }
@@ -461,26 +462,26 @@ namespace System
             return Number.ParseDecimal(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-        public static decimal Parse(string s, IFormatProvider provider)
+        public static decimal Parse(string s, IFormatProvider? provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseDecimal(s, NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static decimal Parse(string s, NumberStyles style, IFormatProvider provider)
+        public static decimal Parse(string s, NumberStyles style, IFormatProvider? provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider provider = null)
+        public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Number, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.ParseDecimal(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        public static bool TryParse(string s, out decimal result)
+        public static bool TryParse(string? s, out decimal result)
         {
             if (s == null)
             {
@@ -496,7 +497,7 @@ namespace System
             return Number.TryParseDecimal(s, NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result) == Number.ParsingStatus.OK;
         }
 
-        public static bool TryParse(string s, NumberStyles style, IFormatProvider provider, out decimal result)
+        public static bool TryParse(string? s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
 
@@ -509,7 +510,7 @@ namespace System
             return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider provider, out decimal result)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out decimal result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             return Number.TryParseDecimal(s, style, NumberFormatInfo.GetInstance(provider), out result) == Number.ParsingStatus.OK;
@@ -1048,77 +1049,77 @@ namespace System
             return TypeCode.Decimal;
         }
 
-        bool IConvertible.ToBoolean(IFormatProvider provider)
+        bool IConvertible.ToBoolean(IFormatProvider? provider)
         {
             return Convert.ToBoolean(this);
         }
 
-        char IConvertible.ToChar(IFormatProvider provider)
+        char IConvertible.ToChar(IFormatProvider? provider)
         {
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Decimal", "Char"));
         }
 
-        sbyte IConvertible.ToSByte(IFormatProvider provider)
+        sbyte IConvertible.ToSByte(IFormatProvider? provider)
         {
             return Convert.ToSByte(this);
         }
 
-        byte IConvertible.ToByte(IFormatProvider provider)
+        byte IConvertible.ToByte(IFormatProvider? provider)
         {
             return Convert.ToByte(this);
         }
 
-        short IConvertible.ToInt16(IFormatProvider provider)
+        short IConvertible.ToInt16(IFormatProvider? provider)
         {
             return Convert.ToInt16(this);
         }
 
-        ushort IConvertible.ToUInt16(IFormatProvider provider)
+        ushort IConvertible.ToUInt16(IFormatProvider? provider)
         {
             return Convert.ToUInt16(this);
         }
 
-        int IConvertible.ToInt32(IFormatProvider provider)
+        int IConvertible.ToInt32(IFormatProvider? provider)
         {
             return Convert.ToInt32(this);
         }
 
-        uint IConvertible.ToUInt32(IFormatProvider provider)
+        uint IConvertible.ToUInt32(IFormatProvider? provider)
         {
             return Convert.ToUInt32(this);
         }
 
-        long IConvertible.ToInt64(IFormatProvider provider)
+        long IConvertible.ToInt64(IFormatProvider? provider)
         {
             return Convert.ToInt64(this);
         }
 
-        ulong IConvertible.ToUInt64(IFormatProvider provider)
+        ulong IConvertible.ToUInt64(IFormatProvider? provider)
         {
             return Convert.ToUInt64(this);
         }
 
-        float IConvertible.ToSingle(IFormatProvider provider)
+        float IConvertible.ToSingle(IFormatProvider? provider)
         {
             return Convert.ToSingle(this);
         }
 
-        double IConvertible.ToDouble(IFormatProvider provider)
+        double IConvertible.ToDouble(IFormatProvider? provider)
         {
             return Convert.ToDouble(this);
         }
 
-        decimal IConvertible.ToDecimal(IFormatProvider provider)
+        decimal IConvertible.ToDecimal(IFormatProvider? provider)
         {
             return this;
         }
 
-        DateTime IConvertible.ToDateTime(IFormatProvider provider)
+        DateTime IConvertible.ToDateTime(IFormatProvider? provider)
         {
             throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Decimal", "DateTime"));
         }
 
-        object IConvertible.ToType(Type type, IFormatProvider provider)
+        object IConvertible.ToType(Type type, IFormatProvider? provider)
         {
             return Convert.DefaultToType((IConvertible)this, type, provider);
         }

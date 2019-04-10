@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.IO;
-using System.Configuration.Assemblies;
+#nullable enable
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Runtime.Loader;
 using StackCrawlMark = System.Threading.StackCrawlMark;
 
 namespace System.Reflection
@@ -40,7 +37,7 @@ namespace System.Reflection
         // weak. The assembly is loaded into the domain of the caller.
         internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, IntPtr ptrLoadContextBinder)
         {
-            AssemblyName modifiedAssemblyRef = null;
+            AssemblyName? modifiedAssemblyRef = null;
             if (assemblyRef.CodeBase != null)
             {
                 modifiedAssemblyRef = (AssemblyName)assemblyRef.Clone();
@@ -59,9 +56,9 @@ namespace System.Reflection
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
         {
-            RuntimeAssembly retAssembly = null;
+            RuntimeAssembly? retAssembly = null;
             GetExecutingAssemblyNative(JitHelpers.GetStackCrawlMarkHandle(ref stackMark), JitHelpers.GetObjectHandleOnStack(ref retAssembly));
-            return retAssembly;
+            return retAssembly!; // TODO-NULLABLE: Confirm this can never be null
         }
 
         // Get the assembly that the current code is running from.
@@ -88,12 +85,12 @@ namespace System.Reflection
         // internal test hook
         private static bool s_forceNullEntryPoint = false;
 
-        public static Assembly GetEntryAssembly()
+        public static Assembly? GetEntryAssembly()
         {
             if (s_forceNullEntryPoint)
                 return null;
 
-            RuntimeAssembly entryAssembly = null;
+            RuntimeAssembly? entryAssembly = null;
             GetEntryAssemblyNative(JitHelpers.GetObjectHandleOnStack(ref entryAssembly));
             return entryAssembly;
         }
