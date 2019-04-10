@@ -206,12 +206,11 @@ VirtualAllocExNuma(
             {
                 int usedNodeMaskBits = g_highestNumaNode + 1;
                 int nodeMaskLength = (usedNodeMaskBits + sizeof(unsigned long) - 1) / sizeof(unsigned long);
-                unsigned long *nodeMask = (unsigned long*)alloca(nodeMaskLength * sizeof(unsigned long));
-                memset(nodeMask, 0, nodeMaskLength);
+                unsigned long nodeMask[nodeMaskLength];
+                memset(nodeMask, 0, sizeof(nodeMask));
 
                 int index = nndPreferred / sizeof(unsigned long);
-                int mask = ((unsigned long)1) << (nndPreferred & (sizeof(unsigned long) - 1));
-                nodeMask[index] = mask;
+                nodeMask[index] = ((unsigned long)1) << (nndPreferred & (sizeof(unsigned long) - 1));
 
                 int st = mbind(result, dwSize, MPOL_PREFERRED, nodeMask, usedNodeMaskBits, 0);
 
