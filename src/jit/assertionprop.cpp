@@ -2556,9 +2556,20 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
     if (conValTree != nullptr)
     {
-        // Were able to optimize, replace as COMMA(side_effects, const value tree);
+        // Were able to optimize.
         conValTree->gtVNPair = vnPair;
-        return optPrepareTreeForReplacement(tree, conValTree);
+        GenTree* sideEffList = optExtractSideEffListFromConst(tree);
+        if (sideEffList != nullptr)
+        {
+            // Replace as COMMA(side_effects, const value tree);
+            assert((sideEffList->gtFlags & GTF_SIDE_EFFECT) != 0);
+            return gtNewOperNode(GT_COMMA, conValTree->TypeGet(), sideEffList, conValTree);
+        }
+        else
+        {
+            // No side effects, replace as const value tree.
+            return conValTree;
+        }
     }
     else
     {
@@ -4619,79 +4630,45 @@ struct VNAssertionPropVisitorInfo
 };
 
 //------------------------------------------------------------------------------
-// optPrepareTreeForReplacement
+// optExtractSideEffListFromConst
 //    Extracts side effects from a tree so it can be replaced with a comma
-//    separated list of side effects + a new tree.
+//    separated list of side effects + a const tree.
 //
 // Note:
-//    The old and new trees may be the same. In this case, the tree will be
-//    appended to the side-effect list (if present) and returned.
+//   The caller expects that the root of the tree has no side effects and it
+//   won't be extracted. Otherwise the resulting comma tree would be bigger
+//   than the tree before optimization.
 //
 // Arguments:
-//    oldTree  - The tree node to be dropped from the stmt expr.
-//    newTree  - The tree node to append to the side effect list from "oldTree".
+//    tree  - The tree node with constant value to extrace side-effects from.
 //
 // Return Value:
-//    Returns a comma separated list of side-effects present in the "oldTree".
-//    When "newTree" is non-null:
-//      1. When side-effects are present in oldTree, newTree will be appended to the
-//         comma separated list.
-//      2. When no side effects are present, then returns the "newTree" without
-//         any list.
-//    When "newTree" is null:
-//      1. Returns the extracted side-effects from "oldTree"
+//      1. Returns the extracted side-effects from "tree"
 //      2. When no side-effects are present, returns null.
 //
-// Description:
-//    Either the "newTree" is returned when no side effects are present or a comma
-//    separated side effect list with "newTree" is returned.
 //
-GenTree* Compiler::optPrepareTreeForReplacement(GenTree* oldTree, GenTree* newTree)
+GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
 {
-    // If we have side effects, extract them and append newTree to the list.
+    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
+
     GenTree* sideEffList = nullptr;
-    if ((oldTree->gtFlags & GTF_SIDE_EFFECT) != 0)
+
+    // If we have side effects, extract them.
+    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
-        bool ignoreRoot = false;
+        // Do a sanity check to ensure persistent side effects aren't discarded and
+        // tell gtExtractSideEffList to ignore the root of the tree.
+        assert(!gtNodeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS));
 
-        if (oldTree == newTree)
-        {
-            // If the caller passed the same tree as both old and new then it means
-            // that it expects that the root of the tree has no side effects and it
-            // won't be extracted. Otherwise the resulting comma tree would be invalid,
-            // having both op1 and op2 point to the same tree.
-            //
-            // Do a sanity check to ensure persistent side effects aren't discarded and
-            // tell gtExtractSideEffList to ignore the root of the tree.
-            assert(!gtNodeHasSideEffects(oldTree, GTF_PERSISTENT_SIDE_EFFECTS));
-            //
-            // Exception side effects may be ignored if the root is known to be a constant
-            // (e.g. VN may evaluate a DIV/MOD node to a constant and the node may still
-            // have GTF_EXCEPT set, even if it does not actually throw any exceptions).
-            assert(!gtNodeHasSideEffects(oldTree, GTF_EXCEPT) ||
-                   vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(oldTree->gtVNPair)));
+        // Exception side effects may be ignored because the root is known to be a constant
+        // (e.g. VN may evaluate a DIV/MOD node to a constant and the node may still
+        // have GTF_EXCEPT set, even if it does not actually throw any exceptions).
+        bool ignoreRoot = true;
 
-            ignoreRoot = true;
-        }
-
-        gtExtractSideEffList(oldTree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
+        gtExtractSideEffList(tree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
     }
 
-    if (sideEffList != nullptr)
-    {
-        noway_assert((sideEffList->gtFlags & GTF_SIDE_EFFECT) != 0);
-
-        if (newTree != nullptr)
-        {
-            newTree = gtNewOperNode(GT_COMMA, newTree->TypeGet(), sideEffList, newTree);
-        }
-        else
-        {
-            newTree = sideEffList;
-        }
-    }
-
-    return newTree;
+    return sideEffList;
 }
 
 //------------------------------------------------------------------------------
@@ -4750,7 +4727,7 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
     }
 
     // Prepare the tree for replacement so any side effects can be extracted.
-    GenTree* sideEffList = optPrepareTreeForReplacement(test, nullptr);
+    GenTree* sideEffList = optExtractSideEffListFromConst(relop);
 
     // Transform the relop's operands to be both zeroes.
     ValueNum vnZero             = vnStore->VNZeroForType(TYP_INT);
