@@ -14,279 +14,6 @@ namespace System.Text.Unicode
     internal static partial class Utf8Utility
     {
         /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the first two bytes of the buffer are
-        /// an overlong representation of a sequence that should be represented as one byte.
-        /// This method *does not* validate that the sequence matches the appropriate
-        /// 2-byte sequence mask (see <see cref="UInt32BeginsWithUtf8TwoByteMask"/>).
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32BeginsWithOverlongUtf8TwoByteSequence(uint value)
-        {
-            // ASSUMPTION: Caller has already checked the '110yyyyy 10xxxxxx' mask of the input.
-            Debug.Assert(UInt32BeginsWithUtf8TwoByteMask(value));
-
-            // Per Table 3-7, first byte of two-byte sequence must be within range C2 .. DF.
-            // Since we already validated it's 80 <= ?? <= DF (per mask check earlier), now only need
-            // to check that it's < C2.
-
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && ((byte)value < 0xC2u))
-                || (!BitConverter.IsLittleEndian && (value < 0xC200_0000u));
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the first four bytes of the buffer match
-        /// the UTF-8 4-byte sequence mask [ 11110www 10zzzzzz 10yyyyyy 10xxxxxx ]. This
-        /// method *does not* validate that the sequence is well-formed; the caller must
-        /// still perform overlong form or out-of-range checking.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32BeginsWithUtf8FourByteMask(uint value)
-        {
-            // The code in this method is equivalent to the code
-            // below but is slightly more optimized.
-            //
-            // if (BitConverter.IsLittleEndian)
-            // {
-            //     const uint mask = 0xC0C0C0F8U;
-            //     const uint comparand = 0x808080F0U;
-            //     return ((value & mask) == comparand);
-            // }
-            // else
-            // {
-            //     const uint mask = 0xF8C0C0C0U;
-            //     const uint comparand = 0xF0808000U;
-            //     return ((value & mask) == comparand);
-            // }
-
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && (((value - 0x8080_80F0u) & 0xC0C0_C0F8u) == 0))
-                || (!BitConverter.IsLittleEndian && (((value - 0xF080_8000u) & 0xF8C0_C0C0u) == 0));
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the first three bytes of the buffer match
-        /// the UTF-8 3-byte sequence mask [ 1110zzzz 10yyyyyy 10xxxxxx ]. This method *does not*
-        /// validate that the sequence is well-formed; the caller must still perform
-        /// overlong form or surrogate checking.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32BeginsWithUtf8ThreeByteMask(uint value)
-        {
-            // The code in this method is equivalent to the code
-            // below but is slightly more optimized.
-            //
-            // if (BitConverter.IsLittleEndian)
-            // {
-            //     const uint mask = 0x00C0C0F0U;
-            //     const uint comparand = 0x008080E0U;
-            //     return ((value & mask) == comparand);
-            // }
-            // else
-            // {
-            //     const uint mask = 0xF0C0C000U;
-            //     const uint comparand = 0xE0808000U;
-            //     return ((value & mask) == comparand);
-            // }
-
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && (((value - 0x0080_80E0u) & 0x00C0_C0F0u) == 0))
-                || (!BitConverter.IsLittleEndian && (((value - 0xE080_8000u) & 0xF0C0_C000u) == 0));
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the first two bytes of the buffer match
-        /// the UTF-8 2-byte sequence mask [ 110yyyyy 10xxxxxx ]. This method *does not*
-        /// validate that the sequence is well-formed; the caller must still perform
-        /// overlong form checking.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32BeginsWithUtf8TwoByteMask(uint value)
-        {
-            // The code in this method is equivalent to the code
-            // below but is slightly more optimized.
-            //
-            // if (BitConverter.IsLittleEndian)
-            // {
-            //     const uint mask = 0x0000C0E0U;
-            //     const uint comparand = 0x000080C0U;
-            //     return ((value & mask) == comparand);
-            // }
-            // else
-            // {
-            //     const uint mask = 0xE0C00000U;
-            //     const uint comparand = 0xC0800000U;
-            //     return ((value & mask) == comparand);
-            // }
-
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && (((value - 0x0000_80C0u) & 0x0000_C0E0u) == 0))
-                || (!BitConverter.IsLittleEndian && (((value - 0xC080_0000u) & 0xE0C0_0000u) == 0));
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the first two bytes of the buffer are
-        /// an overlong representation of a sequence that should be represented as one byte.
-        /// This method *does not* validate that the sequence matches the appropriate
-        /// 2-byte sequence mask (see <see cref="UInt32BeginsWithUtf8TwoByteMask"/>).
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32EndsWithOverlongUtf8TwoByteSequence(uint value)
-        {
-            // ASSUMPTION: Caller has already checked the '110yyyyy 10xxxxxx' mask of the input.
-            Debug.Assert(UInt32EndsWithUtf8TwoByteMask(value));
-
-            // Per Table 3-7, first byte of two-byte sequence must be within range C2 .. DF.
-            // We already validated that it's 80 .. DF (per mask check earlier).
-            // C2 = 1100 0010
-            // DF = 1101 1111
-            // This means that we can AND the leading byte with the mask 0001 1110 (1E),
-            // and if the result is zero the sequence is overlong.
-
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && ((value & 0x001E_0000u) == 0))
-                || (!BitConverter.IsLittleEndian && ((value & 0x1E00u) == 0));
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the last two bytes of the buffer match
-        /// the UTF-8 2-byte sequence mask [ 110yyyyy 10xxxxxx ]. This method *does not*
-        /// validate that the sequence is well-formed; the caller must still perform
-        /// overlong form checking.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32EndsWithUtf8TwoByteMask(uint value)
-        {
-            // The code in this method is equivalent to the code
-            // below but is slightly more optimized.
-            //
-            // if (BitConverter.IsLittleEndian)
-            // {
-            //     const uint mask = 0xC0E00000U;
-            //     const uint comparand = 0x80C00000U;
-            //     return ((value & mask) == comparand);
-            // }
-            // else
-            // {
-            //     const uint mask = 0x0000E0C0U;
-            //     const uint comparand = 0x0000C080U;
-            //     return ((value & mask) == comparand);
-            // }
-
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && (((value - 0x80C0_0000u) & 0xC0E0_0000u) == 0))
-                || (!BitConverter.IsLittleEndian && (((value - 0x0000_C080u) & 0x0000_E0C0u) == 0));
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD on a little-endian machine,
-        /// returns <see langword="true"/> iff the first two bytes of the buffer are a well-formed
-        /// UTF-8 two-byte sequence. This wraps the mask check and the overlong check into a
-        /// single operation. Returns <see langword="false"/> if running on a big-endian machine.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32BeginsWithValidUtf8TwoByteSequenceLittleEndian(uint value)
-        {
-            // Per Table 3-7, valid 2-byte sequences are [ C2..DF ] [ 80..BF ].
-            // In little-endian, that would be represented as:
-            // [ ######## ######## 10xxxxxx 110yyyyy ].
-            // Due to the little-endian representation we can perform a trick by ANDing the low
-            // WORD with the bitmask [ 11000000 11111111 ] and checking that the value is within
-            // the range [ 10000000_11000010, 10000000_11011111 ]. This performs both the
-            // 2-byte-sequence bitmask check and overlong form validation with one comparison.
-
-            Debug.Assert(BitConverter.IsLittleEndian);
-
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && UnicodeUtility.IsInRangeInclusive(value & 0xC0FFu, 0x80C2u, 0x80DFu))
-                || (!BitConverter.IsLittleEndian && false);
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD on a little-endian machine,
-        /// returns <see langword="true"/> iff the last two bytes of the buffer are a well-formed
-        /// UTF-8 two-byte sequence. This wraps the mask check and the overlong check into a
-        /// single operation. Returns <see langword="false"/> if running on a big-endian machine.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32EndsWithValidUtf8TwoByteSequenceLittleEndian(uint value)
-        {
-            // See comments in UInt32BeginsWithValidUtf8TwoByteSequenceLittleEndian.
-
-            Debug.Assert(BitConverter.IsLittleEndian);
-
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && UnicodeUtility.IsInRangeInclusive(value & 0xC0FF_0000u, 0x80C2_0000u, 0x80DF_0000u))
-                || (!BitConverter.IsLittleEndian && false);
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the first byte of the buffer is ASCII.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32FirstByteIsAscii(uint value)
-        {
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && ((value & 0x80u) == 0))
-                || (!BitConverter.IsLittleEndian && ((int)value >= 0));
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the fourth byte of the buffer is ASCII.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32FourthByteIsAscii(uint value)
-        {
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && ((int)value >= 0))
-                || (!BitConverter.IsLittleEndian && ((value & 0x80u) == 0));
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the second byte of the buffer is ASCII.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32SecondByteIsAscii(uint value)
-        {
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && ((value & 0x8000u) == 0))
-                || (!BitConverter.IsLittleEndian && ((value & 0x0080_0000u) == 0));
-        }
-
-        /// <summary>
-        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
-        /// returns <see langword="true"/> iff the third byte of the buffer is ASCII.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool UInt32ThirdByteIsAscii(uint value)
-        {
-            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
-
-            return (BitConverter.IsLittleEndian && ((value & 0x0080_0000u) == 0))
-                || (!BitConverter.IsLittleEndian && ((value & 0x8000u) == 0));
-        }
-
-        /// <summary>
         /// Given a machine-endian DWORD which four bytes of UTF-8 data, interprets the
         /// first three bytes as a three-byte UTF-8 subsequence and returns the UTF-16 representation.
         /// </summary>
@@ -752,6 +479,279 @@ namespace System.Text.Unicode
             {
                 return BinaryPrimitives.ReverseEndianness(value);
             }
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the first two bytes of the buffer are
+        /// an overlong representation of a sequence that should be represented as one byte.
+        /// This method *does not* validate that the sequence matches the appropriate
+        /// 2-byte sequence mask (see <see cref="UInt32BeginsWithUtf8TwoByteMask"/>).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32BeginsWithOverlongUtf8TwoByteSequence(uint value)
+        {
+            // ASSUMPTION: Caller has already checked the '110yyyyy 10xxxxxx' mask of the input.
+            Debug.Assert(UInt32BeginsWithUtf8TwoByteMask(value));
+
+            // Per Table 3-7, first byte of two-byte sequence must be within range C2 .. DF.
+            // Since we already validated it's 80 <= ?? <= DF (per mask check earlier), now only need
+            // to check that it's < C2.
+
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && ((byte)value < 0xC2u))
+                || (!BitConverter.IsLittleEndian && (value < 0xC200_0000u));
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the first four bytes of the buffer match
+        /// the UTF-8 4-byte sequence mask [ 11110www 10zzzzzz 10yyyyyy 10xxxxxx ]. This
+        /// method *does not* validate that the sequence is well-formed; the caller must
+        /// still perform overlong form or out-of-range checking.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32BeginsWithUtf8FourByteMask(uint value)
+        {
+            // The code in this method is equivalent to the code
+            // below but is slightly more optimized.
+            //
+            // if (BitConverter.IsLittleEndian)
+            // {
+            //     const uint mask = 0xC0C0C0F8U;
+            //     const uint comparand = 0x808080F0U;
+            //     return ((value & mask) == comparand);
+            // }
+            // else
+            // {
+            //     const uint mask = 0xF8C0C0C0U;
+            //     const uint comparand = 0xF0808000U;
+            //     return ((value & mask) == comparand);
+            // }
+
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && (((value - 0x8080_80F0u) & 0xC0C0_C0F8u) == 0))
+                || (!BitConverter.IsLittleEndian && (((value - 0xF080_8000u) & 0xF8C0_C0C0u) == 0));
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the first three bytes of the buffer match
+        /// the UTF-8 3-byte sequence mask [ 1110zzzz 10yyyyyy 10xxxxxx ]. This method *does not*
+        /// validate that the sequence is well-formed; the caller must still perform
+        /// overlong form or surrogate checking.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32BeginsWithUtf8ThreeByteMask(uint value)
+        {
+            // The code in this method is equivalent to the code
+            // below but is slightly more optimized.
+            //
+            // if (BitConverter.IsLittleEndian)
+            // {
+            //     const uint mask = 0x00C0C0F0U;
+            //     const uint comparand = 0x008080E0U;
+            //     return ((value & mask) == comparand);
+            // }
+            // else
+            // {
+            //     const uint mask = 0xF0C0C000U;
+            //     const uint comparand = 0xE0808000U;
+            //     return ((value & mask) == comparand);
+            // }
+
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && (((value - 0x0080_80E0u) & 0x00C0_C0F0u) == 0))
+                || (!BitConverter.IsLittleEndian && (((value - 0xE080_8000u) & 0xF0C0_C000u) == 0));
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the first two bytes of the buffer match
+        /// the UTF-8 2-byte sequence mask [ 110yyyyy 10xxxxxx ]. This method *does not*
+        /// validate that the sequence is well-formed; the caller must still perform
+        /// overlong form checking.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32BeginsWithUtf8TwoByteMask(uint value)
+        {
+            // The code in this method is equivalent to the code
+            // below but is slightly more optimized.
+            //
+            // if (BitConverter.IsLittleEndian)
+            // {
+            //     const uint mask = 0x0000C0E0U;
+            //     const uint comparand = 0x000080C0U;
+            //     return ((value & mask) == comparand);
+            // }
+            // else
+            // {
+            //     const uint mask = 0xE0C00000U;
+            //     const uint comparand = 0xC0800000U;
+            //     return ((value & mask) == comparand);
+            // }
+
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && (((value - 0x0000_80C0u) & 0x0000_C0E0u) == 0))
+                || (!BitConverter.IsLittleEndian && (((value - 0xC080_0000u) & 0xE0C0_0000u) == 0));
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the first two bytes of the buffer are
+        /// an overlong representation of a sequence that should be represented as one byte.
+        /// This method *does not* validate that the sequence matches the appropriate
+        /// 2-byte sequence mask (see <see cref="UInt32BeginsWithUtf8TwoByteMask"/>).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32EndsWithOverlongUtf8TwoByteSequence(uint value)
+        {
+            // ASSUMPTION: Caller has already checked the '110yyyyy 10xxxxxx' mask of the input.
+            Debug.Assert(UInt32EndsWithUtf8TwoByteMask(value));
+
+            // Per Table 3-7, first byte of two-byte sequence must be within range C2 .. DF.
+            // We already validated that it's 80 .. DF (per mask check earlier).
+            // C2 = 1100 0010
+            // DF = 1101 1111
+            // This means that we can AND the leading byte with the mask 0001 1110 (1E),
+            // and if the result is zero the sequence is overlong.
+
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && ((value & 0x001E_0000u) == 0))
+                || (!BitConverter.IsLittleEndian && ((value & 0x1E00u) == 0));
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the last two bytes of the buffer match
+        /// the UTF-8 2-byte sequence mask [ 110yyyyy 10xxxxxx ]. This method *does not*
+        /// validate that the sequence is well-formed; the caller must still perform
+        /// overlong form checking.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32EndsWithUtf8TwoByteMask(uint value)
+        {
+            // The code in this method is equivalent to the code
+            // below but is slightly more optimized.
+            //
+            // if (BitConverter.IsLittleEndian)
+            // {
+            //     const uint mask = 0xC0E00000U;
+            //     const uint comparand = 0x80C00000U;
+            //     return ((value & mask) == comparand);
+            // }
+            // else
+            // {
+            //     const uint mask = 0x0000E0C0U;
+            //     const uint comparand = 0x0000C080U;
+            //     return ((value & mask) == comparand);
+            // }
+
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && (((value - 0x80C0_0000u) & 0xC0E0_0000u) == 0))
+                || (!BitConverter.IsLittleEndian && (((value - 0x0000_C080u) & 0x0000_E0C0u) == 0));
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD on a little-endian machine,
+        /// returns <see langword="true"/> iff the first two bytes of the buffer are a well-formed
+        /// UTF-8 two-byte sequence. This wraps the mask check and the overlong check into a
+        /// single operation. Returns <see langword="false"/> if running on a big-endian machine.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32BeginsWithValidUtf8TwoByteSequenceLittleEndian(uint value)
+        {
+            // Per Table 3-7, valid 2-byte sequences are [ C2..DF ] [ 80..BF ].
+            // In little-endian, that would be represented as:
+            // [ ######## ######## 10xxxxxx 110yyyyy ].
+            // Due to the little-endian representation we can perform a trick by ANDing the low
+            // WORD with the bitmask [ 11000000 11111111 ] and checking that the value is within
+            // the range [ 10000000_11000010, 10000000_11011111 ]. This performs both the
+            // 2-byte-sequence bitmask check and overlong form validation with one comparison.
+
+            Debug.Assert(BitConverter.IsLittleEndian);
+
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && UnicodeUtility.IsInRangeInclusive(value & 0xC0FFu, 0x80C2u, 0x80DFu))
+                || (!BitConverter.IsLittleEndian && false);
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD on a little-endian machine,
+        /// returns <see langword="true"/> iff the last two bytes of the buffer are a well-formed
+        /// UTF-8 two-byte sequence. This wraps the mask check and the overlong check into a
+        /// single operation. Returns <see langword="false"/> if running on a big-endian machine.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32EndsWithValidUtf8TwoByteSequenceLittleEndian(uint value)
+        {
+            // See comments in UInt32BeginsWithValidUtf8TwoByteSequenceLittleEndian.
+
+            Debug.Assert(BitConverter.IsLittleEndian);
+
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && UnicodeUtility.IsInRangeInclusive(value & 0xC0FF_0000u, 0x80C2_0000u, 0x80DF_0000u))
+                || (!BitConverter.IsLittleEndian && false);
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the first byte of the buffer is ASCII.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32FirstByteIsAscii(uint value)
+        {
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && ((value & 0x80u) == 0))
+                || (!BitConverter.IsLittleEndian && ((int)value >= 0));
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the fourth byte of the buffer is ASCII.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32FourthByteIsAscii(uint value)
+        {
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && ((int)value >= 0))
+                || (!BitConverter.IsLittleEndian && ((value & 0x80u) == 0));
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the second byte of the buffer is ASCII.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32SecondByteIsAscii(uint value)
+        {
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && ((value & 0x8000u) == 0))
+                || (!BitConverter.IsLittleEndian && ((value & 0x0080_0000u) == 0));
+        }
+
+        /// <summary>
+        /// Given a UTF-8 buffer which has been read into a DWORD in machine endianness,
+        /// returns <see langword="true"/> iff the third byte of the buffer is ASCII.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool UInt32ThirdByteIsAscii(uint value)
+        {
+            // Return statement is written this way to work around https://github.com/dotnet/coreclr/issues/914.
+
+            return (BitConverter.IsLittleEndian && ((value & 0x0080_0000u) == 0))
+                || (!BitConverter.IsLittleEndian && ((value & 0x8000u) == 0));
         }
 
         /// <summary>
