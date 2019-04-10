@@ -23,29 +23,29 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            Range.OffsetAndLength offLen = range.GetOffsetAndLength(array.Length);
+            (int offset, int length) = range.GetOffsetAndLength(array.Length);
 
             if (default(T) != null || typeof(T[]) == array.GetType())
             {
                 // We know the type of the array to be exactly T[].
 
-                if (offLen.Length == 0)
+                if (length == 0)
                 {
                     return Array.Empty<T>();
                 }
 
-                var dest = new T[offLen.Length];
+                var dest = new T[length];
                 Buffer.Memmove(
                     ref Unsafe.As<byte, T>(ref dest.GetRawSzArrayData()),
-                    ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), offLen.Offset),
-                    (uint)offLen.Length);
+                    ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), offset),
+                    (uint)length);
                 return dest;
             }
             else
             {
                 // The array is actually a U[] where U:T.
-                T[] dest = (T[])Array.CreateInstance(array.GetType().GetElementType(), offLen.Length);
-                Array.Copy(array, offLen.Offset, dest, 0, offLen.Length);
+                T[] dest = (T[])Array.CreateInstance(array.GetType().GetElementType(), length);
+                Array.Copy(array, offset, dest, 0, length);
                 return dest;
             }
         }
@@ -56,7 +56,7 @@ namespace System.Runtime.CompilerServices
             {
                 throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
             }
-            
+
             if (!type.IsRuntimeImplemented())
             {
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));
