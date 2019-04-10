@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Threading;
 using Xunit;
 
 namespace Microsoft.Extensions.Primitives
@@ -86,6 +87,41 @@ namespace Microsoft.Extensions.Primitives
             Assert.Throws<Exception>(() => token.Changed());
             Assert.Equal(2, count);
             Assert.NotNull(callbackState);
+        }
+
+        [Fact]
+        public void AsyncLocalsNotCapturedAndRestored()
+        {
+            // Capture clean context
+            var executionContext = ExecutionContext.Capture();
+
+            var cancellationTokenSource = new CancellationTokenSource();
+            var cancellationToken = cancellationTokenSource.Token;
+            var cancellationChangeToken = new CancellationChangeToken(cancellationToken);
+            var executed = false;
+
+            // Set AsyncLocal
+            var asyncLocal = new AsyncLocal<int>();
+            asyncLocal.Value = 1;
+
+            // Register Callback
+            cancellationChangeToken.RegisterChangeCallback(al =>
+            {
+                // AsyncLocal not set, when run on clean context
+                // A suppressed flow runs in current context, rather than restoring the captured context
+                Assert.Equal(0, ((AsyncLocal<int>) al).Value);
+                executed = true;
+            }, asyncLocal);
+
+            // AsyncLocal should still be set
+            Assert.Equal(1, asyncLocal.Value);
+
+            // Check AsyncLocal is not restored by running on clean context
+            ExecutionContext.Run(executionContext, cts => ((CancellationTokenSource)cts).Cancel(), cancellationTokenSource);
+
+            // AsyncLocal should still be set
+            Assert.Equal(1, asyncLocal.Value);
+            Assert.True(executed);
         }
     }
 }

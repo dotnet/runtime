@@ -56,6 +56,8 @@ namespace Microsoft.Extensions.Logging
                     var categoryName = logger.Key;
 
                     ApplyRules(loggerInformation, categoryName, 0, loggerInformation.Length);
+
+                    logger.Value.Loggers = loggerInformation;
                 }
             }
         }
@@ -89,10 +91,9 @@ namespace Microsoft.Extensions.Logging
                 throw new ObjectDisposedException(nameof(LoggerFactory));
             }
 
-            AddProviderRegistration(provider, dispose: true);
-
             lock (_sync)
             {
+                AddProviderRegistration(provider, dispose: true);
 
                 foreach (var logger in _loggers)
                 {

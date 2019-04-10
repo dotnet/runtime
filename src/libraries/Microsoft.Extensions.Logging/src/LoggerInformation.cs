@@ -19,6 +19,8 @@ namespace Microsoft.Extensions.Logging
 
         public bool ExternalScope { get; set; }
 
+        public bool CreateScopes => !ExternalScope && IsEnabled(LogLevel.Critical);
+
         public bool IsEnabled(LogLevel level)
         {
             if (MinLevel != null && level < MinLevel)
