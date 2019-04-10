@@ -23,6 +23,7 @@ namespace System
         public static bool IsWindows10Version1703OrGreater => false;
         public static bool IsWindows10Version1709OrGreater => false;
         public static bool IsWindows10Version1803OrGreater => false;
+        public static bool IsWindows10Version1903OrGreater => false;
         public static bool IsNotOneCoreUAP =>  true;
         public static bool IsInAppContainer => false;
         public static int WindowsVersion => -1;
