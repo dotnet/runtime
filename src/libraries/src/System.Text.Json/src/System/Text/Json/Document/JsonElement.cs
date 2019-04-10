@@ -338,9 +338,9 @@ namespace System.Text.Json
         /// <remarks>
         ///   This method does not create a string representation of values other than JSON strings.
         /// </remarks>
-        /// <returns>The value of the element as a <see cref="bool"/>.</returns>
+        /// <returns>The value of the element as a <see cref="string"/>.</returns>
         /// <exception cref="InvalidOperationException">
-        ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
+        ///   This value's <see cref="Type"/> is neither <see cref="JsonValueType.String"/> nor <see cref="JsonValueType.Null"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
