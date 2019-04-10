@@ -275,7 +275,7 @@ else()
   clr_unknown_arch()
 endif()
 
-set( SOURCES
+set(SOURCES
   ${JIT_SOURCES}
   ${JIT_HEADERS}
   ${JIT_RESOURCES}
@@ -291,27 +291,19 @@ convert_to_absolute_path(JIT_ARM_SOURCES ${JIT_ARM_SOURCES})
 convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
 convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 
-set (CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
 
 if(WIN32)
   add_precompiled_header(jitpch.h ../jitpch.cpp SOURCES)
+  set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
   preprocess_def_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
   set(SHARED_LIB_SOURCES ${SOURCES} ${JIT_EXPORTS_FILE})
 else()
-  set(JIT_EXPORTS_IN_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports.in)
-  set (CLRJIT_PAL_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports)
-
-  find_program(CAT cat)
-  add_custom_command(
-    OUTPUT ${JIT_EXPORTS_IN_FILE}
-    COMMAND ${CAT} ${CLRJIT_EXPORTS} ${CLRJIT_PAL_EXPORTS} > ${JIT_EXPORTS_IN_FILE}
-    DEPENDS ${CLRJIT_EXPORTS} ${CLRJIT_PAL_EXPORTS}
-  )
+  set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports)
 
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports)
-  generate_exports_file(${JIT_EXPORTS_IN_FILE} ${JIT_EXPORTS_FILE})
+  generate_exports_file(${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
   if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     # This is required to force using our own PAL, not one that we are loaded with.
