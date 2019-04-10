@@ -6722,7 +6722,7 @@ public:
     fgWalkResult optVNConstantPropCurStmt(BasicBlock* block, GenTreeStmt* stmt, GenTree* tree);
     GenTree* optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test);
     GenTree* optVNConstantPropOnTree(BasicBlock* block, GenTree* tree);
-    GenTree* optPrepareTreeForReplacement(GenTree* extractTree, GenTree* replaceTree);
+    GenTree* optExtractSideEffListFromConst(GenTree* tree);
 
     AssertionIndex GetAssertionCount()
     {
