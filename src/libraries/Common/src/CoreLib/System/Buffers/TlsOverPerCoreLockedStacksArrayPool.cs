@@ -301,12 +301,12 @@ namespace System.Buffers
             const double HighPressureThreshold = .90;       // Percent of GC memory pressure threshold we consider "high"
             const double MediumPressureThreshold = .70;     // Percent of GC memory pressure threshold we consider "medium"
 
-            GC.GetMemoryInfo(out uint threshold, out _, out uint lastLoad, out _, out _);
-            if (lastLoad >= threshold * HighPressureThreshold)
+            GCMemoryInfo memoryInfo = GC.GetGCMemoryInfo();
+            if (memoryInfo.MemoryLoadBytes >= memoryInfo.HighMemoryLoadThresholdBytes * HighPressureThreshold)
             {
                 return MemoryPressure.High;
             }
-            else if (lastLoad >= threshold * MediumPressureThreshold)
+            else if (memoryInfo.MemoryLoadBytes >= memoryInfo.HighMemoryLoadThresholdBytes * MediumPressureThreshold)
             {
                 return MemoryPressure.Medium;
             }
