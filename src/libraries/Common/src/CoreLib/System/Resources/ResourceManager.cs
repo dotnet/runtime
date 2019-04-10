@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
+#nullable enable
 using System.IO;
 using System.Globalization;
 using System.Reflection;
@@ -95,20 +95,20 @@ namespace System.Resources
     {
         internal class CultureNameResourceSetPair
         {
-            public string lastCultureName;
-            public ResourceSet lastResourceSet;
+            public string? lastCultureName;
+            public ResourceSet? lastResourceSet;
         }
 
-        protected string BaseNameField;
-        protected Assembly MainAssembly;    // Need the assembly manifest sometimes.
+        protected string? BaseNameField;
+        protected Assembly? MainAssembly;    // Need the assembly manifest sometimes.
 
-        private Dictionary<string, ResourceSet> _resourceSets;
-        private string _moduleDir;          // For assembly-ignorant directory location
-        private Type _locationInfo;         // For Assembly or type-based directory layout
-        private Type _userResourceSet;      // Which ResourceSet instance to create
-        private CultureInfo _neutralResourcesCulture;  // For perf optimizations.
+        private Dictionary<string, ResourceSet>? _resourceSets;
+        private string? _moduleDir;          // For assembly-ignorant directory location
+        private Type? _locationInfo;         // For Assembly or type-based directory layout
+        private Type? _userResourceSet;      // Which ResourceSet instance to create
+        private CultureInfo? _neutralResourcesCulture;  // For perf optimizations.
 
-        private CultureNameResourceSetPair _lastUsedResourceCache;
+        private CultureNameResourceSetPair? _lastUsedResourceCache;
 
         private bool _ignoreCase;   // Whether case matters in GetString & GetObject
 
@@ -118,10 +118,10 @@ namespace System.Resources
         // satellite for the neutral resources.
         private UltimateResourceFallbackLocation _fallbackLoc;
         // Version number of satellite assemblies to look for.  May be null.
-        private Version _satelliteContractVersion;
+        private Version? _satelliteContractVersion;
         private bool _lookedForSatelliteContractVersion;
 
-        private IResourceGroveler _resourceGroveler;
+        private IResourceGroveler _resourceGroveler = null!;
 
         public static readonly int MagicNumber = unchecked((int)0xBEEFCACE);  // If only hex had a K...
 
@@ -168,7 +168,7 @@ namespace System.Resources
         //
         // Note: System.Windows.Forms uses this method at design time.
         // 
-        private ResourceManager(string baseName, string resourceDir, Type usingResourceSet)
+        private ResourceManager(string baseName, string resourceDir, Type? userResourceSet)
         {
             if (null == baseName)
                 throw new ArgumentNullException(nameof(baseName));
@@ -178,7 +178,7 @@ namespace System.Resources
             BaseNameField = baseName;
 
             _moduleDir = resourceDir;
-            _userResourceSet = usingResourceSet;
+            _userResourceSet = userResourceSet;
             _resourceSets = new Dictionary<string, ResourceSet>();
             _lastUsedResourceCache = new CultureNameResourceSetPair();
             _useManifest = false;
@@ -202,7 +202,7 @@ namespace System.Resources
             CommonAssemblyInit();
         }
 
-        public ResourceManager(string baseName, Assembly assembly, Type usingResourceSet)
+        public ResourceManager(string baseName, Assembly assembly, Type? usingResourceSet)
         {
             if (null == baseName)
                 throw new ArgumentNullException(nameof(baseName));
@@ -252,11 +252,12 @@ namespace System.Resources
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
             _resourceGroveler = new ManifestBasedResourceGroveler(mediator);
 
+            Debug.Assert(MainAssembly != null);
             _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, out _fallbackLoc);
         }
 
         // Gets the base name for the ResourceManager.
-        public virtual string BaseName
+        public virtual string? BaseName
         {
             get { return BaseNameField; }
         }
@@ -293,6 +294,7 @@ namespace System.Resources
         // creating a new ResourceManager isn't quite the correct behavior.
         public virtual void ReleaseAllResources()
         {
+            Debug.Assert(_resourceSets != null);
             Dictionary<string, ResourceSet> localResourceSets = _resourceSets;
 
             // If any calls to Close throw, at least leave ourselves in a
@@ -340,7 +342,7 @@ namespace System.Resources
 
         // WARNING: This function must be kept in sync with ResourceFallbackManager.GetEnumerator()
         // Return the first ResourceSet, based on the first culture ResourceFallbackManager would return
-        internal ResourceSet GetFirstResourceSet(CultureInfo culture)
+        internal ResourceSet? GetFirstResourceSet(CultureInfo culture)
         {
             // Logic from ResourceFallbackManager.GetEnumerator()
             if (_neutralResourcesCulture != null && culture.Name == _neutralResourcesCulture.Name)
@@ -358,8 +360,8 @@ namespace System.Resources
             }
 
             // Look in the ResourceSet table
-            Dictionary<string, ResourceSet> localResourceSets = _resourceSets;
-            ResourceSet rs = null;
+            Dictionary<string, ResourceSet>? localResourceSets = _resourceSets;
+            ResourceSet? rs = null;
             if (localResourceSets != null)
             {
                 lock (localResourceSets)
@@ -393,12 +395,12 @@ namespace System.Resources
         // if it hasn't yet been loaded and if parent CultureInfos should be 
         // loaded as well for resource inheritance.
         //         
-        public virtual ResourceSet GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
+        public virtual ResourceSet? GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
             if (null == culture)
                 throw new ArgumentNullException(nameof(culture));
 
-            Dictionary<string, ResourceSet> localResourceSets = _resourceSets;
+            Dictionary<string, ResourceSet>? localResourceSets = _resourceSets;
             ResourceSet rs;
             if (localResourceSets != null)
             {
@@ -412,10 +414,12 @@ namespace System.Resources
             if (_useManifest && culture.HasInvariantCultureName)
             {
                 string fileName = GetResourceFileName(culture);
+                Debug.Assert(MainAssembly != null);
                 Stream stream = MainAssembly.GetManifestResourceStream(_locationInfo, fileName);
                 if (createIfNotExists && stream != null)
                 {
                     rs = ((ManifestBasedResourceGroveler)_resourceGroveler).CreateResourceSet(stream, MainAssembly);
+                    Debug.Assert(localResourceSets != null);
                     AddResourceSet(localResourceSets, culture.Name, ref rs);
                     return rs;
                 }
@@ -428,13 +432,14 @@ namespace System.Resources
         // for getting a resource set lives.  Access to it is controlled by
         // threadsafe methods such as GetResourceSet, GetString, & GetObject.  
         // This will take a minimal number of locks.
-        protected virtual ResourceSet InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
+        protected virtual ResourceSet? InternalGetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
             Debug.Assert(culture != null, "culture != null");
+            Debug.Assert(_resourceSets != null);
 
             Dictionary<string, ResourceSet> localResourceSets = _resourceSets;
-            ResourceSet rs = null;
-            CultureInfo foundCulture = null;
+            ResourceSet? rs = null;
+            CultureInfo? foundCulture = null;
             lock (localResourceSets)
             {
                 if (localResourceSets.TryGetValue(culture.Name, out rs))
@@ -483,7 +488,7 @@ namespace System.Resources
                 // that had resources.
                 foreach (CultureInfo updateCultureInfo in mgr)
                 {
-                    AddResourceSet(localResourceSets, updateCultureInfo.Name, ref rs);
+                    AddResourceSet(localResourceSets, updateCultureInfo.Name, ref rs!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34874
 
                     // stop when we've added current or reached invariant (top of chain)
                     if (updateCultureInfo == foundCulture)
@@ -526,7 +531,7 @@ namespace System.Resources
             }
         }
 
-        protected static Version GetSatelliteContractVersion(Assembly a)
+        protected static Version? GetSatelliteContractVersion(Assembly a)
         {
             // Ensure that the assembly reference is not null
             if (a == null)
@@ -534,7 +539,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(a), SR.ArgumentNull_Assembly);
             }
 
-            string v = a.GetCustomAttribute<SatelliteContractVersionAttribute>()?.Version;
+            string? v = a.GetCustomAttribute<SatelliteContractVersionAttribute>()?.Version;
             if (v == null)
             {
                 // Return null. The calling code will use the assembly version instead to avoid potential type
@@ -589,16 +594,16 @@ namespace System.Resources
         // current thread's CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
         // 
-        public virtual string GetString(string name)
+        public virtual string? GetString(string name)
         {
-            return GetString(name, (CultureInfo)null);
+            return GetString(name, (CultureInfo?)null);
         }
 
         // Looks up a resource value for a particular name.  Looks in the 
         // specified CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
         // 
-        public virtual string GetString(string name, CultureInfo culture)
+        public virtual string? GetString(string name, CultureInfo? culture)
         {
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
@@ -607,6 +612,7 @@ namespace System.Resources
             if (_useUapResourceManagement)
             {
                 // Throws WinRT hresults.
+                Debug.Assert(_neutralResourcesCulture != null);
                 return GetStringFromPRI(name, culture, _neutralResourcesCulture.Name);
             }
 #endif
@@ -616,11 +622,11 @@ namespace System.Resources
                 culture = CultureInfo.CurrentUICulture;
             }
 
-            ResourceSet last = GetFirstResourceSet(culture);
+            ResourceSet? last = GetFirstResourceSet(culture);
 
             if (last != null)
             {
-                string value = last.GetString(name, _ignoreCase);
+                string? value = last.GetString(name, _ignoreCase);
                 if (value != null)
                     return value;
             }
@@ -631,13 +637,13 @@ namespace System.Resources
             ResourceFallbackManager mgr = new ResourceFallbackManager(culture, _neutralResourcesCulture, true);
             foreach (CultureInfo currentCultureInfo in mgr)
             {
-                ResourceSet rs = InternalGetResourceSet(currentCultureInfo, true, true);
+                ResourceSet? rs = InternalGetResourceSet(currentCultureInfo, true, true);
                 if (rs == null)
                     break;
 
                 if (rs != last)
                 {
-                    string value = rs.GetString(name, _ignoreCase);
+                    string? value = rs.GetString(name, _ignoreCase);
                     if (value != null)
                     {
                         // update last used ResourceSet
@@ -663,20 +669,20 @@ namespace System.Resources
         // current thread's CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
         // 
-        public virtual object GetObject(string name)
+        public virtual object? GetObject(string name)
         {
-            return GetObject(name, (CultureInfo)null, true);
+            return GetObject(name, (CultureInfo?)null, true);
         }
 
         // Looks up a resource value for a particular name.  Looks in the 
         // specified CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
-        public virtual object GetObject(string name, CultureInfo culture)
+        public virtual object? GetObject(string name, CultureInfo culture)
         {
             return GetObject(name, culture, true);
         }
 
-        private object GetObject(string name, CultureInfo culture, bool wrapUnmanagedMemStream)
+        private object? GetObject(string name, CultureInfo? culture, bool wrapUnmanagedMemStream)
         {
             if (null == name)
                 throw new ArgumentNullException(nameof(name));
@@ -686,10 +692,10 @@ namespace System.Resources
                 culture = CultureInfo.CurrentUICulture;
             }
 
-            ResourceSet last = GetFirstResourceSet(culture);
+            ResourceSet? last = GetFirstResourceSet(culture);
             if (last != null)
             {
-                object value = last.GetObject(name, _ignoreCase);
+                object? value = last.GetObject(name, _ignoreCase);
 
                 if (value != null)
                 {
@@ -707,13 +713,13 @@ namespace System.Resources
 
             foreach (CultureInfo currentCultureInfo in mgr)
             {
-                ResourceSet rs = InternalGetResourceSet(currentCultureInfo, true, true);
+                ResourceSet? rs = InternalGetResourceSet(currentCultureInfo, true, true);
                 if (rs == null)
                     break;
 
                 if (rs != last)
                 {
-                    object value = rs.GetObject(name, _ignoreCase);
+                    object? value = rs.GetObject(name, _ignoreCase);
                     if (value != null)
                     {
                         // update the last used ResourceSet
@@ -739,15 +745,15 @@ namespace System.Resources
             return null;
         }
 
-        public UnmanagedMemoryStream GetStream(string name)
+        public UnmanagedMemoryStream? GetStream(string name)
         {
-            return GetStream(name, (CultureInfo)null);
+            return GetStream(name, (CultureInfo?)null);
         }
 
-        public UnmanagedMemoryStream GetStream(string name, CultureInfo culture)
+        public UnmanagedMemoryStream? GetStream(string name, CultureInfo? culture)
         {
-            object obj = GetObject(name, culture, false);
-            UnmanagedMemoryStream ums = obj as UnmanagedMemoryStream;
+            object? obj = GetObject(name, culture, false);
+            UnmanagedMemoryStream? ums = obj as UnmanagedMemoryStream;
             if (ums == null && obj != null)
                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_ResourceNotStream_Name, name));
             return ums;
@@ -767,28 +773,28 @@ namespace System.Resources
             }
 
             // NEEDED ONLY BY FILE-BASED
-            internal string ModuleDir
+            internal string? ModuleDir
             {
                 get { return _rm._moduleDir; }
             }
 
             // NEEDED BOTH BY FILE-BASED  AND ASSEMBLY-BASED
-            internal Type LocationInfo
+            internal Type? LocationInfo
             {
                 get { return _rm._locationInfo; }
             }
 
-            internal Type UserResourceSet
+            internal Type? UserResourceSet
             {
                 get { return _rm._userResourceSet; }
             }
 
-            internal string BaseNameField
+            internal string? BaseNameField
             {
                 get { return _rm.BaseNameField; }
             }
 
-            internal CultureInfo NeutralResourcesCulture
+            internal CultureInfo? NeutralResourcesCulture
             {
                 get { return _rm._neutralResourcesCulture; }
                 set { _rm._neutralResourcesCulture = value; }
@@ -806,13 +812,13 @@ namespace System.Resources
                 set { _rm._lookedForSatelliteContractVersion = value; }
             }
 
-            internal Version SatelliteContractVersion
+            internal Version? SatelliteContractVersion
             {
                 get { return _rm._satelliteContractVersion; }
                 set { _rm._satelliteContractVersion = value; }
             }
 
-            internal Version ObtainSatelliteContractVersion(Assembly a)
+            internal Version? ObtainSatelliteContractVersion(Assembly a)
             {
                 return ResourceManager.GetSatelliteContractVersion(a);
             }
@@ -823,14 +829,14 @@ namespace System.Resources
                 set { _rm._fallbackLoc = value; }
             }
 
-            internal Assembly MainAssembly
+            internal Assembly? MainAssembly
             {
                 get { return _rm.MainAssembly; }
             }
 
             // this is weird because we have BaseNameField accessor above, but we're sticking
             // with it for compat.
-            internal string BaseName
+            internal string? BaseName
             {
                 get { return _rm.BaseName; }
             }
