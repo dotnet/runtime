@@ -391,7 +391,7 @@ BOOL ThreadpoolMgr::Initialize()
         else
             RecycledLists.Initialize( g_SystemInfo.dwNumberOfProcessors );
 #else // !FEATURE_PAL
-        RecycledLists.Initialize( g_SystemInfo.dwNumberOfProcessors );
+        RecycledLists.Initialize( PAL_GetTotalCpuCount() );
 #endif // !FEATURE_PAL
     }
     EX_CATCH
@@ -404,7 +404,7 @@ BOOL ThreadpoolMgr::Initialize()
             RetiredCPWakeupEvent = NULL;
         }
 
-        // Note: It is fine to call Destroy on unitialized critical sections
+        // Note: It is fine to call Destroy on uninitialized critical sections
         WorkerCriticalSection.Destroy();
         WaitThreadsCriticalSection.Destroy();
         TimerQueueCriticalSection.Destroy();
