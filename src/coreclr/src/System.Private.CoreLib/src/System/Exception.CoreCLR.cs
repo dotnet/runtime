@@ -465,7 +465,7 @@ namespace System
         {
             string? retMesg = null;
             GetMessageFromNativeResources(kind, JitHelpers.GetStringHandleOnStack(ref retMesg));
-            return retMesg;
+            return retMesg!;
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

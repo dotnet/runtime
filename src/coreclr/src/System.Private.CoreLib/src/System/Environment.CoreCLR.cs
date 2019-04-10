@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -33,7 +34,7 @@ namespace System
         // to assign blame for crashes.  Don't mess with this, such as by making it call 
         // another managed helper method, unless you consult with some CLR Watson experts.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(string message);
+        public static extern void FailFast(string? message);
 
         // This overload of FailFast will allow you to specify the exception object
         // whose bucket details *could* be used when undergoing the failfast process.
@@ -49,10 +50,10 @@ namespace System
         //    IP for bucketing. If the exception object is not preallocated, it will use the bucket
         //    details contained in the object (if any).
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(string message, Exception exception);
+        public static extern void FailFast(string? message, Exception? exception);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void FailFast(string message, Exception exception, string errorMessage);
+        public static extern void FailFast(string? message, Exception? exception, string? errorMessage);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern string[] GetCommandLineArgsNative();
@@ -91,7 +92,7 @@ namespace System
         // If you change this method's signature then you must change the code that calls it
         // in excep.cpp and probably you will have to visit mscorlib.h to add the new signature
         // as well as metasig.h to create the new signature type
-        internal static string GetResourceStringLocal(string key) => SR.GetResourceString(key);
+        internal static string? GetResourceStringLocal(string key) => SR.GetResourceString(key);
 
         public static string StackTrace
         {

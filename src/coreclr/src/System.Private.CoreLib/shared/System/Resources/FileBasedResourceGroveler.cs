@@ -111,7 +111,7 @@ namespace System.Resources
                 args[0] = file;
                 try
                 {
-                    return (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args);
+                    return (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args)!;
                 }
                 catch (MissingMethodException e)
                 {

@@ -123,7 +123,7 @@ namespace System.Runtime.Loader
             return null;
         }
 
-        private Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string requestedSimpleName)
+        private Assembly ValidateAssemblyNameWithSimpleName(Assembly assembly, string? requestedSimpleName)
         {
             // Get the name of the loaded assembly
             string? loadedSimpleName = null;
@@ -138,15 +138,21 @@ namespace System.Runtime.Loader
             }
 
             // The simple names should match at the very least
-            if (string.IsNullOrEmpty(loadedSimpleName) || (!requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase)))
+            if (string.IsNullOrEmpty(requestedSimpleName))
+            {
+                throw new ArgumentException(SR.ArgumentNull_AssemblyNameName);
+            }
+            if (string.IsNullOrEmpty(loadedSimpleName) || requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase))
+            {
                 throw new InvalidOperationException(SR.Argument_CustomAssemblyLoadContextRequestedNameMismatch);
+            }
 
             return assembly;
         }
 
         private Assembly? ResolveUsingLoad(AssemblyName assemblyName)
         {
-            string simpleName = assemblyName.Name;
+            string? simpleName = assemblyName.Name;
             Assembly? assembly = Load(assemblyName);
 
             if (assembly != null)
@@ -159,7 +165,7 @@ namespace System.Runtime.Loader
 
         private Assembly ResolveUsingEvent(AssemblyName assemblyName)
         {
-            string simpleName = assemblyName.Name;
+            string? simpleName = assemblyName.Name;
 
             // Invoke the AssemblyResolve event callbacks if wired up
             Assembly? assembly = GetFirstResolvedAssembly(assemblyName);

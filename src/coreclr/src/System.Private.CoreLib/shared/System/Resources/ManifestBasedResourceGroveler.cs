@@ -255,7 +255,7 @@ namespace System.Resources
                             Type readerType = Type.GetType(readerTypeName, throwOnError: true);
                             object[] args = new object[1];
                             args[0] = store;
-                            reader = (IResourceReader)Activator.CreateInstance(readerType, args);
+                            reader = (IResourceReader)Activator.CreateInstance(readerType, args)!;
                         }
 
                         object[] resourceSetArgs = new object[1];
@@ -268,13 +268,16 @@ namespace System.Resources
                             resSetType = Type.GetType(resSetTypeName, true, false);
                         }
                         else
+                        {
                             resSetType = _mediator.UserResourceSet;
+                        }
+
                         ResourceSet rs = (ResourceSet)Activator.CreateInstance(resSetType,
                                                                                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.CreateInstance,
                                                                                 null,
                                                                                 resourceSetArgs,
                                                                                 null,
-                                                                                null);
+                                                                                null)!;
                         return rs;
                     }
                 }
@@ -299,14 +302,14 @@ namespace System.Resources
                     // Add in a check for a constructor taking in an assembly first.
                     try
                     {
-                        rs = (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args);
+                        rs = (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args)!;
                         return rs;
                     }
                     catch (MissingMethodException) { }
 
                     args = new object[1];
                     args[0] = store;
-                    rs = (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args);
+                    rs = (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args)!;
 
                     return rs;
                 }

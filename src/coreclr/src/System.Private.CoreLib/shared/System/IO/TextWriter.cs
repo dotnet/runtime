@@ -607,8 +607,8 @@ namespace System.IO
 
         public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                WriteAsync(array.Array, array.Offset, array.Count) :
+            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ? // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                WriteAsync(array.Array!, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
                 {
                     var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
@@ -682,8 +682,8 @@ namespace System.IO
 
         public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                WriteLineAsync(array.Array, array.Offset, array.Count) :
+            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ? // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                WriteLineAsync(array.Array!, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
                 {
                     var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761

@@ -51,7 +51,7 @@ namespace System.Text
             return true;
         }
 
-        object IEnumerator.Current => _current;
+        object? IEnumerator.Current => _current; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
 
         void IDisposable.Dispose()
         {
