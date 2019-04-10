@@ -2,9 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using Microsoft.Extensions.Logging.Internal;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -13,7 +10,7 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public static class LoggerExtensions
     {
-        private static readonly Func<object, Exception, string> _messageFormatter = MessageFormatter;
+        private static readonly Func<FormattedLogValues, Exception, string> _messageFormatter = MessageFormatter;
 
         //------------------------------------------DEBUG------------------------------------------//
 
@@ -425,7 +422,7 @@ namespace Microsoft.Extensions.Logging
 
         //------------------------------------------HELPERS------------------------------------------//
 
-        private static string MessageFormatter(object state, Exception error)
+        private static string MessageFormatter(FormattedLogValues state, Exception error)
         {
             return state.ToString();
         }

@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Options
         public string Name { get; }
 
         /// <summary>
-        /// Validates a specific named options instance (or all when name is null).
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is null).
         /// </summary>
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>

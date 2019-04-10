@@ -1,10 +1,10 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Implementation of IOptions and IOptionsSnapshot.
+    /// Implementation of <see cref="IOptions{TOptions}"/> and <see cref="IOptionsSnapshot{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions"></typeparam>
     public class OptionsManager<TOptions> : IOptions<TOptions>, IOptionsSnapshot<TOptions> where TOptions : class, new()
@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// The default configured TOptions instance, equivalent to Get(Options.DefaultName).
+        /// The default configured <typeparamref name="TOptions"/> instance, equivalent to Get(Options.DefaultName).
         /// </summary>
         public TOptions Value
         {
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Returns a configured TOptions instance with the given name.
+        /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
         public virtual TOptions Get(string name)
         {

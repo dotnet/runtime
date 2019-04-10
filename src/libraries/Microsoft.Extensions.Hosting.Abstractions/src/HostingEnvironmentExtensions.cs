@@ -3,6 +3,7 @@
 
 using System;
 
+#pragma warning disable CS0618 // Type or member is obsolete
 namespace Microsoft.Extensions.Hosting
 {
     /// <summary>
@@ -77,3 +78,4 @@ namespace Microsoft.Extensions.Hosting
         }
     }
 }
+#pragma warning restore CS0618 // Type or member is obsolete

@@ -2,17 +2,14 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Extensions.Logging.EventLog.Internal;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
     /// <summary>
     /// A logger that writes messages to Windows Event Log.
     /// </summary>
-    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is using EventLogLoggerProvider to construct loggers.")]
-    public class EventLogLogger : ILogger
+    internal class EventLogLogger : ILogger
     {
         private readonly string _name;
         private readonly EventLogSettings _settings;
@@ -21,15 +18,6 @@ namespace Microsoft.Extensions.Logging.EventLog
         private const string ContinuationString = "...";
         private readonly int _beginOrEndMessageSegmentSize;
         private readonly int _intermediateMessageSegmentSize;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EventLogLogger"/> class.
-        /// </summary>
-        /// <param name="name">The name of the logger.</param>
-        public EventLogLogger(string name)
-            : this(name, settings: new EventLogSettings())
-        {
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EventLogLogger"/> class.
@@ -186,15 +174,6 @@ namespace Microsoft.Extensions.Logging.EventLog
                     return EventLogEntryType.Error;
                 default:
                     return EventLogEntryType.Information;
-            }
-        }
-
-        private class NoopDisposable : IDisposable
-        {
-            public static NoopDisposable Instance = new NoopDisposable();
-
-            public void Dispose()
-            {
             }
         }
     }

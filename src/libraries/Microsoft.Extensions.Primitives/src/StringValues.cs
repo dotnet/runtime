@@ -4,6 +4,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Primitives
@@ -13,21 +15,17 @@ namespace Microsoft.Extensions.Primitives
     /// </summary>
     public readonly struct StringValues : IList<string>, IReadOnlyList<string>, IEquatable<StringValues>, IEquatable<string>, IEquatable<string[]>
     {
-        private static readonly string[] EmptyArray = new string[0];
-        public static readonly StringValues Empty = new StringValues(EmptyArray);
+        public static readonly StringValues Empty = new StringValues(Array.Empty<string>());
 
-        private readonly string _value;
-        private readonly string[] _values;
+        private readonly object _values;
 
         public StringValues(string value)
         {
-            _value = value;
-            _values = null;
+            _values = value;
         }
 
         public StringValues(string[] values)
         {
-            _value = null;
             _values = values;
         }
 
@@ -51,7 +49,28 @@ namespace Microsoft.Extensions.Primitives
             return value.GetArrayValue();
         }
 
-        public int Count => _value != null ? 1 : (_values?.Length ?? 0);
+        public int Count
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
+                var value = _values;
+                if (value is string)
+                {
+                    return 1;
+                }
+                if (value is null)
+                {
+                    return 0;
+                }
+                else
+                {
+                    // Not string, not null, can only be string[]
+                    return Unsafe.As<string[]>(value).Length;
+                }
+            }
+        }
 
         bool ICollection<string>.IsReadOnly
         {
@@ -66,18 +85,31 @@ namespace Microsoft.Extensions.Primitives
 
         public string this[int index]
         {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (_values != null)
+                // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
+                var value = _values;
+                if (index == 0 && value is string str)
                 {
-                    return _values[index]; // may throw
+                    return str;
                 }
-                if (index == 0 && _value != null)
+                else if (value != null)
                 {
-                    return _value;
+                    // Not string, not null, can only be string[]
+                    return Unsafe.As<string[]>(value)[index]; // may throw
                 }
-                return EmptyArray[0]; // throws
+                else
+                {
+                    return OutOfBounds(); // throws
+                }
             }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static string OutOfBounds()
+        {
+            return Array.Empty<string>()[0]; // throws
         }
 
         public override string ToString()
@@ -87,30 +119,58 @@ namespace Microsoft.Extensions.Primitives
 
         private string GetStringValue()
         {
-            if (_values == null)
+            // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
+            var value = _values;
+            if (value is string s)
             {
-                return _value;
+                return s;
             }
-            switch (_values.Length)
+            else
             {
-                case 0: return null;
-                case 1: return _values[0];
-                default: return string.Join(",", _values);
+                return GetStringValueFromArray(value);
+            }
+
+            static string GetStringValueFromArray(object value)
+            {
+                if (value is null)
+                {
+                    return null;
+                }
+
+                Debug.Assert(value is string[]);
+                // value is not null or string, array, can only be string[]
+                var values = Unsafe.As<string[]>(value);
+                switch (values.Length)
+                {
+                    case 0: return null;
+                    case 1: return values[0];
+                    default: return string.Join(",", values);
+                }
             }
         }
 
         public string[] ToArray()
         {
-            return GetArrayValue() ?? EmptyArray;
+            return GetArrayValue() ?? Array.Empty<string>();
         }
 
         private string[] GetArrayValue()
         {
-            if (_value != null)
+            // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
+            var value = _values;
+            if (value is string[] values)
             {
-                return new[] { _value };
+                return values;
             }
-            return _values;
+            else if (value != null)
+            {
+                // value not array, can only be string
+                return new[] { Unsafe.As<string>(value) };
+            }
+            else
+            {
+                return null;
+            }
         }
 
         int IList<string>.IndexOf(string item)
@@ -120,9 +180,10 @@ namespace Microsoft.Extensions.Primitives
 
         private int IndexOf(string item)
         {
-            if (_values != null)
+            // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
+            var value = _values;
+            if (value is string[] values)
             {
-                var values = _values;
                 for (int i = 0; i < values.Length; i++)
                 {
                     if (string.Equals(values[i], item, StringComparison.Ordinal))
@@ -133,9 +194,10 @@ namespace Microsoft.Extensions.Primitives
                 return -1;
             }
 
-            if (_value != null)
+            if (value != null)
             {
-                return string.Equals(_value, item, StringComparison.Ordinal) ? 0 : -1;
+                // value not array, can only be string
+                return string.Equals(Unsafe.As<string>(value), item, StringComparison.Ordinal) ? 0 : -1;
             }
 
             return -1;
@@ -153,13 +215,15 @@ namespace Microsoft.Extensions.Primitives
 
         private void CopyTo(string[] array, int arrayIndex)
         {
-            if (_values != null)
+            // Take local copy of _values so type checks remain valid even if the StringValues is overwritten in memory
+            var value = _values;
+            if (value is string[] values)
             {
-                Array.Copy(_values, 0, array, arrayIndex, _values.Length);
+                Array.Copy(values, 0, array, arrayIndex, values.Length);
                 return;
             }
 
-            if (_value != null)
+            if (value != null)
             {
                 if (array == null)
                 {
@@ -175,7 +239,8 @@ namespace Microsoft.Extensions.Primitives
                         $"'{nameof(array)}' is not long enough to copy all the items in the collection. Check '{nameof(arrayIndex)}' and '{nameof(array)}' length.");
                 }
 
-                array[arrayIndex] = _value;
+                // value not array, can only be string
+                array[arrayIndex] = Unsafe.As<string>(value);
             }
         }
 
@@ -206,7 +271,7 @@ namespace Microsoft.Extensions.Primitives
 
         public Enumerator GetEnumerator()
         {
-            return new Enumerator(_values, _value);
+            return new Enumerator(_values);
         }
 
         IEnumerator<string> IEnumerable<string>.GetEnumerator()
@@ -221,15 +286,24 @@ namespace Microsoft.Extensions.Primitives
 
         public static bool IsNullOrEmpty(StringValues value)
         {
-            if (value._values == null)
+            var data = value._values;
+            if (data is null)
             {
-                return string.IsNullOrEmpty(value._value);
+                return true;
             }
-            switch (value._values.Length)
+            if (data is string[] values)
             {
-                case 0: return true;
-                case 1: return string.IsNullOrEmpty(value._values[0]);
-                default: return false;
+                switch (values.Length)
+                {
+                    case 0: return true;
+                    case 1: return string.IsNullOrEmpty(values[0]);
+                    default: return false;
+                }
+            }
+            else
+            {
+                // Not array, can only be string
+                return string.IsNullOrEmpty(Unsafe.As<string>(data));
             }
         }
 
@@ -443,17 +517,20 @@ namespace Microsoft.Extensions.Primitives
 
         public override int GetHashCode()
         {
-            if (_values == null)
+            var value = _values;
+            if (value is string[] values)
             {
-                return _value == null ? 0 : _value.GetHashCode();
+                var hcc = new HashCodeCombiner();
+                for (var i = 0; i < values.Length; i++)
+                {
+                    hcc.Add(values[i]);
+                }
+                return hcc.CombinedHash;
             }
-
-            var hcc = new HashCodeCombiner();
-            for (var i = 0; i < _values.Length; i++)
+            else
             {
-                hcc.Add(_values[i]);
+                return Unsafe.As<string>(value)?.GetHashCode() ?? 0;
             }
-            return hcc.CombinedHash;
         }
 
         public struct Enumerator : IEnumerator<string>
@@ -462,33 +539,39 @@ namespace Microsoft.Extensions.Primitives
             private string _current;
             private int _index;
 
-            internal Enumerator(string[] values, string value)
+            internal Enumerator(object value)
             {
-               _values = values;
-               _current = value;
+                if (value is string str)
+                {
+                    _values = null;
+                    _current = str;
+                }
+                else
+                {
+                    _current = null;
+                    _values = Unsafe.As<string[]>(value);
+                }
                _index = 0;
             }
 
-            public Enumerator(ref StringValues values)
-            {
-                _values = values._values;
-                _current = values._value;
-                _index = 0;
-            }
+            public Enumerator(ref StringValues values) : this(values._values)
+            { }
 
             public bool MoveNext()
             {
-                if (_index < 0)
+                var index = _index;
+                if (index < 0)
                 {
                     return false;
                 }
 
-                if (_values != null)
+                var values = _values;
+                if (values != null)
                 {
-                    if (_index < _values.Length)
+                    if ((uint)index < (uint)values.Length)
                     {
-                        _current = _values[_index];
-                        _index++;
+                        _index = index + 1;
+                        _current = values[index];
                         return true;
                     }
 

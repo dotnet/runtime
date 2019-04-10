@@ -5,8 +5,12 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
-    internal interface IServiceProviderEngine : IDisposable, IServiceProvider
+    internal interface IServiceProviderEngine : IServiceProvider, IDisposable
+#if DISPOSE_ASYNC
+        , IAsyncDisposable
+#endif
     {
         IServiceScope RootScope { get; }
+        void ValidateService(ServiceDescriptor descriptor);
     }
 }

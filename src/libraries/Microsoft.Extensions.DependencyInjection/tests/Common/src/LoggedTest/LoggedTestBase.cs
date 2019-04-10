@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 
@@ -12,6 +13,8 @@ namespace Microsoft.Extensions.Logging.Testing
 {
     public class LoggedTestBase : ILoggedTest
     {
+        private ExceptionDispatchInfo _initializationException;
+
         private IDisposable _testLog;
 
         // Obsolete but keeping for back compat
@@ -23,7 +26,7 @@ namespace Microsoft.Extensions.Logging.Testing
         // Internal for testing
         internal string ResolvedTestClassName { get; set; }
 
-        internal RetryContext RetryContext { get; set; }
+        internal RepeatContext RepeatContext { get; set; }
 
         public string ResolvedLogOutputDirectory { get; set; }
 
@@ -48,35 +51,56 @@ namespace Microsoft.Extensions.Logging.Testing
 
         public virtual void Initialize(MethodInfo methodInfo, object[] testMethodArguments, ITestOutputHelper testOutputHelper)
         {
-            TestOutputHelper = testOutputHelper;
+            try
+            {
+                TestOutputHelper = testOutputHelper;
 
-            var classType = GetType();
-            var logLevelAttribute = methodInfo.GetCustomAttribute<LogLevelAttribute>();
-            var testName = testMethodArguments.Aggregate(methodInfo.Name, (a, b) => $"{a}-{(b ?? "null")}");
+                var classType = GetType();
+                var logLevelAttribute = methodInfo.GetCustomAttribute<LogLevelAttribute>()
+                                        ?? methodInfo.DeclaringType.GetCustomAttribute<LogLevelAttribute>()
+                                        ?? methodInfo.DeclaringType.Assembly.GetCustomAttribute<LogLevelAttribute>();
+                var testName = testMethodArguments.Aggregate(methodInfo.Name, (a, b) => $"{a}-{(b ?? "null")}");
 
-            var useShortClassName = methodInfo.DeclaringType.GetCustomAttribute<ShortClassNameAttribute>()
-                ?? methodInfo.DeclaringType.Assembly.GetCustomAttribute<ShortClassNameAttribute>();
-            // internal for testing
-            ResolvedTestClassName = useShortClassName == null ? classType.FullName : classType.Name;
+                var useShortClassName = methodInfo.DeclaringType.GetCustomAttribute<ShortClassNameAttribute>()
+                                        ?? methodInfo.DeclaringType.Assembly.GetCustomAttribute<ShortClassNameAttribute>();
+                // internal for testing
+                ResolvedTestClassName = useShortClassName == null ? classType.FullName : classType.Name;
 
-            _testLog = AssemblyTestLog
-                .ForAssembly(classType.GetTypeInfo().Assembly)
-                .StartTestLog(
-                    TestOutputHelper,
-                    ResolvedTestClassName,
-                    out var loggerFactory,
-                    logLevelAttribute?.LogLevel ?? LogLevel.Debug,
-                    out var resolvedTestName,
-                    out var logOutputDirectory,
-                    testName);
+                _testLog = AssemblyTestLog
+                    .ForAssembly(classType.GetTypeInfo().Assembly)
+                    .StartTestLog(
+                        TestOutputHelper,
+                        ResolvedTestClassName,
+                        out var loggerFactory,
+                        logLevelAttribute?.LogLevel ?? LogLevel.Debug,
+                        out var resolvedTestName,
+                        out var logOutputDirectory,
+                        testName);
 
-            ResolvedLogOutputDirectory = logOutputDirectory;
-            ResolvedTestMethodName = resolvedTestName;
+                ResolvedLogOutputDirectory = logOutputDirectory;
+                ResolvedTestMethodName = resolvedTestName;
 
-            LoggerFactory = loggerFactory;
-            Logger = loggerFactory.CreateLogger(classType);
+                LoggerFactory = loggerFactory;
+                Logger = loggerFactory.CreateLogger(classType);
+            }
+            catch (Exception e)
+            {
+                _initializationException = ExceptionDispatchInfo.Capture(e);
+            }
         }
 
-        public virtual void Dispose() => _testLog.Dispose();
+        public virtual void Dispose()
+        {
+            if(_testLog == null)
+            {
+                // It seems like sometimes the MSBuild goop that adds the test framework can end up in a bad state and not actually add it
+                // Not sure yet why that happens but the exception isn't clear so I'm adding this error so we can detect it better.
+                // -anurse
+                throw new InvalidOperationException("LoggedTest base class was used but nothing initialized it! The test framework may not be enabled. Try cleaning your 'obj' directory.");
+            }
+
+            _initializationException?.Throw();
+            _testLog.Dispose();
+        }
     }
 }

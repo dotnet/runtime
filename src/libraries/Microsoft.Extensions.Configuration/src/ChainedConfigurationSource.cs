@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Represents a chained IConfiguration as an <see cref="IConfigurationSource"/>.
+    /// Represents a chained <see cref="IConfiguration"/> as an <see cref="IConfigurationSource"/>.
     /// </summary>
     public class ChainedConfigurationSource : IConfigurationSource
     {
@@ -12,6 +12,12 @@ namespace Microsoft.Extensions.Configuration
         /// The chained configuration.
         /// </summary>
         public IConfiguration Configuration { get; set; }
+
+        /// <summary>
+        /// Whether the chained configuration should be disposed when the
+        /// configuration provider gets disposed.
+        /// </summary>
+        public bool ShouldDisposeConfiguration { get; set; }
 
         /// <summary>
         /// Builds the <see cref="ChainedConfigurationProvider"/> for this source.

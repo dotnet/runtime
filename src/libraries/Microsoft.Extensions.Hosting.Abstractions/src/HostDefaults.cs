@@ -9,18 +9,18 @@ namespace Microsoft.Extensions.Hosting
     public static class HostDefaults
     {
         /// <summary>
-        /// The configuration key used to set <see cref="IHostingEnvironment.ApplicationName"/>.
+        /// The configuration key used to set <see cref="IHostEnvironment.ApplicationName"/>.
         /// </summary>
         public static readonly string ApplicationKey = "applicationName";
 
         /// <summary>
-        /// The configuration key used to set <see cref="IHostingEnvironment.EnvironmentName"/>.
+        /// The configuration key used to set <see cref="IHostEnvironment.EnvironmentName"/>.
         /// </summary>
         public static readonly string EnvironmentKey = "environment";
 
         /// <summary>
-        /// The configuration key used to set <see cref="IHostingEnvironment.ContentRootPath"/>
-        /// and <see cref="IHostingEnvironment.ContentRootFileProvider"/>.
+        /// The configuration key used to set <see cref="IHostEnvironment.ContentRootPath"/>
+        /// and <see cref="IHostEnvironment.ContentRootFileProvider"/>.
         /// </summary>
         public static readonly string ContentRootKey = "contentRoot";
     }

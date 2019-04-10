@@ -31,22 +31,5 @@ namespace Microsoft.Extensions.Logging
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IOptionsChangeTokenSource<LoggerFilterOptions>, EventLogFiltersConfigureOptionsChangeSource>());
             return builder;
         }
-
-        /// <summary>
-        /// Adds an event logger that is enabled for <see cref="LogLevel"/>.Information or higher.
-        /// </summary>
-        /// <param name="factory">The extension method argument.</param>
-        [Obsolete("This method is obsolete and will be removed in a future version. The recommended alternative is AddEventSourceLogger(this ILoggingBuilder builder).")]
-        public static ILoggerFactory AddEventSourceLogger(this ILoggerFactory factory)
-        {
-            if (factory == null)
-            {
-                throw new ArgumentNullException(nameof(factory));
-            }
-
-            factory.AddProvider(new EventSourceLoggerProvider(LoggingEventSource.Instance, handleFilters: true));
-
-            return factory;
-        }
     }
 }

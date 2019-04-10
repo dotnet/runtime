@@ -2,6 +2,8 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
@@ -343,6 +345,78 @@ namespace Microsoft.Extensions.Options.Tests
 
             config.Reload();
             Assert.Equal("2", controller.Message);
+        }
+
+        [Fact]
+        public void DisposingOptionsMonitorDisposesChangeTokenRegistrations()
+        {
+            var token = new ChangeToken();
+
+            for (int i = 0; i < 10; i++)
+            {
+                var services = new ServiceCollection();
+                services.AddOptions();
+                services.AddSingleton<IOptionsChangeTokenSource<FakeOptions>>(new ChangeTokenSource<FakeOptions>(token));
+                using (var sp = services.BuildServiceProvider())
+                {
+                    var monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+                    using (monitor.OnChange(o => { }))
+                    {
+
+                    }
+                }
+            }
+
+            Assert.Empty(token.Callbacks);
+        }
+
+        public class ChangeToken : IChangeToken
+        {
+            public List<(Action<object>, object)> Callbacks { get; } = new List<(Action<object>, object)>();
+
+            public bool HasChanged => false;
+
+            public bool ActiveChangeCallbacks => true;
+
+            public IDisposable RegisterChangeCallback(Action<object> callback, object state)
+            {
+                var item = (callback, state);
+                Callbacks.Add(item);
+                return new DisposableAction(() => Callbacks.Remove(item));
+            }
+
+            private class DisposableAction : IDisposable
+            {
+                private Action _action;
+
+                public DisposableAction(Action action)
+                {
+                    _action = action;
+                }
+
+                public void Dispose()
+                {
+                    var a = _action;
+                    if (a != null)
+                    {
+                        _action = null;
+                        a();
+                    }
+                }
+            }
+        }
+        
+        public class ChangeTokenSource<T> : IOptionsChangeTokenSource<T>
+        {
+            private readonly IChangeToken _changeToken;
+            public ChangeTokenSource(IChangeToken changeToken)
+            {
+                _changeToken = changeToken;
+            }
+
+            public string Name => null;
+
+            public IChangeToken GetChangeToken() => _changeToken;
         }
     }
 }

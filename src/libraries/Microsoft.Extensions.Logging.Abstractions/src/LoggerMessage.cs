@@ -1,11 +1,10 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Logging.Internal;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -102,11 +101,16 @@ namespace Microsoft.Extensions.Logging
         {
             var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 1);
 
+            void Log(ILogger logger, T1 arg1, Exception exception)
+            {
+                logger.Log(logLevel, eventId, new LogValues<T1>(formatter, arg1), exception, LogValues<T1>.Callback);
+            }
+
             return (logger, arg1, exception) =>
             {
                 if (logger.IsEnabled(logLevel))
                 {
-                    logger.Log(logLevel, eventId, new LogValues<T1>(formatter, arg1), exception, LogValues<T1>.Callback);
+                    Log(logger, arg1, exception);
                 }
             };
         }
@@ -124,11 +128,16 @@ namespace Microsoft.Extensions.Logging
         {
             var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 2);
 
+            void Log(ILogger logger, T1 arg1, T2 arg2, Exception exception)
+            {
+                logger.Log(logLevel, eventId, new LogValues<T1, T2>(formatter, arg1, arg2), exception, LogValues<T1, T2>.Callback);
+            }
+
             return (logger, arg1, arg2, exception) =>
             {
                 if (logger.IsEnabled(logLevel))
                 {
-                    logger.Log(logLevel, eventId, new LogValues<T1, T2>(formatter, arg1, arg2), exception, LogValues<T1, T2>.Callback);
+                    Log(logger, arg1, arg2, exception);
                 }
             };
         }
@@ -147,11 +156,16 @@ namespace Microsoft.Extensions.Logging
         {
             var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 3);
 
+            void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, Exception exception)
+            {
+                logger.Log(logLevel, eventId, new LogValues<T1, T2, T3>(formatter, arg1, arg2, arg3), exception, LogValues<T1, T2, T3>.Callback);
+            }
+
             return (logger, arg1, arg2, arg3, exception) =>
             {
                 if (logger.IsEnabled(logLevel))
                 {
-                    logger.Log(logLevel, eventId, new LogValues<T1, T2, T3>(formatter, arg1, arg2, arg3), exception, LogValues<T1, T2, T3>.Callback);
+                    Log(logger, arg1, arg2, arg3, exception);
                 }
             };
         }
@@ -171,11 +185,16 @@ namespace Microsoft.Extensions.Logging
         {
             var formatter = CreateLogValuesFormatter(formatString, expectedNamedParameterCount: 4);
 
+            void Log(ILogger logger, T1 arg1, T2 arg2, T3 arg3, T4 arg4, Exception exception)
+            {
+                logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4>(formatter, arg1, arg2, arg3, arg4), exception, LogValues<T1, T2, T3, T4>.Callback);
+            }
+
             return (logger, arg1, arg2, arg3, arg4, exception) =>
             {
                 if (logger.IsEnabled(logLevel))
                 {
-                    logger.Log(logLevel, eventId, new LogValues<T1, T2, T3, T4>(formatter, arg1, arg2, arg3, arg4), exception, LogValues<T1, T2, T3, T4>.Callback);
+                    Log(logger, arg1, arg2, arg3, arg4, exception);
                 }
             };
         }
@@ -245,11 +264,9 @@ namespace Microsoft.Extensions.Logging
             return logValuesFormatter;
         }
 
-        private class LogValues : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues : IReadOnlyList<KeyValuePair<string, object>>
         {
-            public static Func<object, Exception, string> Callback = (state, exception) => ((LogValues)state)._formatter.Format(((LogValues)state).ToArray());
-
-            private static object[] _valueArray = new object[0];
+            public static readonly Func<LogValues, Exception, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
 
@@ -270,22 +287,14 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            public int Count
-            {
-                get
-                {
-                    return 1;
-                }
-            }
+            public int Count => 1;
 
             public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
             {
                 yield return this[0];
             }
 
-            public object[] ToArray() => _valueArray;
-
-            public override string ToString() => _formatter.Format(ToArray());
+            public override string ToString() => _formatter.Format();
 
             IEnumerator IEnumerable.GetEnumerator()
             {
@@ -293,9 +302,9 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private class LogValues<T0> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0> : IReadOnlyList<KeyValuePair<string, object>>
         {
-            public static Func<object, Exception, string> Callback = (state, exception) => ((LogValues<T0>)state)._formatter.Format(((LogValues<T0>)state).ToArray());
+            public static readonly Func<LogValues<T0>, Exception, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
             private readonly T0 _value0;
@@ -310,25 +319,19 @@ namespace Microsoft.Extensions.Logging
             {
                 get
                 {
-                    if (index == 0)
+                    switch (index)
                     {
-                        return new KeyValuePair<string, object>(_formatter.ValueNames[0], _value0);
+                        case 0:
+                            return new KeyValuePair<string, object>(_formatter.ValueNames[0], _value0);
+                        case 1:
+                            return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
+                        default:
+                            throw new IndexOutOfRangeException(nameof(index));
                     }
-                    else if (index == 1)
-                    {
-                        return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
-                    }
-                    throw new IndexOutOfRangeException(nameof(index));
                 }
             }
 
-            public int Count
-            {
-                get
-                {
-                    return 2;
-                }
-            }
+            public int Count => 2;
 
             public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
             {
@@ -338,9 +341,8 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            public object[] ToArray() => new object[] { _value0 };
 
-            public override string ToString() => _formatter.Format(ToArray());
+            public override string ToString() => _formatter.Format(_value0);
 
             IEnumerator IEnumerable.GetEnumerator()
             {
@@ -348,9 +350,9 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private class LogValues<T0, T1> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1> : IReadOnlyList<KeyValuePair<string, object>>
         {
-            public static Func<object, Exception, string> Callback = (state, exception) => ((LogValues<T0, T1>)state)._formatter.Format(((LogValues<T0, T1>)state).ToArray());
+            public static readonly Func<LogValues<T0, T1>, Exception, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
             private readonly T0 _value0;
@@ -381,13 +383,7 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            public int Count
-            {
-                get
-                {
-                    return 3;
-                }
-            }
+            public int Count => 3;
 
             public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
             {
@@ -397,9 +393,7 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            public object[] ToArray() => new object[] { _value0, _value1 };
-
-            public override string ToString() => _formatter.Format(ToArray());
+            public override string ToString() => _formatter.Format(_value0, _value1);
 
             IEnumerator IEnumerable.GetEnumerator()
             {
@@ -407,22 +401,16 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private class LogValues<T0, T1, T2> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1, T2> : IReadOnlyList<KeyValuePair<string, object>>
         {
-            public static Func<object, Exception, string> Callback = (state, exception) => ((LogValues<T0, T1, T2>)state)._formatter.Format(((LogValues<T0, T1, T2>)state).ToArray());
+            public static readonly Func<LogValues<T0, T1, T2>, Exception, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
-            public T0 _value0;
-            public T1 _value1;
-            public T2 _value2;
+            private readonly T0 _value0;
+            private readonly T1 _value1;
+            private readonly T2 _value2;
 
-            public int Count
-            {
-                get
-                {
-                    return 4;
-                }
-            }
+            public int Count => 4;
 
             public KeyValuePair<string, object> this[int index]
             {
@@ -452,9 +440,7 @@ namespace Microsoft.Extensions.Logging
                 _value2 = value2;
             }
 
-            public object[] ToArray() => new object[] { _value0, _value1, _value2 };
-
-            public override string ToString() => _formatter.Format(ToArray());
+            public override string ToString() => _formatter.Format(_value0, _value1, _value2);
 
             public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
             {
@@ -470,23 +456,17 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private class LogValues<T0, T1, T2, T3> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1, T2, T3> : IReadOnlyList<KeyValuePair<string, object>>
         {
-            public static Func<object, Exception, string> Callback = (state, exception) => ((LogValues<T0, T1, T2, T3>)state)._formatter.Format(((LogValues<T0, T1, T2, T3>)state).ToArray());
+            public static readonly Func<LogValues<T0, T1, T2, T3>, Exception, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
-            public T0 _value0;
-            public T1 _value1;
-            public T2 _value2;
-            public T3 _value3;
+            private readonly T0 _value0;
+            private readonly T1 _value1;
+            private readonly T2 _value2;
+            private readonly T3 _value3;
 
-            public int Count
-            {
-                get
-                {
-                    return 5;
-                }
-            }
+            public int Count => 5;
 
             public KeyValuePair<string, object> this[int index]
             {
@@ -519,7 +499,7 @@ namespace Microsoft.Extensions.Logging
                 _value3 = value3;
             }
 
-            public object[] ToArray() => new object[] { _value0, _value1, _value2, _value3 };
+            private object[] ToArray() => new object[] { _value0, _value1, _value2, _value3 };
 
             public override string ToString() => _formatter.Format(ToArray());
 
@@ -537,24 +517,18 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private class LogValues<T0, T1, T2, T3, T4> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1, T2, T3, T4> : IReadOnlyList<KeyValuePair<string, object>>
         {
-            public static Func<object, Exception, string> Callback = (state, exception) => ((LogValues<T0, T1, T2, T3, T4>)state)._formatter.Format(((LogValues<T0, T1, T2, T3, T4>)state).ToArray());
+            public static readonly Func<LogValues<T0, T1, T2, T3, T4>, Exception, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
-            public T0 _value0;
-            public T1 _value1;
-            public T2 _value2;
-            public T3 _value3;
-            public T4 _value4;
+            private readonly T0 _value0;
+            private readonly T1 _value1;
+            private readonly T2 _value2;
+            private readonly T3 _value3;
+            private readonly T4 _value4;
 
-            public int Count
-            {
-                get
-                {
-                    return 6;
-                }
-            }
+            public int Count => 6;
 
             public KeyValuePair<string, object> this[int index]
             {
@@ -590,7 +564,7 @@ namespace Microsoft.Extensions.Logging
                 _value4 = value4;
             }
 
-            public object[] ToArray() => new object[] { _value0, _value1, _value2, _value3, _value4 };
+            private object[] ToArray() => new object[] { _value0, _value1, _value2, _value3, _value4 };
 
             public override string ToString() => _formatter.Format(ToArray());
 
@@ -608,25 +582,19 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private class LogValues<T0, T1, T2, T3, T4, T5> : IReadOnlyList<KeyValuePair<string, object>>
+        private readonly struct LogValues<T0, T1, T2, T3, T4, T5> : IReadOnlyList<KeyValuePair<string, object>>
         {
-            public static Func<object, Exception, string> Callback = (state, exception) => ((LogValues<T0, T1, T2, T3, T4, T5>)state)._formatter.Format(((LogValues<T0, T1, T2, T3, T4, T5>)state).ToArray());
+            public static readonly Func<LogValues<T0, T1, T2, T3, T4, T5>, Exception, string> Callback = (state, exception) => state.ToString();
 
             private readonly LogValuesFormatter _formatter;
-            public T0 _value0;
-            public T1 _value1;
-            public T2 _value2;
-            public T3 _value3;
-            public T4 _value4;
-            public T5 _value5;
+            private readonly T0 _value0;
+            private readonly T1 _value1;
+            private readonly T2 _value2;
+            private readonly T3 _value3;
+            private readonly T4 _value4;
+            private readonly T5 _value5;
 
-            public int Count
-            {
-                get
-                {
-                    return 7;
-                }
-            }
+            public int Count => 7;
 
             public KeyValuePair<string, object> this[int index]
             {
@@ -665,86 +633,7 @@ namespace Microsoft.Extensions.Logging
                 _value5 = value5;
             }
 
-            public object[] ToArray() => new object[] { _value0, _value1, _value2, _value3, _value4, _value5 };
-
-            public override string ToString() => _formatter.Format(ToArray());
-
-            public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
-            {
-                for (int i = 0; i < Count; ++i)
-                {
-                    yield return this[i];
-                }
-            }
-
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return GetEnumerator();
-            }
-        }
-
-        private class LogValues<T0, T1, T2, T3, T4, T5, T6> : IReadOnlyList<KeyValuePair<string, object>>
-        {
-            public static Func<object, Exception, string> Callback = (state, exception) => ((LogValues<T0, T1, T2, T3, T4, T5, T6>)state)._formatter.Format(((LogValues<T0, T1, T2, T3, T4, T5, T6>)state).ToArray());
-
-            private readonly LogValuesFormatter _formatter;
-            public T0 _value0;
-            public T1 _value1;
-            public T2 _value2;
-            public T3 _value3;
-            public T4 _value4;
-            public T5 _value5;
-            public T6 _value6;
-
-            public int Count
-            {
-                get
-                {
-                    return 8;
-                }
-            }
-
-            public KeyValuePair<string, object> this[int index]
-            {
-                get
-                {
-                    switch (index)
-                    {
-                        case 0:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[0], _value0);
-                        case 1:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[1], _value1);
-                        case 2:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[2], _value2);
-                        case 3:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[3], _value3);
-                        case 4:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[4], _value4);
-                        case 5:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[5], _value5);
-                        case 6:
-                            return new KeyValuePair<string, object>(_formatter.ValueNames[6], _value6);
-                        case 7:
-                            return new KeyValuePair<string, object>("{OriginalFormat}", _formatter.OriginalFormat);
-                        default:
-                            throw new IndexOutOfRangeException(nameof(index));
-                    }
-                }
-            }
-
-            public LogValues(LogValuesFormatter formatter, T0 value0, T1 value1, T2 value2, T3 value3, T4 value4, T5 value5, T6 value6)
-            {
-                _formatter = formatter;
-                _value0 = value0;
-                _value1 = value1;
-                _value2 = value2;
-                _value3 = value3;
-                _value4 = value4;
-                _value5 = value5;
-                _value6 = value6;
-            }
-
-            public object[] ToArray() => new object[] { _value0, _value1, _value2, _value3, _value4, _value5, _value6 };
+            private object[] ToArray() => new object[] { _value0, _value1, _value2, _value3, _value4, _value5 };
 
             public override string ToString() => _formatter.Format(ToArray());
 
@@ -763,4 +652,3 @@ namespace Microsoft.Extensions.Logging
         }
     }
 }
-

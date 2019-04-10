@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Configuration
     /// </summary>
     public class ConfigurationSection : IConfigurationSection
     {
-        private readonly ConfigurationRoot _root;
+        private readonly IConfigurationRoot _root;
         private readonly string _path;
         private string _key;
 
@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="root">The configuration root.</param>
         /// <param name="path">The path to this section.</param>
-        public ConfigurationSection(ConfigurationRoot root, string path)
+        public ConfigurationSection(IConfigurationRoot root, string path)
         {
             if (root == null)
             {
