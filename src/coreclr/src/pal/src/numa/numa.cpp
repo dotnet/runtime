@@ -204,7 +204,8 @@ VirtualAllocExNuma(
 #if HAVE_NUMA_H
             if (result != NULL && g_numaAvailable)
             {
-                int nodeMaskLength = (g_highestNumaNode + sizeof(unsigned long) - 1) / sizeof(unsigned long);
+                int usedNodeMaskBits = g_highestNumaNode + 1;
+                int nodeMaskLength = (usedNodeMaskBits + sizeof(unsigned long) - 1) / sizeof(unsigned long);
                 unsigned long *nodeMask = (unsigned long*)alloca(nodeMaskLength * sizeof(unsigned long));
                 memset(nodeMask, 0, nodeMaskLength);
 
@@ -212,7 +213,7 @@ VirtualAllocExNuma(
                 int mask = ((unsigned long)1) << (nndPreferred & (sizeof(unsigned long) - 1));
                 nodeMask[index] = mask;
 
-                int st = mbind(result, dwSize, MPOL_PREFERRED, nodeMask, g_highestNumaNode, 0);
+                int st = mbind(result, dwSize, MPOL_PREFERRED, nodeMask, usedNodeMaskBits, 0);
 
                 _ASSERTE(st == 0);
                 // If the mbind fails, we still return the allocated memory since the nndPreferred is just a hint
