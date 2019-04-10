@@ -295,20 +295,8 @@ set (CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
 
 if(WIN32)
   add_precompiled_header(jitpch.h ../jitpch.cpp SOURCES)
-
-  # Create .def file containing a list of exports preceeded by
-  # 'EXPORTS'.  The file "ClrJit.exports" already contains the list, so we
-  # massage it into the correct format here to create "ClrJit.exports.def".
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
-  set(JIT_EXPORTS_FILE_TEMP ${JIT_EXPORTS_FILE}.txt)
-  file(READ ${CLRJIT_EXPORTS} exports_list)
-  file(WRITE ${JIT_EXPORTS_FILE_TEMP} "LIBRARY CLRJIT\n")
-  file(APPEND ${JIT_EXPORTS_FILE_TEMP} "EXPORTS\n")
-  file(APPEND ${JIT_EXPORTS_FILE_TEMP} ${exports_list})
-
-  # Copy the file only if it has changed.
-  execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${JIT_EXPORTS_FILE_TEMP} ${JIT_EXPORTS_FILE})
+  preprocess_def_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
   set(SHARED_LIB_SOURCES ${SOURCES} ${JIT_EXPORTS_FILE})
 else()
