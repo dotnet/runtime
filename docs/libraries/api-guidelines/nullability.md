@@ -47,7 +47,7 @@ Things are generally easier when looking at return values (and out parameters), 
 - **DO** define a return value or out parameter as nullable if it may be assigned `null` under any circumstance.
 - **DO** define all other return values or out parameters as non-nullable.
 
-Annotating one of our return types as non-nullable is equivalent to documenting a guarantee that it will never return null.  Violations of that guarantee are similarly bugs to be fixed in the implementation. However, there is a huge gap here, in the form of overridable members…
+Annotating one of our return types as non-nullable is equivalent to documenting a guarantee that it will never return null.  Violations of that guarantee are bugs to be fixed in the implementation. However, there is a huge gap here, in the form of overridable membersâ€¦
 
 ### Virtual/Abstract Methods and Interfaces
 
@@ -71,7 +71,7 @@ In contrast, for `Exception.Message` which is also virtual, we plan to have it b
 
 ## Code Review Guidance
 
-Code reviews for enabling the nullability warnings are particularly interesting in that often differ significantly from general code reviews.  Typically, a code reviewer focused only on the code actually being modified, and thus that shows up in a code review diffing tool.  However, enabling the nullability feature has a much broader impact, in that it effectively inverts the meaning of every reference type use in the codebase (or, more specifically, in the scope at which the nullability warning context was applied).  So, for example, if you turn on nullability for a whole file (`#enable nullable` at the top of the file) and then touch no other lines in the file, every method that accepts a `string` is now accepting a non-nullable `string`; whereas previously passing in `null` to that argument would be fine, now the compiler will warn about it, and to allow nulls, the argument must be changed to `string?`.  This means that enabling nullability checking requires reviewing all exposed APIs in that context, regardless of whether they were modified or not, as the contract exposed by the API may have been implicitly modified.
+Code reviews for enabling the nullability warnings are particularly interesting in that they often differ significantly from general code reviews.  Typically, a code reviewer focuses only on the code actually being modified (e.g. the lines highlighted by the code diffing tool); however, enabling the nullability feature has a much broader impact, in that it effectively inverts the meaning of every reference type use in the codebase (or, more specifically, in the scope at which the nullability warning context was applied).  So, for example, if you turn on nullability for a whole file (`#enable nullable` at the top of the file) and then touch no other lines in the file, every method that accepts a `string` is now accepting a non-nullable `string`; whereas previously passing in `null` to that argument would be fine, now the compiler will warn about it, and to allow nulls, the argument must be changed to `string?`.  This means that enabling nullability checking requires reviewing all exposed APIs in that context, regardless of whether they were modified or not, as the contract exposed by the API may have been implicitly modified.
 
 A code review for enabling nullability generally involves three passes:
 
