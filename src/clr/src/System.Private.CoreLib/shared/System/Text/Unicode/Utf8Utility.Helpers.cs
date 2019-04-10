@@ -391,35 +391,35 @@ namespace System.Text.Unicode
                 }
                 else
                 {
-                    // UTF8 [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ] = scalar 000uuuuu zzzzyyyy yyxxxxxx
-                    // UTF16 scalar 000uuuuuzzzzyyyyyyxxxxxx = [ 110111yy yyxxxxxx 110110ww wwzzzzyy ]
+                    // input is UTF8 [ 10xxxxxx 10yyyyyy 10uuzzzz 11110uuu ] = scalar 000uuuuu zzzzyyyy yyxxxxxx
+                    // want to return UTF16 scalar 000uuuuuzzzzyyyyyyxxxxxx = [ 110111yy yyxxxxxx 110110ww wwzzzzyy ]
                     // where wwww = uuuuu - 1
                     uint retVal = (uint)(byte)value << 8; // retVal = [ 00000000 00000000 11110uuu 00000000 ]
-                    retVal |= (value & 0x3F00u) >> 6; // retVal = [ 00000000 00000000 11110uuu uuzzzz00 ]
-                    retVal |= (value & 0x030000u) >> 16; // retVal = [ 00000000 00000000 11110uuu uuzzzzyy ]
-                    retVal |= (value & 0x3F000000u) >> 8; // retVal = [ 00000000 00xxxxxx 11110uuu uuzzzzyy ]
-                    retVal |= (value & 0x0F0000u) << 6; // retVal = [ 000000yy yyxxxxxx 11110uuu uuzzzzyy ]
-                    retVal -= 0x40u;// retVal = [ 000000yy yyxxxxxx 111100ww wwzzzzyy ]
-                    retVal -= 0x2000u; // retVal = [ 000000yy yyxxxxxx 110100ww wwzzzzyy ]
-                    retVal += 0x0800u; // retVal = [ 000000yy yyxxxxxx 110110ww wwzzzzyy ]
-                    retVal += 0xDC000000u; // retVal = [ 110111yy yyxxxxxx 110110ww wwzzzzyy ]
+                    retVal |= (value & 0x0000_3F00u) >> 6; // retVal = [ 00000000 00000000 11110uuu uuzzzz00 ]
+                    retVal |= (value & 0x0030_0000u) >> 20; // retVal = [ 00000000 00000000 11110uuu uuzzzzyy ]
+                    retVal |= (value & 0x3F00_0000u) >> 8; // retVal = [ 00000000 00xxxxxx 11110uuu uuzzzzyy ]
+                    retVal |= (value & 0x000F_0000u) << 6; // retVal = [ 000000yy yyxxxxxx 11110uuu uuzzzzyy ]
+                    retVal -= 0x0000_0040u; // retVal = [ 000000yy yyxxxxxx 111100ww wwzzzzyy ]
+                    retVal -= 0x0000_2000u; // retVal = [ 000000yy yyxxxxxx 110100ww wwzzzzyy ]
+                    retVal += 0x0000_0800u; // retVal = [ 000000yy yyxxxxxx 110110ww wwzzzzyy ]
+                    retVal += 0xDC00_0000u; // retVal = [ 110111yy yyxxxxxx 110110ww wwzzzzyy ]
                     return retVal;
                 }
             }
             else
             {
-                // UTF8 [ 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx ] = scalar 000uuuuu zzzzyyyy yyxxxxxx
-                // UTF16 scalar 000uuuuuxxxxxxxxxxxxxxxx = [ 110110wwwwxxxxxx 110111xxxxxxxxx ]
+                // input is UTF8 [ 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx ] = scalar 000uuuuu zzzzyyyy yyxxxxxx
+                // want to return UTF16 scalar 000uuuuuxxxxxxxxxxxxxxxx = [ 110110wwwwxxxxxx 110111xxxxxxxxx ]
                 // where wwww = uuuuu - 1
-                uint retVal = value & 0xFF000000U; // retVal = [ 11110uuu 00000000 00000000 00000000 ]
-                retVal |= (value & 0x3F0000U) << 2; // retVal = [ 11110uuu uuzzzz00 00000000 00000000 ]
-                retVal |= (value & 0x3000U) << 4; // retVal = [ 11110uuu uuzzzzyy 00000000 00000000 ]
-                retVal |= (value & 0x0F00U) >> 2; // retVal = [ 11110uuu uuzzzzyy 000000yy yy000000 ]
-                retVal |= (value & 0x3FU); // retVal = [ 11110uuu uuzzzzyy 000000yy yyxxxxxx ]
-                retVal -= 0x20000000U; // retVal = [ 11010uuu uuzzzzyy 000000yy yyxxxxxx ]
-                retVal -= 0x400000U; // retVal = [ 110100ww wwzzzzyy 000000yy yyxxxxxx ]
-                retVal += 0xDC00U; // retVal = [ 110100ww wwzzzzyy 110111yy yyxxxxxx ]
-                retVal += 0x08000000U; // retVal = [ 110110ww wwzzzzyy 110111yy yyxxxxxx ]
+                uint retVal = value & 0xFF00_0000u; // retVal = [ 11110uuu 00000000 00000000 00000000 ]
+                retVal |= (value & 0x003F_0000u) << 2; // retVal = [ 11110uuu uuzzzz00 00000000 00000000 ]
+                retVal |= (value & 0x0000_3000u) << 4; // retVal = [ 11110uuu uuzzzzyy 00000000 00000000 ]
+                retVal |= (value & 0x0000_0F00u) >> 2; // retVal = [ 11110uuu uuzzzzyy 000000yy yy000000 ]
+                retVal |= (value & 0x0000_003Fu); // retVal = [ 11110uuu uuzzzzyy 000000yy yyxxxxxx ]
+                retVal -= 0x2000_0000u; // retVal = [ 11010uuu uuzzzzyy 000000yy yyxxxxxx ]
+                retVal -= 0x0040_0000u; // retVal = [ 110100ww wwzzzzyy 000000yy yyxxxxxx ]
+                retVal += 0x0000_DC00u; // retVal = [ 110100ww wwzzzzyy 110111yy yyxxxxxx ]
+                retVal += 0x0800_0000u; // retVal = [ 110110ww wwzzzzyy 110111yy yyxxxxxx ]
                 return retVal;
             }
         }
