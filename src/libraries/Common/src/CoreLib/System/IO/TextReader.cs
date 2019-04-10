@@ -254,7 +254,7 @@ namespace System.IO
 
         public virtual ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                ReadAsync(array.Array, array.Offset, array.Count) :
+                ReadAsync(array.Array!, array.Offset, array.Count) : // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 Task<int>.Factory.StartNew(state =>
                 {
                     var t = (Tuple<TextReader, Memory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
@@ -292,7 +292,7 @@ namespace System.IO
 
         public virtual ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                ReadBlockAsync(array.Array, array.Offset, array.Count) :
+                ReadBlockAsync(array.Array!, array.Offset, array.Count) : // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 Task<int>.Factory.StartNew(state =>
                 {
                     var t = (Tuple<TextReader, Memory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761

@@ -12,6 +12,7 @@
 ** 
 ===========================================================*/
 
+#nullable enable
 namespace System
 {
     // IDisposable is an attempt at helping to solve problems with deterministic

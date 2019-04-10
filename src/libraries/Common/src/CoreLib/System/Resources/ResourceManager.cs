@@ -547,7 +547,7 @@ namespace System.Resources
                 return null;
             }
 
-            if (!Version.TryParse(v, out Version version))
+            if (!Version.TryParse(v, out Version? version))
             {
                 throw new ArgumentException(SR.Format(SR.Arg_InvalidSatelliteContract_Asm_Ver, a, v));
             }

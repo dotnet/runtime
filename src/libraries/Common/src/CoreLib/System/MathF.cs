@@ -10,7 +10,7 @@
 
 //This class contains only static members and doesn't require serialization.
 
-using System.Runtime;
+#nullable enable
 using System.Runtime.CompilerServices;
 
 namespace System
@@ -190,26 +190,34 @@ namespace System
 
         public static float MaxMagnitude(float x, float y)
         {
-            // This matches the IEEE 754:2019 `maximumMagnitude` function
-            //
-            // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // When x and y are both finite or infinite, return the larger magnitude
+            //  * We count +0.0 as larger than -0.0 to match MSVC
+            // When x or y, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
-            float ax = Abs(x);
-            float ay = Abs(y);
+            if (float.IsNaN(x))
+            {
+                return y;
+            }
 
-            if ((ax > ay) || float.IsNaN(ax))
+            if (float.IsNaN(y))
             {
                 return x;
             }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (ax < ay) first could get transformed into (ay >= ax) by the JIT which would
+            //   then return an incorrect value
+
+            float ax = Abs(x);
+            float ay = Abs(y);
 
             if (ax == ay)
             {
                 return float.IsNegative(x) ? y : x;
             }
 
-            return y;
+            return (ax < ay) ? y : x;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -220,26 +228,34 @@ namespace System
 
         public static float MinMagnitude(float x, float y)
         {
-            // This matches the IEEE 754:2019 `minimumMagnitude` function
-            //
-            // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // When x and y are both finite or infinite, return the smaller magnitude
+            //  * We count -0.0 as smaller than -0.0 to match MSVC
+            // When x or y, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
-            float ax = Abs(x);
-            float ay = Abs(y);
+            if (float.IsNaN(x))
+            {
+                return y;
+            }
 
-            if ((ax < ay) || float.IsNaN(ax))
+            if (float.IsNaN(y))
             {
                 return x;
             }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (ax < ay) first could get transformed into (ay >= ax) by the JIT which would
+            //   then return an incorrect value
+
+            float ax = Abs(x);
+            float ay = Abs(y);
 
             if (ax == ay)
             {
                 return float.IsNegative(x) ? x : y;
             }
 
-            return y;
+            return (ax < ay) ? x : y;
         }
 
         [Intrinsic]

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Diagnostics;
 using System.IO;
@@ -14,9 +15,7 @@ namespace System
 {
     public static partial class Environment
     {
-        internal static bool IsWindows8OrAbove => WindowsVersion.IsWindows8OrAbove;
-
-        private static string GetEnvironmentVariableFromRegistry(string variable, bool fromMachine)
+        private static string? GetEnvironmentVariableFromRegistry(string variable, bool fromMachine)
         {
             Debug.Assert(variable != null);
 
@@ -25,13 +24,13 @@ namespace System
                 return null; // Systems without the Windows registry pretend that it's always empty.
 #endif
 
-            using (RegistryKey environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: false))
+            using (RegistryKey? environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: false))
             {
                 return environmentKey?.GetValue(variable) as string;
             }
         }
 
-        private static void SetEnvironmentVariableFromRegistry(string variable, string value, bool fromMachine)
+        private static void SetEnvironmentVariableFromRegistry(string variable, string? value, bool fromMachine)
         {
             Debug.Assert(variable != null);
 
@@ -46,7 +45,7 @@ namespace System
                 throw new ArgumentException(SR.Argument_LongEnvVarValue, nameof(variable));
             }
 
-            using (RegistryKey environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: true))
+            using (RegistryKey? environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: true))
             {
                 if (environmentKey != null)
                 {
@@ -74,13 +73,13 @@ namespace System
                 return results;
 #endif
 
-            using (RegistryKey environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: false))
+            using (RegistryKey? environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: false))
             {
                 if (environmentKey != null)
                 {
                     foreach (string name in environmentKey.GetValueNames())
                     {
-                        string value = environmentKey.GetValue(name, "").ToString();
+                        string? value = environmentKey.GetValue(name, "")!.ToString(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                         try
                         {
                             results.Add(name, value);
@@ -96,7 +95,7 @@ namespace System
             return results;
         }
 
-        private static RegistryKey OpenEnvironmentKeyIfExists(bool fromMachine, bool writable)
+        private static RegistryKey? OpenEnvironmentKeyIfExists(bool fromMachine, bool writable)
         {
             RegistryKey baseKey;
             string keyName;
@@ -411,44 +410,14 @@ namespace System
                 if (s_winRTFolderPathsGetFolderPath == null)
                 {
                     Type winRtFolderPathsType = Type.GetType("System.WinRTFolderPaths, System.Runtime.WindowsRuntime, Version=4.0.14.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", throwOnError: false);
-                    MethodInfo getFolderPathsMethod = winRtFolderPathsType?.GetMethod("GetFolderPath", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(SpecialFolder), typeof(SpecialFolderOption) }, null);
-                    var d = (Func<SpecialFolder, SpecialFolderOption, string>)getFolderPathsMethod?.CreateDelegate(typeof(Func<SpecialFolder, SpecialFolderOption, string>));
-                    s_winRTFolderPathsGetFolderPath = d ?? delegate { return null; };
+                    MethodInfo? getFolderPathsMethod = winRtFolderPathsType?.GetMethod("GetFolderPath", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(SpecialFolder), typeof(SpecialFolderOption) }, null);
+                    var d = (Func<SpecialFolder, SpecialFolderOption, string>?)getFolderPathsMethod?.CreateDelegate(typeof(Func<SpecialFolder, SpecialFolderOption, string>));
+                    s_winRTFolderPathsGetFolderPath = d ?? delegate { return string.Empty; };
                 }
 
                 return s_winRTFolderPathsGetFolderPath(folder, option);
             }
         }
 #endif
-
-        // Seperate type so a .cctor is not created for Enviroment which then would be triggered during startup
-        private static class WindowsVersion
-        {
-            // Cache the value in readonly static that can be optimized out by the JIT
-            internal readonly static bool IsWindows8OrAbove = GetIsWindows8OrAbove();
-
-            private static bool GetIsWindows8OrAbove()
-            {
-                ulong conditionMask = Interop.Kernel32.VerSetConditionMask(0, Interop.Kernel32.VER_MAJORVERSION, Interop.Kernel32.VER_GREATER_EQUAL);
-                conditionMask = Interop.Kernel32.VerSetConditionMask(conditionMask, Interop.Kernel32.VER_MINORVERSION, Interop.Kernel32.VER_GREATER_EQUAL);
-                conditionMask = Interop.Kernel32.VerSetConditionMask(conditionMask, Interop.Kernel32.VER_SERVICEPACKMAJOR, Interop.Kernel32.VER_GREATER_EQUAL);
-                conditionMask = Interop.Kernel32.VerSetConditionMask(conditionMask, Interop.Kernel32.VER_SERVICEPACKMINOR, Interop.Kernel32.VER_GREATER_EQUAL);
-
-                // Windows 8 version is 6.2
-                Interop.Kernel32.OSVERSIONINFOEX version = default;
-                unsafe
-                {
-                    version.dwOSVersionInfoSize = sizeof(Interop.Kernel32.OSVERSIONINFOEX);
-                }
-                version.dwMajorVersion = 6;
-                version.dwMinorVersion = 2;
-                version.wServicePackMajor = 0;
-                version.wServicePackMinor = 0;
-
-                return Interop.Kernel32.VerifyVersionInfoW(ref version,
-                    Interop.Kernel32.VER_MAJORVERSION | Interop.Kernel32.VER_MINORVERSION | Interop.Kernel32.VER_SERVICEPACKMAJOR | Interop.Kernel32.VER_SERVICEPACKMINOR,
-                    conditionMask);
-            }
-        }
     }
 }
