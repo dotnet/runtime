@@ -3578,7 +3578,7 @@ do_box_value (VerifyContext *ctx, int klass_token)
 
 	klass = mono_class_from_mono_type_internal (type);
 	if (mono_class_is_nullable (klass))
-		type = m_class_get_byval_arg (mono_class_get_nullable_param (klass));
+		type = m_class_get_byval_arg (mono_class_get_nullable_param_internal (klass));
 	stack_push_val (ctx, TYPE_COMPLEX | BOXED_MASK, type);
 }
 

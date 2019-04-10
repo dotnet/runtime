@@ -1908,13 +1908,22 @@ mono_class_is_nullable (MonoClass *klass)
 	return gklass && gklass->container_class == mono_defaults.generic_nullable_class;
 }
 
-
 /** if klass is T? return T */
+MonoClass*
+mono_class_get_nullable_param_internal (MonoClass *klass)
+{
+	g_assert (mono_class_is_nullable (klass));
+	return mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
+}
+
 MonoClass*
 mono_class_get_nullable_param (MonoClass *klass)
 {
-       g_assert (mono_class_is_nullable (klass));
-       return mono_class_from_mono_type_internal (mono_class_get_generic_class (klass)->context.class_inst->type_argv [0]);
+	MonoClass *result = NULL;
+	MONO_ENTER_GC_UNSAFE;
+	result = mono_class_get_nullable_param_internal (klass);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
 }
 
 gboolean

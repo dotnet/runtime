@@ -855,7 +855,7 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 		gclass_recorded_list = g_slist_append (gclass_recorded_list, klass);
 
 	if (mono_class_is_nullable (klass))
-		klass->cast_class = klass->element_class = mono_class_get_nullable_param (klass);
+		klass->cast_class = klass->element_class = mono_class_get_nullable_param_internal (klass);
 
 	MONO_PROFILER_RAISE (class_loading, (klass));
 

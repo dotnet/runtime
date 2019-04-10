@@ -2966,7 +2966,7 @@ handle_unbox_nullable (MonoCompile* cfg, MonoInst* val, MonoClass* klass, int co
 {
 	MonoMethod* method;
 
-	if (m_class_is_enumtype (mono_class_get_nullable_param (klass)))
+	if (m_class_is_enumtype (mono_class_get_nullable_param_internal (klass)))
 		method = get_method_nofail (klass, "UnboxExact", 1, 0);
 	else
 		method = get_method_nofail (klass, "Unbox", 1, 0);

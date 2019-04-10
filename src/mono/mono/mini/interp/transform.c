@@ -3795,7 +3795,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 			if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method;
-				if (m_class_is_enumtype (mono_class_get_nullable_param (klass)))
+				if (m_class_is_enumtype (mono_class_get_nullable_param_internal (klass)))
 					target_method = mono_class_get_method_from_name_checked (klass, "UnboxExact", 1, 0, error);
 				else
 					target_method = mono_class_get_method_from_name_checked (klass, "Unbox", 1, 0, error);
@@ -3832,7 +3832,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				SET_TYPE (td->sp - 1, stack_type [mt], klass);
 			} else if (mono_class_is_nullable (klass)) {
 				MonoMethod *target_method;
-				if (m_class_is_enumtype (mono_class_get_nullable_param (klass)))
+				if (m_class_is_enumtype (mono_class_get_nullable_param_internal (klass)))
 					target_method = mono_class_get_method_from_name_checked (klass, "UnboxExact", 1, 0, error);
 				else
 					target_method = mono_class_get_method_from_name_checked (klass, "Unbox", 1, 0, error);

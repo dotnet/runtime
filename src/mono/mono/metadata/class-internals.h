@@ -1131,8 +1131,8 @@ MonoMethodSignature *mono_metadata_signature_deep_dup (MonoImage *image, MonoMet
 MONO_API void
 mono_image_init_name_cache (MonoImage *image);
 
-gboolean mono_class_is_nullable (MonoClass *klass);
-MonoClass *mono_class_get_nullable_param (MonoClass *klass);
+MonoClass*
+mono_class_get_nullable_param_internal (MonoClass *klass);
 
 /* object debugging functions, for use inside gdb */
 MONO_API void mono_object_describe        (MonoObject *obj);

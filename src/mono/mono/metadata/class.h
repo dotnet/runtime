@@ -292,6 +292,12 @@ mono_method_can_access_field (MonoMethod *method, MonoClassField *field);
 MONO_API mono_bool
 mono_method_can_access_method (MonoMethod *method, MonoMethod *called);
 
+MONO_API mono_bool
+mono_class_is_nullable (MonoClass *klass);
+
+MONO_API MONO_RT_EXTERNAL_ONLY MonoClass*
+mono_class_get_nullable_param (MonoClass *klass);
+
 MONO_END_DECLS
 
 #endif /* _MONO_CLI_CLASS_H_ */
