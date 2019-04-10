@@ -111,6 +111,7 @@ namespace System
         public static bool IsWindows10Version1703OrGreater { get { throw null; } }
         public static bool IsWindows10Version1709OrGreater { get { throw null; } }
         public static bool IsWindows10Version1803OrGreater { get { throw null; } }
+        public static bool IsWindows10Version1903OrGreater { get { throw null; } }
         public static bool IsWindows7 { get { throw null; } }
         public static bool IsWindows8x { get { throw null; } }
         public static bool IsWindows8xOrLater { get { throw null; } }
