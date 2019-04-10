@@ -6,10 +6,12 @@ namespace Microsoft.Extensions.Configuration
     public static partial class ChainedBuilderExtensions
     {
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddConfiguration(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, Microsoft.Extensions.Configuration.IConfiguration config) { throw null; }
+        public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddConfiguration(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, Microsoft.Extensions.Configuration.IConfiguration config, bool shouldDisposeConfiguration) { throw null; }
     }
-    public partial class ChainedConfigurationProvider : Microsoft.Extensions.Configuration.IConfigurationProvider
+    public partial class ChainedConfigurationProvider : Microsoft.Extensions.Configuration.IConfigurationProvider, System.IDisposable
     {
         public ChainedConfigurationProvider(Microsoft.Extensions.Configuration.ChainedConfigurationSource source) { }
+        public void Dispose() { }
         public System.Collections.Generic.IEnumerable<string> GetChildKeys(System.Collections.Generic.IEnumerable<string> earlierKeys, string parentPath) { throw null; }
         public Microsoft.Extensions.Primitives.IChangeToken GetReloadToken() { throw null; }
         public void Load() { }
@@ -20,6 +22,7 @@ namespace Microsoft.Extensions.Configuration
     {
         public ChainedConfigurationSource() { }
         public Microsoft.Extensions.Configuration.IConfiguration Configuration { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool ShouldDisposeConfiguration { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
         public Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder) { throw null; }
     }
     public partial class ConfigurationBuilder : Microsoft.Extensions.Configuration.IConfigurationBuilder
