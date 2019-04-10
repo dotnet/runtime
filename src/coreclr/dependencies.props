@@ -26,13 +26,13 @@
 
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreClrCurrentRef>5928d719ef5382c7436f460326c1a92ced0af1cd</CoreClrCurrentRef>
+    <CoreClrCurrentRef>5b279e7174e71e3a94d48562f049f21ff3a0d33a</CoreClrCurrentRef>
     <BuildToolsCurrentRef>66f3bb05de8ac6063fbedff5816ef25cc6ecfa11</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview5-27609-71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview5-27610-71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <XunitPackageVersion>2.4.1</XunitPackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.36</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
