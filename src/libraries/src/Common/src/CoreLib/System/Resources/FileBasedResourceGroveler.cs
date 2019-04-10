@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 /*============================================================
 **
 **
@@ -34,12 +35,12 @@ namespace System.Resources
         // Consider modifying IResourceGroveler interface (hence this method signature) when we figure out 
         // serialization compat story for moving ResourceManager members to either file-based or 
         // manifest-based classes. Want to continue tightening the design to get rid of unused params.
-        public ResourceSet GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
+        public ResourceSet? GrovelForResourceSet(CultureInfo culture, Dictionary<string, ResourceSet> localResourceSets, bool tryParents, bool createIfNotExists)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
 
-            string fileName = null;
-            ResourceSet rs = null;
+            string? fileName = null;
+            ResourceSet? rs = null;
 
             // Don't use Assembly manifest, but grovel on disk for a file.
             // Create new ResourceSet, if a file exists on disk for it.
@@ -72,8 +73,7 @@ namespace System.Resources
         // constructor, we'll look there first.  If it couldn't be found in the module
         // diretory or the module dir wasn't provided, look in the current
         // directory.
-
-        private string FindResourceFile(CultureInfo culture, string fileName)
+        private string? FindResourceFile(CultureInfo culture, string fileName)
         {
             Debug.Assert(culture != null, "culture shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
