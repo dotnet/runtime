@@ -587,7 +587,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
         IfFailThrow(pImageInfo->GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, &hashAlgId, NULL, NULL, NULL));
     }
 
-    MethodDescCallSite init(METHOD__ASSEMBLY_NAME__INIT);
+    MethodDescCallSite init(METHOD__ASSEMBLY_NAME__CTOR);
     
     ARG_SLOT MethodArgs[] =
     {
