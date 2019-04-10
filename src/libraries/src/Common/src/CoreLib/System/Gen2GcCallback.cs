@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 
@@ -13,9 +14,13 @@ namespace System
     /// </summary>
     internal sealed class Gen2GcCallback : CriticalFinalizerObject
     {
-        private Gen2GcCallback()
-            : base()
+        private readonly Func<object, bool> _callback;
+        private readonly GCHandle _weakTargetObj;
+
+        private Gen2GcCallback(Func<object, bool> callback, object targetObj)
         {
+            _callback = callback;
+            _weakTargetObj = GCHandle.Alloc(targetObj, GCHandleType.Weak);
         }
 
         /// <summary>
@@ -28,17 +33,7 @@ namespace System
         public static void Register(Func<object, bool> callback, object targetObj)
         {
             // Create a unreachable object that remembers the callback function and target object.
-            Gen2GcCallback gcCallback = new Gen2GcCallback();
-            gcCallback.Setup(callback, targetObj);
-        }
-
-        private Func<object, bool> _callback;
-        private GCHandle _weakTargetObj;
-
-        private void Setup(Func<object, bool> callback, object targetObj)
-        {
-            _callback = callback;
-            _weakTargetObj = GCHandle.Alloc(targetObj, GCHandleType.Weak);
+            new Gen2GcCallback(callback, targetObj);
         }
 
         ~Gen2GcCallback()
@@ -71,7 +66,10 @@ namespace System
             }
 
             // Resurrect ourselves by re-registering for finalization.
-            GC.ReRegisterForFinalize(this);
+            if (!Environment.HasShutdownStarted)
+            {
+                GC.ReRegisterForFinalize(this);
+            }
         }
     }
 }

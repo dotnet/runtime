@@ -381,7 +381,7 @@ namespace System.IO
         {
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
             {
-                return new ValueTask<int>(ReadAsync(array.Array, array.Offset, array.Count, cancellationToken));
+                return new ValueTask<int>(ReadAsync(array.Array!, array.Offset, array.Count, cancellationToken)); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             }
             else
             {
@@ -692,7 +692,7 @@ namespace System.IO
         {
             if (MemoryMarshal.TryGetArray(buffer, out ArraySegment<byte> array))
             {
-                return new ValueTask(WriteAsync(array.Array, array.Offset, array.Count, cancellationToken));
+                return new ValueTask(WriteAsync(array.Array!, array.Offset, array.Count, cancellationToken)); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             }
             else
             {

@@ -11,6 +11,7 @@
 **
 ===========================================================*/
 
+#nullable enable
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
@@ -22,7 +23,7 @@ namespace System.Runtime.CompilerServices
         /// Create a <see cref="FormattableString"/> from a composite format string and object
         /// array containing zero or more objects to format.
         /// </summary>
-        public static FormattableString Create(string format, params object[] arguments)
+        public static FormattableString Create(string format, params object?[] arguments)
         {
             if (format == null)
             {
@@ -40,19 +41,19 @@ namespace System.Runtime.CompilerServices
         private sealed class ConcreteFormattableString : FormattableString
         {
             private readonly string _format;
-            private readonly object[] _arguments;
+            private readonly object?[] _arguments;
 
-            internal ConcreteFormattableString(string format, object[] arguments)
+            internal ConcreteFormattableString(string format, object?[] arguments)
             {
                 _format = format;
                 _arguments = arguments;
             }
 
             public override string Format { get { return _format; } }
-            public override object[] GetArguments() { return _arguments; }
+            public override object?[] GetArguments() { return _arguments; }
             public override int ArgumentCount { get { return _arguments.Length; } }
-            public override object GetArgument(int index) { return _arguments[index]; }
-            public override string ToString(IFormatProvider formatProvider) { return string.Format(formatProvider, _format, _arguments); }
+            public override object? GetArgument(int index) { return _arguments[index]; }
+            public override string ToString(IFormatProvider? formatProvider) { return string.Format(formatProvider, _format, _arguments); }
         }
     }
 }

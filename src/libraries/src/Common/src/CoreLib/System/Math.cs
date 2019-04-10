@@ -13,6 +13,7 @@
 
 //This class contains only static members and doesn't require serialization.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -538,23 +539,31 @@ namespace System
 
         public static double Max(double val1, double val2)
         {
-            // This matches the IEEE 754:2019 `maximum` function
-            //
-            // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // When val1 and val2 are both finite or infinite, return the larger
+            //  * We count +0.0 as larger than -0.0 to match MSVC
+            // When val1 or val2, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
-            if ((val1 > val2) || double.IsNaN(val1))
+            if (double.IsNaN(val1))
+            {
+                return val2;
+            }
+
+            if (double.IsNaN(val2))
             {
                 return val1;
             }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (val1 < val2) first could get transformed into (val2 >= val1) by the JIT
+            //   which would then return an incorrect value
 
             if (val1 == val2)
             {
                 return double.IsNegative(val1) ? val2 : val1;
             }
 
-            return val2;
+            return (val1 < val2) ? val2 : val1;
         }
 
         [NonVersionable]
@@ -584,23 +593,31 @@ namespace System
         
         public static float Max(float val1, float val2)
         {
-            // This matches the IEEE 754:2019 `maximum` function
-            //
-            // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // When val1 and val2 are both finite or infinite, return the larger
+            //  * We count +0.0 as larger than -0.0 to match MSVC
+            // When val1 or val2, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
-            if ((val1 > val2) || float.IsNaN(val1))
+            if (float.IsNaN(val1))
+            {
+                return val2;
+            }
+
+            if (float.IsNaN(val2))
             {
                 return val1;
             }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (val1 < val2) first could get transformed into (val2 >= val1) by the JIT
+            //   which would then return an incorrect value
 
             if (val1 == val2)
             {
                 return float.IsNegative(val1) ? val2 : val1;
             }
 
-            return val2;
+            return (val1 < val2) ? val2 : val1;
         }
 
         [CLSCompliant(false)]
@@ -626,26 +643,34 @@ namespace System
 
         public static double MaxMagnitude(double x, double y)
         {
-            // This matches the IEEE 754:2019 `maximumMagnitude` function
-            //
-            // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // When x and y are both finite or infinite, return the larger magnitude
+            //  * We count +0.0 as larger than -0.0 to match MSVC
+            // When x or y, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
-            double ax = Abs(x);
-            double ay = Abs(y);
+            if (double.IsNaN(x))
+            {
+                return y;
+            }
 
-            if ((ax > ay) || double.IsNaN(ax))
+            if (double.IsNaN(y))
             {
                 return x;
             }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (ax < ay) first could get transformed into (ay >= ax) by the JIT which would
+            //   then return an incorrect value
+
+            double ax = Abs(x);
+            double ay = Abs(y);
 
             if (ax == ay)
             {
                 return double.IsNegative(x) ? y : x;
             }
 
-            return y;
+            return (ax < ay) ? y : x;
         }
 
         [NonVersionable]
@@ -662,23 +687,31 @@ namespace System
 
         public static double Min(double val1, double val2)
         {
-            // This matches the IEEE 754:2019 `minimum` function
-            //
-            // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // When val1 and val2 are both finite or infinite, return the smaller
+            //  * We count -0.0 as smaller than -0.0 to match MSVC
+            // When val1 or val2, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
-            if ((val1 < val2) || double.IsNaN(val1))
+            if (double.IsNaN(val1))
+            {
+                return val2;
+            }
+
+            if (double.IsNaN(val2))
             {
                 return val1;
             }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (val1 < val2) first could get transformed into (val2 >= val1) by the JIT
+            //   which would then return an incorrect value
 
             if (val1 == val2)
             {
                 return double.IsNegative(val1) ? val1 : val2;
             }
 
-            return val2;
+            return (val1 < val2) ? val1 : val2;
         }
 
         [NonVersionable]
@@ -708,23 +741,31 @@ namespace System
 
         public static float Min(float val1, float val2)
         {
-            // This matches the IEEE 754:2019 `minimum` function
-            //
-            // It propagates NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
+            // When val1 and val2 are both finite or infinite, return the smaller
+            //  * We count -0.0 as smaller than -0.0 to match MSVC
+            // When val1 or val2, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
-            if ((val1 < val2) || float.IsNaN(val1))
+            if (float.IsNaN(val1))
+            {
+                return val2;
+            }
+
+            if (float.IsNaN(val2))
             {
                 return val1;
             }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (val1 < val2) first could get transformed into (val2 >= val1) by the JIT
+            //   which would then return an incorrect value
 
             if (val1 == val2)
             {
                 return float.IsNegative(val1) ? val1 : val2;
             }
 
-            return val2;
+            return (val1 < val2) ? val1 : val2;
         }
 
         [CLSCompliant(false)]
@@ -750,26 +791,34 @@ namespace System
 
         public static double MinMagnitude(double x, double y)
         {
-            // This matches the IEEE 754:2019 `minimumMagnitude` function
-            //
-            // It propagates NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
+            // When x and y are both finite or infinite, return the smaller magnitude
+            //  * We count -0.0 as smaller than -0.0 to match MSVC
+            // When x or y, but not both, are NaN return the opposite
+            //  * We return the opposite if either is NaN to match MSVC
 
-            double ax = Abs(x);
-            double ay = Abs(y);
+            if (double.IsNaN(x))
+            {
+                return y;
+            }
 
-            if ((ax < ay) || double.IsNaN(ax))
+            if (double.IsNaN(y))
             {
                 return x;
             }
+
+            // We do this comparison first and separately to handle the -0.0 to +0.0 comparision
+            // * Doing (ax < ay) first could get transformed into (ay >= ax) by the JIT which would
+            //   then return an incorrect value
+
+            double ax = Abs(x);
+            double ay = Abs(y);
 
             if (ax == ay)
             {
                 return double.IsNegative(x) ? x : y;
             }
 
-            return y;
+            return (ax < ay) ? x : y;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
