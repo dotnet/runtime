@@ -216,7 +216,7 @@ namespace System.Text
             // we get to the high byte; or (b) all of the earlier bytes are ASCII, so the high byte must be
             // non-ASCII. In both cases we only care about the low 24 bits.
 
-            pBuffer += CountNumberOfLeadingAsciiBytesFrom24BitInteger(currentUInt32);
+            pBuffer += CountNumberOfLeadingAsciiBytesFromUInt32WithSomeNonAsciiData(currentUInt32);
             goto Finish;
         }
 
@@ -378,7 +378,7 @@ namespace System.Text
 
             uint currentDWord;
             Debug.Assert(!AllBytesInUInt32AreAscii(currentDWord), "Shouldn't be here unless we see non-ASCII data.");
-            pBuffer += CountNumberOfLeadingAsciiBytesFrom24BitInteger(currentDWord);
+            pBuffer += CountNumberOfLeadingAsciiBytesFromUInt32WithSomeNonAsciiData(currentDWord);
 
             goto Finish;
 
