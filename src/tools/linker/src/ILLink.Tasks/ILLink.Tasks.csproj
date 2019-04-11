@@ -42,6 +42,7 @@
          references from being marked as dependencies. -->
     <!-- TODO: Remove the custom .nuspec once the P2P PrivateAssets
          issue is fixed. -->
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <NuspecFileName>ILLink.Tasks.nuspec</NuspecFileName>
     <NuspecFile>$(BaseOutputPath)$(NuspecFileName)</NuspecFile>
     <NuspecProperties>id=$(AssemblyName);authors=$(AssemblyName);description=linker tasks;</NuspecProperties>
