@@ -1984,17 +1984,9 @@ namespace System
         public override bool Equals(object value) { throw null; }
         public bool Equals(System.Range other) { throw null; }
         public override int GetHashCode() { throw null; }
-        public System.Range.OffsetAndLength GetOffsetAndLength(int length) { throw null; }
+        public (int Offset, int Length) GetOffsetAndLength(int length) { throw null; }
         public static System.Range StartAt(System.Index start) { throw null; }
         public override string ToString() { throw null; }
-        public readonly partial struct OffsetAndLength
-        {
-            private readonly int _dummyPrimitive;
-            public OffsetAndLength(int offset, int length) { throw null; }
-            public int Length { get { throw null; } }
-            public int Offset { get { throw null; } }
-            public void Deconstruct(out int offset, out int length) { throw null; }
-        }
     }
     public partial class RankException : System.SystemException
     {

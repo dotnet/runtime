@@ -12,3 +12,5 @@ MembersMustExist : Member 'System.Text.Rune.EncodeToUtf16(System.Span<System.Cha
 MembersMustExist : Member 'System.Text.Rune.TryEncodeToUtf16(System.Span<System.Char>, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Rune.EncodeToUtf8(System.Span<System.Byte>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Text.Rune.TryEncodeToUtf8(System.Span<System.Byte>, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Range.GetOffsetAndLength(System.Int32)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Range.OffsetAndLength' does not exist in the implementation but it does exist in the contract.
