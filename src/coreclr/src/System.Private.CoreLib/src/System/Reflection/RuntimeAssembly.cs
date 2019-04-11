@@ -10,6 +10,7 @@ using System.IO;
 using StringBuilder = System.Text.StringBuilder;
 using System.Configuration.Assemblies;
 using StackCrawlMark = System.Threading.StackCrawlMark;
+using System.Runtime.Loader;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -86,11 +87,9 @@ namespace System.Reflection
         // is returned.
         public override AssemblyName GetName(bool copiedName)
         {
-            AssemblyName an = new AssemblyName();
-
             string codeBase = GetCodeBase(copiedName);
 
-            an.Init(GetSimpleName(),
+            var an = new AssemblyName(GetSimpleName(),
                     GetPublicKey(),
                     null, // public key token
                     GetVersion(),
@@ -151,11 +150,12 @@ namespace System.Reflection
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetType(RuntimeAssembly assembly,
-                                                        string name,
-                                                        bool throwOnError,
-                                                        bool ignoreCase,
-                                                        ObjectHandleOnStack type,
-                                                        ObjectHandleOnStack keepAlive);
+                                            string name,
+                                            bool throwOnError,
+                                            bool ignoreCase,
+                                            ObjectHandleOnStack type,
+                                            ObjectHandleOnStack keepAlive,
+                                            ObjectHandleOnStack assemblyLoadContext);
 
         public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
@@ -165,7 +165,15 @@ namespace System.Reflection
 
             RuntimeType type = null;
             object keepAlive = null;
-            GetType(GetNativeHandle(), name, throwOnError, ignoreCase, JitHelpers.GetObjectHandleOnStack(ref type), JitHelpers.GetObjectHandleOnStack(ref keepAlive));
+            AssemblyLoadContext assemblyLoadContextStack = AssemblyLoadContext.CurrentContextualReflectionContext;
+
+            GetType(GetNativeHandle(),
+                    name,
+                    throwOnError,
+                    ignoreCase,
+                    JitHelpers.GetObjectHandleOnStack(ref type),
+                    JitHelpers.GetObjectHandleOnStack(ref keepAlive),
+                    JitHelpers.GetObjectHandleOnStack(ref assemblyLoadContextStack));
             GC.KeepAlive(keepAlive);
 
             return type;
@@ -295,7 +303,7 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
-        internal static RuntimeAssembly InternalLoad(string assemblyString, ref StackCrawlMark stackMark)
+        internal static RuntimeAssembly InternalLoad(string assemblyString, ref StackCrawlMark stackMark, AssemblyLoadContext assemblyLoadContext = null)
         {
             RuntimeAssembly assembly;
             AssemblyName an = CreateAssemblyName(assemblyString, out assembly);
@@ -306,7 +314,7 @@ namespace System.Reflection
                 return assembly;
             }
 
-            return InternalLoadAssemblyName(an, ref stackMark);
+            return InternalLoadAssemblyName(an, ref stackMark, assemblyLoadContext);
         }
 
         // Creates AssemblyName. Fills assembly if AssemblyResolve event has been raised.
@@ -329,7 +337,7 @@ namespace System.Reflection
             return an;
         }
 
-        internal static RuntimeAssembly InternalLoadAssemblyName(AssemblyName assemblyRef, ref StackCrawlMark stackMark, IntPtr ptrLoadContextBinder = default)
+        internal static RuntimeAssembly InternalLoadAssemblyName(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext assemblyLoadContext = null)
         {
 #if FEATURE_APPX
             if (ApplicationModel.IsUap)
@@ -350,7 +358,7 @@ namespace System.Reflection
 
             string codeBase = VerifyCodeBase(assemblyRef.CodeBase);
 
-            return nLoad(assemblyRef, codeBase, null, ref stackMark, true, ptrLoadContextBinder);
+            return nLoad(assemblyRef, codeBase, null, ref stackMark, true, assemblyLoadContext);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -359,7 +367,7 @@ namespace System.Reflection
                                                     RuntimeAssembly assemblyContext,
                                                     ref StackCrawlMark stackMark,
                                                     bool throwOnFileNotFound,
-                                                    IntPtr ptrLoadContextBinder);
+                                                    AssemblyLoadContext assemblyLoadContext = null);
 
         public override bool ReflectionOnly
         {
@@ -649,7 +657,7 @@ namespace System.Reflection
             // This stack crawl mark is never used because the requesting assembly is explicitly specified,
             // so the value could be anything.
             StackCrawlMark unused = default;
-            RuntimeAssembly retAssembly = nLoad(an, null, this, ref unused, throwOnFileNotFound, IntPtr.Zero);
+            RuntimeAssembly retAssembly = nLoad(an, null, this, ref unused, throwOnFileNotFound);
 
             if (retAssembly == this)
             {
