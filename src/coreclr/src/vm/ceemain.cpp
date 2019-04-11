@@ -654,8 +654,9 @@ void EEStartupHelper(COINITIEE fFlags)
         // Need to do this as early as possible. Used by creating object handle
         // table inside Ref_Initialization() before GC is initialized.
         NumaNodeInfo::InitNumaNodeInfo();
+#ifndef FEATURE_PAL
         CPUGroupInfo::EnsureInitialized();
-
+#endif // !FEATURE_PAL
 
         // Initialize global configuration settings based on startup flags
         // This needs to be done before the EE has started
