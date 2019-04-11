@@ -2450,6 +2450,11 @@ PALAPI
 PAL_GetLogicalCpuCountFromOS(VOID);
 
 PALIMPORT
+DWORD
+PALAPI
+PAL_GetTotalCpuCount(VOID);
+
+PALIMPORT
 size_t
 PALAPI
 PAL_GetRestrictedPhysicalMemoryLimit(VOID);
@@ -3996,88 +4001,6 @@ CreatePipe(
 // NUMA related APIs
 //
 
-typedef enum _PROCESSOR_CACHE_TYPE {
-  CacheUnified,
-  CacheInstruction,
-  CacheData,
-  CacheTrace
-} PROCESSOR_CACHE_TYPE;
-
-typedef struct _PROCESSOR_NUMBER {
-  WORD Group;
-  BYTE Number;
-  BYTE Reserved;
-} PROCESSOR_NUMBER, *PPROCESSOR_NUMBER;
-
-typedef enum _LOGICAL_PROCESSOR_RELATIONSHIP {
-  RelationProcessorCore,
-  RelationNumaNode,
-  RelationCache,
-  RelationProcessorPackage,
-  RelationGroup,
-  RelationAll               = 0xffff
-} LOGICAL_PROCESSOR_RELATIONSHIP;
-
-typedef ULONG_PTR KAFFINITY;
-
-#define ANYSIZE_ARRAY 1
-
-typedef struct _GROUP_AFFINITY {
-  KAFFINITY Mask;
-  WORD      Group;
-  WORD      Reserved[3];
-} GROUP_AFFINITY, *PGROUP_AFFINITY;
-
-typedef struct _PROCESSOR_GROUP_INFO {
-  BYTE      MaximumProcessorCount;
-  BYTE      ActiveProcessorCount;
-  BYTE      Reserved[38];
-  KAFFINITY ActiveProcessorMask;
-} PROCESSOR_GROUP_INFO, *PPROCESSOR_GROUP_INFO;
-
-typedef struct _PROCESSOR_RELATIONSHIP {
-  BYTE           Flags;
-  BYTE           EfficiencyClass;
-  BYTE           Reserved[21];
-  WORD           GroupCount;
-  GROUP_AFFINITY GroupMask[ANYSIZE_ARRAY];
-} PROCESSOR_RELATIONSHIP, *PPROCESSOR_RELATIONSHIP;
-
-typedef struct _GROUP_RELATIONSHIP {
-  WORD                 MaximumGroupCount;
-  WORD                 ActiveGroupCount;
-  BYTE                 Reserved[20];
-  PROCESSOR_GROUP_INFO GroupInfo[ANYSIZE_ARRAY];
-} GROUP_RELATIONSHIP, *PGROUP_RELATIONSHIP;
-
-typedef struct _NUMA_NODE_RELATIONSHIP {
-  DWORD          NodeNumber;
-  BYTE           Reserved[20];
-  GROUP_AFFINITY GroupMask;
-} NUMA_NODE_RELATIONSHIP, *PNUMA_NODE_RELATIONSHIP;
-
-typedef struct _CACHE_RELATIONSHIP {
-  BYTE                 Level;
-  BYTE                 Associativity;
-  WORD                 LineSize;
-  DWORD                CacheSize;
-  PROCESSOR_CACHE_TYPE Type;
-  BYTE                 Reserved[20];
-  GROUP_AFFINITY       GroupMask;
-} CACHE_RELATIONSHIP, *PCACHE_RELATIONSHIP;
-
-typedef struct _SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX {
-  LOGICAL_PROCESSOR_RELATIONSHIP Relationship;
-  DWORD                          Size;
-  union {
-    PROCESSOR_RELATIONSHIP Processor;
-    NUMA_NODE_RELATIONSHIP NumaNode;
-    CACHE_RELATIONSHIP     Cache;
-    GROUP_RELATIONSHIP     Group;
-  };
-} SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX, *PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX;
-
-
 PALIMPORT
 BOOL
 PALAPI
@@ -4088,10 +4011,7 @@ GetNumaHighestNodeNumber(
 PALIMPORT
 BOOL
 PALAPI
-GetNumaProcessorNodeEx(
-  IN  PPROCESSOR_NUMBER Processor,
-  OUT PUSHORT NodeNumber
-);
+PAL_GetNumaProcessorNode(WORD procNo, WORD* node);
 
 PALIMPORT
 LPVOID
@@ -4108,61 +4028,12 @@ VirtualAllocExNuma(
 PALIMPORT
 BOOL
 PALAPI
-GetLogicalProcessorInformationEx(
-  IN LOGICAL_PROCESSOR_RELATIONSHIP RelationshipType,
-  OUT OPTIONAL PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX Buffer,
-  IN OUT PDWORD ReturnedLength
-);
-
-PALIMPORT
-DWORD_PTR
-PALAPI
-SetThreadAffinityMask(
-  IN HANDLE hThread,
-  IN DWORD_PTR dwThreadAffinityMask
-);
+PAL_SetCurrentThreadAffinity(WORD procNo);
 
 PALIMPORT
 BOOL
 PALAPI
-SetThreadGroupAffinity(
-  IN HANDLE hThread,
-  IN const GROUP_AFFINITY *GroupAffinity,
-  OUT OPTIONAL PGROUP_AFFINITY PreviousGroupAffinity
-);
-
-PALIMPORT
-BOOL
-PALAPI
-GetThreadGroupAffinity(
-  IN HANDLE hThread,
-  OUT PGROUP_AFFINITY GroupAffinity
-);
-
-PALIMPORT
-VOID
-PALAPI
-GetCurrentProcessorNumberEx(
-  OUT PPROCESSOR_NUMBER ProcNumber
-);
-
-PALIMPORT
-BOOL
-PALAPI
-GetProcessAffinityMask(
-  IN HANDLE hProcess,
-  OUT PDWORD_PTR lpProcessAffinityMask,
-  OUT PDWORD_PTR lpSystemAffinityMask
-);
-
-PALIMPORT
-BOOL
-PALAPI
-SetThreadIdealProcessorEx(
-  IN HANDLE hThread,
-  IN PPROCESSOR_NUMBER lpIdealProcessor,
-  OUT PPROCESSOR_NUMBER lpPreviousIdealProcessor
-);
+PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 
 //
 // The types of events that can be logged.
