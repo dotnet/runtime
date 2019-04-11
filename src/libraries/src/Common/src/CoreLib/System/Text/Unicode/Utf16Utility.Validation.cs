@@ -200,11 +200,15 @@ namespace System.Text.Unicode
                                 inputLength++;
                             }
 
-                            int surrogatePairsCount = BitOperations.PopCount(highSurrogatesMask);
+                            // If we're 64-bit, we can perform the zero-extension of the surrogate pairs count for
+                            // free right now, saving the extension step a few lines below. If we're 32-bit, the
+                            // convertion to nuint immediately below is a no-op, and we'll pay the cost of the real
+                            // 64 -bit extension a few lines below.
+                            nuint surrogatePairsCountNuint = (uint)BitOperations.PopCount(highSurrogatesMask);
 
                             // 2 UTF-16 chars become 1 Unicode scalar
 
-                            tempScalarCountAdjustment -= surrogatePairsCount;
+                            tempScalarCountAdjustment -= (int)surrogatePairsCountNuint;
 
                             // Since each surrogate code unit was >= 0x0800, we eagerly assumed
                             // it'd be encoded as 3 UTF-8 code units, so our earlier popcnt computation
@@ -212,9 +216,18 @@ namespace System.Text.Unicode
                             // pair is in reality only encoded as 4 UTF-8 code units, we need to
                             // perform this adjustment now.
 
-                            nint surrogatePairsCountNint = (nint)(nuint)(uint)surrogatePairsCount; // zero-extend to native int size
-                            tempUtf8CodeUnitCountAdjustment -= surrogatePairsCountNint;
-                            tempUtf8CodeUnitCountAdjustment -= surrogatePairsCountNint;
+                            if (IntPtr.Size == 8)
+                            {
+                                // Since we've already zero-extended surrogatePairsCountNuint, we can directly
+                                // sub + sub. It's more efficient than shl + sub.
+                                tempUtf8CodeUnitCountAdjustment -= (long)surrogatePairsCountNuint;
+                                tempUtf8CodeUnitCountAdjustment -= (long)surrogatePairsCountNuint;
+                            }
+                            else
+                            {
+                                // Take the hit of the 64-bit extension now.
+                                tempUtf8CodeUnitCountAdjustment -= 2 * surrogatePairsCountNuint;
+                            }
                         }
 
                         tempUtf8CodeUnitCountAdjustment += popcnt;
