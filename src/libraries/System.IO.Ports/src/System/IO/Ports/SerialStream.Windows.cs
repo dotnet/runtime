@@ -141,15 +141,15 @@ namespace System.IO.Ports
         {
             set
             {
-                int fNullFlag = GetDcbFlag(NativeMethods.FNULL);
+                int fNullFlag = GetDcbFlag(Interop.Kernel32.DCBFlags.FNULL);
                 if (value == true && fNullFlag == 0 || value == false && fNullFlag == 1)
                 {
                     int fNullOld = fNullFlag;
-                    SetDcbFlag(NativeMethods.FNULL, value ? 1 : 0);
+                    SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, value ? 1 : 0);
 
                     if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
-                        SetDcbFlag(NativeMethods.FNULL, fNullOld);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, fNullOld);
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
                 }
@@ -160,24 +160,24 @@ namespace System.IO.Ports
         {
             get
             {
-                int fDtrControl = GetDcbFlag(NativeMethods.FDTRCONTROL);
+                int fDtrControl = GetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL);
 
-                return (fDtrControl == NativeMethods.DTR_CONTROL_ENABLE);
+                return (fDtrControl == Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_ENABLE);
             }
             set
             {
                 // first set the FDTRCONTROL field in the DCB struct
-                int fDtrControlOld = GetDcbFlag(NativeMethods.FDTRCONTROL);
+                int fDtrControlOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL);
 
-                SetDcbFlag(NativeMethods.FDTRCONTROL, value ? NativeMethods.DTR_CONTROL_ENABLE : NativeMethods.DTR_CONTROL_DISABLE);
+                SetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL, value ? Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_ENABLE : Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_DISABLE);
                 if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                 {
-                    SetDcbFlag(NativeMethods.FDTRCONTROL, fDtrControlOld);
+                    SetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL, fDtrControlOld);
                     throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
 
                 // then set the actual pin
-                if (!Interop.Kernel32.EscapeCommFunction(_handle, value ? NativeMethods.SETDTR : NativeMethods.CLRDTR))
+                if (!Interop.Kernel32.EscapeCommFunction(_handle, value ? Interop.Kernel32.CommFunctions.SETDTR : Interop.Kernel32.CommFunctions.CLRDTR))
                     throw Win32Marshal.GetExceptionForLastWin32Error();
             }
         }
@@ -194,39 +194,39 @@ namespace System.IO.Ports
                     // in the DCB, handshake affects the fRtsControl, fOutxCtsFlow, and fInX, fOutX fields,
                     // so we must save everything in that closure before making any changes.
                     Handshake handshakeOld = _handshake;
-                    int fInOutXOld = GetDcbFlag(NativeMethods.FINX);
-                    int fOutxCtsFlowOld = GetDcbFlag(NativeMethods.FOUTXCTSFLOW);
-                    int fRtsControlOld = GetDcbFlag(NativeMethods.FRTSCONTROL);
+                    int fInOutXOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FINX);
+                    int fOutxCtsFlowOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FOUTXCTSFLOW);
+                    int fRtsControlOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL);
 
                     _handshake = value;
                     int fInXOutXFlag = (_handshake == Handshake.XOnXOff || _handshake == Handshake.RequestToSendXOnXOff) ? 1 : 0;
-                    SetDcbFlag(NativeMethods.FINX, fInXOutXFlag);
-                    SetDcbFlag(NativeMethods.FOUTX, fInXOutXFlag);
+                    SetDcbFlag(Interop.Kernel32.DCBFlags.FINX, fInXOutXFlag);
+                    SetDcbFlag(Interop.Kernel32.DCBFlags.FOUTX, fInXOutXFlag);
 
-                    SetDcbFlag(NativeMethods.FOUTXCTSFLOW, (_handshake == Handshake.RequestToSend ||
+                    SetDcbFlag(Interop.Kernel32.DCBFlags.FOUTXCTSFLOW, (_handshake == Handshake.RequestToSend ||
                         _handshake == Handshake.RequestToSendXOnXOff) ? 1 : 0);
 
                     if ((_handshake == Handshake.RequestToSend ||
                         _handshake == Handshake.RequestToSendXOnXOff))
                     {
-                        SetDcbFlag(NativeMethods.FRTSCONTROL, NativeMethods.RTS_CONTROL_HANDSHAKE);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_HANDSHAKE);
                     }
                     else if (_rtsEnable)
                     {
-                        SetDcbFlag(NativeMethods.FRTSCONTROL, NativeMethods.RTS_CONTROL_ENABLE);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_ENABLE);
                     }
                     else
                     {
-                        SetDcbFlag(NativeMethods.FRTSCONTROL, NativeMethods.RTS_CONTROL_DISABLE);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_DISABLE);
                     }
 
                     if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _handshake = handshakeOld;
-                        SetDcbFlag(NativeMethods.FINX, fInOutXOld);
-                        SetDcbFlag(NativeMethods.FOUTX, fInOutXOld);
-                        SetDcbFlag(NativeMethods.FOUTXCTSFLOW, fOutxCtsFlowOld);
-                        SetDcbFlag(NativeMethods.FRTSCONTROL, fRtsControlOld);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FINX, fInOutXOld);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FOUTX, fInOutXOld);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FOUTXCTSFLOW, fOutxCtsFlowOld);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, fRtsControlOld);
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
 
@@ -249,30 +249,30 @@ namespace System.IO.Ports
                     // in the DCB structure, the parity setting also potentially effects:
                     // fParity, fErrorChar, ErrorChar
                     // so these must be saved as well.
-                    int fParityOld = GetDcbFlag(NativeMethods.FPARITY);
+                    int fParityOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FPARITY);
                     byte ErrorCharOld = _dcb.ErrorChar;
-                    int fErrorCharOld = GetDcbFlag(NativeMethods.FERRORCHAR);
+                    int fErrorCharOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR);
                     _dcb.Parity = (byte)value;
 
                     int parityFlag = (_dcb.Parity == (byte)Parity.None) ? 0 : 1;
-                    SetDcbFlag(NativeMethods.FPARITY, parityFlag);
+                    SetDcbFlag(Interop.Kernel32.DCBFlags.FPARITY, parityFlag);
                     if (parityFlag == 1)
                     {
-                        SetDcbFlag(NativeMethods.FERRORCHAR, (_parityReplace != '\0') ? 1 : 0);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, (_parityReplace != '\0') ? 1 : 0);
                         _dcb.ErrorChar = _parityReplace;
                     }
                     else
                     {
-                        SetDcbFlag(NativeMethods.FERRORCHAR, 0);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, 0);
                         _dcb.ErrorChar = (byte)'\0';
                     }
                     if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _dcb.Parity = parityOld;
-                        SetDcbFlag(NativeMethods.FPARITY, fParityOld);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FPARITY, fParityOld);
 
                         _dcb.ErrorChar = ErrorCharOld;
-                        SetDcbFlag(NativeMethods.FERRORCHAR, fErrorCharOld);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, fErrorCharOld);
 
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
@@ -291,24 +291,24 @@ namespace System.IO.Ports
                 {
                     byte parityReplaceOld = _parityReplace;
                     byte errorCharOld = _dcb.ErrorChar;
-                    int fErrorCharOld = GetDcbFlag(NativeMethods.FERRORCHAR);
+                    int fErrorCharOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR);
 
                     _parityReplace = value;
-                    if (GetDcbFlag(NativeMethods.FPARITY) == 1)
+                    if (GetDcbFlag(Interop.Kernel32.DCBFlags.FPARITY) == 1)
                     {
-                        SetDcbFlag(NativeMethods.FERRORCHAR, (_parityReplace != '\0') ? 1 : 0);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, (_parityReplace != '\0') ? 1 : 0);
                         _dcb.ErrorChar = _parityReplace;
                     }
                     else
                     {
-                        SetDcbFlag(NativeMethods.FERRORCHAR, 0);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, 0);
                         _dcb.ErrorChar = (byte)'\0';
                     }
 
                     if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
                         _parityReplace = parityReplaceOld;
-                        SetDcbFlag(NativeMethods.FERRORCHAR, fErrorCharOld);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, fErrorCharOld);
                         _dcb.ErrorChar = errorCharOld;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
@@ -354,21 +354,21 @@ namespace System.IO.Ports
                 {
                     _commTimeouts.ReadTotalTimeoutConstant = 0;
                     _commTimeouts.ReadTotalTimeoutMultiplier = 0;
-                    _commTimeouts.ReadIntervalTimeout = NativeMethods.MAXDWORD;
+                    _commTimeouts.ReadIntervalTimeout = Interop.Kernel32.MAXDWORD;
                 }
                 else if (value == SerialPort.InfiniteTimeout)
                 {
                     // SetCommTimeouts doesn't like a value of -1 for some reason, so
                     // we'll use -2(infiniteTimeoutConst) to represent infinite.
                     _commTimeouts.ReadTotalTimeoutConstant = infiniteTimeoutConst;
-                    _commTimeouts.ReadTotalTimeoutMultiplier = NativeMethods.MAXDWORD;
-                    _commTimeouts.ReadIntervalTimeout = NativeMethods.MAXDWORD;
+                    _commTimeouts.ReadTotalTimeoutMultiplier = Interop.Kernel32.MAXDWORD;
+                    _commTimeouts.ReadIntervalTimeout = Interop.Kernel32.MAXDWORD;
                 }
                 else
                 {
                     _commTimeouts.ReadTotalTimeoutConstant = value;
-                    _commTimeouts.ReadTotalTimeoutMultiplier = NativeMethods.MAXDWORD;
-                    _commTimeouts.ReadIntervalTimeout = NativeMethods.MAXDWORD;
+                    _commTimeouts.ReadTotalTimeoutMultiplier = Interop.Kernel32.MAXDWORD;
+                    _commTimeouts.ReadIntervalTimeout = Interop.Kernel32.MAXDWORD;
                 }
 
                 if (Interop.Kernel32.SetCommTimeouts(_handle, ref _commTimeouts) == false)
@@ -385,11 +385,11 @@ namespace System.IO.Ports
         {
             get
             {
-                int fRtsControl = GetDcbFlag(NativeMethods.FRTSCONTROL);
-                if (fRtsControl == NativeMethods.RTS_CONTROL_HANDSHAKE)
+                int fRtsControl = GetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL);
+                if (fRtsControl == Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_HANDSHAKE)
                     throw new InvalidOperationException(SR.CantSetRtsWithHandshaking);
 
-                return (fRtsControl == NativeMethods.RTS_CONTROL_ENABLE);
+                return (fRtsControl == Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_ENABLE);
             }
             set
             {
@@ -398,23 +398,23 @@ namespace System.IO.Ports
 
                 if (value != _rtsEnable)
                 {
-                    int fRtsControlOld = GetDcbFlag(NativeMethods.FRTSCONTROL);
+                    int fRtsControlOld = GetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL);
 
                     _rtsEnable = value;
                     if (value)
-                        SetDcbFlag(NativeMethods.FRTSCONTROL, NativeMethods.RTS_CONTROL_ENABLE);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_ENABLE);
                     else
-                        SetDcbFlag(NativeMethods.FRTSCONTROL, NativeMethods.RTS_CONTROL_DISABLE);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_DISABLE);
 
                     if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
                     {
-                        SetDcbFlag(NativeMethods.FRTSCONTROL, fRtsControlOld);
+                        SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, fRtsControlOld);
                         // set it back to the old value on a failure
                         _rtsEnable = !_rtsEnable;
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                     }
 
-                    if (!Interop.Kernel32.EscapeCommFunction(_handle, value ? NativeMethods.SETRTS : NativeMethods.CLRRTS))
+                    if (!Interop.Kernel32.EscapeCommFunction(_handle, value ? Interop.Kernel32.CommFunctions.SETRTS : Interop.Kernel32.CommFunctions.CLRRTS))
                         throw Win32Marshal.GetExceptionForLastWin32Error();
                 }
             }
@@ -428,9 +428,18 @@ namespace System.IO.Ports
                 Debug.Assert(!(value < StopBits.One || value > StopBits.OnePointFive), "An invalid value was passed to StopBits");
 
                 byte nativeValue = 0;
-                if (value == StopBits.One) nativeValue = NativeMethods.ONESTOPBIT;
-                else if (value == StopBits.OnePointFive) nativeValue = NativeMethods.ONE5STOPBITS;
-                else nativeValue = NativeMethods.TWOSTOPBITS;
+                if (value == StopBits.One)
+                {
+                    nativeValue = Interop.Kernel32.DCBStopBits.ONESTOPBIT;
+                }
+                else if (value == StopBits.OnePointFive)
+                {
+                    nativeValue = Interop.Kernel32.DCBStopBits.ONE5STOPBITS;
+                }
+                else
+                {
+                    nativeValue = Interop.Kernel32.DCBStopBits.TWOSTOPBITS;
+                }
 
                 if (nativeValue != _dcb.StopBits)
                 {
@@ -483,7 +492,7 @@ namespace System.IO.Ports
                 if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
-                return (NativeMethods.MS_RLSD_ON & pinStatus) != 0;
+                return (Interop.Kernel32.CommModemState.MS_RLSD_ON & pinStatus) != 0;
             }
         }
 
@@ -494,7 +503,7 @@ namespace System.IO.Ports
                 int pinStatus = 0;
                 if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
-                return (NativeMethods.MS_CTS_ON & pinStatus) != 0;
+                return (Interop.Kernel32.CommModemState.MS_CTS_ON & pinStatus) != 0;
             }
 
         }
@@ -507,7 +516,7 @@ namespace System.IO.Ports
                 if (Interop.Kernel32.GetCommModemStatus(_handle, ref pinStatus) == false)
                     throw Win32Marshal.GetExceptionForLastWin32Error();
 
-                return (NativeMethods.MS_DSR_ON & pinStatus) != 0;
+                return (Interop.Kernel32.CommModemState.MS_DSR_ON & pinStatus) != 0;
             }
         }
 
@@ -622,7 +631,7 @@ namespace System.IO.Ports
 
                 // query and cache the initial RtsEnable value
                 // so that set_RtsEnable can do the (value != rtsEnable) optimization
-                _rtsEnable = (GetDcbFlag(NativeMethods.FRTSCONTROL) == NativeMethods.RTS_CONTROL_ENABLE);
+                _rtsEnable = (GetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL) == Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_ENABLE);
 
                 // now set this.RtsEnable to the specified value.
                 // Handshake takes precedence, this will be a nop if
@@ -635,21 +644,21 @@ namespace System.IO.Ports
                 {
                     _commTimeouts.ReadTotalTimeoutConstant = 0;
                     _commTimeouts.ReadTotalTimeoutMultiplier = 0;
-                    _commTimeouts.ReadIntervalTimeout = NativeMethods.MAXDWORD;
+                    _commTimeouts.ReadIntervalTimeout = Interop.Kernel32.MAXDWORD;
                 }
                 else if (readTimeout == SerialPort.InfiniteTimeout)
                 {
                     // SetCommTimeouts doesn't like a value of -1 for some reason, so
                     // we'll use -2(infiniteTimeoutConst) to represent infinite.
                     _commTimeouts.ReadTotalTimeoutConstant = infiniteTimeoutConst;
-                    _commTimeouts.ReadTotalTimeoutMultiplier = NativeMethods.MAXDWORD;
-                    _commTimeouts.ReadIntervalTimeout = NativeMethods.MAXDWORD;
+                    _commTimeouts.ReadTotalTimeoutMultiplier = Interop.Kernel32.MAXDWORD;
+                    _commTimeouts.ReadIntervalTimeout = Interop.Kernel32.MAXDWORD;
                 }
                 else
                 {
                     _commTimeouts.ReadTotalTimeoutConstant = readTimeout;
-                    _commTimeouts.ReadTotalTimeoutMultiplier = NativeMethods.MAXDWORD;
-                    _commTimeouts.ReadIntervalTimeout = NativeMethods.MAXDWORD;
+                    _commTimeouts.ReadTotalTimeoutMultiplier = Interop.Kernel32.MAXDWORD;
+                    _commTimeouts.ReadIntervalTimeout = Interop.Kernel32.MAXDWORD;
                 }
 
                 _commTimeouts.WriteTotalTimeoutMultiplier = 0;
@@ -667,7 +676,7 @@ namespace System.IO.Ports
                 }
 
                 // monitor all events except TXEMPTY
-                Interop.Kernel32.SetCommMask(_handle, NativeMethods.ALL_EVENTS);
+                Interop.Kernel32.SetCommMask(_handle, Interop.Kernel32.CommEvents.ALL_EVENTS);
 
                 // prep. for starting event cycle.
                 _eventRunner = new EventLoopRunner(this);
@@ -701,7 +710,7 @@ namespace System.IO.Ports
 
                     // turn off all events and signal WaitCommEvent
                     Interop.Kernel32.SetCommMask(_handle, 0);
-                    if (!Interop.Kernel32.EscapeCommFunction(_handle, NativeMethods.CLRDTR))
+                    if (!Interop.Kernel32.EscapeCommFunction(_handle, Interop.Kernel32.CommFunctions.CLRDTR))
                     {
                         int hr = Marshal.GetLastWin32Error();
 
@@ -825,14 +834,14 @@ namespace System.IO.Ports
         internal void DiscardInBuffer()
         {
 
-            if (Interop.Kernel32.PurgeComm(_handle, NativeMethods.PURGE_RXCLEAR | NativeMethods.PURGE_RXABORT) == false)
+            if (Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_RXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_RXABORT) == false)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
         // Uses Win32 method to dump out the xmit buffer; analagous to MSComm's "OutBufferCount = 0"
         internal void DiscardOutBuffer()
         {
-            if (Interop.Kernel32.PurgeComm(_handle, NativeMethods.PURGE_TXCLEAR | NativeMethods.PURGE_TXABORT) == false)
+            if (Interop.Kernel32.PurgeComm(_handle, Interop.Kernel32.PurgeFlags.PURGE_TXCLEAR | Interop.Kernel32.PurgeFlags.PURGE_TXABORT) == false)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
         }
 
@@ -1156,13 +1165,13 @@ namespace System.IO.Ports
             switch (stopBits)
             {
                 case StopBits.One:
-                    _dcb.StopBits = NativeMethods.ONESTOPBIT;
+                    _dcb.StopBits = Interop.Kernel32.DCBStopBits.ONESTOPBIT;
                     break;
                 case StopBits.OnePointFive:
-                    _dcb.StopBits = NativeMethods.ONE5STOPBITS;
+                    _dcb.StopBits = Interop.Kernel32.DCBStopBits.ONE5STOPBITS;
                     break;
                 case StopBits.Two:
-                    _dcb.StopBits = NativeMethods.TWOSTOPBITS;
+                    _dcb.StopBits = Interop.Kernel32.DCBStopBits.TWOSTOPBITS;
                     break;
                 default:
                     Debug.Fail("Invalid value for stopBits");
@@ -1173,40 +1182,40 @@ namespace System.IO.Ports
             // SetDcbFlag, GetDcbFlag expose access to each of the relevant bits of the 32-bit integer
             // storing all flags of the DCB.  C# provides no direct means of manipulating bit fields, so
             // this is the solution.
-            SetDcbFlag(NativeMethods.FPARITY, ((parity == Parity.None) ? 0 : 1));
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FPARITY, ((parity == Parity.None) ? 0 : 1));
 
-            SetDcbFlag(NativeMethods.FBINARY, 1);   // always true for communications resources
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FBINARY, 1);   // always true for communications resources
 
             // set DCB fields implied by default and the arguments given.
             // Boolean fields in C# must become 1, 0 to properly set the bit flags in the unmanaged DCB struct
 
-            SetDcbFlag(NativeMethods.FOUTXCTSFLOW, ((_handshake == Handshake.RequestToSend ||
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FOUTXCTSFLOW, ((_handshake == Handshake.RequestToSend ||
                 _handshake == Handshake.RequestToSendXOnXOff) ? 1 : 0));
-            // SetDcbFlag(NativeMethods.FOUTXDSRFLOW, (dsrTimeout != 0L) ? 1 : 0);
-            SetDcbFlag(NativeMethods.FOUTXDSRFLOW, 0); // dsrTimeout is always set to 0.
-            SetDcbFlag(NativeMethods.FDTRCONTROL, NativeMethods.DTR_CONTROL_DISABLE);
-            SetDcbFlag(NativeMethods.FDSRSENSITIVITY, 0); // this should remain off
-            SetDcbFlag(NativeMethods.FINX, (_handshake == Handshake.XOnXOff || _handshake == Handshake.RequestToSendXOnXOff) ? 1 : 0);
-            SetDcbFlag(NativeMethods.FOUTX, (_handshake == Handshake.XOnXOff || _handshake == Handshake.RequestToSendXOnXOff) ? 1 : 0);
+            // SetDcbFlag(Interop.Kernel32.DCBFlags.FOUTXDSRFLOW, (dsrTimeout != 0L) ? 1 : 0);
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FOUTXDSRFLOW, 0); // dsrTimeout is always set to 0.
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FDTRCONTROL, Interop.Kernel32.DCBDTRFlowControl.DTR_CONTROL_DISABLE);
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FDSRSENSITIVITY, 0); // this should remain off
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FINX, (_handshake == Handshake.XOnXOff || _handshake == Handshake.RequestToSendXOnXOff) ? 1 : 0);
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FOUTX, (_handshake == Handshake.XOnXOff || _handshake == Handshake.RequestToSendXOnXOff) ? 1 : 0);
 
             // if no parity, we have no error character (i.e. ErrorChar = '\0' or null character)
             if (parity != Parity.None)
             {
-                SetDcbFlag(NativeMethods.FERRORCHAR, (_parityReplace != '\0') ? 1 : 0);
+                SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, (_parityReplace != '\0') ? 1 : 0);
                 _dcb.ErrorChar = _parityReplace;
             }
             else
             {
-                SetDcbFlag(NativeMethods.FERRORCHAR, 0);
+                SetDcbFlag(Interop.Kernel32.DCBFlags.FERRORCHAR, 0);
                 _dcb.ErrorChar = (byte)'\0';
             }
 
             // this method only runs once in the constructor, so we only have the default value to use.
             // Later the user may change this via the NullDiscard property.
-            SetDcbFlag(NativeMethods.FNULL, discardNull ? 1 : 0);
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FNULL, discardNull ? 1 : 0);
 
             // SerialStream does not handle the fAbortOnError behaviour, so we must make sure it's not enabled
-            SetDcbFlag(NativeMethods.FABORTONOERROR, 0);
+            SetDcbFlag(Interop.Kernel32.DCBFlags.FABORTONOERROR, 0);
 
             // Setting RTS control, which is RTS_CONTROL_HANDSHAKE if RTS / RTS-XOnXOff handshaking
             // used, RTS_ENABLE (RTS pin used during operation) if rtsEnable true but XOnXoff / No handshaking
@@ -1214,25 +1223,25 @@ namespace System.IO.Ports
             if ((_handshake == Handshake.RequestToSend ||
                 _handshake == Handshake.RequestToSendXOnXOff))
             {
-                SetDcbFlag(NativeMethods.FRTSCONTROL, NativeMethods.RTS_CONTROL_HANDSHAKE);
+                SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_HANDSHAKE);
             }
-            else if (GetDcbFlag(NativeMethods.FRTSCONTROL) == NativeMethods.RTS_CONTROL_HANDSHAKE)
+            else if (GetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL) == Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_HANDSHAKE)
             {
-                SetDcbFlag(NativeMethods.FRTSCONTROL, NativeMethods.RTS_CONTROL_DISABLE);
+                SetDcbFlag(Interop.Kernel32.DCBFlags.FRTSCONTROL, Interop.Kernel32.DCBRTSFlowControl.RTS_CONTROL_DISABLE);
             }
 
-            _dcb.XonChar = NativeMethods.DEFAULTXONCHAR;             // may be exposed later but for now, constant
-            _dcb.XoffChar = NativeMethods.DEFAULTXOFFCHAR;
+            _dcb.XonChar = Interop.Kernel32.DCB.DEFAULTXONCHAR;             // may be exposed later but for now, constant
+            _dcb.XoffChar = Interop.Kernel32.DCB.DEFAULTXOFFCHAR;
 
             // minimum number of bytes allowed in each buffer before flow control activated
             // heuristically, this has been set at 1/4 of the buffer size
             _dcb.XonLim = _dcb.XoffLim = (ushort)(_commProp.dwCurrentRxQueue / 4);
 
-            _dcb.EofChar = NativeMethods.EOFCHAR;
+            _dcb.EofChar = Interop.Kernel32.DCB.EOFCHAR;
 
             //OLD MSCOMM: dcb.EvtChar = (byte) 0;
             // now changed to make use of RXFlag WaitCommEvent event => Eof WaitForCommEvent event
-            _dcb.EvtChar = NativeMethods.EOFCHAR;
+            _dcb.EvtChar = Interop.Kernel32.DCB.EOFCHAR;
 
             // set DCB structure
             if (Interop.Kernel32.SetCommState(_handle, ref _dcb) == false)
@@ -1243,18 +1252,17 @@ namespace System.IO.Ports
 
         // Here we provide a method for getting the flags of the Device Control Block structure dcb
         // associated with each instance of SerialStream, i.e. this method gets myStream.dcb.Flags
-        // Flags are any of the constants in NativeMethods such as FBINARY, FDTRCONTROL, etc.
         internal int GetDcbFlag(int whichFlag)
         {
             uint mask;
 
-            Debug.Assert(whichFlag >= NativeMethods.FBINARY && whichFlag <= NativeMethods.FDUMMY2, "GetDcbFlag needs to fit into enum!");
+            Debug.Assert(whichFlag >= Interop.Kernel32.DCBFlags.FBINARY && whichFlag <= Interop.Kernel32.DCBFlags.FDUMMY2, "GetDcbFlag needs to fit into enum!");
 
-            if (whichFlag == NativeMethods.FDTRCONTROL || whichFlag == NativeMethods.FRTSCONTROL)
+            if (whichFlag == Interop.Kernel32.DCBFlags.FDTRCONTROL || whichFlag == Interop.Kernel32.DCBFlags.FRTSCONTROL)
             {
                 mask = 0x3;
             }
-            else if (whichFlag == NativeMethods.FDUMMY2)
+            else if (whichFlag == Interop.Kernel32.DCBFlags.FDUMMY2)
             {
                 mask = 0x1FFFF;
             }
@@ -1269,19 +1277,18 @@ namespace System.IO.Ports
         // Since C# applications have to provide a workaround for accessing and setting bitfields in unmanaged code,
         // here we provide methods for getting and setting the Flags field of the Device Control Block structure dcb
         // associated with each instance of SerialStream, i.e. this method sets myStream.dcb.Flags
-        // Flags are any of the constants in NativeMethods such as FBINARY, FDTRCONTROL, etc.
         internal void SetDcbFlag(int whichFlag, int setting)
         {
             uint mask;
             setting = setting << whichFlag;
 
-            Debug.Assert(whichFlag >= NativeMethods.FBINARY && whichFlag <= NativeMethods.FDUMMY2, "SetDcbFlag needs to fit into enum!");
+            Debug.Assert(whichFlag >= Interop.Kernel32.DCBFlags.FBINARY && whichFlag <= Interop.Kernel32.DCBFlags.FDUMMY2, "SetDcbFlag needs to fit into enum!");
 
-            if (whichFlag == NativeMethods.FDTRCONTROL || whichFlag == NativeMethods.FRTSCONTROL)
+            if (whichFlag == Interop.Kernel32.DCBFlags.FDTRCONTROL || whichFlag == Interop.Kernel32.DCBFlags.FRTSCONTROL)
             {
                 mask = 0x3;
             }
-            else if (whichFlag == NativeMethods.FDUMMY2)
+            else if (whichFlag == Interop.Kernel32.DCBFlags.FDUMMY2)
             {
                 mask = 0x1FFFF;
             }
@@ -1681,7 +1688,7 @@ namespace System.IO.Ports
                 // EV_ERR includes only CE_FRAME, CE_OVERRUN, and CE_RXPARITY
                 // To catch errors such as CE_RXOVER, we need to call CleanCommErrors bit more regularly.
                 // EV_RXCHAR is perhaps too loose an event to look for overflow errors but a safe side to err...
-                if ((nativeEvents & (NativeMethods.EV_ERR | NativeMethods.EV_RXCHAR)) != 0)
+                if ((nativeEvents & (Interop.Kernel32.CommEvents.EV_ERR | Interop.Kernel32.CommEvents.EV_RXCHAR)) != 0)
                 {
                     int errors = 0;
                     if (Interop.Kernel32.ClearCommError(handle, ref errors, IntPtr.Zero) == false)
