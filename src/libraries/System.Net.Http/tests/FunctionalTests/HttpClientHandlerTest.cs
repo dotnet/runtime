@@ -367,35 +367,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task SendAsync_Cancel_CancellationTokenPropagates()
-        {
-            var cts = new CancellationTokenSource();
-            cts.Cancel();
-            using (HttpClient client = CreateHttpClient())
-            {
-                var request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer);
-                Task t = client.SendAsync(request, cts.Token);
-                OperationCanceledException ex;
-                if (PlatformDetection.IsUap)
-                {
-                    ex = await Assert.ThrowsAsync<OperationCanceledException>(() => t);
-                }
-                else
-                {
-                    ex = await Assert.ThrowsAsync<TaskCanceledException>(() => t);
-                }
-
-                Assert.True(cts.Token.IsCancellationRequested, "cts token IsCancellationRequested");
-                if (!PlatformDetection.IsFullFramework)
-                {
-                    // .NET Framework has bug where it doesn't propagate token information.
-                    Assert.True(ex.CancellationToken.IsCancellationRequested, "exception token IsCancellationRequested");
-                }
-            }
-        }
-
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
         [Theory]
         [InlineData("[::1234]")]

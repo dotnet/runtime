@@ -1071,28 +1071,5 @@ namespace System.Net.Http
             public override bool Equals(object obj) => obj is CachedConnection && Equals((CachedConnection)obj);
             public override int GetHashCode() => _connection?.GetHashCode() ?? 0;
         }
-
-        private sealed class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
-        {
-            private CancellationToken _cancellationToken;
-
-            public TaskCompletionSourceWithCancellation() : base(TaskCreationOptions.RunContinuationsAsynchronously)
-            {
-            }
-
-            private void OnCancellation()
-            {
-                TrySetCanceled(_cancellationToken);
-            }
-
-            public async Task<T> WaitWithCancellationAsync(CancellationToken cancellationToken)
-            {
-                _cancellationToken = cancellationToken;
-                using (cancellationToken.Register(s => ((TaskCompletionSourceWithCancellation<HttpConnection>)s).OnCancellation(), this))
-                {
-                    return await Task.ConfigureAwait(false);
-                }
-            }
-        }
     }
 }
