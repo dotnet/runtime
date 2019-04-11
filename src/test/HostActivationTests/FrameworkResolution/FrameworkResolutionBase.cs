@@ -42,6 +42,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             public Func<RuntimeConfig, RuntimeConfig> RuntimeConfigCustomizer { get; set; }
             public IDictionary<string, string> Environment { get; set; }
             public IEnumerable<string> CommandLine { get; set; }
+            public string WorkingDirectory { get; set; }
 
             public TestSettings WithRuntimeConfigCustomizer(Func<RuntimeConfig, RuntimeConfig> customizer)
             {
@@ -72,6 +73,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 return this;
             }
 
+            public TestSettings WithWorkingDirectory(string path)
+            {
+                WorkingDirectory = path;
+                return this;
+            }
+
             public TestSettings With(Func<TestSettings, TestSettings> modifier)
             {
                 return modifier(this);
@@ -92,7 +99,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
             settings.WithCommandLine(app.AppDll);
 
-            CommandResult result = dotnet.Exec(settings.CommandLine.First(), settings.CommandLine.Skip(1).ToArray())
+            Command command = dotnet.Exec(settings.CommandLine.First(), settings.CommandLine.Skip(1).ToArray());
+
+            if (settings.WorkingDirectory != null)
+            {
+                command = command.WorkingDirectory(settings.WorkingDirectory);
+            }
+
+            CommandResult result = command
                 .EnvironmentVariable("COREHOST_TRACE", "1")
                 .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", multiLevelLookup ? "1" : "0")
                 .Environment(settings.Environment)

@@ -395,6 +395,34 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                         .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.6.0"));
         }
 
+        [Fact]
+        public void RollForwardOnAllFrameworks()
+        {
+            RunTest(
+                runtimeConfig => runtimeConfig
+                    .WithFramework(MiddleWare, "2.0.0")
+                    .WithFramework(HighWare, "7.0.0")
+                    .WithFramework(MicrosoftNETCoreApp, "5.0.0"),
+                dotnetCustomizer =>
+                {
+                    dotnetCustomizer.Framework(MiddleWare).RuntimeConfig(runtimeConfig =>
+                        runtimeConfig.GetFramework(MicrosoftNETCoreApp)
+                            .Version = "5.0.0");
+                    dotnetCustomizer.Framework(HighWare).RuntimeConfig(runtimeConfig =>
+                    {
+                        runtimeConfig.GetFramework(MiddleWare)
+                            .Version = "2.0.0";
+                        runtimeConfig.GetFramework(MicrosoftNETCoreApp)
+                            .Version = "5.0.0";
+                    });
+                },
+                resultValidator: commandResult =>
+                    commandResult.Should().Pass()
+                        .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3")
+                        .And.HaveResolvedFramework(MiddleWare, "2.1.2")
+                        .And.HaveResolvedFramework(HighWare, "7.3.1"));
+        }
+
         private void RunTest(
             Func<RuntimeConfig, RuntimeConfig> runtimeConfig,
             Action<DotNetCliExtensions.DotNetCliCustomizer> customizeDotNet = null,
