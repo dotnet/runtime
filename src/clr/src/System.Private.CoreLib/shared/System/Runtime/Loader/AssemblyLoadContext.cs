@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -31,17 +32,32 @@ namespace System.Runtime.Loader
         private static readonly Dictionary<long, WeakReference<AssemblyLoadContext>> s_allContexts = new Dictionary<long, WeakReference<AssemblyLoadContext>>();
         private static long s_nextId;
 
-        // Indicates the state of this ALC (Alive or in Unloading state)
-        private InternalState _state;
-
-        // Id used by s_allContexts
-        private readonly long _id;
+#region private data members
+        // If you modify any of these fields, you must also update the
+        // AssemblyLoadContextBaseObject structure in object.h
 
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
 
+        private event Func<Assembly, string, IntPtr> _resolvingUnmanagedDll;
+
+        private event Func<AssemblyLoadContext, AssemblyName, Assembly> _resolving;
+
+        private event Action<AssemblyLoadContext> _unloading;
+
+        private readonly string _name;
+
         // Contains the reference to VM's representation of the AssemblyLoadContext
         private readonly IntPtr _nativeAssemblyLoadContext;
+
+        // Id used by s_allContexts
+        private readonly long _id;
+
+        // Indicates the state of this ALC (Alive or in Unloading state)
+        private InternalState _state;
+
+        private readonly bool _isCollectible;
+#endregion
 
         protected AssemblyLoadContext() : this(false, false, null)
         {
@@ -58,9 +74,9 @@ namespace System.Runtime.Loader
         private protected AssemblyLoadContext(bool representsTPALoadContext, bool isCollectible, string name)
         {
             // Initialize the VM side of AssemblyLoadContext if not already done.
-            IsCollectible = isCollectible;
+            _isCollectible = isCollectible;
 
-            Name = name;
+            _name = name;
 
             // The _unloadLock needs to be assigned after the IsCollectible to ensure proper behavior of the finalizer
             // even in case the following allocation fails or the thread is aborted between these two lines.
@@ -103,7 +119,7 @@ namespace System.Runtime.Loader
         private void RaiseUnloadEvent()
         {
             // Ensure that we raise the Unload event only once
-            Interlocked.Exchange(ref Unloading, null)?.Invoke(this);
+            Interlocked.Exchange(ref _unloading, null)?.Invoke(this);
         }
 
         private void InitiateUnload()
@@ -153,7 +169,17 @@ namespace System.Runtime.Loader
         //
         // Inputs: Invoking assembly, and library name to resolve
         // Returns: A handle to the loaded native library
-        public event Func<Assembly, string, IntPtr> ResolvingUnmanagedDll;
+        public event Func<Assembly, string, IntPtr> ResolvingUnmanagedDll
+        {
+            add
+            {
+                _resolvingUnmanagedDll += value;
+            }
+            remove
+            {
+                _resolvingUnmanagedDll -= value;
+            }
+        }
 
         // Event handler for resolving managed assemblies.
         // This event is raised if the managed assembly could not be resolved via
@@ -161,9 +187,29 @@ namespace System.Runtime.Loader
         //
         // Inputs: The AssemblyLoadContext and AssemblyName to be loaded
         // Returns: The Loaded assembly object.
-        public event Func<AssemblyLoadContext, AssemblyName, Assembly> Resolving;
+        public event Func<AssemblyLoadContext, AssemblyName, Assembly> Resolving
+        {
+            add
+            {
+                _resolving += value;
+            }
+            remove
+            {
+                _resolving -= value;
+            }
+        }
 
-        public event Action<AssemblyLoadContext> Unloading;
+        public event Action<AssemblyLoadContext> Unloading
+        {
+            add
+            {
+                _unloading += value;
+            }
+            remove
+            {
+                _unloading -= value;
+            }
+        }
 
         // Occurs when an Assembly is loaded
         public static event AssemblyLoadEventHandler AssemblyLoad;
@@ -180,9 +226,9 @@ namespace System.Runtime.Loader
 
         public static AssemblyLoadContext Default => DefaultAssemblyLoadContext.s_loadContext;
 
-        public bool IsCollectible { get; }
+        public bool IsCollectible { get { return _isCollectible;} }
 
-        public string Name { get; }
+        public string Name { get { return _name;} }
 
         public override string ToString() => "\"" + Name + "\" " + GetType().ToString() + " #" + _id;
 
@@ -240,7 +286,7 @@ namespace System.Runtime.Loader
 
             // Attempt to load the assembly, using the same ordering as static load, in the current load context.
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return Assembly.Load(assemblyName, ref stackMark, _nativeAssemblyLoadContext);
+            return Assembly.Load(assemblyName, ref stackMark, this);
         }
 
         // These methods load assemblies into the current AssemblyLoadContext
@@ -394,6 +440,110 @@ namespace System.Runtime.Loader
             if (_state != InternalState.Alive)
             {
                 throw new InvalidOperationException(SR.AssemblyLoadContext_Verify_NotUnloading);
+            }
+        }
+
+        private static AsyncLocal<AssemblyLoadContext> s_asyncLocalCurrent;
+
+        /// <summary>Nullable current AssemblyLoadContext used for context sensitive reflection APIs</summary>
+        /// <remarks>
+        /// This is an advanced setting used in reflection assembly loading scenarios.
+        ///
+        /// There are a set of contextual reflection APIs which load managed assemblies through an inferred AssemblyLoadContext.
+        /// * <see cref="System.Activator.CreateInstance" />
+        /// * <see cref="System.Reflection.Assembly.Load" />
+        /// * <see cref="System.Reflection.Assembly.GetType" />
+        /// * <see cref="System.Type.GetType" />
+        ///
+        /// When CurrentContextualReflectionContext is null, the AssemblyLoadContext is inferred.
+        /// The inference logic is simple.
+        /// * For static methods, it is the AssemblyLoadContext which loaded the method caller's assembly.
+        /// * For instance methods, it is the AssemblyLoadContext which loaded the instance's assembly.
+        ///
+        /// When this property is set, the CurrentContextualReflectionContext value is used by these contextual reflection APIs for loading.
+        ///
+        /// This property is typically set in a using block by
+        /// <see cref="System.Runtime.Loader.AssemblyLoadContext.EnterContextualReflection"/>.
+        ///
+        /// The property is stored in an AsyncLocal&lt;AssemblyLoadContext&gt;. This means the setting can be unique for every async or thread in the process.
+        ///
+        /// For more details see https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/AssemblyLoadContext.ContextualReflection.md
+        /// </remarks>
+        public static AssemblyLoadContext CurrentContextualReflectionContext
+        {
+            get { return s_asyncLocalCurrent?.Value; }
+        }
+
+        private static void SetCurrentContextualReflectionContext(AssemblyLoadContext value)
+        {
+            if (s_asyncLocalCurrent == null)
+            {
+                Interlocked.CompareExchange(ref s_asyncLocalCurrent, new AsyncLocal<AssemblyLoadContext>(), null);
+            }
+            s_asyncLocalCurrent.Value = value;
+        }
+
+        /// <summary>Enter scope using this AssemblyLoadContext for ContextualReflection</summary>
+        /// <returns>A disposable ContextualReflectionScope for use in a using block</returns>
+        /// <remarks>
+        /// Sets CurrentContextualReflectionContext to this instance.
+        /// <see cref="System.Runtime.Loader.AssemblyLoadContext.CurrentContextualReflectionContext"/>
+        ///
+        /// Returns a disposable ContextualReflectionScope for use in a using block. When the using calls the
+        /// Dispose() method, it restores the ContextualReflectionScope to its previous value.
+        /// </remarks>
+        public ContextualReflectionScope EnterContextualReflection()
+        {
+            return new ContextualReflectionScope(this);
+        }
+
+        /// <summary>Enter scope using this AssemblyLoadContext for ContextualReflection</summary>
+        /// <param name="activating">Set CurrentContextualReflectionContext to the AssemblyLoadContext which loaded activating.</param>
+        /// <returns>A disposable ContextualReflectionScope for use in a using block</returns>
+        /// <remarks>
+        /// Sets CurrentContextualReflectionContext to to the AssemblyLoadContext which loaded activating.
+        /// <see cref="System.Runtime.Loader.AssemblyLoadContext.CurrentContextualReflectionContext"/>
+        ///
+        /// Returns a disposable ContextualReflectionScope for use in a using block. When the using calls the
+        /// Dispose() method, it restores the ContextualReflectionScope to its previous value.
+        /// </remarks>
+        public static ContextualReflectionScope EnterContextualReflection(Assembly activating)
+        {
+            return activating != null ?
+                GetLoadContext(activating).EnterContextualReflection() :
+                new ContextualReflectionScope(null);
+        }
+
+        /// <summary>Opaque disposable struct used to restore CurrentContextualReflectionContext</summary>
+        /// <remarks>
+        /// This is an implmentation detail of the AssemblyLoadContext.EnterContextualReflection APIs.
+        /// It is a struct, to avoid heap allocation.
+        /// It is required to be public to avoid boxing.
+        /// <see cref="System.Runtime.Loader.AssemblyLoadContext.EnterContextualReflection"/>
+        /// </remarks>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public struct ContextualReflectionScope : IDisposable
+        {
+            private readonly AssemblyLoadContext _activated;
+            private readonly AssemblyLoadContext _predecessor;
+            private readonly bool _initialized;
+
+            internal ContextualReflectionScope(AssemblyLoadContext activating)
+            {
+                _predecessor = AssemblyLoadContext.CurrentContextualReflectionContext;
+                AssemblyLoadContext.SetCurrentContextualReflectionContext(activating);
+                _activated = activating;
+                _initialized = true;
+            }
+
+            public void Dispose()
+            {
+                if (_initialized)
+                {
+                    // Do not clear initialized. Always restore the _predecessor in Dispose()
+                    // _initialized = false;
+                    AssemblyLoadContext.SetCurrentContextualReflectionContext(_predecessor);
+                }
             }
         }
     }
