@@ -130,10 +130,10 @@ namespace System.Reflection
             var name = new AssemblyName
             {
                 _name = _name,
-                _publicKey = (byte[])_publicKey?.Clone(),
-                _publicKeyToken = (byte[])_publicKeyToken?.Clone(),
+                _publicKey = (byte[]?)_publicKey?.Clone(),
+                _publicKeyToken = (byte[]?)_publicKeyToken?.Clone(),
                 _cultureInfo = _cultureInfo,
-                _version = (Version)_version?.Clone(),
+                _version = (Version?)_version?.Clone(),
                 _flags = _flags,
                 _codeBase = _codeBase,
                 _hashAlgorithm = _hashAlgorithm,
