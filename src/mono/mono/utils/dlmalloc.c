@@ -19,6 +19,8 @@
  * - the defines below
  */
 
+#include "mono-mmap.h"
+
 #define USE_DL_PREFIX 1
 #define USE_LOCKS 1
 /* Use mmap for allocating memory */
@@ -1309,14 +1311,18 @@ extern void*     sbrk(ptrdiff_t);
 #define USE_MMAP_BIT         (SIZE_T_ONE)
 
 #ifndef WIN32
-#define CALL_MUNMAP(a, s)    munmap((a), (s))
+//#define CALL_MUNMAP(a, s)    munmap((a), (s))
+#define CALL_MUNMAP(a, s)    mono_vfree((a), (s), MONO_MEM_ACCOUNT_CODE)
 #define MMAP_PROT            (PROT_READ|PROT_WRITE|PROT_EXEC)
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
 #define MAP_ANONYMOUS        MAP_ANON
 #endif /* MAP_ANON */
 #ifdef MAP_ANONYMOUS
 #define MMAP_FLAGS           (MAP_PRIVATE|MAP_ANONYMOUS)
-#define CALL_MMAP(s)         mmap(0, (s), MMAP_PROT, MMAP_FLAGS, -1, 0)
+
+//#define CALL_MMAP(s)         mmap(0, (s), MMAP_PROT, MMAP_FLAGS, -1, 0)
+#define CALL_MMAP(s) mono_valloc(NULL, (s), MONO_MMAP_READ|MONO_MMAP_WRITE|MONO_MMAP_EXEC|MONO_MMAP_JIT, MONO_MEM_ACCOUNT_CODE)
+
 #else /* MAP_ANONYMOUS */
 /*
    Nearly all versions of mmap support MAP_ANONYMOUS, so the following
