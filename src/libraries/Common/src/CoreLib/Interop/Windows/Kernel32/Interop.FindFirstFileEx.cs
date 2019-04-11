@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -19,10 +21,11 @@ internal partial class Interop
 
         internal static SafeFindHandle FindFirstFile(string fileName, ref WIN32_FIND_DATA data)
         {
-            fileName = PathInternal.EnsureExtendedPrefixIfNeeded(fileName);
+            string? fileNameWithPrefix = PathInternal.EnsureExtendedPrefixIfNeeded(fileName);
+            Debug.Assert(fileNameWithPrefix != null, "null not expected when non-null passed"); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
 
             // use FindExInfoBasic since we don't care about short name and it has better perf
-            return FindFirstFileExPrivate(fileName, FINDEX_INFO_LEVELS.FindExInfoBasic, ref data, FINDEX_SEARCH_OPS.FindExSearchNameMatch, IntPtr.Zero, 0);
+            return FindFirstFileExPrivate(fileNameWithPrefix, FINDEX_INFO_LEVELS.FindExInfoBasic, ref data, FINDEX_SEARCH_OPS.FindExSearchNameMatch, IntPtr.Zero, 0);
         }
 
         internal enum FINDEX_INFO_LEVELS : uint
