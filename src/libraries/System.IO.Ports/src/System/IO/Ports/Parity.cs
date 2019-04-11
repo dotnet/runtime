@@ -6,11 +6,11 @@ namespace System.IO.Ports
 {
     public enum Parity
     {
-        None = NativeMethods.NOPARITY,
-        Odd = NativeMethods.ODDPARITY,
-        Even = NativeMethods.EVENPARITY,
-        Mark = NativeMethods.MARKPARITY,
-        Space = NativeMethods.SPACEPARITY
+        None = 0,
+        Odd = 1,
+        Even = 2,
+        Mark = 3,
+        Space = 4
     };
 }
 

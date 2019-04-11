@@ -13,7 +13,7 @@ namespace System.IO.Ports
             return Interop.mincore.OpenCommPort(
                 portNumber,
                 Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
-                NativeMethods.FILE_FLAG_OVERLAPPED);
+                Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED);
         }
     }
 }
