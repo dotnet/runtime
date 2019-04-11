@@ -21,6 +21,14 @@ namespace System.Text
 {
     internal static partial class ASCIIUtility
     {
+#if DEBUG
+        static ASCIIUtility()
+        {
+            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
+            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
+        }
+#endif // DEBUG
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllBytesInUInt64AreAscii(ulong value)
         {
