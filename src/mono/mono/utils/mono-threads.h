@@ -814,6 +814,24 @@ mono_win32_interrupt_wait (PVOID thread_info, HANDLE native_thread_handle, DWORD
 
 void
 mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
+
+#define W32_DEFINE_LAST_ERROR_RESTORE_POINT \
+	DWORD _last_error_restore_point = GetLastError ();
+
+#define W32_UPDATE_LAST_ERROR_RESTORE_POINT \
+	_last_error_restore_point = GetLastError ();
+
+#define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT \
+		/* Only restore if changed to prevent unecessary writes. */ \
+		if (GetLastError () != _last_error_restore_point) \
+			SetLastError (_last_error_restore_point);
+
+#else
+
+#define W32_DEFINE_LAST_ERROR_RESTORE_POINT /* nothing */
+#define W32_UPDATE_LAST_ERROR_RESTORE_POINT /* nothing */
+#define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT /* nothing */
+
 #endif
 
 #endif /* __MONO_THREADS_H__ */

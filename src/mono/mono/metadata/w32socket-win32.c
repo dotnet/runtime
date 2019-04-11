@@ -38,15 +38,36 @@ mono_w32socket_cleanup (void)
 {
 }
 
+// See win32_wait_interrupt_handler for details.
+static void
+win32_io_interrupt_handler(gpointer ignored)
+{
+}
+
 #define INTERRUPTABLE_SOCKET_CALL(blocking, ret, op, sock, ...) \
 	MonoThreadInfo *info = mono_thread_info_current (); \
-	if (blocking) \
-		mono_win32_enter_blocking_io_call (info, (HANDLE)sock); \
-	MONO_ENTER_GC_SAFE; \
-	ret = op (sock, __VA_ARGS__); \
-	MONO_EXIT_GC_SAFE; \
-	if (blocking) \
-		mono_win32_leave_blocking_io_call (info, (HANDLE)sock);
+	gboolean alerted = FALSE; \
+	if (blocking && info) { \
+		mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted); \
+		if (alerted) { \
+			WSASetLastError (WSAEINTR); \
+		} else { \
+			mono_win32_enter_blocking_io_call (info, (HANDLE)sock); \
+		} \
+	} \
+	if (!alerted) { \
+		MONO_ENTER_GC_SAFE; \
+		if (blocking && info && mono_thread_info_is_interrupt_state (info)) { \
+			WSASetLastError (WSAEINTR); \
+		} else { \
+			ret = op (sock, __VA_ARGS__); \
+		} \
+		MONO_EXIT_GC_SAFE; \
+	} \
+	if (blocking && info && !alerted) { \
+		mono_win32_leave_blocking_io_call (info, (HANDLE)sock); \
+		mono_thread_info_uninstall_interrupt (&alerted); \
+	}
 
 SOCKET mono_w32socket_accept (SOCKET s, struct sockaddr *addr, socklen_t *addrlen, gboolean blocking)
 {
@@ -115,17 +136,32 @@ internal_w32socket_transmit_file (SOCKET sock, gpointer file, TRANSMIT_FILE_BUFF
 
 	if (!WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &transmit_file_guid, sizeof (GUID), &transmit_file, sizeof (LPFN_TRANSMITFILE), &output_bytes, NULL, NULL)) {
 		MonoThreadInfo *info = mono_thread_info_current ();
+		gboolean alerted = FALSE;
 
-		if (blocking)
-			mono_win32_enter_blocking_io_call (info, (HANDLE)sock);
+		if (blocking && info) {
+			mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted);
+			if (alerted) {
+				WSASetLastError (WSAEINTR);
+			} else {
+				mono_win32_enter_blocking_io_call (info, (HANDLE)sock);
+			}
+		}
 
-		MONO_ENTER_GC_SAFE;
-		if (transmit_file (sock, file, 0, 0, NULL, lpTransmitBuffers, dwReserved))
-			ret = 0;
-		MONO_EXIT_GC_SAFE;
+		if (!alerted) {
+			MONO_ENTER_GC_SAFE;
+			if (blocking && info && mono_thread_info_is_interrupt_state (info)) {
+				WSASetLastError (WSAEINTR);
+			} else {
+				if (transmit_file (sock, file, 0, 0, NULL, lpTransmitBuffers, dwReserved))
+					ret = 0;
+			}
+			MONO_EXIT_GC_SAFE;
+		}
 
-		if (blocking)
+		if (blocking && info && !alerted) {
 			mono_win32_leave_blocking_io_call (info, (HANDLE)sock);
+			mono_thread_info_uninstall_interrupt (&alerted);
+		}
 	}
 
 	if (ret != 0)
@@ -144,17 +180,32 @@ internal_w32socket_disconnect (SOCKET sock, gboolean reuse, gboolean blocking)
 
 	if (!WSAIoctl (sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &disconnect_guid, sizeof (GUID), &disconnect, sizeof (LPFN_DISCONNECTEX), &output_bytes, NULL, NULL)) {
 		MonoThreadInfo *info = mono_thread_info_current ();
+		gboolean alerted = FALSE;
 
-		if (blocking)
-			mono_win32_enter_blocking_io_call (info, (HANDLE)sock);
+		if (blocking && info) {
+			mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted);
+			if (alerted) {
+				WSASetLastError (WSAEINTR);
+			} else {
+				mono_win32_enter_blocking_io_call (info, (HANDLE)sock);
+			}
+		}
 
-		MONO_ENTER_GC_SAFE;
-		if (disconnect (sock, NULL, reuse ? TF_REUSE_SOCKET : 0, 0))
-			ret = 0;
-		MONO_EXIT_GC_SAFE;
+		if (!alerted) {
+			MONO_ENTER_GC_SAFE;
+			if (blocking && info && mono_thread_info_is_interrupt_state (info)) {
+				WSASetLastError (WSAEINTR);
+			} else {
+				if (disconnect (sock, NULL, reuse ? TF_REUSE_SOCKET : 0, 0))
+					ret = 0;
+			}
+			MONO_EXIT_GC_SAFE;
+		}
 
-		if (blocking)
+		if (blocking && info && !alerted) {
 			mono_win32_leave_blocking_io_call (info, (HANDLE)sock);
+			mono_thread_info_uninstall_interrupt (&alerted);
+		}
 	}
 
 	if (ret != 0)

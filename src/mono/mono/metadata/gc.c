@@ -615,9 +615,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	ResetEvent (pending_done_event);
 	mono_gc_finalize_notify ();
 	/* g_print ("Waiting for pending finalizers....\n"); */
-	MONO_ENTER_GC_SAFE;
-	mono_win32_wait_for_single_object_ex (pending_done_event, INFINITE, TRUE);
-	MONO_EXIT_GC_SAFE;
+	mono_coop_win32_wait_for_single_object_ex (pending_done_event, INFINITE, TRUE);
 	/* g_print ("Done pending....\n"); */
 #else
 	gboolean alerted = FALSE;

@@ -22,16 +22,24 @@
 /* Disables the IO portability layer */
 #define DISABLE_PORTABILITY 1
 
-/* DISABLE_DEFINES picked up from cygconfig.h, if available */
+/* Start configure DISABLE_DEFINES picked up from cygconfig.h or other external source, if available */
 /* @DISABLE_DEFINES@ */
+/* End configure DISABLE_DEFINES picked up from cygconfig.h or other external source, if available */
 
 /* No DISABLE_DEFINES below this point */
 
 /* Some VES is available at runtime */
 #define ENABLE_ILGEN 1
 
-/* Optional ENABLE_DEFINES */
+/* Start configure ENABLE_DEFINES picked up from cygconfig.h or other external source, if available */
 /* @ENABLE_DEFINES@ */
+/* End configure ENABLE_DEFINES picked up from cygconfig.h or other external source, if available */
+
+#if defined(ENABLE_HYBRID_SUSPEND) || defined(ENABLE_COOP_SUSPEND)
+/* Windows MSVC builds defaults to preemptive suspend. Disable ENABLE_HYBRID_SUSPEND/ENABLE_COOP_SUSPEND defines. */
+#undef ENABLE_HYBRID_SUSPEND
+#undef ENABLE_COOP_SUSPEND
+#endif
 
 /* No ENABLE_DEFINES below this point */
 
@@ -157,8 +165,9 @@
 #define HAVE_WRITE_BARRIERS
 #endif
 
-/* Optional HAVE_DEFINES */
+/* Start configure HAVE_DEFINES picked up from cygconfig.h or other external source, if available */
 /* @HAVE_DEFINES@ */
+/* End configure HAVE_DEFINES picked up from cygconfig.h or other external source, if available */
 
 /* No HAVE_DEFINES below this point */
 

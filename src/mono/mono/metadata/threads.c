@@ -2230,17 +2230,8 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 
 	for (;;) {
 
-#ifdef HOST_WIN32
-		MONO_ENTER_GC_SAFE;
-		DWORD const wait_result = (numhandles != 1)
-			? mono_win32_wait_for_multiple_objects_ex (numhandles, handles, waitall, timeoutLeft, TRUE, error)
-			: mono_win32_wait_for_single_object_ex (handles [0], timeoutLeft, TRUE);
-		ret = mono_w32handle_convert_wait_ret (wait_result, numhandles);
-		MONO_EXIT_GC_SAFE;
-#else
 		/* mono_w32handle_wait_multiple optimizes the case for numhandles == 1 */
 		ret = mono_w32handle_wait_multiple (handles, numhandles, waitall, timeoutLeft, TRUE, error);
-#endif /* HOST_WIN32 */
 
 		if (ret != MONO_W32HANDLE_WAIT_RET_ALERTED)
 			break;
@@ -2290,13 +2281,7 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal,
 
 	mono_thread_set_state (thread, ThreadState_WaitSleepJoin);
 	
-#ifdef HOST_WIN32
-	MONO_ENTER_GC_SAFE;
-	ret = mono_w32handle_convert_wait_ret (mono_win32_signal_object_and_wait (toSignal, toWait, ms, TRUE), 1);
-	MONO_EXIT_GC_SAFE;
-#else
 	ret = mono_w32handle_signal_and_wait (toSignal, toWait, ms, TRUE);
-#endif
 	
 	mono_thread_clr_state (thread, ThreadState_WaitSleepJoin);
 
@@ -4958,7 +4943,21 @@ mono_alloc_special_static_data_free (GHashTable *special_static_fields)
 }
 
 #ifdef HOST_WIN32
-static void CALLBACK dummy_apc (ULONG_PTR param)
+static void
+flush_thread_interrupt_queue (void)
+{
+	/* Consume pending APC calls for current thread.*/
+	/* Since this function get's called from interrupt handler it must use a direct */
+	/* Win32 API call and can't go through mono_coop_win32_wait_for_single_object_ex */
+	/* or it will detect a pending interrupt and not entering the wait call needed */
+	/* to consume pending APC's.*/
+	MONO_ENTER_GC_SAFE;
+	WaitForSingleObjectEx (GetCurrentThread (), 0, TRUE);
+	MONO_EXIT_GC_SAFE;
+}
+#else
+static void
+flush_thread_interrupt_queue (void)
 {
 }
 #endif
@@ -4997,12 +4996,7 @@ mono_thread_execute_interruption (MonoExceptionHandle *pexc)
 	MonoThreadObjectHandle sys_thread;
 	sys_thread = mono_thread_current_handle ();
 
-	/* this will consume pending APC calls */
-#ifdef HOST_WIN32
-	MONO_ENTER_GC_SAFE;
-	mono_win32_wait_for_single_object_ex (GetCurrentThread (), 0, TRUE);
-	MONO_EXIT_GC_SAFE;
-#endif
+	flush_thread_interrupt_queue ();
 
 	/* Clear the interrupted flag of the thread so it can wait again */
 	mono_thread_info_clear_self_interrupt ();

@@ -58,7 +58,7 @@ mono_w32file_create(const gunichar2 *name, guint32 fileaccess, guint32 sharemode
 {
 	gpointer res;
 	MONO_ENTER_GC_SAFE;
-	res = CreateFile (name, fileaccess, sharemode, NULL, createmode, attrs, NULL);
+	res = CreateFileW (name, fileaccess, sharemode, NULL, createmode, attrs, NULL);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
@@ -78,9 +78,15 @@ mono_w32file_delete (const gunichar2 *name)
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
-	res = DeleteFile (name);
+	res = DeleteFileW (name);
 	MONO_EXIT_GC_SAFE;
 	return res;
+}
+
+// See win32_wait_interrupt_handler for details.
+static void
+win32_io_interrupt_handler (gpointer ignored)
+{
 }
 
 gboolean
@@ -88,14 +94,33 @@ mono_w32file_read(gpointer handle, gpointer buffer, guint32 numbytes, guint32 *b
 {
 	gboolean res;
 	MonoThreadInfo *info = mono_thread_info_current ();
+	gboolean alerted = FALSE;
 
-	mono_win32_enter_blocking_io_call (info, (HANDLE)handle);
+	if (info) {
+		mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted);
+		if (alerted) {
+			SetLastError (ERROR_OPERATION_ABORTED);
+			*win32error = ERROR_OPERATION_ABORTED;
+			return FALSE;
+		}
+		mono_win32_enter_blocking_io_call (info, handle);
+	}
+
 	MONO_ENTER_GC_SAFE;
-	res = ReadFile ((HANDLE)handle, buffer, numbytes, (PDWORD)bytesread, NULL);
+	if (info && mono_thread_info_is_interrupt_state (info)) {
+		res = FALSE;
+		SetLastError (ERROR_OPERATION_ABORTED);
+	} else {
+		res = ReadFile (handle, buffer, numbytes, (PDWORD)bytesread, NULL);
+	}
 	if (!res)
 		*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
-	mono_win32_leave_blocking_io_call (info, (HANDLE)handle);
+
+	if (info) {
+		mono_win32_leave_blocking_io_call (info, handle);
+		mono_thread_info_uninstall_interrupt (&alerted);
+	}
 
 	return res;
 }
@@ -105,14 +130,33 @@ mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, gui
 {
 	gboolean res;
 	MonoThreadInfo *info = mono_thread_info_current ();
+	gboolean alerted = FALSE;
 
-	mono_win32_enter_blocking_io_call (info, (HANDLE)handle);
+	if (info) {
+		mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted);
+		if (alerted) {
+			SetLastError (ERROR_OPERATION_ABORTED);
+			*win32error = ERROR_OPERATION_ABORTED;
+			return FALSE;
+		}
+		mono_win32_enter_blocking_io_call (info, handle);
+	}
+
 	MONO_ENTER_GC_SAFE;
-	res = WriteFile ((HANDLE)handle, buffer, numbytes, (PDWORD)byteswritten, NULL);
+	if (info && mono_thread_info_is_interrupt_state (info)) {
+		res = FALSE;
+		SetLastError (ERROR_OPERATION_ABORTED);
+	} else {
+		res = WriteFile (handle, buffer, numbytes, (PDWORD)byteswritten, NULL);
+	}
 	if (!res)
 		*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
-	mono_win32_leave_blocking_io_call (info, (HANDLE)handle);
+
+	if (info) {
+		mono_win32_leave_blocking_io_call (info, handle);
+		mono_thread_info_uninstall_interrupt (&alerted);
+	}
 
 	return res;
 }
@@ -178,21 +222,21 @@ mono_w32file_filetime_to_systemtime (const FILETIME *file_time, SYSTEMTIME *syst
 }
 
 gpointer
-mono_w32file_find_first (const gunichar2 *pattern, WIN32_FIND_DATA *find_data)
+mono_w32file_find_first (const gunichar2 *pattern, WIN32_FIND_DATAW *find_data)
 {
 	gpointer res;
 	MONO_ENTER_GC_SAFE;
-	res = FindFirstFile (pattern, find_data);
+	res = FindFirstFileW (pattern, find_data);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
 
 gboolean
-mono_w32file_find_next (gpointer handle, WIN32_FIND_DATA *find_data)
+mono_w32file_find_next (gpointer handle, WIN32_FIND_DATAW *find_data)
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
-	res = FindNextFile (handle, find_data);
+	res = FindNextFileW (handle, find_data);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
@@ -212,7 +256,7 @@ mono_w32file_create_directory (const gunichar2 *name)
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
-	res = CreateDirectory (name, NULL);
+	res = CreateDirectoryW (name, NULL);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
@@ -222,7 +266,7 @@ mono_w32file_remove_directory (const gunichar2 *name)
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
-	res = RemoveDirectory (name);
+	res = RemoveDirectoryW (name);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
@@ -235,33 +279,25 @@ guint32
 mono_w32file_get_attributes (const gunichar2 *name)
 {
 	guint32 res;
-	guint32 error;
 	HANDLE find_handle;
-	WIN32_FIND_DATA find_data;
+	WIN32_FIND_DATAW find_data;
 
 	MONO_ENTER_GC_SAFE;
-	res = GetFileAttributes (name);
-	error = GetLastError ();
+
+	res = GetFileAttributesW (name);
+	if (res == INVALID_FILE_ATTRIBUTES && GetLastError () == ERROR_SHARING_VIOLATION) {
+		find_handle = FindFirstFileW (name, &find_data);
+		if (find_handle != INVALID_HANDLE_VALUE) {
+			FindClose (find_handle);
+			res = find_data.dwFileAttributes;
+		} else {
+			res = INVALID_FILE_ATTRIBUTES;
+		}
+	}
+
 	MONO_EXIT_GC_SAFE;
 
-	if (res != INVALID_FILE_ATTRIBUTES)
-		return res;
-
-	if (error != ERROR_SHARING_VIOLATION)
-		return INVALID_FILE_ATTRIBUTES;
-
-	MONO_ENTER_GC_SAFE;
-	find_handle = FindFirstFile (name, &find_data);
-	MONO_EXIT_GC_SAFE;
-
-	if (find_handle == INVALID_HANDLE_VALUE)
-		return INVALID_FILE_ATTRIBUTES;
-
-	MONO_ENTER_GC_SAFE;
-	FindClose (find_handle);
-	MONO_EXIT_GC_SAFE;
-
-	return find_data.dwFileAttributes;
+	return res;
 }
 
 static gint64
@@ -274,44 +310,35 @@ gboolean
 mono_w32file_get_attributes_ex (const gunichar2 *name, MonoIOStat *stat)
 {
 	gboolean res;
-	guint32 error;
 	HANDLE find_handle;
-	WIN32_FIND_DATA find_data;
+	WIN32_FIND_DATAW find_data;
 	WIN32_FILE_ATTRIBUTE_DATA file_attribute_data;
 
 	MONO_ENTER_GC_SAFE;
-	res = GetFileAttributesEx (name, GetFileExInfoStandard, &file_attribute_data);
-	error = GetLastError ();
-	MONO_EXIT_GC_SAFE;
+
+	res = GetFileAttributesExW (name, GetFileExInfoStandard, &file_attribute_data);
 	if (res) {
 		stat->attributes = file_attribute_data.dwFileAttributes;
 		stat->creation_time = convert_filetime (&file_attribute_data.ftCreationTime);
 		stat->last_access_time = convert_filetime (&file_attribute_data.ftLastAccessTime);
 		stat->last_write_time = convert_filetime (&file_attribute_data.ftLastWriteTime);
 		stat->length = ((gint64)file_attribute_data.nFileSizeHigh << 32) | file_attribute_data.nFileSizeLow;
-		return TRUE;
+	} else if (!res && GetLastError () == ERROR_SHARING_VIOLATION) {
+		find_handle = FindFirstFileW (name, &find_data);
+		if (find_handle != INVALID_HANDLE_VALUE) {
+			FindClose (find_handle);
+			stat->attributes = find_data.dwFileAttributes;
+			stat->creation_time = convert_filetime (&find_data.ftCreationTime);
+			stat->last_access_time = convert_filetime (&find_data.ftLastAccessTime);
+			stat->last_write_time = convert_filetime (&find_data.ftLastWriteTime);
+			stat->length = ((gint64)find_data.nFileSizeHigh << 32) | find_data.nFileSizeLow;
+			res = TRUE;
+		}
 	}
 
-	if (error != ERROR_SHARING_VIOLATION)
-		return FALSE;
-
-	MONO_ENTER_GC_SAFE;
-	find_handle = FindFirstFile (name, &find_data);
 	MONO_EXIT_GC_SAFE;
 
-	if (find_handle == INVALID_HANDLE_VALUE)
-		return FALSE;
-
-	MONO_ENTER_GC_SAFE;
-	FindClose (find_handle);
-	MONO_EXIT_GC_SAFE;
-
-	stat->attributes = find_data.dwFileAttributes;
-	stat->creation_time = convert_filetime (&find_data.ftCreationTime);
-	stat->last_access_time = convert_filetime (&find_data.ftLastAccessTime);
-	stat->last_write_time = convert_filetime (&find_data.ftLastWriteTime);
-	stat->length = ((gint64)find_data.nFileSizeHigh << 32) | find_data.nFileSizeLow;
-	return TRUE;
+	return res;
 }
 
 gboolean
@@ -319,7 +346,7 @@ mono_w32file_set_attributes (const gunichar2 *name, guint32 attrs)
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
-	res = SetFileAttributes (name, attrs);
+	res = SetFileAttributesW (name, attrs);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
@@ -329,7 +356,7 @@ mono_w32file_get_cwd (guint32 length, gunichar2 *buffer)
 {
 	guint32 res;
 	MONO_ENTER_GC_SAFE;
-	res = GetCurrentDirectory (length, buffer);
+	res = GetCurrentDirectoryW (length, buffer);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
@@ -339,7 +366,7 @@ mono_w32file_set_cwd (const gunichar2 *path)
 {
 	gboolean res;
 	MONO_ENTER_GC_SAFE;
-	res = SetCurrentDirectory (path);
+	res = SetCurrentDirectoryW (path);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
@@ -401,7 +428,7 @@ mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 
 	MONO_ENTER_GC_SAFE;
 
-	result = MoveFile (path, dest);
+	result = MoveFileW (path, dest);
 	if (!result)
 		*error = GetLastError ();
 
@@ -419,7 +446,7 @@ mono_w32file_replace (const gunichar2 *destinationFileName, const gunichar2 *sou
 
 	MONO_ENTER_GC_SAFE;
 
-	result = ReplaceFile (destinationFileName, sourceFileName, destinationBackupFileName, flags, NULL, NULL);
+	result = ReplaceFileW (destinationFileName, sourceFileName, destinationBackupFileName, flags, NULL, NULL);
 	if (!result)
 		*error = GetLastError ();
 
@@ -447,7 +474,7 @@ mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwr
 
 	MONO_ENTER_GC_SAFE;
 
-	result = CopyFile (path, dest, !overwrite);
+	result = CopyFileW (path, dest, !overwrite);
 	if (!result)
 		*error = GetLastError ();
 
@@ -576,7 +603,7 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 {
 	gint32 res;
 	MONO_ENTER_GC_SAFE;
-	res = GetLogicalDriveStrings (len, buf);
+	res = GetLogicalDriveStringsW (len, buf);
 	MONO_EXIT_GC_SAFE;
 	return res;
 }
