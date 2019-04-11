@@ -22,7 +22,6 @@ arguments_t::arguments_t()
  * Setup the shared store directories.
  *
  *  o %DOTNET_SHARED_STORE% -- multiple delimited paths
- *  o $HOME/.dotnet/{x86|x64}/store/arch/tfm or %USERPROFILE%\.dotnet\{x86|x64}\store\<arch>\<tfm>
  *  o dotnet.exe relative shared store\<arch>\<tfm>
  *  o Global location
  *      Windows: C:\Program Files (x86) or
