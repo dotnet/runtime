@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <ILLinkBuild Condition=" $(Configuration.StartsWith('illink')) ">true</ILLinkBuild>
     <ILLinkBuild Condition=" '$(ILLinkBuild)' == '' ">false</ILLinkBuild>
   </PropertyGroup>
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props') And ! $(ILLinkBuild) "/>
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props') And ! $(ILLinkBuild) " />
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" Condition=" $(ILLinkBuild) " />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -690,7 +690,7 @@
     <PackageReference Include="NUnit.Extension.NUnitV2ResultWriter" Version="3.5.0" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" Condition=" ! $(ILLinkBuild) "/>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" Condition=" ! $(ILLinkBuild) " />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
