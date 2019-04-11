@@ -3,14 +3,11 @@
     <!-- Copy to IBC directory -->
     <OutputPath>$(IbcOptimizationDataDir)</OutputPath>
     <EnableBinPlacing>false</EnableBinPlacing>
-
-    <CoreFxOptimizationDataPackageId>optimization.windows_nt-x64.IBC.CoreFx</CoreFxOptimizationDataPackageId>
-    <CoreFxOptimizationDataPackageId Condition="'$(IBCTarget)'=='Linux'">optimization.linux-x64.IBC.CoreFx</CoreFxOptimizationDataPackageId>
-    <CoreFxOptimizationDataVersion>$(optimizationwindows_ntx64IBCCoreFxPackageVersion)</CoreFxOptimizationDataVersion>
   </PropertyGroup>
   <ItemGroup>
     <!-- IBC data -->
-    <IBCPackage Include="$(CoreFxOptimizationDataPackageId)" Version="$(CoreFxOptimizationDataVersion)" />
+    <IBCPackage Include="$(WindowsCoreFxOptimizationDataPackageId)" Version="$(WindowsCoreFxOptimizationDataVersion)" />
+    <IBCPackage Include="$(LinuxCoreFxOptimizationDataPackageId)" Version="$(LinuxCoreFxOptimizationDataVersion)" />
     <PackageReference Include="@(IBCPackage)" GeneratePathProperty="true" />
   </ItemGroup>
   
