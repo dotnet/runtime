@@ -19,75 +19,14 @@
 #include "fx_resolver.h"
 #include "fx_ver.h"
 #include "host_startup_info.h"
+#include "hostpolicy_resolver.h"
 #include "runtime_config.h"
 #include "sdk_info.h"
 #include "sdk_resolver.h"
 
-using corehost_load_fn = int(*) (const host_interface_t* init);
 using corehost_main_fn = int(*) (const int argc, const pal::char_t* argv[]);
 using corehost_get_delegate_fn = int(*)(coreclr_delegate_type type, void** delegate);
 using corehost_main_with_output_buffer_fn = int(*) (const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size);
-using corehost_unload_fn = int(*) ();
-using corehost_error_writer_fn = void(*) (const pal::char_t* message);
-using corehost_set_error_writer_fn = corehost_error_writer_fn(*) (corehost_error_writer_fn error_writer);
-
-struct hostpolicy_contract
-{
-    // Required API contracts
-    corehost_load_fn load;
-    corehost_unload_fn unload;
-
-    // 3.0+ contracts
-    corehost_set_error_writer_fn set_error_writer;
-};
-
-namespace
-{
-    std::mutex g_hostpolicy_lock;
-    pal::dll_t g_hostpolicy;
-    hostpolicy_contract g_hostpolicy_contract;
-}
-
-int load_hostpolicy_common(
-    const pal::string_t& lib_dir,
-    pal::string_t& host_path,
-    pal::dll_t* h_host,
-    hostpolicy_contract &host_contract)
-{
-    std::lock_guard<std::mutex> lock{ g_hostpolicy_lock };
-    if (g_hostpolicy == nullptr)
-    {
-        if (!library_exists_in_dir(lib_dir, LIBHOSTPOLICY_NAME, &host_path))
-        {
-            return StatusCode::CoreHostLibMissingFailure;
-        }
-
-        // Load library
-        if (!pal::load_library(&host_path, &g_hostpolicy))
-        {
-            trace::info(_X("Load library of %s failed"), host_path.c_str());
-            return StatusCode::CoreHostLibLoadFailure;
-        }
-
-        // Obtain entrypoint symbols
-        g_hostpolicy_contract.load = (corehost_load_fn)pal::get_symbol(g_hostpolicy, "corehost_load");
-        g_hostpolicy_contract.unload = (corehost_unload_fn)pal::get_symbol(g_hostpolicy, "corehost_unload");
-        if ((g_hostpolicy_contract.load == nullptr) || (g_hostpolicy_contract.unload == nullptr))
-            return StatusCode::CoreHostEntryPointFailure;
-
-        g_hostpolicy_contract.set_error_writer = (corehost_set_error_writer_fn)pal::get_symbol(g_hostpolicy, "corehost_set_error_writer");
-
-        // It's possible to not have corehost_set_error_writer, since this was only introduced in 3.0
-        // so 2.0 hostpolicy would not have the export. In this case we will not propagate the error writer
-        // and errors will still be reported to stderr.
-    }
-
-    // Return global values
-    *h_host = g_hostpolicy;
-    host_contract = g_hostpolicy_contract;
-
-    return StatusCode::Success;
-}
 
 template<typename T>
 int load_hostpolicy(
@@ -99,8 +38,7 @@ int load_hostpolicy(
 {
     assert(main_entry_symbol != nullptr && main_fn != nullptr);
 
-    pal::string_t host_path;
-    int rc = load_hostpolicy_common(lib_dir, host_path, h_host, host_contract);
+    int rc = hostpolicy_resolver::load(lib_dir, h_host, host_contract);
     if (rc != StatusCode::Success)
     {
         trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, lib_dir.c_str());
@@ -180,147 +118,6 @@ static int execute_host_command(
     return code;
 }
 
-/**
-* Resolve the hostpolicy version from deps.
-*  - Scan the deps file's libraries section and find the hostpolicy version in the file.
-*/
-pal::string_t resolve_hostpolicy_version_from_deps(const pal::string_t& deps_json)
-{
-    trace::verbose(_X("--- Resolving %s version from deps json [%s]"), LIBHOSTPOLICY_NAME, deps_json.c_str());
-
-    pal::string_t retval;
-    if (!pal::file_exists(deps_json))
-    {
-        trace::verbose(_X("Dependency manifest [%s] does not exist"), deps_json.c_str());
-        return retval;
-    }
-
-    pal::ifstream_t file(deps_json);
-    if (!file.good())
-    {
-        trace::verbose(_X("Dependency manifest [%s] could not be opened"), deps_json.c_str());
-        return retval;
-    }
-
-    if (skip_utf8_bom(&file))
-    {
-        trace::verbose(_X("UTF-8 BOM skipped while reading [%s]"), deps_json.c_str());
-    }
-
-    try
-    {
-        const auto root = json_value::parse(file);
-        const auto& json = root.as_object();
-        const auto& libraries = json.at(_X("libraries")).as_object();
-
-        // Look up the root package instead of the "runtime" package because we can't do a full rid resolution.
-        // i.e., look for "Microsoft.NETCore.DotNetHostPolicy/" followed by version.
-        pal::string_t prefix = _X("Microsoft.NETCore.DotNetHostPolicy/");
-        for (const auto& library : libraries)
-        {
-            if (starts_with(library.first, prefix, false))
-            {
-                // Extract the version information that occurs after '/'
-                retval = library.first.substr(prefix.size());
-                break;
-            }
-        }
-    }
-    catch (const std::exception& je)
-    {
-        pal::string_t jes;
-        (void)pal::utf8_palstring(je.what(), &jes);
-        trace::error(_X("A JSON parsing exception occurred in [%s]: %s"), deps_json.c_str(), jes.c_str());
-    }
-    trace::verbose(_X("Resolved version %s from dependency manifest file [%s]"), retval.c_str(), deps_json.c_str());
-    return retval;
-}
-
-/**
-* Given a directory and a version, find if the package relative
-*     dir under the given directory contains hostpolicy.dll
-*/
-bool to_hostpolicy_package_dir(const pal::string_t& dir, const pal::string_t& version, pal::string_t* candidate)
-{
-    assert(!version.empty());
-
-    candidate->clear();
-
-    // Ensure the relative dir contains platform directory separators.
-    pal::string_t rel_dir = _STRINGIFY(HOST_POLICY_PKG_REL_DIR);
-    if (DIR_SEPARATOR != '/')
-    {
-        replace_char(&rel_dir, '/', DIR_SEPARATOR);
-    }
-
-    // Construct the path to directory containing hostpolicy.
-    pal::string_t path = dir;
-    append_path(&path, _STRINGIFY(HOST_POLICY_PKG_NAME)); // package name
-    append_path(&path, version.c_str());                  // package version
-    append_path(&path, rel_dir.c_str());                  // relative dir containing hostpolicy library
-
-                                                          // Check if "path" contains the required library.
-    if (!library_exists_in_dir(path, LIBHOSTPOLICY_NAME, nullptr))
-    {
-        trace::verbose(_X("Did not find %s in directory %s"), LIBHOSTPOLICY_NAME, path.c_str());
-        return false;
-    }
-
-    // "path" contains the directory containing hostpolicy library.
-    *candidate = path;
-
-    trace::verbose(_X("Found %s in directory %s"), LIBHOSTPOLICY_NAME, path.c_str());
-    return true;
-}
-
-/**
-* Given a nuget version, detect if a serviced hostpolicy is available at
-*   platform servicing location.
-*/
-bool hostpolicy_exists_in_svc(const pal::string_t& version, pal::string_t* resolved_dir)
-{
-    if (version.empty())
-    {
-        return false;
-    }
-
-    pal::string_t svc_dir;
-    pal::get_default_servicing_directory(&svc_dir);
-    append_path(&svc_dir, _X("pkgs"));
-    return to_hostpolicy_package_dir(svc_dir, version, resolved_dir);
-}
-
-/**
-* Given a version and probing paths, find if package layout
-*    directory containing hostpolicy exists.
-*/
-bool resolve_hostpolicy_dir_from_probe_paths(const pal::string_t& version, const std::vector<pal::string_t>& probe_realpaths, pal::string_t* candidate)
-{
-    if (probe_realpaths.empty() || version.empty())
-    {
-        return false;
-    }
-
-    // Check if the package relative directory containing hostpolicy exists.
-    for (const auto& probe_path : probe_realpaths)
-    {
-        trace::verbose(_X("Considering %s to probe for %s"), probe_path.c_str(), LIBHOSTPOLICY_NAME);
-        if (to_hostpolicy_package_dir(probe_path, version, candidate))
-        {
-            return true;
-        }
-    }
-
-    // Print detailed message about the file not found in the probe paths.
-    trace::error(_X("Could not find required library %s in %d probing paths:"),
-        LIBHOSTPOLICY_NAME, probe_realpaths.size());
-    for (const auto& path : probe_realpaths)
-    {
-        trace::error(_X("  %s"), path.c_str());
-    }
-    return false;
-}
-
 void get_runtime_config_paths_from_arg(const pal::string_t& arg, pal::string_t* cfg, pal::string_t* dev_cfg)
 {
     auto name = get_filename_without_ext(arg);
@@ -346,130 +143,6 @@ void get_runtime_config_paths_from_app(const pal::string_t& app, pal::string_t* 
     auto path = get_directory(app);
 
     get_runtime_config_paths(path, name, cfg, dev_cfg);
-}
-
-/**
-* Return name of deps file for app.
-*/
-pal::string_t get_deps_file(
-    bool is_framework_dependent,
-    const pal::string_t& app_candidate,
-    const pal::string_t& specified_deps_file,
-    const fx_definition_vector_t& fx_definitions
-)
-{
-    if (is_framework_dependent)
-    {
-        // The hostpolicy is resolved from the root framework's name and location.
-        pal::string_t deps_file = get_root_framework(fx_definitions).get_dir();
-        if (!deps_file.empty() && deps_file.back() != DIR_SEPARATOR)
-        {
-            deps_file.push_back(DIR_SEPARATOR);
-        }
-
-        return deps_file + get_root_framework(fx_definitions).get_name() + _X(".deps.json");
-    }
-    else
-    {
-        // Self-contained app's hostpolicy is from specified deps or from app deps.
-        return !specified_deps_file.empty() ? specified_deps_file : get_deps_from_app_binary(get_directory(app_candidate), app_candidate);
-    }
-}
-
-/**
-* Return location that is expected to contain hostpolicy
-*/
-bool fx_muxer_t::resolve_hostpolicy_dir(
-    host_mode_t mode,
-    const pal::string_t& dotnet_root,
-    const fx_definition_vector_t& fx_definitions,
-    const pal::string_t& app_candidate,
-    const pal::string_t& specified_deps_file,
-    const std::vector<pal::string_t>& probe_realpaths,
-    pal::string_t* impl_dir)
-{
-    bool is_framework_dependent = get_app(fx_definitions).get_runtime_config().get_is_framework_dependent();
-
-    // Obtain deps file for the given configuration.
-    pal::string_t resolved_deps = get_deps_file(is_framework_dependent, app_candidate, specified_deps_file, fx_definitions);
-
-    // Resolve hostpolicy version out of the deps file.
-    pal::string_t version = resolve_hostpolicy_version_from_deps(resolved_deps);
-    if (trace::is_enabled() && version.empty() && pal::file_exists(resolved_deps))
-    {
-        trace::warning(_X("Dependency manifest %s does not contain an entry for %s"),
-            resolved_deps.c_str(), _STRINGIFY(HOST_POLICY_PKG_NAME));
-    }
-
-    // Check if the given version of the hostpolicy exists in servicing.
-    if (hostpolicy_exists_in_svc(version, impl_dir))
-    {
-        return true;
-    }
-
-    // Get the expected directory that would contain hostpolicy.
-    pal::string_t expected;
-    if (is_framework_dependent)
-    {
-        // The hostpolicy is required to be in the root framework's location
-        expected.assign(get_root_framework(fx_definitions).get_dir());
-        assert(pal::directory_exists(expected));
-    }
-    else
-    {
-        // Native apps can be activated by muxer, native exe host or "corehost"
-        // 1. When activated with dotnet.exe or corehost.exe, check for hostpolicy in the deps dir or
-        //    app dir.
-        // 2. When activated with native exe, the standalone host, check own directory.
-        assert(mode != host_mode_t::invalid);
-        switch (mode)
-        {
-        case host_mode_t::apphost:
-        case host_mode_t::libhost:
-            expected = dotnet_root;
-            break;
-
-        default:
-            expected = get_directory(specified_deps_file.empty() ? app_candidate : specified_deps_file);
-            break;
-        }
-    }
-
-    // Check if hostpolicy exists in "expected" directory.
-    trace::verbose(_X("The expected %s directory is [%s]"), LIBHOSTPOLICY_NAME, expected.c_str());
-    if (library_exists_in_dir(expected, LIBHOSTPOLICY_NAME, nullptr))
-    {
-        impl_dir->assign(expected);
-        return true;
-    }
-
-    trace::verbose(_X("The %s was not found in [%s]"), LIBHOSTPOLICY_NAME, expected.c_str());
-
-    // Start probing for hostpolicy in the specified probe paths.
-    pal::string_t candidate;
-    if (resolve_hostpolicy_dir_from_probe_paths(version, probe_realpaths, &candidate))
-    {
-        impl_dir->assign(candidate);
-        return true;
-    }
-
-    // If it still couldn't be found, somebody upstack messed up. Flag an error for the "expected" location.
-    trace::error(_X("A fatal error was encountered. The library '%s' required to execute the application was not found in '%s'."),
-        LIBHOSTPOLICY_NAME, expected.c_str());
-    if (mode == host_mode_t::muxer && !is_framework_dependent)
-    {
-        if (!pal::file_exists(get_app(fx_definitions).get_runtime_config().get_path()))
-        {
-            trace::error(_X("Failed to run as a self-contained app. If this should be a framework-dependent app, add the %s file specifying the appropriate framework."),
-                get_app(fx_definitions).get_runtime_config().get_path().c_str());
-        }
-        else if (get_app(fx_definitions).get_name().empty())
-        {
-            trace::error(_X("Failed to run as a self-contained app. If this should be a framework-dependent app, specify the appropriate framework in %s."),
-                get_app(fx_definitions).get_runtime_config().get_path().c_str());
-        }
-    }
-    return false;
 }
 
 bool is_sdk_dir_present(const pal::string_t& dotnet_root)
@@ -686,68 +359,200 @@ int fx_muxer_t::parse_args(
     return StatusCode::Success;
 }
 
-int read_config(
-    fx_definition_t& app,
-    const pal::string_t& app_candidate,
-    pal::string_t& runtime_config,
-    const fx_reference_t& override_settings)
+namespace
 {
-    if (!runtime_config.empty() && !pal::realpath(&runtime_config))
+    int read_config(
+        fx_definition_t& app,
+        const pal::string_t& app_candidate,
+        pal::string_t& runtime_config,
+        const fx_reference_t& override_settings)
     {
-        trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
-        return StatusCode::InvalidConfigFile;
+        if (!runtime_config.empty() && !pal::realpath(&runtime_config))
+        {
+            trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
+            return StatusCode::InvalidConfigFile;
+        }
+
+        pal::string_t config_file, dev_config_file;
+
+        if (runtime_config.empty())
+        {
+            trace::verbose(_X("App runtimeconfig.json from [%s]"), app_candidate.c_str());
+            get_runtime_config_paths_from_app(app_candidate, &config_file, &dev_config_file);
+        }
+        else
+        {
+            trace::verbose(_X("Specified runtimeconfig.json from [%s]"), runtime_config.c_str());
+            get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);
+        }
+
+        app.parse_runtime_config(config_file, dev_config_file, fx_reference_t(), override_settings);
+        if (!app.get_runtime_config().is_valid())
+        {
+            trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), app.get_runtime_config().get_path().c_str(), app.get_runtime_config().get_dev_path().c_str());
+            return StatusCode::InvalidConfigFile;
+        }
+
+        return StatusCode::Success;
     }
 
-    pal::string_t config_file, dev_config_file;
-
-    if (runtime_config.empty())
+    host_mode_t detect_operating_mode(const host_startup_info_t& host_info)
     {
-        trace::verbose(_X("App runtimeconfig.json from [%s]"), app_candidate.c_str());
-        get_runtime_config_paths_from_app(app_candidate, &config_file, &dev_config_file);
-    }
-    else
-    {
-        trace::verbose(_X("Specified runtimeconfig.json from [%s]"), runtime_config.c_str());
-        get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);
-    }
+        if (coreclr_exists_in_dir(host_info.dotnet_root))
+        {
+            // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
 
-    app.parse_runtime_config(config_file, dev_config_file, fx_reference_t(), override_settings);
-    if (!app.get_runtime_config().is_valid())
-    {
-        trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), app.get_runtime_config().get_path().c_str(), app.get_runtime_config().get_dev_path().c_str());
-        return StatusCode::InvalidConfigFile;
-    }
+            pal::string_t deps_in_dotnet_root = host_info.dotnet_root;
+            pal::string_t deps_filename = host_info.get_app_name() + _X(".deps.json");
+            append_path(&deps_in_dotnet_root, deps_filename.c_str());
+            bool deps_exists = pal::file_exists(deps_in_dotnet_root);
 
-    return StatusCode::Success;
-}
+            trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
+                host_info.dotnet_root.c_str(), deps_filename.c_str(), deps_exists);
 
-host_mode_t detect_operating_mode(const host_startup_info_t& host_info)
-{
-    if (coreclr_exists_in_dir(host_info.dotnet_root))
-    {
-        // Detect between standalone apphost or legacy split mode (specifying --depsfile and --runtimeconfig)
+            // Name of runtimeconfig file; since no path is included here the check is in the current working directory
+            pal::string_t config_in_cwd = host_info.get_app_name() + _X(".runtimeconfig.json");
 
-        pal::string_t deps_in_dotnet_root = host_info.dotnet_root;
-        pal::string_t deps_filename = host_info.get_app_name() + _X(".deps.json");
-        append_path(&deps_in_dotnet_root, deps_filename.c_str());
-        bool deps_exists = pal::file_exists(deps_in_dotnet_root);
+            return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::split_fx;
+        }
 
-        trace::info(_X("Detecting mode... CoreCLR present in dotnet root [%s] and checking if [%s] file present=[%d]"),
-            host_info.dotnet_root.c_str(), deps_filename.c_str(), deps_exists);
+        if (pal::file_exists(host_info.app_path))
+        {
+            // Framework-dependent apphost
+            return host_mode_t::apphost;
+        }
 
-        // Name of runtimeconfig file; since no path is included here the check is in the current working directory
-        pal::string_t config_in_cwd = host_info.get_app_name() + _X(".runtimeconfig.json");
-
-        return (deps_exists || !pal::file_exists(config_in_cwd)) && pal::file_exists(host_info.app_path) ? host_mode_t::apphost : host_mode_t::split_fx;
+        return host_mode_t::muxer;
     }
 
-    if (pal::file_exists(host_info.app_path))
+    std::vector<pal::string_t> get_probe_realpaths(
+        const fx_definition_vector_t &fx_definitions,
+        const std::vector<pal::string_t> &specified_probing_paths)
     {
-        // Framework-dependent apphost
-        return host_mode_t::apphost;
+        // The tfm is taken from the app.
+        pal::string_t tfm = get_app(fx_definitions).get_runtime_config().get_tfm();
+
+        // Append specified probe paths first and then config file probe paths into realpaths.
+        std::vector<pal::string_t> probe_realpaths;
+        for (const auto& path : specified_probing_paths)
+        {
+            append_probe_realpath(path, &probe_realpaths, tfm);
+        }
+
+        // Each framework can add probe paths
+        for (const auto& fx : fx_definitions)
+        {
+            for (const auto& path : fx->get_runtime_config().get_probe_paths())
+            {
+                append_probe_realpath(path, &probe_realpaths, tfm);
+            }
+        }
+
+        return probe_realpaths;
     }
 
-    return host_mode_t::muxer;
+    int get_init_info_for_app(
+        const pal::string_t &host_command,
+        const host_startup_info_t &host_info,
+        const pal::string_t &app_candidate,
+        const opt_map_t &opts,
+        host_mode_t mode,
+        pal::string_t &impl_dir,
+        std::unique_ptr<corehost_init_t> &init)
+    {
+        pal::string_t opts_fx_version = _X("--fx-version");
+        pal::string_t opts_roll_fwd_on_no_candidate_fx = _X("--roll-forward-on-no-candidate-fx");
+        pal::string_t opts_deps_file = _X("--depsfile");
+        pal::string_t opts_probe_path = _X("--additionalprobingpath");
+        pal::string_t opts_additional_deps = _X("--additional-deps");
+        pal::string_t opts_runtime_config = _X("--runtimeconfig");
+
+        pal::string_t runtime_config = get_last_known_arg(opts, opts_runtime_config, _X(""));
+
+        pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, _X(""));
+        if (!deps_file.empty() && !pal::realpath(&deps_file))
+        {
+            trace::error(_X("The specified deps.json [%s] does not exist"), deps_file.c_str());
+            return StatusCode::InvalidArgFailure;
+        }
+
+        fx_reference_t override_settings;
+
+        // 'Roll forward on no candidate fx' is set to 1 (roll_fwd_on_no_candidate_fx_option::minor) by default. It can be changed through:
+        // 1. Command line argument (--roll-forward-on-no-candidate-fx).
+        // 2. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in "framework" section).
+        // 3. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in a referencing "frameworks" section).
+        // 4. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var.
+        // The conflicts will be resolved by following the priority rank described above (from 1 to 4).
+        // The env var condition is verified in the config file processing
+        pal::string_t roll_fwd_on_no_candidate_fx = get_last_known_arg(opts, opts_roll_fwd_on_no_candidate_fx, _X(""));
+        if (roll_fwd_on_no_candidate_fx.length() > 0)
+        {
+            override_settings.set_roll_fwd_on_no_candidate_fx(static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str())));
+        }
+
+        // Read config
+        fx_definition_vector_t fx_definitions;
+        auto app = new fx_definition_t();
+        fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
+        int rc = read_config(*app, app_candidate, runtime_config, override_settings);
+        if (rc != StatusCode::Success)
+            return rc;
+
+        runtime_config_t app_config = app->get_runtime_config();
+        bool is_framework_dependent = app_config.get_is_framework_dependent();
+
+        pal::string_t additional_deps_serialized;
+        if (is_framework_dependent)
+        {
+            // Apply the --fx-version option to the first framework
+            pal::string_t fx_version_specified = get_last_known_arg(opts, opts_fx_version, _X(""));
+            if (fx_version_specified.length() > 0)
+            {
+                // This will also set roll forward defaults on the ref
+                app_config.set_fx_version(fx_version_specified);
+            }
+
+            // Determine additional deps
+            pal::string_t additional_deps = get_last_known_arg(opts, opts_additional_deps, _X(""));
+            additional_deps_serialized = additional_deps;
+            if (additional_deps_serialized.empty())
+            {
+                // additional_deps_serialized stays empty if DOTNET_ADDITIONAL_DEPS env var is not defined
+                pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
+            }
+
+            // If invoking using FX dotnet.exe, use own directory.
+            if (mode == host_mode_t::split_fx)
+            {
+                auto fx = new fx_definition_t(app_config.get_frameworks()[0].get_fx_name(), host_info.dotnet_root, pal::string_t(), pal::string_t());
+                fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
+            }
+            else
+            {
+                rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+                if (rc != StatusCode::Success)
+                {
+                    return rc;
+                }
+            }
+        }
+
+        std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
+        std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, spec_probe_paths);
+
+        trace::verbose(_X("Executing as a %s app as per config file [%s]"),
+            (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
+
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &impl_dir))
+        {
+            return CoreHostLibMissingFailure;
+        }
+
+        init.reset(new corehost_init_t(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
+
+        return StatusCode::Success;
+    }
 }
 
 int fx_muxer_t::read_config_and_execute(
@@ -762,134 +567,29 @@ int fx_muxer_t::read_config_and_execute(
     int32_t buffer_size,
     int32_t* required_buffer_size)
 {
-    pal::string_t opts_fx_version = _X("--fx-version");
-    pal::string_t opts_roll_fwd_on_no_candidate_fx = _X("--roll-forward-on-no-candidate-fx");
-    pal::string_t opts_deps_file = _X("--depsfile");
-    pal::string_t opts_probe_path = _X("--additionalprobingpath");
-    pal::string_t opts_additional_deps = _X("--additional-deps");
-    pal::string_t opts_runtime_config = _X("--runtimeconfig");
-
-    pal::string_t roll_fwd_on_no_candidate_fx;
-    pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, _X(""));
-    pal::string_t additional_deps;
-    pal::string_t runtime_config = get_last_known_arg(opts, opts_runtime_config, _X(""));
-    std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
-
-    if (!deps_file.empty() && !pal::realpath(&deps_file))
-    {
-        trace::error(_X("The specified deps.json [%s] does not exist"), deps_file.c_str());
-        return StatusCode::InvalidArgFailure;
-    }
-
-    fx_reference_t override_settings;
-
-    // 'Roll forward on no candidate fx' is set to 1 (roll_fwd_on_no_candidate_fx_option::minor) by default. It can be changed through:
-    // 1. Command line argument (--roll-forward-on-no-candidate-fx).
-    // 2. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in "framework" section).
-    // 3. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in a referencing "frameworks" section).
-    // 4. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var.
-    // The conflicts will be resolved by following the priority rank described above (from 1 to 4).
-    // The env var condition is verified in the config file processing
-    roll_fwd_on_no_candidate_fx = get_last_known_arg(opts, opts_roll_fwd_on_no_candidate_fx, _X(""));
-    if (roll_fwd_on_no_candidate_fx.length() > 0)
-    {
-        override_settings.set_roll_fwd_on_no_candidate_fx(static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str())));
-    }
-
-    // Read config
-    fx_definition_vector_t fx_definitions;
-    auto app = new fx_definition_t();
-    fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
-    int rc = read_config(*app, app_candidate, runtime_config, override_settings);
-    if (rc)
-    {
-        return rc;
-    }
-
-    runtime_config_t app_config = app->get_runtime_config();
-    bool is_framework_dependent = app_config.get_is_framework_dependent();
-
-    // Apply the --fx-version option to the first framework
-    if (is_framework_dependent)
-    {
-        pal::string_t fx_version_specified = get_last_known_arg(opts, opts_fx_version, _X(""));
-        if (fx_version_specified.length() > 0)
-        {
-            // This will also set roll forward defaults on the ref
-            app_config.set_fx_version(fx_version_specified);
-        }
-    }
-
-    additional_deps = get_last_known_arg(opts, opts_additional_deps, _X(""));
-    pal::string_t additional_deps_serialized;
-    if (is_framework_dependent)
-    {
-        // Determine additional deps
-        additional_deps_serialized = additional_deps;
-        if (additional_deps_serialized.empty())
-        {
-            // additional_deps_serialized stays empty if DOTNET_ADDITIONAL_DEPS env var is not defined
-            pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
-        }
-
-        // If invoking using FX dotnet.exe, use own directory.
-        if (mode == host_mode_t::split_fx)
-        {
-            auto fx = new fx_definition_t(app_config.get_frameworks()[0].get_fx_name(), host_info.dotnet_root, pal::string_t(), pal::string_t());
-            fx_definitions.push_back(std::unique_ptr<fx_definition_t>(fx));
-        }
-        else
-        {
-            rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
-            if (rc != StatusCode::Success)
-            {
-                return rc;
-            }
-        }
-    }
-
-    // Append specified probe paths first and then config file probe paths into realpaths.
-    std::vector<pal::string_t> probe_realpaths;
-
-    // The tfm is taken from the app.
-    pal::string_t tfm = get_app(fx_definitions).get_runtime_config().get_tfm();
-
-    for (const auto& path : spec_probe_paths)
-    {
-        append_probe_realpath(path, &probe_realpaths, tfm);
-    }
-
-    // Each framework can add probe paths
-    for (const auto& fx : fx_definitions)
-    {
-        for (const auto& path : fx->get_runtime_config().get_probe_paths())
-        {
-            append_probe_realpath(path, &probe_realpaths, tfm);
-        }
-    }
-
-    trace::verbose(_X("Executing as a %s app as per config file [%s]"),
-        (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
-
     pal::string_t impl_dir;
-    if (!resolve_hostpolicy_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &impl_dir))
-    {
-        return CoreHostLibMissingFailure;
-    }
+    std::unique_ptr<corehost_init_t> init;
+    int rc = get_init_info_for_app(
+        host_command,
+        host_info,
+        app_candidate,
+        opts,
+        mode,
+        impl_dir,
+        init);
+    if (rc != StatusCode::Success)
+        return rc;
 
-    corehost_init_t init(host_command, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions);
-
-    int status;
     if (host_command.size() == 0)
     {
-        status = execute_app(impl_dir, &init, new_argc, new_argv);
+        rc = execute_app(impl_dir, init.get(), new_argc, new_argv);
     }
     else
     {
-        status = execute_host_command(impl_dir, &init, new_argc, new_argv, out_buffer, buffer_size, required_buffer_size);
+        rc = execute_host_command(impl_dir, init.get(), new_argc, new_argv, out_buffer, buffer_size, required_buffer_size);
     }
 
-    return status;
+    return rc;
 }
 
 /**
@@ -972,39 +672,86 @@ int fx_muxer_t::execute(
     return result;
 }
 
-
-static int get_delegate_from_runtime(
-    const pal::string_t& impl_dll_dir,
-    corehost_init_t* init,
-    coreclr_delegate_type type,
-    void** delegate)
+namespace
 {
-    pal::dll_t corehost;
-    hostpolicy_contract host_contract{};
-    corehost_get_delegate_fn coreclr_delegate = nullptr;
-
-    int code = load_hostpolicy(impl_dll_dir, &corehost, host_contract, "corehost_get_coreclr_delegate", &coreclr_delegate);
-    if (code != StatusCode::Success)
+    int get_delegate_from_runtime(
+        const pal::string_t& impl_dll_dir,
+        corehost_init_t* init,
+        coreclr_delegate_type type,
+        void** delegate)
     {
-        trace::error(_X("This component must target .NET Core 3.0 or a higher version."));
+        pal::dll_t corehost;
+        hostpolicy_contract host_contract{};
+        corehost_get_delegate_fn coreclr_delegate = nullptr;
+
+        int code = load_hostpolicy(impl_dll_dir, &corehost, host_contract, "corehost_get_coreclr_delegate", &coreclr_delegate);
+        if (code != StatusCode::Success)
+        {
+            trace::error(_X("This component must target .NET Core 3.0 or a higher version."));
+            return code;
+        }
+
+        // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
+        trace::flush();
+
+        {
+            propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
+
+            const host_interface_t& intf = init->get_host_init_data();
+
+            if ((code = host_contract.load(&intf)) == StatusCode::Success)
+            {
+                code = coreclr_delegate(type, delegate);
+            }
+        }
+
         return code;
     }
 
-    // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
-    trace::flush();
-
+    int get_init_info_for_component(
+        const host_startup_info_t &host_info,
+        host_mode_t mode,
+        pal::string_t &runtime_config_path,
+        pal::string_t &impl_dir,
+        std::unique_ptr<corehost_init_t> &init)
     {
-        propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
+        // Read config
+        fx_definition_vector_t fx_definitions;
+        auto app = new fx_definition_t();
+        fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
 
-        const host_interface_t& intf = init->get_host_init_data();
+        fx_reference_t override_settings;
+        int rc = read_config(*app, host_info.app_path, runtime_config_path, override_settings);
+        if (rc != StatusCode::Success)
+            return rc;
 
-        if ((code = host_contract.load(&intf)) == StatusCode::Success)
+        runtime_config_t app_config = app->get_runtime_config();
+        bool is_framework_dependent = app_config.get_is_framework_dependent();
+        if (is_framework_dependent)
         {
-            code = coreclr_delegate(type, delegate);
+            rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+            if (rc != StatusCode::Success)
+            {
+                return rc;
+            }
         }
-    }
 
-    return code;
+        std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, std::vector<pal::string_t>() /* specified_probing_paths */);
+
+        trace::verbose(_X("Libhost loading occurring as a %s app as per config file [%s]"),
+            (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
+
+        pal::string_t deps_file;
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_realpaths, &impl_dir))
+        {
+            return StatusCode::CoreHostLibMissingFailure;
+        }
+
+        pal::string_t additional_deps_serialized;
+        init.reset(new corehost_init_t(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
+
+        return StatusCode::Success;
+    }
 }
 
 int fx_muxer_t::load_runtime_and_get_delegate(
@@ -1015,57 +762,14 @@ int fx_muxer_t::load_runtime_and_get_delegate(
 {
     assert(host_info.is_valid());
 
-    // Read config
-    fx_definition_vector_t fx_definitions;
-    auto app = new fx_definition_t();
-    fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
-
     pal::string_t runtime_config = _X("");
-    fx_reference_t override_settings;
-    int rc = read_config(*app, host_info.app_path, runtime_config, override_settings);
+    pal::string_t impl_dir;
+    std::unique_ptr<corehost_init_t> init;
+    int rc = get_init_info_for_component(host_info, mode, runtime_config, impl_dir, init);
     if (rc != StatusCode::Success)
         return rc;
 
-    runtime_config_t app_config = app->get_runtime_config();
-    bool is_framework_dependent = app_config.get_is_framework_dependent();
-    if (is_framework_dependent)
-    {
-        rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
-        if (rc != StatusCode::Success)
-        {
-            return rc;
-        }
-    }
-
-    // Append specified probe paths first and then config file probe paths into realpaths.
-    std::vector<pal::string_t> probe_realpaths;
-
-    // The tfm is taken from the app.
-    pal::string_t tfm = get_app(fx_definitions).get_runtime_config().get_tfm();
-
-    // Each framework can add probe paths
-    for (const auto& fx : fx_definitions)
-    {
-        for (const auto& path : fx->get_runtime_config().get_probe_paths())
-        {
-            append_probe_realpath(path, &probe_realpaths, tfm);
-        }
-    }
-
-    trace::verbose(_X("Libhost loading occurring as a %s app as per config file [%s]"),
-        (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
-
-    pal::string_t deps_file;
-    pal::string_t impl_dir;
-    if (!resolve_hostpolicy_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_realpaths, &impl_dir))
-    {
-        return StatusCode::CoreHostLibMissingFailure;
-    }
-
-    pal::string_t additional_deps_serialized;
-    corehost_init_t init(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions);
-
-    rc = get_delegate_from_runtime(impl_dir, &init, delegate_type, delegate);
+    rc = get_delegate_from_runtime(impl_dir, init.get(), delegate_type, delegate);
     return rc;
 }
 
