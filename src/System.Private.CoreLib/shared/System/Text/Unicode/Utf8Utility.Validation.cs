@@ -19,6 +19,14 @@ namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf8Utility
     {
+#if DEBUG
+        private static void _ValidateAdditionalNIntDefinitions()
+        {
+            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
+            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
+        }
+#endif // DEBUG
+
         // Returns &inputBuffer[inputLength] if the input buffer is valid.
         /// <summary>
         /// Given an input buffer <paramref name="pInputBuffer"/> of byte length <paramref name="inputLength"/>,
