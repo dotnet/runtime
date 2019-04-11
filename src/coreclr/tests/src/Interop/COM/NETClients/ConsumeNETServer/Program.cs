@@ -57,11 +57,6 @@ namespace NetClient
             }
             finally
             {
-                if (ccw != IntPtr.Zero)
-                {
-                    Marshal.Release(ccw);
-                }
-
                 test.ReleaseResources();
             }
         }
