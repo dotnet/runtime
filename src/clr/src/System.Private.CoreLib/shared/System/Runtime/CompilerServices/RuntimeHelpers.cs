@@ -4,6 +4,7 @@
 
 #nullable enable
 using System.Runtime.Serialization;
+using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.CompilerServices
 {
@@ -14,22 +15,39 @@ namespace System.Runtime.CompilerServices
         public delegate void CleanupCode(object? userData, bool exceptionThrown);
 
         /// <summary>
-        /// GetSubArray helper method for the compiler to slice an array using a range.
+        /// Slices the specified array using the specified range.
         /// </summary>
         public static T[] GetSubArray<T>(T[] array, Range range)
         {
-            Type elementType = array.GetType().GetElementType();
-            Span<T> source = array.AsSpan(range);
-
-            if (elementType.IsValueType)
+            if (array == null)
             {
-                return source.ToArray();
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
+            }
+
+            (int offset, int length) = range.GetOffsetAndLength(array.Length);
+
+            if (default(T) != null || typeof(T[]) == array.GetType())
+            {
+                // We know the type of the array to be exactly T[].
+
+                if (length == 0)
+                {
+                    return Array.Empty<T>();
+                }
+
+                var dest = new T[length];
+                Buffer.Memmove(
+                    ref Unsafe.As<byte, T>(ref dest.GetRawSzArrayData()),
+                    ref Unsafe.Add(ref Unsafe.As<byte, T>(ref array.GetRawSzArrayData()), offset),
+                    (uint)length);
+                return dest;
             }
             else
             {
-                T[] newArray = (T[])Array.CreateInstance(elementType, source.Length);
-                source.CopyTo(newArray);
-                return newArray;
+                // The array is actually a U[] where U:T.
+                T[] dest = (T[])Array.CreateInstance(array.GetType().GetElementType(), length);
+                Array.Copy(array, offset, dest, 0, length);
+                return dest;
             }
         }
 
@@ -39,7 +57,7 @@ namespace System.Runtime.CompilerServices
             {
                 throw new ArgumentNullException(nameof(type), SR.ArgumentNull_Type);
             }
-            
+
             if (!type.IsRuntimeImplemented())
             {
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type.ToString()));

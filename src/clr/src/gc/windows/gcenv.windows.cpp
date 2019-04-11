@@ -27,6 +27,8 @@ static size_t g_RestrictedPhysicalMemoryLimit = (size_t)UINTPTR_MAX;
 // memory on the machine/in the container, we need to restrict by the VM.
 static bool g_UseRestrictedVirtualMemory = false;
 
+static bool g_SeLockMemoryPrivilegeAcquired = false;
+
 static AffinitySet g_processAffinitySet;
 
 typedef BOOL (WINAPI *PIS_PROCESS_IN_JOB)(HANDLE processHandle, HANDLE jobHandle, BOOL* result);
@@ -113,6 +115,42 @@ DWORD LCM(DWORD u, DWORD v)
     return u / GCD(u, v) * v;
 }
 #endif
+
+bool InitLargePagesPrivilege()
+{
+    TOKEN_PRIVILEGES tp;
+    LUID luid;
+    if (!LookupPrivilegeValueW(nullptr, SE_LOCK_MEMORY_NAME, &luid))
+    {
+        return false;
+    }
+
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Luid = luid;
+    tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+    HANDLE token;
+    if (!OpenProcessToken(::GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &token))
+    {
+        return false;
+    }
+
+    BOOL retVal = AdjustTokenPrivileges(token, FALSE, &tp, 0, nullptr, 0);
+    DWORD gls = GetLastError();
+    CloseHandle(token);
+
+    if (!retVal)
+    {
+        return false;
+    }
+
+    if (gls != 0)
+    {
+        return false;
+    }
+
+    return true;
+}
 
 bool InitCPUGroupInfoArray()
 {
@@ -699,6 +737,31 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
     return !!::VirtualFree(address, 0, MEM_RELEASE);
 }
 
+// Commit virtual memory range.
+// Parameters:
+//  size      - size of the virtual memory range
+// Return:
+//  Starting virtual address of the committed range
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+{
+    void* pRetVal = nullptr;
+
+    if (!g_SeLockMemoryPrivilegeAcquired)
+    {
+        if (!InitLargePagesPrivilege())
+        {
+            return nullptr;
+        }
+
+        g_SeLockMemoryPrivilegeAcquired = true;
+    }
+
+    SIZE_T largePageMinimum = GetLargePageMinimum();
+    size = (size + (largePageMinimum - 1)) & ~(largePageMinimum - 1);
+
+    return ::VirtualAlloc(nullptr, size, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
+}
+
 // Commit virtual memory range. It must be part of a range reserved using VirtualReserve.
 // Parameters:
 //  address - starting virtual address
@@ -1223,19 +1286,6 @@ bool GCToOSInterface::CanEnableGCNumaAware()
     return g_fEnableGCNumaAware;
 }
 
-bool GCToOSInterface::GetNumaProcessorNode(uint16_t proc_no, uint16_t *node_no)
-{
-    GroupProcNo groupProcNo(proc_no);
-
-    PROCESSOR_NUMBER procNumber;
-    procNumber.Group    = groupProcNo.GetGroup();
-    procNumber.Number   = (BYTE)groupProcNo.GetProcIndex();
-    procNumber.Reserved = 0;
-
-    assert(g_fEnableGCNumaAware);
-    return ::GetNumaProcessorNodeEx(&procNumber, node_no) != FALSE;
-}
-
 // Get processor number and optionally its NUMA node number for the specified heap number
 // Parameters:
 //  heap_number - heap number to get the result for
@@ -1247,53 +1297,66 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
 {
     bool success = false;
 
-    if (CanEnableGCCPUGroups())
+    // Locate heap_number-th available processor
+    uint16_t procIndex;
+    size_t cnt = heap_number;
+    for (uint16_t i = 0; i < GCToOSInterface::GetTotalProcessorCount(); i++)
     {
-        uint16_t gn, gpn;
-        GetGroupForProcessor((uint16_t)heap_number, &gn, &gpn);
+        if (g_processAffinitySet.Contains(i))
+        {
+            if (cnt == 0)
+            {
+                procIndex = i;
+                success = true;
+                break;
+            }
 
-        *proc_no = GroupProcNo(gn, gpn).GetCombinedValue();
+            cnt--;
+        }
+    }
+
+    if (success)
+    {
+        WORD gn, gpn;
+
+        if (CanEnableGCCPUGroups())
+        {
+            GetGroupForProcessor(procIndex, &gn, &gpn);
+        }
+        else
+        {
+            gn = GroupProcNo::NoGroup;
+            gpn = procIndex;
+        }
+
+        GroupProcNo groupProcNo(gn, gpn);
+        *proc_no = groupProcNo.GetCombinedValue();
 
         if (GCToOSInterface::CanEnableGCNumaAware())
         {
-            if (!GCToOSInterface::GetNumaProcessorNode(*proc_no, node_no))
+            PROCESSOR_NUMBER procNumber;
+
+            if (CanEnableGCCPUGroups())
+            {
+                procNumber.Group = gn;
+            }
+            else
+            {
+                // Get the current processor group
+                GetCurrentProcessorNumberEx(&procNumber);
+            }
+
+            procNumber.Number   = (BYTE)gpn;
+            procNumber.Reserved = 0;
+
+            if (!GetNumaProcessorNodeEx(&procNumber, node_no))
             {
                 *node_no = NUMA_NODE_UNDEFINED;
             }
         }
         else
         {   // no numa setting, each cpu group is treated as a node
-            *node_no = gn;
-        }
-
-        success = true;
-    }
-    else
-    {
-        int bit_number = 0;
-        uint8_t proc_number = 0;
-        for (uintptr_t mask = 1; mask != 0; mask <<= 1)
-        {
-            if (g_processAffinitySet.Contains(proc_number))
-            {
-                if (bit_number == heap_number)
-                {
-                    *proc_no = GroupProcNo(GroupProcNo::NoGroup, proc_number).GetCombinedValue();
-
-                    if (GCToOSInterface::CanEnableGCNumaAware())
-                    {
-                        if (!GCToOSInterface::GetNumaProcessorNode(proc_number, node_no))
-                        {
-                            *node_no = NUMA_NODE_UNDEFINED;
-                        }
-                    }
-
-                    success = true;
-                    break;
-                }
-                bit_number++;
-            }
-            proc_number++;
+            *node_no = groupProcNo.GetGroup();
         }
     }
 

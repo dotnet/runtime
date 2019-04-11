@@ -19,11 +19,11 @@ namespace BasicEventSourceTests
         [EventSource(Name = "SimpleEventSource")]
         private sealed class SimpleEventSource : EventSource
         {
-            private object _failureCounter;
+            private object _mockedCounter;
 
-            public SimpleEventSource(Func<float> getFailureCount, Type IncrementingPollingCounterType)
+            public SimpleEventSource(Func<double> getMockedCount, Type IncrementingPollingCounterType)
             {
-                _failureCounter = Activator.CreateInstance(IncrementingPollingCounterType, "failureCount", this, getFailureCount);    
+                _mockedCounter = Activator.CreateInstance(IncrementingPollingCounterType, "failureCount", this, getMockedCount);    
             }
         }
 
@@ -91,12 +91,12 @@ namespace BasicEventSourceTests
         }
 
 
-        public static int failureCountCalled = 0;
+        public static int mockedCountCalled = 0;
 
-        public static float getFailureCount()
+        public static double getMockedCount()
         {
-            failureCountCalled++;
-            return failureCountCalled;
+            mockedCountCalled++;
+            return mockedCountCalled;
         }
         public static int Main(string[] args)
         {
@@ -117,12 +117,12 @@ namespace BasicEventSourceTests
                     return 1;
                 }
 
-                SimpleEventSource eventSource = new SimpleEventSource(getFailureCount, IncrementingPollingCounterType);
+                SimpleEventSource eventSource = new SimpleEventSource(getMockedCount, IncrementingPollingCounterType);
 
                 // Want to sleep for 5000 ms to get some counters piling up.
                 Thread.Sleep(5000);
 
-                if (!myListener.Failed && failureCountCalled > 0)
+                if (!myListener.Failed && mockedCountCalled > 0)
                 {
                     Console.WriteLine("Test Passed");
                     return 100;    

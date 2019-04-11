@@ -30,7 +30,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="../../ServerContracts/NativeServers.cs" />
+    <Compile Include="../../ServerContracts/Server.CoClasses.cs" />
     <Compile Include="../../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../../ServerContracts/ServerGuids.cs" />
   </ItemGroup>

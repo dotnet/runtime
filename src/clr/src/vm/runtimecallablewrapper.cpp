@@ -242,6 +242,12 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
             ThrowHRMsg(hr, IDS_EE_CREATEINSTANCE_LIC_FAILED);
     }
 
+    // If the activated COM class has a CCW, mark the
+    // CCW as being activated via COM.
+    ComCallWrapper *ccw = GetCCWFromIUnknown(pUnk);
+    if (ccw != NULL)
+        ccw->MarkComActivated();
+
     pUnk.SuppressRelease();
     RETURN pUnk;
 }

@@ -24,6 +24,15 @@ check_cxx_source_compiles("
     }
     " HAVE_PTHREAD_GETTHREADID_NP)
 
+check_cxx_source_compiles("
+    #include <sys/mman.h>
+
+    int main()
+    {
+        return MAP_HUGETLB;
+    }
+    " HAVE_MAP_HUGETLB)
+
 check_cxx_source_runs("
     #include <sched.h>
 

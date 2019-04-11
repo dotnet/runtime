@@ -22,8 +22,7 @@ UINT64 QCALLTYPE EventPipeInternal::Enable(
     UINT32 circularBufferSizeInMB,
     INT64 profilerSamplingRateInNanoseconds,
     EventPipeProviderConfiguration *pProviders,
-    UINT32 numProviders,
-    UINT64 multiFileTraceLengthInSeconds)
+    UINT32 numProviders)
 {
     QCALL_CONTRACT;
 
@@ -36,8 +35,7 @@ UINT64 QCALLTYPE EventPipeInternal::Enable(
             circularBufferSizeInMB,
             profilerSamplingRateInNanoseconds,
             pProviders,
-            numProviders,
-            multiFileTraceLengthInSeconds);
+            numProviders);
     }
     END_QCALL;
 

@@ -177,7 +177,7 @@ public:
     static
     void QCALLTYPE GetTypeByName(LPCWSTR pwzClassName, BOOL bThrowOnError, BOOL bIgnoreCase,
                                  QCall::StackCrawlMarkHandle pStackMark, 
-                                 ICLRPrivBinder * pPrivHostBinder,
+                                 QCall::ObjectHandleOnStack pAssemblyLoadContext,
                                  BOOL bLoadTypeFromPartialNameHack, QCall::ObjectHandleOnStack retType,
                                  QCall::ObjectHandleOnStack keepAlive);
 
