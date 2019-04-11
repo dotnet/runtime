@@ -5569,7 +5569,15 @@ mono_runtime_try_invoke_array (MonoMethod *method, void *obj, MonoArray *params,
 
 			g_assert (res->vtable->klass == mono_defaults.int_class);
 			box_args [0] = ((MonoIntPtr*)res)->m_value;
-			box_args [1] = mono_type_get_object_checked (mono_domain_get (), sig->ret, error);
+			if (sig->ret->byref) {
+				// byref is already unboxed by the invoke code
+				MonoType *tmpret = mono_metadata_type_dup (NULL, sig->ret);
+				tmpret->byref = FALSE;
+				box_args [1] = mono_type_get_object_checked (mono_domain_get (), tmpret, error);
+				mono_metadata_free_type (tmpret);
+			} else {
+				box_args [1] = mono_type_get_object_checked (mono_domain_get (), sig->ret, error);
+			}
 			return_val_if_nok (error, NULL);
 
 			res = mono_runtime_try_invoke (box_method, NULL, box_args, &box_exc, error);

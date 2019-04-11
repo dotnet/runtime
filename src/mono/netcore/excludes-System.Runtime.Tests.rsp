@@ -32,9 +32,6 @@
 -nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
 -nomethod System.Tests.StringTests.NormalizationTest
 -nomethod *HideDetectionHappensBeforeBindingFlagChecks
--nomethod *TestRefReturnNullableNoValue
--nomethod *TestRefReturnOfPointer
--nomethod *TestNullRefReturnOfPointer
 -nomethod *Assembly_IsCollectibleFalse_WhenUsingAssemblyLoad
 -nomethod *Assembly_IsCollectibleTrue_WhenUsingAssemblyLoadContext
 -nomethod *GenericWithCollectibleTypeParameter_IsCollectibleTrue_WhenUsingAssemblyLoadContext
