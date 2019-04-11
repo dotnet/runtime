@@ -105,7 +105,7 @@ namespace System.Runtime.Loader
         {
             Assembly? resolvedAssembly = null;
 
-            Func<AssemblyLoadContext, AssemblyName, Assembly> assemblyResolveHandler = Resolving;
+            Func<AssemblyLoadContext, AssemblyName, Assembly> assemblyResolveHandler = _resolving;
 
             if (assemblyResolveHandler != null)
             {
@@ -207,7 +207,7 @@ namespace System.Runtime.Loader
         {
             IntPtr resolvedDll = IntPtr.Zero;
 
-            Func<Assembly, string, IntPtr> dllResolveHandler = ResolvingUnmanagedDll;
+            Func<Assembly, string, IntPtr> dllResolveHandler = _resolvingUnmanagedDll;
 
             if (dllResolveHandler != null)
             {

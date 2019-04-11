@@ -2388,8 +2388,8 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
     }
 
     // We want to use the Normal ValueNumber when checking for constants.
-    ValueNum vnCns = vnStore->VNConservativeNormalValue(tree->gtVNPair);
-    ValueNum vnLib = vnStore->VNLiberalNormalValue(tree->gtVNPair);
+    ValueNumPair vnPair = tree->gtVNPair;
+    ValueNum     vnCns  = vnStore->VNConservativeNormalValue(vnPair);
 
     // Check if node evaluates to a constant.
     if (!vnStore->IsVNConstant(vnCns))
@@ -2397,7 +2397,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
         return nullptr;
     }
 
-    GenTree* newTree = tree;
+    GenTree* conValTree = nullptr;
     switch (vnStore->TypeOfVN(vnCns))
     {
         case TYP_FLOAT:
@@ -2407,20 +2407,13 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             if (tree->TypeGet() == TYP_INT)
             {
                 // Same sized reinterpretation of bits to integer
-                newTree = optPrepareTreeForReplacement(tree, tree);
-                tree->ChangeOperConst(GT_CNS_INT);
-                tree->gtIntCon.gtIconVal = *(reinterpret_cast<int*>(&value));
-                tree->gtVNPair           = ValueNumPair(vnLib, vnCns);
+                conValTree = gtNewIconNode(*(reinterpret_cast<int*>(&value)));
             }
             else
             {
                 // Implicit assignment conversion to float or double
                 assert(varTypeIsFloating(tree->TypeGet()));
-
-                newTree = optPrepareTreeForReplacement(tree, tree);
-                tree->ChangeOperConst(GT_CNS_DBL);
-                tree->gtDblCon.gtDconVal = value;
-                tree->gtVNPair           = ValueNumPair(vnLib, vnCns);
+                conValTree = gtNewDconNode(value, tree->TypeGet());
             }
             break;
         }
@@ -2431,21 +2424,13 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
             if (tree->TypeGet() == TYP_LONG)
             {
-                // Same sized reinterpretation of bits to long
-                newTree = optPrepareTreeForReplacement(tree, tree);
-                tree->ChangeOperConst(GT_CNS_NATIVELONG);
-                tree->gtIntConCommon.SetLngValue(*(reinterpret_cast<INT64*>(&value)));
-                tree->gtVNPair = ValueNumPair(vnLib, vnCns);
+                conValTree = gtNewLconNode(*(reinterpret_cast<INT64*>(&value)));
             }
             else
             {
                 // Implicit assignment conversion to float or double
                 assert(varTypeIsFloating(tree->TypeGet()));
-
-                newTree = optPrepareTreeForReplacement(tree, tree);
-                tree->ChangeOperConst(GT_CNS_DBL);
-                tree->gtDblCon.gtDconVal = value;
-                tree->gtVNPair           = ValueNumPair(vnLib, vnCns);
+                conValTree = gtNewDconNode(value, tree->TypeGet());
             }
             break;
         }
@@ -2460,9 +2445,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                 // to be recorded as a relocation with the VM.
                 if (!opts.compReloc)
                 {
-                    newTree           = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
-                    newTree->gtVNPair = ValueNumPair(vnLib, vnCns);
-                    newTree           = optPrepareTreeForReplacement(tree, newTree);
+                    conValTree = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
                 }
             }
             else
@@ -2472,18 +2455,12 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                 {
                     case TYP_INT:
                         // Implicit assignment conversion to smaller integer
-                        newTree = optPrepareTreeForReplacement(tree, tree);
-                        tree->ChangeOperConst(GT_CNS_INT);
-                        tree->gtIntCon.gtIconVal = (int)value;
-                        tree->gtVNPair           = ValueNumPair(vnLib, vnCns);
+                        conValTree = gtNewIconNode(static_cast<int>(value));
                         break;
 
                     case TYP_LONG:
                         // Same type no conversion required
-                        newTree = optPrepareTreeForReplacement(tree, tree);
-                        tree->ChangeOperConst(GT_CNS_NATIVELONG);
-                        tree->gtIntConCommon.SetLngValue(value);
-                        tree->gtVNPair = ValueNumPair(vnLib, vnCns);
+                        conValTree = gtNewLconNode(value);
                         break;
 
                     case TYP_FLOAT:
@@ -2494,32 +2471,27 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
                     case TYP_DOUBLE:
                         // Same sized reinterpretation of bits to double
-                        newTree = optPrepareTreeForReplacement(tree, tree);
-                        tree->ChangeOperConst(GT_CNS_DBL);
-                        tree->gtDblCon.gtDconVal = *(reinterpret_cast<double*>(&value));
-                        tree->gtVNPair           = ValueNumPair(vnLib, vnCns);
+                        conValTree = gtNewDconNode(*(reinterpret_cast<double*>(&value)));
                         break;
 
                     default:
-                        return nullptr;
+                        // Do not support such optimization.
+                        break;
                 }
             }
         }
         break;
 
         case TYP_REF:
-            if (tree->TypeGet() != TYP_REF)
-            {
-                return nullptr;
-            }
-
+        {
             assert(vnStore->ConstantValue<size_t>(vnCns) == 0);
-            newTree = optPrepareTreeForReplacement(tree, tree);
-            tree->ChangeOperConst(GT_CNS_INT);
-            tree->gtIntCon.gtIconVal = 0;
-            tree->ClearIconHandleMask();
-            tree->gtVNPair = ValueNumPair(vnLib, vnCns);
-            break;
+            // Support onle ref(ref(0)), do not support other forms (e.g byref(ref(0)).
+            if (tree->TypeGet() == TYP_REF)
+            {
+                conValTree = gtNewIconNode(0, TYP_REF);
+            }
+        }
+        break;
 
         case TYP_INT:
         {
@@ -2531,9 +2503,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                 // to be recorded as a relocation with the VM.
                 if (!opts.compReloc)
                 {
-                    newTree           = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
-                    newTree->gtVNPair = ValueNumPair(vnLib, vnCns);
-                    newTree           = optPrepareTreeForReplacement(tree, newTree);
+                    conValTree = gtNewIconHandleNode(value, vnStore->GetHandleFlags(vnCns));
                 }
             }
             else
@@ -2544,27 +2514,17 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                     case TYP_REF:
                     case TYP_INT:
                         // Same type no conversion required
-                        newTree = optPrepareTreeForReplacement(tree, tree);
-                        tree->ChangeOperConst(GT_CNS_INT);
-                        tree->gtIntCon.gtIconVal = value;
-                        tree->ClearIconHandleMask();
-                        tree->gtVNPair = ValueNumPair(vnLib, vnCns);
+                        conValTree = gtNewIconNode(static_cast<int>(value));
                         break;
 
                     case TYP_LONG:
                         // Implicit assignment conversion to larger integer
-                        newTree = optPrepareTreeForReplacement(tree, tree);
-                        tree->ChangeOperConst(GT_CNS_NATIVELONG);
-                        tree->gtIntConCommon.SetLngValue(value);
-                        tree->gtVNPair = ValueNumPair(vnLib, vnCns);
+                        conValTree = gtNewLconNode(static_cast<int>(value));
                         break;
 
                     case TYP_FLOAT:
                         // Same sized reinterpretation of bits to float
-                        newTree = optPrepareTreeForReplacement(tree, tree);
-                        tree->ChangeOperConst(GT_CNS_DBL);
-                        tree->gtDblCon.gtDconVal = *(reinterpret_cast<float*>(&value));
-                        tree->gtVNPair           = ValueNumPair(vnLib, vnCns);
+                        conValTree = gtNewDconNode(*(reinterpret_cast<float*>(&value)), TYP_FLOAT);
                         break;
 
                     case TYP_DOUBLE:
@@ -2574,16 +2534,45 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                         break;
 
                     default:
-                        return nullptr;
+                        // Do not support (e.g. bool(const int)).
+                        break;
                 }
             }
         }
         break;
 
+        case TYP_BYREF:
+            // Do not support const byref optimization.
+            break;
+
         default:
-            return nullptr;
+            // We do not record constants of other types.
+            unreached();
+            break;
     }
-    return newTree;
+
+    if (conValTree != nullptr)
+    {
+        // Were able to optimize.
+        conValTree->gtVNPair = vnPair;
+        GenTree* sideEffList = optExtractSideEffListFromConst(tree);
+        if (sideEffList != nullptr)
+        {
+            // Replace as COMMA(side_effects, const value tree);
+            assert((sideEffList->gtFlags & GTF_SIDE_EFFECT) != 0);
+            return gtNewOperNode(GT_COMMA, conValTree->TypeGet(), sideEffList, conValTree);
+        }
+        else
+        {
+            // No side effects, replace as const value tree.
+            return conValTree;
+        }
+    }
+    else
+    {
+        // Was not able to optimize.
+        return nullptr;
+    }
 }
 
 /*******************************************************************************************************
@@ -3897,7 +3886,8 @@ GenTree* Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, GenTree
 
 GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, GenTreeStmt* stmt)
 {
-    noway_assert(newTree != nullptr);
+    assert(newTree != nullptr);
+    assert(tree != nullptr);
 
     if (stmt == nullptr)
     {
@@ -3908,33 +3898,22 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, GenT
         noway_assert(!optLocalAssertionProp);
 
         // If newTree == tree then we modified the tree in-place otherwise we have to
-        // locate our parent node and update it so that it points to newTree
+        // locate our parent node and update it so that it points to newTree.
         if (newTree != tree)
         {
             GenTree** link = gtFindLink(stmt, tree);
-#ifdef DEBUG
-            if (link == nullptr)
-            {
-                noway_assert(!"gtFindLink failed!");
-                printf("\nCould not find parent of:\n");
-                gtDispTree(tree);
-                printf("\nIn this stmt:\n");
-                gtDispTree(stmt);
-            }
-#endif
             noway_assert(link != nullptr);
-            noway_assert(tree != nullptr);
-            if (link != nullptr)
-            {
-                // Replace the old operand with the newTree
-                *link = newTree;
 
-                // We only need to ensure that the gtNext field is set as it is used to traverse
-                // to the next node in the tree. We will re-morph this entire statement in
-                // optAssertionPropMain(). It will reset the gtPrev and gtNext links for all nodes.
+            // Replace the old operand with the newTree
+            *link = newTree;
 
-                newTree->gtNext = tree->gtNext;
-            }
+            // We only need to ensure that the gtNext field is set as it is used to traverse
+            // to the next node in the tree. We will re-morph this entire statement in
+            // optAssertionPropMain(). It will reset the gtPrev and gtNext links for all nodes.
+            newTree->gtNext = tree->gtNext;
+
+            // Old tree should not be referenced anymore.
+            DEBUG_DESTROY_NODE(tree);
         }
     }
 
@@ -4648,79 +4627,45 @@ struct VNAssertionPropVisitorInfo
 };
 
 //------------------------------------------------------------------------------
-// optPrepareTreeForReplacement
+// optExtractSideEffListFromConst
 //    Extracts side effects from a tree so it can be replaced with a comma
-//    separated list of side effects + a new tree.
+//    separated list of side effects + a const tree.
 //
 // Note:
-//    The old and new trees may be the same. In this case, the tree will be
-//    appended to the side-effect list (if present) and returned.
+//   The caller expects that the root of the tree has no side effects and it
+//   won't be extracted. Otherwise the resulting comma tree would be bigger
+//   than the tree before optimization.
 //
 // Arguments:
-//    oldTree  - The tree node to be dropped from the stmt expr.
-//    newTree  - The tree node to append to the side effect list from "oldTree".
+//    tree  - The tree node with constant value to extrace side-effects from.
 //
 // Return Value:
-//    Returns a comma separated list of side-effects present in the "oldTree".
-//    When "newTree" is non-null:
-//      1. When side-effects are present in oldTree, newTree will be appended to the
-//         comma separated list.
-//      2. When no side effects are present, then returns the "newTree" without
-//         any list.
-//    When "newTree" is null:
-//      1. Returns the extracted side-effects from "oldTree"
+//      1. Returns the extracted side-effects from "tree"
 //      2. When no side-effects are present, returns null.
 //
-// Description:
-//    Either the "newTree" is returned when no side effects are present or a comma
-//    separated side effect list with "newTree" is returned.
 //
-GenTree* Compiler::optPrepareTreeForReplacement(GenTree* oldTree, GenTree* newTree)
+GenTree* Compiler::optExtractSideEffListFromConst(GenTree* tree)
 {
-    // If we have side effects, extract them and append newTree to the list.
+    assert(vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(tree->gtVNPair)));
+
     GenTree* sideEffList = nullptr;
-    if ((oldTree->gtFlags & GTF_SIDE_EFFECT) != 0)
+
+    // If we have side effects, extract them.
+    if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
-        bool ignoreRoot = false;
+        // Do a sanity check to ensure persistent side effects aren't discarded and
+        // tell gtExtractSideEffList to ignore the root of the tree.
+        assert(!gtNodeHasSideEffects(tree, GTF_PERSISTENT_SIDE_EFFECTS));
 
-        if (oldTree == newTree)
-        {
-            // If the caller passed the same tree as both old and new then it means
-            // that it expects that the root of the tree has no side effects and it
-            // won't be extracted. Otherwise the resulting comma tree would be invalid,
-            // having both op1 and op2 point to the same tree.
-            //
-            // Do a sanity check to ensure persistent side effects aren't discarded and
-            // tell gtExtractSideEffList to ignore the root of the tree.
-            assert(!gtNodeHasSideEffects(oldTree, GTF_PERSISTENT_SIDE_EFFECTS));
-            //
-            // Exception side effects may be ignored if the root is known to be a constant
-            // (e.g. VN may evaluate a DIV/MOD node to a constant and the node may still
-            // have GTF_EXCEPT set, even if it does not actually throw any exceptions).
-            assert(!gtNodeHasSideEffects(oldTree, GTF_EXCEPT) ||
-                   vnStore->IsVNConstant(vnStore->VNConservativeNormalValue(oldTree->gtVNPair)));
+        // Exception side effects may be ignored because the root is known to be a constant
+        // (e.g. VN may evaluate a DIV/MOD node to a constant and the node may still
+        // have GTF_EXCEPT set, even if it does not actually throw any exceptions).
+        bool ignoreRoot = true;
 
-            ignoreRoot = true;
-        }
-
-        gtExtractSideEffList(oldTree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
+        gtExtractSideEffList(tree, &sideEffList, GTF_SIDE_EFFECT, ignoreRoot);
     }
 
-    if (sideEffList != nullptr)
-    {
-        noway_assert((sideEffList->gtFlags & GTF_SIDE_EFFECT) != 0);
-
-        if (newTree != nullptr)
-        {
-            newTree = gtNewOperNode(GT_COMMA, newTree->TypeGet(), sideEffList, newTree);
-        }
-        else
-        {
-            newTree = sideEffList;
-        }
-    }
-
-    return newTree;
+    return sideEffList;
 }
 
 //------------------------------------------------------------------------------
@@ -4779,7 +4724,7 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
     }
 
     // Prepare the tree for replacement so any side effects can be extracted.
-    GenTree* sideEffList = optPrepareTreeForReplacement(test, nullptr);
+    GenTree* sideEffList = optExtractSideEffListFromConst(relop);
 
     // Transform the relop's operands to be both zeroes.
     ValueNum vnZero             = vnStore->VNZeroForType(TYP_INT);

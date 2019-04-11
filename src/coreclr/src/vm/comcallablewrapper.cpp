@@ -918,7 +918,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
     LPCUTF8 pszNamespace;
     if (SUCCEEDED(m_pMT->GetMDImport()->GetNameOfTypeDef(m_pMT->GetCl(), &pszClassName, &pszNamespace)))
     {
-        OBJECTHANDLE handle = GetMainWrapper()->GetRawObjectHandle();
+        OBJECTHANDLE handle = GetMainWrapper()->GetObjectHandle();
         _UNCHECKED_OBJECTREF obj = NULL;
 
         // Force retriving the handle without using OBJECTREF and under cooperative mode
@@ -2016,12 +2016,27 @@ void SimpleComCallWrapper::EnumConnectionPoints(IEnumConnectionPoints **ppEnumCP
 //  
 //--------------------------------------------------------------------------
 
+//--------------------------------------------------------------------------
+// Check if the wrapper has been deactivated
+//--------------------------------------------------------------------------
+BOOL ComCallWrapper::IsHandleWeak()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    SimpleComCallWrapper* simpleWrap = GetSimpleWrapper();
+    _ASSERTE(simpleWrap);
+    return simpleWrap->IsHandleWeak();
+}
 
 //--------------------------------------------------------------------------
-// void ComCallWrapper::MarkHandleWeak()
-//  mark the wrapper as holding a weak handle to the object
+// Mark the wrapper as holding a weak handle to the object
 //--------------------------------------------------------------------------
-
 void ComCallWrapper::MarkHandleWeak()
 {
     CONTRACTL
@@ -2032,17 +2047,14 @@ void ComCallWrapper::MarkHandleWeak()
     }
     CONTRACTL_END;
 
-    SyncBlock* pSyncBlock = GetSyncBlock();
-    _ASSERTE(pSyncBlock);
-
-    GetSimpleWrapper()->MarkHandleWeak();
+    SimpleComCallWrapper* simpleWrap = GetSimpleWrapper();
+    _ASSERTE(simpleWrap);
+    simpleWrap->MarkHandleWeak();
 }
 
 //--------------------------------------------------------------------------
-// void ComCallWrapper::ResetHandleStrength()
-//  mark the wrapper as not having a weak handle
+// Mark the wrapper as not having a weak handle
 //--------------------------------------------------------------------------
-
 void ComCallWrapper::ResetHandleStrength()
 {
     CONTRACTL
@@ -2052,11 +2064,46 @@ void ComCallWrapper::ResetHandleStrength()
         MODE_ANY;
     }
     CONTRACTL_END;
-    
-    SyncBlock* pSyncBlock = GetSyncBlock();
-    _ASSERTE(pSyncBlock);
 
-    GetSimpleWrapper()->ResetHandleStrength();
+    SimpleComCallWrapper* simpleWrap = GetSimpleWrapper();
+    _ASSERTE(simpleWrap);
+    simpleWrap->ResetHandleStrength();
+}
+
+//--------------------------------------------------------------------------
+// Check if the wrapper was activated via COM
+//--------------------------------------------------------------------------
+BOOL ComCallWrapper::IsComActivated()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    SimpleComCallWrapper* simpleWrap = GetSimpleWrapper();
+    _ASSERTE(simpleWrap);
+    return simpleWrap->IsComActivated();
+}
+
+//--------------------------------------------------------------------------
+// Mark the wrapper as being created via COM activation
+//--------------------------------------------------------------------------
+VOID ComCallWrapper::MarkComActivated()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    SimpleComCallWrapper* simpleWrap = GetSimpleWrapper();
+    _ASSERTE(simpleWrap);
+    simpleWrap->MarkComActivated();
 }
 
 //--------------------------------------------------------------------------

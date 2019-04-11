@@ -50,7 +50,7 @@ Visual Studio Express is not supported.
 
 ## CMake
 
-The CoreCLR repo build has been validated using CMake 3.9.3.
+The CoreCLR repo build has been validated using CMake 3.9.3. When using Visual Studio 2019 at least version 3.14.1 is required. 
 
 - Install [CMake](http://www.cmake.org/download) for Windows.
 - Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable.  
@@ -60,7 +60,7 @@ The CoreCLR repo build has been validated using CMake 3.9.3.
 
 ## Python
 
-Python is used in the build system. We are currently using python 2.7.9, although
+Python is used in the build system. We are currently using Python 2.7.9, although
 any recent (2.4+) version of Python should work, including Python 3.
 - Install [Python](https://www.python.org/downloads/) for Windows.
 - Add its location (e.g. C:\Python*\) to the PATH environment variable.  

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
+using System;
 using System.Runtime.Serialization;
 
 #if ES_BUILD_STANDALONE
