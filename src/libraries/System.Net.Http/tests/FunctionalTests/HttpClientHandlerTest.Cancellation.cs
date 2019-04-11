@@ -343,6 +343,46 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Fact]
+        public async Task SendAsync_Cancel_CancellationTokenPropagates()
+        {
+            TaskCompletionSource<bool> clientCanceled = new TaskCompletionSource<bool>();
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    var cts = new CancellationTokenSource();
+                    cts.Cancel();
+
+                    using (HttpClient client = CreateHttpClient())
+                    {
+                        OperationCanceledException ex = null;
+                        try
+                        {
+                            await client.GetAsync(uri, cts.Token);
+                        }
+                        catch(OperationCanceledException e)
+                        {
+                            ex = e;
+                        }
+                        Assert.True(ex != null, "Expected OperationCancelledException, but no exception was thrown.");
+
+                        Assert.True(cts.Token.IsCancellationRequested, "cts token IsCancellationRequested");
+
+                        if (!PlatformDetection.IsFullFramework)
+                        {
+                            // .NET Framework has bug where it doesn't propagate token information.
+                            Assert.True(ex.CancellationToken.IsCancellationRequested, "exception token IsCancellationRequested");
+                        }
+                        clientCanceled.SetResult(true);
+                    }
+                },
+                async server =>
+                {
+                    Task serverTask = server.HandleRequestAsync();
+                    await clientCanceled.Task;
+                });
+        }
+
         private async Task ValidateClientCancellationAsync(Func<Task> clientBodyAsync)
         {
             var stopwatch = Stopwatch.StartNew();

@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Net.Test.Common;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -1106,6 +1108,158 @@ namespace System.Net.Http.Functional.Tests
                 await server.SendDefaultResponseAsync(streamId);
                 response = await sendTask;
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            }
+        }
+
+        [OuterLoop("Uses Task.Delay")]
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_WaitingForStream_Cancellation()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                server.IgnoreWindowUpdates();
+
+                // Process first request and send response.
+                int streamId = await server.ReadRequestHeaderAsync();
+                await server.SendDefaultResponseAsync(streamId);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                // Change MaxConcurrentStreams setting and wait for ack.
+                // (We don't want to send any new requests until we receive the ack, otherwise we may have a timing issue.)
+                SettingsFrame settingsFrame = new SettingsFrame(new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 0 });
+                await server.WriteFrameAsync(settingsFrame);
+                Frame settingsAckFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(FrameType.Settings, settingsAckFrame.Type);
+                Assert.Equal(FrameFlags.Ack, settingsAckFrame.Flags);
+
+                // Issue a new request, so that we can cancel it while it waits for a stream.
+                var cts = new CancellationTokenSource();
+                sendTask = client.GetAsync(server.Address, cts.Token);
+
+                // Make sure that the request makes it to the point where it's waiting for a connection.
+                // It's possible that we'll still initiate a cancellation before it makes it to the queue,
+                // but it should still behave in the same way if so.
+                await Task.Delay(500);
+
+                Stopwatch stopwatch = Stopwatch.StartNew();
+                cts.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await sendTask);
+
+                // Ensure that the cancellation occurs promptly
+                stopwatch.Stop();
+                Assert.True(stopwatch.ElapsedMilliseconds < 30000);
+
+                // As the client has not allocated a stream ID when the corresponding request is cancelled,
+                // we do not send a RST stream frame.
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_WaitingOnWindowCredit_Cancellation()
+        {
+            // The goal of this test is to get the client into the state where it has sent the headers,
+            // but is waiting on window credit before it will send the body. We then issue a cancellation
+            // to ensure the request is cancelled as expected.
+            const int InitialWindowSize = 65535;
+            const int ContentSize = InitialWindowSize + 1;
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            TestHelper.EnsureHttp2Feature(handler);
+
+            var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                var cts = new CancellationTokenSource();
+                Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content, cts.Token);
+
+                await server.EstablishConnectionAsync();
+
+                Frame frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                int streamId = frame.StreamId;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
+
+                // Receive up to initial window size
+                int bytesReceived = 0;
+                while (bytesReceived < InitialWindowSize)
+                {
+                    frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                    Assert.Equal(streamId, frame.StreamId);
+                    Assert.Equal(FrameType.Data, frame.Type);
+                    Assert.Equal(FrameFlags.None, frame.Flags);
+                    Assert.True(frame.Length > 0);
+
+                    bytesReceived += frame.Length;
+                }
+
+                // The client is waiting for more credit in order to send the last byte of the
+                // request body. Test cancellation at this point.
+                Stopwatch stopwatch = Stopwatch.StartNew();
+
+                cts.Cancel();
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await clientTask);
+
+                // Ensure that the cancellation occurs promptly
+                stopwatch.Stop();
+                Assert.True(stopwatch.ElapsedMilliseconds < 30000);
+
+                // The server should receive a RstStream frame.
+                frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                Assert.Equal(FrameType.RstStream, frame.Type);
+            }
+        }
+
+        [OuterLoop("Uses Task.Delay")]
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_PendingSend_Cancellation()
+        {
+            // The goal of this test is to get the client into the state where it is sending content,
+            // but the send pends because the TCP window is full.
+            const int InitialWindowSize = 65535;
+            const int ContentSize = InitialWindowSize * 2; // Double the default TCP window size.
+
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            TestHelper.EnsureHttp2Feature(handler);
+
+            var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (var client = new HttpClient(handler))
+            {
+                var cts = new CancellationTokenSource();
+
+                Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content, cts.Token);
+
+                await server.EstablishConnectionAsync();
+
+                Frame frame = await server.ReadFrameAsync(TimeSpan.FromSeconds(30));
+                int streamId = frame.StreamId;
+                Assert.Equal(FrameType.Headers, frame.Type);
+                Assert.Equal(FrameFlags.EndHeaders, frame.Flags);
+
+                // Increase the size of the HTTP/2 Window, so that it is large enough to fill the
+                // TCP window when we do not perform any reads on the server side.
+                await server.WriteFrameAsync(new WindowUpdateFrame(InitialWindowSize, streamId));
+
+                // Give the client time to read the window update frame, and for the write to pend.
+                await Task.Delay(1000);
+                cts.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await clientTask);
             }
         }
     }

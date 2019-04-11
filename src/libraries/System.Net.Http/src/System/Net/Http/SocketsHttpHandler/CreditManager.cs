@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -13,7 +14,7 @@ namespace System.Net.Http
         private struct Waiter
         {
             public int Amount;
-            public TaskCompletionSource<int> TaskCompletionSource;
+            public TaskCompletionSourceWithCancellation<int> TaskCompletionSource;
         }
 
         private int _current;
@@ -37,7 +38,7 @@ namespace System.Net.Http
             }
         }
 
-        public ValueTask<int> RequestCreditAsync(int amount)
+        public ValueTask<int> RequestCreditAsync(int amount, CancellationToken cancellationToken)
         {
             lock (SyncObject)
             {
@@ -55,16 +56,21 @@ namespace System.Net.Http
                     return new ValueTask<int>(granted);
                 }
 
-                var tcs = new TaskCompletionSource<int>(TaskContinuationOptions.RunContinuationsAsynchronously);
+                // Uses RunContinuationsAsynchronously internally.
+                var tcs = new TaskCompletionSourceWithCancellation<int>();
 
                 if (_waiters == null)
                 {
                     _waiters = new Queue<Waiter>();
                 }
 
-                _waiters.Enqueue(new Waiter { Amount = amount, TaskCompletionSource = tcs });
+                Waiter waiter = new Waiter { Amount = amount, TaskCompletionSource = tcs };
 
-                return new ValueTask<int>(tcs.Task);
+                _waiters.Enqueue(waiter);
+
+                return new ValueTask<int>(cancellationToken.CanBeCanceled ?
+                                          tcs.WaitWithCancellationAsync(cancellationToken) :
+                                          tcs.Task);
             }
         }
 
@@ -92,8 +98,12 @@ namespace System.Net.Http
                     while (_current > 0 && _waiters.TryDequeue(out Waiter waiter))
                     {
                         int granted = Math.Min(waiter.Amount, _current);
-                        _current -= granted;
-                        waiter.TaskCompletionSource.SetResult(granted);
+
+                        // Ensure that we grant credit only if the task has not been canceled.
+                        if (waiter.TaskCompletionSource.TrySetResult(granted))
+                        {
+                            _current -= granted;
+                        }
                     }
                 }
             }
@@ -114,7 +124,7 @@ namespace System.Net.Http
                 {
                     while (_waiters.TryDequeue(out Waiter waiter))
                     {
-                        waiter.TaskCompletionSource.SetException(new ObjectDisposedException(nameof(CreditManager)));
+                        waiter.TaskCompletionSource.TrySetException(new ObjectDisposedException(nameof(CreditManager)));
                     }
                 }
             }
