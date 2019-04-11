@@ -190,16 +190,6 @@ jobs:
                     $(_windowsOfficialBuildArguments)
                     $(_msbuildCommonParameters)
             displayName: Build Packages and Tests
-          - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-            - script: build.cmd
-                      -restore
-                      -build
-                      -configuration $(_BuildConfig)
-                      -ci
-                      -buildtests
-                      -framework netstandard
-                      -arch $(_architecture)
-              displayName: Build Netstandard Test Suite
 
       # TODO: UAPAOT official builds should send to helix using continuation runner.
       # Legs without HELIX testing
