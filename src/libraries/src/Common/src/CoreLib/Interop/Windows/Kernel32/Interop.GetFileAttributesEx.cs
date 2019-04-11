@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -19,8 +21,9 @@ internal partial class Interop
 
         internal static bool GetFileAttributesEx(string name, GET_FILEEX_INFO_LEVELS fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation)
         {
-            name = PathInternal.EnsureExtendedPrefixOverMaxPath(name);
-            return GetFileAttributesExPrivate(name, fileInfoLevel, ref lpFileInformation);
+            string? nameWithExtendedPrefix = PathInternal.EnsureExtendedPrefixIfNeeded(name);
+            Debug.Assert(nameWithExtendedPrefix != null, "null not expected when non-null is passed"); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            return GetFileAttributesExPrivate(nameWithExtendedPrefix, fileInfoLevel, ref lpFileInformation);
         }
 
         internal enum GET_FILEEX_INFO_LEVELS : uint
@@ -69,9 +72,9 @@ internal partial class Interop
             internal uint dwReserved0;
             internal uint dwReserved1;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)]
-            internal string cFileName;
+            internal string? cFileName;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 14)]
-            internal string cAlternateFileName;
+            internal string? cAlternateFileName;
         }
 
         internal struct FILE_TIME
