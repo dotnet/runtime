@@ -480,8 +480,9 @@ namespace System.Text.Unicode
                     // As an optimization, on compatible platforms check if a second three-byte sequence immediately
                     // follows the one we just read, and if so use BSWAP and BMI2 to extract them together.
 
-                    if (BitConverter.IsLittleEndian && Bmi2.X64.IsSupported)
+                    if (Bmi2.X64.IsSupported)
                     {
+                        Debug.Assert(BitConverter.IsLittleEndian, "BMI2 requires little-endian.");
                         if (((thisDWord - 0xE000_0000u) & 0xF000_0000u) == 0)
                         {
                             if (outputCharsRemaining > 1 && (nint)(void*)Unsafe.ByteOffset(ref *pInputBuffer, ref *pFinalPosWhereCanReadDWordFromInputBuffer) >= 7)
@@ -926,8 +927,9 @@ namespace System.Text.Unicode
                     uint inputCharsRemaining = (uint)(pFinalPosWhereCanReadDWordFromInputBuffer - pInputBuffer) + 2;
                     uint minElementsRemaining = (uint)Math.Min(inputCharsRemaining, outputBytesRemaining);
 
-                    if (BitConverter.IsLittleEndian && Bmi2.X64.IsSupported)
+                    if (Bmi2.X64.IsSupported)
                     {
+                        Debug.Assert(BitConverter.IsLittleEndian, "BMI2 requires little-endian.");
                         const ulong PEXT_MASK = 0x00FF00FF_00FF00FFul;
 
                         // Try reading and writing 8 elements per iteration.
