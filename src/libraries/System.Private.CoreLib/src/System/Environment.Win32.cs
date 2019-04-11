@@ -14,6 +14,8 @@ namespace System
 {
     public static partial class Environment
     {
+        internal static bool IsWindows8OrAbove => WindowsVersion.IsWindows8OrAbove;
+
         private static string GetEnvironmentVariableFromRegistry(string variable, bool fromMachine)
         {
             Debug.Assert(variable != null);
@@ -418,5 +420,35 @@ namespace System
             }
         }
 #endif
+
+        // Seperate type so a .cctor is not created for Enviroment which then would be triggered during startup
+        private static class WindowsVersion
+        {
+            // Cache the value in readonly static that can be optimized out by the JIT
+            internal readonly static bool IsWindows8OrAbove = GetIsWindows8OrAbove();
+
+            private static bool GetIsWindows8OrAbove()
+            {
+                ulong conditionMask = Interop.Kernel32.VerSetConditionMask(0, Interop.Kernel32.VER_MAJORVERSION, Interop.Kernel32.VER_GREATER_EQUAL);
+                conditionMask = Interop.Kernel32.VerSetConditionMask(conditionMask, Interop.Kernel32.VER_MINORVERSION, Interop.Kernel32.VER_GREATER_EQUAL);
+                conditionMask = Interop.Kernel32.VerSetConditionMask(conditionMask, Interop.Kernel32.VER_SERVICEPACKMAJOR, Interop.Kernel32.VER_GREATER_EQUAL);
+                conditionMask = Interop.Kernel32.VerSetConditionMask(conditionMask, Interop.Kernel32.VER_SERVICEPACKMINOR, Interop.Kernel32.VER_GREATER_EQUAL);
+
+                // Windows 8 version is 6.2
+                Interop.Kernel32.OSVERSIONINFOEX version = default;
+                unsafe
+                {
+                    version.dwOSVersionInfoSize = sizeof(Interop.Kernel32.OSVERSIONINFOEX);
+                }
+                version.dwMajorVersion = 6;
+                version.dwMinorVersion = 2;
+                version.wServicePackMajor = 0;
+                version.wServicePackMinor = 0;
+
+                return Interop.Kernel32.VerifyVersionInfoW(ref version,
+                    Interop.Kernel32.VER_MAJORVERSION | Interop.Kernel32.VER_MINORVERSION | Interop.Kernel32.VER_SERVICEPACKMAJOR | Interop.Kernel32.VER_SERVICEPACKMINOR,
+                    conditionMask);
+            }
+        }
     }
 }

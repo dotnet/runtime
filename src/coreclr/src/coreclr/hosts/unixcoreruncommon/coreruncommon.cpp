@@ -466,11 +466,6 @@ int ExecuteManagedAssembly(
                 }
             }
         }
-
-        if (dlclose(coreclrLib) != 0)
-        {
-            fprintf(stderr, "Warning - dlclose failed\n");
-        }
     }
     else
     {

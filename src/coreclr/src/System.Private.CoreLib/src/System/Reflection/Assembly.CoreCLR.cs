@@ -15,13 +15,13 @@ namespace System.Reflection
 {
     public abstract partial class Assembly : ICustomAttributeProvider, ISerializable
     {
-        // Locate an assembly by the long form of the assembly name. 
+        // Locate an assembly by the long form of the assembly name.
         // eg. "Toolbox.dll, version=1.1.10.1220, locale=en, publickey=1234567890123456789012345678901234567890"
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(string assemblyString)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return RuntimeAssembly.InternalLoad(assemblyString, ref stackMark);
+            return RuntimeAssembly.InternalLoad(assemblyString, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
         // Locate an assembly by its name. The name can be strong or
@@ -33,12 +33,12 @@ namespace System.Reflection
                 throw new ArgumentNullException(nameof(assemblyRef));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
-            return Load(assemblyRef, ref stackMark, IntPtr.Zero);
+            return Load(assemblyRef, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext);
         }
 
         // Locate an assembly by its name. The name can be strong or
         // weak. The assembly is loaded into the domain of the caller.
-        internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, IntPtr ptrLoadContextBinder)
+        internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext assemblyLoadContext)
         {
             AssemblyName modifiedAssemblyRef = null;
             if (assemblyRef.CodeBase != null)
@@ -51,7 +51,7 @@ namespace System.Reflection
                 modifiedAssemblyRef = assemblyRef;
             }
 
-            return RuntimeAssembly.InternalLoadAssemblyName(modifiedAssemblyRef, ref stackMark, ptrLoadContextBinder);
+            return RuntimeAssembly.InternalLoadAssemblyName(modifiedAssemblyRef, ref stackMark, assemblyLoadContext);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
