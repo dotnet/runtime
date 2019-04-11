@@ -1226,7 +1226,14 @@ HRESULT EEConfig::sync()
 
     tieredCompilation_StartupTier_CallCountingDelayMs =
         CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_StartupTier_CallCountingDelayMs);
-    if (CPUGroupInfo::HadSingleProcessorAtStartup())
+
+#ifndef FEATURE_PAL
+    bool hadSingleProcessorAtStartup = CPUGroupInfo::HadSingleProcessorAtStartup();
+#else // !FEATURE_PAL
+    bool hadSingleProcessorAtStartup = g_SystemInfo.dwNumberOfProcessors == 1;
+#endif // !FEATURE_PAL
+
+    if (hadSingleProcessorAtStartup)
     {
         DWORD delayMultiplier =
             CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_TC_StartupTier_DelaySingleProcMultiplier);
