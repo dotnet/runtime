@@ -444,7 +444,7 @@ namespace System.Runtime.Loader
             }
         }
 
-        private static AsyncLocal<AssemblyLoadContext> s_asyncLocalCurrent;
+        private static AsyncLocal<AssemblyLoadContext>? s_asyncLocalCurrent;
 
         /// <summary>Nullable current AssemblyLoadContext used for context sensitive reflection APIs</summary>
         /// <remarks>
@@ -470,18 +470,18 @@ namespace System.Runtime.Loader
         ///
         /// For more details see https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/AssemblyLoadContext.ContextualReflection.md
         /// </remarks>
-        public static AssemblyLoadContext CurrentContextualReflectionContext
+        public static AssemblyLoadContext? CurrentContextualReflectionContext
         {
             get { return s_asyncLocalCurrent?.Value; }
         }
 
-        private static void SetCurrentContextualReflectionContext(AssemblyLoadContext value)
+        private static void SetCurrentContextualReflectionContext(AssemblyLoadContext? value)
         {
             if (s_asyncLocalCurrent == null)
             {
-                Interlocked.CompareExchange(ref s_asyncLocalCurrent, new AsyncLocal<AssemblyLoadContext>(), null);
+                Interlocked.CompareExchange<AsyncLocal<AssemblyLoadContext>?>(ref s_asyncLocalCurrent, new AsyncLocal<AssemblyLoadContext>(), null);
             }
-            s_asyncLocalCurrent.Value = value;
+            s_asyncLocalCurrent!.Value = value!; // TODO-NULLABLE-GENERIC
         }
 
         /// <summary>Enter scope using this AssemblyLoadContext for ContextualReflection</summary>
@@ -508,10 +508,10 @@ namespace System.Runtime.Loader
         /// Returns a disposable ContextualReflectionScope for use in a using block. When the using calls the
         /// Dispose() method, it restores the ContextualReflectionScope to its previous value.
         /// </remarks>
-        public static ContextualReflectionScope EnterContextualReflection(Assembly activating)
+        public static ContextualReflectionScope EnterContextualReflection(Assembly? activating)
         {
             return activating != null ?
-                GetLoadContext(activating).EnterContextualReflection() :
+                GetLoadContext(activating)?.EnterContextualReflection() ?? default :
                 new ContextualReflectionScope(null);
         }
 
@@ -525,11 +525,11 @@ namespace System.Runtime.Loader
         [EditorBrowsable(EditorBrowsableState.Never)]
         public struct ContextualReflectionScope : IDisposable
         {
-            private readonly AssemblyLoadContext _activated;
-            private readonly AssemblyLoadContext _predecessor;
+            private readonly AssemblyLoadContext? _activated;
+            private readonly AssemblyLoadContext? _predecessor;
             private readonly bool _initialized;
 
-            internal ContextualReflectionScope(AssemblyLoadContext activating)
+            internal ContextualReflectionScope(AssemblyLoadContext? activating)
             {
                 _predecessor = AssemblyLoadContext.CurrentContextualReflectionContext;
                 AssemblyLoadContext.SetCurrentContextualReflectionContext(activating);

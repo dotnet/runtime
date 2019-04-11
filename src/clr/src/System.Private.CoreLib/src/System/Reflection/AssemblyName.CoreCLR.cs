@@ -22,7 +22,7 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
             _name = assemblyName;
-            nInit(out RuntimeAssembly dummy, false);
+            nInit(out RuntimeAssembly? dummy, false);
         }
 
         internal AssemblyName(string? name,
