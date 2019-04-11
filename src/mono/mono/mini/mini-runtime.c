@@ -2161,7 +2161,6 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
 	    (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL)) {
-		MonoMethod *nm;
 		MonoMethodPInvoke* piinfo = (MonoMethodPInvoke *) method;
 
 		if (!piinfo->addr) {
@@ -2179,9 +2178,11 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 				mono_error_cleanup (ignored_error);
 			}
 		}
-		nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
+
+		MonoMethod *nm = mono_marshal_get_native_wrapper (method, TRUE, mono_aot_only);
 		gpointer compiled_method = mono_jit_compile_method_jit_only (nm, error);
 		return_val_if_nok (error, NULL);
+
 		code = mono_get_addr_from_ftnptr (compiled_method);
 		jinfo = mono_jit_info_table_find (target_domain, code);
 		if (!jinfo)
