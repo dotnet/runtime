@@ -16,7 +16,7 @@ namespace System.IO.Ports
                 Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                 0,              // comm devices must be opened w/exclusive-access
                 FileMode.Open,  // comm devices must use OPEN_EXISTING
-                NativeMethods.FILE_FLAG_OVERLAPPED);
+                Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED);
         }
     }
 }

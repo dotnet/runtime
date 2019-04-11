@@ -9,6 +9,8 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
+        internal const int MAXDWORD = -1; // This is 0xfffffff, or UInt32.MaxValue, here used as an int
+
         [DllImport(Libraries.Kernel32, SetLastError=true, CharSet=CharSet.Auto)]
         internal static extern bool SetCommTimeouts(
             SafeFileHandle hFile,
