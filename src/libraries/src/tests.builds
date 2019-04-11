@@ -35,15 +35,5 @@
     <Project Include="$(RepoRoot)pkg\test\testPackages.proj" />
   </ItemGroup>
 
-  <Target Name="BinPlaceXUnitRuntimeForNetstandardSuite"
-          Condition="'$(TargetGroup)' == 'netstandard'"
-          BeforeTargets="BuildAllProjects">
-    <!-- Ensure that we binplace all of the xunit assemblies on the netstandard runtime path in order to be able to build netstandard test suite -->
-    <MSBuild Projects="$(MSBuildThisFileDirectory)../external/test-runtime/XUnit.Runtime.depproj"
-             Properties="TargetGroup=$(TargetGroup)"
-             RemoveProperties="Configuration"
-             ContinueOnError="ErrorAndStop" />
-  </Target>
-
   <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
 </Project>
