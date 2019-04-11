@@ -2319,7 +2319,8 @@ handle_type:
 			*p++ = simple_type = klass_byval_arg->type;
 			goto handle_enum;
 		} else {
-			g_error ("unhandled type in custom attr");
+			mono_error_set_not_supported (error, "unhandled type in custom attr");
+			break;
 		}
 		str = type_get_qualified_name (m_class_get_byval_arg (klass), NULL);
 		slen = strlen (str);
@@ -2339,7 +2340,7 @@ handle_type:
 		goto handle_enum;
 	}
 	default:
-		g_error ("type 0x%02x not yet supported in custom attr encoder", simple_type);
+		mono_error_set_not_supported (error, "type 0x%02x not yet supported in custom attr encoder", simple_type);
 	}
 	*retp = p;
 	*retbuffer = buffer;
