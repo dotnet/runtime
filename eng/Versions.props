@@ -12,7 +12,7 @@
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview5.19211.2</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
     <!-- standard -->
-    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19210.1</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19211.1</NETStandardLibraryPackageVersion>
     <!-- coreclr -->
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview5-27610-72</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- dotnet-trusted -->
