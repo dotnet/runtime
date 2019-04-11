@@ -513,7 +513,10 @@ namespace System.Text.Unicode
                                 // fail, and redirect control flow to the error handling logic at the very end of this method.
 
                                 uint secondDWord = Unsafe.ReadUnaligned<uint>(pInputBuffer + 3);
-                                if (((secondDWord & 0x0000_200Fu) != 0) && (((secondDWord - 0x0000_200Du) & 0x0000_200Fu) != 0))
+
+                                if (UInt32BeginsWithUtf8ThreeByteMask(secondDWord)
+                                    && ((secondDWord & 0x0000_200Fu) != 0)
+                                    && (((secondDWord - 0x0000_200Du) & 0x0000_200Fu) != 0))
                                 {
                                     // combinedQWord = [ 1110ZZZZ 10YYYYYY 10XXXXXX ######## | 1110zzzz 10yyyyyy 10xxxxxx ######## ], where xyz are from first DWORD, XYZ are from second DWORD
                                     ulong combinedQWord = ((ulong)BinaryPrimitives.ReverseEndianness(secondDWord) << 32) | BinaryPrimitives.ReverseEndianness(thisDWord);
