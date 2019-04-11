@@ -226,7 +226,7 @@ namespace System.Text.Unicode
                             else
                             {
                                 // Take the hit of the 64-bit extension now.
-                                tempUtf8CodeUnitCountAdjustment -= 2 * surrogatePairsCountNuint;
+                                tempUtf8CodeUnitCountAdjustment -= 2 * (uint)surrogatePairsCountNuint;
                             }
                         }
 
