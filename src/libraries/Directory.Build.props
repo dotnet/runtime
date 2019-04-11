@@ -264,8 +264,13 @@
   </PropertyGroup>
   
   <PropertyGroup>
-    <!-- Embed IBC data on Windows release builds, if IBCMerge isn't available this will just log the commandline -->
-    <EnablePartialNgenOptimization Condition="'$(EnablePartialNgenOptimization)' == '' and '$(OS)' == 'Windows_NT' and '$(ConfigurationGroup)' == 'Release'">true</EnablePartialNgenOptimization>
+    <!-- Embed IBC data on release builds, if IBCMerge isn't available this will just log the commandline -->
+    <EnablePartialNgenOptimization Condition="'$(EnablePartialNgenOptimization)' == '' and '$(ConfigurationGroup)' == 'Release'">true</EnablePartialNgenOptimization>
+
+    <WindowsCoreFxOptimizationDataPackageId>optimization.windows_nt-x64.IBC.CoreFx</WindowsCoreFxOptimizationDataPackageId>
+    <WindowsCoreFxOptimizationDataVersion>$(optimizationwindows_ntx64IBCCoreFxPackageVersion)</WindowsCoreFxOptimizationDataVersion>
+    <LinuxCoreFxOptimizationDataPackageId>optimization.linux-x64.IBC.CoreFx</LinuxCoreFxOptimizationDataPackageId>
+    <LinuxCoreFxOptimizationDataVersion>$(optimizationwindows_ntx64IBCCoreFxPackageVersion)</LinuxCoreFxOptimizationDataVersion>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
