@@ -1610,6 +1610,53 @@ class AssemblyBaseObject : public Object
 NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembly *pAssembly, OBJECTREF keepAlive);
 #define FC_RETURN_ASSEMBLY_OBJECT(pAssembly, refKeepAlive) FC_INNER_RETURN(AssemblyBaseObject*, GetRuntimeAssemblyHelper(__me, pAssembly, refKeepAlive))
 
+// AssemblyLoadContextBaseObject
+// This class is the base class for AssemblyLoadContext
+//
+#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#include "pshpack4.h"
+#endif // (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+class AssemblyLoadContextBaseObject : public Object
+{
+    friend class MscorlibBinder;
+
+  protected:
+    // READ ME:
+    // Modifying the order or fields of this object may require other changes to the
+    //  classlib class definition of this object.
+#ifdef _TARGET_64BIT_
+    OBJECTREF     _unloadLock;
+    OBJECTREF     _resovlingUnmanagedDll;
+    OBJECTREF     _resolving;
+    OBJECTREF     _unloading;
+    OBJECTREF     _name;
+    INT_PTR       _nativeAssemblyLoadContext;
+    int64_t       _id; // On 64-bit platforms this is a value type so it is placed after references and pointers
+    DWORD         _state;
+    CLR_BOOL      _isCollectible;
+#else // _TARGET_64BIT_
+    int64_t       _id; // On 32-bit platforms this 64-bit value type is larger than a pointer so JIT places it first
+    OBJECTREF     _unloadLock;
+    OBJECTREF     _resovlingUnmanagedDll;
+    OBJECTREF     _resolving;
+    OBJECTREF     _unloading;
+    OBJECTREF     _name;
+    INT_PTR       _nativeAssemblyLoadContext;
+    DWORD         _state;
+    CLR_BOOL      _isCollectible;
+#endif // _TARGET_64BIT_
+
+  protected:
+    AssemblyLoadContextBaseObject() { LIMITED_METHOD_CONTRACT; }
+   ~AssemblyLoadContextBaseObject() { LIMITED_METHOD_CONTRACT; }
+
+  public:
+    INT_PTR GetNativeAssemblyLoadContext() { LIMITED_METHOD_CONTRACT; return _nativeAssemblyLoadContext; }
+};
+#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#include "poppack.h"
+#endif // (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+
 // AssemblyNameBaseObject 
 // This class is the base class for assembly names
 //  
@@ -1700,11 +1747,11 @@ typedef REF<ReflectFieldObject> REFLECTFIELDREF;
 
 typedef REF<ThreadBaseObject> THREADBASEREF;
 
-typedef REF<AppDomainBaseObject> APPDOMAINREF;
-
 typedef REF<MarshalByRefObjectBaseObject> MARSHALBYREFOBJECTBASEREF;
 
 typedef REF<AssemblyBaseObject> ASSEMBLYREF;
+
+typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
 
@@ -1753,6 +1800,7 @@ typedef PTR_ReflectMethodObject REFLECTMETHODREF;
 typedef PTR_ReflectFieldObject REFLECTFIELDREF;
 typedef PTR_ThreadBaseObject THREADBASEREF;
 typedef PTR_AssemblyBaseObject ASSEMBLYREF;
+typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 
 #ifndef DACCESS_COMPILE
