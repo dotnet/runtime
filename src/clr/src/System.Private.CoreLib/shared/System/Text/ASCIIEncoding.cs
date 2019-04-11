@@ -159,7 +159,7 @@ namespace System.Text
             // Common helper method for all non-EncoderNLS entry points to GetByteCount.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
-            Debug.Assert(charCount >= 0, "Caller should't specify negative length buffer.");
+            Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
             Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
@@ -340,9 +340,9 @@ namespace System.Text
             // Common helper method for all non-EncoderNLS entry points to GetBytes.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
-            Debug.Assert(charCount >= 0, "Caller should't specify negative length buffer.");
+            Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
             Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
-            Debug.Assert(byteCount >= 0, "Caller should't specify negative length buffer.");
+            Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
             Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
@@ -496,7 +496,7 @@ namespace System.Text
             // Common helper method for all non-DecoderNLS entry points to GetCharCount.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
-            Debug.Assert(byteCount >= 0, "Caller should't specify negative length buffer.");
+            Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
             Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
@@ -624,9 +624,9 @@ namespace System.Text
             // Common helper method for all non-DecoderNLS entry points to GetChars.
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
-            Debug.Assert(byteCount >= 0, "Caller should't specify negative length buffer.");
+            Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
             Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
-            Debug.Assert(charCount >= 0, "Caller should't specify negative length buffer.");
+            Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
             Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
