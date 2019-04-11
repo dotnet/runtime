@@ -179,7 +179,7 @@ namespace Microsoft.Extensions.Hosting
         {
             var configBuilder = new ConfigurationBuilder()
                 .SetBasePath(_hostingEnvironment.ContentRootPath)
-                .AddConfiguration(_hostConfiguration);
+                .AddConfiguration(_hostConfiguration, shouldDisposeConfiguration: true);
 
             foreach (var buildAction in _configureAppConfigActions)
             {
@@ -197,7 +197,8 @@ namespace Microsoft.Extensions.Hosting
 #pragma warning restore CS0618 // Type or member is obsolete
             services.AddSingleton<IHostEnvironment>(_hostingEnvironment);
             services.AddSingleton(_hostBuilderContext);
-            services.AddSingleton(_appConfiguration);
+            // register configuration as factory to make it dispose with the service provider
+            services.AddSingleton(_ => _appConfiguration);
 #pragma warning disable CS0618 // Type or member is obsolete
             services.AddSingleton<IApplicationLifetime>(s => (IApplicationLifetime)s.GetService<IHostApplicationLifetime>());
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -225,6 +226,10 @@ namespace Microsoft.Extensions.Hosting
             {
                 throw new InvalidOperationException($"The IServiceProviderFactory returned a null IServiceProvider.");
             }
+
+            // resolve configuration explicitly once to mark it as resolved within the
+            // service provider, ensuring it will be properly disposed with the provider
+            _ = _appServices.GetService<IConfiguration>();
         }
     }
 }
