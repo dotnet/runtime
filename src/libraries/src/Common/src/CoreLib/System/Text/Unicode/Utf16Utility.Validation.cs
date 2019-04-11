@@ -87,6 +87,11 @@ namespace System.Text.Unicode
                         Vector128<ushort> utf16Data = Sse2.LoadVector128((ushort*)pInputBuffer); // unaligned
                         uint mask;
 
+                        // The 'charIsNonAscii' vector we're about to build will have the 0x8000 or the 0x0080
+                        // bit set (but not both!) only if the corresponding input char is non-ASCII. Which of
+                        // the two bits is set doesn't matter, as will be explained in the diagram a few lines
+                        // below.
+
                         Vector128<ushort> charIsNonAscii;
                         if (Sse41.IsSupported)
                         {
@@ -98,6 +103,12 @@ namespace System.Text.Unicode
                             // sets 0x8000 bit if corresponding char element is >= 0x0080
                             charIsNonAscii = Sse2.AndNot(vector0080, Sse2.Subtract(vectorZero, Sse2.ShiftRightLogical(utf16Data, 7)));
                         }
+
+#if DEBUG
+                        // Quick check to ensure we didn't accidentally set both 0x8080 bits in any element.
+                        uint debugMask = (uint)Sse2.MoveMask(charIsNonAscii.AsByte());
+                        Debug.Assert((debugMask & (debugMask << 1)) == 0, "Two set bits shouldn't occur adjacent to each other in this mask.");
+#endif // DEBUG
 
                         // sets 0x8080 bits if corresponding char element is >= 0x0800
                         Vector128<ushort> charIsThreeByteUtf8Encoded = Sse2.Subtract(vectorZero, Sse2.ShiftRightLogical(utf16Data, 11));
