@@ -8,6 +8,7 @@
 // except for the case in the try/catch.
 
 using System;
+using System.Runtime.CompilerServices;
 
 enum E
 {
@@ -38,6 +39,12 @@ struct EStruct
 class EClass
 {
     public E e;
+}
+
+class ShortHolder
+{
+    public ShortHolder(short s) { v = s; }
+    public short v;
 }
 
 class P
@@ -81,6 +88,20 @@ class P
         return e1.HasFlag(e2);
     }
 
+    // Example from GitHub 23847
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static bool GitHub23847(E e1, short s)
+    {
+        return GitHub23847Aux(s).HasFlag(e1);
+    }
+
+    // Once this is inlined we end up with a short pre-boxed value
+    public static E GitHub23847Aux(short s)
+    {
+        ShortHolder h = new ShortHolder(s);
+        return (E)h.v;
+    }
+
     public static int Main()
     {
         E e1 = E.RED;
@@ -120,8 +141,10 @@ class P
         G g1 = G.RED;
         bool true9 = ByrefG(ref g1, G.RED);
 
+        bool false10 = GitHub23847(E.RED, 0x100);
+
         bool[] trueResults = {true0, true1, true2, true3, true4, true5, true6, true7, true8, true9};
-        bool[] falseResults = {false0, false1, false2, false3, false4, false5, false6, false7, false8, false9};
+        bool[] falseResults = {false0, false1, false2, false3, false4, false5, false6, false7, false8, false9, false10};
 
         bool resultOk = true;
 
