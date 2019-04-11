@@ -5,6 +5,7 @@
     <version>$version$</version>
     <authors>$authors$</authors>
     <description>$description$</description>
+    <license type="expression">MIT</license>
   </metadata>
   <files>
     <file src="ILLink.Tasks.targets" target="build" />
