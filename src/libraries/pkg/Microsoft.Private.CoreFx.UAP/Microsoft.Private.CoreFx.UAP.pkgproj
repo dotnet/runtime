@@ -9,6 +9,8 @@
     <LibBinDir>$(UAPPackageRuntimePath)</LibBinDir>
     <LibBinDir Condition="$(PackageTargetRuntime.EndsWith('-aot'))">$(UAPAOTPackageRuntimePath)</LibBinDir>
     <IsFrameworkPackage>true</IsFrameworkPackage>
+    <!-- we cannot build native on Unix -->
+    <IncludeNativeFiles Condition="'$(OS)' != 'Windows_NT'">false</IncludeNativeFiles>
     <!-- Private packages need symbols -->
     <IncludeSymbolsInPackage Condition="'$(IncludeSymbolsInPackage)' == ''">true</IncludeSymbolsInPackage>
 

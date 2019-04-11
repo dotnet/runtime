@@ -1,14 +1,7 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp-Windows_NT;
-      netcoreapp-Unix;
-      netfx;
-      uap10.0.16299;
-      uap10.0.16299aot;
-      uap;
-      uapaot;
-      mono;
+      netstandard;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
