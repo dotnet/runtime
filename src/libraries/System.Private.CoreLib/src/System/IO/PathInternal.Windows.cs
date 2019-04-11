@@ -100,23 +100,6 @@ namespace System.IO
         }
 
         /// <summary>
-        /// DO NOT USE- Use EnsureExtendedPrefixIfNeeded. This will be removed shortly.
-        /// Adds the extended path prefix (\\?\) if not already a device path, IF the path is not relative,
-        /// AND the path is more than 259 characters. (> MAX_PATH + null)
-        /// </summary>
-        internal static string? EnsureExtendedPrefixOverMaxPath(string? path)
-        {
-            if (path != null && path.Length >= MaxShortPath)
-            {
-                return EnsureExtendedPrefix(path);
-            }
-            else
-            {
-                return path;
-            }
-        }
-
-        /// <summary>
         /// Adds the extended path prefix (\\?\) if not relative or already a device path.
         /// </summary>
         internal static string EnsureExtendedPrefix(string path)
