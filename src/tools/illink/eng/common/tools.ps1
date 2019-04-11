@@ -461,7 +461,7 @@ function MSBuild() {
 
   $buildTool = InitializeBuildTool
 
-  $cmdArgs = "$($buildTool.Command) /m /nologo /clp:Summary /v:$verbosity /nr:$nodeReuse"
+  $cmdArgs = "$($buildTool.Command) /m /nologo /clp:Summary /v:$verbosity /nr:$nodeReuse /p:ContinuousIntegrationBuild=$ci"
 
   if ($warnAsError) { 
     $cmdArgs += " /warnaserror /p:TreatWarningsAsErrors=true" 
@@ -518,6 +518,10 @@ Create-Directory $TempDir
 Create-Directory $LogDir
 
 if ($ci) {
+  Write-Host "##vso[task.setvariable variable=Artifacts]$ArtifactsDir"
+  Write-Host "##vso[task.setvariable variable=Artifacts.Toolset]$ToolsetDir"
+  Write-Host "##vso[task.setvariable variable=Artifacts.Log]$LogDir"
+
   $env:TEMP = $TempDir
   $env:TMP = $TempDir
 }

@@ -10,7 +10,7 @@ force=false
 download_retries=5
 retry_wait_time_seconds=30
 global_json_file="${scriptroot}/../../global.json"
-declare -a native_assets
+declare -A native_assets
 
 . $scriptroot/native/common-library.sh
 
