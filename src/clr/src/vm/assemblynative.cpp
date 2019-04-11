@@ -38,22 +38,24 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
         AssemblyBaseObject* requestingAssemblyUNSAFE,
         StackCrawlMark* stackMark,
         CLR_BOOL fThrowOnFileNotFound,
-        INT_PTR ptrLoadContextBinder)
+        AssemblyLoadContextBaseObject *assemblyLoadContextUNSAFE)
 {
     FCALL_CONTRACT;
 
     struct _gc
     {
-        ASSEMBLYNAMEREF assemblyName;
-        STRINGREF       codeBase;
-        ASSEMBLYREF     requestingAssembly; 
-        ASSEMBLYREF     rv;
+        ASSEMBLYNAMEREF        assemblyName;
+        STRINGREF              codeBase;
+        ASSEMBLYREF            requestingAssembly;
+        ASSEMBLYREF            rv;
+        ASSEMBLYLOADCONTEXTREF assemblyLoadContext;
     } gc;
 
-    gc.assemblyName    = (ASSEMBLYNAMEREF) assemblyNameUNSAFE;
-    gc.codeBase        = (STRINGREF)       codeBaseUNSAFE;
-    gc.requestingAssembly    = (ASSEMBLYREF)     requestingAssemblyUNSAFE;
-    gc.rv              = NULL;
+    gc.assemblyName        = (ASSEMBLYNAMEREF)        assemblyNameUNSAFE;
+    gc.codeBase            = (STRINGREF)              codeBaseUNSAFE;
+    gc.requestingAssembly  = (ASSEMBLYREF)            requestingAssemblyUNSAFE;
+    gc.rv                  = NULL;
+    gc.assemblyLoadContext = (ASSEMBLYLOADCONTEXTREF) assemblyLoadContextUNSAFE;
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
 
@@ -65,6 +67,8 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
 
     DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
+
+    INT_PTR ptrLoadContextBinder = (gc.assemblyLoadContext != NULL) ? gc.assemblyLoadContext->GetNativeAssemblyLoadContext() : NULL;
 
     if(gc.assemblyName->GetSimpleName() == NULL)
     {
@@ -446,7 +450,13 @@ void QCALLTYPE AssemblyNative::LoadTypeForWinRTTypeNameInContext(INT_PTR ptrAsse
 }
 #endif
 
-void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly, LPCWSTR wszName, BOOL bThrowOnError, BOOL bIgnoreCase, QCall::ObjectHandleOnStack retType, QCall::ObjectHandleOnStack keepAlive)
+void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly,
+                                       LPCWSTR wszName,
+                                       BOOL bThrowOnError,
+                                       BOOL bIgnoreCase,
+                                       QCall::ObjectHandleOnStack retType,
+                                       QCall::ObjectHandleOnStack keepAlive,
+                                       QCall::ObjectHandleOnStack pAssemblyLoadContext)
 {
     CONTRACTL
     {
@@ -464,8 +474,20 @@ void QCALLTYPE AssemblyNative::GetType(QCall::AssemblyHandle pAssembly, LPCWSTR 
 
     BOOL prohibitAsmQualifiedName = TRUE;
 
+    ICLRPrivBinder * pPrivHostBinder = NULL;
+
+    if (*pAssemblyLoadContext.m_ppObject != NULL)
+    {
+        GCX_COOP();
+        ASSEMBLYLOADCONTEXTREF * pAssemblyLoadContextRef = reinterpret_cast<ASSEMBLYLOADCONTEXTREF *>(pAssemblyLoadContext.m_ppObject);
+
+        INT_PTR nativeAssemblyLoadContext = (*pAssemblyLoadContextRef)->GetNativeAssemblyLoadContext();
+
+        pPrivHostBinder = reinterpret_cast<ICLRPrivBinder *>(nativeAssemblyLoadContext);
+    }
+
     // Load the class from this assembly (fail if it is in a different one).
-    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, NULL, FALSE, (OBJECTREF*)keepAlive.m_ppObject);
+    retTypeHandle = TypeName::GetTypeManaged(wszName, pAssembly, bThrowOnError, bIgnoreCase, prohibitAsmQualifiedName, pAssembly->GetAssembly(), FALSE, (OBJECTREF*)keepAlive.m_ppObject, pPrivHostBinder);
 
     if (!retTypeHandle.IsNull())
     {
