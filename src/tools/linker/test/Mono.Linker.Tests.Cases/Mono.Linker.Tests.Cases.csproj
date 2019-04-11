@@ -347,7 +347,7 @@
     <Compile Include="Inheritance.VirtualMethods\Dependencies\TypeWithBaseInCopiedAssembly_Base.cs" />
     <Compile Include="Inheritance.VirtualMethods\HarderToDetectUnusedVirtualMethodGetsRemoved.cs" />
     <Compile Include="Inheritance.VirtualMethods\NotKeptCtor\NeverInstantiatedTypeWithBaseInCopiedAssembly.cs" />
-    <Compile Include="Inheritance.VirtualMethods\TypeWithBaseInCopiedAssembly.cs" />
+    <Compile Include="Inheritance.VirtualMethods\NeverInstantiatedTypeWithBaseInCopiedAssembly.cs" />
     <Compile Include="Inheritance.VirtualMethods\UnusedTypeWithOverrideOfVirtualMethodIsRemoved.cs" />
     <Compile Include="Inheritance.VirtualMethods\UnusedVirtualMethodRemoved.cs" />
     <Compile Include="Inheritance.VirtualMethods\UsedOverrideOfVirtualMethodIsKept.cs" />
