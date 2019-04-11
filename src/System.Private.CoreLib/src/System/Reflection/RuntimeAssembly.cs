@@ -164,7 +164,7 @@ namespace System.Reflection
 
             RuntimeType? type = null;
             object? keepAlive = null;
-            AssemblyLoadContext assemblyLoadContextStack = AssemblyLoadContext.CurrentContextualReflectionContext;
+            AssemblyLoadContext? assemblyLoadContextStack = AssemblyLoadContext.CurrentContextualReflectionContext;
 
             GetType(GetNativeHandle(),
                     name,
@@ -302,7 +302,7 @@ namespace System.Reflection
             return CustomAttributeData.GetCustomAttributesInternal(this);
         }
 
-        internal static RuntimeAssembly InternalLoad(string assemblyString, ref StackCrawlMark stackMark, AssemblyLoadContext assemblyLoadContext = null)
+        internal static RuntimeAssembly InternalLoad(string assemblyString, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
         {
             RuntimeAssembly? assembly;
             AssemblyName an = CreateAssemblyName(assemblyString, out assembly);
@@ -336,7 +336,7 @@ namespace System.Reflection
             return an;
         }
 
-        internal static RuntimeAssembly InternalLoadAssemblyName(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext assemblyLoadContext = null)
+        internal static RuntimeAssembly InternalLoadAssemblyName(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
         {
 #if FEATURE_APPX
             if (ApplicationModel.IsUap)
@@ -366,7 +366,7 @@ namespace System.Reflection
                                                     RuntimeAssembly? assemblyContext,
                                                     ref StackCrawlMark stackMark,
                                                     bool throwOnFileNotFound,
-                                                    AssemblyLoadContext assemblyLoadContext = null);
+                                                    AssemblyLoadContext? assemblyLoadContext = null);
 
         public override bool ReflectionOnly
         {
