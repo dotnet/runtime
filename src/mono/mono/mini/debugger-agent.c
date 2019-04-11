@@ -1236,7 +1236,10 @@ socket_transport_connect (const char *address)
 
 			/* No address, generate one */
 			sfd = socket (AF_INET, SOCK_STREAM, 0);
-			g_assert (sfd);
+			if (sfd == -1) {
+				g_printerr ("debugger-agent: Unable to create a socket: %s\n", strerror (get_last_sock_error ()));
+				exit (1);
+			}
 
 			/* This will bind the socket to a random port */
 			res = listen (sfd, 16);
