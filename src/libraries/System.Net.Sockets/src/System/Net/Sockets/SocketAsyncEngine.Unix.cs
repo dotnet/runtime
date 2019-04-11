@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -124,9 +124,8 @@ namespace System.Net.Sockets
 
         //
         // Maps handle values to SocketAsyncContext instances.
-        // Must be accessed under s_lock.
         //
-        private readonly Dictionary<IntPtr, SocketAsyncContext> _handleToContextMap = new Dictionary<IntPtr, SocketAsyncContext>();
+        private readonly ConcurrentDictionary<IntPtr, SocketAsyncContext> _handleToContextMap = new ConcurrentDictionary<IntPtr, SocketAsyncContext>();
 
         //
         // True if we've reached the handle value limit for this event port, and thus must allocate a new event port
@@ -193,7 +192,7 @@ namespace System.Net.Sockets
             Debug.Assert(!IsFull, "Expected !IsFull");
 
             IntPtr handle = _nextHandle;
-            _handleToContextMap.Add(handle, context);
+            _handleToContextMap.TryAdd(handle, context);
 
             _nextHandle = IntPtr.Add(_nextHandle, 1);
             _outstandingHandles = IntPtr.Add(_outstandingHandles, 1);
@@ -210,7 +209,7 @@ namespace System.Net.Sockets
 
             lock (s_lock)
             {
-                if (_handleToContextMap.Remove(handle))
+                if (_handleToContextMap.TryRemove(handle, out _))
                 {
                     _outstandingHandles = IntPtr.Subtract(_outstandingHandles, 1);
                     Debug.Assert(_outstandingHandles.ToInt64() >= 0, $"Unexpected _outstandingHandles: {_outstandingHandles}");
@@ -232,18 +231,6 @@ namespace System.Net.Sockets
             if (shutdownNeeded)
             {
                 RequestEventLoopShutdown();
-            }
-        }
-
-        private SocketAsyncContext GetContextFromHandle(IntPtr handle)
-        {
-            Debug.Assert(handle != ShutdownHandle, $"Expected handle != ShutdownHandle: {handle}");
-            Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
-            lock (s_lock)
-            {
-                SocketAsyncContext context;
-                _handleToContextMap.TryGetValue(handle, out context);
-                return context;
             }
         }
 
@@ -339,7 +326,8 @@ namespace System.Net.Sockets
                         }
                         else
                         {
-                            SocketAsyncContext context = GetContextFromHandle(handle);
+                            Debug.Assert(handle.ToInt64() < MaxHandles.ToInt64(), $"Unexpected values: handle={handle}, MaxHandles={MaxHandles}");
+                            _handleToContextMap.TryGetValue(handle, out SocketAsyncContext context);
                             if (context != null)
                             {
                                 context.HandleEvents(_buffer[i].Events);
