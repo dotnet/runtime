@@ -21,7 +21,7 @@ namespace BasicEventSourceTests
         {
             private object _failureCounter;
 
-            public SimpleEventSource(Func<float> getFailureCount, Type IncrementingPollingCounterType)
+            public SimpleEventSource(Func<double> getFailureCount, Type IncrementingPollingCounterType)
             {
                 _failureCounter = Activator.CreateInstance(IncrementingPollingCounterType, "failureCount", this, getFailureCount);    
             }
@@ -93,7 +93,7 @@ namespace BasicEventSourceTests
 
         public static int failureCountCalled = 0;
 
-        public static float getFailureCount()
+        public static double getFailureCount()
         {
             failureCountCalled++;
             return failureCountCalled;

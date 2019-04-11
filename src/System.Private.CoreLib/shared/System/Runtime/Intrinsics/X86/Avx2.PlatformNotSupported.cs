@@ -674,64 +674,131 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// __m256i _mm256_cvtepi8_epi16 (__m128i a)
-        ///   VPMOVSXBW ymm, xmm/m128
+        ///   VPMOVSXBW ymm, xmm
         /// </summary>
         public static Vector256<short> ConvertToVector256Int16(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepu8_epi16 (__m128i a)
-        ///   VPMOVZXBW ymm, xmm/m128
+        ///   VPMOVZXBW ymm, xmm
         /// </summary>
         public static Vector256<ushort> ConvertToVector256UInt16(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<short> ConvertToVector256Int16(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepi8_epi32 (__m128i a)
-        ///   VPMOVSXBD ymm, xmm/m128
+        ///   VPMOVSXBD ymm, xmm
         /// </summary>
         public static Vector256<int> ConvertToVector256Int32(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// __m256i _mm256_cvtepu8_epi32 (__m128i a)
+        ///   VPMOVZXBD ymm, xmm
+        /// </summary>
+        public static Vector256<uint> ConvertToVector256UInt32(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> ConvertToVector256Int32(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         /// __m256i _mm256_cvtepi16_epi32 (__m128i a)
-        ///   VPMOVSXWD ymm, xmm/m128
+        ///   VPMOVSXWD ymm, xmm
         /// </summary>
         public static Vector256<int> ConvertToVector256Int32(Vector128<short> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __m256i _mm256_cvtepu8_epi32 (__m128i a)
-        ///   VPMOVZXBD ymm, xmm/m128
-        /// </summary>
-        public static Vector256<uint> ConvertToVector256UInt32(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
         /// __m256i _mm256_cvtepu16_epi32 (__m128i a)
-        ///   VPMOVZXWD ymm, xmm/m128
+        ///   VPMOVZXWD ymm, xmm
         /// </summary>
         public static Vector256<uint> ConvertToVector256UInt32(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<int> ConvertToVector256Int32(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
         /// __m256i _mm256_cvtepi8_epi64 (__m128i a)
-        ///   VPMOVSXBQ ymm, xmm/m128
+        ///   VPMOVSXBQ ymm, xmm
         /// </summary>
         public static Vector256<long> ConvertToVector256Int64(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// __m256i _mm256_cvtepu8_epi64 (__m128i a)
+        ///   VPMOVZXBQ ymm, xmm
+        /// </summary>
+        public static Vector256<ulong> ConvertToVector256UInt64(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ConvertToVector256Int64(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         /// __m256i _mm256_cvtepi16_epi64 (__m128i a)
-        ///   VPMOVSXWQ ymm, xmm/m128
+        ///   VPMOVSXWQ ymm, xmm
         /// </summary>
         public static Vector256<long> ConvertToVector256Int64(Vector128<short> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
+        /// __m256i _mm256_cvtepu16_epi64 (__m128i a)
+        ///   VPMOVZXWQ ymm, xmm
+        /// </summary>
+        public static Vector256<ulong> ConvertToVector256UInt64(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ConvertToVector256Int64(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
+        /// <summary>
         /// __m256i _mm256_cvtepi32_epi64 (__m128i a)
-        ///   VPMOVSXDQ ymm, xmm/m128
+        ///   VPMOVSXDQ ymm, xmm
         /// </summary>
         public static Vector256<long> ConvertToVector256Int64(Vector128<int> value) { throw new PlatformNotSupportedException(); }
         /// <summary>
-        /// __m256i _mm256_cvtepu8_epi64 (__m128i a)
-        ///   VPMOVZXBQ ymm, xmm/m128
-        /// </summary>
-        public static Vector256<ulong> ConvertToVector256UInt64(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
-        /// __m256i _mm256_cvtepu16_epi64 (__m128i a)
-        ///   VPMOVZXWQ ymm, xmm/m128
-        /// </summary>
-        public static Vector256<ulong> ConvertToVector256UInt64(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
-        /// <summary>
         /// __m256i _mm256_cvtepu32_epi64 (__m128i a)
-        ///   VPMOVZXDQ ymm, xmm/m128
+        ///   VPMOVZXDQ ymm, xmm
         /// </summary>
         public static Vector256<ulong> ConvertToVector256UInt64(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+        public static Vector256<long> ConvertToVector256Int64(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
+
+        /// <summary>
+        ///   VPMOVSXBW ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<short> ConvertToVector256Int16(sbyte* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVZXBW ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<short> ConvertToVector256Int16(byte* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVSXBD ymm, m64
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<int> ConvertToVector256Int32(sbyte* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVZXBD ymm, m64
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<int> ConvertToVector256Int32(byte* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVSXWD ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<int> ConvertToVector256Int32(short* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVZXWD ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<int> ConvertToVector256Int32(ushort* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVSXBQ ymm, m32
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<long> ConvertToVector256Int64(sbyte* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVZXBQ ymm, m32
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<long> ConvertToVector256Int64(byte* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVSXWQ ymm, m64
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<long> ConvertToVector256Int64(short* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVZXWQ ymm, m64
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<long> ConvertToVector256Int64(ushort* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVSXDQ ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<long> ConvertToVector256Int64(int* address) { throw new PlatformNotSupportedException(); }
+        /// <summary>
+        ///   VPMOVZXDQ ymm, m128
+        /// The native signature does not exist. We provide this additional overload for completeness.
+        /// </summary>
+        public static unsafe Vector256<long> ConvertToVector256Int64(uint* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// __m128i _mm256_extracti128_si256 (__m256i a, const int imm8)
