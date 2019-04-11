@@ -2323,7 +2323,7 @@ MarshalInfo::MarshalInfo(Module* pModule,
 
                         case NATIVE_TYPE_DEFAULT:
 #ifdef FEATURE_COMINTEROP
-                            if (m_ms == MARSHAL_SCENARIO_WINRT)
+                            if (m_ms == MARSHAL_SCENARIO_WINRT || m_pMT->IsProjectedFromWinRT() || WinRTTypeNameConverter::IsRedirectedType(m_pMT))
                             {
                                 m_type = MARSHAL_TYPE_INTERFACE;
                             }
