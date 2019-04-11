@@ -493,18 +493,31 @@ namespace System.Text.Unicode
                     if (Bmi2.X64.IsSupported)
                     {
                         Debug.Assert(BitConverter.IsLittleEndian, "BMI2 requires little-endian.");
+
+                        // First, check that the leftover byte from the original DWORD is in the range [ E0..EF ], which
+                        // would indicate the potential start of a second three-byte sequence.
+
                         if (((thisDWord - 0xE000_0000u) & 0xF000_0000u) == 0)
                         {
-                            if (outputCharsRemaining > 1 && (nint)(void*)Unsafe.ByteOffset(ref *pInputBuffer, ref *pFinalPosWhereCanReadDWordFromInputBuffer) >= 7)
+                            // The const '3' below is correct because pFinalPosWhereCanReadDWordFromInputBuffer represents
+                            // the final place where we can safely perform a DWORD read, and we want to probe whether it's
+                            // safe to read a DWORD beginning at address &pInputBuffer[3].
+
+                            if (outputCharsRemaining > 1 && (nint)(void*)Unsafe.ByteOffset(ref *pInputBuffer, ref *pFinalPosWhereCanReadDWordFromInputBuffer) >= 3)
                             {
                                 // We're going to attempt to read a second 3-byte sequence and write them both out simultaneously using PEXT.
+                                // Since we already validated the first byte of the second DWORD (it's the same as the final byte of the
+                                // first DWORD), the only checks that remain are the overlong + surrogate checks. If the overlong or surrogate
+                                // checks fail, we'll fall through to the remainder of the logic which will transcode the original valid
+                                // 3-byte UTF-8 sequence we read; and on the next iteration of the loop the validation routine will run again,
+                                // fail, and redirect control flow to the error handling logic at the very end of this method.
 
-                                uint nextDWord = Unsafe.ReadUnaligned<uint>(pInputBuffer + 3);
-                                if (((nextDWord & 0x0000_200Fu) != 0) && (((nextDWord - 0x0000_200Du) & 0x0000_200Fu) != 0))
+                                uint secondDWord = Unsafe.ReadUnaligned<uint>(pInputBuffer + 3);
+                                if (((secondDWord & 0x0000_200Fu) != 0) && (((secondDWord - 0x0000_200Du) & 0x0000_200Fu) != 0))
                                 {
                                     // combinedQWord = [ 1110ZZZZ 10YYYYYY 10XXXXXX ######## | 1110zzzz 10yyyyyy 10xxxxxx ######## ], where xyz are from first DWORD, XYZ are from second DWORD
-                                    ulong combinedQWord = ((ulong)BinaryPrimitives.ReverseEndianness(nextDWord) << 32) | BinaryPrimitives.ReverseEndianness(thisDWord);
-                                    thisDWord = nextDWord; // store this value in the correct local for the ASCII drain logic
+                                    ulong combinedQWord = ((ulong)BinaryPrimitives.ReverseEndianness(secondDWord) << 32) | BinaryPrimitives.ReverseEndianness(thisDWord);
+                                    thisDWord = secondDWord; // store this value in the correct local for the ASCII drain logic
 
                                     // extractedQWord = [ 00000000 00000000 00000000 00000000 | ZZZZYYYYYYXXXXXX zzzzyyyyyyxxxxxx ]
                                     ulong extractedQWord = Bmi2.X64.ParallelBitExtract(combinedQWord, 0x0F3F3F00_0F3F3F00ul);
