@@ -22,6 +22,16 @@ namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf8Utility
     {
+#if DEBUG
+        static Utf8Utility()
+        {
+            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
+            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
+
+            _ValidateAdditionalNIntDefinitions();
+        }
+#endif // DEBUG
+
         // On method return, pInputBufferRemaining and pOutputBufferRemaining will both point to where
         // the next byte would have been consumed from / the next char would have been written to.
         // inputLength in bytes, outputCharsRemaining in chars.

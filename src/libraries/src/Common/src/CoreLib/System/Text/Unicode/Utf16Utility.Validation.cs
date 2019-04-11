@@ -20,6 +20,14 @@ namespace System.Text.Unicode
 {
     internal static unsafe partial class Utf16Utility
     {
+#if DEBUG
+        static Utf16Utility()
+        {
+            Debug.Assert(sizeof(nint) == IntPtr.Size && nint.MinValue < 0, "nint is defined incorrectly.");
+            Debug.Assert(sizeof(nuint) == IntPtr.Size && nuint.MinValue == 0, "nuint is defined incorrectly.");
+        }
+#endif // DEBUG
+
         // Returns &inputBuffer[inputLength] if the input buffer is valid.
         /// <summary>
         /// Given an input buffer <paramref name="pInputBuffer"/> of char length <paramref name="inputLength"/>,
