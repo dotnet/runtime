@@ -423,6 +423,41 @@ private:
     ULONG_PTR _actCookie;
 };
 
+class ClrInstanceDetails
+{
+    static void * _currentClrInstance;
+    static unsigned int _currentAppDomainId;
+
+public: // static
+    static HRESULT GetDetails(void **clrInstance, unsigned int *appDomainId)
+    {
+        *clrInstance = _currentClrInstance;
+        *appDomainId = _currentAppDomainId;
+        return S_OK;
+    }
+
+public:
+    ClrInstanceDetails(void *clrInstance, unsigned int appDomainId)
+    {
+        _currentClrInstance = clrInstance;
+        _currentAppDomainId = appDomainId;
+    }
+
+    ~ClrInstanceDetails()
+    {
+        _currentClrInstance = nullptr;
+        _currentAppDomainId = 0;
+    }
+};
+
+void * ClrInstanceDetails::_currentClrInstance;
+unsigned int ClrInstanceDetails::_currentAppDomainId;
+
+extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void **clrInstance, unsigned int *appDomainId)
+{
+    return ClrInstanceDetails::GetDetails(clrInstance, appDomainId);
+}
+
 bool TryLoadHostPolicy(StackSString& hostPolicyPath)
 {
     const WCHAR *hostpolicyName = W("hostpolicy.dll");
@@ -666,6 +701,7 @@ bool TryRun(const int argc, const wchar_t* argv[], Logger &log, const bool verbo
 
     {
         ActivationContext cxt{ log, managedAssemblyFullName.GetUnicode() };
+        ClrInstanceDetails current{ host, domainId };
 
         hr = host->ExecuteAssembly(domainId, managedAssemblyFullName, argc - 1, (argc - 1) ? &(argv[1]) : NULL, &exitCode);
         if (FAILED(hr))
