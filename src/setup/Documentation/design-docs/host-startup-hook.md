@@ -34,11 +34,33 @@ Windows:
 DOTNET_STARTUP_HOOKS=D:\path\to\StartupHook1.dll;D:\path\to\StartupHook2.dll
 ```
 
-This variable is a list of absolute assembly paths, delimited by the
+This variable is a list of assembly paths or names, delimited by the
 platform-specific path separator (`;` on Windows and `:` on Unix). It
-may not contain any empty entries or a trailing path separator. The
+may contain leading, trailing or duplicate path separators. The
 type must be named `StartupHook` without any namespace, and should be
 `internal`.
+
+Each part may be either
+* absolute path to the assembly with the startup hook. In this case
+  the assembly is loaded from the specified path before running
+  the startup hook.
+* name of the assembly with the startup hook. In this case the assembly
+  is loaded by its name from the `AssemblyLoadContext.Default`. For
+  this to work the assembly needs to be part of the application
+  otherwise the default context won't be able to resolve it. The assembly
+  name must not be a relative path, so the following rules apply
+  * the assembly name must not contain directory separator characters
+    `/` and `\`
+  * the assembly name must not contain the space characters ` ` and
+    the comma character `,`
+  * the assembly name must not end with `.dll` (any casing)
+  * the assembly name must be considered a valid assembly name as specified
+    by the `AssemblyName` class.
+
+Note that white-spaces are preserved and considered part of the specified 
+path/name. So for example path separator followed by a white-space and 
+another path separator is invalid, since the white-space only string
+in between the path separators will be considered as assembly name.
 
 Setting this environment variable will cause the `public static void
 Initialize()` method of the `StartupHook` type in each of the
