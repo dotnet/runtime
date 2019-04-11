@@ -506,8 +506,8 @@ namespace System.Text.Unicode
                             if (outputCharsRemaining > 1 && (nint)(void*)Unsafe.ByteOffset(ref *pInputBuffer, ref *pFinalPosWhereCanReadDWordFromInputBuffer) >= 3)
                             {
                                 // We're going to attempt to read a second 3-byte sequence and write them both out simultaneously using PEXT.
-                                // Since we already validated the first byte of the second DWORD (it's the same as the final byte of the
-                                // first DWORD), the only checks that remain are the overlong + surrogate checks. If the overlong or surrogate
+                                // We need to check the continuation bit mask on the remaining two bytes (and we may as well check the leading
+                                // byte mask again since it's free), then perform overlong + surrogate checks. If the overlong or surrogate
                                 // checks fail, we'll fall through to the remainder of the logic which will transcode the original valid
                                 // 3-byte UTF-8 sequence we read; and on the next iteration of the loop the validation routine will run again,
                                 // fail, and redirect control flow to the error handling logic at the very end of this method.
