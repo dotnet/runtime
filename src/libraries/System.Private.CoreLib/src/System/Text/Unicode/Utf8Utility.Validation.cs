@@ -211,7 +211,7 @@ namespace System.Text.Unicode
                 // We only handle up to three ASCII bytes here since we handled the four ASCII byte case above.
 
                 {
-                    uint numLeadingAsciiBytes = ASCIIUtility.CountNumberOfLeadingAsciiBytesFrom24BitInteger(thisDWord);
+                    uint numLeadingAsciiBytes = ASCIIUtility.CountNumberOfLeadingAsciiBytesFromUInt32WithSomeNonAsciiData(thisDWord);
                     pInputBuffer += numLeadingAsciiBytes;
 
                     if (pFinalPosWhereCanReadDWordFromInputBuffer < pInputBuffer)
