@@ -95,24 +95,13 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #endif
 #endif // __APPLE__
 
-
 DWORD
 PALAPI
-PAL_GetLogicalCpuCountFromOS()
+PAL_GetTotalCpuCount()
 {
     int nrcpus = 0;
 
-#if HAVE_SCHED_GETAFFINITY
-
-    cpu_set_t cpuSet;
-    int st = sched_getaffinity(0, sizeof(cpu_set_t), &cpuSet);
-    if (st != 0)
-    {
-        ASSERT("sched_getaffinity failed (%d)\n", errno);
-    }
-
-    nrcpus = CPU_COUNT(&cpuSet);
-#elif HAVE_SYSCONF
+#if HAVE_SYSCONF
 
 #if defined(_ARM_) || defined(_ARM64_)
 #define SYSCONF_GET_NUMPROCS       _SC_NPROCESSORS_CONF
@@ -139,7 +128,32 @@ PAL_GetLogicalCpuCountFromOS()
     {
         ASSERT("sysctl failed for HW_NCPU (%d)\n", errno);
     }
+#else // HAVE_SYSCONF
+#error "Don't know how to get total CPU count on this platform"
 #endif // HAVE_SYSCONF
+
+    return nrcpus;
+}
+
+DWORD
+PALAPI
+PAL_GetLogicalCpuCountFromOS()
+{
+    int nrcpus = 0;
+
+#if HAVE_SCHED_GETAFFINITY
+
+    cpu_set_t cpuSet;
+    int st = sched_getaffinity(0, sizeof(cpu_set_t), &cpuSet);
+    if (st != 0)
+    {
+        ASSERT("sched_getaffinity failed (%d)\n", errno);
+    }
+
+    nrcpus = CPU_COUNT(&cpuSet);
+#else // HAVE_SCHED_GETAFFINITY
+    nrcpus = PAL_GetTotalCpuCount();
+#endif // HAVE_SCHED_GETAFFINITY
 
     return nrcpus;
 }

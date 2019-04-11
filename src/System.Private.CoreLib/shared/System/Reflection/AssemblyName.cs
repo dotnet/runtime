@@ -5,14 +5,13 @@
 #nullable enable
 using System.Configuration.Assemblies;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Text;
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection
 {
-    public sealed class AssemblyName : ICloneable, IDeserializationCallback, ISerializable
+    public sealed partial class AssemblyName : ICloneable, IDeserializationCallback, ISerializable
     {
         // If you modify any of these fields, you must also update the 
         // AssemblyBaseObject structure in object.h
@@ -37,18 +36,6 @@ namespace System.Reflection
             _hashAlgorithm = AssemblyHashAlgorithm.None;
             _versionCompatibility = AssemblyVersionCompatibility.SameMachine;
             _flags = AssemblyNameFlags.None;
-        }
-
-        public AssemblyName(string assemblyName)
-        {
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
-            if ((assemblyName.Length == 0) ||
-                (assemblyName[0] == '\0'))
-                throw new ArgumentException(SR.Format_StringZeroLength);
-
-            _name = assemblyName;
-            nInit();
         }
 
         // Set and get the name of the assembly. If this is a weak Name
@@ -145,19 +132,20 @@ namespace System.Reflection
         // Make a copy of this assembly name.
         public object Clone()
         {
-            AssemblyName name = new AssemblyName();
-            name.Init(_name,
-                      _publicKey,
-                      _publicKeyToken,
-                      _version,
-                      _cultureInfo,
-                      _hashAlgorithm,
-                      _versionCompatibility,
-                      _codeBase,
-                      _flags,
-                      _strongNameKeyPair);
-            name._hashForControl = _hashForControl;
-            name._hashAlgorithmForControl = _hashAlgorithmForControl;
+            var name = new AssemblyName
+            {
+                _name = _name,
+                _publicKey = (byte[])_publicKey?.Clone(),
+                _publicKeyToken = (byte[])_publicKeyToken?.Clone(),
+                _cultureInfo = _cultureInfo,
+                _version = (Version)_version?.Clone(),
+                _flags = _flags,
+                _codeBase = _codeBase,
+                _hashAlgorithm = _hashAlgorithm,
+                _versionCompatibility = _versionCompatibility,
+                _hashForControl = _hashForControl,
+                _hashAlgorithmForControl = _hashAlgorithmForControl
+            };
             return name;
         }
 
@@ -171,16 +159,9 @@ namespace System.Reflection
             if (assemblyFile == null)
                 throw new ArgumentNullException(nameof(assemblyFile));
 
-            // Assembly.GetNameInternal() will not demand path discovery 
-            //  permission, so do that first.
-            string fullPath = Path.GetFullPath(assemblyFile);
-            return nGetFileInformation(fullPath);
+            return GetFileInformationCore(assemblyFile);
         }
 
-        // The public key that is used to verify an assemblies
-        // inclusion into the namespace. If the public key associated
-        // with the namespace cannot verify the assembly the assembly
-        // will fail to load.
         public byte[]? GetPublicKey()
         {
             return _publicKey;
@@ -201,7 +182,7 @@ namespace System.Reflection
         public byte[] GetPublicKeyToken()
         {
             if (_publicKeyToken == null)
-                _publicKeyToken = nGetPublicKeyToken();
+                _publicKeyToken = ComputePublicKeyToken();
             return _publicKeyToken;
         }
 
@@ -252,7 +233,7 @@ namespace System.Reflection
                 if (this.Name == null)
                     return string.Empty;
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
-                byte[] pkt = _publicKeyToken ?? nGetPublicKeyToken();
+                byte[] pkt = _publicKeyToken ?? ComputePublicKeyToken();
                 return AssemblyNameFormatter.ComputeDisplayName(Name, Version, CultureName, pkt, Flags, ContentType);
             }
         }
@@ -296,103 +277,6 @@ namespace System.Reflection
             string defName = definition.Name ?? string.Empty;
             return refName.Equals(defName, StringComparison.OrdinalIgnoreCase);
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern void nInit(out RuntimeAssembly? assembly, bool raiseResolveEvent);
-
-        internal void nInit()
-        {
-            RuntimeAssembly? dummy = null;
-            nInit(out dummy, false);
-        }
-
-        internal void SetProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm)
-        {
-            ProcessorArchitecture = CalculateProcArchIndex(pek, ifm, _flags);
-        }
-
-        internal static ProcessorArchitecture CalculateProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm, AssemblyNameFlags flags)
-        {
-            if (((uint)flags & 0xF0) == 0x70)
-                return ProcessorArchitecture.None;
-
-            if ((pek & System.Reflection.PortableExecutableKinds.PE32Plus) == System.Reflection.PortableExecutableKinds.PE32Plus)
-            {
-                switch (ifm)
-                {
-                    case System.Reflection.ImageFileMachine.IA64:
-                        return ProcessorArchitecture.IA64;
-                    case System.Reflection.ImageFileMachine.AMD64:
-                        return ProcessorArchitecture.Amd64;
-                    case System.Reflection.ImageFileMachine.I386:
-                        if ((pek & System.Reflection.PortableExecutableKinds.ILOnly) == System.Reflection.PortableExecutableKinds.ILOnly)
-                            return ProcessorArchitecture.MSIL;
-                        break;
-                }
-            }
-            else
-            {
-                if (ifm == System.Reflection.ImageFileMachine.I386)
-                {
-                    if ((pek & System.Reflection.PortableExecutableKinds.Required32Bit) == System.Reflection.PortableExecutableKinds.Required32Bit)
-                        return ProcessorArchitecture.X86;
-
-                    if ((pek & System.Reflection.PortableExecutableKinds.ILOnly) == System.Reflection.PortableExecutableKinds.ILOnly)
-                        return ProcessorArchitecture.MSIL;
-
-                    return ProcessorArchitecture.X86;
-                }
-                if (ifm == System.Reflection.ImageFileMachine.ARM)
-                {
-                    return ProcessorArchitecture.Arm;
-                }
-            }
-            return ProcessorArchitecture.None;
-        }
-
-        internal void Init(string? name,
-                           byte[]? publicKey,
-                           byte[]? publicKeyToken,
-                           Version? version,
-                           CultureInfo? cultureInfo,
-                           AssemblyHashAlgorithm hashAlgorithm,
-                           AssemblyVersionCompatibility versionCompatibility,
-                           string? codeBase,
-                           AssemblyNameFlags flags,
-                           StrongNameKeyPair? keyPair) // Null if ref, matching Assembly if def
-        {
-            _name = name;
-
-            if (publicKey != null)
-            {
-                _publicKey = new byte[publicKey.Length];
-                Array.Copy(publicKey, 0, _publicKey, 0, publicKey.Length);
-            }
-
-            if (publicKeyToken != null)
-            {
-                _publicKeyToken = new byte[publicKeyToken.Length];
-                Array.Copy(publicKeyToken, 0, _publicKeyToken, 0, publicKeyToken.Length);
-            }
-
-            if (version != null)
-                _version = (Version)version.Clone();
-
-            _cultureInfo = cultureInfo;
-            _hashAlgorithm = hashAlgorithm;
-            _versionCompatibility = versionCompatibility;
-            _codeBase = codeBase;
-            _flags = flags;
-            _strongNameKeyPair = keyPair;
-        }
-
-        // This call opens and closes the file, but does not add the
-        // assembly to the domain.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern AssemblyName nGetFileInformation(string s);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private extern byte[] nGetPublicKeyToken();
 
         internal static string EscapeCodeBase(string? codebase)
         {

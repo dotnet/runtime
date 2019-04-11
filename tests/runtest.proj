@@ -147,6 +147,8 @@ $(_XunitEpilog)
     <MSBuild Projects="$(XunitWrapperSrcDir)\$(XunitWrapper).csproj" Targets="Restore;Build" />
   </Target>
 
+  <Import Project="testgrouping.proj" />
+
   <Target Name="CreateXunitFacts">
     <!-- NOTE! semicolons must be escaped with %3B boooo -->
 
@@ -215,10 +217,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       </_XunitEpilog>
     </PropertyGroup>
 
-    <ItemGroup>
-      <CanonicalExcludeList Include="%(ExcludeList.FullPath)" Condition="$(HaveExcludes)"/>
-    </ItemGroup>
-
     <PropertyGroup>
       <TestExecutableReplacement Condition="'$(TargetsWindows)' != 'true' ">testExecutable = testExecutable.Replace("\\", "/")%3B</TestExecutableReplacement>
     </PropertyGroup>
@@ -226,22 +224,31 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <ItemGroup>
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.cmd" Condition="'$(RunningOnUnix)' != 'true'" />
       <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" Condition="'$(RunningOnUnix)' == 'true'" />
-      <AllCMDExcludeFilter Include="@(CanonicalExcludeList)" Condition="$(HaveExcludes)"/>
-      <AllCMDs Include="@(AllCMDsPresent)" Exclude="@(AllCMDExcludeFilter)"/>
-
-      <AllCommands Include="@(AllCMDs)" >
-        <_FactName Condition="'$(RunningOnUnix)' != 'true'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("\","_").Replace("-","_"))</_FactName>
-        <_ClassName Condition="'$(RunningOnUnix)' != 'true'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))</_ClassName>
-        <_FactName Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace(".","_").Replace("/","_").Replace("-","_"))</_FactName>
-        <_ClassName Condition="'$(RunningOnUnix)' == 'true'" >$([System.String]::Copy('%(AllCMDs.FullPath)').Replace("$(_CMDDIR)",'').Replace("sh","").Replace(".","_").Replace("/","_").Replace("-","_"))</_ClassName>
-
-        <_XunitFact >
+      <TestGroupingDistinctWithCase Include="@(TestGrouping->Metadata('FullPath')->DistinctWithCase())" />
+      <TestGroupingNotRelevant Include="@(TestGroupingDistinctWithCase)" Exclude="@(AllCMDsPresent)" />
+      <GroupedCMDs Include="@(TestGroupingDistinctWithCase)" Exclude="@(TestGroupingNotRelevant)" />
+      <GroupedCMDs Include="@(AllCMDsPresent)" Exclude="@(GroupedCMDs)">
+        <TestGroup>$(Category)</TestGroup>
+      </GroupedCMDs>
+      <AllCMDExcludeFilter Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
+      <AllCMDs Include="@(GroupedCMDs)" Exclude="@(AllCMDExcludeFilter)">
+        <RelativeToCMDDIR>$([MSBuild]::MakeRelative($(_CMDDIR), %(FullPath)))</RelativeToCMDDIR>
+      </AllCMDs>
+      <AllCommands Include="@(AllCMDs)" Condition="@(AllCMDs->Count()) &gt; 0">
+        <DisplayName>$([MSBuild]::MakeRelative($(XunitTestBinBase), %(AllCMDs.FullPath)))</DisplayName>
+        <FactName Condition="'$(RunningOnUnix)' != 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace(".","_").Replace("\","_").Replace("-","_"))</FactName>
+        <ClassName Condition="'$(RunningOnUnix)' != 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace("cmd","").Replace(".","_").Replace("\","_").Replace("-","_"))</ClassName>
+        <FactName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR),"").Replace(".","_").Replace("/","_").Replace("-","_"))</FactName>
+        <ClassName Condition="'$(RunningOnUnix)' == 'true'" >_$([MSBuild]::ValueOrDefault(%(AllCMDs.RelativeToCMDDIR), '').Replace('sh','').Replace('.','_').Replace('/','_').Replace('-','_'))</ClassName>
+        <TestGroup>%(AllCMDs.TestGroup)</TestGroup>
+        <XUnitFact >
           <![CDATA[
 
-        public class %(AllCommands._ClassName)
+        public class %(AllCommands.ClassName)
         {
-            [Fact]
-            public void %(AllCommands._FactName)()
+            [Fact(DisplayName=@"%(AllCommands.DisplayName)")]
+            [Trait("TestGroup", "%(AllCommands.TestGroup)")]
+            public void %(AllCommands.FactName)()
             {
                 int ret = -100%3B
                 string outputFile = null%3B
@@ -310,9 +317,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
        }
 
         ]]>
-        </_XunitFact>
+        </XUnitFact>
       </AllCommands>
-      <AllXUnitFacts Include= "%(AllCommands._XunitFact)" />
+      <AllXUnitFacts Include= "@(AllCommands->Metadata(XUnitFact))" />
     </ItemGroup>
   </Target>
 

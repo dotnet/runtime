@@ -64,6 +64,7 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 #include "pal/fakepoll.h"
 #endif  // HAVE_POLL
 #include <limits.h>
+#include <algorithm>
 
 #if HAVE_SYS_LWP_H
 #include <sys/lwp.h>
@@ -74,6 +75,10 @@ SET_DEFAULT_DEBUG_CHANNEL(THREAD); // some headers have code with asserts, so do
 // If we don't have sys/lwp.h but do expect to use _lwp_self, declare it to silence compiler warnings
 #if HAVE__LWP_SELF && !HAVE_SYS_LWP_H && !HAVE_LWP_H
 extern "C" int _lwp_self ();
+#endif
+
+#if HAVE_CPUSET_T
+typedef cpuset_t cpu_set_t;
 #endif
 
 using namespace CorUnix;
@@ -2921,3 +2926,95 @@ int CorUnix::CThreadMachExceptionHandlers::GetIndexOfHandler(exception_mask_t bm
 }
 
 #endif // HAVE_MACH_EXCEPTIONS
+
+/*++
+Function:
+  PAL_SetCurrentThreadAffinity
+
+Abstract
+  Set affinity of the current thread to the specified processor.
+
+Parameters:
+  procNo - number of the processor to affinitize the current thread to
+
+Return value:
+  TRUE if the function was able to set the affinity, FALSE if it has failed.
+--*/
+BOOL
+PALAPI
+PAL_SetCurrentThreadAffinity(WORD procNo)
+{
+#if HAVE_PTHREAD_GETAFFINITY_NP
+    cpu_set_t cpuSet;
+    CPU_ZERO(&cpuSet);
+
+    int st = pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+
+    if (st == 0)
+    {
+        CPU_SET(procNo, &cpuSet);
+        st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+    }
+
+    return st == 0;
+#else  // HAVE_PTHREAD_GETAFFINITY_NP
+    // There is no API to manage thread affinity, so let's ignore the request
+    return FALSE;
+#endif // HAVE_PTHREAD_GETAFFINITY_NP
+}
+
+/*++
+Function:
+  PAL_SetCurrentThreadAffinity
+
+Abstract
+  Get affinity set of the current thread. The set is represented by an array of "size" entries of UINT_PTR type.
+
+Parameters:
+  size - number of entries in the "data" array
+  data - pointer to the data of the resulting set, the LSB of the first entry in the array represents processor 0
+
+Return value:
+  TRUE if the function was able to get the affinity set, FALSE if it has failed.
+--*/
+BOOL
+PALAPI
+PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data)
+{
+#if HAVE_PTHREAD_GETAFFINITY_NP
+    cpu_set_t cpuSet;
+    CPU_ZERO(&cpuSet);
+
+    int st = pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+
+    if (st == 0)
+    {
+        const SIZE_T BitsPerBitsetEntry = 8 * sizeof(UINT_PTR);
+        int nrcpus = PAL_GetTotalCpuCount();
+
+        // Get info for as much processors as it is possible to fit into the resulting set
+        SIZE_T remainingCount = std::min(size * BitsPerBitsetEntry, (SIZE_T)nrcpus);
+        SIZE_T i = 0;
+        while (remainingCount != 0)
+        {
+            UINT_PTR entry = 0;
+            SIZE_T bitsToCopy = std::min(remainingCount, BitsPerBitsetEntry);
+            SIZE_T cpuSetOffset = i * BitsPerBitsetEntry;
+            for (SIZE_T j = 0; j < bitsToCopy; j++)
+            {
+                if (CPU_ISSET(cpuSetOffset + j, &cpuSet))
+                {
+                    entry |= (UINT_PTR)1 << j;
+                }
+            }
+            remainingCount -= bitsToCopy;
+            data[i++] = entry;
+        }
+    }
+
+    return st == 0;
+#else  // HAVE_PTHREAD_GETAFFINITY_NP
+    // There is no API to manage thread affinity, so let's ignore the request
+    return FALSE;
+#endif // HAVE_PTHREAD_GETAFFINITY_NP
+}

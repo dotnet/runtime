@@ -84,7 +84,8 @@ if(WIN32)
   set (GC_LINK_LIBRARIES
     ${STATIC_MT_CRT_LIB}
     ${STATIC_MT_VCRT_LIB}
-    kernel32.lib)
+    kernel32.lib
+    advapi32.lib)
 else()
   set (GC_LINK_LIBRARIES)
 endif(WIN32)

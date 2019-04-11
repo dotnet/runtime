@@ -22,10 +22,10 @@ namespace BasicEventSourceTests
             private object _failureCounter;
             private object _successCounter;
 
-            public SimpleEventSource(Func<float> getFailureCount, Func<float> getSuccessCount, Type PollingCounterType)
+            public SimpleEventSource(Func<double> getMockedCount, Func<double> getSuccessCount, Type PollingCounterType)
             {
                 _failureCounter = Activator.CreateInstance(PollingCounterType, "failureCount", this, getSuccessCount);
-                _successCounter = Activator.CreateInstance(PollingCounterType, "successCount", this, getFailureCount);
+                _successCounter = Activator.CreateInstance(PollingCounterType, "successCount", this, getMockedCount);
             }
         }
 
@@ -112,9 +112,9 @@ namespace BasicEventSourceTests
                         }
                         else if (name.Equals("successCount"))
                         {
-                            if (Int32.Parse(mean) != failureCountCalled)
+                            if (Int32.Parse(mean) != mockedCountCalled)
                             {
-                                Console.WriteLine($"Mean is not what we expected: {mean} vs {failureCountCalled}");
+                                Console.WriteLine($"Mean is not what we expected: {mean} vs {mockedCountCalled}");
                             }
                         }
 
@@ -137,16 +137,16 @@ namespace BasicEventSourceTests
         }
 
 
-        public static int failureCountCalled = 0;
+        public static int mockedCountCalled = 0;
         public static int successCountCalled = 0;
 
-        public static float getFailureCount()
+        public static double getMockedCount()
         {
-            failureCountCalled++;
-            return failureCountCalled;
+            mockedCountCalled++;
+            return mockedCountCalled;
         }
 
-        public static float getSuccessCount()
+        public static double getSuccessCount()
         {
             successCountCalled++;
             return successCountCalled;
@@ -171,12 +171,12 @@ namespace BasicEventSourceTests
                     return 1;
                 }
 
-                SimpleEventSource eventSource = new SimpleEventSource(getFailureCount, getSuccessCount, PollingCounterType);
+                SimpleEventSource eventSource = new SimpleEventSource(getMockedCount, getSuccessCount, PollingCounterType);
 
                 // Want to sleep for 5000 ms to get some counters piling up.
                 Thread.Sleep(5000);
 
-                if (myListener.FailureEventCount > 0 && myListener.SuccessEventCount > 0 && !myListener.Failed && (failureCountCalled > 0 && successCountCalled > 0))
+                if (myListener.FailureEventCount > 0 && myListener.SuccessEventCount > 0 && !myListener.Failed && (mockedCountCalled > 0 && successCountCalled > 0))
                 {
                     Console.WriteLine("Test Passed");
                     return 100;    
