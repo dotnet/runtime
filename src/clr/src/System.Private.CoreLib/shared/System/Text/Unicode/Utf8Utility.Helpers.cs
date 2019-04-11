@@ -20,6 +20,8 @@ namespace System.Text.Unicode
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint ExtractCharFromFirstThreeByteSequence(uint value)
         {
+            Debug.Assert(UInt32BeginsWithUtf8ThreeByteMask(value));
+
             if (BitConverter.IsLittleEndian)
             {
                 // value = [ ######## | 10xxxxxx 10yyyyyy 1110zzzz ]
