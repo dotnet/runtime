@@ -36,8 +36,7 @@ public:
         const host_startup_info_t& host_info,
         host_mode_t mode,
         coreclr_delegate_type delegate_type,
-        void** delegate
-    );
+        void** delegate);
 private:
     static int parse_args(
         const host_startup_info_t& host_info,
@@ -88,13 +87,5 @@ private:
         pal::char_t out_buffer[],
         int32_t buffer_size,
         int32_t* required_buffer_size);
-    static bool resolve_hostpolicy_dir(
-        host_mode_t mode,
-        const pal::string_t& dotnet_root,
-        const fx_definition_vector_t& fx_definitions,
-        const pal::string_t& app_candidate,
-        const pal::string_t& specified_deps_file,
-        const std::vector<pal::string_t>& probe_realpaths,
-        pal::string_t* impl_dir);
     static void muxer_usage(bool is_sdk_present);
 };
