@@ -62,18 +62,18 @@
 
   ldarga.s 0
   constrained. !!T
-  callvirt instance int32 class IAdder`1<string>::PlusPlus<object>()
+  callvirt instance int32 class IAdder`1<!!U>::PlusPlus<object>()
   ldarga.s 0
   constrained. !!T
-  callvirt instance int32 class IAdder`1<string>::PlusPlus<object>()
+  callvirt instance int32 class IAdder`1<!!U>::PlusPlus<object>()
   add
 
   ldarga.s 0
   constrained. !!T
-  callvirt instance int32 class IAdder`1<!!U>::PlusPlus<object>()
+  callvirt instance int32 class IAdder`1<string>::PlusPlus<object>()
   ldarga.s 0
   constrained. !!T
-  callvirt instance int32 class IAdder`1<!!U>::PlusPlus<object>()
+  callvirt instance int32 class IAdder`1<string>::PlusPlus<object>()
   add
 
   add
