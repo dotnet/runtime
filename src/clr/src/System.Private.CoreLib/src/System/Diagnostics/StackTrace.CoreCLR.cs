@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Reflection;
@@ -11,7 +12,7 @@ namespace System.Diagnostics
     public partial class StackTrace
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetStackFramesInternal(StackFrameHelper sfh, int iSkip, bool fNeedFileInfo, Exception e);
+        internal static extern void GetStackFramesInternal(StackFrameHelper sfh, int iSkip, bool fNeedFileInfo, Exception? e);
 
         internal static int CalculateFramesToSkip(StackFrameHelper StackF, int iNumFrames)
         {
@@ -23,13 +24,13 @@ namespace System.Diagnostics
             // System.Diagnostics functions
             for (int i = 0; i < iNumFrames; i++)
             {
-                MethodBase mb = StackF.GetMethodBase(i);
+                MethodBase? mb = StackF.GetMethodBase(i);
                 if (mb != null)
                 {
-                    Type t = mb.DeclaringType;
+                    Type? t = mb.DeclaringType;
                     if (t == null)
                         break;
-                    string ns = t.Namespace;
+                    string? ns = t.Namespace;
                     if (ns == null)
                         break;
                     if (!string.Equals(ns, PackageName, StringComparison.Ordinal))
@@ -41,7 +42,7 @@ namespace System.Diagnostics
             return iRetVal;
         }
 
-        private void InitializeForException(Exception exception, int skipFrames, bool fNeedFileInfo)
+        private void InitializeForException(Exception? exception, int skipFrames, bool fNeedFileInfo)
         {
             CaptureStackTrace(skipFrames, fNeedFileInfo, exception);
         }
@@ -55,7 +56,7 @@ namespace System.Diagnostics
         /// Retrieves an object with stack trace information encoded.
         /// It leaves out the first "iSkip" lines of the stacktrace.
         /// </summary>
-        private void CaptureStackTrace(int skipFrames, bool fNeedFileInfo, Exception e)
+        private void CaptureStackTrace(int skipFrames, bool fNeedFileInfo, Exception? e)
         {
             _methodsToSkip = skipFrames;
 
