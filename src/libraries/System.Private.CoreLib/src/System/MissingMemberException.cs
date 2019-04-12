@@ -40,7 +40,7 @@ namespace System
         {
             ClassName = info.GetString("MMClassName");
             MemberName = info.GetString("MMMemberName");
-            Signature = (byte[])info.GetValue("MMSignature", typeof(byte[]));
+            Signature = (byte[]?)info.GetValue("MMSignature", typeof(byte[]));
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)

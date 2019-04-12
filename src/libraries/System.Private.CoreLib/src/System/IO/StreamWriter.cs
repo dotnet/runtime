@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -335,7 +336,7 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
-        public override void Write(char[] buffer)
+        public override void Write(char[]? buffer)
         {
             WriteSpan(buffer, appendNewLine: false);
         }
@@ -453,13 +454,13 @@ namespace System.IO
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
-        public override void Write(string value)
+        public override void Write(string? value)
         {
             WriteSpan(value, appendNewLine: false);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)] // prevent WriteSpan from bloating call sites
-        public override void WriteLine(string value)
+        public override void WriteLine(string? value)
         {
             CheckAsyncTaskInProgress();
             WriteSpan(value, appendNewLine: true);
@@ -484,8 +485,8 @@ namespace System.IO
         private void WriteFormatHelper(string format, ParamsArray args, bool appendNewLine)
         {
             StringBuilder sb =
-                StringBuilderCache.Acquire(format.Length + args.Length * 8)
-                .AppendFormatHelper(null, format, args);
+                StringBuilderCache.Acquire((format?.Length ?? 0) + args.Length * 8)
+                .AppendFormatHelper(null, format!, args); // AppendFormatHelper will appropriately throw ArgumentNullException for a null format
 
             StringBuilder.ChunkEnumerator chunks = sb.GetChunks();
 
@@ -502,7 +503,7 @@ namespace System.IO
             StringBuilderCache.Release(sb);
         }
 
-        public override void Write(string format, object arg0)
+        public override void Write(string format, object? arg0)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -514,7 +515,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, object arg0, object arg1)
+        public override void Write(string format, object? arg0, object? arg1)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -526,7 +527,7 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, object arg0, object arg1, object arg2)
+        public override void Write(string format, object? arg0, object? arg1, object? arg2)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -538,10 +539,14 @@ namespace System.IO
             }
         }
 
-        public override void Write(string format, params object[] arg)
+        public override void Write(string format, params object?[] arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
+                if (arg == null)
+                {
+                    throw new ArgumentNullException((format == null) ? nameof(format) : nameof(arg)); // same as base logic
+                }
                 WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: false);
             }
             else
@@ -550,7 +555,7 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object arg0)
+        public override void WriteLine(string format, object? arg0)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -562,7 +567,7 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object arg0, object arg1)
+        public override void WriteLine(string format, object? arg0, object? arg1)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -574,7 +579,7 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, object arg0, object arg1, object arg2)
+        public override void WriteLine(string format, object? arg0, object? arg1, object? arg2)
         {
             if (GetType() == typeof(StreamWriter))
             {
@@ -586,10 +591,14 @@ namespace System.IO
             }
         }
 
-        public override void WriteLine(string format, params object[] arg)
+        public override void WriteLine(string format, params object?[] arg)
         {
             if (GetType() == typeof(StreamWriter))
             {
+                if (arg == null)
+                {
+                    throw new ArgumentNullException(nameof(arg));
+                }
                 WriteFormatHelper(format, new ParamsArray(arg), appendNewLine: true);
             }
             else
@@ -661,7 +670,7 @@ namespace System.IO
             _this.CharPos_Prop = charPos;
         }
 
-        public override Task WriteAsync(string value)
+        public override Task WriteAsync(string? value)
         {
             // If we have been inherited into a subclass, the following implementation could be incorrect
             // since it does not call through to Write() which a subclass might have overridden.  
@@ -901,7 +910,7 @@ namespace System.IO
         }
 
 
-        public override Task WriteLineAsync(string value)
+        public override Task WriteLineAsync(string? value)
         {
             if (value == null)
             {

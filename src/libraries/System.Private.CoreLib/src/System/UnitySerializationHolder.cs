@@ -17,7 +17,7 @@ namespace System
     {
         internal const int NullUnity = 0x0002;
         private readonly int _unityType;
-        private readonly string _data;
+        private readonly string? _data;
 
         /// <summary>
         /// A helper method that returns the SerializationInfo that a class utilizing 
