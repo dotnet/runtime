@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Microsoft.NET.Build.Bundle
+namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     /// This exception is thrown when a bundle/extraction

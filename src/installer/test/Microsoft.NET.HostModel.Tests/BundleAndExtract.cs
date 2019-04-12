@@ -6,6 +6,7 @@ using System;
 using System.IO;
 using Xunit;
 using Microsoft.DotNet.Cli.Build.Framework;
+using Microsoft.NET.HostModel.Bundle;
 
 namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
 {
@@ -17,7 +18,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
         {
             sharedTestState = fixture;
         }
-
 
         private void Run(TestProjectFixture fixture, string publishDir, string singleFileDir)
         {
@@ -35,32 +35,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.BundleTests.BundleExtract
                 .HaveStdOutContaining("Wow! We now say hello to the big world and you.");
 
             // Bundle to a single-file
-            string bundleDll = Path.Combine(sharedTestState.RepoDirectories.Artifacts,
-                                            "Microsoft.NET.Build.Bundle",
-                                            "netcoreapp2.0",
-                                            "Microsoft.NET.Build.Bundle.dll");
-            string[] bundleArgs = { "--source", publishDir,
-                                    "--apphost", hostName,
-                                    "--output", singleFileDir };
+            Bundler bundler = new Bundler(hostName, singleFileDir);
+            string singleFile = bundler.GenerateBundle(publishDir);
 
-            dotnet.Exec(bundleDll, bundleArgs)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass();
-
-            // Extract the contents
-            string singleFile = Path.Combine(singleFileDir, hostName);
-            string[] extractArgs = { "--extract", singleFile,
-                                     "--output", singleFileDir };
-
-            dotnet.Exec(bundleDll, extractArgs)
-                .CaptureStdErr()
-                .CaptureStdOut()
-                .Execute()
-                .Should()
-                .Pass();
+            // Extract the file
+            Extractor extractor = new Extractor(singleFile, singleFileDir);
+            extractor.ExtractFiles();
 
             // Run the extracted app
             Command.Create(singleFile)

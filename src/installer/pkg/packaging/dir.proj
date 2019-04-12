@@ -198,7 +198,7 @@
       <!-- The list of packages we are servicing -->
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
-      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.NET.Build.Bundle\Microsoft.NET.Build.Bundle.csproj" />
+      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(BuildAllPackages)' == 'true'">

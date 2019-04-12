@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Microsoft.NET.Build.Bundle
+namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     ///  BundleManifest is a description of the contents of a bundle file.
@@ -59,7 +58,7 @@ namespace Microsoft.NET.Build.Bundle
             Files = new List<FileEntry>();
         }
 
-        public void Write(BinaryWriter writer)
+        public long Write(BinaryWriter writer)
         {
             long startOffset = writer.BaseStream.Position;
 
@@ -78,8 +77,7 @@ namespace Microsoft.NET.Build.Bundle
             writer.Write(startOffset);
             writer.Write(Signature);
 
-            long size = writer.BaseStream.Position - startOffset;
-            Program.Log($"Manifest: Offset={startOffset}, Size={size}");
+            return startOffset;
         }
 
         public static Manifest Read(BinaryReader reader)
