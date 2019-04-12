@@ -81,7 +81,7 @@ namespace Mono.Linker.Steps {
 			var il = body.GetILProcessor ();
 
 			// import the method into the current assembly
-			var ctor = Context.MarkedKnownMembers.NotSupportedExceptionCtorString;
+			MethodReference ctor = Context.MarkedKnownMembers.NotSupportedExceptionCtorString;
 			ctor = assembly.MainModule.ImportReference (ctor);
 
 			il.Emit (OpCodes.Ldstr, "Linked away");
