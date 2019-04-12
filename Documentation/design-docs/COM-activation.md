@@ -20,8 +20,8 @@ The following list represents an exhaustive activation matrix.
 | Server | Client | Current Support |
 | --- | --- | :---: |
 | COM* | .NET Core | Yes |
-| .NET Core | COM* | No |
-| .NET Core | .NET Core | No |
+| .NET Core | COM* | Yes |
+| .NET Core | .NET Core | Yes |
 | .NET Framework | .NET Core | No |
 | .NET Core | .NET Framework | No |
 
