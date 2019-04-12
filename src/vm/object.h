@@ -1613,9 +1613,9 @@ NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembl
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext
 //
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 #include "pshpack4.h"
-#endif // (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#endif // defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 class AssemblyLoadContextBaseObject : public Object
 {
     friend class MscorlibBinder;
@@ -1653,9 +1653,9 @@ class AssemblyLoadContextBaseObject : public Object
   public:
     INT_PTR GetNativeAssemblyLoadContext() { LIMITED_METHOD_CONTRACT; return _nativeAssemblyLoadContext; }
 };
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 #include "poppack.h"
-#endif // (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#endif // defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 
 // AssemblyNameBaseObject 
 // This class is the base class for assembly names
