@@ -5,14 +5,18 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 	public class EventUsedViaReflection {
 		public static void Main ()
 		{
-			var eventInfo = typeof (EventUsedViaReflection).GetEvent ("Event");
+			new Foo (); // Needed to avoid lazy body marking stubbing
+			var eventInfo = typeof (Foo).GetEvent ("Event");
 			eventInfo.GetAddMethod (false);
 		}
 
-		[Kept]
-		[KeptBackingField]
-		[KeptEventAddMethod]
-		[KeptEventRemoveMethod]
-		event EventHandler<EventArgs> Event;
+		[KeptMember (".ctor()")]
+		class Foo {
+			[Kept]
+			[KeptBackingField]
+			[KeptEventAddMethod]
+			[KeptEventRemoveMethod]
+			event EventHandler<EventArgs> Event;
+		}
 	}
 }

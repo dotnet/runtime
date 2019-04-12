@@ -1,25 +1,24 @@
-﻿using System;
 using System.Diagnostics.Tracing;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
-namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
+namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW  {
 	[SetupLinkerArgument ("--exclude-feature", "etw")]
-	public class BaseRemovedEventSource {
+	public class BaseRemovedEventSourceEmptyBody {
 		public static void Main ()
 		{
-			var b = CustomCtorEventSource.Log.IsEnabled ();
+			var b = CustomCtorEventSourceEmptyBody.Log.IsEnabled ();
 			if (b)
-				CustomCtorEventSource.Log.SomeMethod ();
+				CustomCtorEventSourceEmptyBody.Log.SomeMethod ();
 		}
 	}
-
+	
 	[Kept]
 	[KeptBaseType (typeof (EventSource))]
 	[KeptMember (".ctor()")]
 	[KeptMember (".cctor()")]
 	[EventSource (Name = "MyCompany")]
-	class CustomCtorEventSource : EventSource {
+	class CustomCtorEventSourceEmptyBody : EventSource {
 		public class Keywords {
 			public const EventKeywords Page = (EventKeywords)1;
 
@@ -27,7 +26,7 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 		}
 
 		[Kept]
-		public static CustomCtorEventSource Log = new MyEventSourceBasedOnCustomCtorEventSource (1);
+		public static CustomCtorEventSourceEmptyBody Log = new MyEventSourceBasedOnCustomCtorEventSourceEmptyBody (1);
 
 		[Kept]
 		[ExpectedInstructionSequence (new []
@@ -36,25 +35,15 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 			"call",
 			"ret",
 		})]
-		public CustomCtorEventSource (int value)
+		public CustomCtorEventSourceEmptyBody (int value)
 		{
 			Removed ();
 		}
 
 		[Kept]
-		[ExpectedInstructionSequence (new []
-		{
-			"ldstr",
-			"newobj",
-			"throw",
-		})]
 		protected override void OnEventCommand (EventCommandEventArgs command)
 		{
-			Removed2 ();
-		}
-
-		static void Removed2 ()
-		{
+			// Not converted to throw because the body is empty
 		}
 
 		[Kept]
@@ -76,10 +65,10 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 	}
 
 	[Kept]
-	[KeptBaseType (typeof (CustomCtorEventSource))]
-	class MyEventSourceBasedOnCustomCtorEventSource : CustomCtorEventSource {
+	[KeptBaseType (typeof (CustomCtorEventSourceEmptyBody))]
+	class MyEventSourceBasedOnCustomCtorEventSourceEmptyBody : CustomCtorEventSourceEmptyBody {
 		[Kept]
-		public MyEventSourceBasedOnCustomCtorEventSource (int value) : base (value)
+		public MyEventSourceBasedOnCustomCtorEventSourceEmptyBody (int value) : base (value)
 		{
 		}
 	}

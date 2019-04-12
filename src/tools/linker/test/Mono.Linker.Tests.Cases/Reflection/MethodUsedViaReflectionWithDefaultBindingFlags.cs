@@ -5,32 +5,36 @@ namespace Mono.Linker.Tests.Cases.Reflection {
 	public class MethodUsedViaReflectionWithDefaultBindingFlags {
 		public static void Main ()
 		{
-			var method = typeof (MethodUsedViaReflectionWithDefaultBindingFlags).GetMethod ("OnlyCalledViaReflection");
+			new Foo (); // Needed to avoid lazy body marking stubbing
+			var method = typeof (Foo).GetMethod ("OnlyCalledViaReflection");
 			method.Invoke (null, new object[] { });
 		}
 
-		[Kept]
-		private static int OnlyCalledViaReflection ()
-		{
-			return 42;
-		}
+		[KeptMember (".ctor()")]
+		class Foo {
+			[Kept]
+			private static int OnlyCalledViaReflection ()
+			{
+				return 42;
+			}
 
-		[Kept]
-		private int OnlyCalledViaReflection (int foo)
-		{
-			return 43;
-		}
+			[Kept]
+			private int OnlyCalledViaReflection (int foo)
+			{
+				return 43;
+			}
 
-		[Kept]
-		public int OnlyCalledViaReflection (int foo, int bar)
-		{
-			return 44;
-		}
+			[Kept]
+			public int OnlyCalledViaReflection (int foo, int bar)
+			{
+				return 44;
+			}
 
-		[Kept]
-		public static int OnlyCalledViaReflection (int foo, int bar, int baz)
-		{
-			return 45;
+			[Kept]
+			public static int OnlyCalledViaReflection (int foo, int bar, int baz)
+			{
+				return 45;
+			}
 		}
 	}
 }

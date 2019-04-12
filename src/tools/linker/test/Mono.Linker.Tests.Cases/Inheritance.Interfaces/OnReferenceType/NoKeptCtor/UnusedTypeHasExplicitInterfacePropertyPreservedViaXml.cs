@@ -20,8 +20,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		[KeptInterface (typeof (IFoo))]
 		class A : IBar, IFoo {
 			[Kept]
-			[KeptBackingField]
-			int IFoo.Foo { [Kept] get; [Kept] set; }
+			int IFoo.Foo { [Kept] [ExpectBodyModified] get; [Kept] [ExpectBodyModified] set; }
 
 			int IBar.Bar { get; set; }
 		}

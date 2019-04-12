@@ -46,6 +46,7 @@ namespace Mono.Linker.Steps {
 		protected Queue<AttributeProviderPair> _assemblyLevelAttributes;
 		protected Queue<AttributeProviderPair> _lateMarkedAttributes;
 		protected List<TypeDefinition> _typesWithInterfaces;
+		protected List<MethodBody> _unreachableBodies;
 
 		public AnnotationStore Annotations {
 			get { return _context.Annotations; }
@@ -64,6 +65,7 @@ namespace Mono.Linker.Steps {
 			_assemblyLevelAttributes = new Queue<AttributeProviderPair> ();
 			_lateMarkedAttributes = new Queue<AttributeProviderPair> ();
 			_typesWithInterfaces = new List<TypeDefinition> ();
+			_unreachableBodies = new List<MethodBody> ();
 		}
 
 		public virtual void Process (LinkContext context)
@@ -72,6 +74,7 @@ namespace Mono.Linker.Steps {
 
 			Initialize ();
 			Process ();
+			Complete ();
 		}
 
 		void Initialize ()
@@ -90,6 +93,13 @@ namespace Mono.Linker.Steps {
 					InitializeType (type);
 			} finally {
 				Tracer.Pop ();
+			}
+		}
+
+		void Complete ()
+		{
+			foreach (var body in _unreachableBodies) {
+				Annotations.SetAction (body.Method, MethodAction.ConvertToThrow);
 			}
 		}
 
@@ -188,6 +198,7 @@ namespace Mono.Linker.Steps {
 				ProcessQueue ();
 				ProcessVirtualMethods ();
 				ProcessMarkedTypesWithInterfaces ();
+				ProcessPendingBodies ();
 				DoAdditionalProcessing ();
 			}
 
@@ -239,6 +250,17 @@ namespace Mono.Linker.Steps {
 					continue;
 
 				MarkInterfaceImplementations (type);
+			}
+		}
+
+		void ProcessPendingBodies ()
+		{
+			for (int i = 0; i < _unreachableBodies.Count; i++) {
+				var body = _unreachableBodies [i];
+				if (Annotations.IsInstantiated (body.Method.DeclaringType)) {
+					MarkMethodBody (body);
+					_unreachableBodies.RemoveAt (i--);
+				}
 			}
 		}
 
@@ -1919,23 +1941,28 @@ namespace Mono.Linker.Steps {
 				break;
 
 			case MethodAction.ConvertToThrow:
-				if (_context.MarkedKnownMembers.NotSupportedExceptionCtorString != null)
-					break;
-
-				var nse = BCL.FindPredefinedType ("System", "NotSupportedException", _context);
-				if (nse == null)
-					throw new NotSupportedException ("Missing predefined 'System.NotSupportedException' type");
-
-				MarkType (nse);
-
-				var nseCtor = MarkMethodIf (nse.Methods, KnownMembers.IsNotSupportedExceptionCtorString);
-				if (nseCtor == null)
-					throw new MarkException ($"Could not find constructor on '{nse.FullName}'");
-
-				_context.MarkedKnownMembers.NotSupportedExceptionCtorString = nseCtor;
+				MarkAndCacheNotSupportedCtorString ();
 				break;
 			}
-		}		
+		}
+
+		void MarkAndCacheNotSupportedCtorString ()
+		{
+			if (_context.MarkedKnownMembers.NotSupportedExceptionCtorString != null)
+				return;
+
+			var nse = BCL.FindPredefinedType ("System", "NotSupportedException", _context);
+			if (nse == null)
+				throw new NotSupportedException ("Missing predefined 'System.NotSupportedException' type");
+
+			MarkType (nse);
+
+			var nseCtor = MarkMethodIf (nse.Methods, KnownMembers.IsNotSupportedExceptionCtorString);
+			if (nseCtor == null)
+				throw new MarkException ($"Could not find constructor on '{nse.FullName}'");
+
+			_context.MarkedKnownMembers.NotSupportedExceptionCtorString = nseCtor;
+		}
 
 		void MarkBaseMethods (MethodDefinition method)
 		{
@@ -2068,6 +2095,12 @@ namespace Mono.Linker.Steps {
 
 		protected virtual void MarkMethodBody (MethodBody body)
 		{
+			if (_context.IsOptimizationEnabled (CodeOptimizations.UnreachableBodies) && IsUnreachableBody (body)) {
+				MarkAndCacheNotSupportedCtorString ();
+				_unreachableBodies.Add (body);
+				return;
+			}
+
 			foreach (VariableDefinition var in body.Variables)
 				MarkType (var.VariableType);
 
@@ -2084,6 +2117,14 @@ namespace Mono.Linker.Steps {
 
 			PostMarkMethodBody (body);
 		}
+
+		bool IsUnreachableBody (MethodBody body)
+		{
+			return !body.Method.IsStatic
+				&& !Annotations.IsInstantiated (body.Method.DeclaringType)
+				&& MethodBodyScanner.IsWorthConvertingToThrow (body);
+		}
+		
 
 		partial void PostMarkMethodBody (MethodBody body);
 
