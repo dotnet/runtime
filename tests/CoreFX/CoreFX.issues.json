@@ -1357,7 +1357,11 @@
                 },
                 {
                     "name": "System.Tests.BufferTests.BlockCopy_Invalid",
-                    "reason" : "https://github.com/dotnet/coreclr/pull/23636"
+                    "reason": "https://github.com/dotnet/coreclr/pull/23636"
+                },
+                {
+                    "name": "System.Tests.VersionTests.Comparisons_NullArgument_ThrowsArgumentNullException",
+                    "reason":  "Version was improved to no longer throw from comparison operators"
                 },
             ]
         }
