@@ -1331,7 +1331,7 @@ typedef unsigned char   regNumberSmall;
   //       x12: trashed
   //       x14: incremented by 8
   //       x15: trashed
-  //       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP (currently non-Windows)
+  //       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
   // CORINFO_HELP_ASSIGN_BYREF (JIT_ByRefWriteBarrier):
   //     On entry:
   //       x13: the source address (points to object reference to write)
@@ -1341,11 +1341,10 @@ typedef unsigned char   regNumberSmall;
   //       x13: incremented by 8
   //       x14: incremented by 8
   //       x15: trashed
-  //       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP (currently non-Windows)
+  //       x17: trashed (ip1) if FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
   //
   // Note that while x17 (ip1) is currently only trashed under FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP,
-  // currently only set for non-Windows, it is expected to be set in the future for Windows, and for R2R.
-  // So simply always consider it trashed, to avoid later breaking changes.
+  // it is expected to be set in the future for R2R. Consider it trashed to avoid later breaking changes.
 
   #define REG_WRITE_BARRIER_DST          REG_R14
   #define RBM_WRITE_BARRIER_DST          RBM_R14

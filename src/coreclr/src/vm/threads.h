@@ -4824,9 +4824,10 @@ public:
     void SetGCSpecial(bool fGCSpecial);
 
 private:
+#ifndef FEATURE_PAL
     WORD m_wCPUGroup;
     DWORD_PTR m_pAffinityMask;
-
+#endif // !FEATURE_PAL
 public:
     void ChooseThreadCPUGroupAffinity();
     void ClearThreadCPUGroupAffinity();

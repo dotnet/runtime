@@ -414,7 +414,7 @@ IUnknown *GetComIPFromObjectRef(OBJECTREF *poref, REFIID iid, bool throwIfNoComI
 // GetObjectRefFromComIP
 // pUnk : input IUnknown
 // pMTClass : specifies the type of instance to be returned
-// NOTE:**  As per COM Rules, the IUnknown passed is shouldn't be AddRef'ed
+// NOTE:**  As per COM Rules, the IUnknown passed in shouldn't be AddRef'ed
 //+----------------------------------------------------------------------------
 void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pMTClass, MethodTable *pItfMT, DWORD dwFlags)
 {
@@ -456,24 +456,27 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
     if (pUnk != NULL)
     {
         // get CCW for IUnknown
-        ComCallWrapper* pWrap = GetCCWFromIUnknown(pUnk);
-        if (pWrap == NULL)
+        ComCallWrapper *ccw = GetCCWFromIUnknown(pUnk);
+        if (ccw == NULL)
         {
             // could be aggregated scenario
             HRESULT hr = SafeQueryInterface(pUnk, IID_IUnknown, &pOuter);
             LogInteropQI(pUnk, IID_IUnknown, hr, "GetObjectRefFromComIP: QI for Outer");
             IfFailThrow(hr);
-                
+
             // store the outer in the auto pointer
             pAutoOuterUnk = pOuter; 
-            pWrap = GetCCWFromIUnknown(pOuter);
+            ccw = GetCCWFromIUnknown(pOuter);
         }
 
-        if (pWrap != NULL)
-        {   // our tear-off
-            _ASSERTE(pWrap != NULL);
-            AppDomain* pCurrDomain = pThread->GetDomain();
-            *pObjOut = pWrap->GetObjectRef();
+        // If the CCW was activated via COM, do not unwrap it.
+        // Unwrapping a CCW would deliver the underlying OBJECTREF,
+        // but when a managed class is activated via COM it should
+        // remain a COM object and adhere to COM rules.
+        if (ccw != NULL
+            && !ccw->IsComActivated())
+        {
+            *pObjOut = ccw->GetObjectRef();
         }
 
         if (*pObjOut != NULL)
