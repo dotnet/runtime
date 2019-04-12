@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 namespace System.Diagnostics
 {
     public partial class DebugProvider
     {
-        public static void FailCore(string stackTrace, string message, string detailMessage, string errorSource)
+        public static void FailCore(string stackTrace, string? message, string? detailMessage, string errorSource)
         {
             if (s_FailCore != null)
             {
@@ -58,7 +60,7 @@ namespace System.Diagnostics
             // We don't want output from multiple threads to be interleaved.
             lock (s_ForLock)
             {
-                if (message == null || message.Length <= WriteChunkLength)
+                if (message.Length <= WriteChunkLength)
                 {
                     WriteToDebugger(message);
                 }
