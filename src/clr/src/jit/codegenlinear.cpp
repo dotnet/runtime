@@ -1646,7 +1646,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
         unsigned thisFieldOffset = argOffset + fieldListPtr->gtFieldOffset;
         getEmitter()->emitIns_S_R(ins_Store(type), attr, reg, outArgVarNum, thisFieldOffset);
 
-        // We can't write beyound the arg area
+        // We can't write beyond the arg area
         assert((thisFieldOffset + EA_SIZE_IN_BYTES(attr)) <= compiler->lvaLclSize(outArgVarNum));
     }
 }
