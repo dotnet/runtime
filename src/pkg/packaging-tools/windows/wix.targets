@@ -1,0 +1,131 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    These targets use MSBuild Exec tasks to run WiX 3 toolset commands.
+
+    WiX 4 is expected to support running in .NET Core. Once using WiX 4, we can (more easily) remove
+    this file and switch to wixproj. See https://github.com/wixtoolset/issues/issues/5627
+  -->
+
+  <!--
+    If UpgradeCode isn't manually set, generate based on installer full path. Not suitable for
+    bundles.
+  -->
+  <Target Name="GetUpgradeCode"
+          DependsOnTargets="GetInstallerProperties"
+          Condition="'$(UpgradeCode)' == ''">
+    <GenerateGuidFromName Name="$(InstallerFile)">
+      <Output TaskParameter="GeneratedGuid" PropertyName="UpgradeCode" />
+    </GenerateGuidFromName>
+  </Target>
+
+  <!-- Set up information to pass to WiX, depending on the type of installer being created. -->
+  <Target Name="GetWixBuildConfiguration" DependsOnTargets="GetInstallerProperties">
+
+    <ItemGroup Condition="'$(FrameworkPackType)' == 'targeting'">
+      <DirectoryToHarvest
+        Include="$(PackLayoutDir)"
+        Name="install-files"
+        SubstituteVar="TargetingPackSrc"
+        ComponentGroupName="InstallFiles"
+        DirectoryRef="DOTNETHOME" />
+
+      <WixSrcFile Include="$(MSBuildThisFileDirectory)targetingPack/product.wxs" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(GenerateSharedFramework)' == 'true'">
+      <DirectoryToHarvest
+        Include="$(SharedFrameworkLayoutDir)"
+        Name="install-shared-framework"
+        SubstituteVar="SharedFrameworkSrc"
+        ComponentGroupName="InstallFiles"
+        DirectoryRef="SHARED" />
+
+      <WixSrcFile Include="$(MSBuildThisFileDirectory)sharedFramework/product.wxs" />
+      <WixSrcFile Include="$(MSBuildThisFileDirectory)sharedFramework/registrykeys.wxs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <WixSrcFile Include="$(MSBuildThisFileDirectory)provider.wxs" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RunHeatHarvester"
+          DependsOnTargets="GetWixBuildConfiguration">
+    <ItemGroup>
+      <DirectoryToHarvest
+        WixSourceFile="$(WixObjDir)%(Name).wxs"
+        WixObjFile="$(WixObjDir)%(Name).wixobj" />
+
+      <DirectoryToHarvest
+        Command="heat.exe ^
+          dir &quot;%(Identity)&quot; ^
+          -nologo ^
+          -template fragment ^
+          -sreg ^
+          -gg ^
+          -var var.%(SubstituteVar) ^
+          -cg %(ComponentGroupName) ^
+          -srd ^
+          -dr %(DirectoryRef) ^
+          -out %(WixSourceFile)" />
+    </ItemGroup>
+
+    <Message Importance="High" Text="Heat '$(MSBuildProjectName)'" />
+    <Exec Command="%(DirectoryToHarvest.Command)" WorkingDirectory="$(WixToolsDir)" />
+  </Target>
+
+  <Target Name="RunCandleCompiler"
+          DependsOnTargets="
+            GetWixBuildConfiguration;
+            GetUpgradeCode;
+            GenerateMsiVersionString">
+    <PropertyGroup>
+      <_wixArgs></_wixArgs>
+      <_wixArgs>$(_wixArgs) -nologo</_wixArgs>
+      <_wixArgs>$(_wixArgs) -ext WixDependencyExtension.dll</_wixArgs>
+      <_wixArgs>$(_wixArgs) -arch $(MsiArch)</_wixArgs>
+
+      <_wixArgs>$(_wixArgs) -dMicrosoftEula="$(MicrosoftEulaFile)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dProductMoniker="$(WixProductMoniker)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dFrameworkName="$(SharedFrameworkName)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dBuildVersion="$(MsiVersionString)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dNugetVersion="$(ProductVersion)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dTargetArchitecture="$(TargetArchitecture)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dUpgradeCode="$(UpgradeCode)"</_wixArgs>
+      <_wixArgs>$(_wixArgs) -dDependencyKeyName="$(InstallerName.Replace('-', '_'))"</_wixArgs>
+      <_wixArgs>$(_wixArgs) @(DirectoryToHarvest -> '-d%(SubstituteVar)="%(Identity)', ' ')" </_wixArgs>
+
+      <_wixArgs>$(_wixArgs) @(WixSrcFile -> '"%(Identity)"', ' ')</_wixArgs>
+      <_wixArgs>$(_wixArgs) @(DirectoryToHarvest -> '"%(WixSourceFile)"', ' ')</_wixArgs>
+
+      <_wixArgs>$(_wixArgs) -out "$(WixObjDir)"</_wixArgs>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="Candle '$(MSBuildProjectName)'" />
+    <Exec Command="candle.exe $(_wixArgs)" WorkingDirectory="$(WixToolsDir)" />
+  </Target>
+
+  <Target Name="RunLightLinker"
+          DependsOnTargets="
+            GetWixBuildConfiguration;
+            RunHeatHarvester;
+            RunCandleCompiler">
+    <PropertyGroup>
+      <_wixArgs></_wixArgs>
+      <_wixArgs>$(_wixArgs) -nologo</_wixArgs>
+      <_wixArgs>$(_wixArgs) -ext WixUIExtension.dll</_wixArgs>
+      <_wixArgs>$(_wixArgs) -ext WixDependencyExtension.dll</_wixArgs>
+      <_wixArgs>$(_wixArgs) -ext WixUtilExtension.dll</_wixArgs>
+      <_wixArgs>$(_wixArgs) -cultures:en-us</_wixArgs>
+
+      <_wixArgs>$(_wixArgs) @(WixSrcFile -> '"$(WixObjDir)%(Filename).wixobj"', ' ')</_wixArgs>
+      <_wixArgs>$(_wixArgs) @(DirectoryToHarvest -> '"%(WixObjFile)"', ' ')</_wixArgs>
+
+      <_wixArgs>$(_wixArgs) -out $(InstallerFile)</_wixArgs>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="Light '$(MSBuildProjectName)'" />
+    <Exec Command="light.exe $(_wixArgs)" WorkingDirectory="$(WixToolsDir)" />
+  </Target>
+
+</Project>

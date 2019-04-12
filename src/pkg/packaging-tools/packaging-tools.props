@@ -1,0 +1,53 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <PropertyGroup>
+    <InstallerSourceIntermediateOutputDir>$(BaseIntermediateOutputPath)$(InstallerSourceOSPlatformConfig)\$(MSBuildProjectName)\</InstallerSourceIntermediateOutputDir>
+  </PropertyGroup>
+
+  <!-- Detect framework pack suffix and apply defaults. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Ref'))">
+    <FrameworkPackType>targeting</FrameworkPackType>
+
+    <!--
+      Prevent 'runtime.<rid>.Microsoft.<framework>.App.Ref' packages from being built.
+
+      Not the same as HasRuntimePackages, which is used to set up ProjectReferences on the runtime
+      packages and generate assets such as the platform manifest.
+    -->
+    <BuildRuntimePackages>false</BuildRuntimePackages>
+
+    <PackageType>DotnetPlatform</PackageType>
+    <Version>$(ProductVersion)</Version>
+
+    <!-- Include the platform manifest in the data dir. -->
+    <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
+
+    <!-- Exclude runtime.json from the package. -->
+    <IncludeRuntimeJson>false</IncludeRuntimeJson>
+    <IsLineupPackage>false</IsLineupPackage>
+
+    <!-- Remove package dependencies. -->
+    <ExcludeLineupReference>true</ExcludeLineupReference>
+    <PackProjectDependencies>false</PackProjectDependencies>
+
+    <!-- Location to lay out pack contents, and where to grab bits to create installers. -->
+    <PackLayoutDir>$(InstallerSourceIntermediateOutputDir)layout/$(FrameworkPackType)/</PackLayoutDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SharedFrameworkLayoutDir>$(InstallerSourceIntermediateOutputDir)sharedFxLayout/</SharedFrameworkLayoutDir>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsFrameworkPackage)' == 'true'">
+    <Version>$(ProductVersion)</Version>
+    <OmitDependencies>true</OmitDependencies>
+    <SkipValidatePackage>true</SkipValidatePackage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(InstallerFileNameWithoutExtension)' != '' AND '$(GenerateMSI)' == 'true'">
+    <OutputType>Package</OutputType>
+    <OutputName>$(InstallerFileNameWithoutExtension)</OutputName>
+  </PropertyGroup>
+
+</Project>
