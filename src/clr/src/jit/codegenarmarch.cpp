@@ -3849,7 +3849,9 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         // Generate:
         //
-        //      mov rOffset, -pageSize
+        //      mov rOffset, -pageSize    // On arm, this turns out to be "movw r1, 0xf000; sxth r1, r1".
+        //                                // We could save 4 bytes in the prolog by using "movs r1, 0" at the
+        //                                // runtime expense of running a useless first loop iteration.
         //      mov rLimit, -frameSize
         // loop:
         //      ldr rTemp, [sp + rOffset] // rTemp = wzr on ARM64
