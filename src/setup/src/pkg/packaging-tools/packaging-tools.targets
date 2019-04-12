@@ -1,0 +1,59 @@
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!--
+    Include common targets for specific project types. These files include BuildTools target
+    overrides that shouldn't be applied to other projects.
+  -->
+  <Import Project="framework.dependency.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
+  <Import Project="framework.packaging.targets" Condition="'$(IsFrameworkPackage)' == 'true'" />
+
+  <!--
+    Set up properties for installer file. These depend on properties defined in the project file.
+    (Unlike properties set up in packaging-tools.props, which shouldn't.)
+  -->
+  <Target Name="GetInstallerProperties">
+    <!-- Detect framework pack suffix and apply defaults. -->
+    <PropertyGroup Condition="'$(FrameworkPackType)' == 'targeting'">
+      <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
+      <WixProductMoniker>$(TargetingPackBrandName)</WixProductMoniker>
+
+      <MacOSComponentName>com.microsoft.$(ShortFrameworkName).pack.$(FrameworkPackType).$(ProductVersion).component.osx.x64</MacOSComponentName>
+      <MacOSSharedInstallDir>/usr/local/share/dotnet</MacOSSharedInstallDir>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(GenerateSharedFramework)' == 'true'">
+      <InstallerName>$(ShortFrameworkName)-runtime</InstallerName>
+      <WixProductMoniker>$(SharedFrameworkBrandName)</WixProductMoniker>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <VersionedInstallerName>$(InstallerName)-$(ProductBandVersion)</VersionedInstallerName>
+      <VersionedInstallerName>$(VersionedInstallerName.ToLowerInvariant())</VersionedInstallerName>
+      <InstallerPackageRelease>1</InstallerPackageRelease>
+
+      <InstallerPackageVersion>$(ProductionVersion)</InstallerPackageVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
+      <InstallerPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</InstallerPackageVersion>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(InstallerExtension)' == '.rpm'">
+      <InstallerPackageRelease Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">0.1.$(VersionSuffix)</InstallerPackageRelease>
+      <InstallerPackageRelease>$([System.String]::Copy('$(InstallerPackageRelease)').Replace('-', '_'))</InstallerPackageRelease>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <InstallerIntermediatesDir>$(PackagesIntermediateDir)$(InstallerName)/$(InstallerPackageVersion)/</InstallerIntermediatesDir>
+
+      <InstallerBuildPart>$(ProductMoniker)</InstallerBuildPart>
+      <InstallerBuildPart Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'"
+        >$(ProductVersion)-$(TargetArchitecture)</InstallerBuildPart>
+
+      <!-- Location to place the installer, in bin. -->
+      <InstallerFileNameWithoutExtension>$(InstallerName)-$(InstallerBuildPart)</InstallerFileNameWithoutExtension>
+      <InstallerFile>$(AssetOutputPath)$(InstallerFileNameWithoutExtension)$(InstallerExtension)</InstallerFile>
+    </PropertyGroup>
+  </Target>
+
+</Project>

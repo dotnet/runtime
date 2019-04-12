@@ -98,11 +98,17 @@ jobs:
       displayName: Build Nuget package
       condition: succeeded()
 
-    # Build sharedframework layout
+    # Build Shared Frameworks
+    - script: build.cmd -sharedfx-netcoreapp
+        -- '$(CommonMSBuildArgs)
+        /bl:$(Build.SourcesDirectory)\sharedframework-netcoreapp.binlog'
+      displayName: Build sharedframework layout (legacy infrastructure)
+      condition: succeeded()
+
     - script: build.cmd -sharedfx
         -- '$(CommonMSBuildArgs)
         /bl:$(Build.SourcesDirectory)\sharedframework.binlog'
-      displayName: Build sharedframework layout
+      displayName: Build sharedframework layouts (new infrastructure)
       condition: succeeded()
 
     - ${{ if ne(parameters.skipTests, 'true') }}:

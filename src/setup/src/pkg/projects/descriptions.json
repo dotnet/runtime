@@ -45,6 +45,11 @@
         "CommonTypes": [ ]
     },
     {
+        "Name": "Microsoft.WindowsDesktop.App",
+        "Description": "Shared Framework for Windows Forms and WPF.",
+        "CommonTypes": [ ]
+    },
+    {
         "Name": "Microsoft.WindowsDesktop.App.Ref",
         "Description": "Windows Forms and WPF targeting pack. Contains reference assemblies, documentation, and other design-time assets.",
         "CommonTypes": [ ]

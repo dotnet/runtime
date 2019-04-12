@@ -189,7 +189,7 @@
 
   <!-- Run the project-based installer creation infrastructure as well. -->
   <Target Name="GenerateProjectInstallers">
-    <MSBuild Targets="GenerateInstallers" Projects="..\projects\installer.builds" />
+    <MSBuild Projects="..\projects\installer.builds" />
   </Target>
 
   <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'">

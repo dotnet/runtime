@@ -6,6 +6,8 @@
   <UsingTask TaskName="BuildFPMToolPreReqs" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
   <UsingTask TaskName="GenerateJsonObjectString" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
 
+  <Import Project="$(MSBuildThisFileDirectory)windows/wix.targets" />
+
   <Target Name="GenerateInstallers"
           DependsOnTargets="
             GenerateDeb;
@@ -23,6 +25,7 @@
   -->
   <Target Name="CreateDeb"
           DependsOnTargets="
+            GetInstallerProperties;
             InitializeDotnetDebTool;
             CreateInstallerLayout;
             GetDebInstallerJsonProperties"
@@ -73,6 +76,7 @@
   -->
   <Target Name="CreateRpm"
           DependsOnTargets="
+            GetInstallerProperties;
             CreateInstallerLayout;
             GetRpmInstallerJsonProperties"
           Condition="'$(FPMPresent)' == 'true'">
@@ -136,100 +140,17 @@
     Create MSI installer, using WiX tools.
   -->
   <Target Name="CreateMsi"
-          DependsOnTargets="RunLightLinker">
+          DependsOnTargets="
+            GetInstallerProperties;
+            RunLightLinker">
     <Message Text="Created '$(InstallerFile)'" Importance="High" />
-  </Target>
-
-  <!--
-    If UpgradeCode isn't manually set, generate based on installer full path. Not suitable for
-    bundles.
-  -->
-  <Target Name="GetUpgradeCode"
-          Condition="'$(UpgradeCode)' == ''">
-    <GenerateGuidFromName Name="$(InstallerFile)">
-      <Output TaskParameter="GeneratedGuid" PropertyName="UpgradeCode" />
-    </GenerateGuidFromName>
-  </Target>
-
-  <Target Name="RunHeatHarvester">
-    <PropertyGroup>
-      <InstallFilesWixSourceFile>$(WixObjDir)install-files.wxs</InstallFilesWixSourceFile>
-      <InstallFilesWixObjFile>$(WixObjDir)install-files.wixobj</InstallFilesWixObjFile>
-
-      <_wixArgs></_wixArgs>
-      <_wixArgs>$(_wixArgs) dir "$(PackLayoutDir)"</_wixArgs>
-      <_wixArgs>$(_wixArgs) -nologo</_wixArgs>
-      <_wixArgs>$(_wixArgs) -template fragment</_wixArgs>
-      <_wixArgs>$(_wixArgs) -sreg</_wixArgs>
-      <_wixArgs>$(_wixArgs) -gg</_wixArgs>
-      <_wixArgs>$(_wixArgs) -var var.TargetingPackSrc</_wixArgs>
-      <_wixArgs>$(_wixArgs) -cg InstallFiles</_wixArgs>
-      <_wixArgs>$(_wixArgs) -srd</_wixArgs>
-      <_wixArgs>$(_wixArgs) -dr DOTNETHOME</_wixArgs>
-      <_wixArgs>$(_wixArgs) -out $(InstallFilesWixSourceFile)</_wixArgs>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="Heat '$(MSBuildProjectName)'" />
-    <Exec Command="heat.exe $(_wixArgs)" WorkingDirectory="$(WixToolsDir)" />
-  </Target>
-
-  <Target Name="RunCandleCompiler"
-          DependsOnTargets="
-            GetUpgradeCode;
-            GenerateMsiVersionString">
-    <PropertyGroup>
-      <_wixArgs></_wixArgs>
-      <_wixArgs>$(_wixArgs) -nologo</_wixArgs>
-      <_wixArgs>$(_wixArgs) -ext WixDependencyExtension.dll</_wixArgs>
-      <_wixArgs>$(_wixArgs) -arch $(MsiArch)</_wixArgs>
-
-      <_wixArgs>$(_wixArgs) -dTargetingPackSrc="$(PackLayoutDir)" </_wixArgs>
-      <_wixArgs>$(_wixArgs) -dMicrosoftEula="$(MicrosoftEulaFile)"</_wixArgs>
-      <_wixArgs>$(_wixArgs) -dProductMoniker="$(TargetingPackBrandName)"</_wixArgs>
-      <_wixArgs>$(_wixArgs) -dBuildVersion="$(MsiVersionString)"</_wixArgs>
-      <_wixArgs>$(_wixArgs) -dNugetVersion="$(ProductVersion)"</_wixArgs>
-      <_wixArgs>$(_wixArgs) -dTargetArchitecture="$(TargetArchitecture)"</_wixArgs>
-      <_wixArgs>$(_wixArgs) -dUpgradeCode="$(UpgradeCode)"</_wixArgs>
-      <_wixArgs>$(_wixArgs) -dDependencyKeyName="$(InstallerName.Replace('-', '_'))"</_wixArgs>
-
-      <_wixArgs>$(_wixArgs) "$(MSBuildThisFileDirectory)windows/targetingpack.wxs"</_wixArgs>
-      <_wixArgs>$(_wixArgs) "$(MSBuildThisFileDirectory)windows/provider.wxs"</_wixArgs>
-      <_wixArgs>$(_wixArgs) "$(InstallFilesWixSourceFile)"</_wixArgs>
-
-      <_wixArgs>$(_wixArgs) -out "$(WixObjDir)"</_wixArgs>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="Candle '$(MSBuildProjectName)'" />
-    <Exec Command="candle.exe $(_wixArgs)" WorkingDirectory="$(WixToolsDir)" />
-  </Target>
-
-  <Target Name="RunLightLinker"
-          DependsOnTargets="
-            RunHeatHarvester;
-            RunCandleCompiler">
-    <PropertyGroup>
-      <_wixArgs></_wixArgs>
-      <_wixArgs>$(_wixArgs) -nologo</_wixArgs>
-      <_wixArgs>$(_wixArgs) -ext WixUIExtension.dll</_wixArgs>
-      <_wixArgs>$(_wixArgs) -ext WixDependencyExtension.dll</_wixArgs>
-      <_wixArgs>$(_wixArgs) -ext WixUtilExtension.dll</_wixArgs>
-      <_wixArgs>$(_wixArgs) -cultures:en-us</_wixArgs>
-
-      <_wixArgs>$(_wixArgs) "$(WixObjDir)targetingpack.wixobj"</_wixArgs>
-      <_wixArgs>$(_wixArgs) "$(WixObjDir)provider.wixobj"</_wixArgs>
-      <_wixArgs>$(_wixArgs) "$(InstallFilesWixObjFile)"</_wixArgs>
-
-      <_wixArgs>$(_wixArgs) -out $(InstallerFile)</_wixArgs>
-    </PropertyGroup>
-
-    <Message Importance="High" Text="Light '$(MSBuildProjectName)'" />
-    <Exec Command="light.exe $(_wixArgs)" WorkingDirectory="$(WixToolsDir)" />
   </Target>
 
   <!--
     Create macOS pkg installer.
   -->
-  <Target Name="CreatePkg">
+  <Target Name="CreatePkg"
+          DependsOnTargets="GetInstallerProperties">
     <PropertyGroup>
       <_pkgArgs></_pkgArgs>
       <_pkgArgs>$(_pkgArgs) --root $(PackLayoutDir)</_pkgArgs>
@@ -381,6 +302,46 @@
       DestinationDirectory="$(PackLayoutDir)packs/$(Id)/$(Version)/"
       OverwriteDestination="true"
       Include="@(TargetingPackDataEntries)" />
+  </Target>
+
+  <Target Name="GenerateSharedFramework"
+          Condition="'$(GenerateSharedFramework)' == 'true'">
+    <PropertyGroup>
+      <SharedFrameworkIntermediateOutputPath>$(IntermediateOutputPath)sharedFx/</SharedFrameworkIntermediateOutputPath>
+    </PropertyGroup>
+
+    <!-- Delete layout directory and sfx NuGet cache to ensure freshness. -->
+    <RemoveDir Directories="$(SharedFrameworkLayoutDir);$(SharedFrameworkIntermediateOutputPath)" />
+
+    <!--
+      Build a csproj that lays out the shared framework using the SDK publish targets. Pass
+      properties to make the csproj restore and publish specific to the current pkgproj.
+
+      Noteworthy inputs:
+        SharedFrameworkName:
+          Name of the shared framework, such as Microsoft.NETCore.App.
+        SharedFrameworkPkgprojFile:
+          Full path of the pkgproj that produces the framework package. The framework package
+          identity is extracted from here via an MSBuild task, to be restored.
+        SharedFrameworkLayoutDir:
+          Directory to lay out "<id>/<version>/<files>" of the shared fx.
+        IntermediateOutputPath:
+          Typical: directory for intermediates, custom to avoid clashing.
+        MSBuildProjectExtensionsPath:
+          Same as IntermediateOutputPath. Passed in as a workaround, because the SDK needs the value
+          in its props file before we have a chance to override in this project.
+    -->
+    <MSBuild
+      Projects="$(MSBuildThisFileDirectory)sharedFramework/sharedFramework.csproj"
+      Properties="
+        SharedFrameworkName=$(MSBuildProjectName);
+        SharedFrameworkPkgprojFile=$(MSBuildProjectFullPath);
+        SharedFrameworkLayoutDir=$(SharedFrameworkLayoutDir);
+        IntermediateOutputPath=$(SharedFrameworkIntermediateOutputPath);
+        MSBuildProjectExtensionsPath=$(SharedFrameworkIntermediateOutputPath);
+        PackageRID=$(PackageRID);
+        GenerateNetCoreAppRuntimeConfig=$(GenerateNetCoreAppRuntimeConfig);
+        GenerateRuntimeGraph=$(GenerateRuntimeGraph)" />
   </Target>
 
   <!--
