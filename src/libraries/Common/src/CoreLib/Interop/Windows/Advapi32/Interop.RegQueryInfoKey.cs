@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #if REGISTRY_ASSEMBLY
 using Microsoft.Win32.SafeHandles;
 #else
@@ -18,16 +19,16 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryInfoKeyW")]
         internal static extern int RegQueryInfoKey(
             SafeRegistryHandle hKey,
-            [Out] char[] lpClass,
-            int[] lpcbClass,
+            [Out] char[]? lpClass,
+            int[]? lpcbClass,
             IntPtr lpReserved_MustBeZero,
             ref int lpcSubKeys,
-            int[] lpcbMaxSubKeyLen,
-            int[] lpcbMaxClassLen,
+            int[]? lpcbMaxSubKeyLen,
+            int[]? lpcbMaxClassLen,
             ref int lpcValues,
-            int[] lpcbMaxValueNameLen,
-            int[] lpcbMaxValueLen,
-            int[] lpcbSecurityDescriptor,
-            int[] lpftLastWriteTime);
+            int[]? lpcbMaxValueNameLen,
+            int[]? lpcbMaxValueLen,
+            int[]? lpcbSecurityDescriptor,
+            int[]? lpftLastWriteTime);
     }
 }
