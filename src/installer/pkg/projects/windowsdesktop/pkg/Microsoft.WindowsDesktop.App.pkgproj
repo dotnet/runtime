@@ -8,26 +8,14 @@
     <PlatformManifestTargetPath>$(BuildTargetPath)</PlatformManifestTargetPath>
     <FileVersionPropsTargetPath>$(BuildTargetPath)</FileVersionPropsTargetPath>
 
-    <GenerateRuntimeGraph>true</GenerateRuntimeGraph>
-
-    <!-- NETCoreApp sfx is still built by old tooling. Switchover is pending validation. -->
-    <GenerateSharedFramework>false</GenerateSharedFramework>
+    <GenerateSharedFramework>true</GenerateSharedFramework>
+    <GenerateNetCoreAppRuntimeConfig>true</GenerateNetCoreAppRuntimeConfig>
   </PropertyGroup>
 
   <!-- Identity / Reference package content -->
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
     <!-- reference RID specific packages to generate lineup -->
     <ProjectReference Include="@(RuntimeProject)" />
-
-    <!-- references the host packages -->
-    <Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
-       <Version>$(HostPolicyVersion)</Version>
-       <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
-    </Dependency>
-
-    <File Include="$(MSBuildProjectName).targets">
-      <TargetPath>$(BuildTargetPath)</TargetPath>
-    </File>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

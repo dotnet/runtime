@@ -29,6 +29,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <PackagingToolsDir>$(MSBuildThisFileDirectory)packaging-tools/</PackagingToolsDir>
+
     <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
 
     <RpmTemplatesDir>$(MSBuildThisFileDirectory)packaging/rpm/templates/</RpmTemplatesDir>

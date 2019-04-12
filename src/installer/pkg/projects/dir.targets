@@ -1,7 +1,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.targets" />
 
-  <Import Project="packaging-tools\packaging-tools.targets" />
+  <Import Project="$(PackagingToolsDir)packaging-tools.targets" />
 
   <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
@@ -240,7 +240,28 @@
 
       <Project Include="@(PkgSrcProject)" Phase="pkg" />
       <Project Include="@(PkgSrcProject)" Phase="src" />
-      <Project Include="@(InstallerPackageProject)" Phase="installer" />
+
+      <!--
+        Create targeting pack packages/installers. Similar to the runtime package, we only make one
+        Debian or RPM package for all distros of that type.
+      -->
+      <Project
+        Include="$(MSBuildProjectFullPath)"
+        Phase="installer"
+        Condition="
+          '$(FrameworkPackType)' == 'targeting' AND
+          '$(BuildDistroIndependentInstallers)' == 'true'" />
+    </ItemGroup>
+
+    <!-- Create shared framework and its installers. -->
+    <ItemGroup Condition="'$(GenerateSharedFramework)' == 'true' AND '$(BuildDistroIndependentInstallers)' == 'true'">
+      <Project Include="$(MSBuildProjectFullPath)" Phase="sharedfx" />
+      <!--
+        Currently any pkgproj is assumed to only build one type of installer, so there is no
+        distinction between this Project and a targeting pack installer Project. Some
+        AdditionalProperties may need to be added if this assumption doesn't hold up.
+      -->
+      <Project Include="$(MSBuildProjectFullPath)" Phase="installer" />
     </ItemGroup>
   </Target>
 

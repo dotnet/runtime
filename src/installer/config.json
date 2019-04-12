@@ -214,10 +214,16 @@
             "Project": "publish\\publish.proj"
           }
         },
-        "sharedfx": {
-          "description": "Build Shared Framework project.",
+        "sharedfx-netcoreapp": {
+          "description": "Build legacy netcoreapp Shared Framework project.",
           "settings": {
             "Project": "src\\sharedframework\\sharedframework.proj"
+          }
+        },
+        "sharedfx": {
+          "description": "Build Shared Framework projects.",
+          "settings": {
+            "Project": "src\\pkg\\projects\\sharedfx.builds"
           }
         },
         "signing-validation": {

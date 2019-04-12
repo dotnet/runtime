@@ -9,7 +9,10 @@
     use this to build runtime packages, for example.
   -->
   <Target Name="ExpandProjects"
-          BeforeTargets="Build;GenerateInstallers">
+          BeforeTargets="
+            Build;
+            GenerateInstallers;
+            GenerateSharedFramework">
     <MSBuild Projects="@(ProjectProvider)" Targets="GetProjectsToBuild">
       <Output TaskParameter="TargetOutputs" ItemName="_everyProject" />
     </MSBuild>

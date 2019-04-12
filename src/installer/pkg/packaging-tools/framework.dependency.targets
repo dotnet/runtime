@@ -16,6 +16,10 @@
         <TargetPath Condition="'%(FilesToPackage.IsNative)' != 'true'">runtimes/$(NuGetRuntimeIdentifier)/lib/$(PackageTargetFramework)</TargetPath>
         <TargetPath Condition="'%(FilesToPackage.IsNative)' == 'true'">runtimes/$(NuGetRuntimeIdentifier)/native</TargetPath>
       </FilesToPackage>
+      <!-- Ensure localization resource files make it to their subdirs. -->
+      <FilesToPackage Condition="'%(FilesToPackage.DestinationSubDirectory)' != ''">
+        <TargetPath>%(FilesToPackage.TargetPath)/%(FilesToPackage.DestinationSubDirectory)</TargetPath>
+      </FilesToPackage>
     </ItemGroup>
 
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">

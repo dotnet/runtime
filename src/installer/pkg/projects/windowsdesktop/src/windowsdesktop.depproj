@@ -3,9 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsDesktop.App">
-      <Version>$(MicrosoftWindowsDesktopAppPackageVersion)</Version>
-    </PackageReference>
+    <PackageReference Include="Microsoft.Private.WindowsDesktop.App" Version="$(MicrosoftPrivateWindowsDesktopAppPackageVersion)" />
   </ItemGroup>
 
   <Target Name="GetDependencyVersionFiles" DependsOnTargets="ResolveNuGetPackages">
