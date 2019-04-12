@@ -255,7 +255,7 @@ namespace System
                 _daylightTransitionStart = (TransitionTime)info.GetValue("DaylightTransitionStart", typeof(TransitionTime)); // Do not rename (binary serialization)
                 _daylightTransitionEnd = (TransitionTime)info.GetValue("DaylightTransitionEnd", typeof(TransitionTime)); // Do not rename (binary serialization)
 
-                object o = info.GetValueNoThrow("BaseUtcOffsetDelta", typeof(TimeSpan)); // Do not rename (binary serialization)
+                object? o = info.GetValueNoThrow("BaseUtcOffsetDelta", typeof(TimeSpan)); // Do not rename (binary serialization)
                 if (o != null)
                 {
                     _baseUtcOffsetDelta = (TimeSpan)o;
