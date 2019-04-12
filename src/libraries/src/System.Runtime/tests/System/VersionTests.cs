@@ -92,61 +92,85 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("revision", () => new Version(0, 0, 0, -1));
         }
 
-        public static IEnumerable<object[]> CompareTo_TestData()
+        public static IEnumerable<object[]> Comparison_TestData()
         {
-            yield return new object[] { new Version(1, 2), null, 1 };
-            yield return new object[] { new Version(1, 2), new Version(1, 2), 0 };
-            yield return new object[] { new Version(1, 2), new Version(1, 3), -1 };
-            yield return new object[] { new Version(1, 2), new Version(1, 1), 1 };
-            yield return new object[] { new Version(1, 2), new Version(2, 0), -1 };
-            yield return new object[] { new Version(1, 2), new Version(1, 2, 1), -1 };
-            yield return new object[] { new Version(1, 2), new Version(1, 2, 0, 1), -1 };
-            yield return new object[] { new Version(1, 2), new Version(1, 0), 1 };
-            yield return new object[] { new Version(1, 2), new Version(1, 0, 1), 1 };
-            yield return new object[] { new Version(1, 2), new Version(1, 0, 0, 1), 1 };
+            foreach (var input in new (Version v1, Version v2, int expectedSign)[]
+            {
+                (null, null, 0),
 
-            yield return new object[] { new Version(3, 2, 1), new Version(2, 2, 1), 1 };
-            yield return new object[] { new Version(3, 2, 1), new Version(3, 1, 1), 1 };
-            yield return new object[] { new Version(3, 2, 1), new Version(3, 2, 0), 1 };
+                (new Version(1, 2), null, 1),
+                (new Version(1, 2), new Version(1, 2), 0),
+                (new Version(1, 2), new Version(1, 3), -1),
+                (new Version(1, 2), new Version(1, 1), 1),
+                (new Version(1, 2), new Version(2, 0), -1),
+                (new Version(1, 2), new Version(1, 2, 1), -1),
+                (new Version(1, 2), new Version(1, 2, 0, 1), -1),
+                (new Version(1, 2), new Version(1, 0), 1),
+                (new Version(1, 2), new Version(1, 0, 1), 1),
+                (new Version(1, 2), new Version(1, 0, 0, 1), 1),
 
-            yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 4), 0 };
-            yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 5), -1 };
-            yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 3), 1 };
+                (new Version(3, 2, 1), null, 1),
+                (new Version(3, 2, 1), new Version(2, 2, 1), 1),
+                (new Version(3, 2, 1), new Version(3, 1, 1), 1),
+                (new Version(3, 2, 1), new Version(3, 2, 0), 1),
 
-            yield return new object[] { new Version(1, 2, 3, 4), null, 1 };
+                (new Version(1, 2, 3, 4), null, 1),
+                (new Version(1, 2, 3, 4), new Version(1, 2, 3, 4), 0),
+                (new Version(1, 2, 3, 4), new Version(1, 2, 3, 5), -1),
+                (new Version(1, 2, 3, 4), new Version(1, 2, 3, 3), 1)
+            })
+            {
+                yield return new object[] { input.v1, input.v2, input.expectedSign };
+                yield return new object[] { input.v2, input.v1, input.expectedSign * -1 };
+            }
         }
 
         [Theory]
-        [MemberData(nameof(CompareTo_TestData))]
-        public void CompareTo_Other_ReturnsExpected(Version version1, object other, int expectedSign)
+        [MemberData(nameof(Comparison_TestData))]
+        public void CompareTo_ReturnsExpected(Version version1, Version version2, int expectedSign)
         {
-            if (version1 != null && other is Version version2)
+            Assert.Equal(expectedSign, Comparer<Version>.Default.Compare(version1, version2));
+            if (version1 != null)
             {
-                if (expectedSign >= 0)
-                {
-                    Assert.True(version1 >= version2);
-                    Assert.False(version1 < version2);
-                }
-                if (expectedSign > 0)
-                {
-                    Assert.True(version1 > version2);
-                    Assert.False(version1 <= version2);
-                }
-                if (expectedSign <= 0)
-                {
-                    Assert.True(version1 <= version2);
-                    Assert.False(version1 > version2);
-                }
-                if (expectedSign < 0)
-                {
-                    Assert.True(version1 < version2);
-                    Assert.False(version1 >= version2);
-                }
+                Assert.Equal(expectedSign, Math.Sign(((IComparable)version1).CompareTo(version2)));
+                Assert.Equal(expectedSign, Math.Sign(version1.CompareTo((object)version2)));
+                Assert.Equal(expectedSign, Math.Sign(version1.CompareTo(version2)));
             }
+        }
 
-            IComparable comparable = version1;
-            Assert.Equal(expectedSign, Math.Sign(comparable.CompareTo(other)));
-            Assert.Equal(expectedSign, Math.Sign(version1.CompareTo(other)));
+        [ActiveIssue("https://github.com/dotnet/coreclr/pull/23898")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/coreclr/pull/23898")]
+        [Theory]
+        [MemberData(nameof(Comparison_TestData))]
+        public void ComparisonOperators_ReturnExpected(Version version1, Version version2, int expectedSign)
+        {
+            if (expectedSign < 0)
+            {
+                Assert.True(version1 < version2);
+                Assert.True(version1 <= version2);
+                Assert.False(version1 == version2);
+                Assert.False(version1 >= version2);
+                Assert.False(version1 > version2);
+                Assert.True(version1 != version2);
+            }
+            else if (expectedSign == 0)
+            {
+                Assert.False(version1 < version2);
+                Assert.True(version1 <= version2);
+                Assert.True(version1 == version2);
+                Assert.True(version1 >= version2);
+                Assert.False(version1 > version2);
+                Assert.False(version1 != version2);
+            }
+            else
+            {
+                Assert.False(version1 < version2);
+                Assert.False(version1 <= version2);
+                Assert.False(version1 == version2);
+                Assert.True(version1 >= version2);
+                Assert.True(version1 > version2);
+                Assert.True(version1 != version2);
+            }
         }
 
         [Theory]
@@ -157,17 +181,6 @@ namespace System.Tests
             var version = new Version(1, 1);
             AssertExtensions.Throws<ArgumentException>(null, () => version.CompareTo(other));
             AssertExtensions.Throws<ArgumentException>(null, () => ((IComparable)version).CompareTo(other));
-        }
-
-        [Fact]
-        public void Comparisons_NullArgument_ThrowsArgumentNullException()
-        {
-            Version nullVersion = null;
-            Version nonNullVersion = new Version(1, 2);
-            AssertExtensions.Throws<ArgumentNullException>("v1", () => nonNullVersion >= nullVersion);
-            AssertExtensions.Throws<ArgumentNullException>("v1", () => nonNullVersion > nullVersion);
-            AssertExtensions.Throws<ArgumentNullException>("v1", () => nullVersion < nonNullVersion);
-            AssertExtensions.Throws<ArgumentNullException>("v1", () => nullVersion <= nonNullVersion);
         }
 
         public static IEnumerable<object[]> Equals_TestData()
