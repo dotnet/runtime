@@ -205,7 +205,17 @@ namespace System.Reflection
             if (partialName == null)
                 throw new ArgumentNullException(nameof(partialName));
 
-            return Load(partialName);
+            if ((partialName.Length == 0) || (partialName[0] == '\0'))
+                throw new ArgumentException(SR.Format_StringZeroLength, nameof(partialName));
+
+            try
+            {
+                return Load(partialName);
+            }
+            catch (FileNotFoundException)
+            {
+                return null;
+            }
         }
 
         // Loads the assembly with a COFF based IMAGE containing
