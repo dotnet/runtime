@@ -511,7 +511,7 @@ namespace System.Runtime.Loader
         public static ContextualReflectionScope EnterContextualReflection(Assembly? activating)
         {
             return activating != null ?
-                GetLoadContext(activating)?.EnterContextualReflection() ?? default :
+                GetLoadContext(activating)!.EnterContextualReflection() : // TODO-NULLABLE: https://github.com/dotnet/coreclr/issues/23952
                 new ContextualReflectionScope(null);
         }
 
