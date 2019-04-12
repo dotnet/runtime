@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #if REGISTRY_ASSEMBLY
 using Microsoft.Win32.SafeHandles;
 #else
@@ -17,25 +18,25 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            string lpValueName,
+            string? lpValueName,
             int Reserved,
             int dwType,
-            byte[] lpData,
+            byte[]? lpData,
             int cbData);
 
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            string lpValueName,
+            string? lpValueName,
             int Reserved,
             int dwType,
-            char[] lpData,
+            char[]? lpData,
             int cbData);
 
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            string lpValueName,
+            string? lpValueName,
             int Reserved,
             int dwType,
             ref int lpData,
@@ -44,7 +45,7 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            string lpValueName,
+            string? lpValueName,
             int Reserved,
             int dwType,
             ref long lpData,
@@ -53,10 +54,10 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegSetValueExW")]
         internal static extern int RegSetValueEx(
             SafeRegistryHandle hKey,
-            string lpValueName,
+            string? lpValueName,
             int Reserved,
             int dwType,
-            string lpData,
+            string? lpData,
             int cbData);
     }
 }
