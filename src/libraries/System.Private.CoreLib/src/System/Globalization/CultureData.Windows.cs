@@ -431,8 +431,7 @@ namespace System.Globalization
             {
                 for (int i = 0; i < array.Length; i++)
                 {
-                    // only returns null when null is passed
-                    array[i] = ReescapeWin32String(array[i])!;
+                    array[i] = ReescapeWin32String(array[i])!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 }
             }
 
