@@ -10698,7 +10698,7 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
  *  Display (optionally) the instruction encoding in hex
  */
 
-void emitter::emitDispInsHex(BYTE* code, size_t sz)
+void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
@@ -10709,6 +10709,7 @@ void emitter::emitDispInsHex(BYTE* code, size_t sz)
         }
         else
         {
+            assert(sz == 0);
             printf("              ");
         }
     }
@@ -10742,7 +10743,7 @@ void emitter::emitDispIns(
 
     /* Display the instruction hex code */
 
-    emitDispInsHex(pCode, sz);
+    emitDispInsHex(id, pCode, sz);
 
     printf("      ");
 
