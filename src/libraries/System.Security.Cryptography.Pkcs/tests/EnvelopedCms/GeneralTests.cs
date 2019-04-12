@@ -286,6 +286,58 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             Assert.Equal<byte>(contentInfo.Content, ecms.ContentInfo.Content);
         }
 
+        [Fact]
+        public static void Encrypt_Data_DoesNotIncreaseInSize()
+        {
+            byte[] content = new byte[15]; // One short of AES block size boundary
+            ContentInfo contentInfo = new ContentInfo(content);
+            AlgorithmIdentifier identifier = new AlgorithmIdentifier(new Oid(Oids.Aes128));
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo, identifier);
+
+            using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
+            {
+                CmsRecipient recipient = new CmsRecipient(cert);
+                ecms.Encrypt(recipient);
+            }
+
+            byte[] encoded = ecms.Encode();
+            EnvelopedCms reDecoded = new EnvelopedCms();
+            reDecoded.Decode(encoded);
+            int expectedSize = PlatformDetection.IsFullFramework ? 22 : 16; //NetFx compat.
+            Assert.Equal(expectedSize, reDecoded.ContentInfo.Content.Length);
+        }
+
+        [Fact]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        [PlatformSpecific(~TestPlatforms.Windows)] /* Applies to managed PAL only. */
+        public static void FromManagedPal_CompatWithOctetStringWrappedContents_Decrypt()
+        {
+            byte[] expectedContent = new byte[] { 1, 2, 3 };
+            byte[] encodedMessage = 
+                ("3082010C06092A864886F70D010703A081FE3081FB0201003181C83081C5020100302" +
+                 "E301A311830160603550403130F5253414B65795472616E7366657231021031D935FB" +
+                 "63E8CFAB48A0BF7B397B67C0300D06092A864886F70D0101010500048180586BCA530" +
+                 "9A74A211859714715D90B8E13A7712838746877DF7D68B0BCF36DE3F77854276C8EAD" +
+                 "389ADD8402697E4FFF215143E0E63676349592CB3A86FF556230D5F4AC4A9A6758219" +
+                 "9E65281A8B63DFBCFB7180E6B54C6E38BECAF09624C6B6D2B3058F280FE8F0BF8EBA3" +
+                 "57AECC1B9B177E98671A9659B034501AE3D58789302B06092A864886F70D010701301" +
+                 "406082A864886F70D0307040810B222648FDC0DE38008036BB59C8B6A784B").HexToByteArray();
+            EnvelopedCms ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+
+            using (X509Certificate2 privateCert = Certificates.RSAKeyTransfer1.TryGetCertificateWithPrivateKey())
+            {
+                if (privateCert == null)
+                {
+                    return; //Private key not available.
+                }
+
+                ecms.Decrypt(new X509Certificate2Collection(privateCert));
+            }
+
+            Assert.Equal(expectedContent, ecms.ContentInfo.Content);
+        }
+
         private static X509Certificate2[] s_certs =
         {
             Certificates.RSAKeyTransfer1.GetCertificate(),
