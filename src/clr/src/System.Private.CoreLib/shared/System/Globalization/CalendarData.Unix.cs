@@ -108,7 +108,7 @@ namespace System.Globalization
 
         // PAL Layer ends here
 
-        private static unsafe bool GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string calendarString)
+        private static unsafe bool GetCalendarInfo(string localeName, CalendarId calendarId, CalendarDataType dataType, out string? calendarString)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
 
