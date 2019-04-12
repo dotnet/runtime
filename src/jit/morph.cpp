@@ -6607,7 +6607,8 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     }
     noway_assert(tree->gtOper == GT_IND);
 
-    GenTree* res = fgMorphSmpOp(tree);
+    // Pass down the current mac; if non null we are computing an address
+    GenTree* res = fgMorphSmpOp(tree, mac);
 
     if (fldOffset == 0 && res->OperGet() == GT_IND)
     {
@@ -11886,6 +11887,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             switch (tree->gtOper)
             {
                 case GT_ADDR:
+                    // A non-null mac here implies this node is part of an address computation.
+                    // If so, we need to pass the existing mac down to the child node.
+                    //
+                    // Otherwise, use a new mac.
                     if (subMac1 == nullptr)
                     {
                         subMac1         = &subIndMac1;
@@ -11901,7 +11906,15 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 case GT_BLK:
                 case GT_DYN_BLK:
                 case GT_IND:
-                    subMac1 = &subIndMac1;
+                    // A non-null mac here implies this node is part of an address computation (the tree parent is
+                    // GT_ADDR).
+                    // If so, we need to pass the existing mac down to the child node.
+                    //
+                    // Otherwise, use a new mac.
+                    if (subMac1 == nullptr)
+                    {
+                        subMac1 = &subIndMac1;
+                    }
                     break;
                 default:
                     break;
@@ -11936,16 +11949,16 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
         }
 
-        // If gtOp1 is a GT_FIELD, we need to pass down the mac if
-        // its parent is GT_ADDR, since the address of the field
+        // If op1 is a GT_FIELD or indir, we need to pass down the mac if
+        // its parent is GT_ADDR, since the address of op1
         // is part of an ongoing address computation. Otherwise
         // op1 represents the value of the field and so any address
         // calculations it does are in a new context.
-        if ((op1->gtOper == GT_FIELD) && (tree->gtOper != GT_ADDR))
+        if (((op1->gtOper == GT_FIELD) || op1->OperIsIndir()) && (tree->gtOper != GT_ADDR))
         {
             subMac1 = nullptr;
 
-            // The impact of this field's value to any ongoing
+            // The impact of op1's value to any ongoing
             // address computation is handled below when looking
             // at op2.
         }
@@ -12046,11 +12059,11 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 break;
         }
 
-        // If gtOp2 is a GT_FIELD, we must be taking its value,
+        // If op2 is a GT_FIELD or indir, we must be taking its value,
         // so it should evaluate its address in a new context.
-        if (op2->gtOper == GT_FIELD)
+        if ((op2->gtOper == GT_FIELD) || op2->OperIsIndir())
         {
-            // The impact of this field's value to any ongoing
+            // The impact of op2's value to any ongoing
             // address computation is handled above when looking
             // at op1.
             mac = nullptr;
