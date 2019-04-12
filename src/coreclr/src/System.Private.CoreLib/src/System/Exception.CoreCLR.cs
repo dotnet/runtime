@@ -206,8 +206,8 @@ namespace System
             StackTrace st = new StackTrace(this, fNeedFileInfo: false);
             if (st.FrameCount > 0)
             {
-                StackFrame sf = st.GetFrame(0);
-                MethodBase method = sf.GetMethod();
+                StackFrame sf = st.GetFrame(0)!;
+                MethodBase method = sf.GetMethod()!;
 
                 Module module = method.Module;
 

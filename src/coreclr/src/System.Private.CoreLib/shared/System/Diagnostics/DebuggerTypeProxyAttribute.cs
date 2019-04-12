@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 namespace System.Diagnostics
 {
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class DebuggerTypeProxyAttribute : Attribute
     {
-        private Type _target;
+        private Type? _target;
 
         public DebuggerTypeProxyAttribute(Type type)
         {
@@ -19,14 +21,14 @@ namespace System.Diagnostics
             ProxyTypeName = type.AssemblyQualifiedName;
         }
 
-        public DebuggerTypeProxyAttribute(string typeName)
+        public DebuggerTypeProxyAttribute(string? typeName)
         {
             ProxyTypeName = typeName;
         }
 
-        public string ProxyTypeName { get; }
+        public string? ProxyTypeName { get; }
 
-        public Type Target
+        public Type? Target
         {
             get => _target;
             set
@@ -41,6 +43,6 @@ namespace System.Diagnostics
             }        
         }
 
-        public string TargetTypeName { get; set; }
+        public string? TargetTypeName { get; set; }
     }
 }

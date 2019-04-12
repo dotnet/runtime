@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics
@@ -10,7 +11,7 @@ namespace System.Diagnostics
     {
         private static readonly bool s_shouldWriteToStdErr = Environment.GetEnvironmentVariable("COMPlus_DebugWriteToStdErr") == "1";
 
-        public static void FailCore(string stackTrace, string message, string detailMessage, string errorSource)
+        public static void FailCore(string stackTrace, string? message, string? detailMessage, string errorSource)
         {
             if (s_FailCore != null)
             {
@@ -77,7 +78,7 @@ namespace System.Diagnostics
             // We don't want to write UTF-16 to a file like standard error.  Ideally we would transcode this
             // to UTF8, but the downside of that is it pulls in a bunch of stuff into what is ideally
             // a path with minimal dependencies (as to prevent re-entrency), so we'll take the strategy
-            // of just throwing away any non ASCII characters from the message and writing the rest
+            // of just throwing away any non ASCII characters from the message and writing the rest            
 
             const int BufferLength = 256;
 
