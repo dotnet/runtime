@@ -57,7 +57,7 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            object target = info.GetValue("TrackedObject", typeof(object)); // Do not rename (binary serialization)
+            object? target = info.GetValue("TrackedObject", typeof(object)); // Do not rename (binary serialization)
             bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
 
             Create(target, trackResurrection);

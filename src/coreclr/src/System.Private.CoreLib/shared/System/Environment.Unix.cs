@@ -216,7 +216,7 @@ namespace System
                 {
                     using (var reader = new StreamReader(userDirsPath))
                     {
-                        string line;
+                        string? line;
                         while ((line = reader.ReadLine()) != null)
                         {
                             // Example lines:
