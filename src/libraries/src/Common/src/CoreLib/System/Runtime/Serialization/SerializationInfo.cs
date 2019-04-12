@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security;
@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
         // Even though we have a dictionary, we're still keeping all the arrays around for back-compat. 
         // Otherwise we may run into potentially breaking behaviors like GetEnumerator() not returning entries in the same order they were added.
         private string[] _names;
-        private object[] _values;
+        private object?[] _values;
         private Type[] _types;
         private int _count;
         private Dictionary<string, int> _nameToIndex;
@@ -282,7 +282,7 @@ namespace System.Runtime.Serialization
             _types = newTypes;
         }
 
-        public void AddValue(string name, object value, Type type)
+        public void AddValue(string name, object? value, Type type)
         {
             if (null == name)
             {
@@ -297,7 +297,7 @@ namespace System.Runtime.Serialization
             AddValueInternal(name, value, type);
         }
 
-        public void AddValue(string name, object value)
+        public void AddValue(string name, object? value)
         {
             if (null == value)
             {
@@ -383,7 +383,7 @@ namespace System.Runtime.Serialization
             AddValue(name, (object)value, typeof(DateTime));
         }
 
-        internal void AddValueInternal(string name, object value, Type type)
+        internal void AddValueInternal(string name, object? value, Type type)
         {
             if (_nameToIndex.ContainsKey(name))
             {
@@ -462,7 +462,7 @@ namespace System.Runtime.Serialization
         /// <param name="name"> The name of the element to find.</param>
         /// <param name="foundType"> The type of the element associated with the given name.</param>
         /// <returns>The value of the element at the position associated with name.</returns>
-        private object GetElement(string name, out Type foundType)
+        private object? GetElement(string name, out Type foundType)
         {
             int index = FindElement(name);
             if (index == -1)
@@ -478,7 +478,7 @@ namespace System.Runtime.Serialization
             return _values[index];
         }
 
-        private object GetElementNoThrow(string name, out Type foundType)
+        private object? GetElementNoThrow(string name, out Type? foundType)
         {
             int index = FindElement(name);
             if (index == -1)
@@ -495,7 +495,7 @@ namespace System.Runtime.Serialization
             return _values[index];
         }
 
-        public object GetValue(string name, Type type)
+        public object? GetValue(string name, Type type)
         {
             if ((object)type == null)
             {
@@ -504,10 +504,9 @@ namespace System.Runtime.Serialization
 
             if (!type.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
-            Type foundType;
-            object value;
 
-            value = GetElement(name, out foundType);
+            Type foundType;
+            object? value = GetElement(name, out foundType);
 
             if (ReferenceEquals(foundType, type) || type.IsAssignableFrom(foundType) || value == null)
             {
@@ -518,15 +517,13 @@ namespace System.Runtime.Serialization
             return _converter.Convert(value, type);
         }
 
-        internal object GetValueNoThrow(string name, Type type)
+        internal object? GetValueNoThrow(string name, Type type)
         {
-            Type foundType;
-            object value;
-
             Debug.Assert((object)type != null, "[SerializationInfo.GetValue]type ==null");
             Debug.Assert(type.IsRuntimeImplemented(), "[SerializationInfo.GetValue]type is not a runtime type");
 
-            value = GetElementNoThrow(name, out foundType);
+            Type? foundType;
+            object? value = GetElementNoThrow(name, out foundType);
             if (value == null)
                 return null;
 
@@ -543,111 +540,111 @@ namespace System.Runtime.Serialization
         public bool GetBoolean(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(bool)) ? (bool)value : _converter.ToBoolean(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(bool)) ? (bool)value : _converter.ToBoolean(value!); // if value is null To* method will either deal with it or throw
         }
 
         public char GetChar(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(char)) ? (char)value : _converter.ToChar(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(char)) ? (char)value : _converter.ToChar(value!);
         }
 
         [CLSCompliant(false)]
         public sbyte GetSByte(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(sbyte)) ? (sbyte)value : _converter.ToSByte(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(sbyte)) ? (sbyte)value : _converter.ToSByte(value!);
         }
 
         public byte GetByte(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(byte)) ? (byte)value : _converter.ToByte(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(byte)) ? (byte)value : _converter.ToByte(value!);
         }
 
         public short GetInt16(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(short)) ? (short)value : _converter.ToInt16(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(short)) ? (short)value : _converter.ToInt16(value!);
         }
 
         [CLSCompliant(false)]
         public ushort GetUInt16(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(ushort)) ? (ushort)value : _converter.ToUInt16(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(ushort)) ? (ushort)value : _converter.ToUInt16(value!);
         }
 
         public int GetInt32(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(int)) ? (int)value : _converter.ToInt32(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(int)) ? (int)value : _converter.ToInt32(value!);
         }
 
         [CLSCompliant(false)]
         public uint GetUInt32(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(uint)) ? (uint)value : _converter.ToUInt32(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(uint)) ? (uint)value : _converter.ToUInt32(value!);
         }
 
         public long GetInt64(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(long)) ? (long)value : _converter.ToInt64(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(long)) ? (long)value : _converter.ToInt64(value!);
         }
 
         [CLSCompliant(false)]
         public ulong GetUInt64(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(ulong)) ? (ulong)value : _converter.ToUInt64(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(ulong)) ? (ulong)value : _converter.ToUInt64(value!);
         }
 
         public float GetSingle(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(float)) ? (float)value : _converter.ToSingle(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(float)) ? (float)value : _converter.ToSingle(value!);
         }
 
 
         public double GetDouble(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(double)) ? (double)value : _converter.ToDouble(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(double)) ? (double)value : _converter.ToDouble(value!);
         }
 
         public decimal GetDecimal(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(decimal)) ? (decimal)value : _converter.ToDecimal(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(decimal)) ? (decimal)value : _converter.ToDecimal(value!);
         }
 
         public DateTime GetDateTime(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(DateTime)) ? (DateTime)value : _converter.ToDateTime(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(DateTime)) ? (DateTime)value : _converter.ToDateTime(value!);
         }
 
-        public string GetString(string name)
+        public string? GetString(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType);
-            return ReferenceEquals(foundType, typeof(string)) || value == null ? (string)value : _converter.ToString(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(string)) || value == null ? (string?)value : _converter.ToString(value);
         }
     }
 }
