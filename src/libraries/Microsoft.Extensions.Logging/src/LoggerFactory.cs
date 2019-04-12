@@ -1,10 +1,10 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
@@ -19,8 +19,7 @@ namespace Microsoft.Extensions.Logging
         private volatile bool _disposed;
         private IDisposable _changeTokenRegistration;
         private LoggerFilterOptions _filterOptions;
-
-        internal LoggerExternalScopeProvider ScopeProvider { get; private set; }
+        private LoggerExternalScopeProvider _scopeProvider;
 
         public LoggerFactory() : this(Enumerable.Empty<ILoggerProvider>())
         {
@@ -45,19 +44,27 @@ namespace Microsoft.Extensions.Logging
             RefreshFilters(filterOption.CurrentValue);
         }
 
+        /// <summary>
+        /// Creates new instance of <see cref="ILoggerFactory"/> configured using provided <paramref name="configure"/> delegate.
+        /// </summary>
+        public static ILoggerFactory Create(Action<ILoggingBuilder> configure)
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging(configure);
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var loggerFactory = serviceProvider.GetService<ILoggerFactory>();
+            return new DisposingLoggerFactory(loggerFactory, serviceProvider);
+        }
+
         private void RefreshFilters(LoggerFilterOptions filterOptions)
         {
             lock (_sync)
             {
                 _filterOptions = filterOptions;
-                foreach (var logger in _loggers)
+                foreach (var registeredLogger in _loggers)
                 {
-                    var loggerInformation = logger.Value.Loggers;
-                    var categoryName = logger.Key;
-
-                    ApplyRules(loggerInformation, categoryName, 0, loggerInformation.Length);
-
-                    logger.Value.Loggers = loggerInformation;
+                    var logger = registeredLogger.Value;
+                    (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
                 }
             }
         }
@@ -73,10 +80,13 @@ namespace Microsoft.Extensions.Logging
             {
                 if (!_loggers.TryGetValue(categoryName, out var logger))
                 {
-                    logger = new Logger(this)
+                    logger = new Logger
                     {
-                        Loggers = CreateLoggers(categoryName)
+                        Loggers = CreateLoggers(categoryName),
                     };
+
+                    (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
+
                     _loggers[categoryName] = logger;
                 }
 
@@ -95,18 +105,17 @@ namespace Microsoft.Extensions.Logging
             {
                 AddProviderRegistration(provider, dispose: true);
 
-                foreach (var logger in _loggers)
+                foreach (var existingLogger in _loggers)
                 {
-                    var loggerInformation = logger.Value.Loggers;
-                    var categoryName = logger.Key;
+                    var logger = existingLogger.Value;
+                    var loggerInformation = logger.Loggers;
 
+                    var newLoggerIndex = loggerInformation.Length;
                     Array.Resize(ref loggerInformation, loggerInformation.Length + 1);
-                    var newLoggerIndex = loggerInformation.Length - 1;
+                    loggerInformation[newLoggerIndex] = new LoggerInformation(provider, existingLogger.Key);
 
-                    SetLoggerInformation(ref loggerInformation[newLoggerIndex], provider, categoryName);
-                    ApplyRules(loggerInformation, categoryName, newLoggerIndex, 1);
-
-                    logger.Value.Loggers = loggerInformation;
+                    logger.Loggers = loggerInformation;
+                    (logger.MessageLoggers, logger.ScopeLoggers) = ApplyFilters(logger.Loggers);
                 }
             }
         }
@@ -121,50 +130,57 @@ namespace Microsoft.Extensions.Logging
 
             if (provider is ISupportExternalScope supportsExternalScope)
             {
-                if (ScopeProvider == null)
+                if (_scopeProvider == null)
                 {
-                    ScopeProvider = new LoggerExternalScopeProvider();
+                    _scopeProvider = new LoggerExternalScopeProvider();
                 }
 
-                supportsExternalScope.SetScopeProvider(ScopeProvider);
+                supportsExternalScope.SetScopeProvider(_scopeProvider);
             }
-        }
-
-        private void SetLoggerInformation(ref LoggerInformation loggerInformation, ILoggerProvider provider,  string categoryName)
-        {
-            loggerInformation.Logger = provider.CreateLogger(categoryName);
-            loggerInformation.ProviderType = provider.GetType();
-            loggerInformation.ExternalScope = provider is ISupportExternalScope;
         }
 
         private LoggerInformation[] CreateLoggers(string categoryName)
         {
             var loggers = new LoggerInformation[_providerRegistrations.Count];
-            for (int i = 0; i < _providerRegistrations.Count; i++)
+            for (var i = 0; i < _providerRegistrations.Count; i++)
             {
-                SetLoggerInformation(ref loggers[i], _providerRegistrations[i].Provider, categoryName);
+                loggers[i] = new LoggerInformation(_providerRegistrations[i].Provider, categoryName);
             }
-
-            ApplyRules(loggers, categoryName, 0, loggers.Length);
             return loggers;
         }
 
-        private void ApplyRules(LoggerInformation[] loggers, string categoryName, int start, int count)
+        private (MessageLogger[] MessageLoggers, ScopeLogger[] ScopeLoggers) ApplyFilters(LoggerInformation[] loggers)
         {
-            for (var index = start; index < start + count; index++)
-            {
-                ref var loggerInformation = ref loggers[index];
+            var messageLoggers = new List<MessageLogger>();
+            var scopeLoggers = _filterOptions.CaptureScopes ? new List<ScopeLogger>() : null;
 
+            foreach (var loggerInformation in loggers)
+            {
                 RuleSelector.Select(_filterOptions,
                     loggerInformation.ProviderType,
-                    categoryName,
+                    loggerInformation.Category,
                     out var minLevel,
                     out var filter);
 
-                loggerInformation.Category = categoryName;
-                loggerInformation.MinLevel = minLevel;
-                loggerInformation.Filter = filter;
+                if (minLevel != null && minLevel > LogLevel.Critical)
+                {
+                    continue;
+                }
+
+                messageLoggers.Add(new MessageLogger(loggerInformation.Logger, loggerInformation.Category, loggerInformation.ProviderType, minLevel, filter));
+
+                if (!loggerInformation.ExternalScope)
+                {
+                    scopeLoggers?.Add(new ScopeLogger(logger: loggerInformation.Logger, externalScopeProvider: null));
+                }
             }
+
+            if (_scopeProvider != null)
+            {
+                scopeLoggers?.Add(new ScopeLogger(logger: null, externalScopeProvider: _scopeProvider));
+            }
+
+            return (messageLoggers.ToArray(), scopeLoggers?.ToArray());
         }
 
         /// <summary>
@@ -202,6 +218,34 @@ namespace Microsoft.Extensions.Logging
         {
             public ILoggerProvider Provider;
             public bool ShouldDispose;
+        }
+
+        private class DisposingLoggerFactory: ILoggerFactory
+        {
+            private readonly ILoggerFactory _loggerFactory;
+
+            private readonly ServiceProvider _serviceProvider;
+
+            public DisposingLoggerFactory(ILoggerFactory loggerFactory, ServiceProvider serviceProvider)
+            {
+                _loggerFactory = loggerFactory;
+                _serviceProvider = serviceProvider;
+            }
+
+            public void Dispose()
+            {
+                _serviceProvider.Dispose();
+            }
+
+            public ILogger CreateLogger(string categoryName)
+            {
+                return _loggerFactory.CreateLogger(categoryName);
+            }
+
+            public void AddProvider(ILoggerProvider provider)
+            {
+                _loggerFactory.AddProvider(provider);
+            }
         }
     }
 }

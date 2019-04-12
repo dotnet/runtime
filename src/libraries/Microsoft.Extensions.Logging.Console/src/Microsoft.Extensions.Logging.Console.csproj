@@ -4,9 +4,16 @@
     <Description>Console logger provider implementation for Microsoft.Extensions.Logging.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Logging.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../../shared/*.cs" />
+
     <Reference Include="Microsoft.Extensions.Configuration.Abstractions" />
     <Reference Include="Microsoft.Extensions.Logging.Configuration" />
     <Reference Include="Microsoft.Extensions.Logging" />

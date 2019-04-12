@@ -13,8 +13,10 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// Base class for file based <see cref="ConfigurationProvider"/>.
     /// </summary>
-    public abstract class FileConfigurationProvider : ConfigurationProvider
+    public abstract class FileConfigurationProvider : ConfigurationProvider, IDisposable
     {
+        private readonly IDisposable _changeTokenRegistration;
+
         /// <summary>
         /// Initializes a new instance with the specified source.
         /// </summary>
@@ -29,7 +31,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (Source.ReloadOnChange && Source.FileProvider != null)
             {
-                ChangeToken.OnChange(
+                _changeTokenRegistration = ChangeToken.OnChange(
                     () => Source.FileProvider.Watch(Source.Path),
                     () => {
                         Thread.Sleep(Source.ReloadDelay);
@@ -42,6 +44,13 @@ namespace Microsoft.Extensions.Configuration
         /// The source settings for this provider.
         /// </summary>
         public FileConfigurationSource Source { get; }
+        
+        /// <summary>
+        /// Generates a string representing this provider name and relevant details.
+        /// </summary>
+        /// <returns> The configuration name. </returns>
+        public override string ToString()
+            => $"{GetType().Name} for '{Source.Path}' ({(Source.Optional ? "Optional" : "Required")})";
 
         private void Load(bool reload)
         {
@@ -59,7 +68,7 @@ namespace Microsoft.Extensions.Configuration
                     {
                         error.Append($" The physical path is '{file.PhysicalPath}'.");
                     }
-                    throw new FileNotFoundException(error.ToString());
+                    HandleException(new FileNotFoundException(error.ToString()));
                 }
             }
             else
@@ -77,21 +86,7 @@ namespace Microsoft.Extensions.Configuration
                     }
                     catch (Exception e)
                     {
-                        bool ignoreException = false;
-                        if (Source.OnLoadException != null)
-                        {
-                            var exceptionContext = new FileLoadExceptionContext
-                            {
-                                Provider = this,
-                                Exception = e
-                            };
-                            Source.OnLoadException.Invoke(exceptionContext);
-                            ignoreException = exceptionContext.Ignore;
-                        }
-                        if (!ignoreException)
-                        {
-                            throw e;
-                        }
+                        HandleException(e);
                     }
                 }
             }
@@ -114,5 +109,36 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="stream">The stream to read.</param>
         public abstract void Load(Stream stream);
+
+        private void HandleException(Exception e)
+        {
+            bool ignoreException = false;
+            if (Source.OnLoadException != null)
+            {
+                var exceptionContext = new FileLoadExceptionContext
+                {
+                    Provider = this,
+                    Exception = e
+                };
+                Source.OnLoadException.Invoke(exceptionContext);
+                ignoreException = exceptionContext.Ignore;
+            }
+            if (!ignoreException)
+            {
+                throw e;
+            }
+        }
+
+        /// <inheritdoc />
+        public void Dispose() => Dispose(true);
+
+        /// <summary>
+        /// Dispose the provider.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> if invoked from <see cref="IDisposable.Dispose"/>.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            _changeTokenRegistration?.Dispose();
+        }
     }
 }

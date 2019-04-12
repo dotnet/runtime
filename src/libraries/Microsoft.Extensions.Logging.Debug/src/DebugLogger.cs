@@ -9,35 +9,23 @@ namespace Microsoft.Extensions.Logging.Debug
     /// <summary>
     /// A logger that writes messages in the debug output window only when a debugger is attached.
     /// </summary>
-    public partial class DebugLogger : ILogger
+    internal partial class DebugLogger : ILogger
     {
-        private readonly Func<string, LogLevel, bool> _filter;
         private readonly string _name;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DebugLogger"/> class.
         /// </summary>
         /// <param name="name">The name of the logger.</param>
-        public DebugLogger(string name) : this(name, filter: null)
+        public DebugLogger(string name)
         {
+            _name = name;
         }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="DebugLogger"/> class.
-        /// </summary>
-        /// <param name="name">The name of the logger.</param>
-        /// <param name="filter">The function used to filter events based on the log level.</param>
-        public DebugLogger(string name, Func<string, LogLevel, bool> filter)
-        {
-            _name = string.IsNullOrEmpty(name) ? nameof(DebugLogger) : name;
-            _filter = filter;
-        }
-
 
         /// <inheritdoc />
         public IDisposable BeginScope<TState>(TState state)
         {
-            return NoopDisposable.Instance;
+            return NullScope.Instance;
         }
 
         /// <inheritdoc />
@@ -45,9 +33,7 @@ namespace Microsoft.Extensions.Logging.Debug
         {
             // If the filter is null, everything is enabled
             // unless the debugger is not attached
-            return Debugger.IsAttached &&
-                logLevel != LogLevel.None &&
-                (_filter == null || _filter(_name, logLevel));
+            return Debugger.IsAttached && logLevel != LogLevel.None;
         }
 
         /// <inheritdoc />
@@ -74,19 +60,10 @@ namespace Microsoft.Extensions.Logging.Debug
 
             if (exception != null)
             {
-                message += Environment.NewLine + Environment.NewLine + exception.ToString();
+                message += Environment.NewLine + Environment.NewLine + exception;
             }
 
             DebugWriteLine(message, _name);
-        }
-
-        private class NoopDisposable : IDisposable
-        {
-            public static NoopDisposable Instance = new NoopDisposable();
-
-            public void Dispose()
-            {
-            }
         }
     }
 }

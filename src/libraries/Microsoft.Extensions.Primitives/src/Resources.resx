@@ -120,6 +120,9 @@
   <data name="Argument_InvalidOffsetLength" xml:space="preserve">
     <value>Offset and length are out of bounds for the string or length is greater than the number of characters from index to the end of the string.</value>
   </data>
+  <data name="Argument_InvalidOffsetLengthStringSegment" xml:space="preserve">
+    <value>Offset and length are out of bounds for this StringSegment or length is greater than the number of characters to the end of this StringSegment.</value>
+  </data>
   <data name="Capacity_CannotChangeAfterWriteStarted" xml:space="preserve">
     <value>Cannot change capacity after write started.</value>
   </data>

@@ -1,13 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.2;net461</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.Logging" />
     <Reference Include="Microsoft.Extensions.Logging.EventSource" />
-    <Reference Include="Microsoft.Extensions.Logging.Tests" />
+    <Reference Include="Newtonsoft.Json" />
   </ItemGroup>
 
 </Project>

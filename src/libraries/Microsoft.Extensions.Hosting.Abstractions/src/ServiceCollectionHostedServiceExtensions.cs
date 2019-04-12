@@ -1,6 +1,7 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -15,6 +16,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The original <see cref="IServiceCollection"/>.</returns>
         public static IServiceCollection AddHostedService<THostedService>(this IServiceCollection services)
             where THostedService : class, IHostedService
-            => services.AddTransient<IHostedService, THostedService>();
+        {
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, THostedService>());
+
+            return services;
+        }
     }
 }

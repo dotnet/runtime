@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Implementation of IOptionsFactory.
+    /// Implementation of <see cref="IOptionsFactory{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">The type of options being requested.</typeparam>
     public class OptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOptions : class, new()
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Returns a configured TOptions instance with the given name.
+        /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
         public TOptions Create(string name)
         {

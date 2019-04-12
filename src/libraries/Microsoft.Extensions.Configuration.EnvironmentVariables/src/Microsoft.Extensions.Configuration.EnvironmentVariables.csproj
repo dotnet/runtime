@@ -4,7 +4,12 @@
     <Description>Environment variables configuration provider implementation for Microsoft.Extensions.Configuration.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageTags>$(PackageTags);envvar;environmentvariable</PackageTags>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Configuration.EnvironmentVariables.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.Configuration" />

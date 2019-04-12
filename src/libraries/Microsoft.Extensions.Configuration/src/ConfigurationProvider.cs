@@ -94,5 +94,11 @@ namespace Microsoft.Extensions.Configuration
             var previousToken = Interlocked.Exchange(ref _reloadToken, new ConfigurationReloadToken());
             previousToken.OnReload();
         }
+
+        /// <summary>
+        /// Generates a string representing this provider name and relevant details.
+        /// </summary>
+        /// <returns> The configuration name. </returns>
+        public override string ToString() => $"{GetType().Name}";
     }
 }

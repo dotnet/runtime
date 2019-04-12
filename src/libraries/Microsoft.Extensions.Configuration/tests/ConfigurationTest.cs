@@ -301,9 +301,28 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal("ValueInMem2", config["Key1:Key2"]);
         }
 
+        [Fact]
+        public void NewConfigurationRootMayBeBuiltFromExistingWithDuplicateKeys()
+        {
+            var configurationRoot = new ConfigurationBuilder()
+                                    .AddInMemoryCollection(new Dictionary<string, string>
+                                        {
+                                            {"keya:keyb", "valueA"},
+                                        })
+                                    .AddInMemoryCollection(new Dictionary<string, string>
+                                        {
+                                            {"KEYA:KEYB", "valueB"}
+                                        })
+                                    .Build();
+            var newConfigurationRoot = new ConfigurationBuilder()
+                .AddInMemoryCollection(configurationRoot.AsEnumerable())
+                .Build();
+            Assert.Equal("valueB", newConfigurationRoot["keya:keyb"]);
+        }
+
         public class TestMemorySourceProvider : MemoryConfigurationProvider, IConfigurationSource
         {
-            public TestMemorySourceProvider(Dictionary<string, string> initialData) 
+            public TestMemorySourceProvider(Dictionary<string, string> initialData)
                 : base(new MemoryConfigurationSource { InitialData = initialData })
             { }
 

@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using Microsoft.Extensions.Logging.Abstractions.Internal;
+using Microsoft.Extensions.Internal;
 
 namespace Microsoft.Extensions.Logging
 {
@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging
     public static class LoggerFactoryExtensions
     {
         /// <summary>
-        /// Creates a new ILogger instance using the full name of the given type.
+        /// Creates a new <see cref="ILogger"/> instance using the full name of the given type.
         /// </summary>
         /// <typeparam name="T">The type.</typeparam>
         /// <param name="factory">The factory.</param>
@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging
             return new Logger<T>(factory);
         }
         /// <summary>
-        /// Creates a new ILogger instance using the full name of the given type.
+        /// Creates a new <see cref="ILogger"/> instance using the full name of the given <paramref name="type"/>.
         /// </summary>
         /// <param name="factory">The factory.</param>
         /// <param name="type">The type.</param>
@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Logging
                 throw new ArgumentNullException(nameof(type));
             }
 
-            return factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(type));
+            return factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(type, includeGenericParameters: false, nestedTypeDelimiter: '.'));
         }
     }
 }

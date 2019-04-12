@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Hosting
         IDictionary<object, object> Properties { get; }
 
         /// <summary>
-        /// Set up the configuration for the builder itself. This will be used to initialize the <see cref="IHostingEnvironment"/>
+        /// Set up the configuration for the builder itself. This will be used to initialize the <see cref="IHostEnvironment"/>
         /// for use later in the build process. This can be called multiple times and the results will be additive.
         /// </summary>
         /// <param name="configureDelegate">The delegate for configuring the <see cref="IConfigurationBuilder"/> that will be used
@@ -52,6 +52,13 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="factory"></param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory);
+
+        /// <summary>
+        /// Overrides the factory used to create the service provider.
+        /// </summary>
+        /// <typeparam name="TContainerBuilder"></typeparam>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory);
 
         /// <summary>
         /// Enables configuring the instantiated dependency container. This can be called multiple times and

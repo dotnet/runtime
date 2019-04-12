@@ -56,11 +56,25 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="token">The token to trigger shutdown.</param>
         public static async Task RunAsync(this IHost host, CancellationToken token = default)
         {
-            using (host)
+            try
             {
                 await host.StartAsync(token);
 
                 await host.WaitForShutdownAsync(token);
+            }
+            finally
+            {
+#if DISPOSE_ASYNC
+                if (host is IAsyncDisposable asyncDisposable)
+                {
+                    await asyncDisposable.DisposeAsync();
+                }
+                else
+#endif
+                {
+                    host.Dispose();
+                }
+
             }
         }
 
@@ -71,11 +85,11 @@ namespace Microsoft.Extensions.Hosting
         /// <param name="token">The token to trigger shutdown.</param>
         public static async Task WaitForShutdownAsync(this IHost host, CancellationToken token = default)
         {
-            var applicationLifetime = host.Services.GetService<IApplicationLifetime>();
+            var applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();
 
             token.Register(state =>
             {
-                ((IApplicationLifetime)state).StopApplication();
+                ((IHostApplicationLifetime)state).StopApplication();
             },
             applicationLifetime);
 

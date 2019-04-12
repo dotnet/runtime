@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         // Keys are services being resolved via GetService, values - first scoped service in their call site tree
         private readonly ConcurrentDictionary<Type, Type> _scopedServices = new ConcurrentDictionary<Type, Type>();
 
-        public void ValidateCallSite(IServiceCallSite callSite)
+        public void ValidateCallSite(ServiceCallSite callSite)
         {
             var scoped = VisitCallSite(callSite, default);
             if (scoped != null)
@@ -38,11 +38,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                         scopedService,
                         nameof(ServiceLifetime.Scoped).ToLowerInvariant()));
             }
-        }
-
-        protected override Type VisitTransient(TransientCallSite transientCallSite, CallSiteValidatorState state)
-        {
-            return VisitCallSite(transientCallSite.ServiceCallSite, state);
         }
 
         protected override Type VisitConstructor(ConstructorCallSite constructorCallSite, CallSiteValidatorState state)
@@ -74,16 +69,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return result;
         }
 
-        protected override Type VisitSingleton(SingletonCallSite singletonCallSite, CallSiteValidatorState state)
+        protected override Type VisitRootCache(ServiceCallSite singletonCallSite, CallSiteValidatorState state)
         {
             state.Singleton = singletonCallSite;
-            return VisitCallSite(singletonCallSite.ServiceCallSite, state);
+            return VisitCallSiteMain(singletonCallSite, state);
         }
 
-        protected override Type VisitScoped(ScopedCallSite scopedCallSite, CallSiteValidatorState state)
+        protected override Type VisitScopeCache(ServiceCallSite scopedCallSite, CallSiteValidatorState state)
         {
             // We are fine with having ServiceScopeService requested by singletons
-            if (scopedCallSite.ServiceCallSite is ServiceScopeFactoryCallSite)
+            if (scopedCallSite is ServiceScopeFactoryCallSite)
             {
                 return null;
             }
@@ -97,13 +92,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     ));
             }
 
-            VisitCallSite(scopedCallSite.ServiceCallSite, state);
+            VisitCallSiteMain(scopedCallSite, state);
             return scopedCallSite.ServiceType;
         }
 
         protected override Type VisitConstant(ConstantCallSite constantCallSite, CallSiteValidatorState state) => null;
-
-        protected override Type VisitCreateInstance(CreateInstanceCallSite createInstanceCallSite, CallSiteValidatorState state) => null;
 
         protected override Type VisitServiceProvider(ServiceProviderCallSite serviceProviderCallSite, CallSiteValidatorState state) => null;
 
@@ -113,7 +106,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         internal struct CallSiteValidatorState
         {
-            public SingletonCallSite Singleton { get; set; }
+            public ServiceCallSite Singleton { get; set; }
         }
     }
 }

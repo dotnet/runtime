@@ -1,7 +1,9 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Test
@@ -28,6 +30,16 @@ namespace Microsoft.Extensions.Logging.Test
             serviceCollection.AddLogging(builder => builder.AddDebug());
 
             Assert.Equal(count, serviceCollection.Count);
+        }
+
+        [Fact]
+        public void CaptureScopesDefaultsToTrue()
+        {
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging(builder => builder.AddConfiguration(new ConfigurationBuilder().Build()));
+            var options = serviceCollection.BuildServiceProvider().GetRequiredService<IOptions<LoggerFilterOptions>>();
+
+            Assert.True(options.Value.CaptureScopes);
         }
     }
 }

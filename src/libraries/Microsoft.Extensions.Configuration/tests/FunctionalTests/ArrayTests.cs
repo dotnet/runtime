@@ -29,19 +29,19 @@ i=ini_i.i.i.i
 ";
         private static readonly string _json1ConfigFileContent = @"
 {
-    'address': [
-        'json_0.0.0.0',
-        'json_1.1.1.1',
-        'json_2.2.2.2'
+    ""address"": [
+        ""json_0.0.0.0"",
+        ""json_1.1.1.1"",
+        ""json_2.2.2.2""
     ]
 }
 ";
 
         private static readonly string _json2ConfigFileContent = @"
 {
-    'address': {
-        'j': 'json_j.j.j.j',
-        '3': 'json_3.3.3.3'
+    ""address"": {
+        ""j"": ""json_j.j.j.j"",
+        ""3"": ""json_3.3.3.3""
     }
 }
 ";

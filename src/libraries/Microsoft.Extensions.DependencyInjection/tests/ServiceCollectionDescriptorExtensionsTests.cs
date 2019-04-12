@@ -1,9 +1,11 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -57,6 +59,58 @@ namespace Microsoft.Extensions.DependencyInjection
             // Assert
             var result = Assert.Single(serviceCollection);
             Assert.Same(result, descriptor2);
+        }
+
+        public static TheoryData<ServiceDescriptor, string> ServiceDescriptorToStringData = new TheoryData<ServiceDescriptor, string>()
+        {
+            {
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Scoped),
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Scoped ImplementationType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeService"
+            },
+            {
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Singleton),
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Singleton ImplementationType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeService"
+            },
+            {
+                new ServiceDescriptor(typeof(IFakeService), typeof(FakeService), ServiceLifetime.Transient),
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Transient ImplementationType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeService"
+            },
+            {
+                new ServiceDescriptor(typeof(IFakeService), new FakeServiceToString()),
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Singleton ImplementationInstance: [FakeServiceToString]"
+            },
+            {
+                new ServiceDescriptor(typeof(IFakeService), CreateFakeService, ServiceLifetime.Scoped),
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Scoped ImplementationFactory: Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeService CreateFakeService(System.IServiceProvider)"
+            },
+            {
+                new ServiceDescriptor(typeof(IFakeService), CreateFakeService, ServiceLifetime.Singleton),
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Singleton ImplementationFactory: Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeService CreateFakeService(System.IServiceProvider)"
+            },
+            {
+                new ServiceDescriptor(typeof(IFakeService), CreateFakeService, ServiceLifetime.Transient),
+                "ServiceType: Microsoft.Extensions.DependencyInjection.Specification.Fakes.IFakeService Lifetime: Transient ImplementationFactory: Microsoft.Extensions.DependencyInjection.Specification.Fakes.FakeService CreateFakeService(System.IServiceProvider)"
+            },
+        };
+
+        [Theory]
+        [MemberData(nameof(ServiceDescriptorToStringData))]
+        public void ServiceDescriptor_ToString(ServiceDescriptor descriptor, string expectedString)
+        {
+            Assert.Equal(expectedString, descriptor.ToString());
+        }
+
+        private static FakeService CreateFakeService(IServiceProvider provider)
+        {
+            return new FakeService();
+        }
+
+        private class FakeServiceToString : IFakeService
+        {
+            public override string ToString()
+            {
+                return "[FakeServiceToString]";
+            }
         }
     }
 }
