@@ -2466,6 +2466,81 @@ interp_handle_isinst (TransformData *td, MonoClass *klass, gboolean isinst_instr
 	td->ip += 5;
 }
 
+static void
+interp_emit_ldobj (TransformData *td, MonoClass *klass)
+{
+	int mt = mint_type (m_class_get_byval_arg (klass));
+	int size;
+
+	if (mt == MINT_TYPE_VT) {
+		interp_add_ins (td, MINT_LDOBJ_VT);
+		td->last_ins->data [0] = get_data_item_index(td, klass);
+		size = mono_class_value_size (klass, NULL);
+		PUSH_VT (td, size);
+	} else {
+		int opcode;
+		switch (mt) {
+			case MINT_TYPE_I1: opcode = MINT_LDIND_I1_CHECK; break;
+			case MINT_TYPE_U1: opcode = MINT_LDIND_U1_CHECK; break;
+			case MINT_TYPE_I2: opcode = MINT_LDIND_I2_CHECK; break;
+			case MINT_TYPE_U2: opcode = MINT_LDIND_U2_CHECK; break;
+			case MINT_TYPE_I4: opcode = MINT_LDIND_I4_CHECK; break;
+			case MINT_TYPE_I8: opcode = MINT_LDIND_I8_CHECK; break;
+			case MINT_TYPE_R4: opcode = MINT_LDIND_R4_CHECK; break;
+			case MINT_TYPE_R8: opcode = MINT_LDIND_R8_CHECK; break;
+			case MINT_TYPE_O: opcode = MINT_LDIND_REF; break;
+			default: g_assert_not_reached (); break;
+		}
+		interp_add_ins (td, opcode);
+	}
+
+	SET_TYPE (td->sp - 1, stack_type [mt], klass);
+}
+
+static void
+interp_emit_stobj (TransformData *td, MonoClass *klass)
+{
+	int mt = mint_type (m_class_get_byval_arg (klass));
+
+	if (mt == MINT_TYPE_VT) {
+		int size;
+		interp_add_ins (td, MINT_STOBJ_VT);
+		td->last_ins->data [0] = get_data_item_index(td, klass);
+		size = mono_class_value_size (klass, NULL);
+		POP_VT (td, size);
+	} else {
+		int opcode;
+		switch (mt) {
+			case MINT_TYPE_I1:
+			case MINT_TYPE_U1:
+				opcode = MINT_STIND_I1;
+				break;
+			case MINT_TYPE_I2:
+			case MINT_TYPE_U2:
+				opcode = MINT_STIND_I2;
+				break;
+			case MINT_TYPE_I4:
+				opcode = MINT_STIND_I4;
+				break;
+			case MINT_TYPE_I8:
+				opcode = MINT_STIND_I8;
+				break;
+			case MINT_TYPE_R4:
+				opcode = MINT_STIND_R4;
+				break;
+			case MINT_TYPE_R8:
+				opcode = MINT_STIND_R8;
+				break;
+			case MINT_TYPE_O:
+				opcode = MINT_STIND_REF;
+				break;
+			default: g_assert_not_reached (); break;
+		}
+		interp_add_ins (td, opcode);
+	}
+	td->sp -= 2;
+}
+
 
 static gboolean
 generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error)
@@ -3597,7 +3672,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		}
 		case CEE_LDOBJ: {
-			int size;
 			CHECK_STACK (td, 1);
 
 			token = read32 (td->ip + 1);
@@ -3609,23 +3683,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				goto_if_nok (error, exit);
 			}
 
-			MonoClass *tos_klass = td->sp [-1].klass;
-			if (tos_klass && td->sp [-1].type == STACK_TYPE_VT) {
-				int tos_size = mono_class_value_size (tos_klass, NULL);
-				POP_VT (td, tos_size);
-			}
+			interp_emit_ldobj (td, klass);
 
-			int mt = mint_type (m_class_get_byval_arg (klass));
-
-			interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_LDOBJ_VT: MINT_LDOBJ);
-			td->last_ins->data [0] = get_data_item_index(td, klass);
-
-			if (mt == MINT_TYPE_VT) {
-				size = mono_class_value_size (klass, NULL);
-				PUSH_VT (td, size);
-			}
 			td->ip += 5;
-			SET_TYPE (td->sp - 1, stack_type [mt], klass);
 			BARRIER_IF_VOLATILE (td);
 			break;
 		}
@@ -3841,18 +3901,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				if (!interp_transform_call (td, method, target_method, domain, generic_context, td->is_bb_start, NULL, FALSE, error, FALSE))
 					goto exit;
 			} else {
-				int mt = mint_type (m_class_get_byval_arg (klass));
 				interp_add_ins (td, MINT_UNBOX);
 				td->last_ins->data [0] = get_data_item_index (td, klass);
 
-				interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_LDOBJ_VT: MINT_LDOBJ);
-				td->last_ins->data [0] = get_data_item_index(td, klass);
-				SET_TYPE (td->sp - 1, stack_type [mt], klass);
+				interp_emit_ldobj (td, klass);
 
-				if (mt == MINT_TYPE_VT) {
-					int size = mono_class_value_size (klass, NULL);
-					PUSH_VT (td, size);
-				}
 				td->ip += 5;
 			}
 
@@ -4111,7 +4164,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			break;
 		}
 		case CEE_STOBJ: {
-			int size;
 			token = read32 (td->ip + 1);
 
 			if (method->wrapper_type != MONO_WRAPPER_NONE)
@@ -4121,14 +4173,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			CHECK_TYPELOAD (klass);
 
 			BARRIER_IF_VOLATILE (td);
-			interp_add_ins (td, td->sp [-1].type == STACK_TYPE_VT ? MINT_STOBJ_VT : MINT_STOBJ);
-			td->last_ins->data [0] = get_data_item_index (td, klass);
-			if (td->sp [-1].type == STACK_TYPE_VT) {
-				size = mono_class_value_size (klass, NULL);
-				POP_VT (td, size);
-			}
+
+			interp_emit_stobj (td, klass);
+
 			td->ip += 5;
-			td->sp -= 2;
 			break;
 		}
 		case CEE_CONV_OVF_I_UN:

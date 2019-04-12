@@ -3757,8 +3757,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			if (!sp[-1].data.p)
 				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
-			/* memmove handles unaligned case */
-			memmove (&sp [-1].data.l, sp [-1].data.p, sizeof (gint64));
+#ifdef NO_UNALIGNED_ACCESS
+			if ((gsize)sp [-1].data.p % SIZEOF_VOID_P)
+				memcpy (&sp [-1].data.l, sp [-1].data.p, sizeof (gint64));
+			else
+#endif
+			sp[-1].data.l = *(gint64*)sp[-1].data.p;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDIND_I) {
 			guint16 offset = * (guint16 *)(ip + 1);
@@ -3787,6 +3791,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			if (!sp[-1].data.p)
 				THROW_EX (mono_get_exception_null_reference (), ip);
 			++ip;
+#ifdef NO_UNALIGNED_ACCESS
+			if ((gsize)sp [-1].data.p % SIZEOF_VOID_P)
+				memcpy (&sp [-1].data.f, sp [-1].data.p, sizeof (gdouble));
+			else
+#endif
 			sp[-1].data.f = *(gdouble*)sp[-1].data.p;
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDIND_REF)
@@ -4242,25 +4251,14 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			sp -= 2;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDOBJ) {
-			void *p;
-			c = (MonoClass*)imethod->data_items[* (guint16 *)(ip + 1)];
-			ip += 2;
-			p = sp [-1].data.p;
-			stackval_from_data (m_class_get_byval_arg (c), &sp [-1], p, FALSE);
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_LDOBJ_VT) {
-			void *p;
+			int size;
 			c = (MonoClass*)imethod->data_items[* (guint16 *)(ip + 1)];
 			ip += 2;
-			p = sp [-1].data.p;
-			if (!m_class_is_enumtype (c)) {
-				int size = mono_class_value_size (c, NULL);
-				sp [-1].data.p = vt_sp;
-				vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
-			}
-			stackval_from_data (m_class_get_byval_arg (c), &sp [-1], p, FALSE);
+			size = mono_class_value_size (c, NULL);
+			mono_value_copy_internal (vt_sp, sp [-1].data.p, c);
+			sp [-1].data.p = vt_sp;
+			vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSTR)
@@ -4916,18 +4914,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			size = mono_class_value_size (c, NULL);
 			mono_value_copy_internal (sp [-2].data.p, sp [-1].data.p, c);
 			vt_sp -= ALIGN_TO (size, MINT_VT_ALIGNMENT);
-			sp -= 2;
-			MINT_IN_BREAK;
-		}
-		MINT_IN_CASE(MINT_STOBJ) {
-			c = (MonoClass*)imethod->data_items[* (guint16 *)(ip + 1)];
-			ip += 2;
-
-			g_assert (!m_class_get_byval_arg (c)->byref);
-			if (MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (c)))
-				mono_gc_wbarrier_generic_store_internal (sp [-2].data.o, sp [-1].data.o);
-			else
-				stackval_to_data (m_class_get_byval_arg (c), &sp [-1], sp [-2].data.p, FALSE);
 			sp -= 2;
 			MINT_IN_BREAK;
 		}
