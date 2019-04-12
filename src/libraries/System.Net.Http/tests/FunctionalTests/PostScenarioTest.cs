@@ -28,6 +28,7 @@ namespace System.Net.Http.Functional.Tests
         private readonly ITestOutputHelper _output;
 
         public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
+        public static readonly object[][] VerifyUploadServers = Configuration.Http.VerifyUploadServers;
 
         public static readonly object[][] BasicAuthEchoServers =
             new object[][]
@@ -67,7 +68,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostNoContentUsingContentLengthSemantics_Success(Uri serverUri)
         {
             await PostHelper(serverUri, string.Empty, null,
@@ -75,7 +76,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostEmptyContentUsingContentLengthSemantics_Success(Uri serverUri)
         {
             await PostHelper(serverUri, string.Empty, new StringContent(string.Empty),
@@ -83,7 +84,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostEmptyContentUsingChunkedEncoding_Success(Uri serverUri)
         {
             await PostHelper(serverUri, string.Empty, new StringContent(string.Empty),
@@ -91,7 +92,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostEmptyContentUsingConflictingSemantics_Success(Uri serverUri)
         {
             await PostHelper(serverUri, string.Empty, new StringContent(string.Empty),
@@ -99,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostUsingContentLengthSemantics_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
@@ -107,7 +108,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostUsingChunkedEncoding_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
@@ -115,7 +116,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostSyncBlockingContentUsingChunkedEncoding_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new SyncBlockingContent(ExpectedContent),
@@ -123,7 +124,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostRepeatedFlushContentUsingChunkedEncoding_Success(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new RepeatedFlushContent(ExpectedContent),
@@ -131,7 +132,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         public async Task PostUsingUsingConflictingSemantics_UsesChunkedSemantics(Uri serverUri)
         {
             await PostHelper(serverUri, ExpectedContent, new StringContent(ExpectedContent),
@@ -139,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(VerifyUploadServers))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx behaves differently and will buffer content and use 'Content-Length' semantics")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT behaves differently and will use 'Content-Length' semantics")]
         public async Task PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(Uri serverUri)
@@ -148,9 +149,9 @@ namespace System.Net.Http.Functional.Tests
                 useContentLengthUpload: false, useChunkedEncodingUpload: false);
         }
 
-        public static IEnumerable<object[]> EchoServersAndLargeContentSizes()
+        public static IEnumerable<object[]> VerifyUploadServersAndLargeContentSizes()
         {
-            foreach (Uri uri in Configuration.Http.EchoServerList)
+            foreach (Uri uri in Configuration.Http.VerifyUploadServerList)
             {
                 yield return new object[] { uri, 5 * 1024 };
                 yield return new object[] { uri, 63 * 1024 };
@@ -160,7 +161,7 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Theory]
-        [MemberData(nameof(EchoServersAndLargeContentSizes))]
+        [MemberData(nameof(VerifyUploadServersAndLargeContentSizes))]
         public async Task PostLargeContentUsingContentLengthSemantics_Success(Uri serverUri, int contentLength)
         {
             var rand = new Random(42);
@@ -246,8 +247,12 @@ namespace System.Net.Http.Functional.Tests
                     {
                         requestContent.Headers.ContentLength = null;
                     }
+
+                    // Compute MD5 of request body data. This will be verified by the server when it
+                    // receives the request.
+                    requestContent.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(requestBody);
                 }
-                
+
                 if (useChunkedEncodingUpload)
                 {
                     client.DefaultRequestHeaders.TransferEncodingChunked = true;
@@ -256,19 +261,6 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpResponseMessage response = await client.PostAsync(serverUri, requestContent))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    string responseContent = await response.Content.ReadAsStringAsync();
-                    _output.WriteLine(responseContent);
-
-                    if (!useContentLengthUpload && !useChunkedEncodingUpload)
-                    {
-                        useChunkedEncodingUpload = true;
-                    }
-
-                    TestHelper.VerifyResponseBody(
-                        responseContent,
-                        response.Content.Headers.ContentMD5,
-                        useChunkedEncodingUpload,
-                        requestBody);
                 }
             }          
         }
