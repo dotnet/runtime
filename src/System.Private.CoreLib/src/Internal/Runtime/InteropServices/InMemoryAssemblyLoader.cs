@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
-using System.Diagnostics;
-using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
@@ -23,9 +21,15 @@ namespace Internal.Runtime.InteropServices
         /// <param name="assemblyPath">The path to the assembly (as a pointer to a UTF-16 C string).</param>
         public static unsafe void LoadInMemoryAssembly(IntPtr moduleHandle, IntPtr assemblyPath)
         {
+            string? assemblyPathString = Marshal.PtrToStringUni(assemblyPath);
+            if (assemblyPathString == null)
+            {
+                throw new ArgumentOutOfRangeException(nameof(assemblyPath));
+            }
+
             // We don't cache the ALCs here since each IJW assembly will call this method at most once
             // (the load process rewrites the stubs that call here to call the actual methods they're supposed to)
-            AssemblyLoadContext context = new IsolatedComponentLoadContext(Marshal.PtrToStringUni(assemblyPath));
+            AssemblyLoadContext context = new IsolatedComponentLoadContext(assemblyPathString);
             context.LoadFromInMemoryModule(moduleHandle);
         }
     }

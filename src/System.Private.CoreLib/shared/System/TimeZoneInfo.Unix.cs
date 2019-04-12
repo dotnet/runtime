@@ -259,7 +259,7 @@ namespace System
             {
                 using (StreamReader sr = new StreamReader(Path.Combine(timeZoneDirectory, ZoneTabFileName), Encoding.UTF8))
                 {
-                    string zoneTabFileLine;
+                    string? zoneTabFileLine;
                     while ((zoneTabFileLine = sr.ReadLine()) != null)
                     {
                         if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')

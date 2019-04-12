@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime.CompilerServices;
-using System.Threading;
-
+#nullable enable
 namespace System.Runtime.Serialization
 {
     // Tracks whether deserialization is currently in progress
     public readonly struct DeserializationToken : IDisposable
     {
-        private readonly DeserializationTracker _tracker;
+        private readonly DeserializationTracker? _tracker;
 
-        internal DeserializationToken(DeserializationTracker tracker)
+        internal DeserializationToken(DeserializationTracker? tracker)
         {
             _tracker = tracker;
         }

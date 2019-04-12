@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-
+#nullable enable
 namespace System.Collections.Generic
 {
     // Implement this interface if you need to support foreach semantics.

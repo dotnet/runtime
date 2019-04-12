@@ -189,7 +189,7 @@ namespace System
 
         private CultureAwareComparer(SerializationInfo info, StreamingContext context)
         {
-            _compareInfo = (CompareInfo)info.GetValue("_compareInfo", typeof(CompareInfo));
+            _compareInfo = (CompareInfo)info.GetValue("_compareInfo", typeof(CompareInfo))!;
             bool ignoreCase = info.GetBoolean("_ignoreCase");
 
             var obj = info.GetValueNoThrow("_options", typeof(CompareOptions));
