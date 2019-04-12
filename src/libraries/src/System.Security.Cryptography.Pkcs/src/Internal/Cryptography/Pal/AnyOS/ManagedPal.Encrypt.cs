@@ -182,7 +182,6 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 if (contentInfo.ContentType.Value == Oids.Pkcs7Data)
                 {
-                    toEncrypt = EncodeOctetString(toEncrypt);
                     return encryptor.OneShot(toEncrypt);
                 }
                 else
