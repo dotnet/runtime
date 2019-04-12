@@ -72,14 +72,24 @@ namespace System.IO.Pipelines.Tests
             using (var pool = new TestMemoryPool())
             {
                 var pipe = new Pipe(s_testOptions);
-                pipe.Writer.WriteEmpty(4096);
-                pipe.Writer.WriteEmpty(4096);
-                pipe.Writer.WriteEmpty(4096);
+                pipe.Writer.WriteEmpty(pool.MaxBufferSize);
+                pipe.Writer.WriteEmpty(pool.MaxBufferSize);
+                pipe.Writer.WriteEmpty(pool.MaxBufferSize);
                 await pipe.Writer.FlushAsync();
                 pipe.Writer.Complete();
 
                 var stream = new ThrowAfterNWritesStream(2);
-                await Assert.ThrowsAsync<InvalidOperationException>(() => pipe.Reader.CopyToAsync(stream));
+                try
+                {
+                    await pipe.Reader.CopyToAsync(stream);
+                    Assert.True(false, $"CopyToAsync should have failed, wrote {stream.Writes} times.");
+                }
+                catch(InvalidOperationException)
+                {
+                    
+                }
+
+                Assert.Equal(2, stream.Writes);
 
                 ReadResult result = await pipe.Reader.ReadAsync();
                 Assert.Equal(4096, result.Buffer.Length);
