@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 
-namespace Microsoft.NET.Build.Bundle
+namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     /// FileEntry: Records information about embedded files.
@@ -21,7 +21,7 @@ namespace Microsoft.NET.Build.Bundle
     public class FileEntry
     {
         public FileType Type;
-        public string RelativePath; // Path of an embedded file, relative to the Bundle source-directory.
+        public string RelativePath; // Path of an embedded file, relative to the <app> dll.
         public long Offset;
         public long Size;
 

@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TestProjects Include="$(TestDir)/Microsoft.NET.Build.Bundle.Tests/Microsoft.NET.Build.Bundle.Tests.csproj" />
     <TestProjects Include="$(TestDir)/HostActivationTests/HostActivationTests.csproj" />
     <TestProjects Include="$(TestDir)/Microsoft.Extensions.DependencyModel.Tests/Microsoft.Extensions.DependencyModel.Tests.csproj" />
+    <TestProjects Include="$(TestDir)/Microsoft.NET.HostModel.Tests/Microsoft.NET.HostModel.Tests.csproj" />
   </ItemGroup>
   <ItemGroup>
     <RestoreTestFallbackSource Include="$(CoreHostOutputDir.TrimEnd('/').TrimEnd('\'))" />
