@@ -2,6 +2,7 @@
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <EnableDefaultItems>false</EnableDefaultItems>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <DisableImplicitFrameworkDefines>true</DisableImplicitFrameworkDefines>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
