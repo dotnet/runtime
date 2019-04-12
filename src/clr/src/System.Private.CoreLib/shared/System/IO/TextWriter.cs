@@ -146,7 +146,7 @@ namespace System.IO
         // Write(char) for each of the characters in the character array.
         // If the character array is null, nothing is written.
         //
-        public virtual void Write(char[] buffer)
+        public virtual void Write(char[]? buffer)
         {
             if (buffer != null)
             {
@@ -362,7 +362,7 @@ namespace System.IO
         // Writes an array of characters followed by a line terminator to the text
         // stream.
         //
-        public virtual void WriteLine(char[] buffer)
+        public virtual void WriteLine(char[]? buffer)
         {
             Write(buffer);
             WriteLine();
@@ -584,7 +584,7 @@ namespace System.IO
             }
         }
 
-        public Task WriteAsync(char[] buffer)
+        public Task WriteAsync(char[]? buffer)
         {
             if (buffer == null)
             {
@@ -659,7 +659,7 @@ namespace System.IO
             }
         }
 
-        public Task WriteLineAsync(char[] buffer)
+        public Task WriteLineAsync(char[]? buffer)
         {
             if (buffer == null)
             {
@@ -793,7 +793,7 @@ namespace System.IO
             public override void Write(char value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(char[] buffer) => _out.Write(buffer);
+            public override void Write(char[]? buffer) => _out.Write(buffer);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(char[] buffer, int index, int count) => _out.Write(buffer, index, count);
@@ -856,7 +856,7 @@ namespace System.IO
             public override void WriteLine(decimal value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(char[] buffer) => _out.WriteLine(buffer);
+            public override void WriteLine(char[]? buffer) => _out.WriteLine(buffer);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine(char[] buffer, int index, int count) => _out.WriteLine(buffer, index, count);

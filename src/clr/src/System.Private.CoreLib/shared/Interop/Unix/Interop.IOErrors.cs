@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -10,7 +11,7 @@ using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
-    private static void ThrowExceptionForIoErrno(ErrorInfo errorInfo, string path, bool isDirectory, Func<ErrorInfo, ErrorInfo> errorRewriter)
+    private static void ThrowExceptionForIoErrno(ErrorInfo errorInfo, string? path, bool isDirectory, Func<ErrorInfo, ErrorInfo>? errorRewriter)
     {
         Debug.Assert(errorInfo.Error != Error.SUCCESS);
         Debug.Assert(errorInfo.Error != Error.EINTR, "EINTR errors should be handled by the native shim and never bubble up to managed code");
@@ -23,7 +24,7 @@ internal static partial class Interop
         throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
     }
 
-    internal static void CheckIo(Error error, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    internal static void CheckIo(Error error, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
     {
         if (error != Interop.Error.SUCCESS)
         {
@@ -43,7 +44,7 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the non-negative result long that was validated.
     /// </returns>
-    internal static long CheckIo(long result, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    internal static long CheckIo(long result, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
     {
         if (result < 0)
         {
@@ -61,7 +62,7 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the non-negative result int that was validated.
     /// </returns>
-    internal static int CheckIo(int result, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    internal static int CheckIo(int result, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
     {
         CheckIo((long)result, path, isDirectory, errorRewriter);
 
@@ -76,7 +77,7 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the non-negative result IntPtr that was validated.
     /// </returns>
-    internal static IntPtr CheckIo(IntPtr result, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    internal static IntPtr CheckIo(IntPtr result, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
     {
         CheckIo((long)result, path, isDirectory, errorRewriter);
 
@@ -91,7 +92,7 @@ internal static partial class Interop
     /// <returns>
     /// On success, returns the valid SafeFileHandle that was validated.
     /// </returns>
-    internal static TSafeHandle CheckIo<TSafeHandle>(TSafeHandle handle, string path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo> errorRewriter = null)
+    internal static TSafeHandle CheckIo<TSafeHandle>(TSafeHandle handle, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
         where TSafeHandle : SafeHandle
     {
         if (handle.IsInvalid)
@@ -109,7 +110,7 @@ internal static partial class Interop
     /// <param name="path">The path with which this error is associated.  This may be null.</param>
     /// <param name="isDirectory">true if the <paramref name="path"/> is known to be a directory; otherwise, false.</param>
     /// <returns></returns>
-    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo, string path = null, bool isDirectory = false)
+    internal static Exception GetExceptionForIoErrno(ErrorInfo errorInfo, string? path = null, bool isDirectory = false)
     {
         // Translate the errno into a known set of exception types.  For cases where multiple errnos map
         // to the same exception type, include an inner exception with the details.

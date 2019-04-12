@@ -1048,12 +1048,12 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            _id = (string)info.GetValue("Id", typeof(string)); // Do not rename (binary serialization)
-            _displayName = (string)info.GetValue("DisplayName", typeof(string)); // Do not rename (binary serialization)
-            _standardDisplayName = (string)info.GetValue("StandardName", typeof(string)); // Do not rename (binary serialization)
-            _daylightDisplayName = (string)info.GetValue("DaylightName", typeof(string)); // Do not rename (binary serialization)
+            _id = (string)info.GetValue("Id", typeof(string))!; // Do not rename (binary serialization)
+            _displayName = (string?)info.GetValue("DisplayName", typeof(string)); // Do not rename (binary serialization)
+            _standardDisplayName = (string?)info.GetValue("StandardName", typeof(string)); // Do not rename (binary serialization)
+            _daylightDisplayName = (string?)info.GetValue("DaylightName", typeof(string)); // Do not rename (binary serialization)
             _baseUtcOffset = (TimeSpan)info.GetValue("BaseUtcOffset", typeof(TimeSpan)); // Do not rename (binary serialization)
-            _adjustmentRules = (AdjustmentRule[])info.GetValue("AdjustmentRules", typeof(AdjustmentRule[])); // Do not rename (binary serialization)
+            _adjustmentRules = (AdjustmentRule[]?)info.GetValue("AdjustmentRules", typeof(AdjustmentRule[])); // Do not rename (binary serialization)
             _supportsDaylightSavingTime = (bool)info.GetValue("SupportsDaylightSavingTime", typeof(bool)); // Do not rename (binary serialization)
         }
 

@@ -55,12 +55,12 @@ namespace System.Security
         protected SecurityException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
-            Demanded = (string)info.GetValueNoThrow(DemandedName, typeof(string));
-            GrantedSet = (string)info.GetValueNoThrow(GrantedSetName, typeof(string));
-            RefusedSet = (string)info.GetValueNoThrow(RefusedSetName, typeof(string));
-            DenySetInstance = (string)info.GetValueNoThrow(DeniedName, typeof(string));
-            PermitOnlySetInstance = (string)info.GetValueNoThrow(PermitOnlyName, typeof(string));
-            Url = (string)info.GetValueNoThrow(UrlName, typeof(string));
+            Demanded = (string?)info.GetValueNoThrow(DemandedName, typeof(string));
+            GrantedSet = (string?)info.GetValueNoThrow(GrantedSetName, typeof(string));
+            RefusedSet = (string?)info.GetValueNoThrow(RefusedSetName, typeof(string));
+            DenySetInstance = (string?)info.GetValueNoThrow(DeniedName, typeof(string));
+            PermitOnlySetInstance = (string?)info.GetValueNoThrow(PermitOnlyName, typeof(string));
+            Url = (string?)info.GetValueNoThrow(UrlName, typeof(string));
         }
 
         public override string ToString() => base.ToString();
