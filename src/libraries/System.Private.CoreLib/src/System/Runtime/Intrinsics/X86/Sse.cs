@@ -83,21 +83,18 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_comieq_ss (__m128 a, __m128 b)
         ///   COMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareEqualOrderedScalar(Vector128<float> left, Vector128<float> right) => CompareEqualOrderedScalar(left, right);
         public static bool CompareScalarOrderedEqual(Vector128<float> left, Vector128<float> right) => CompareScalarOrderedEqual(left, right);
 
         /// <summary>
         /// int _mm_ucomieq_ss (__m128 a, __m128 b)
         ///   UCOMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareEqualUnorderedScalar(Vector128<float> left, Vector128<float> right) => CompareEqualUnorderedScalar(left, right);
         public static bool CompareScalarUnorderedEqual(Vector128<float> left, Vector128<float> right) => CompareScalarUnorderedEqual(left, right);
 
         /// <summary>
         /// __m128 _mm_cmpeq_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(0)
         /// </summary>
-        public static Vector128<float> CompareEqualScalar(Vector128<float> left, Vector128<float> right) => CompareEqualScalar(left, right);
         public static Vector128<float> CompareScalarEqual(Vector128<float> left, Vector128<float> right) => CompareScalarEqual(left, right);
 
         /// <summary>
@@ -110,21 +107,18 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_comigt_ss (__m128 a, __m128 b)
         ///   COMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareGreaterThanOrderedScalar(Vector128<float> left, Vector128<float> right) => CompareGreaterThanOrderedScalar(left, right);
         public static bool CompareScalarOrderedGreaterThan(Vector128<float> left, Vector128<float> right) => CompareScalarOrderedGreaterThan(left, right);
 
         /// <summary>
         /// int _mm_ucomigt_ss (__m128 a, __m128 b)
         ///   UCOMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareGreaterThanUnorderedScalar(Vector128<float> left, Vector128<float> right) => CompareGreaterThanUnorderedScalar(left, right);
         public static bool CompareScalarUnorderedGreaterThan(Vector128<float> left, Vector128<float> right) => CompareScalarUnorderedGreaterThan(left, right);
 
         /// <summary>
         /// __m128 _mm_cmpgt_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(6)
         /// </summary>
-        public static Vector128<float> CompareGreaterThanScalar(Vector128<float> left, Vector128<float> right) => CompareGreaterThanScalar(left, right);
         public static Vector128<float> CompareScalarGreaterThan(Vector128<float> left, Vector128<float> right) => CompareScalarGreaterThan(left, right);
 
         /// <summary>
@@ -137,21 +131,18 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_comige_ss (__m128 a, __m128 b)
         ///   COMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareGreaterThanOrEqualOrderedScalar(Vector128<float> left, Vector128<float> right) => CompareGreaterThanOrEqualOrderedScalar(left, right);
         public static bool CompareScalarOrderedGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareScalarOrderedGreaterThanOrEqual(left, right);
 
         /// <summary>
         /// int _mm_ucomige_ss (__m128 a, __m128 b)
         ///   UCOMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareGreaterThanOrEqualUnorderedScalar(Vector128<float> left, Vector128<float> right) => CompareGreaterThanOrEqualUnorderedScalar(left, right);
         public static bool CompareScalarUnorderedGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareScalarUnorderedGreaterThanOrEqual(left, right);
 
         /// <summary>
         /// __m128 _mm_cmpge_ss (__m128 a,  __m128 b)
         ///   CMPPS xmm, xmm/m32, imm8(5)
         /// </summary>
-        public static Vector128<float> CompareGreaterThanOrEqualScalar(Vector128<float> left, Vector128<float> right) => CompareGreaterThanOrEqualScalar(left, right);
         public static Vector128<float> CompareScalarGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareScalarGreaterThanOrEqual(left, right);
 
         /// <summary>
@@ -164,21 +155,18 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_comilt_ss (__m128 a, __m128 b)
         ///   COMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareLessThanOrderedScalar(Vector128<float> left, Vector128<float> right) => CompareLessThanOrderedScalar(left, right);
         public static bool CompareScalarOrderedLessThan(Vector128<float> left, Vector128<float> right) => CompareScalarOrderedLessThan(left, right);
 
         /// <summary>
         /// int _mm_ucomilt_ss (__m128 a, __m128 b)
         ///   UCOMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareLessThanUnorderedScalar(Vector128<float> left, Vector128<float> right) => CompareLessThanUnorderedScalar(left, right);
         public static bool CompareScalarUnorderedLessThan(Vector128<float> left, Vector128<float> right) => CompareScalarUnorderedLessThan(left, right);
 
         /// <summary>
         /// __m128 _mm_cmplt_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(1)
         /// </summary>
-        public static Vector128<float> CompareLessThanScalar(Vector128<float> left, Vector128<float> right) => CompareLessThanScalar(left, right);
         public static Vector128<float> CompareScalarLessThan(Vector128<float> left, Vector128<float> right) => CompareScalarLessThan(left, right);
 
         /// <summary>
@@ -191,21 +179,18 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_comile_ss (__m128 a, __m128 b)
         ///   COMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareLessThanOrEqualOrderedScalar(Vector128<float> left, Vector128<float> right) => CompareLessThanOrEqualOrderedScalar(left, right);
         public static bool CompareScalarOrderedLessThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareScalarOrderedLessThanOrEqual(left, right);
 
         /// <summary>
         /// int _mm_ucomile_ss (__m128 a, __m128 b)
         ///   UCOMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareLessThanOrEqualUnorderedScalar(Vector128<float> left, Vector128<float> right) => CompareLessThanOrEqualUnorderedScalar(left, right);
         public static bool CompareScalarUnorderedLessThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareScalarUnorderedLessThanOrEqual(left, right);
 
         /// <summary>
         /// __m128 _mm_cmple_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(2)
         /// </summary>
-        public static Vector128<float> CompareLessThanOrEqualScalar(Vector128<float> left, Vector128<float> right) => CompareLessThanOrEqualScalar(left, right);
         public static Vector128<float> CompareScalarLessThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareScalarLessThanOrEqual(left, right);
 
         /// <summary>
@@ -218,21 +203,18 @@ namespace System.Runtime.Intrinsics.X86
         /// int _mm_comineq_ss (__m128 a, __m128 b)
         ///   COMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareNotEqualOrderedScalar(Vector128<float> left, Vector128<float> right) => CompareNotEqualOrderedScalar(left, right);
         public static bool CompareScalarOrderedNotEqual(Vector128<float> left, Vector128<float> right) => CompareScalarOrderedNotEqual(left, right);
 
         /// <summary>
         /// int _mm_ucomineq_ss (__m128 a, __m128 b)
         ///   UCOMISS xmm, xmm/m32
         /// </summary>
-        public static bool CompareNotEqualUnorderedScalar(Vector128<float> left, Vector128<float> right) => CompareNotEqualUnorderedScalar(left, right);
         public static bool CompareScalarUnorderedNotEqual(Vector128<float> left, Vector128<float> right) => CompareScalarUnorderedNotEqual(left, right);
 
         /// <summary>
         /// __m128 _mm_cmpneq_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(4)
         /// </summary>
-        public static Vector128<float> CompareNotEqualScalar(Vector128<float> left, Vector128<float> right) => CompareNotEqualScalar(left, right);
         public static Vector128<float> CompareScalarNotEqual(Vector128<float> left, Vector128<float> right) => CompareScalarNotEqual(left, right);
 
         /// <summary>
@@ -245,7 +227,6 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_cmpngt_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(2)
         /// </summary>
-        public static Vector128<float> CompareNotGreaterThanScalar(Vector128<float> left, Vector128<float> right) => CompareNotGreaterThanScalar(left, right);
         public static Vector128<float> CompareScalarNotGreaterThan(Vector128<float> left, Vector128<float> right) => CompareScalarNotGreaterThan(left, right);
 
         /// <summary>
@@ -258,7 +239,6 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_cmpnge_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(1)
         /// </summary>
-        public static Vector128<float> CompareNotGreaterThanOrEqualScalar(Vector128<float> left, Vector128<float> right) => CompareNotGreaterThanOrEqualScalar(left, right);
         public static Vector128<float> CompareScalarNotGreaterThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareScalarNotGreaterThanOrEqual(left, right);
 
         /// <summary>
@@ -271,7 +251,6 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_cmpnlt_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(5)
         /// </summary>
-        public static Vector128<float> CompareNotLessThanScalar(Vector128<float> left, Vector128<float> right) => CompareNotLessThanScalar(left, right);
         public static Vector128<float> CompareScalarNotLessThan(Vector128<float> left, Vector128<float> right) => CompareScalarNotLessThan(left, right);
 
         /// <summary>
@@ -284,7 +263,6 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_cmpnle_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(6)
         /// </summary>
-        public static Vector128<float> CompareNotLessThanOrEqualScalar(Vector128<float> left, Vector128<float> right) => CompareNotLessThanOrEqualScalar(left, right);
         public static Vector128<float> CompareScalarNotLessThanOrEqual(Vector128<float> left, Vector128<float> right) => CompareScalarNotLessThanOrEqual(left, right);
 
         /// <summary>
@@ -297,7 +275,6 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_cmpord_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(7)
         /// </summary>
-        public static Vector128<float> CompareOrderedScalar(Vector128<float> left, Vector128<float> right) => CompareOrderedScalar(left, right);
         public static Vector128<float> CompareScalarOrdered(Vector128<float> left, Vector128<float> right) => CompareScalarOrdered(left, right);
 
         /// <summary>
@@ -310,7 +287,6 @@ namespace System.Runtime.Intrinsics.X86
         /// __m128 _mm_cmpunord_ss (__m128 a,  __m128 b)
         ///   CMPSS xmm, xmm/m32, imm8(3)
         /// </summary>
-        public static Vector128<float> CompareUnorderedScalar(Vector128<float> left, Vector128<float> right) => CompareUnorderedScalar(left, right);
         public static Vector128<float> CompareScalarUnordered(Vector128<float> left, Vector128<float> right) => CompareScalarUnordered(left, right);
 
         /// <summary>
