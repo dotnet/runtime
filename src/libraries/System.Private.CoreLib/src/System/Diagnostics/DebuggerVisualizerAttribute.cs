@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 namespace System.Diagnostics
 {
     /// <summary>
@@ -11,20 +13,20 @@ namespace System.Diagnostics
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class DebuggerVisualizerAttribute : Attribute
     {
-        private Type _target;
+        private Type? _target;
 
-        public DebuggerVisualizerAttribute(string visualizerTypeName)
+        public DebuggerVisualizerAttribute(string? visualizerTypeName)
         {
             VisualizerTypeName = visualizerTypeName;
         }
 
-        public DebuggerVisualizerAttribute(string visualizerTypeName, string visualizerObjectSourceTypeName)
+        public DebuggerVisualizerAttribute(string? visualizerTypeName, string? visualizerObjectSourceTypeName)
         {
             VisualizerTypeName = visualizerTypeName;
             VisualizerObjectSourceTypeName = visualizerObjectSourceTypeName;
         }
 
-        public DebuggerVisualizerAttribute(string visualizerTypeName, Type visualizerObjectSource)
+        public DebuggerVisualizerAttribute(string? visualizerTypeName, Type visualizerObjectSource)
         {
             if (visualizerObjectSource == null)
             {
@@ -60,7 +62,7 @@ namespace System.Diagnostics
             VisualizerObjectSourceTypeName = visualizerObjectSource.AssemblyQualifiedName;
         }
 
-        public DebuggerVisualizerAttribute(Type visualizer, string visualizerObjectSourceTypeName)
+        public DebuggerVisualizerAttribute(Type visualizer, string? visualizerObjectSourceTypeName)
         {
             if (visualizer == null)
             {
@@ -71,13 +73,13 @@ namespace System.Diagnostics
             VisualizerObjectSourceTypeName = visualizerObjectSourceTypeName;
         }
 
-        public string VisualizerObjectSourceTypeName { get; }
+        public string? VisualizerObjectSourceTypeName { get; }
 
-        public string VisualizerTypeName { get; }
+        public string? VisualizerTypeName { get; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
         
-        public Type Target
+        public Type? Target
         {
             get => _target;
             set
@@ -92,6 +94,6 @@ namespace System.Diagnostics
             }
         }
 
-        public string TargetTypeName { get; set; }
+        public string? TargetTypeName { get; set; }
     }
 }
