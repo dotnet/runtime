@@ -3089,7 +3089,7 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
     assert(srcReg != REG_NA);
     if (srcReg != REG_STK)
     {
-        getEmitter()->emitIns_R_R_I(INS_vinsertf128, EA_32BYTE, lclVarReg, srcReg, 0x01);
+        getEmitter()->emitIns_R_R_R_I(INS_vinsertf128, EA_32BYTE, lclVarReg, lclVarReg, srcReg, 0x01);
     }
     else
     {
@@ -3099,7 +3099,7 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
         assert(varDsc->lvOnFrame);
         // We will load this from the upper 16 bytes of this localVar's home.
         int offs = 16;
-        getEmitter()->emitIns_R_S_I(INS_vinsertf128, EA_32BYTE, lclVarReg, varNum, offs, 0x01);
+        getEmitter()->emitIns_R_R_S_I(INS_vinsertf128, EA_32BYTE, lclVarReg, lclVarReg, varNum, offs, 0x01);
     }
 }
 

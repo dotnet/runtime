@@ -5774,36 +5774,41 @@ void LinearScan::allocateRegisters()
             // The interval could be dead if this is a user variable, or if the
             // node is being evaluated for side effects, or a call whose result
             // is not used, etc.
-            if (currentRefPosition->lastUse || currentRefPosition->nextRefPosition == nullptr)
+            // If this is an UpperVector we'll neither free it nor preference it
+            // (it will be freed when it is used).
+            if (!currentInterval->IsUpperVector())
             {
-                assert(currentRefPosition->isIntervalRef());
-
-                if (refType != RefTypeExpUse && currentRefPosition->nextRefPosition == nullptr)
+                if (currentRefPosition->lastUse || currentRefPosition->nextRefPosition == nullptr)
                 {
-                    if (currentRefPosition->delayRegFree)
-                    {
-                        delayRegsToFree |= assignedRegBit;
+                    assert(currentRefPosition->isIntervalRef());
 
-                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
+                    if (refType != RefTypeExpUse && currentRefPosition->nextRefPosition == nullptr)
+                    {
+                        if (currentRefPosition->delayRegFree)
+                        {
+                            delayRegsToFree |= assignedRegBit;
+
+                            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE_DELAYED));
+                        }
+                        else
+                        {
+                            regsToFree |= assignedRegBit;
+
+                            INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
+                        }
                     }
                     else
                     {
-                        regsToFree |= assignedRegBit;
-
-                        INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_LAST_USE));
+                        currentInterval->isActive = false;
                     }
-                }
-                else
-                {
-                    currentInterval->isActive = false;
-                }
 
-                // Update the register preferences for the relatedInterval, if this is 'preferencedToDef'.
-                // Don't propagate to subsequent relatedIntervals; that will happen as they are allocated, and we
-                // don't know yet whether the register will be retained.
-                if (currentInterval->relatedInterval != nullptr)
-                {
-                    currentInterval->relatedInterval->updateRegisterPreferences(assignedRegBit);
+                    // Update the register preferences for the relatedInterval, if this is 'preferencedToDef'.
+                    // Don't propagate to subsequent relatedIntervals; that will happen as they are allocated, and we
+                    // don't know yet whether the register will be retained.
+                    if (currentInterval->relatedInterval != nullptr)
+                    {
+                        currentInterval->relatedInterval->updateRegisterPreferences(assignedRegBit);
+                    }
                 }
             }
 
