@@ -74,7 +74,7 @@ void EventPipeProtocolHelper::EnableFileTracingEventHandler(IpcStream *pStream)
 
     // The protocol buffer is defined as:
     // X, Y, Z means encode bytes for X followed by bytes for Y followed by bytes for Z
-    // message = uint circularBufferMB, ulong multiFileTraceLength, string outputPath, array<provider_config> providers
+    // message = uint circularBufferMB, string outputPath, array<provider_config> providers
     // uint = 4 little endian bytes
     // ulong = 8 little endian bytes
     // wchar = 2 little endian bytes, UTF16 encoding
@@ -84,13 +84,11 @@ void EventPipeProtocolHelper::EnableFileTracingEventHandler(IpcStream *pStream)
 
     LPCWSTR strOutputPath;
     uint32_t circularBufferSizeInMB = EventPipeProtocolHelper::DefaultCircularBufferMB;
-    uint64_t multiFileTraceLengthInSeconds = EventPipeProtocolHelper::DefaultMultiFileTraceLengthInSeconds;
     CQuickArray<EventPipeProviderConfiguration> providerConfigs;
 
     uint8_t *pBufferCursor = buffer;
     uint32_t bufferLen = nNumberOfBytesRead;
     if (!TryParse(pBufferCursor, bufferLen, circularBufferSizeInMB) ||
-        !TryParse(pBufferCursor, bufferLen, multiFileTraceLengthInSeconds) ||
         !TryParseString(pBufferCursor, bufferLen, strOutputPath) ||
         !TryParseProviderConfiguration(pBufferCursor, bufferLen, providerConfigs))
     {
@@ -103,12 +101,11 @@ void EventPipeProtocolHelper::EnableFileTracingEventHandler(IpcStream *pStream)
     if (providerConfigs.Size() > 0)
     {
         sessionId = EventPipe::Enable(
-            strOutputPath,                                 // outputFile
-            circularBufferSizeInMB,                        // circularBufferSizeInMB
-            DefaultProfilerSamplingRateInNanoseconds,      // ProfilerSamplingRateInNanoseconds
-            providerConfigs.Ptr(),                         // pConfigs
-            static_cast<uint32_t>(providerConfigs.Size()), // numConfigs
-            multiFileTraceLengthInSeconds);                // multiFileTraceLengthInSeconds
+            strOutputPath,                                  // outputFile
+            circularBufferSizeInMB,                         // circularBufferSizeInMB
+            DefaultProfilerSamplingRateInNanoseconds,       // ProfilerSamplingRateInNanoseconds
+            providerConfigs.Ptr(),                          // pConfigs
+            static_cast<uint32_t>(providerConfigs.Size())); // numConfigs
     }
 
     uint32_t nBytesWritten = 0;
@@ -191,7 +188,7 @@ void EventPipeProtocolHelper::AttachTracingEventHandler(IpcStream *pStream)
 
     // The protocol buffer is defined as:
     // X, Y, Z means encode bytes for X followed by bytes for Y followed by bytes for Z
-    // message = uint circularBufferMB, ulong multiFileTraceLength, string outputPath, array<provider_config> providers
+    // message = uint circularBufferMB, string outputPath, array<provider_config> providers
     // uint = 4 little endian bytes
     // wchar = 2 little endian bytes, UTF16 encoding
     // array<T> = uint length, length # of Ts
@@ -200,13 +197,11 @@ void EventPipeProtocolHelper::AttachTracingEventHandler(IpcStream *pStream)
 
     LPCWSTR strOutputPath;
     uint32_t circularBufferSizeInMB = EventPipeProtocolHelper::DefaultCircularBufferMB;
-    uint64_t multiFileTraceLengthInSeconds = EventPipeProtocolHelper::DefaultMultiFileTraceLengthInSeconds;
     CQuickArray<EventPipeProviderConfiguration> providerConfigs;
 
     uint8_t *pBufferCursor = buffer;
     uint32_t bufferLen = nNumberOfBytesRead;
     if (!TryParse(pBufferCursor, bufferLen, circularBufferSizeInMB) ||
-        !TryParse(pBufferCursor, bufferLen, multiFileTraceLengthInSeconds) ||
         !TryParseString(pBufferCursor, bufferLen, strOutputPath) ||
         !TryParseProviderConfiguration(pBufferCursor, bufferLen, providerConfigs))
     {

@@ -3864,6 +3864,14 @@ BOOL ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
         return TRUE; 
 #endif
 
+    if (IsReadyToRunCompilation() && !m_pImage->GetCompileInfo()->IsInCurrentVersionBubble(m_pEEJitInfo->getMethodModule(method)))
+    {
+        // FUTURE: ZapSig::EncodeMethod does not yet handle cross module references for ReadyToRun
+        // See zapsig.cpp around line 1217.
+        // Once this is implemented, we'll be able to inline pinvokes of extern methods declared in other modules (Ex: PresentationCore.dll)
+        return TRUE;
+    }
+
     return m_pEEJitInfo->pInvokeMarshalingRequired(method, sig);
 }
 

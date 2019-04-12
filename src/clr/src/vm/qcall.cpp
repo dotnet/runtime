@@ -76,25 +76,3 @@ void QCall::ObjectHandleOnStack::SetGuidArray(const GUID * p, COUNT_T length)
     memcpyNoGCRefs(arr->GetDataPtr(), p, length * sizeof(GUID));
     Set(arr);
 }
-
-//
-// Helpers for passing an AppDomain to a QCall
-//
-
-#ifdef _DEBUG
-
-//---------------------------------------------------------------------------------------
-//
-// Verify that the AppDomain being passed from the BCL is valid for use in a QCall. Note: some additional
-// checks are in System.AppDomain.GetNativeHandle()
-//
-
-void QCall::AppDomainHandle::VerifyDomainHandle() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // System.AppDomain.GetNativeHandle() should ensure that we're not calling through with a null AppDomain pointer.
-    _ASSERTE(m_pAppDomain);
-}
-
-#endif // _DEBUG

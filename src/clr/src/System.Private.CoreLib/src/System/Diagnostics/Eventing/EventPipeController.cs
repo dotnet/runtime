@@ -46,7 +46,6 @@ namespace System.Diagnostics.Tracing
         private const string ConfigKey_CircularMB = "CircularMB";
         private const string ConfigKey_OutputPath = "OutputPath";
         private const string ConfigKey_ProcessID = "ProcessID";
-        private const string ConfigKey_MultiFileSec = "MultiFileSec";
 
         // The default set of providers/keywords/levels.  Used if an alternative configuration is not specified.
         private static EventPipeProviderConfiguration[] DefaultProviderConfiguration => new EventPipeProviderConfiguration[]
@@ -170,7 +169,6 @@ namespace System.Diagnostics.Tracing
             string strProviderConfig = null;
             string strCircularMB = null;
             string strProcessID = null;
-            string strMultiFileSec = null;
 
             // Split the configuration entries by line.
             string[] configEntries = strConfigContents.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -200,10 +198,6 @@ namespace System.Diagnostics.Tracing
                     {
                         strProcessID = entryComponents[1];
                     }
-                    else if (key.Equals(ConfigKey_MultiFileSec))
-                    {
-                        strMultiFileSec = entryComponents[1];
-                    }
                 }
             }
 
@@ -224,13 +218,6 @@ namespace System.Diagnostics.Tracing
                 throw new ArgumentNullException(nameof(outputPath));
             }
 
-            // Check to see if MultiFileSec is specified.
-            ulong multiFileSec = 0;
-            if (!string.IsNullOrEmpty(strMultiFileSec))
-            {
-                multiFileSec = Convert.ToUInt64(strMultiFileSec);
-            }
-
             // Build the full path to the trace file.
             string traceFileName = BuildTraceFileName();
             string outputFile = Path.Combine(outputPath, traceFileName);
@@ -244,7 +231,6 @@ namespace System.Diagnostics.Tracing
 
             // Initialize a new configuration object.
             EventPipeConfiguration config = new EventPipeConfiguration(outputFile, circularMB);
-            config.SetMultiFileTraceLength(multiFileSec);
 
             // Set the provider configuration if specified.
             if (!string.IsNullOrEmpty(strProviderConfig))
