@@ -94,8 +94,10 @@ static void insert_match(deflate_state *s, struct match match)
                 match.strstart += match.match_length;
                 match.match_length = 0;
                 s->ins_h = s->window[match.strstart];
-                if (match.strstart >= 1)
-                    UPDATE_HASH(s, s->ins_h, match.strstart+2-MIN_MATCH);
+                if (match.strstart >= 1) {
+                    IPos hash_head = 0;
+		    INSERT_STRING(s, match.strstart - 1, hash_head);
+                }
 #if MIN_MATCH != 3
 #warning Call UPDATE_HASH() MIN_MATCH-3 more times
 #endif
@@ -214,6 +216,9 @@ block_state deflate_medium(deflate_state *s, int flush)
             if (s->lookahead >= MIN_MATCH) {
                 INSERT_STRING(s, s->strstart, hash_head);
             }
+
+            if (hash_head && hash_head == s->strstart)
+                hash_head--;
         
             /* set up the initial match to be a 1 byte literal */
             current_match.match_start = 0;
@@ -247,6 +252,9 @@ block_state deflate_medium(deflate_state *s, int flush)
         if (s->lookahead > MIN_LOOKAHEAD) {
             s->strstart = current_match.strstart + current_match.match_length;
             INSERT_STRING(s, s->strstart, hash_head);
+
+            if (hash_head && hash_head == s->strstart)
+                hash_head--;
         
             /* set up the initial match to be a 1 byte literal */
             next_match.match_start = 0;
