@@ -17,13 +17,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="ImportedTypes.cs" />
-    <Compile Include="NumericTesting.cs" />
-    <Compile Include="ArrayTesting.cs" />
-    <Compile Include="StringTesting.cs" />
-    <Compile Include="ErrorMarshalTesting.cs" />
-    <Compile Include="ColorTesting.cs" />
-    <Compile Include="LicenseTesting.cs" />
+    <Compile Include="*.cs" />
     <Compile Include="../ServerContracts/Server.Contracts.cs" />
     <Compile Include="../ServerContracts/ServerGuids.cs" />
   </ItemGroup>

@@ -733,10 +733,17 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     return ::VirtualAllocExNuma(hProc, lpAddr, dwSize, allocType, prot, node);
 }
 
+#ifndef FEATURE_PAL
 /*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no)
 {
     return ::GetNumaProcessorNodeEx(proc_no, node_no);
 }
+#else // !FEATURE_PAL
+/*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no)
+{
+    return PAL_GetNumaProcessorNode(proc_no, node_no);
+}
+#endif // !FEATURE_PAL
 #endif
 
 /*static*/ BOOL NumaNodeInfo::m_enableGCNumaAware = FALSE;
@@ -747,15 +754,6 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     ULONG highest = 0;
     
     if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_GCNumaAware) == 0)
-        return FALSE;
-
-#ifndef FEATURE_PAL
-    // check if required APIs are supported
-    HMODULE hMod = GetModuleHandleW(WINDOWS_KERNEL32_DLLNAME_W);
-#else
-    HMODULE hMod = GetCLRModule();
-#endif    
-    if (hMod == NULL)
         return FALSE;
 
     // fail to get the highest numa node number
@@ -778,8 +776,10 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     m_enableGCNumaAware = InitNumaNodeInfoAPI();
 }
 
+#ifndef FEATURE_PAL
+
 //******************************************************************************
-// NumaNodeInfo 
+// CPUGroupInfo 
 //******************************************************************************
 #if !defined(FEATURE_REDHAWK)
 /*static*/ //CPUGroupInfo::PNTQSIEx CPUGroupInfo::m_pNtQuerySystemInformationEx = NULL;
@@ -1187,6 +1187,7 @@ BOOL CPUGroupInfo::GetCPUGroupRange(WORD group_number, WORD* group_begin, WORD* 
     LIMITED_METHOD_CONTRACT;
     return m_threadUseAllCpuGroups;
 }
+#endif // !FEATURE_PAL
 
 //******************************************************************************
 // Returns the number of processors that a process has been configured to run on
@@ -1206,6 +1207,8 @@ int GetCurrentProcessCpuCount()
         return cCPUs;
 
     unsigned int count = 0;
+
+#ifndef FEATURE_PAL
     DWORD_PTR pmask, smask;
 
     if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
@@ -1233,18 +1236,20 @@ int GetCurrentProcessCpuCount()
             count = 64;
     }
 
-#ifdef FEATURE_PAL
-    uint32_t cpuLimit;
+#else // !FEATURE_PAL
+    count = PAL_GetLogicalCpuCountFromOS();
 
+    uint32_t cpuLimit;
     if (PAL_GetCpuLimit(&cpuLimit) && cpuLimit < count)
         count = cpuLimit;
-#endif
+#endif // !FEATURE_PAL
 
     cCPUs = count;
 
     return count;
 }
 
+#ifndef FEATURE_PAL
 DWORD_PTR GetCurrentProcessCpuMask()
 {
     CONTRACTL
@@ -1266,6 +1271,7 @@ DWORD_PTR GetCurrentProcessCpuMask()
     return 0;
 #endif
 }
+#endif // !FEATURE_PAL
 
 uint32_t GetOsPageSizeUncached()
 {

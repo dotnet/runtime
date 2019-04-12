@@ -1507,20 +1507,23 @@ DomainAssembly * LoadDomainAssembly(
         spec.SetWindowsRuntimeType(*pssOuterTypeName);
     }
 
-    if (pPrivHostBinder)
-    {
-        spec.SetHostBinder(pPrivHostBinder);
-    }
-    else if (pRequestingAssembly && (!pRequestingAssembly->IsCollectible()))
+    if (pRequestingAssembly)
     {
         GCX_PREEMP();
         spec.SetParentAssembly(pRequestingAssembly->GetDomainAssembly());
     }
 
-    // If the requesting assembly has Fallback LoadContext binder available,
-    // then set it up in the AssemblySpec.
-    if (pRequestingAssembly != NULL)
+    // Have we been passed the reference to the binder against which this load should be triggered?
+    // If so, then use it to set the fallback load context binder.
+    if (pPrivHostBinder != NULL)
     {
+        spec.SetFallbackLoadContextBinderForRequestingAssembly(pPrivHostBinder);
+        spec.SetPreferFallbackLoadContextBinder();
+    }
+    else if (pRequestingAssembly != NULL)
+    {
+        // If the requesting assembly has Fallback LoadContext binder available,
+        // then set it up in the AssemblySpec.
         PEFile *pRequestingAssemblyManifestFile = pRequestingAssembly->GetManifestFile();
         spec.SetFallbackLoadContextBinderForRequestingAssembly(pRequestingAssemblyManifestFile->GetFallbackLoadContextBinder());
     }

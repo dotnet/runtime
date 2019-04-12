@@ -6885,26 +6885,36 @@ bool Compiler::optHoistLoopExprsForTree(GenTree*          tree,
         // Tree must be a suitable CSE candidate for us to be able to hoist it.
         treeIsHoistable &= optIsCSEcandidate(tree);
 
-        // If it's a call, it must be a helper call, and be pure.
-        // Further, if it may run a cctor, it must be labeled as "Hoistable"
-        // (meaning it won't run a cctor because the class is not precise-init).
-        if (treeIsHoistable && tree->OperGet() == GT_CALL)
+        if (treeIsHoistable)
         {
-            GenTreeCall* call = tree->AsCall();
-            if (call->gtCallType != CT_HELPER)
+            // We cannot hoist an r-value of TYP_STRUCT
+            // as they currently do not carry full descriptors of the struct type
+            if (tree->TypeGet() == TYP_STRUCT)
             {
                 treeIsHoistable = false;
             }
-            else
+
+            // If it's a call, it must be a helper call, and be pure.
+            // Further, if it may run a cctor, it must be labeled as "Hoistable"
+            // (meaning it won't run a cctor because the class is not precise-init).
+            if (tree->OperGet() == GT_CALL)
             {
-                CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
-                if (!s_helperCallProperties.IsPure(helpFunc))
+                GenTreeCall* call = tree->AsCall();
+                if (call->gtCallType != CT_HELPER)
                 {
                     treeIsHoistable = false;
                 }
-                else if (s_helperCallProperties.MayRunCctor(helpFunc) && (call->gtFlags & GTF_CALL_HOISTABLE) == 0)
+                else
                 {
-                    treeIsHoistable = false;
+                    CorInfoHelpFunc helpFunc = eeGetHelperNum(call->gtCallMethHnd);
+                    if (!s_helperCallProperties.IsPure(helpFunc))
+                    {
+                        treeIsHoistable = false;
+                    }
+                    else if (s_helperCallProperties.MayRunCctor(helpFunc) && (call->gtFlags & GTF_CALL_HOISTABLE) == 0)
+                    {
+                        treeIsHoistable = false;
+                    }
                 }
             }
         }
