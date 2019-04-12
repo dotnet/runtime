@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.ComponentModel
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Constructor | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Event | AttributeTargets.Delegate | AttributeTargets.Interface)]
@@ -18,7 +19,7 @@ namespace System.ComponentModel
 
         public EditorBrowsableState State { get; }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == this)
             {
