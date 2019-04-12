@@ -427,32 +427,34 @@ namespace System
             return !(v1 == v2);
         }
 
-        public static bool operator <(Version v1, Version? v2)
+        public static bool operator <(Version? v1, Version? v2)
         {
             if (v1 is null)
-                throw new ArgumentNullException(nameof(v1));
+            {
+                return !(v2 is null);
+            }
+
             return (v1.CompareTo(v2) < 0);
         }
 
-        public static bool operator <=(Version v1, Version? v2)
+        public static bool operator <=(Version? v1, Version? v2)
         {
             if (v1 is null)
-                throw new ArgumentNullException(nameof(v1));
+            {
+                return true;
+            }
+
             return (v1.CompareTo(v2) <= 0);
         }
 
-        public static bool operator >(Version v1, Version? v2)
+        public static bool operator >(Version? v1, Version? v2)
         {
-            if (v1 is null)
-                throw new ArgumentNullException(nameof(v1));
-            return (v1.CompareTo(v2) > 0);
+            return (v2 < v1);
         }
 
-        public static bool operator >=(Version v1, Version? v2)
+        public static bool operator >=(Version? v1, Version? v2)
         {
-            if (v1 is null)
-                throw new ArgumentNullException(nameof(v1));
-            return (v1.CompareTo(v2) >= 0);
+            return (v2 <= v1);
         }
     }
 }
