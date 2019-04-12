@@ -429,15 +429,21 @@ namespace System
 
         public static bool operator <(Version v1, Version v2)
         {
-            if ((object)v1 == null)
-                throw new ArgumentNullException(nameof(v1));
+            if (v1 is null)
+            {
+                return !(v2 is null);
+            }
+
             return (v1.CompareTo(v2) < 0);
         }
 
         public static bool operator <=(Version v1, Version v2)
         {
-            if ((object)v1 == null)
-                throw new ArgumentNullException(nameof(v1));
+            if (v1 is null)
+            {
+                return true;
+            }
+
             return (v1.CompareTo(v2) <= 0);
         }
 
