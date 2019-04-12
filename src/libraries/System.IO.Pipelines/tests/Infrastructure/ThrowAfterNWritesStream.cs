@@ -12,6 +12,8 @@ namespace System.IO.Pipelines.Tests
         private readonly int _maxWrites;
         private int _writes;
 
+        public int Writes => _writes;
+
         public ThrowAfterNWritesStream(int maxWrites)
         {
             _maxWrites = maxWrites;
