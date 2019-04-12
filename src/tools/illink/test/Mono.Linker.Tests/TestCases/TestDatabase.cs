@@ -131,6 +131,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("UnreachableBody");
 		}
 
+		public static IEnumerable<TestCaseData> CodegenAnnotationTests ()
+		{
+			return NUnitCasesBySuiteName ("CodegenAnnotation");
+		}
+
 		public static TestCaseCollector CreateCollector ()
 		{
 			string rootSourceDirectory;

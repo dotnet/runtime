@@ -63,6 +63,7 @@ namespace Mono.Linker.Steps {
 					context.Annotations.AddPreservedMethod (calendar, ctor);
 					// we need to mark the type or the above won't be processed
 					context.Annotations.Mark (calendar);
+					context.Annotations.MarkIndirectlyCalledMethod (ctor);
 					return;
 				}
 			}

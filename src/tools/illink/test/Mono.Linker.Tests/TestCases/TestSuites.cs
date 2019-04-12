@@ -1,5 +1,6 @@
 ﻿using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;
+using System;
 
 namespace Mono.Linker.Tests.TestCases
 {
@@ -141,6 +142,18 @@ namespace Mono.Linker.Tests.TestCases
 		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.CommandLineTests))]
 		public void CommandLineTests (TestCase testCase)
 		{
+			Run (testCase);
+		}
+
+		[TestCaseSource (typeof (TestDatabase), nameof (TestDatabase.CodegenAnnotationTests))]
+		public void CodegenAnnotationTests (TestCase testCase)
+		{
+			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+				Assert.Ignore("These tests are not valid when linking against .NET Framework");
+
+#if NETCOREAPP
+			Assert.Ignore("These tests are not valid when linking against .NET Core");
+#endif
 			Run (testCase);
 		}
 

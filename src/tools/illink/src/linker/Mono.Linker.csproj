@@ -107,6 +107,7 @@
     <Compile Include="Linker.Steps\PreserveCalendarsStep.cs" />
     <Compile Include="Linker.Steps\RemoveFeaturesStep.cs" />
     <Compile Include="Linker.Steps\CodeRewriterStep.cs" />
+    <Compile Include="Linker.Steps\ReflectionBlockedStep.cs" />
     <Compile Include="Linker\KnownMembers.cs" />
     <Compile Include="Linker\BCL.cs" />
     <Compile Include="Linker\MethodDefinitionExtensions.cs" />

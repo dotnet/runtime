@@ -434,6 +434,7 @@ namespace Mono.Linker.Steps {
 				Context.LogMessage ($"Duplicate preserve in {_xmlDocumentLocation} of {method.FullName}"); 
 
 			Annotations.Mark (method);
+			Annotations.MarkIndirectlyCalledMethod (method);
 			Tracer.AddDirectDependency (this, method);
 			Annotations.SetAction (method, MethodAction.Parse);
 		}
