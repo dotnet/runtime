@@ -8049,7 +8049,7 @@ void emitter::emitDispShift(instruction ins, int cnt)
  *  Display (optionally) the bytes for the instruction encoding in hex
  */
 
-void emitter::emitDispInsHex(BYTE* code, size_t sz)
+void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
@@ -8216,7 +8216,7 @@ void emitter::emitDispIns(
     {
         /* Display the instruction hex code */
 
-        emitDispInsHex(code, sz);
+        emitDispInsHex(id, code, sz);
     }
 
     /* Display the instruction name */
