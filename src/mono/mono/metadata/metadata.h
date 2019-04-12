@@ -365,7 +365,7 @@ MONO_API mono_bool mono_type_is_struct    (MonoType *type);
 MONO_API mono_bool mono_type_is_void      (MonoType *type);
 MONO_API mono_bool mono_type_is_pointer   (MonoType *type);
 MONO_API mono_bool mono_type_is_reference (MonoType *type);
-mono_bool mono_type_is_generic_parameter (MonoType *type);
+MONO_API mono_bool mono_type_is_generic_parameter (MonoType *type);
 
 MONO_API MonoType*
 mono_signature_get_return_type (MonoMethodSignature *sig);
