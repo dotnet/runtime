@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Description>Abstractions for modifying .net core host-binaries</Description>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), CommonManaged.props))\CommonManaged.props" />
+
+  <ItemGroup>
+    <PackageReference Include="System.Reflection.Metadata">
+      <Version>1.5.0</Version>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>
+
+

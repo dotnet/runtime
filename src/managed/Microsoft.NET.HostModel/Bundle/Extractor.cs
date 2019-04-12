@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 
-namespace Microsoft.NET.Build.Bundle
+namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     /// Extractor: The functionality to extract the files embedded 
@@ -16,20 +16,30 @@ namespace Microsoft.NET.Build.Bundle
         string OutputDir;
         string BundlePath;
 
-        public Extractor(string bundlePath, string outputDir)
+        readonly Trace trace;
+
+        public Extractor(string bundlePath, string outputDir,
+                         bool diagnosticOutput = false)
         {
             BundlePath = bundlePath;
-            OutputDir = outputDir;
+            OutputDir = Path.GetFullPath(string.IsNullOrEmpty(outputDir) ? Environment.CurrentDirectory : outputDir);
+            trace = new Trace(diagnosticOutput);
         }
 
-        public void Spill()
+        /// <summary>
+        /// Extract all files in the bundle to disk
+        /// </summary>
+        /// <exceptions>
+        /// BundleException if the bundle is invalid or malformed.
+        /// IOExceptions and ArgumentExceptions from callees flow to the caller.
+        /// </exceptions>
+        public void ExtractFiles()
         {
             try
             {
-                if (!File.Exists(BundlePath))
-                {
-                    throw new BundleException("File not found: " + BundlePath);
-                }
+                trace.Log($"Bundler version {Bundler.Version}");
+                trace.Log($"Extract from file: {BundlePath}");
+                trace.Log($"Output Directory: {OutputDir}");
 
                 using (BinaryReader reader = new BinaryReader(File.OpenRead(BundlePath)))
                 {
@@ -37,7 +47,7 @@ namespace Microsoft.NET.Build.Bundle
 
                     foreach (FileEntry entry in manifest.Files)
                     {
-                        Program.Log($"Spill: {entry}");
+                        trace.Log($"Extract: {entry}");
 
                         string fileRelativePath = entry.RelativePath.Replace(Manifest.DirectorySeparatorChar, Path.DirectorySeparatorChar);
                         string filePath = Path.Combine(OutputDir, fileRelativePath);
@@ -62,8 +72,9 @@ namespace Microsoft.NET.Build.Bundle
                     }
                 }
             }
-            catch (IOException)
+            catch (EndOfStreamException)
             {
+                // Trying to read non-existant bits in the bundle
                 throw new BundleException("Malformed Bundle");
             }
             catch (ArgumentOutOfRangeException)

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.NET.Build.Bundle
+namespace Microsoft.NET.HostModel.Bundle
 {
     /// <summary>
     /// FileType: Identifies the type of file embedded into the bundle.
@@ -19,12 +19,11 @@ namespace Microsoft.NET.Build.Bundle
     /// </summary>
     public enum FileType : byte
     {
-        Application,        // Represents the main app, also an assembly
         Assembly,           // IL Assemblies, which will be processed from bundle
         Ready2Run,          // R2R assemblies, currently unused, spilled to disk.
         DepsJson,           // Configuration file, processed from bundle
         RuntimeConfigJson,  // Configuration file, processed from bundle
-        Extract            // Files spilled to disk by the host
+        Extract             // Files spilled to disk by the host
     };
 }
 
