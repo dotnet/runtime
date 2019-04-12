@@ -19,10 +19,10 @@ namespace System.Diagnostics.Tracing
 #endif
 {
     /// <summary>
-    /// BaseCounter is an abstract class that serves as the parent class for various Counter* classes, 
+    /// DiagnosticCounter is an abstract class that serves as the parent class for various Counter* classes, 
     /// namely EventCounter, PollingCounter, IncrementingEventCounter, and IncrementingPollingCounter.
     /// </summary>
-    public abstract class BaseCounter : IDisposable
+    public abstract class DiagnosticCounter : IDisposable
     {
         /// <summary>
         /// All Counters live as long as the EventSource that they are attached to unless they are
@@ -30,23 +30,22 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="eventSource">The event source.</param>
-        public BaseCounter(string name, EventSource eventSource)
+        public DiagnosticCounter(string name, EventSource eventSource)
         {
             if (name == null)
             {
-                throw new ArgumentNullException(nameof(_name));
+                throw new ArgumentNullException(nameof(Name));
             }
 
             if (eventSource == null)
             {
-                throw new ArgumentNullException(nameof(eventSource));
+                throw new ArgumentNullException(nameof(EventSource));
             }
 
             _group = CounterGroup.GetCounterGroup(eventSource);
             _group.Add(this);
-            _eventSource = eventSource;
-            _name = name;
-            _metaData = new Dictionary<string, string>();
+            Name = name;
+            EventSource = eventSource;
         }
 
         /// <summary>
@@ -67,38 +66,45 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Adds a key-value metadata to the EventCounter that will be included as a part of the payload
         /// </summary>
-        internal void AddMetaData(string key, string value)
+        public void AddMetadata(string key, string value)
         {
             lock (MyLock)
             {
-                _metaData.Add(key, value);
+                _metadata = _metadata ?? new Dictionary<string, string>();
+                _metadata.Add(key, value);
             }
         }
 
-        internal string DisplayName { get; set; }
+        public string DisplayName { get; set; }
+
+        public string Name { get; }
+
+        public EventSource EventSource { get; }
 
         #region private implementation
 
-        internal readonly string _name;
-
         private CounterGroup _group;
-        private Dictionary<string, string> _metaData;
-        internal EventSource _eventSource;
+        private Dictionary<string, string> _metadata;
 
         internal abstract void WritePayload(float intervalSec);
 
         // arbitrarily we use name as the lock object.  
-        internal object MyLock { get { return _name; } }
+        internal object MyLock { get { return Name; } }
 
         internal void ReportOutOfBandMessage(string message)
         {
-            _eventSource.ReportOutOfBandMessage(message, true);
+            EventSource.ReportOutOfBandMessage(message, true);
         }
 
-        internal string GetMetaDataString()
+        internal string GetMetadataString()
         {
+            if (_metadata == null)
+            {
+                return "";
+            }
+
             StringBuilder sb = new StringBuilder("");
-            foreach(KeyValuePair<string, string> kvPair in _metaData)
+            foreach(KeyValuePair<string, string> kvPair in _metadata)
             {
                 sb.Append($"{kvPair.Key}:{kvPair.Value},");
             }

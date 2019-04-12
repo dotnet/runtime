@@ -49,8 +49,7 @@ public:
         UINT32 circularBufferSizeInMB,
         INT64 profilerSamplingRateInNanoseconds,
         EventPipeProviderConfiguration *pProviders,
-        UINT32 numProviders,
-        UINT64 multiFileTraceLengthInSeconds);
+        UINT32 numProviders);
 
     //! TODO: Add a ListActiveSessions to get the live SessionID in order to Disable?
 

@@ -20,22 +20,22 @@ namespace System.Diagnostics.Tracing
     internal class CounterGroup
     {
         private readonly EventSource _eventSource;
-        private readonly List<BaseCounter> _counters;
+        private readonly List<DiagnosticCounter> _counters;
 
         internal CounterGroup(EventSource eventSource)
         {
             _eventSource = eventSource;
-            _counters = new List<BaseCounter>();
+            _counters = new List<DiagnosticCounter>();
             RegisterCommandCallback();
         }
 
-        internal void Add(BaseCounter eventCounter)
+        internal void Add(DiagnosticCounter eventCounter)
         {
             lock (this) // Lock the CounterGroup
                 _counters.Add(eventCounter);
         }
 
-        internal void Remove(BaseCounter eventCounter)
+        internal void Remove(DiagnosticCounter eventCounter)
         {
             lock (this) // Lock the CounterGroup
                 _counters.Remove(eventCounter);
