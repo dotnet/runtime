@@ -5,12 +5,15 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 	class PreserveDependencyMethod {
 		public static void Main ()
 		{
+			new B (); // Needed to avoid lazy body marking stubbing
+			
 			B.Method ();
 			B.SameContext ();
 			B.Broken ();
 			B.Conditional ();
 		}
 
+		[KeptMember (".ctor()")]
 		class B
 		{
 			[Kept]
@@ -25,6 +28,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 			[Kept]
 			[PreserveDependency ("Dependency1()", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
 			[PreserveDependency ("Dependency2`1    (   T[]  ,   System.Int32  )  ", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
+			[PreserveDependency (".ctor()", "Mono.Linker.Tests.Cases.PreserveDependencies.C")] // To avoid lazy body marking stubbing
 			[PreserveDependency ("field", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
 			[PreserveDependency ("NextOne (Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod+Nested&)", "Mono.Linker.Tests.Cases.PreserveDependencies.PreserveDependencyMethod+Nested")]
 			[PreserveDependency ("Property", "Mono.Linker.Tests.Cases.PreserveDependencies.C")]
@@ -64,6 +68,7 @@ namespace Mono.Linker.Tests.Cases.PreserveDependencies {
 		}
 	}
 
+	[KeptMember (".ctor()")]
 	class C
 	{
 		[Kept]

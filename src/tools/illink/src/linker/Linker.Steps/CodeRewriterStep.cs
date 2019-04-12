@@ -45,16 +45,17 @@ namespace Mono.Linker.Steps {
 			}
 		}
 
-		void RewriteBodyToLinkedAway (MethodDefinition method)
+		protected virtual void RewriteBodyToLinkedAway (MethodDefinition method)
 		{
 			method.ImplAttributes &= ~(MethodImplAttributes.AggressiveInlining | MethodImplAttributes.Synchronized);
 			method.ImplAttributes |= MethodImplAttributes.NoInlining;
 
 			method.Body = CreateThrowLinkedAwayBody (method);
+
 			ClearDebugInformation (method);
 		}
 
-		void RewriteBodyToStub (MethodDefinition method)
+		protected virtual void RewriteBodyToStub (MethodDefinition method)
 		{
 			if (!method.IsIL)
 				throw new NotImplementedException ();
@@ -64,7 +65,7 @@ namespace Mono.Linker.Steps {
 			ClearDebugInformation (method);
 		}
 
-		void RewriteBodyToFalse (MethodDefinition method)
+		protected virtual void RewriteBodyToFalse (MethodDefinition method)
 		{
 			if (!method.IsIL)
 				throw new NotImplementedException ();

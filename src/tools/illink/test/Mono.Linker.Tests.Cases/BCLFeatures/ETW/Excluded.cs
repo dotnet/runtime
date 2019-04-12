@@ -41,6 +41,11 @@ namespace Mono.Linker.Tests.Cases.BCLFeatures.ETW {
 		})]
 		protected override void OnEventCommand (EventCommandEventArgs command)
 		{
+			Removed2 ();
+		}
+
+		static void Removed2 ()
+		{
 		}
 
 		[Kept]

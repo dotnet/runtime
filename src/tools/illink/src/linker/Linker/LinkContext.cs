@@ -401,5 +401,10 @@ namespace Mono.Linker {
 		/// that do not get an instance constructor marked.
 		/// </summary>
 		OverrideRemoval = 1 << 1,
+		
+		/// <summary>
+		/// Option to disable delaying marking of instance methods until an instance of that type could exist
+		/// </summary>
+		UnreachableBodies = 1 << 2
 	}
 }

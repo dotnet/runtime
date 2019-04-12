@@ -100,7 +100,8 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				annotations.SetAction (method, MethodAction.ConvertToThrow);
+				if (MethodBodyScanner.IsWorthConvertingToThrow (method.Body))
+					annotations.SetAction (method, MethodAction.ConvertToThrow);
 			}
 		}
 
@@ -149,7 +150,7 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				if (!skip)
+				if (!skip && MethodBodyScanner.IsWorthConvertingToThrow (method.Body))
 					annotations.SetAction (method, MethodAction.ConvertToThrow);
 			}
 		}
@@ -166,7 +167,8 @@ namespace Mono.Linker.Steps
 					{
 						foreach (var method in type.Methods)
 						{
-							annotations.SetAction(method, MethodAction.ConvertToThrow);
+							if (MethodBodyScanner.IsWorthConvertingToThrow (method.Body))
+								annotations.SetAction(method, MethodAction.ConvertToThrow);
 						}
 					}
 

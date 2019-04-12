@@ -4,9 +4,11 @@ namespace Mono.Linker.Tests.Cases.LinkXml {
 	class UnusedPropertyPreservedByLinkXmlIsKept {
 		public static void Main ()
 		{
+			new Unused (); // Used to avoid lazy body marking
 		}
 
 		[Kept]
+		[KeptMember (".ctor()")]
 		class Unused {
 			[Kept]
 			[KeptBackingField]

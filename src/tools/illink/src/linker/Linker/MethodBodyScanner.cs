@@ -6,6 +6,49 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker {
 	public static class MethodBodyScanner {
+		public static bool IsWorthConvertingToThrow (MethodBody body)
+		{
+			// Some bodies are cheaper size wise to leave alone than to convert to a throw
+			Instruction previousMeaningful = null;
+			int meaningfulCount = 0;
+			foreach (var ins in body.Instructions)  {
+				// Handle ignoring noops because because (1) it's a valid case to ignore
+				// and (2) When running the tests on .net core roslyn tosses in no ops
+				// and that leads to a difference in test results between mcs and .net framework csc.
+				if (ins.OpCode.Code == Code.Nop)
+					continue;
+
+				meaningfulCount++;
+				
+				if (meaningfulCount == 1 && ins.OpCode.Code == Code.Ret)
+					return false;
+
+				if (meaningfulCount == 2 && ins.OpCode.Code == Code.Ret && previousMeaningful != null) {
+					if (previousMeaningful.OpCode.StackBehaviourPop == StackBehaviour.Pop0) {
+						switch (previousMeaningful.OpCode.StackBehaviourPush) {
+							case StackBehaviour.Pushi:
+							case StackBehaviour.Pushi8:
+							case StackBehaviour.Pushr4:
+							case StackBehaviour.Pushr8:
+								return false;
+						}
+					
+						switch (previousMeaningful.OpCode.Code) {
+							case Code.Ldnull:
+								return false;
+						}
+					}
+				}
+
+				if (meaningfulCount >= 2)
+					return true;
+
+				previousMeaningful = ins;
+			}
+
+			return true;
+		}
+
 		public static IEnumerable<InterfaceImplementation> GetReferencedInterfaces (AnnotationStore annotations, MethodBody body)
 		{
 			var possibleStackTypes = AllPossibleStackTypes (body.Method);
