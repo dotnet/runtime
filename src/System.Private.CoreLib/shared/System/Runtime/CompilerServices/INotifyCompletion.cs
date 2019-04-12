@@ -9,9 +9,7 @@
 // Interfaces used to represent instances that notify listeners of their completion via continuations.
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-using System;
-using System.Security;
-
+#nullable enable
 namespace System.Runtime.CompilerServices
 {
     /// <summary>

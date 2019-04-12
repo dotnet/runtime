@@ -37,6 +37,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
+#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading;
@@ -187,7 +188,7 @@ namespace System.Runtime.CompilerServices
                     else
                     {
                         Debug.Fail("There should be exceptions if we're Faulted.");
-                        throw task.Exception;
+                        throw task.Exception!;
                     }
             }
         }
@@ -261,7 +262,7 @@ namespace System.Runtime.CompilerServices
                 // If this task's continuation is another task, get it.
                 var continuationTask = AsyncMethodBuilderCore.TryGetContinuationTask(continuation);
                 log.TaskWaitBegin(
-                    (currentTaskAtBegin != null ? currentTaskAtBegin.m_taskScheduler.Id : TaskScheduler.Default.Id),
+                    (currentTaskAtBegin != null ? currentTaskAtBegin.m_taskScheduler!.Id : TaskScheduler.Default.Id),
                     (currentTaskAtBegin != null ? currentTaskAtBegin.Id : 0),
                     task.Id, TplEventSource.TaskWaitBehavior.Asynchronous,
                     (continuationTask != null ? continuationTask.Id : 0));
@@ -288,7 +289,7 @@ namespace System.Runtime.CompilerServices
                 {
                     var currentTaskAtEnd = Task.InternalCurrent;
                     innerEtwLog.TaskWaitEnd(
-                        (currentTaskAtEnd != null ? currentTaskAtEnd.m_taskScheduler.Id : TaskScheduler.Default.Id),
+                        (currentTaskAtEnd != null ? currentTaskAtEnd.m_taskScheduler!.Id : TaskScheduler.Default.Id),
                         (currentTaskAtEnd != null ? currentTaskAtEnd.Id : 0),
                         innerTask.Id);
 
