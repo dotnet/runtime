@@ -6778,7 +6778,7 @@ void emitter::emitDispGC(emitAttr attr)
  *  Display (optionally) the instruction encoding in hex
  */
 
-void emitter::emitDispInsHex(BYTE* code, size_t sz)
+void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
@@ -6790,6 +6790,27 @@ void emitter::emitDispInsHex(BYTE* code, size_t sz)
         else if (sz == 4)
         {
             printf("  %04X %04X", (*((unsigned short*)(code + 0))), (*((unsigned short*)(code + 2))));
+        }
+        else
+        {
+            assert(sz == 0);
+
+            // At least display the encoding size of the instruction, even if not displaying its actual encoding.
+            insSize isz = emitInsSize(id->idInsFmt());
+            switch (isz)
+            {
+                case ISZ_16BIT:
+                    printf("  2B");
+                    break;
+                case ISZ_32BIT:
+                    printf("  4B");
+                    break;
+                case ISZ_48BIT:
+                    printf("  6B");
+                    break;
+                default:
+                    unreached();
+            }
         }
     }
 }
@@ -6822,7 +6843,7 @@ void emitter::emitDispInsHelp(
 
     /* Display the instruction hex code */
 
-    emitDispInsHex(code, sz);
+    emitDispInsHex(id, code, sz);
 
     printf("      ");
 
