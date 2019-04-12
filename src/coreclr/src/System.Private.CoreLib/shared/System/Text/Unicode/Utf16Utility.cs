@@ -5,7 +5,7 @@
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 
-namespace System.Text
+namespace System.Text.Unicode
 {
     internal static partial class Utf16Utility
     {
