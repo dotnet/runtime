@@ -13,12 +13,14 @@
             GenerateDeb;
             GenerateRpm;
             GenerateMsi;
-            GeneratePkg" />
+            GeneratePkg;
+            GenerateCompressedArchive" />
 
   <Target Name="GenerateDeb" DependsOnTargets="TestDebuild;CreateDeb" Condition="'$(BuildDebPackage)' == 'true'"/>
   <Target Name="GenerateRpm" DependsOnTargets="TestFPMTool;CreateRpm" Condition="'$(BuildRpmPackage)' == 'true'"/>
   <Target Name="GenerateMsi" DependsOnTargets="CreateMsi" Condition="'$(GenerateMSI)' == 'true'"/>
   <Target Name="GeneratePkg" DependsOnTargets="CreatePkg" Condition="'$(GeneratePkg)' == 'true'"/>
+  <Target Name="GenerateCompressedArchive" DependsOnTargets="CreateCompressedArchive" Condition="'$(GenerateCompressedArchive)' == 'true'"/>
 
   <!--
     Create Debian package.
@@ -144,6 +146,21 @@
             GetInstallerProperties;
             RunLightLinker">
     <Message Text="Created '$(InstallerFile)'" Importance="High" />
+  </Target>
+
+  <Target Name="CreateCompressedArchive"
+          DependsOnTargets="
+            GetInstallerProperties;
+            GenerateZip"/>
+
+  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
+  <Target Name="GenerateZip"
+          Condition="'$(OSGroup)' == 'Windows_NT'">
+    <ZipFileCreateFromDirectory
+      SourceDirectory="$(SharedFrameworkLayoutDir)"
+      DestinationArchive="$(CompressedArchiveFile)"
+      OverwriteDestination="true" />
   </Target>
 
   <!--

@@ -10,6 +10,8 @@
 
     <GenerateSharedFramework>true</GenerateSharedFramework>
     <GenerateNetCoreAppRuntimeConfig>true</GenerateNetCoreAppRuntimeConfig>
+
+    <GenerateCompressedArchive>true</GenerateCompressedArchive>
   </PropertyGroup>
 
   <!-- Identity / Reference package content -->
