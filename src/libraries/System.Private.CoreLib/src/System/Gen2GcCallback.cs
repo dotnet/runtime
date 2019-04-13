@@ -39,7 +39,7 @@ namespace System
         ~Gen2GcCallback()
         {
             // Check to see if the target object is still alive.
-            object targetObj = _weakTargetObj.Target;
+            object? targetObj = _weakTargetObj.Target;
             if (targetObj == null)
             {
                 // The target object is dead, so this callback object is no longer needed.

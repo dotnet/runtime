@@ -82,8 +82,7 @@
 // means that the problem is already quite complex and we should not be dealing with it - see
 // ComEventsMethod.Invoke
 
-using System;
-
+#nullable enable
 namespace System.Runtime.InteropServices
 {
     /// <summary>
@@ -105,13 +104,13 @@ namespace System.Runtime.InteropServices
             {
                 ComEventsInfo eventsInfo = ComEventsInfo.FromObject(rcw);
 
-                ComEventsSink sink = eventsInfo.FindSink(ref iid);
+                ComEventsSink? sink = eventsInfo.FindSink(ref iid);
                 if (sink == null)
                 {
                     sink = eventsInfo.AddSink(ref iid);
                 }
 
-                ComEventsMethod method = sink.FindMethod(dispid);
+                ComEventsMethod? method = sink.FindMethod(dispid);
                 if (method == null)
                 {
                     method = sink.AddMethod(dispid);
@@ -128,23 +127,23 @@ namespace System.Runtime.InteropServices
         /// <param name="iid">identifier of the source interface used by COM object to fire events</param>
         /// <param name="dispid">dispatch identifier of the method on the source interface</param>
         /// <param name="d">delegate to remove from the invocation list</param>
-        public static Delegate Remove(object rcw, Guid iid, int dispid, Delegate d)
+        public static Delegate? Remove(object rcw, Guid iid, int dispid, Delegate d)
         {
             lock (rcw)
             {
-                ComEventsInfo eventsInfo = ComEventsInfo.Find(rcw);
+                ComEventsInfo? eventsInfo = ComEventsInfo.Find(rcw);
                 if (eventsInfo == null)
                 {
                     return null;
                 }
 
-                ComEventsSink sink = eventsInfo.FindSink(ref iid);
+                ComEventsSink? sink = eventsInfo.FindSink(ref iid);
                 if (sink == null)
                 {
                     return null;
                 }
 
-                ComEventsMethod method = sink.FindMethod(dispid);
+                ComEventsMethod? method = sink.FindMethod(dispid);
                 if (method == null)
                 {
                     return null;

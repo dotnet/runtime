@@ -2,14 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using ComTypes = System.Runtime.InteropServices.ComTypes;
-
+#nullable enable
 namespace System.Runtime.InteropServices
 {
     internal class ComEventsInfo
     {
-        private ComEventsSink _sinks;
+        private ComEventsSink? _sinks;
         private object _rcw;
 
         private ComEventsInfo(object rcw)
@@ -23,15 +21,15 @@ namespace System.Runtime.InteropServices
             _sinks = ComEventsSink.RemoveAll(_sinks);
         }
 
-        public static ComEventsInfo Find(object rcw)
+        public static ComEventsInfo? Find(object rcw)
         {
-            return (ComEventsInfo)Marshal.GetComObjectData(rcw, typeof(ComEventsInfo));
+            return (ComEventsInfo?)Marshal.GetComObjectData(rcw, typeof(ComEventsInfo));
         }
 
         // it is caller's responsibility to call this method under lock(rcw)
         public static ComEventsInfo FromObject(object rcw)
         {
-            ComEventsInfo eventsInfo = Find(rcw);
+            ComEventsInfo? eventsInfo = Find(rcw);
             if (eventsInfo == null)
             {
                 eventsInfo = new ComEventsInfo(rcw);
@@ -40,7 +38,7 @@ namespace System.Runtime.InteropServices
             return eventsInfo;
         }
 
-        public ComEventsSink FindSink(ref Guid iid)
+        public ComEventsSink? FindSink(ref Guid iid)
         {
             return ComEventsSink.Find(_sinks, ref iid);
         }
@@ -57,8 +55,8 @@ namespace System.Runtime.InteropServices
         // it is caller's responsibility to call this method under lock(rcw)
         internal ComEventsSink RemoveSink(ComEventsSink sink)
         {
-            _sinks = ComEventsSink.Remove(_sinks, sink);
-            return _sinks;
+            _sinks = ComEventsSink.Remove(_sinks!, sink);
+            return _sinks!;
         }
     }
 }
