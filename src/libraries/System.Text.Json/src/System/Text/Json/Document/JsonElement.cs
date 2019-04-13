@@ -1096,6 +1096,31 @@ namespace System.Text.Json
             }
         }
 
+        /// <summary>
+        ///   Get a JsonElement which can be safely stored beyond the lifetime of the
+        ///   original <see cref="JsonDocument"/>.
+        /// </summary>
+        /// <returns>
+        ///   A JsonElement which can be safely stored beyond the lifetime of the
+        ///   original <see cref="JsonDocument"/>.
+        /// </returns>
+        /// <remarks>
+        ///   If this JsonElement is itself the output of a previous call to Clone, or
+        ///   a value contained within another JsonElement which was the output of a previous
+        ///   call to Clone, this method results in no additional memory allocation.
+        /// </remarks>
+        public JsonElement Clone()
+        {
+            CheckValidInstance();
+
+            if (!_parent.IsDisposable)
+            {
+                return this;
+            }
+
+            return _parent.CloneElement(_idx);
+        }
+
         private void CheckValidInstance()
         {
             if (_parent == null)

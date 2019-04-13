@@ -33,6 +33,7 @@ namespace System.Text.Json
         private readonly int _dummyPrimitive;
         public System.Text.Json.JsonElement this[int index] { get { throw null; } }
         public System.Text.Json.JsonValueType Type { get { throw null; } }
+        public System.Text.Json.JsonElement Clone() { throw null; }
         public System.Text.Json.JsonElement.ArrayEnumerator EnumerateArray() { throw null; }
         public System.Text.Json.JsonElement.ObjectEnumerator EnumerateObject() { throw null; }
         public int GetArrayLength() { throw null; }
@@ -70,8 +71,8 @@ namespace System.Text.Json
         public bool TryGetUInt32(out uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool TryGetUInt64(out ulong value) { throw null; }
-        public void WriteAsProperty(ReadOnlySpan<byte> utf8PropertyName, ref Utf8JsonWriter writer) { }
-        public void WriteAsProperty(ReadOnlySpan<char> propertyName, ref Utf8JsonWriter writer) { }
+        public void WriteAsProperty(System.ReadOnlySpan<byte> utf8PropertyName, ref System.Text.Json.Utf8JsonWriter writer) { }
+        public void WriteAsProperty(System.ReadOnlySpan<char> propertyName, ref System.Text.Json.Utf8JsonWriter writer) { }
         public void WriteAsValue(ref System.Text.Json.Utf8JsonWriter writer) { }
         public partial struct ArrayEnumerator : System.Collections.Generic.IEnumerable<System.Text.Json.JsonElement>, System.Collections.Generic.IEnumerator<System.Text.Json.JsonElement>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
         {
