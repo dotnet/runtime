@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Cache;
 using System.Net.Test.Common;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -478,6 +479,8 @@ namespace System.Net.Tests
         public const int TimeoutMilliseconds = 30 * 1000;
 
         public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
+        public static readonly object[][] VerifyUploadServers = Configuration.Http.VerifyUploadServers;
+
         const string ExpectedText =
             "To be, or not to be, that is the question:" +
             "Whether 'tis Nobler in the mind to suffer" +
@@ -628,16 +631,17 @@ namespace System.Net.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory]
-        [MemberData(nameof(EchoServers))]
-        public async Task UploadData_Success(Uri echoServer)
+        [MemberData(nameof(VerifyUploadServers))]
+        public async Task UploadData_Success(Uri server)
         {
             var wc = new WebClient();
 
             var uploadProgressInvoked = new TaskCompletionSource<bool>();
             wc.UploadProgressChanged += (s, e) => uploadProgressInvoked.TrySetResult(true); // to enable chunking of the upload
 
-            byte[] result = await UploadDataAsync(wc, echoServer.ToString(), Encoding.UTF8.GetBytes(ExpectedText));
-            Assert.Contains(ExpectedText, Encoding.UTF8.GetString(result));
+            // Server will verify uploaded data. An exception will be thrown if there is a problem.
+            AddMD5Header(wc, ExpectedText);
+            byte[] ignored = await UploadDataAsync(wc, server.ToString(), Encoding.UTF8.GetBytes(ExpectedText));
             if(IsAsync)
             {
                 await uploadProgressInvoked.Task.TimeoutAfter(TimeoutMilliseconds);
@@ -646,13 +650,15 @@ namespace System.Net.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory]
-        [MemberData(nameof(EchoServers))]
-        public async Task UploadData_LargeData_Success(Uri echoServer)
+        [MemberData(nameof(VerifyUploadServers))]
+        public async Task UploadData_LargeData_Success(Uri server)
         {
             var wc = new WebClient();
             string largeText = GetRandomText(512 * 1024);
-            byte[] result = await UploadDataAsync(wc, echoServer.ToString(), Encoding.UTF8.GetBytes(largeText));
-            Assert.Contains(largeText, Encoding.UTF8.GetString(result));
+
+            // Server will verify uploaded data. An exception will be thrown if there is a problem.
+            AddMD5Header(wc, largeText);
+            byte[] ignored = await UploadDataAsync(wc, server.ToString(), Encoding.UTF8.GetBytes(largeText));
         }
 
         private static string GetRandomText(int length)
@@ -682,12 +688,14 @@ namespace System.Net.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory]
-        [MemberData(nameof(EchoServers))]
-        public async Task UploadString_Success(Uri echoServer)
+        [MemberData(nameof(VerifyUploadServers))]
+        public async Task UploadString_Success(Uri server)
         {
             var wc = new WebClient();
-            string result = await UploadStringAsync(wc, echoServer.ToString(), ExpectedText);
-            Assert.Contains(ExpectedText, result);
+
+            // Server will verify uploaded data. An exception will be thrown if there is a problem.
+            AddMD5Header(wc, ExpectedText);
+            string ignored = await UploadStringAsync(wc, server.ToString(), ExpectedText);
         }
 
         [OuterLoop("Uses external servers")]
@@ -698,6 +706,17 @@ namespace System.Net.Tests
             var wc = new WebClient();
             byte[] result = await UploadValuesAsync(wc, echoServer.ToString(), new NameValueCollection() { { "Data", ExpectedText } });
             Assert.Contains(ExpectedTextAfterUrlEncode, Encoding.UTF8.GetString(result));
+        }
+
+        private static void AddMD5Header(WebClient wc, string data)
+        {
+            using (MD5 md5 = MD5.Create())
+            {
+                // Compute MD5 hash of the data that will be uploaded. We convert the string to UTF-8 since
+                // that is the encoding used by WebClient when serializing the data on the wire.
+                string headerValue = Convert.ToBase64String(md5.ComputeHash(Encoding.UTF8.GetBytes(data)));
+                wc.Headers.Add("Content-MD5", headerValue);
+            }
         }
     }
 
