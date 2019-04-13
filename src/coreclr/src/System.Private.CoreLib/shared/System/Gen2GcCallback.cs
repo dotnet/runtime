@@ -71,10 +71,7 @@ namespace System
             }
 
             // Resurrect ourselves by re-registering for finalization.
-            if (!Environment.HasShutdownStarted)
-            {
-                GC.ReRegisterForFinalize(this);
-            }
+            GC.ReRegisterForFinalize(this);
         }
     }
 }
