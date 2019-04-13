@@ -91,6 +91,11 @@ namespace Microsoft.Win32.SafeHandles
         {
         }
 
+        internal SafeCFStringHandle(IntPtr handle, bool ownsHandle)
+            : base(handle, ownsHandle)
+        {
+        }
+
         protected override bool ReleaseHandle()
         {
             Interop.CoreFoundation.CFRelease(handle);
