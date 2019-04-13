@@ -760,7 +760,7 @@ int fx_muxer_t::load_runtime_and_get_delegate(
     coreclr_delegate_type delegate_type,
     void** delegate)
 {
-    assert(host_info.is_valid());
+    assert(host_info.is_valid(mode));
 
     pal::string_t runtime_config = _X("");
     pal::string_t impl_dir;
