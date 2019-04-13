@@ -470,7 +470,13 @@ int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, co
     else
     {
         // iOS, tvOS, watchOS
-        SSLCipherSuite* cipherSuites16 = (SSLCipherSuite*)malloc(sizeof(SSLCipherSuite) * (size_t)numCipherSuites);
+        SSLCipherSuite* cipherSuites16 = (SSLCipherSuite*)calloc((size_t)numCipherSuites, sizeof(SSLCipherSuite));
+
+        if (cipherSuites16 == NULL)
+        {
+            return errSSLInternal;
+        }
+
         for (int i = 0; i < numCipherSuites; i++)
         {
             cipherSuites16[i] = (SSLCipherSuite)cipherSuites[i];
