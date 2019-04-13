@@ -49,8 +49,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    attr                - operation size and GC attribute
 //    reg1, reg2          - first and second register operands
 //    imm                 - immediate value (third operand when it fits)
-//    tmpReg              - temp register to use when the 'imm' doesn't fit
-//    inUnwindRegion      - true if we are in a prolog/epilog region with unwind codes
+//    tmpReg              - temp register to use when the 'imm' doesn't fit. Can be REG_NA
+//                          if caller knows for certain the constant will fit.
+//    inUnwindRegion      - true if we are in a prolog/epilog region with unwind codes.
+//                          Default: false.
 //
 // Return Value:
 //    returns true if the immediate was too large and tmpReg was used and modified.
@@ -2146,7 +2148,8 @@ void CodeGen::genLclHeap(GenTree* tree)
     {
         assert((compiler->lvaOutgoingArgSpaceSize % STACK_ALIGN) == 0); // This must be true for the stack to remain
                                                                         // aligned
-        inst_RV_IV(INS_add, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize, EA_PTRSIZE);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, compiler->lvaOutgoingArgSpaceSize,
+                             rsGetRsvdReg());
         stackAdjustment += compiler->lvaOutgoingArgSpaceSize;
     }
 
@@ -2301,12 +2304,12 @@ ALLOC_DONE:
     {
         assert((stackAdjustment % STACK_ALIGN) == 0); // This must be true for the stack to remain aligned
         assert(stackAdjustment > 0);
-        getEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, (int)stackAdjustment);
+        genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, (ssize_t)stackAdjustment, rsGetRsvdReg());
 
         // Return the stackalloc'ed address in result register.
         // TargetReg = SP + stackAdjustment.
         //
-        getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, targetReg, REG_SPBASE, (int)stackAdjustment);
+        genInstrWithConstant(INS_add, EA_PTRSIZE, targetReg, REG_SPBASE, (ssize_t)stackAdjustment, rsGetRsvdReg());
     }
     else // stackAdjustment == 0
     {
@@ -4534,7 +4537,7 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
     emitAttr    attr = (simdNode->gtSIMDSize > 8) ? EA_16BYTE : EA_8BYTE;
     insOpts     opt  = genGetSimdInsOpt(attr, baseType);
 
-    // TODO-ARM64-CQ Contain integer constants where posible
+    // TODO-ARM64-CQ Contain integer constants where possible
 
     regNumber tmpFloatReg = simdNode->GetSingleTempReg(RBM_ALLFLOAT);
 
