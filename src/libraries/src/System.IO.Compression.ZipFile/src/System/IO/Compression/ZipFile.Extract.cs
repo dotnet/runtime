@@ -42,7 +42,7 @@ namespace System.IO.Compression
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName) => 
-            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwrite: false);
+            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false);
 
         /// <summary>
         /// Extracts all of the files in the specified archive to a directory on the file system.
@@ -74,9 +74,9 @@ namespace System.IO.Compression
         /// 
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        /// <param name="overwrite">True to indicate overwrite.</param> 
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwrite) => 
-            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwrite: overwrite);
+        /// <param name="overwriteFiles">True to indicate overwrite.</param> 
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles) => 
+            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles);
 
         /// <summary>
         /// Extracts all of the files in the specified archive to a directory on the file system.
@@ -131,7 +131,7 @@ namespace System.IO.Compression
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
         public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding entryNameEncoding) => 
-            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwrite: false);
+            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false);
 
         /// <summary>
         /// Extracts all of the files in the specified archive to a directory on the file system.
@@ -163,7 +163,7 @@ namespace System.IO.Compression
         /// 
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        /// <param name="overwrite">True to indicate overwrite.</param>
+        /// <param name="overwriteFiles">True to indicate overwrite.</param>
         /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
         ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
@@ -186,14 +186,14 @@ namespace System.IO.Compression
         ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding entryNameEncoding, bool overwrite)
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding entryNameEncoding, bool overwriteFiles)
         {
             if (sourceArchiveFileName == null)
                 throw new ArgumentNullException(nameof(sourceArchiveFileName));
 
             using (ZipArchive archive = Open(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding))
             {
-                archive.ExtractToDirectory(destinationDirectoryName, overwrite);
+                archive.ExtractToDirectory(destinationDirectoryName, overwriteFiles);
             }
         }
     }
