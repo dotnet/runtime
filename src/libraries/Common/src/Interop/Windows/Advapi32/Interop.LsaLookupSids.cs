@@ -17,6 +17,6 @@ internal static partial class Interop
             IntPtr[] sids,
             out SafeLsaMemoryHandle referencedDomains,
             out SafeLsaMemoryHandle names
-            );
+        );
     }
 }
