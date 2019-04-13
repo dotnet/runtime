@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Runtime.InteropServices
@@ -227,7 +228,7 @@ namespace System.Runtime.InteropServices
         /// Get the managed object representing the Variant.
         /// </summary>
         /// <returns></returns>
-        public object ToObject()
+        public object? ToObject()
         {
             // Check the simple case upfront
             if (IsEmpty)
@@ -644,7 +645,7 @@ namespace System.Runtime.InteropServices
 
         // VT_UNKNOWN
 
-        public object AsUnknown
+        public object? AsUnknown
         {
             get
             {
@@ -672,7 +673,7 @@ namespace System.Runtime.InteropServices
 
         // VT_DISPATCH
 
-        public object AsDispatch
+        public object? AsDispatch
         {
             get
             {
