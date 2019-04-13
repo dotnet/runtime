@@ -7,7 +7,8 @@ internal static partial class Interop
     internal static partial class Libraries
     {
         internal const string CoreFoundationLibrary = "/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
-        internal const string CoreServicesLibrary   = "/System/Library/Frameworks/CoreServices.framework/CoreServices";
+        internal const string CoreServicesLibrary = "/System/Library/Frameworks/CoreServices.framework/CoreServices";
+        internal const string CFNetworkLibrary = "/System/Library/Frameworks/CFNetwork.framework/CFNetwork";
         internal const string libproc = "libproc";
         internal const string LibSystemCommonCrypto = "/usr/lib/system/libcommonCrypto";
         internal const string LibSystemKernel = "/usr/lib/system/libsystem_kernel";

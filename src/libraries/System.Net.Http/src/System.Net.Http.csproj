@@ -215,7 +215,6 @@
   </ItemGroup>
   <!-- SocketsHttpHandler platform parts -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
       <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
@@ -255,6 +254,49 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Security\Unix\SafeDeleteNegoContext.cs">
       <Link>Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetsOSX)' != 'true' And '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsOSX)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.OSX.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\MacProxy.cs" />
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFArray.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFArray.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFData.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFData.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFDictionary.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFDictionary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFProxy.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFProxy.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFUrl.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFUrl.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFString.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFString.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFNumber.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFString.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.CoreFoundation.CFError.cs">
+      <Link>Common\Interop\OSX\Interop.CoreFoundation.CFError.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.RunLoop.cs">
+      <Link>Common\Interop\OSX\Interop.RunLoop.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\OSX\Interop.Libraries.cs">
+      <Link>Common\Interop\OSX\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeCreateHandle.OSX.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
