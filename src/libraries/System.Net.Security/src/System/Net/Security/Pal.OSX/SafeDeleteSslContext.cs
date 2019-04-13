@@ -29,6 +29,8 @@ namespace System.Net
 
             try
             {
+                int osStatus;
+
                 unsafe
                 {
                     _readCallback = ReadFromConnection;
@@ -37,7 +39,7 @@ namespace System.Net
 
                 _sslContext = CreateSslContext(credential, sslAuthenticationOptions.IsServer);
 
-                int osStatus = Interop.AppleCrypto.SslSetIoCallbacks(
+                osStatus = Interop.AppleCrypto.SslSetIoCallbacks(
                     _sslContext,
                     _readCallback,
                     _writeCallback);
@@ -45,6 +47,27 @@ namespace System.Net
                 if (osStatus != 0)
                 {
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+                }
+
+                if (sslAuthenticationOptions.CipherSuitesPolicy != null)
+                {
+                    uint[] tlsCipherSuites = sslAuthenticationOptions.CipherSuitesPolicy.Pal.TlsCipherSuites;
+
+                    unsafe
+                    {
+                        fixed (uint* cipherSuites = tlsCipherSuites)
+                        {
+                            osStatus = Interop.AppleCrypto.SslSetEnabledCipherSuites(
+                                _sslContext,
+                                cipherSuites,
+                                tlsCipherSuites.Length);
+
+                            if (osStatus != 0)
+                            {
+                                throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
+                            }
+                        }
+                    }
                 }
 
                 if (sslAuthenticationOptions.ApplicationProtocols != null)
@@ -314,7 +337,7 @@ namespace System.Net
             // If we didn't find an unset protocol after the min, go all the way to the last one.
             if (maxProtocolId == (SslProtocols)(-1))
             {
-                maxProtocolId = orderedSslProtocols[orderedSslProtocols.Length - 1]; 
+                maxProtocolId = orderedSslProtocols[orderedSslProtocols.Length - 1];
             }
 
             // Finally set this min and max.

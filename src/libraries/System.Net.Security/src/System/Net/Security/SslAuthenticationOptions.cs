@@ -27,6 +27,7 @@ namespace System.Net.Security
             CertSelectionDelegate = localCallback;
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
             ClientCertificates = sslClientAuthenticationOptions.ClientCertificates;
+            CipherSuitesPolicy = sslClientAuthenticationOptions.CipherSuitesPolicy;
         }
 
         internal SslAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
@@ -48,6 +49,7 @@ namespace System.Net.Security
             // Server specific options.
             CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
             ServerCertificate = sslServerAuthenticationOptions.ServerCertificate;
+            CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
         }
 
         internal bool AllowRenegotiation { get; set; }
@@ -64,6 +66,7 @@ namespace System.Net.Security
         internal RemoteCertValidationCallback CertValidationDelegate { get; set; }
         internal LocalCertSelectionCallback CertSelectionDelegate { get; set; }
         internal ServerCertSelectionCallback ServerCertSelectionDelegate { get; set; }
+        internal CipherSuitesPolicy CipherSuitesPolicy { get; set; }
     }
 }
 

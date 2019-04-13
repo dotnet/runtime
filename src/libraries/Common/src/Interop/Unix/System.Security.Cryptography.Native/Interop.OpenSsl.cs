@@ -64,30 +64,54 @@ internal static partial class Interop
                     throw CreateSslException(SR.net_allocate_ssl_context_failed);
                 }
 
-                // TLS 1.3 uses different ciphersuite restrictions than previous versions.
-                // It has no equivalent to a NoEncryption option.
-                if (policy == EncryptionPolicy.NoEncryption)
+                if (!Interop.Ssl.Tls13Supported)
+                {
+                    if (protocols != SslProtocols.None &&
+                        CipherSuitesPolicyPal.WantsTls13(protocols))
+                    {
+                        protocols = protocols & (~SslProtocols.Tls13);
+                    }
+                }
+                else if (CipherSuitesPolicyPal.WantsTls13(protocols) &&
+                    CipherSuitesPolicyPal.ShouldOptOutOfTls13(sslAuthenticationOptions.CipherSuitesPolicy, policy))
                 {
                     if (protocols == SslProtocols.None)
                     {
+                        // we are using default settings but cipher suites policy says that TLS 1.3
+                        // is not compatible with our settings (i.e. we requested no encryption or disabled
+                        // all TLS 1.3 cipher suites)
                         protocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12;
                     }
                     else
                     {
-                        protocols &= ~SslProtocols.Tls13;
-
-                        if (protocols == SslProtocols.None)
-                        {
-                            throw new SslException(
-                                SR.Format(SR.net_ssl_encryptionpolicy_notsupported, policy));
-                        }
+                        // user explicitly asks for TLS 1.3 but their policy is not compatible with TLS 1.3
+                        throw new SslException(
+                            SR.Format(SR.net_ssl_encryptionpolicy_notsupported, policy));
                     }
                 }
 
+                if (CipherSuitesPolicyPal.ShouldOptOutOfLowerThanTls13(sslAuthenticationOptions.CipherSuitesPolicy, policy))
+                {
+                    if (!CipherSuitesPolicyPal.WantsTls13(protocols))
+                    {
+                        // We cannot provide neither TLS 1.3 or non TLS 1.3, user disabled all cipher suites
+                        throw new SslException(
+                            SR.Format(SR.net_ssl_encryptionpolicy_notsupported, policy));
+                    }
+
+                    protocols = SslProtocols.Tls13;
+                }
 
                 // Configure allowed protocols. It's ok to use DangerousGetHandle here without AddRef/Release as we just
                 // create the handle, it's rooted by the using, no one else has a reference to it, etc.
                 Ssl.SetProtocolOptions(innerContext.DangerousGetHandle(), protocols);
+
+                // Sets policy and security level
+                if (!Ssl.SetEncryptionPolicy(innerContext, policy))
+                {
+                    throw new SslException(
+                        SR.Format(SR.net_ssl_encryptionpolicy_notsupported, policy));
+                }
 
                 // The logic in SafeSslHandle.Disconnect is simple because we are doing a quiet
                 // shutdown (we aren't negotiating for session close to enable later session
@@ -98,10 +122,23 @@ internal static partial class Interop
                 // https://www.openssl.org/docs/manmaster/ssl/SSL_shutdown.html
                 Ssl.SslCtxSetQuietShutdown(innerContext);
 
-                if (!Ssl.SetEncryptionPolicy(innerContext, policy))
+                byte[] cipherList =
+                    CipherSuitesPolicyPal.GetOpenSslCipherList(sslAuthenticationOptions.CipherSuitesPolicy, protocols, policy);
+
+                byte[] cipherSuites =
+                    CipherSuitesPolicyPal.GetOpenSslCipherSuites(sslAuthenticationOptions.CipherSuitesPolicy, protocols, policy);
+
+                unsafe
                 {
-                    Crypto.ErrClearError();
-                    throw new PlatformNotSupportedException(SR.Format(SR.net_ssl_encryptionpolicy_notsupported, policy));
+                    fixed (byte* cipherListStr = cipherList)
+                    fixed (byte* cipherSuitesStr = cipherSuites)
+                    {
+                        if (!Ssl.SetCiphers(innerContext, cipherListStr, cipherSuitesStr))
+                        {
+                            Crypto.ErrClearError();
+                            throw new PlatformNotSupportedException(SR.Format(SR.net_ssl_encryptionpolicy_notsupported, policy));
+                        }
+                    }
                 }
 
                 bool hasCertificateAndKey =

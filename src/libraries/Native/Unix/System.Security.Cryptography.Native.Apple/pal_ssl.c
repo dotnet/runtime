@@ -443,12 +443,44 @@ int32_t AppleCryptoNative_SslGetProtocolVersion(SSLContextRef sslContext, PAL_Ss
     return osStatus;
 }
 
-int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint32_t* pCipherSuiteOut)
+int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint16_t* pCipherSuiteOut)
 {
     if (pCipherSuiteOut == NULL)
-        *pCipherSuiteOut = 0;
+    {
+        return errSecParam;
+    }
 
-    return SSLGetNegotiatedCipher(sslContext, pCipherSuiteOut);
+    SSLCipherSuite cipherSuite;
+    OSStatus status = SSLGetNegotiatedCipher(sslContext, &cipherSuite);
+    *pCipherSuiteOut = (uint16_t)cipherSuite;
+
+    return status;
+}
+
+int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, const uint32_t* cipherSuites, int32_t numCipherSuites)
+{
+    // Max numCipherSuites is 2^16 (all possible cipher suites)
+    assert(numCipherSuites < (1 << 16));
+
+    if (sizeof(SSLCipherSuite) == sizeof(uint32_t))
+    {
+        // macOS
+        return SSLSetEnabledCiphers(sslContext, cipherSuites, (size_t)numCipherSuites);
+    }
+    else
+    {
+        // iOS, tvOS, watchOS
+        SSLCipherSuite* cipherSuites16 = (SSLCipherSuite*)malloc(sizeof(SSLCipherSuite) * (size_t)numCipherSuites);
+        for (int i = 0; i < numCipherSuites; i++)
+        {
+            cipherSuites16[i] = (SSLCipherSuite)cipherSuites[i];
+        }
+
+        OSStatus status = SSLSetEnabledCiphers(sslContext, cipherSuites16, (size_t)numCipherSuites);
+
+        free(cipherSuites16);
+        return status;
+    }
 }
 
 __attribute__((constructor)) static void InitializeAppleCryptoSslShim()

@@ -23,6 +23,7 @@
     <Compile Include="System\Net\Security\SslStream.Implementation.Adapters.cs" />
     <Compile Include="System\Net\SslStreamContext.cs" />
     <Compile Include="System\Net\Security\AuthenticatedStream.cs" />
+    <Compile Include="System\Net\Security\CipherSuitesPolicy.cs" />
     <Compile Include="System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="System\Net\Security\SecureChannel.cs" />
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
@@ -142,6 +143,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
     <Compile Include="System\Net\CertificateValidationPal.Windows.cs" />
+    <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Windows.cs" />
     <Compile Include="System\Net\Security\NegotiateStreamPal.Windows.cs" />
     <Compile Include="System\Net\Security\NetEventSource.Security.Windows.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Windows.cs" />
@@ -318,6 +320,7 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' AND '$(TargetsOSX)' != 'true' ">
     <Compile Include="System\Net\CertificateValidationPal.Unix.cs" />
+    <Compile Include="System\Net\Security\CipherSuitesPolicyPal.Linux.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.Unix.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.Linux.cs" />
     <Compile Include="System\Net\Security\StreamSizes.Unix.cs" />
@@ -437,6 +440,7 @@
     <Compile Include="System\Net\Security\SslConnectionInfo.OSX.cs" />
     <Compile Include="System\Net\Security\SslStreamPal.OSX.cs" />
     <Compile Include="System\Net\Security\StreamSizes.OSX.cs" />
+    <Compile Include="System\Net\Security\CipherSuitesPolicyPal.OSX.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
@@ -446,6 +450,7 @@
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tracing" />
+    <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Resources.ResourceManager" />

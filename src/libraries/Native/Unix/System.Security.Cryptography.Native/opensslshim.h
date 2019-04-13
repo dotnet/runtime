@@ -36,8 +36,15 @@
 #include <openssl/x509v3.h>
 
 #include "pal_crypto_config.h"
+#define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
 #define OPENSSL_VERSION_1_0_2_RTM 0x10002000L
+
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1_RTM
+#define HAVE_OPENSSL_SET_CIPHERSUITES 1
+#else
+#define HAVE_OPENSSL_SET_CIPHERSUITES 0
+#endif
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0_RTM
 
@@ -77,6 +84,14 @@ int EC_POINT_get_affine_coordinates_GF2m(const EC_GROUP* group, const EC_POINT* 
 int EC_POINT_set_affine_coordinates_GF2m(
     const EC_GROUP* group, EC_POINT* p, const BIGNUM* x, const BIGNUM* y, BN_CTX* ctx);
 #endif
+
+#if !HAVE_OPENSSL_SET_CIPHERSUITES
+#undef HAVE_OPENSSL_SET_CIPHERSUITES
+#define HAVE_OPENSSL_SET_CIPHERSUITES 1
+int SSL_CTX_set_ciphersuites(SSL_CTX *ctx, const char *str);
+const SSL_CIPHER* SSL_CIPHER_find(SSL *ssl, const unsigned char *ptr);
+#endif
+
 #if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0_RTM
 typedef struct stack_st _STACK;
 int CRYPTO_add_lock(int* pointer, int amount, int type, const char* file, int line);
@@ -422,9 +437,11 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(RSA_size) \
     REQUIRED_FUNCTION(RSA_up_ref) \
     REQUIRED_FUNCTION(RSA_verify) \
-    REQUIRED_FUNCTION(SSL_CIPHER_description) \
+    LIGHTUP_FUNCTION(SSL_CIPHER_find) \
     REQUIRED_FUNCTION(SSL_CIPHER_get_bits) \
     REQUIRED_FUNCTION(SSL_CIPHER_get_id) \
+    LIGHTUP_FUNCTION(SSL_CIPHER_get_name) \
+    LIGHTUP_FUNCTION(SSL_CIPHER_get_version) \
     REQUIRED_FUNCTION(SSL_ctrl) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
@@ -436,6 +453,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LIGHTUP_FUNCTION(SSL_CTX_set_alpn_select_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_cert_verify_callback) \
     REQUIRED_FUNCTION(SSL_CTX_set_cipher_list) \
+    LIGHTUP_FUNCTION(SSL_CTX_set_ciphersuites) \
     REQUIRED_FUNCTION(SSL_CTX_set_client_cert_cb) \
     REQUIRED_FUNCTION(SSL_CTX_set_quiet_shutdown) \
     FALLBACK_FUNCTION(SSL_CTX_set_options) \
@@ -810,8 +828,10 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define sk_push OPENSSL_sk_push_ptr
 #define sk_value OPENSSL_sk_value_ptr
 #define SSL_CIPHER_get_bits SSL_CIPHER_get_bits_ptr
-#define SSL_CIPHER_description SSL_CIPHER_description_ptr
+#define SSL_CIPHER_find SSL_CIPHER_find_ptr
 #define SSL_CIPHER_get_id SSL_CIPHER_get_id_ptr
+#define SSL_CIPHER_get_name SSL_CIPHER_get_name_ptr
+#define SSL_CIPHER_get_version SSL_CIPHER_get_version_ptr
 #define SSL_ctrl SSL_ctrl_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
@@ -822,6 +842,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_set_alpn_select_cb SSL_CTX_set_alpn_select_cb_ptr
 #define SSL_CTX_set_cert_verify_callback SSL_CTX_set_cert_verify_callback_ptr
 #define SSL_CTX_set_cipher_list SSL_CTX_set_cipher_list_ptr
+#define SSL_CTX_set_ciphersuites SSL_CTX_set_ciphersuites_ptr
 #define SSL_CTX_set_client_cert_cb SSL_CTX_set_client_cert_cb_ptr
 #define SSL_CTX_set_options SSL_CTX_set_options_ptr
 #define SSL_CTX_set_quiet_shutdown SSL_CTX_set_quiet_shutdown_ptr
