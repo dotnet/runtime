@@ -11,9 +11,10 @@ namespace Microsoft.Extensions.Configuration
     /// <summary>
     /// Chained implementation of <see cref="IConfigurationProvider"/>
     /// </summary>
-    public class ChainedConfigurationProvider : IConfigurationProvider
+    public class ChainedConfigurationProvider : IConfigurationProvider, IDisposable
     {
         private readonly IConfiguration _config;
+        private readonly bool _shouldDisposeConfig;
 
         /// <summary>
         /// Initialize a new instance from the source configuration.
@@ -31,6 +32,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             _config = source.Configuration;
+            _shouldDisposeConfig = source.ShouldDisposeConfiguration;
         }
 
         /// <summary>
@@ -81,6 +83,15 @@ namespace Microsoft.Extensions.Configuration
             keys.AddRange(children.Select(c => c.Key));
             return keys.Concat(earlierKeys)
                 .OrderBy(k => k, ConfigurationKeyComparer.Instance);
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (_shouldDisposeConfig)
+            {
+                (_config as IDisposable)?.Dispose();
+            }
         }
     }
 }
