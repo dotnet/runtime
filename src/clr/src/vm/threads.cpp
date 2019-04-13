@@ -5213,12 +5213,6 @@ DEBUG_NOINLINE void ThreadStore::Enter()
     ANNOTATION_SPECIAL_HOLDER_CALLER_NEEDS_DYNAMIC_CONTRACT;
     CHECK_ONE_STORE();
     m_Crst.Enter();
-
-    // Threadstore needs special shutdown handling.
-    if (g_fSuspendOnShutdown)
-    {
-        m_Crst.ReleaseAndBlockForShutdownIfNotSpecialThread();
-    }
 }
 
 DEBUG_NOINLINE void ThreadStore::Leave()
