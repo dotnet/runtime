@@ -84,6 +84,15 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void WriteEmptyObjectArray()
+        {
+            object[] arr = new object[]{new object()};
+
+            string json = JsonSerializer.ToString(arr);
+            Assert.Equal("[{}]", json);
+        }
+
+        [Fact]
         public static void WritePrimitiveJaggedArray()
         {
             var input = new int[2][];

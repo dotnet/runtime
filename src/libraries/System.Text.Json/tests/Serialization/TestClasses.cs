@@ -555,17 +555,17 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class TestClassWithNullButInitialized
+    public class TestClassWithInitializedProperties
     {
         public string MyString { get; set; } = "Hello";
         public int? MyInt { get; set; } = 1;
-        public static readonly string s_json =
+        public static readonly string s_null_json =
                 @"{" +
                 @"""MyString"" : null," +
                 @"""MyInt"" : null" +
                 @"}";
 
-        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_null_json);
     }
 
     public class TestClassWithNestedObjectInner : ITestClass

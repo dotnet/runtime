@@ -14,23 +14,6 @@ namespace System.Text.Json.Serialization
     public static partial class JsonSerializer
     {
         internal static readonly JsonPropertyInfo s_missingProperty = new JsonPropertyInfoNotNullable<object, object, object>();
-        private static readonly JsonSerializerOptions s_defaultSettings = new JsonSerializerOptions();
-
-        private static object ReadCore(
-            Type returnType,
-            JsonSerializerOptions options,
-            ref Utf8JsonReader reader)
-        {
-            if (options == null)
-                options = s_defaultSettings;
-
-            ReadStack state = default;
-            state.Current.Initialize(returnType, options);
-
-            ReadCore(options, ref reader, ref state);
-
-            return state.Current.ReturnValue;
-        }
 
         // todo: for readability, refactor this method to split by ClassType(Enumerable, Object, or Value) like Write()
         private static void ReadCore(

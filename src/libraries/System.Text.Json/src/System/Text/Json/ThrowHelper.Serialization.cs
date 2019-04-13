@@ -22,12 +22,6 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonReaderException_DeserializeUnableToConvertValue(Type propertyType, in ReadStack state)
-        {
-            throw new JsonReaderException(SR.Format(SR.DeserializeUnableToConvertValue, state.PropertyPath, propertyType), 0 , 0);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonReaderException_DeserializeCannotBeNull(in Utf8JsonReader reader, in ReadStack state)
         {
             throw new JsonReaderException(SR.Format(SR.DeserializeCannotBeNull, state.PropertyPath), reader.CurrentState);
@@ -37,6 +31,12 @@ namespace System.Text.Json
         public static void ThrowObjectDisposedException(string name)
         {
             throw new ObjectDisposedException(name);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_SerializerOptionsImmutable()
+        {
+            throw new InvalidOperationException(SR.SerializerOptionsImmutable);
         }
     }
 }

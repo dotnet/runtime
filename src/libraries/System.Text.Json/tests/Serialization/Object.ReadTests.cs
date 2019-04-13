@@ -16,6 +16,13 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadEmpty()
+        {
+            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>("{}");
+            Assert.NotNull(obj);
+        }
+
+        [Fact]
         public static void EmptyClassWithRandomData()
         {
             JsonSerializer.Parse<EmptyClass>(SimpleTestClass.s_json);
