@@ -14,7 +14,7 @@
     <!-- standard -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19212.1</NETStandardLibraryPackageVersion>
     <!-- coreclr -->
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview5-27612-71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview5-27612-73</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- dotnet-trusted -->
     <MicrosoftPrivateWindowsDesktopAppPackageVersion>3.0.0-preview5-27612-14</MicrosoftPrivateWindowsDesktopAppPackageVersion>
     <!-- Not auto-updated. -->
