@@ -37,6 +37,21 @@ Namespace Microsoft.VisualBasic
                                                         &HFF00FFI, &HFFFFI, &HFFFFFFI}
         Friend Const COMObjectName As String = "__ComObject"
 
+        '============================================================================
+        ' Error functions.
+        '============================================================================
+        Public Function Err() As ErrObject
+
+            Dim oProj As ProjectData
+            oProj = ProjectData.GetProjectData()
+
+            If oProj.m_Err Is Nothing Then
+                oProj.m_Err = New ErrObject
+            End If
+            Err = oProj.m_Err
+
+        End Function
+
         Public Function IsArray(ByVal VarName As Object) As Boolean
 
             If VarName Is Nothing Then

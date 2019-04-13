@@ -190,8 +190,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Function
 
         Friend Shared Function VbMakeException(ByVal ex As Exception, ByVal hr As Integer) As System.Exception
-            ' UNDONE - Err() requires port of Information.vb, ProjectData.vb
-            'Err().SetUnmappedError(hr)
+            Err().SetUnmappedError(hr)
             Return ex
         End Function
 
