@@ -25,11 +25,13 @@
     <Compile Include="Microsoft\VisualBasic\CompilerServices\StructUtilsTests.cs" />
     <Compile Include="Microsoft\VisualBasic\Devices\NetworkAvailableEventArgsTests.cs" />
     <Compile Include="ConversionsTests.cs" />
+    <Compile Include="ErrObjectTests.cs" />
     <Compile Include="OperatorsTests.cs" />
     <Compile Include="OperatorsTests.Comparison.cs" />
     <Compile Include="DateAndTimeTests.cs" />
     <Compile Include="IConvertibleWrapper.cs" />
     <Compile Include="InformationTests.cs" />
+    <Compile Include="ProjectDataTests.cs" />
     <Compile Include="UtilsTests.cs" />
     <Compile Include="VBMathTests.cs" />
     <Compile Include="StringsTests.cs" />
