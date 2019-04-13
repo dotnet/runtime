@@ -166,6 +166,7 @@ $(_XunitEpilog)
       <_XunitProlog Condition=" '$(_XunitProlog)'=='' ">
         <![CDATA[
 using Xunit%3B
+using Xunit.Abstractions%3B
 using System%3B
 using System.Collections.Generic%3B
 using System.Diagnostics%3B
@@ -246,6 +247,13 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
         public class %(AllCommands.ClassName)
         {
+            private readonly ITestOutputHelper output%3B
+
+            public %(AllCommands.ClassName)(ITestOutputHelper output)
+            {
+                this.output = output%3B
+            }
+
             [Fact(DisplayName=@"%(AllCommands.DisplayName)")]
             [Trait("TestGroup", "%(AllCommands.TestGroup)")]
             public void %(AllCommands.FactName)()
@@ -278,43 +286,52 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                     infraEx = ex%3B
                 }
 
-                if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
+                if (infraEx != null)
                 {
-                    string sErrorText = null%3B
+                    Assert.True(false, "Test Infrastructure Failure: " + infraEx.Message)%3B
+                }
+                else if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
+                {
+                    List<string> allOutput = new List<string>()%3B
+
                     try
                     {
-                        sErrorText = System.IO.File.ReadAllText(errorFile)%3B
+                        allOutput.AddRange(System.IO.File.ReadAllLines(errorFile))%3B
+                    }
+                    catch (Exception ex)
+                    {
+                        allOutput.Add("Unable to read error file: " + errorFile)%3B
+                        allOutput.Add(ex.Message)%3B
+                    }
+
+                    allOutput.Add(string.Empty)%3B
+                    allOutput.Add("Return code:      " + ret)%3B
+                    allOutput.Add("Raw output file:      " + outputFile)%3B
+                    allOutput.Add("Raw output:")%3B
+
+                    try
+                    {
+                        allOutput.AddRange(System.IO.File.ReadAllLines(outputFile))%3B
                     }
                     catch(Exception ex)
                     {
-                      sErrorText = $"Unable to read error file: {errorFile}\n{ex}"%3B
+                        allOutput.Add("Unable to read output file: " + outputFile)%3B
+                        allOutput.Add(ex.Message)%3B
                     }
 
-                    string outputText = null%3B
-                    try
+                    allOutput.Add("To run the test:")%3B
+                    allOutput.Add("> set CORE_ROOT=" + _Global.coreRoot)%3B
+                    allOutput.Add("> " + testExecutable)%3B
+
+                    foreach (string line in allOutput)
                     {
-                        System.IO.StreamReader outputReader = new System.IO.StreamReader(outputFile)%3B
-                        outputText = outputReader.ReadToEnd()%3B
-                        outputReader.Close()%3B
-                    }
-                    catch(Exception ex)
-                    {
-                        outputText = $"Unable to read error file: {outputFile}\n{ex}"%3B
+                        output.WriteLine(line)%3B
                     }
 
-                    string msg = infraEx != null ? "Test Infrastructure Failure: " + infraEx.ToString()
-                                                 : sErrorText + "\n\n" +
-                                                   "Return code:      " + ret + "\n" +
-                                                   "Raw output file:      " + outputFile + "\n" +
-                                                   "Raw output:\n" + outputText + "\n" +
-                                                   "To run the test:\n" +
-                                                   "> set CORE_ROOT=" + _Global.coreRoot + "\n" +
-                                                   "> " + testExecutable + "\n"%3B
-
-                    Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, msg)%3B
+                    Assert.True(false, string.Join(Environment.NewLine, allOutput))%3B
                 }
             }
-       }
+        }
 
         ]]>
         </XUnitFact>
@@ -357,7 +374,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
   </Target>
 
   <Target Name="ResolveTestHostDependencies">
-    <MSBuild Projects="$(MSBuildThisFileDirectory)src\Common\CoreFX\CoreFX.depproj" 
+    <MSBuild Projects="$(MSBuildThisFileDirectory)src\Common\CoreFX\CoreFX.depproj"
             Properties="OutputPath=$(NETCoreAppTestSharedFrameworkPath);" />
   </Target>
 
@@ -401,7 +418,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <HostPolicyFileName>hostpolicy</HostPolicyFileName>
       <HostPolicyExtension>dll</HostPolicyExtension>
     </PropertyGroup>
-    
+
     <PropertyGroup Condition="'$(OSGroup)'!='Windows_NT'">
       <HostFxrFileName>libhostfxr</HostFxrFileName>
       <HostFxrFileExtension Condition="'$(OSGroup)' == 'Linux' Or '$(OSGroup)' == 'FreeBSD'">so</HostFxrFileExtension>
@@ -410,9 +427,9 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <HostPolicyExtension>$(HostFxrFileExtension)</HostPolicyExtension>
       <DotnetExecutableName>dotnet</DotnetExecutableName>
     </PropertyGroup>
-    
+
     <ItemGroup>
-      <!-- Workaround for packages on which Microsoft.NetCoreApp expresses a dependency 
+      <!-- Workaround for packages on which Microsoft.NetCoreApp expresses a dependency
       The <PackageToInclude> element doesn't allow a version to be specified and we end up with clashing assembly versions in Core_Root-->
       <NetCoreAppPackagedAssemblies Include="System.Text.Encoding.CodePages.dll"/>
       <!-- Use xunit dependencies defined in CoreFX.depproj instead of conflicting versions from test dependencies. -->
@@ -434,17 +451,17 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <!-- Should this be referenced from a NuGet package? -->
     <Copy SourceFiles="@(HostPolicyFile)"
-          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)" 
+          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true" />
 
     <Copy SourceFiles="@(DotnetExe)"
-          DestinationFolder="$(TestHostRootPath)" 
+          DestinationFolder="$(TestHostRootPath)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="true"  />
 
-    <Copy SourceFiles="@(CoreCLRBinaries)" 
-          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)" 
+    <Copy SourceFiles="@(CoreCLRBinaries)"
+          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)"
           SkipUnchangedFiles="true" />
   </Target>
 
@@ -468,7 +485,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
     <MSBuild Projects="$(MSBuildProjectFile)"
              Targets="CreateTestHost"
-             Condition=" '$(GenerateTestHost)'=='true' "/>    
+             Condition=" '$(GenerateTestHost)'=='true' "/>
 
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="RunTests"
              Condition=" '$(RunTests)'=='true' "/>
