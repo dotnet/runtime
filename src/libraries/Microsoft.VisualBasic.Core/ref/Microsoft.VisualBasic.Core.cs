@@ -100,6 +100,17 @@ namespace Microsoft.VisualBasic
         public static System.DateTime Now { get { throw null; } }
         public static System.DateTime Today { get { throw null; } }
     }
+    public sealed partial class ErrObject
+    {
+        internal ErrObject() { }
+        public void Clear() { }
+        public string Description { get { throw null; } set { } }
+        public int Erl { get { throw null; } }
+        public System.Exception GetException() { throw null; }
+        public int LastDllError { get { throw null; } }
+        public int Number { get { throw null; } set { } }
+        public void Raise(int Number, object Source = null, object Description = null, object HelpFile = null, object HelpContext = null) { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class HideModuleNameAttribute : System.Attribute
@@ -110,6 +121,7 @@ namespace Microsoft.VisualBasic
     public sealed partial class Information
     {
         internal Information() { }
+        public static ErrObject Err() { throw null; }
         public static bool IsArray(object VarName) { throw null; }
         public static bool IsDate(object Expression) { throw null; }
         public static bool IsDBNull(object Expression) { throw null; }
@@ -467,6 +479,7 @@ namespace Microsoft.VisualBasic.CompilerServices
     {
         internal ProjectData() { }
         public static void ClearProjectError() { }
+        public static System.Exception CreateProjectError(int hr) { throw null; }
         public static void SetProjectError(System.Exception ex) { }
         public static void SetProjectError(System.Exception ex, int lErl) { }
     }
