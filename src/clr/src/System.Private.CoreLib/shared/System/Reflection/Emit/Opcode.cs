@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Threading;
 
 namespace System.Reflection.Emit
@@ -108,9 +109,9 @@ namespace System.Reflection.Emit
             }
         }
 
-        private static volatile string[] g_nameCache;
+        private static volatile string[]? g_nameCache;
 
-        public string Name
+        public string? Name
         {
             get
             {
@@ -119,7 +120,7 @@ namespace System.Reflection.Emit
 
                 // Create and cache the opcode names lazily. They should be rarely used (only for logging, etc.)
                 // Note that we do not any locks here because of we always get the same names. The last one wins.
-                string[] nameCache = g_nameCache;
+                string[]? nameCache = g_nameCache;
                 if (nameCache == null)
                 {
                     nameCache = new string[0x11f];
@@ -149,13 +150,13 @@ namespace System.Reflection.Emit
                     return name;
 
                 // Create ilasm style name from the enum value name.
-                name = Enum.GetName(typeof(OpCodeValues), opCodeValue).ToLowerInvariant().Replace('_', '.');
+                name = Enum.GetName(typeof(OpCodeValues), opCodeValue)!.ToLowerInvariant().Replace('_', '.');
                 Volatile.Write(ref nameCache[idx], name);
                 return name;
             }
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is OpCode)
                 return Equals((OpCode)obj);
@@ -183,7 +184,7 @@ namespace System.Reflection.Emit
             return Value;
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             return Name;
         }

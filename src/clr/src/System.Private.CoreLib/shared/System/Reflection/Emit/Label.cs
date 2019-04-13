@@ -14,10 +14,7 @@
 ** 
 ===========================================================*/
 
-using System;
-using System.Reflection;
-using System.Runtime.InteropServices;
-
+#nullable enable
 namespace System.Reflection.Emit
 {
     // The Label class is an opaque representation of a label used by the 
@@ -49,7 +46,7 @@ namespace System.Reflection.Emit
             return m_label;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is Label)
                 return Equals((Label)obj);
