@@ -30,9 +30,7 @@ namespace System.Reflection
 
         public AssemblyName()
         {
-            _hashAlgorithm = AssemblyHashAlgorithm.None;
             _versionCompatibility = AssemblyVersionCompatibility.SameMachine;
-            _flags = AssemblyNameFlags.None;
         }
 
         // Set and get the name of the assembly. If this is a weak Name
