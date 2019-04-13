@@ -33,7 +33,9 @@ namespace System.Text.Unicode.Tests
 
         private const string GRINNING_FACE_UTF8 = "F09F9880"; // U+1F600 GRINNING FACE, 4 bytes
         private const string GRINNING_FACE_UTF16 = "\U0001F600";
-        
+
+        private const string WOMAN_CARTWHEELING_MEDSKIN_UTF16 = "\U0001F938\U0001F3FD\u200D\u2640\uFE0F"; // U+1F938 U+1F3FD U+200D U+2640 U+FE0F WOMAN CARTWHEELING: MEDIUM SKIN TONE
+
         // All valid scalars [ U+0000 .. U+D7FF ] and [ U+E000 .. U+10FFFF ].
         private static readonly IEnumerable<Rune> s_allValidScalars = Enumerable.Range(0x0000, 0xD800).Concat(Enumerable.Range(0xE000, 0x110000 - 0xE000)).Select(value => new Rune(value));
 
@@ -59,7 +61,7 @@ namespace System.Text.Unicode.Tests
          * COMMON UTILITIES FOR UNIT TESTS
          */
 
-        private static byte[] DecodeHex(ReadOnlySpan<char> inputHex)
+        public static byte[] DecodeHex(ReadOnlySpan<char> inputHex)
         {
             Assert.True(Regex.IsMatch(inputHex.ToString(), "^([0-9a-fA-F]{2})*$"), "Input must be an even number of hex characters.");
 
@@ -74,7 +76,7 @@ namespace System.Text.Unicode.Tests
         // !! IMPORTANT !!
         // Don't delete this implementation, as we use it as a reference to make sure the framework's
         // transcoding logic is correct.
-        private static byte[] ToUtf8(Rune rune)
+        public static byte[] ToUtf8(Rune rune)
         {
             Assert.True(Rune.IsValid(rune.Value), $"Rune with value U+{(uint)rune.Value:X4} is not well-formed.");
 

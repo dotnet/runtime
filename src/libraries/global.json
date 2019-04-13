@@ -5,6 +5,6 @@
   "msbuild-sdks": {
     "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.19212.2",
     "Microsoft.DotNet.Helix.Sdk": "2.0.0-beta.19212.2",
-    "Microsoft.NET.Sdk.IL": "3.0.0-preview5-27610-72"
+    "Microsoft.NET.Sdk.IL": "3.0.0-preview5-27612-73"
   }
 }
