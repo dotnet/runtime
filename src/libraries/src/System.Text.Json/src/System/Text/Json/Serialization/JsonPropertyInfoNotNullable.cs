@@ -36,7 +36,7 @@ namespace System.Text.Json.Serialization
                 JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
                 propertyInfo.ReadEnumerable(tokenType, options, ref state, ref reader);
             }
-            else if (HasSetter)
+            else if (ShouldDeserialize)
             {
                 if (ValueConverter != null)
                 {
@@ -48,10 +48,10 @@ namespace System.Text.Json.Serialization
                         }
                         else
                         {
-                            if (value != null || !IgnoreNullPropertyValueOnRead(options))
-                            {
-                                Set((TClass)state.Current.ReturnValue, value);
-                            }
+                            // Null values were already handled.
+                            Debug.Assert(value != null);
+
+                            Set((TClass)state.Current.ReturnValue, value);
                         }
 
                         return;
@@ -85,7 +85,7 @@ namespace System.Text.Json.Serialization
                 JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
                 propertyInfo.WriteEnumerable(options, ref current, ref writer);
             }
-            else if (HasGetter)
+            else if (ShouldSerialize)
             {
                 TRuntimeProperty value;
                 if (_isPropertyPolicy)
@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization
                     {
                         writer.WriteNullValue();
                     }
-                    else if (!IgnoreNullPropertyValueOnWrite(options))
+                    else if (!IgnoreNullValues)
                     {
                         writer.WriteNull(_escapedName);
                     }

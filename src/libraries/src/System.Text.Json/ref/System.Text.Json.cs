@@ -118,9 +118,9 @@ namespace System.Text.Json
     public partial struct JsonReaderOptions
     {
         private int _dummyPrimitive;
+        public bool AllowTrailingCommas { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling CommentHandling { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
-        public bool AllowTrailingCommas { get { throw null; } set { } }
     }
     public partial struct JsonReaderState
     {
@@ -311,6 +311,15 @@ namespace System.Text.Json
 }
 namespace System.Text.Json.Serialization
 {
+    public abstract partial class JsonAttribute : System.Attribute
+    {
+        protected JsonAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
+    public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonIgnoreAttribute() { }
+    }
     public static partial class JsonSerializer
     {
         public static object Parse(System.ReadOnlySpan<byte> utf8Json, System.Type returnType, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
@@ -329,10 +338,12 @@ namespace System.Text.Json.Serialization
     public sealed partial class JsonSerializerOptions
     {
         public JsonSerializerOptions() { }
+        public bool AllowTrailingCommas { get { throw null; } set { } }
         public int DefaultBufferSize { get { throw null; } set { } }
-        public bool IgnoreNullPropertyValueOnRead { get { throw null; } set { } }
-        public bool IgnoreNullPropertyValueOnWrite { get { throw null; } set { } }
-        public System.Text.Json.JsonReaderOptions ReaderOptions { get { throw null; } set { } }
-        public System.Text.Json.JsonWriterOptions WriterOptions { get { throw null; } set { } }
+        public bool IgnoreNullValues { get { throw null; } set { } }
+        public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
+        public int MaxDepth { get { throw null; } set { } }
+        public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
+        public bool WriteIndented { get { throw null; } set { } }
     }
 }

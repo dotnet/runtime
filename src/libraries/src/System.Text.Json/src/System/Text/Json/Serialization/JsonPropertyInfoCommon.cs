@@ -78,7 +78,7 @@ namespace System.Text.Json.Serialization
             Debug.Assert(Set != null);
             TDeclaredProperty typedValue = (TDeclaredProperty)value;
 
-            if (typedValue != null || !IgnoreNullPropertyValueOnWrite(options))
+            if (typedValue != null || !IgnoreNullValues)
             {
                 Set((TClass)obj, (TDeclaredProperty)value);
             }

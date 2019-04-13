@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(@"""NullableInt"":null", json);
 
             JsonSerializerOptions options = new JsonSerializerOptions();
-            options.IgnoreNullPropertyValueOnWrite = true;
+            options.IgnoreNullValues = true;
             json = JsonSerializer.ToString(obj, options);
             Assert.DoesNotContain(@"""NullableInt"":null", json);
         }

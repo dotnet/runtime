@@ -9,21 +9,28 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class NullTests
     {
         [Fact]
-        public static void DefaultWriteOptions()
+        public static void DefaultIgnoreNullValuesOnWrite()
         {
-            var input = new TestClassWithNull();
-            string json = JsonSerializer.ToString(input);
-            Assert.Equal(@"{""MyString"":null}", json);
+            var obj = new TestClassWithInitializedProperties();
+            obj.MyString = null;
+            obj.MyInt = null;
+
+            string json = JsonSerializer.ToString(obj);
+            Assert.Contains(@"""MyString"":null", json);
+            Assert.Contains(@"""MyInt"":null", json);
         }
 
         [Fact]
-        public static void OverrideWriteOnOption()
+        public static void EnableIgnoreNullValuesOnWrite()
         {
             JsonSerializerOptions options = new JsonSerializerOptions();
-            options.IgnoreNullPropertyValueOnWrite = true;
+            options.IgnoreNullValues = true;
 
-            var input = new TestClassWithNull();
-            string json = JsonSerializer.ToString(input, options);
+            var obj = new TestClassWithInitializedProperties();
+            obj.MyString = null;
+            obj.MyInt = null;
+
+            string json = JsonSerializer.ToString(obj, options);
             Assert.Equal(@"{}", json);
         }
 
