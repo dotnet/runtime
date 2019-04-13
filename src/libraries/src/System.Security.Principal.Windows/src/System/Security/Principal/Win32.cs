@@ -40,33 +40,26 @@ namespace System.Security.Principal
             string systemName,
             PolicyRights rights)
         {
-            uint ReturnCode;
-            SafeLsaPolicyHandle Result;
-            Interop.LSA_OBJECT_ATTRIBUTES Loa;
+            SafeLsaPolicyHandle policyHandle;
 
-            Loa.Length = Marshal.SizeOf<Interop.LSA_OBJECT_ATTRIBUTES>();
-            Loa.RootDirectory = IntPtr.Zero;
-            Loa.ObjectName = IntPtr.Zero;
-            Loa.Attributes = 0;
-            Loa.SecurityDescriptor = IntPtr.Zero;
-            Loa.SecurityQualityOfService = IntPtr.Zero;
-
-            if (0 == (ReturnCode = Interop.Advapi32.LsaOpenPolicy(systemName, ref Loa, (int)rights, out Result)))
+            var attributes = new Interop.OBJECT_ATTRIBUTES();
+            uint error = Interop.Advapi32.LsaOpenPolicy(systemName, ref attributes, (int)rights, out policyHandle);
+            if (error == 0)
             {
-                return Result;
+                return policyHandle;
             }
-            else if (ReturnCode == Interop.StatusOptions.STATUS_ACCESS_DENIED)
+            else if (error == Interop.StatusOptions.STATUS_ACCESS_DENIED)
             {
                 throw new UnauthorizedAccessException();
             }
-            else if (ReturnCode == Interop.StatusOptions.STATUS_INSUFFICIENT_RESOURCES ||
-                      ReturnCode == Interop.StatusOptions.STATUS_NO_MEMORY)
+            else if (error == Interop.StatusOptions.STATUS_INSUFFICIENT_RESOURCES ||
+                      error == Interop.StatusOptions.STATUS_NO_MEMORY)
             {
                 throw new OutOfMemoryException();
             }
             else
             {
-                uint win32ErrorCode = Interop.Advapi32.LsaNtStatusToWinError(ReturnCode);
+                uint win32ErrorCode = Interop.Advapi32.LsaNtStatusToWinError(error);
 
                 throw new Win32Exception(unchecked((int)win32ErrorCode));
             }

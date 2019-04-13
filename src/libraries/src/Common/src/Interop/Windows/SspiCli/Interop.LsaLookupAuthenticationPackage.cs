@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-
 using Microsoft.Win32.SafeHandles;
 
 internal partial class Interop
@@ -12,6 +11,10 @@ internal partial class Interop
     internal partial class SspiCli
     {
         [DllImport(Libraries.SspiCli)]
-        internal static extern int LsaLookupAuthenticationPackage(SafeLsaHandle LsaHandle, [In] ref LSA_STRING PackageName, out int AuthenticationPackage);
+        internal static extern int LsaLookupAuthenticationPackage(
+            SafeLsaHandle LsaHandle,
+            [In] ref Advapi32.LSA_STRING PackageName,
+            out int AuthenticationPackage
+        );
     }
 }

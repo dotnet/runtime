@@ -18,17 +18,6 @@ internal static partial class Interop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct LSA_OBJECT_ATTRIBUTES
-    {
-        internal int Length;
-        internal IntPtr RootDirectory;
-        internal IntPtr ObjectName;
-        internal int Attributes;
-        internal IntPtr SecurityDescriptor;
-        internal IntPtr SecurityQualityOfService;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct LSA_TRANSLATED_SID2
     {
         internal int Use;

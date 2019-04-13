@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 internal partial class Interop
 {
-    internal partial class SspiCli
+    internal partial class Advapi32
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct LSA_STRING

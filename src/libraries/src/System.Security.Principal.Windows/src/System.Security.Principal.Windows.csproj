@@ -10,7 +10,6 @@
   </PropertyGroup>
   <ItemGroup Condition="($(TargetGroup.StartsWith('netcoreapp')) or '$(TargetGroup)' == 'uap') AND '$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAccessTokenHandle.cs" />
-    <Compile Include="Microsoft\Win32\SafeHandles\SafeSecurityHandles.cs" />
     <Compile Include="System\Security\Principal\IdentityNotMappedException.cs" />
     <Compile Include="System\Security\Principal\IdentityReference.cs" />
     <Compile Include="System\Security\Principal\IRCollection.cs" />
@@ -22,6 +21,12 @@
     <Compile Include="System\Security\Principal\WindowsPrincipal.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.UNICODE_STRING.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.UNICODE_STRING.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.OBJECT_ATTRIBUTES.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.OBJECT_ATTRIBUTES.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\Interop.TOKENS.cs">
       <Link>Common\Interop\Interop.TOKENS.cs</Link>
@@ -40,9 +45,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\Interop.SECURITY_LOGON_SESSION_DATA.cs">
       <Link>Common\Interop\Interop.SECURITY_LOGON_SESSION_DATA.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\Interop.UNICODE_STRING.cs">
-      <Link>Common\Interop\Interop.UNICODE_STRING.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
       <Link>Common\Interop\Interop.GetCurrentProcess.cs</Link>
@@ -116,6 +118,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.LsaNtStatusToWinError.cs">
       <Link>Common\Interop\Interop.LsaNtStatusToWinError.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Advapi32\Interop.LSA_STRING.cs">
+      <Link>Common\Interop\Windows\Advapi32\Interop.LSA_STRING.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.LocalFree.cs">
       <Link>Common\Interop\Interop.LocalFree.cs</Link>
     </Compile>
@@ -146,12 +151,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\Interop.LsaLookupAuthenticationPackage.cs">
       <Link>Common\Interop\Windows\SspiCli\Interop.LsaLookupAuthenticationPackage.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\Interop.LsaString.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.LsaString.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\Interop.LsaUnicodeString.cs">
-      <Link>Common\Interop\Windows\SspiCli\Interop.LsaUnicodeString.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\SspiCli\Interop.QuotaLimits.cs">
       <Link>Common\Interop\Windows\SspiCli\Interop.QuotaLimits.cs</Link>
     </Compile>
@@ -169,6 +168,15 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLsaHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaMemoryHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaPolicyHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLsaReturnBufferHandle.cs">
+      <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaReturnBufferHandle.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="$(TargetGroup.StartsWith('netcoreapp')) AND '$(TargetsWindows)' == 'true'">

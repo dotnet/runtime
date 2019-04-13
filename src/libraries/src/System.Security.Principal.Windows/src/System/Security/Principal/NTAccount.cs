@@ -247,7 +247,7 @@ namespace System.Security.Principal
                 // Construct an array of unicode strings
                 //
 
-                Interop.UNICODE_STRING[] Names = new Interop.UNICODE_STRING[sourceAccounts.Count];
+                Interop.Advapi32.MARSHALLED_UNICODE_STRING[] Names = new Interop.Advapi32.MARSHALLED_UNICODE_STRING[sourceAccounts.Count];
 
                 int currentName = 0;
                 foreach (IdentityReference id in sourceAccounts)
