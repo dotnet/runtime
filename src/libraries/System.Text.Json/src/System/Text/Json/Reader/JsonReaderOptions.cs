@@ -15,7 +15,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Defines how the <see cref="Utf8JsonReader"/> should handle comments when reading through the JSON.
-        /// By default the reader will throw a <exception cref="JsonReaderException"/> if it encounters a comment.
+        /// By default <exception cref="JsonReaderException"/> is thrown if a comment is encountered.
         /// </summary>
         public JsonCommentHandling CommentHandling { get; set; }
 
@@ -37,8 +37,8 @@ namespace System.Text.Json
 
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array
-        /// are allowed (and ignored) within the JSON payload being read.
-        /// By default, it's set to false, and the reader will throw a <exception cref="JsonReaderException"/> if it encounters a trailing comma.
+        /// is allowed (and ignored) within the JSON payload being read.
+        /// By default, it's set to false, and <exception cref="JsonReaderException"/> is thrown if a trailing comma is encountered.
         /// </summary>
         public bool AllowTrailingCommas { get; set; }
     }

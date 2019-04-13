@@ -2,12 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ArrayTests
     {
+        [Fact]
+        public static void ReadEmpty()
+        {
+            SimpleTestClass[] arr = JsonSerializer.Parse<SimpleTestClass[]>("[]");
+            Assert.Equal(0, arr.Length);
+
+            List<SimpleTestClass> list = JsonSerializer.Parse<List<SimpleTestClass>>("[]");
+            Assert.Equal(0, list.Count);
+        }
+
         [Fact]
         public static void ReadClassWithStringArray()
         {

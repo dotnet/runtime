@@ -114,7 +114,7 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                if (!jsonPropertyInfo.IgnoreNullPropertyValueOnWrite(options))
+                if (!jsonPropertyInfo.IgnoreNullValues)
                 {
                     writer.WriteNull(jsonPropertyInfo._escapedName);
                 }

@@ -254,6 +254,14 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadEmptyObjectArray()
+        {
+            SimpleTestClass[] data = JsonSerializer.Parse<SimpleTestClass[]>("[{}]");
+            Assert.Equal(1, data.Length);
+            Assert.NotNull(data[0]);
+        }
+
+        [Fact]
         public static void ReadPrimitiveJaggedArray()
         {
             int[][] i = JsonSerializer.Parse<int[][]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));

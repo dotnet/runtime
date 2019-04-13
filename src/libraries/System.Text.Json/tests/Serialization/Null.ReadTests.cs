@@ -30,20 +30,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DefaultReadValue()
+        public static void DefaultIgnoreNullValuesOnRead()
         {
-            TestClassWithNullButInitialized obj = JsonSerializer.Parse<TestClassWithNullButInitialized>(TestClassWithNullButInitialized.s_json);
+            TestClassWithInitializedProperties obj = JsonSerializer.Parse<TestClassWithInitializedProperties>(TestClassWithInitializedProperties.s_null_json);
             Assert.Equal(null, obj.MyString);
             Assert.Equal(null, obj.MyInt);
         }
 
         [Fact]
-        public static void OverrideReadOnOption()
+        public static void EnableIgnoreNullValuesOnRead()
         {
             var options = new JsonSerializerOptions();
-            options.IgnoreNullPropertyValueOnRead = true;
+            options.IgnoreNullValues = true;
 
-            TestClassWithNullButInitialized obj = JsonSerializer.Parse<TestClassWithNullButInitialized>(TestClassWithNullButInitialized.s_json, options);
+            TestClassWithInitializedProperties obj = JsonSerializer.Parse<TestClassWithInitializedProperties>(TestClassWithInitializedProperties.s_null_json, options);
             Assert.Equal("Hello", obj.MyString);
             Assert.Equal(1, obj.MyInt);
         }
