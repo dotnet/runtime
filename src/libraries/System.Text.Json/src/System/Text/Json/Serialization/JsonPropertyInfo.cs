@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Reflection;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Policies;
@@ -10,9 +11,6 @@ namespace System.Text.Json.Serialization
 {
     internal abstract class JsonPropertyInfo
     {
-        // For now, just a global converter.
-        private static JsonEnumerableConverter s_jsonEnumerableConverter = new DefaultArrayConverter();
-
         internal ClassType ClassType;
 
         internal byte[] _name = default;
@@ -70,7 +68,16 @@ namespace System.Text.Json.Serialization
         {
             if (RuntimePropertyType.IsArray)
             {
-                EnumerableConverter = s_jsonEnumerableConverter;
+                EnumerableConverter = new DefaultArrayConverter();
+            }
+            else if (typeof(IEnumerable).IsAssignableFrom(RuntimePropertyType))
+            {
+                Type elementType = JsonClassInfo.GetElementType(RuntimePropertyType);
+
+                if (RuntimePropertyType.IsAssignableFrom(typeof(JsonEnumerableT<>).MakeGenericType(elementType)))
+                {
+                    EnumerableConverter = new DefaultEnumerableConverter();
+                }
             }
         }
 

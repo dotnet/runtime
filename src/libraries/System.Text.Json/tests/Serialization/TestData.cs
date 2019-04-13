@@ -20,8 +20,18 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { typeof(TestClassWithNestedObjectInner), TestClassWithNestedObjectInner.s_data };
                 yield return new object[] { typeof(TestClassWithNestedObjectOuter), TestClassWithNestedObjectOuter.s_data };
                 yield return new object[] { typeof(TestClassWithObjectArray), TestClassWithObjectArray.s_data };
+                yield return new object[] { typeof(TestClassWithObjectIEnumerableT), TestClassWithObjectIEnumerableT.s_data };
+                yield return new object[] { typeof(TestClassWithObjectIListT), TestClassWithObjectIListT.s_data };
+                yield return new object[] { typeof(TestClassWithObjectICollectionT), TestClassWithObjectICollectionT.s_data };
+                yield return new object[] { typeof(TestClassWithObjectIReadOnlyCollectionT), TestClassWithObjectIReadOnlyCollectionT.s_data };
+                yield return new object[] { typeof(TestClassWithObjectIReadOnlyListT), TestClassWithObjectIReadOnlyListT.s_data };
                 yield return new object[] { typeof(TestClassWithStringArray), TestClassWithStringArray.s_data };
                 yield return new object[] { typeof(TestClassWithGenericList), TestClassWithGenericList.s_data };
+                yield return new object[] { typeof(TestClassWithGenericIEnumerableT), TestClassWithGenericIEnumerableT.s_data };
+                yield return new object[] { typeof(TestClassWithGenericIListT), TestClassWithGenericIListT.s_data };
+                yield return new object[] { typeof(TestClassWithGenericICollectionT), TestClassWithGenericICollectionT.s_data };
+                yield return new object[] { typeof(TestClassWithGenericIReadOnlyCollectionT), TestClassWithGenericIReadOnlyCollectionT.s_data };
+                yield return new object[] { typeof(TestClassWithGenericIReadOnlyListT), TestClassWithGenericIReadOnlyListT.s_data };
             }
         }
         public static IEnumerable<object[]> WriteSuccessCases
@@ -36,8 +46,18 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { new TestClassWithNestedObjectInner() };
                 yield return new object[] { new TestClassWithNestedObjectOuter() };
                 yield return new object[] { new TestClassWithObjectArray() };
+                yield return new object[] { new TestClassWithObjectIEnumerableT() };
+                yield return new object[] { new TestClassWithObjectIListT() };
+                yield return new object[] { new TestClassWithObjectICollectionT() };
+                yield return new object[] { new TestClassWithObjectIReadOnlyCollectionT() };
+                yield return new object[] { new TestClassWithObjectIReadOnlyListT() };
                 yield return new object[] { new TestClassWithStringArray() };
                 yield return new object[] { new TestClassWithGenericList() };
+                yield return new object[] { new TestClassWithGenericIEnumerableT() };
+                yield return new object[] { new TestClassWithGenericIListT() };
+                yield return new object[] { new TestClassWithGenericICollectionT() };
+                yield return new object[] { new TestClassWithGenericIReadOnlyCollectionT() };
+                yield return new object[] { new TestClassWithGenericIReadOnlyListT() };
             }
         }
     }

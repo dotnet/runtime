@@ -275,7 +275,7 @@ namespace System.Text.Json.Serialization
 
         }
 
-        private static Type GetElementType(Type propertyType)
+        public static Type GetElementType(Type propertyType)
         {
             Type elementType = null;
             if (typeof(IEnumerable).IsAssignableFrom(propertyType))
