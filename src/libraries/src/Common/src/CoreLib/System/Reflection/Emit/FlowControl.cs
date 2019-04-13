@@ -12,8 +12,7 @@
 ** See $(RepoRoot)\src\inc\OpCodeGen.pl for more information.**
 ==============================================================*/
 
-using System;
-
+#nullable enable
 namespace System.Reflection.Emit
 {
     public enum FlowControl
