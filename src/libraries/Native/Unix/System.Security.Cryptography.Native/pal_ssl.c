@@ -229,247 +229,6 @@ int32_t CryptoNative_SslSessionReused(SSL* ssl)
     return SSL_session_reused(ssl) == 1;
 }
 
-static bool StringSpanEquals(const char* lhs, const char* rhs, size_t lhsLength)
-{
-    if (lhsLength != strlen(rhs))
-    {
-        return false;
-    }
-
-    return strncmp(lhs, rhs, lhsLength) == 0;
-}
-
-static CipherAlgorithmType MapCipherAlgorithmType(const char* encryption, size_t encryptionLength)
-{
-    if (StringSpanEquals(encryption, "DES(56)", encryptionLength))
-        return Des;
-    if (StringSpanEquals(encryption, "3DES(168)", encryptionLength))
-        return TripleDes;
-    if (StringSpanEquals(encryption, "RC4(128)", encryptionLength))
-        return Rc4;
-    if (StringSpanEquals(encryption, "RC2(128)", encryptionLength))
-        return Rc2;
-    if (StringSpanEquals(encryption, "None", encryptionLength))
-        return Null;
-    if (StringSpanEquals(encryption, "IDEA(128)", encryptionLength))
-        return SSL_IDEA;
-    if (StringSpanEquals(encryption, "SEED(128)", encryptionLength))
-        return SSL_SEED;
-    if (StringSpanEquals(encryption, "AES(128)", encryptionLength))
-        return Aes128;
-    if (StringSpanEquals(encryption, "AES(256)", encryptionLength))
-        return Aes256;
-    if (StringSpanEquals(encryption, "Camellia(128)", encryptionLength))
-        return SSL_CAMELLIA128;
-    if (StringSpanEquals(encryption, "Camellia(256)", encryptionLength))
-        return SSL_CAMELLIA256;
-    if (StringSpanEquals(encryption, "GOST89(256)", encryptionLength))
-        return SSL_eGOST2814789CNT;
-    if (StringSpanEquals(encryption, "AESGCM(128)", encryptionLength))
-        return Aes128;
-    if (StringSpanEquals(encryption, "AESGCM(256)", encryptionLength))
-        return Aes256;
-
-    return CipherAlgorithmType_None;
-}
-
-static ExchangeAlgorithmType MapExchangeAlgorithmType(const char* keyExchange, size_t keyExchangeLength)
-{
-    if (StringSpanEquals(keyExchange, "RSA", keyExchangeLength))
-        return RsaKeyX;
-    if (StringSpanEquals(keyExchange, "DH/RSA", keyExchangeLength))
-        return DiffieHellman;
-    if (StringSpanEquals(keyExchange, "DH/DSS", keyExchangeLength))
-        return DiffieHellman;
-    if (StringSpanEquals(keyExchange, "DH", keyExchangeLength))
-        return DiffieHellman;
-    if (StringSpanEquals(keyExchange, "KRB5", keyExchangeLength))
-        return SSL_kKRB5;
-    if (StringSpanEquals(keyExchange, "ECDH", keyExchangeLength))
-        return SSL_ECDHE;
-    if (StringSpanEquals(keyExchange, "ECDH/RSA", keyExchangeLength))
-        return SSL_ECDH;
-    if (StringSpanEquals(keyExchange, "ECDH/ECDSA", keyExchangeLength))
-        return SSL_ECDSA;
-    if (StringSpanEquals(keyExchange, "PSK", keyExchangeLength))
-        return SSL_kPSK;
-    if (StringSpanEquals(keyExchange, "GOST", keyExchangeLength))
-        return SSL_kGOST;
-    if (StringSpanEquals(keyExchange, "SRP", keyExchangeLength))
-        return SSL_kSRP;
-
-    return ExchangeAlgorithmType_None;
-}
-
-static void GetHashAlgorithmTypeAndSize(const char* mac,
-                                        size_t macLength,
-                                        HashAlgorithmType* dataHashAlg,
-                                        DataHashSize* hashKeySize)
-{
-    if (StringSpanEquals(mac, "MD5", macLength))
-    {
-        *dataHashAlg = Md5;
-        *hashKeySize = MD5_HashKeySize;
-        return;
-    }
-    if (StringSpanEquals(mac, "SHA1", macLength))
-    {
-        *dataHashAlg = Sha1;
-        *hashKeySize = SHA1_HashKeySize;
-        return;
-    }
-    if (StringSpanEquals(mac, "GOST94", macLength))
-    {
-        *dataHashAlg = SSL_GOST94;
-        *hashKeySize = GOST_HashKeySize;
-        return;
-    }
-    if (StringSpanEquals(mac, "GOST89", macLength))
-    {
-        *dataHashAlg = SSL_GOST89;
-        *hashKeySize = GOST_HashKeySize;
-        return;
-    }
-    if (StringSpanEquals(mac, "SHA256", macLength))
-    {
-        *dataHashAlg = SSL_SHA256;
-        *hashKeySize = SHA256_HashKeySize;
-        return;
-    }
-    if (StringSpanEquals(mac, "SHA384", macLength))
-    {
-        *dataHashAlg = SSL_SHA384;
-        *hashKeySize = SHA384_HashKeySize;
-        return;
-    }
-    if (StringSpanEquals(mac, "AEAD", macLength))
-    {
-        *dataHashAlg = SSL_AEAD;
-        *hashKeySize = Default;
-        return;
-    }
-
-    *dataHashAlg = HashAlgorithmType_None;
-    *hashKeySize = Default;
-}
-
-/*
-Given a keyName string like "Enc=XXX", parses the description string and returns the
-'XXX' into value and valueLength return variables.
-
-Returns a value indicating whether the pattern starting with keyName was found in description.
-*/
-static bool GetDescriptionValue(
-    const char* description, const char* keyName, size_t keyNameLength, const char** value, size_t* valueLength)
-{
-    // search for keyName in description
-    const char* keyNameStart = strstr(description, keyName);
-    if (keyNameStart != NULL)
-    {
-        // set valueStart to the beginning of the value
-        const char* valueStart = keyNameStart + keyNameLength;
-        size_t index = 0;
-
-        // the value ends when we hit a space or the end of the string
-        while (valueStart[index] != ' ' && valueStart[index] != '\0')
-        {
-            index++;
-        }
-
-        *value = valueStart;
-        *valueLength = index;
-        return true;
-    }
-
-    return false;
-}
-
-#define descriptionLength 256
-
-/*
-Parses the Kx, Enc, and Mac values out of the SSL_CIPHER_description and
-maps the values to the corresponding .NET enum value.
-*/
-static bool GetSslConnectionInfoFromDescription(const SSL_CIPHER* cipher,
-                                                CipherAlgorithmType* dataCipherAlg,
-                                                ExchangeAlgorithmType* keyExchangeAlg,
-                                                HashAlgorithmType* dataHashAlg,
-                                                DataHashSize* hashKeySize)
-{
-    char description[descriptionLength] = { 0 };
-    SSL_CIPHER_description(cipher, description, descriptionLength - 1); // ensure description is NULL-terminated
-
-    const char* keyExchange;
-    size_t keyExchangeLength;
-    if (!GetDescriptionValue(description, "Kx=", 3, &keyExchange, &keyExchangeLength))
-    {
-        return false;
-    }
-
-    const char* encryption;
-    size_t encryptionLength;
-    if (!GetDescriptionValue(description, "Enc=", 4, &encryption, &encryptionLength))
-    {
-        return false;
-    }
-
-    const char* mac;
-    size_t macLength;
-    if (!GetDescriptionValue(description, "Mac=", 4, &mac, &macLength))
-    {
-        return false;
-    }
-
-    *keyExchangeAlg = MapExchangeAlgorithmType(keyExchange, keyExchangeLength);
-    *dataCipherAlg = MapCipherAlgorithmType(encryption, encryptionLength);
-    GetHashAlgorithmTypeAndSize(mac, macLength, dataHashAlg, hashKeySize);
-    return true;
-}
-
-int32_t CryptoNative_GetSslConnectionInfo(SSL* ssl,
-                                                     CipherAlgorithmType* dataCipherAlg,
-                                                     ExchangeAlgorithmType* keyExchangeAlg,
-                                                     HashAlgorithmType* dataHashAlg,
-                                                     int32_t* dataKeySize,
-                                                     DataHashSize* hashKeySize)
-{
-    const SSL_CIPHER* cipher;
-
-    if (!ssl || !dataCipherAlg || !keyExchangeAlg || !dataHashAlg || !dataKeySize || !hashKeySize)
-    {
-        goto err;
-    }
-
-    cipher = SSL_get_current_cipher(ssl);
-    if (!cipher)
-    {
-        goto err;
-    }
-
-    SSL_CIPHER_get_bits(cipher, dataKeySize);
-
-    if (GetSslConnectionInfoFromDescription(cipher, dataCipherAlg, keyExchangeAlg, dataHashAlg, hashKeySize))
-    {
-        return 1;
-    }
-
-err:
-    assert(false);
-
-    if (dataCipherAlg)
-        *dataCipherAlg = CipherAlgorithmType_None;
-    if (keyExchangeAlg)
-        *keyExchangeAlg = ExchangeAlgorithmType_None;
-    if (dataHashAlg)
-        *dataHashAlg = HashAlgorithmType_None;
-    if (dataKeySize)
-        *dataKeySize = 0;
-    if (hashKeySize)
-        *hashKeySize = Default;
-
-    return 0;
-}
-
 int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num)
 {
     return SSL_write(ssl, buf, num);
@@ -560,46 +319,110 @@ CryptoNative_SslCtxSetCertVerifyCallback(SSL_CTX* ctx, SslCtxSetCertVerifyCallba
     SSL_CTX_set_cert_verify_callback(ctx, callback, arg);
 }
 
-// delimiter ":" is used to allow more than one strings
-// below string is corresponding to "AllowNoEncryption"
-#define SSL_TXT_Separator ":"
-#define SSL_TXT_Exclusion "!"
-#define SSL_TXT_AllIncludingNull SSL_TXT_ALL SSL_TXT_Separator SSL_TXT_eNULL
-#define SSL_TXT_NotAnon SSL_TXT_Separator SSL_TXT_Exclusion SSL_TXT_aNULL
-
 int32_t CryptoNative_SetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
 {
-    const char* cipherString = NULL;
-    bool clearSecLevel = false;
-
     switch (policy)
     {
-        case RequireEncryption:
-            cipherString = SSL_TXT_ALL SSL_TXT_NotAnon;
-            break;
-
         case AllowNoEncryption:
-            cipherString = SSL_TXT_AllIncludingNull;
-            clearSecLevel = true;
-            break;
-
         case NoEncryption:
-            cipherString = SSL_TXT_eNULL;
-            clearSecLevel = true;
-            break;
+            // No minimum security policy, same as OpenSSL 1.0
+            SSL_CTX_set_security_level(ctx, 0);
+            return true;
+        case RequireEncryption:
+            return true;
     }
 
-    assert(cipherString != NULL);
-
-    if (clearSecLevel)
-    {
-        // No minimum security policy, same as OpenSSL 1.0
-        SSL_CTX_set_security_level(ctx, 0);
-    }
-
-    return SSL_CTX_set_cipher_list(ctx, cipherString);
+    return false;
 }
 
+int32_t CryptoNative_SetCiphers(SSL_CTX* ctx, const char* cipherList, const char* cipherSuites)
+{
+    int32_t ret = true;
+
+    // for < TLS 1.3
+    if (cipherList != NULL)
+    {
+        ret &= SSL_CTX_set_cipher_list(ctx, cipherList);
+        if (!ret)
+        {
+            return ret;
+        }
+    }
+
+    // for TLS 1.3
+#if HAVE_OPENSSL_SET_CIPHERSUITES
+    if (CryptoNative_Tls13Supported() && cipherSuites != NULL)
+    {
+        ret &= SSL_CTX_set_ciphersuites(ctx, cipherSuites);
+    }
+#else
+    (void)cipherSuites;
+#endif
+
+    return ret;
+}
+
+const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite, int32_t* isTls12OrLower)
+{
+    unsigned char cs[2];
+    const SSL_CIPHER* cipher;
+    const char* ret;
+
+    *isTls12OrLower = 0;
+    cs[0] = (cipherSuite >> 8) & 0xFF;
+    cs[1] = cipherSuite & 0xFF;
+    cipher = SSL_CIPHER_find(ssl, cs);
+
+    if (cipher == NULL)
+        return NULL;
+
+    ret = SSL_CIPHER_get_name(cipher);
+
+    if (ret == NULL)
+        return NULL;
+
+    // we should get (NONE) only when cipher is NULL
+    assert(strcmp("(NONE)", ret) != 0);
+
+    const char* version = SSL_CIPHER_get_version(cipher);
+    assert(version != NULL);
+    assert(strcmp(version, "unknown") != 0);
+
+    // same rules apply for DTLS as for TLS so just shortcut
+    if (version[0] == 'D')
+    {
+        version++;
+    }
+
+    // check if tls1.2 or lower
+    // check most common case first
+    if (strncmp("TLSv1", version, 5) == 0)
+    {
+        const char* tlsver = version + 5;
+        // true for TLSv1, TLSv1.0, TLSv1.1, TLS1.2, anything else is assumed to be newer
+        *isTls12OrLower =
+            tlsver[0] == 0 ||
+            (tlsver[0] == '.' && tlsver[1] >= '0' && tlsver[1] <= '2' && tlsver[2] == 0);
+    }
+    else
+    {
+        // if we don't know it assume it is new
+        // worst case scenario OpenSSL will ignore it
+        *isTls12OrLower =
+            strncmp("SSLv", version, 4) == 0;
+    }
+
+    return ret;
+}
+
+int32_t CryptoNative_Tls13Supported()
+{
+#if HAVE_OPENSSL_SET_CIPHERSUITES
+    return API_EXISTS(SSL_CTX_set_ciphersuites);
+#else
+    return false;
+#endif
+}
 
 void CryptoNative_SslCtxSetClientCertCallback(SSL_CTX* ctx, SslClientCertCallback callback)
 {

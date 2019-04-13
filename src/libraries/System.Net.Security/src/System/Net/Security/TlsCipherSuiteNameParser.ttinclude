@@ -135,7 +135,20 @@ internal static class EnumHelpers
 
     public static string ToFrameworkName(HashAlgorithmType val)
     {
-        return val == HashAlgorithmType.Aead ? "None" : val.ToString();
+        switch (val)
+        {
+            case HashAlgorithmType.Aead:
+            case HashAlgorithmType.None:
+                return "None";
+            case HashAlgorithmType.Md5:
+            case HashAlgorithmType.Sha1:
+            case HashAlgorithmType.Sha256:
+            case HashAlgorithmType.Sha384:
+            case HashAlgorithmType.Sha512:
+                return val.ToString();
+            default:
+                throw new Exception($"Value `HashAlgorithmType.{val}` does not have framework corresponding name. See TlsCipherSuiteNameParser.ttinclude: ToFrameworkName.");
+        }
     }
 }
 

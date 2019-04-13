@@ -230,7 +230,14 @@ Retrieve the TLS Cipher Suite which was negotiated for the current session.
 Returns the output of SSLGetNegotiatedCipher.
 
 Output:
-pProtocol: The TLS CipherSuite value (from the RFC), e.g. ((uint32_t)0xC030) for
+pProtocol: The TLS CipherSuite value (from the RFC), e.g. ((uint16_t)0xC030) for
 TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
 */
-DLLEXPORT int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint32_t* pCipherSuiteOut);
+DLLEXPORT int32_t AppleCryptoNative_SslGetCipherSuite(SSLContextRef sslContext, uint16_t* pCipherSuiteOut);
+
+/*
+Sets enabled cipher suites for the current session.
+
+Returns the output of SSLSetEnabledCiphers.
+*/
+DLLEXPORT int32_t AppleCryptoNative_SslSetEnabledCipherSuites(SSLContextRef sslContext, const uint32_t* cipherSuites, int32_t numCipherSuites);

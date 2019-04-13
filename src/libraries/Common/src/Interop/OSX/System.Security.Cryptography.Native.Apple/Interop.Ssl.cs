@@ -146,6 +146,9 @@ internal static partial class Interop
         [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslGetProtocolVersion")]
         internal static extern int SslGetProtocolVersion(SafeSslHandle sslHandle, out SslProtocols protocol);
 
+        [DllImport(Interop.Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_SslSetEnabledCipherSuites")]
+        unsafe internal static extern int SslSetEnabledCipherSuites(SafeSslHandle sslHandle, uint* cipherSuites, int numCipherSuites);
+
         internal static void SslSetAcceptClientCert(SafeSslHandle sslHandle)
         {
             int osStatus = AppleCryptoNative_SslSetAcceptClientCert(sslHandle);
