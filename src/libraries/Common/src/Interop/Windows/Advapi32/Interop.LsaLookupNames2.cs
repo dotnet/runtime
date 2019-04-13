@@ -15,9 +15,18 @@ internal static partial class Interop
             SafeLsaPolicyHandle handle,
             int flags,
             int count,
-            UNICODE_STRING[] names,
+            MARSHALLED_UNICODE_STRING[] names,
             out SafeLsaMemoryHandle referencedDomains,
             out SafeLsaMemoryHandle sids
-            );
+        );
+        
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal struct MARSHALLED_UNICODE_STRING
+        {
+            internal ushort Length;
+            internal ushort MaximumLength;
+            [MarshalAs(UnmanagedType.LPWStr)]
+            internal string Buffer;
+        }
     }
 }

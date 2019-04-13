@@ -14,7 +14,7 @@ internal partial class Interop
         [DllImport(Libraries.SspiCli)]
         internal static extern int LsaLogonUser(
             [In]  SafeLsaHandle LsaHandle,
-            [In]  ref LSA_STRING OriginName,
+            [In]  ref Advapi32.LSA_STRING OriginName,
             [In]  SECURITY_LOGON_TYPE LogonType,
             [In]  int AuthenticationPackage,
             [In]  IntPtr AuthenticationInformation,
