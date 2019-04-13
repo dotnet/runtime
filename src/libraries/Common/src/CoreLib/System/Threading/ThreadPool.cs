@@ -709,8 +709,9 @@ namespace System.Threading
             currentThread = Thread.CurrentThread;
         }
 
-        private void CleanUp()
+        ~ThreadPoolWorkQueueThreadLocals()
         {
+            // Transfer any pending workitems into the global queue so that they will be executed by another thread
             if (null != workStealingQueue)
             {
                 if (null != workQueue)
@@ -725,17 +726,6 @@ namespace System.Threading
 
                 ThreadPoolWorkQueue.WorkStealingQueueList.Remove(workStealingQueue);
             }
-        }
-
-        ~ThreadPoolWorkQueueThreadLocals()
-        {
-            // Since the purpose of calling CleanUp is to transfer any pending workitems into the global
-            // queue so that they will be executed by another thread, there's no point in doing this cleanup
-            // if we're in the process of shutting down or unloading the AD.  In those cases, the work won't
-            // execute anyway.  And there are subtle race conditions involved there that would lead us to do the wrong
-            // thing anyway.  So we'll only clean up if this is a "normal" finalization.
-            if (!Environment.HasShutdownStarted)
-                CleanUp();
         }
     }
 
@@ -752,8 +742,7 @@ namespace System.Threading
         ~QueueUserWorkItemCallbackBase()
         {
             Debug.Assert(
-                executed != 0 || Environment.HasShutdownStarted,
-                "A QueueUserWorkItemCallback was never called!");
+                executed != 0, "A QueueUserWorkItemCallback was never called!");
         }
 #endif
 
