@@ -6,6 +6,7 @@
 #define __HOST_STARTUP_INFO_H_
 
 #include "pal.h"
+#include "host_interface.h"
 
 struct host_startup_info_t
 {
@@ -19,7 +20,7 @@ struct host_startup_info_t
         int argc,
         const pal::char_t* argv[]);
 
-    const bool is_valid() const;
+    const bool is_valid(host_mode_t mode) const;
 
     const pal::string_t get_app_name() const;
 
