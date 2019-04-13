@@ -204,7 +204,6 @@ typedef enum
         // Stop bypasses finalizer run.
     eFastExitProcess,
     eRudeExitProcess,
-    eDisableRuntime,
     MaxPolicyAction
 } EPolicyAction;
 
