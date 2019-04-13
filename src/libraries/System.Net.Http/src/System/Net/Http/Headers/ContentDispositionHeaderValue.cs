@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Text;
 
 namespace System.Net.Http.Headers
@@ -425,7 +424,7 @@ namespace System.Net.Http.Headers
         }
 
         // Returns input for decoding failures, as the content might not be encoded.
-        private string EncodeAndQuoteMime(string input)
+        private static string EncodeAndQuoteMime(string input)
         {
             string result = input;
             bool needsQuotes = false;
@@ -441,7 +440,7 @@ namespace System.Net.Http.Headers
                 throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
                     SR.net_http_headers_invalid_value, input));
             }
-            else if (RequiresEncoding(result))
+            else if (HeaderUtilities.ContainsNonAscii(result))
             {
                 needsQuotes = true; // Encoded data must always be quoted, the equals signs are invalid in tokens.
                 result = EncodeMime(result); // =?utf-8?B?asdfasdfaesdf?=
@@ -460,7 +459,7 @@ namespace System.Net.Http.Headers
         }
 
         // Returns true if the value starts and ends with a quote.
-        private bool IsQuoted(ReadOnlySpan<char> value)
+        private static bool IsQuoted(ReadOnlySpan<char> value)
         {
             return
                 value.Length > 1 &&
@@ -468,23 +467,8 @@ namespace System.Net.Http.Headers
                 value[value.Length - 1] == '"';
         }
 
-        // tspecials are required to be in a quoted string.  Only non-ascii needs to be encoded.
-        private bool RequiresEncoding(string input)
-        {
-            Debug.Assert(input != null);
-
-            foreach (char c in input)
-            {
-                if ((int)c > 0x7f)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
         // Encode using MIME encoding.
-        private string EncodeMime(string input)
+        private static string EncodeMime(string input)
         {
             byte[] buffer = Encoding.UTF8.GetBytes(input);
             string encodedName = Convert.ToBase64String(buffer);
@@ -492,7 +476,7 @@ namespace System.Net.Http.Headers
         }
 
         // Attempt to decode MIME encoded strings.
-        private bool TryDecodeMime(string input, out string output)
+        private static bool TryDecodeMime(string input, out string output)
         {
             Debug.Assert(input != null);
 
@@ -535,7 +519,7 @@ namespace System.Net.Http.Headers
 
         // Attempt to decode using RFC 5987 encoding.
         // encoding'language'my%20string
-        private bool TryDecode5987(string input, out string output)
+        private static bool TryDecode5987(string input, out string output)
         {
             output = null;
             

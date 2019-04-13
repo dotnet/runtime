@@ -56,5 +56,20 @@ namespace System.Net.Http.Tests
 
             Assert.Equal(expectedResult, parameter != null);
         }
+
+        [Theory]
+        [InlineData("test", "username=\"test\"")]
+        [InlineData("test@example.org", "username=\"test@example.org\"")]
+        [InlineData("test\"example.org", "username=\"test\\\"example.org\"")]
+        [InlineData("t\u00E6st", "username*=utf-8''t%C3%A6st")]
+        [InlineData("\uD834\uDD1E", "username*=utf-8''%F0%9D%84%9E")]
+        public async void DigestResponse_UserName_Encoding(string username, string encodedUserName)
+        {
+            NetworkCredential credential = new NetworkCredential(username, "bar");
+            AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse("realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\"");
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
+            string parameter = await AuthenticationHelper.GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
+            Assert.StartsWith(encodedUserName, parameter);
+        }
     }
 }

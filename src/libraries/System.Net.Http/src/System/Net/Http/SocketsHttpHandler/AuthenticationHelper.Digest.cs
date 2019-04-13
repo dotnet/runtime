@@ -91,9 +91,9 @@ namespace System.Net.Http
             }
             else
             {
-                string usernameStar;
-                if (HeaderUtilities.IsInputEncoded5987(credential.UserName, out usernameStar))
+                if (HeaderUtilities.ContainsNonAscii(credential.UserName))
                 {
+                    string usernameStar = HeaderUtilities.Encode5987(credential.UserName);
                     sb.AppendKeyValue(UsernameStar, usernameStar, includeQuotes: false);
                 }
                 else
@@ -408,6 +408,9 @@ namespace System.Net.Http
 
     internal static class StringBuilderExtensions
     {
+        // Characters that require escaping in quoted string
+        private static readonly char[] SpecialCharacters = new[] { '"', '\\' };
+
         public static void AppendKeyValue(this StringBuilder sb, string key, string value, bool includeQuotes = true, bool includeComma = true)
         {
             sb.Append(key);
@@ -415,12 +418,29 @@ namespace System.Net.Http
             if (includeQuotes)
             {
                 sb.Append('"');
-            }
-
-            sb.Append(value);
-            if (includeQuotes)
-            {
+                int lastSpecialIndex = 0;
+                int specialIndex;
+                while (true)
+                {
+                    specialIndex = value.IndexOfAny(SpecialCharacters, lastSpecialIndex);
+                    if (specialIndex >= 0)
+                    {
+                        sb.Append(value, lastSpecialIndex, specialIndex - lastSpecialIndex);
+                        sb.Append('\\');
+                        sb.Append(value[specialIndex]);
+                        lastSpecialIndex = specialIndex + 1;
+                    }
+                    else
+                    {
+                        sb.Append(value, lastSpecialIndex, value.Length - lastSpecialIndex);
+                        break;
+                    }
+                }
                 sb.Append('"');
+            }
+            else
+            {
+                sb.Append(value);
             }
 
             if (includeComma)
