@@ -34,6 +34,11 @@ namespace System.Text.Json.Serialization.Tests
             obj.Address = null;
             obj.Array = null;
             obj.List = null;
+            obj.IEnumerableT = null;
+            obj.IListT = null;
+            obj.ICollectionT = null;
+            obj.IReadOnlyCollectionT = null;
+            obj.IReadOnlyListT = null;
             obj.NullableInt = null;
             obj.NullableIntArray = null;
             obj.Object = null;
@@ -42,6 +47,11 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains(@"""Address"":null", json);
             Assert.Contains(@"""List"":null", json);
             Assert.Contains(@"""Array"":null", json);
+            Assert.Contains(@"""IEnumerableT"":null", json);
+            Assert.Contains(@"""IListT"":null", json);
+            Assert.Contains(@"""ICollectionT"":null", json);
+            Assert.Contains(@"""IReadOnlyCollectionT"":null", json);
+            Assert.Contains(@"""IReadOnlyListT"":null", json);
             Assert.Contains(@"""NullableInt"":null", json);
             Assert.Contains(@"""Object"":null", json);
             Assert.Contains(@"""NullableIntArray"":null", json);

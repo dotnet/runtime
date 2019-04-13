@@ -139,5 +139,235 @@ namespace System.Text.Json.Serialization.Tests
             string json = JsonSerializer.ToString(input);
             Assert.Equal("[1,2]", json);
         }
+
+        [Fact]
+        public static void WriteIEnumerableTOfIEnumerableT()
+        {
+            IEnumerable<IEnumerable<int>> input = new List<List<int>>
+            {
+                new List<int>() { 1, 2 },
+                new List<int>() { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteIEnumerableTOfArray()
+        {
+            IEnumerable<int[]> input = new List<int[]>
+            {
+                new int[] { 1, 2 },
+                new int[] { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteArrayOfIEnumerableT()
+        {
+            IEnumerable<int>[] input = new List<int>[2];
+            input[0] = new List<int>() { 1, 2 };
+            input[1] = new List<int>() { 3, 4 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WritePrimitiveIEnumerableT()
+        {
+            IEnumerable<int> input = new List<int> { 1, 2 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[1,2]", json);
+        }
+
+        [Fact]
+        public static void WriteIListTOfIListT()
+        {
+            IList<IList<int>> input = new List<IList<int>>
+            {
+                new List<int>() { 1, 2 },
+                new List<int>() { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteIListTOfArray()
+        {
+            IList<int[]> input = new List<int[]>
+            {
+                new int[] { 1, 2 },
+                new int[] { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteArrayOfIListT()
+        {
+            IList<int>[] input = new List<int>[2];
+            input[0] = new List<int>() { 1, 2 };
+            input[1] = new List<int>() { 3, 4 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WritePrimitiveIListT()
+        {
+            IList<int> input = new List<int> { 1, 2 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[1,2]", json);
+        }
+
+        [Fact]
+        public static void WriteICollectionTOfICollectionT()
+        {
+            ICollection<ICollection<int>> input = new List<ICollection<int>>
+            {
+                new List<int>() { 1, 2 },
+                new List<int>() { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteICollectionTOfArray()
+        {
+            ICollection<int[]> input = new List<int[]>
+            {
+                new int[] { 1, 2 },
+                new int[] { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteArrayOfICollectionT()
+        {
+            ICollection<int>[] input = new List<int>[2];
+            input[0] = new List<int>() { 1, 2 };
+            input[1] = new List<int>() { 3, 4 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WritePrimitiveICollectionT()
+        {
+            ICollection<int> input = new List<int> { 1, 2 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[1,2]", json);
+        }
+
+        [Fact]
+        public static void WriteIReadOnlyCollectionTOfIReadOnlyCollectionT()
+        {
+            IReadOnlyCollection<IReadOnlyCollection<int>> input = new List<List<int>>
+            {
+                new List<int>() { 1, 2 },
+                new List<int>() { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteIReadOnlyCollectionTOfArray()
+        {
+            IReadOnlyCollection<int[]> input = new List<int[]>
+            {
+                new int[] { 1, 2 },
+                new int[] { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteArrayOfIReadOnlyCollectionT()
+        {
+            IReadOnlyCollection<int>[] input = new List<int>[2];
+            input[0] = new List<int>() { 1, 2 };
+            input[1] = new List<int>() { 3, 4 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WritePrimitiveIReadOnlyCollectionT()
+        {
+            IReadOnlyCollection<int> input = new List<int> { 1, 2 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[1,2]", json);
+        }
+
+        [Fact]
+        public static void WriteIReadOnlyListTOfIReadOnlyListT()
+        {
+            IReadOnlyList<IReadOnlyList<int>> input = new List<List<int>>
+            {
+                new List<int>() { 1, 2 },
+                new List<int>() { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteIReadOnlyListTOfArray()
+        {
+            IReadOnlyList<int[]> input = new List<int[]>
+            {
+                new int[] { 1, 2 },
+                new int[] { 3, 4 }
+            };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WriteArrayOfIReadOnlyListT()
+        {
+            IReadOnlyList<int>[] input = new List<int>[2];
+            input[0] = new List<int>() { 1, 2 };
+            input[1] = new List<int>() { 3, 4 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[[1,2],[3,4]]", json);
+        }
+
+        [Fact]
+        public static void WritePrimitiveIReadOnlyListT()
+        {
+            IReadOnlyList<int> input = new List<int> { 1, 2 };
+
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal("[1,2]", json);
+        }
     }
 }
