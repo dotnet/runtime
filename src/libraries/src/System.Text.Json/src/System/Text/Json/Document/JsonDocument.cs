@@ -28,23 +28,37 @@ namespace System.Text.Json
         private (int, string) _lastIndexAndString = (-1, null);
 
         /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
+        internal bool IsDisposable { get; }
+
+        /// <summary>
         ///   The <see cref="JsonElement"/> representing the value of the document.
         /// </summary>
         public JsonElement RootElement => new JsonElement(this, 0);
 
-        private JsonDocument(ReadOnlyMemory<byte> utf8Json, MetadataDb parsedData, byte[] extraRentedBytes)
+        private JsonDocument(
+            ReadOnlyMemory<byte> utf8Json,
+            MetadataDb parsedData,
+            byte[] extraRentedBytes,
+            bool isDisposable = true)
         {
             Debug.Assert(!utf8Json.IsEmpty);
 
             _utf8Json = utf8Json;
             _parsedData = parsedData;
             _extraRentedBytes = extraRentedBytes;
+
+            IsDisposable = isDisposable;
+
+            // extraRentedBytes better be null if we're not disposable.
+            Debug.Assert(isDisposable || extraRentedBytes == null);
         }
 
         /// <inheritdoc />
         public void Dispose()
         {
-            if (_utf8Json.IsEmpty)
+            if (_utf8Json.IsEmpty || !IsDisposable)
             {
                 return;
             }
@@ -567,6 +581,21 @@ namespace System.Text.Json
         {
             ReadOnlyMemory<byte> segment = GetPropertyRawValue(valueIndex);
             return JsonReaderHelper.TranscodeHelper(segment.Span);
+        }
+
+        /// <summary>
+        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+        /// </summary>
+        internal JsonElement CloneElement(int index)
+        {
+            int endIndex = GetEndIndex(index, true);
+            MetadataDb newDb = _parsedData.CopySegment(index, endIndex);
+            ReadOnlyMemory<byte> segmentCopy = GetRawValue(index, includeQuotes: true).ToArray();
+
+            JsonDocument newDocument =
+                new JsonDocument(segmentCopy, newDb, extraRentedBytes: null, isDisposable: false);
+
+            return newDocument.RootElement;
         }
 
         /// <summary>

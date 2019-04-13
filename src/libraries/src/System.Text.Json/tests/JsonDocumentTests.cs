@@ -494,6 +494,8 @@ namespace System.Text.Json.Tests
 
             using (JsonDocument doc = stringDocBuilder?.Invoke(jsonString) ?? bytesDocBuilder?.Invoke(dataUtf8))
             {
+                Assert.NotNull(doc);
+
                 JsonElement rootElement = doc.RootElement;
 
                 Func<JToken, string> expectedFunc = null;
