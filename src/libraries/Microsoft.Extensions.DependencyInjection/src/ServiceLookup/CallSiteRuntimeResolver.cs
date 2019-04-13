@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 
@@ -35,6 +36,9 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 }
             }
 
+#if NETCOREAPP3_0
+            return constructorCallSite.ConstructorInfo.Invoke(BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameterValues, culture: null);
+#else
             try
             {
                 return constructorCallSite.ConstructorInfo.Invoke(parameterValues);
@@ -45,6 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 // The above line will always throw, but the compiler requires we throw explicitly.
                 throw;
             }
+#endif
         }
 
         protected override object VisitRootCache(ServiceCallSite singletonCallSite, RuntimeResolverContext context)
@@ -63,7 +68,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             return VisitCache(singletonCallSite, context, context.Scope, requiredScope);
         }
 
-        private object VisitCache(ServiceCallSite scopedCallSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
+        private object VisitCache(ServiceCallSite callSite, RuntimeResolverContext context, ServiceProviderEngineScope serviceProviderEngine, RuntimeResolverLock lockType)
         {
             bool lockTaken = false;
             var resolvedServices = serviceProviderEngine.ResolvedServices;
@@ -79,16 +84,16 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             try
             {
-                if (!resolvedServices.TryGetValue(scopedCallSite.Cache.Key, out var resolved))
+                if (!resolvedServices.TryGetValue(callSite.Cache.Key, out var resolved))
                 {
-                    resolved = VisitCallSiteMain(scopedCallSite, new RuntimeResolverContext
+                    resolved = VisitCallSiteMain(callSite, new RuntimeResolverContext
                     {
                         Scope = serviceProviderEngine,
                         AcquiredLocks = context.AcquiredLocks | lockType
                     });
 
                     serviceProviderEngine.CaptureDisposable(resolved);
-                    resolvedServices.Add(scopedCallSite.Cache.Key, resolved);
+                    resolvedServices.Add(callSite.Cache.Key, resolved);
                 }
 
                 return resolved;
