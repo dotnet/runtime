@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace System.Text.Tests
@@ -247,6 +248,25 @@ namespace System.Text.Tests
             NegativeEncodingTests.Encode_Invalid(
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: true, throwOnInvalidBytes: true), 
                 chars, index, count);
+        }
+
+        [Theory]
+        [InlineData("", "ABCDEF")]
+        [InlineData("\uFFFD", "\uFFFDAB\uFFFDCD\uFFFDEF\uFFFD")]
+        [InlineData("?", "?AB?CD?EF?")]
+        [InlineData("\uFFFD?", "\uFFFD?AB\uFFFD?CD\uFFFD?EF\uFFFD?")]
+        public void Encode_InvalidChars_WithCustomReplacementFallback(string replacementString, string expected)
+        {
+            byte[] expectedUtf8Output = expected.SelectMany(ch => (ch == '\uFFFD') ? new byte[] { 0xEF, 0xBF, 0xBD } : new byte[] { (byte)ch }).ToArray();
+
+            Encoding utf8Encoding = Encoding.GetEncoding(
+                name: "utf-8",
+                encoderFallback: new EncoderReplacementFallback(replacementString),
+                decoderFallback: DecoderFallback.ExceptionFallback);
+
+            byte[] actualUtf8Output = utf8Encoding.GetBytes("\uD800AB\uDC00CD\uDFFFEF\uDBFF"); // pass in an invalid UTF-16 sequence
+
+            Assert.Equal(expectedUtf8Output, actualUtf8Output);
         }
     }
 }

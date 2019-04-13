@@ -45,7 +45,14 @@ namespace System.Text.Tests
         public static unsafe void GetByteCount_Invalid(Encoding encoding)
         {
             // Chars is null
-            AssertExtensions.Throws<ArgumentNullException>(encoding is ASCIIEncoding ? "chars" : "s", () => encoding.GetByteCount((string)null));
+            if (PlatformDetection.IsNetCore)
+            {
+                AssertExtensions.Throws<ArgumentNullException>((encoding is ASCIIEncoding || encoding is UTF8Encoding) ? "chars" : "s", () => encoding.GetByteCount((string)null));
+            }
+            else
+            {
+                AssertExtensions.Throws<ArgumentNullException>((encoding is ASCIIEncoding) ? "chars" : "s", () => encoding.GetByteCount((string)null));
+            }
             AssertExtensions.Throws<ArgumentNullException>("chars", () => encoding.GetByteCount((char[])null));
             AssertExtensions.Throws<ArgumentNullException>("chars", () => encoding.GetByteCount((char[])null, 0, 0));
 
