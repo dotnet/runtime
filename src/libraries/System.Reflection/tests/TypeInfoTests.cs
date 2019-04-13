@@ -984,8 +984,8 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, type.GetTypeInfo().GetElementType());
         }
 
-        [Theory]
-        public void GenericParameterConstraints(Type type)
+        [Fact]
+        public void GenericParameterConstraints()
         {
             Type[] genericTypeParameters = typeof(MethodClassWithConstraints<,>).GetTypeInfo().GenericTypeParameters;
             Assert.Equal(2, genericTypeParameters.Length);
