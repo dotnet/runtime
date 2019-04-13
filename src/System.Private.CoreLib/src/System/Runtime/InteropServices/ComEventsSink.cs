@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 using System.Diagnostics;
-
-using Variant = System.Runtime.InteropServices.Variant;
 
 namespace System.Runtime.InteropServices
 {
@@ -16,10 +14,10 @@ namespace System.Runtime.InteropServices
     internal class ComEventsSink : IDispatch, ICustomQueryInterface
     {
         private Guid _iidSourceItf;
-        private ComTypes.IConnectionPoint _connectionPoint;
+        private ComTypes.IConnectionPoint? _connectionPoint;
         private int _cookie;
-        private ComEventsMethod _methods;
-        private ComEventsSink _next;
+        private ComEventsMethod? _methods;
+        private ComEventsSink? _next;
 
         public ComEventsSink(object rcw, Guid iid)
         {
@@ -27,9 +25,9 @@ namespace System.Runtime.InteropServices
             this.Advise(rcw);
         }
 
-        public static ComEventsSink Find(ComEventsSink sinks, ref Guid iid)
+        public static ComEventsSink? Find(ComEventsSink? sinks, ref Guid iid)
         {
-            ComEventsSink sink = sinks;
+            ComEventsSink? sink = sinks;
             while (sink != null && sink._iidSourceItf != iid)
             {
                 sink = sink._next;
@@ -38,13 +36,13 @@ namespace System.Runtime.InteropServices
             return sink;
         }
 
-        public static ComEventsSink Add(ComEventsSink sinks, ComEventsSink sink)
+        public static ComEventsSink Add(ComEventsSink? sinks, ComEventsSink sink)
         {
             sink._next = sinks;
             return sink;
         }
 
-        public static ComEventsSink RemoveAll(ComEventsSink sinks)
+        public static ComEventsSink? RemoveAll(ComEventsSink? sinks)
         {
             while (sinks != null)
             {
@@ -55,18 +53,20 @@ namespace System.Runtime.InteropServices
             return null;
         }
 
-        public static ComEventsSink Remove(ComEventsSink sinks, ComEventsSink sink)
+        public static ComEventsSink? Remove(ComEventsSink sinks, ComEventsSink sink)
         {
             Debug.Assert(sinks != null, "removing event sink from empty sinks collection");
             Debug.Assert(sink != null, "specify event sink is null");
 
+            ComEventsSink? toReturn = sinks;
+
             if (sink == sinks)
             {
-                sinks = sinks._next;
+                toReturn = sinks._next;
             }
             else
             {
-                ComEventsSink current = sinks;
+                ComEventsSink? current = sinks;
                 while (current != null && current._next != sink)
                 {
                     current = current._next;
@@ -80,16 +80,16 @@ namespace System.Runtime.InteropServices
 
             sink.Unadvise();
 
-            return sinks;
+            return toReturn;
         }
 
-        public ComEventsMethod RemoveMethod(ComEventsMethod method)
+        public ComEventsMethod? RemoveMethod(ComEventsMethod method)
         {
-            _methods = ComEventsMethod.Remove(_methods, method);
+            _methods = ComEventsMethod.Remove(_methods!, method);
             return _methods;
         }
 
-        public ComEventsMethod FindMethod(int dispid)
+        public ComEventsMethod? FindMethod(int dispid)
         {
             return ComEventsMethod.Find(_methods, dispid);
         }
@@ -148,7 +148,7 @@ namespace System.Runtime.InteropServices
             IntPtr pExcepInfo,
             IntPtr puArgErr)
         {
-            ComEventsMethod method = FindMethod(dispid);
+            ComEventsMethod? method = FindMethod(dispid);
             if (method == null)
             {
                 return;
@@ -158,7 +158,7 @@ namespace System.Runtime.InteropServices
             // arguments marshalling. see code:ComEventsHelper#ComEventsArgsMarshalling
 
             const int InvalidIdx = -1;
-            object [] args = new object[pDispParams.cArgs];
+            object[] args = new object[pDispParams.cArgs];
             int [] byrefsMap = new int[pDispParams.cArgs];
             bool [] usedArgs = new bool[pDispParams.cArgs];
 
@@ -173,7 +173,7 @@ namespace System.Runtime.InteropServices
             {
                 pos = namedArgs[i];
                 ref Variant pvar = ref GetVariant(ref vars[i]);
-                args[pos] = pvar.ToObject();
+                args[pos] = pvar.ToObject()!;
                 usedArgs[pos] = true;
 
                 int byrefIdx = InvalidIdx;
@@ -196,7 +196,7 @@ namespace System.Runtime.InteropServices
                 }
 
                 ref Variant pvar = ref GetVariant(ref vars[pDispParams.cArgs - 1 - i]);
-                args[pos] = pvar.ToObject();
+                args[pos] = pvar.ToObject()!;
 
                 int byrefIdx = InvalidIdx;
                 if (pvar.IsByRef)
@@ -210,7 +210,7 @@ namespace System.Runtime.InteropServices
             }
 
             // Do the actual delegate invocation
-            object result = method.Invoke(args);
+            object? result = method.Invoke(args);
 
             // convert result to VARIANT
             if (pVarResult != IntPtr.Zero)
@@ -250,7 +250,7 @@ namespace System.Runtime.InteropServices
 
             ComTypes.IConnectionPointContainer cpc = (ComTypes.IConnectionPointContainer)rcw;
             ComTypes.IConnectionPoint cp;
-            cpc.FindConnectionPoint(ref _iidSourceItf, out cp);
+            cpc.FindConnectionPoint(ref _iidSourceItf, out cp!);
 
             object sinkObject = this;
 
