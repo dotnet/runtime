@@ -110,6 +110,11 @@ namespace System.Text.Json.Serialization.Tests
         public object /*Address*/ Address { get; set; }
         public object /*List<string>*/ List { get; set; }
         public object /*string[]*/ Array { get; set; }
+        public object /*IEnumerable<string>*/ IEnumerableT { get; set; }
+        public object /*IList<string>*/ IListT { get; set; }
+        public object /*ICollection<string>*/ ICollectionT { get; set; }
+        public object /*IReadOnlyCollection<string>*/ IReadOnlyCollectionT { get; set; }
+        public object /*IReadOnlyList<string>*/ IReadOnlyListT { get; set; }
         public object /*int?*/ NullableInt { get; set; }
         public object /*object*/ Object { get; set; }
         public object /*int?[]*/ NullableIntArray { get; set; }
@@ -127,6 +132,31 @@ namespace System.Text.Json.Serialization.Tests
             Array = new string[]
             {
                 "Hello", "Again"
+            };
+
+            IEnumerableT = new List<string>
+            {
+                "Hello", "World"
+            };
+
+            IListT = new List<string>
+            {
+                "Hello", "World"
+            };
+
+            ICollectionT = new List<string>
+            {
+                "Hello", "World"
+            };
+
+            IReadOnlyCollectionT = new List<string>
+            {
+                "Hello", "World"
+            };
+
+            IReadOnlyListT = new List<string>
+            {
+                "Hello", "World"
             };
 
             NullableInt = new int?(42);

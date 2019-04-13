@@ -304,6 +304,291 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, i[1]);
         }
 
+        [Fact]
+        public static void ReadIEnumerableTOfIEnumerableT()
+        {
+            IEnumerable<IEnumerable<int>> result = JsonSerializer.Parse<IEnumerable<IEnumerable<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (IEnumerable<int> ie in result)
+            {
+                foreach (int i in ie)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadIEnumerableTOfArray()
+        {
+            IEnumerable<int[]> result = JsonSerializer.Parse<IEnumerable<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (int[] arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadArrayOfIEnumerableT()
+        {
+            IEnumerable<int>[] result = JsonSerializer.Parse<IEnumerable<int>[]> (Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (IEnumerable<int> arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadPrimitiveIEnumerableT()
+        {
+            IEnumerable<int> result = JsonSerializer.Parse<IEnumerable<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
+            int expected = 1;
+
+            foreach (int i in result)
+            {
+                Assert.Equal(expected++, i);
+            }
+        }
+
+        [Fact]
+        public static void ReadIListTOfIListT()
+        {
+            IList<IList<int>> result = JsonSerializer.Parse<IList<IList<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (IList<int> ie in result)
+            {
+                foreach (int i in ie)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadIListTOfArray()
+        {
+            IList<int[]> result = JsonSerializer.Parse<IList<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (int[] arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadArrayOfIListT()
+        {
+            IList<int>[] result = JsonSerializer.Parse<IList<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (IList<int> arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadPrimitiveIListT()
+        {
+            IList<int> result = JsonSerializer.Parse<IList<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
+            int expected = 1;
+
+            foreach (int i in result)
+            {
+                Assert.Equal(expected++, i);
+            }
+        }
+
+        [Fact]
+        public static void ReadICollectionTOfICollectionT()
+        {
+            ICollection<ICollection<int>> result = JsonSerializer.Parse<ICollection<ICollection<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (ICollection<int> ie in result)
+            {
+                foreach (int i in ie)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadICollectionTOfArray()
+        {
+            ICollection<int[]> result = JsonSerializer.Parse<ICollection<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (int[] arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadArrayOfICollectionT()
+        {
+            ICollection<int>[] result = JsonSerializer.Parse<ICollection<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (ICollection<int> arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadPrimitiveICollectionT()
+        {
+            ICollection<int> result = JsonSerializer.Parse<ICollection<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
+            int expected = 1;
+
+            foreach (int i in result)
+            {
+                Assert.Equal(expected++, i);
+            }
+        }
+
+        [Fact]
+        public static void ReadIReadOnlyCollectionTOfIReadOnlyCollectionT()
+        {
+            IReadOnlyCollection<IReadOnlyCollection<int>> result = JsonSerializer.Parse<IReadOnlyCollection<IReadOnlyCollection<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (IReadOnlyCollection<int> ie in result)
+            {
+                foreach (int i in ie)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadIReadOnlyCollectionTOfArray()
+        {
+            IReadOnlyCollection<int[]> result = JsonSerializer.Parse<IReadOnlyCollection<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (int[] arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadArrayOfIReadOnlyCollectionT()
+        {
+            IReadOnlyCollection<int>[] result = JsonSerializer.Parse<IReadOnlyCollection<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (IReadOnlyCollection<int> arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadPrimitiveIReadOnlyCollectionT()
+        {
+            IReadOnlyCollection<int> result = JsonSerializer.Parse<IReadOnlyCollection<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
+            int expected = 1;
+
+            foreach (int i in result)
+            {
+                Assert.Equal(expected++, i);
+            }
+        }
+
+        [Fact]
+        public static void ReadIReadOnlyListTOfIReadOnlyListT()
+        {
+            IReadOnlyList<IReadOnlyList<int>> result = JsonSerializer.Parse<IReadOnlyList<IReadOnlyList<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (IReadOnlyList<int> ie in result)
+            {
+                foreach (int i in ie)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadIReadOnlyListTOfArray()
+        {
+            IReadOnlyList<int[]> result = JsonSerializer.Parse<IReadOnlyList<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (int[] arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadArrayOfIReadOnlyListT()
+        {
+            IReadOnlyList<int>[] result = JsonSerializer.Parse<IReadOnlyList<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (IReadOnlyList<int> arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadPrimitiveIReadOnlyListT()
+        {
+            IReadOnlyList<int> result = JsonSerializer.Parse<IReadOnlyList<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
+            int expected = 1;
+
+            foreach (int i in result)
+            {
+                Assert.Equal(expected++, i);
+            }
+        }
+
         public class TestClassWithBadData
         {
             public TestChildClassWithBadData[] Children { get; set; }
