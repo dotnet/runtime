@@ -543,7 +543,6 @@ public:
     static bool HasValidVTablePtr(Frame * pFrame);
     static PTR_GSCookie SafeGetGSCookiePtr(Frame * pFrame);
     static void Init();
-    static void Term();
 
     // Callers, note that the REGDISPLAY parameter is actually in/out. While
     // UpdateRegDisplay is generally used to fill out the REGDISPLAY parameter, some
