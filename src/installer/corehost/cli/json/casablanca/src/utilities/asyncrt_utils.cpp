@@ -483,13 +483,13 @@ utility::string_t __cdecl conversions::to_string_t(const std::string &s)
 #endif
 }
 
-std::string __cdecl conversions::to_utf8string(std::string value) { return std::move(value); }
+std::string __cdecl conversions::to_utf8string(std::string value) { return value; }
 
 std::string __cdecl conversions::to_utf8string(const utf16string &value) { return utf16_to_utf8(value); }
 
 utf16string __cdecl conversions::to_utf16string(const std::string &value) { return utf8_to_utf16(value); }
 
-utf16string __cdecl conversions::to_utf16string(utf16string value) { return std::move(value); }
+utf16string __cdecl conversions::to_utf16string(utf16string value) { return value; }
 
 static bool is_digit(utility::char_t c) { return c >= _XPLATSTR('0') && c <= _XPLATSTR('9'); }
 
