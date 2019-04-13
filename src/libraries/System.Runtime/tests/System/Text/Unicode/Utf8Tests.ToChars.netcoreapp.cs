@@ -42,6 +42,18 @@ namespace System.Text.Unicode.Tests
               expectedOperationStatus: OperationStatus.InvalidData,
               expectedNumBytesRead: expectedNumBytesConsumed,
               expectedUtf16Transcoding: expectedUtf16Transcoding);
+
+            // Now try the tests again with a larger buffer.
+            // This ensures that running out of destination space wasn't the reason we failed.
+
+            ToChars_Test_Core(
+              utf8Input: DecodeHex(utf8HexInput),
+              destinationSize: expectedUtf16Transcoding.Length + 16,
+              replaceInvalidSequences: false,
+              isFinalChunk: false,
+              expectedOperationStatus: OperationStatus.InvalidData,
+              expectedNumBytesRead: expectedNumBytesConsumed,
+              expectedUtf16Transcoding: expectedUtf16Transcoding);
         }
 
         [Theory]
@@ -74,6 +86,18 @@ namespace System.Text.Unicode.Tests
               expectedOperationStatus: OperationStatus.NeedMoreData,
               expectedNumBytesRead: expectedNumBytesConsumed,
               expectedUtf16Transcoding: expectedUtf16Transcoding);
+
+            // Now try the tests again with a larger buffer.
+            // This ensures that running out of destination space wasn't the reason we failed.
+
+            ToChars_Test_Core(
+             utf8Input: DecodeHex(utf8HexInput),
+             destinationSize: expectedUtf16Transcoding.Length + 16,
+             replaceInvalidSequences: false,
+             isFinalChunk: false,
+             expectedOperationStatus: OperationStatus.NeedMoreData,
+             expectedNumBytesRead: expectedNumBytesConsumed,
+             expectedUtf16Transcoding: expectedUtf16Transcoding);
         }
 
         [Theory]
@@ -104,7 +128,7 @@ namespace System.Text.Unicode.Tests
         [InlineData(EURO_SYMBOL_UTF16 + EURO_SYMBOL_UTF16 + E_ACUTE_UTF16 + E_ACUTE_UTF16 + E_ACUTE_UTF16 + E_ACUTE_UTF16)] // 2x 3-byte sequences + 4x 2-byte sequences, exercises "consume multiple bytes at a time" logic in 3-byte sequence processing
         [InlineData(GRINNING_FACE_UTF16 + GRINNING_FACE_UTF16)] // 2x 4-byte sequences, exercises 4-byte sequence processing
         [InlineData(GRINNING_FACE_UTF16 + "@AB")] // single 4-byte sequence + 3 ASCII bytes, exercises 4-byte sequence processing and draining logic
-        [InlineData("\U0001F938\U0001F3FD\u200D\u2640\uFE0F")] // U+1F938 U+1F3FD U+200D U+2640 U+FE0F WOMAN CARTWHEELING: MEDIUM SKIN TONE, exercising switching between multiple sequence lengths
+        [InlineData(WOMAN_CARTWHEELING_MEDSKIN_UTF16)] // exercises switching between multiple sequence lengths
         public void ToChars_ValidBuffers(string utf16Input)
         {
             // We're going to run the tests with destination buffer lengths ranging from 0 all the way
@@ -162,6 +186,34 @@ namespace System.Text.Unicode.Tests
                     expectedNumBytesRead: expectedNumBytesConsumed,
                     expectedUtf16Transcoding: concatenatedUtf16);
             }
+
+            // now throw lots of ASCII data at the beginning so that we exercise the vectorized code paths
+
+            utf16Input = new string('x', 64) + utf16Input;
+            utf8Input = utf16Input.EnumerateRunes().SelectMany(ToUtf8).ToArray();
+
+            ToChars_Test_Core(
+                utf8Input: utf8Input,
+                destinationSize: utf16Input.Length,
+                replaceInvalidSequences: false,
+                isFinalChunk: true,
+                expectedOperationStatus: OperationStatus.Done,
+                expectedNumBytesRead: utf8Input.Length,
+                expectedUtf16Transcoding: utf16Input);
+
+            // now throw some non-ASCII data at the beginning so that we *don't* exercise the vectorized code paths
+
+            utf16Input = WOMAN_CARTWHEELING_MEDSKIN_UTF16 + utf16Input[64..];
+            utf8Input = utf16Input.EnumerateRunes().SelectMany(ToUtf8).ToArray();
+
+            ToChars_Test_Core(
+                utf8Input: utf8Input,
+                destinationSize: utf16Input.Length,
+                replaceInvalidSequences: false,
+                isFinalChunk: true,
+                expectedOperationStatus: OperationStatus.Done,
+                expectedNumBytesRead: utf8Input.Length,
+                expectedUtf16Transcoding: utf16Input);
         }
 
         [Theory]
@@ -182,6 +234,7 @@ namespace System.Text.Unicode.Tests
         [InlineData("3031" + "E17F80" + EURO_SYMBOL_UTF8 + EURO_SYMBOL_UTF8, 2, "01")] // Improperly terminated 3-byte sequence at start of DWORD
         [InlineData("3031" + "E1C080" + EURO_SYMBOL_UTF8 + EURO_SYMBOL_UTF8, 2, "01")] // Improperly terminated 3-byte sequence at start of DWORD
         [InlineData("3031" + "EDA080" + EURO_SYMBOL_UTF8 + EURO_SYMBOL_UTF8, 2, "01")] // Surrogate 3-byte sequence at start of DWORD
+        [InlineData("3031" + "E69C88" + "E59B" + "E69C88", 5, "01\u6708")] // Incomplete 3-byte sequence surrounded by valid 3-byte sequences
         [InlineData("3031" + "F5808080", 2, "01")] // [ F5 ] is always invalid
         [InlineData("3031" + "F6808080", 2, "01")] // [ F6 ] is always invalid
         [InlineData("3031" + "F7808080", 2, "01")] // [ F7 ] is always invalid
@@ -203,6 +256,18 @@ namespace System.Text.Unicode.Tests
             ToChars_Test_Core(
                 utf8Input: DecodeHex(utf8HexInput),
                 destinationSize: expectedUtf16Transcoding.Length,
+                replaceInvalidSequences: false,
+                isFinalChunk: false,
+                expectedOperationStatus: OperationStatus.InvalidData,
+                expectedNumBytesRead: expectedNumBytesConsumed,
+                expectedUtf16Transcoding: expectedUtf16Transcoding);
+
+            // Now try the tests again with a larger buffer.
+            // This ensures that running out of destination space wasn't the reason we failed.
+
+            ToChars_Test_Core(
+                utf8Input: DecodeHex(utf8HexInput),
+                destinationSize: expectedUtf16Transcoding.Length + 16,
                 replaceInvalidSequences: false,
                 isFinalChunk: false,
                 expectedOperationStatus: OperationStatus.InvalidData,

@@ -111,7 +111,7 @@ namespace System.Text.Tests
             EncodingHelpers.Decode(new UTF8Encoding(false, true), bytes, index, count, expected);
             EncodingHelpers.Decode(new UTF8Encoding(true, true), bytes, index, count, expected);
         }
-        
+
         public static IEnumerable<object[]> Decode_InvalidBytes_TestData()
         {
             yield return new object[] { new byte[] { 196, 84, 101, 115, 116, 196, 196, 196, 176, 176, 84, 101, 115, 116, 176 }, 0, 15, "\uFFFDTest\uFFFD\uFFFD\u0130\uFFFDTest\uFFFD" };
@@ -126,97 +126,217 @@ namespace System.Text.Tests
             yield return new object[] { validSurrogateBytes, 2, 2, "\uFFFD\uFFFD" };
             yield return new object[] { validSurrogateBytes, 2, 1, "\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xED, 0xA0, 0x80 }, 0, 3, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xED, 0xAF, 0xBF }, 0, 3, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xED, 0xB0, 0x80 }, 0, 3, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xED, 0xBF, 0xBF }, 0, 3, "\uFFFD\uFFFD" };
+            if (PlatformDetection.IsNetCore)
+            {
+                // Overlong 2-byte sequences
+                yield return new object[] { new byte[] { 0xC0, 0x80 }, 0, 2, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xC1, 0x80 }, 0, 2, "\uFFFD\uFFFD" };
 
-            // Invalid surrogate pair (low/low, high/high, low/high)
-            yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xAF, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xED, 0xB0, 0x80, 0xED, 0xB0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xA0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD" };
+                // Incomplete 2-byte sequences
+                yield return new object[] { new byte[] { 0xC2, 0x41 }, 0, 2, "\uFFFD\u0041" };
+                yield return new object[] { new byte[] { 0xC2, 0x41 }, 0, 2, "\uFFFD\u0041" };
 
-            // Too high scalar value in surrogates
-            yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xEE, 0x80, 0x80 }, 0, 6, "\uFFFD\uFFFD\uE000" };
-            yield return new object[] { new byte[] { 0xF4, 0x90, 0x80, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+                // Overlong 3-byte sequences
+                yield return new object[] { new byte[] { 0xE0, 0x80, 0x80 }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0x9F, 0x80 }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
 
-            // These are examples of overlong sequences. This can cause security
-            // vulnerabilities (e.g. MS00-078) so it is important we parse these as invalid.
-            yield return new object[] { new byte[] { 0xC0 }, 0, 1, "\uFFFD" };
-            yield return new object[] { new byte[] { 0xC0, 0xAF }, 0, 2, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xE0, 0x80, 0xBF }, 0, 3, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xF0, 0x80, 0x80, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xF8, 0x80, 0x80, 0x80, 0xBF }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xFC, 0x80, 0x80, 0x80, 0x80, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                // Truncated 3-byte sequences
+                yield return new object[] { new byte[] { 0xE0, 0xA0, 0x41 }, 0, 3, "\uFFFD\u0041" };
+                yield return new object[] { new byte[] { 0xED, 0x9F, 0x41 }, 0, 3, "\uFFFD\u0041" };
 
-            yield return new object[] { new byte[] { 0xC0, 0xBF }, 0, 2, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xE0, 0x9C, 0x90 }, 0, 3, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xF0, 0x8F, 0xA4, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+                // UTF-16 surrogate code points (invalid to be encoded in UTF-8)
+                yield return new object[] { new byte[] { 0xED, 0xA0, 0x80 }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xAF, 0xBF }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xB0, 0x80 }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xBF, 0xBF }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xAF, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xB0, 0x80, 0xED, 0xB0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xA0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xEF, 0x41 }, 0, 2, "\uFFFD\u0041" };
-            yield return new object[] { new byte[] { 0xEF, 0xBF, 0xAE }, 0, 1, "\uFFFD" };
-            yield return new object[] { new byte[] { 0xEF, 0xBF, 0x41 }, 0, 3, "\uFFFD\u0041" };
-            yield return new object[] { new byte[] { 0xEF, 0xBF, 0x61 }, 0, 3, "\uFFFD\u0061" };
-            yield return new object[] { new byte[] { 0xEF, 0xBF, 0xEF, 0xBF, 0xAE }, 0, 5, "\uFFFD\uFFEE" };
-            yield return new object[] { new byte[] { 0xEF, 0xBF, 0xC0, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+                // Overlong 4-byte sequences
+                yield return new object[] { new byte[] { 0xF0, 0x80, 0x80 }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF0, 0x8F, 0x80 }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xF0, 0xC4, 0x80 }, 0, 3, "\uFFFD\u0100" };
+                // Truncated 4-byte sequences
+                yield return new object[] { new byte[] { 0xF0, 0x90, 0x41, 0x42 }, 0, 4, "\uFFFD\u0041\u0042" };
+                yield return new object[] { new byte[] { 0xF0, 0x90, 0x80, 0x42 }, 0, 4, "\uFFFD\u0042" };
 
-            yield return new object[] { new byte[] { 176 }, 0, 1, "\uFFFD" };
-            yield return new object[] { new byte[] { 196 }, 0, 1, "\uFFFD" };
+                // Too high scalar value in surrogates
+                yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xEE, 0x80, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uE000" };
+                yield return new object[] { new byte[] { 0xF4, 0x90, 0x80, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0x52, 0x7C, 0x7B, 0x41, 0x6E, 0x47, 0x65, 0xA3, 0xA4 }, 0, 12, "\uFFFD\uFFFD\u0061\u0052\u007C\u007B\u0041\u006E\u0047\u0065\uFFFD\uFFFD" };
+                // More examples of overlong sequences. This can cause security
+                // vulnerabilities (e.g. MS00-078) so it is important we parse these as invalid.
+                yield return new object[] { new byte[] { 0xC0 }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 0xC0, 0xAF }, 0, 2, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0x80, 0xBF }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF0, 0x80, 0x80, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF8, 0x80, 0x80, 0x80, 0xBF }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xFC, 0x80, 0x80, 0x80, 0x80, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xA3 }, 0, 1, "\uFFFD" };
-            yield return new object[] { new byte[] { 0xA3, 0xA4 }, 0, 2, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0x65, 0xA3, 0xA4 }, 0, 3, "\u0065\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0x47, 0x65, 0xA3, 0xA4 }, 0, 4, "\u0047\u0065\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0xA3, 0xA4 }, 0, 5, "\uFFFD\uFFFD\u0061\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0xA3 }, 0, 4, "\uFFFD\uFFFD\u0061\uFFFD" };
-            yield return new object[] { new byte[] { 0xD0, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD" };
-            yield return new object[] { new byte[] { 0xA4, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD" };
-            yield return new object[] { new byte[] { 0xD0, 0x61, 0x52, 0xA3 }, 0, 4, "\uFFFD\u0061\u0052\uFFFD" };
-                        
-            yield return new object[] { new byte[] { 0xAA }, 0, 1, "\uFFFD" };
-            yield return new object[] { new byte[] { 0xAA, 0x41 }, 0, 2, "\uFFFD\u0041" };
+                yield return new object[] { new byte[] { 0xC0, 0xBF }, 0, 2, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0x9C, 0x90 }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF0, 0x8F, 0xA4, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xEF, 0xFF, 0xEE }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xEF, 0xFF, 0xAE }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xEF, 0x41 }, 0, 2, "\uFFFD\u0041" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0xAE }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0x41 }, 0, 3, "\uFFFD\u0041" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0x61 }, 0, 3, "\uFFFD\u0061" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0xEF, 0xBF, 0xAE }, 0, 5, "\uFFFD\uFFEE" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0xC0, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
 
-            yield return new object[] { new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 15, "\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F }, 0, 15, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F" };
+                yield return new object[] { new byte[] { 0xF0, 0xC4, 0x80 }, 0, 3, "\uFFFD\u0100" };
 
-            yield return new object[] { new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 8, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xC2, 0xDF }, 0, 2, "\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0x80, 0x80, 0xC1, 0x80, 0xC1, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0x7F, 0x7F, 0x7F, 0x7F, 0xC3, 0xA1, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 14, "\uFFFD\u007F\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u00E1\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 176 }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 196 }, 0, 1, "\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0xE0, 0xBF, 0x7F, 0xE0, 0xBF, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xE0, 0x9F, 0x80, 0xE0, 0xC0, 0x80, 0xE0, 0x9F, 0xBF, 0xE0, 0xC0, 0xBF }, 0, 12, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0x7F, 0xE0, 0xBF, 0x7F, 0xC3, 0xA1, 0xE0, 0xBF, 0xC0 }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\u007F\uFFFD\u007F\u00E1\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0x52, 0x7C, 0x7B, 0x41, 0x6E, 0x47, 0x65, 0xA3, 0xA4 }, 0, 12, "\uFFFD\uFFFD\u0061\u0052\u007C\u007B\u0041\u006E\u0047\u0065\uFFFD\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xE1, 0x80, 0x7F, 0xE1, 0x80, 0xC0, 0xE1, 0xBF, 0x7F, 0xE1, 0xBF, 0xC0, 0xEC, 0x80, 0x7F, 0xEC, 0x80, 0xC0, 0xEC, 0xBF, 0x7F, 0xEC, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xE1, 0x7F, 0x80, 0xE1, 0xC0, 0x80, 0xE1, 0x7F, 0xBF, 0xE1, 0xC0, 0xBF, 0xEC, 0x7F, 0x80, 0xEC, 0xC0, 0x80, 0xEC, 0x7F, 0xBF, 0xEC, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xA3 }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 0xA3, 0xA4 }, 0, 2, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x65, 0xA3, 0xA4 }, 0, 3, "\u0065\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x47, 0x65, 0xA3, 0xA4 }, 0, 4, "\u0047\u0065\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0xA3, 0xA4 }, 0, 5, "\uFFFD\uFFFD\u0061\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0xA3 }, 0, 4, "\uFFFD\uFFFD\u0061\uFFFD" };
+                yield return new object[] { new byte[] { 0xD0, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD" };
+                yield return new object[] { new byte[] { 0xA4, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD" };
+                yield return new object[] { new byte[] { 0xD0, 0x61, 0x52, 0xA3 }, 0, 4, "\uFFFD\u0061\u0052\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xED, 0x80, 0x7F, 0xED, 0x80, 0xC0, 0xED, 0x9F, 0x7F, 0xED, 0x9F, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xE8, 0x80, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u8000\uFFFD\u007F\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xAA }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 0xAA, 0x41 }, 0, 2, "\uFFFD\u0041" };
 
-            yield return new object[] { new byte[] { 0xEE, 0x80, 0x7F, 0xEE, 0x80, 0xC0, 0xEE, 0xBF, 0x7F, 0xEE, 0xBF, 0xC0, 0xEF, 0x80, 0x7F, 0xEF, 0x80, 0xC0, 0xEF, 0xBF, 0x7F, 0xEF, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xEE, 0x7F, 0x80, 0xEE, 0xC0, 0x80, 0xEE, 0x7F, 0xBF, 0xEE, 0xC0, 0xBF, 0xEF, 0x7F, 0x80, 0xEF, 0xC0, 0x80, 0xEF, 0x7F, 0xBF, 0xEF, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xEF, 0xFF, 0xEE }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xEF, 0xFF, 0xAE }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xF0, 0x90, 0x80, 0x7F, 0xF0, 0x90, 0x80, 0xC0, 0xF0, 0xBF, 0xBF, 0x7F, 0xF0, 0xBF, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xF0, 0x90, 0x7F, 0x80, 0xF0, 0x90, 0xC0, 0x80, 0xF0, 0x90, 0x7F, 0xBF, 0xF0, 0x90, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xF0, 0x8F, 0x80, 0x80, 0xF0, 0xC0, 0x80, 0x80, 0xF0, 0x8F, 0xBF, 0xBF, 0xF0, 0xC0, 0xBF, 0xBF }, 0, 16, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 15, "\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F }, 0, 15, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F" };
 
-            yield return new object[] { new byte[] { 0xF1, 0x80, 0x80, 0x7F, 0xF1, 0x80, 0x80, 0xC0, 0xF1, 0xBF, 0xBF, 0x7F, 0xF1, 0xBF, 0xBF, 0xC0, 0xF3, 0x80, 0x80, 0x7F, 0xF3, 0x80, 0x80, 0xC0, 0xF3, 0xBF, 0xBF, 0x7F, 0xF3, 0xBF, 0xBF, 0xC0 }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xF1, 0x80, 0x7F, 0x80, 0xF1, 0x80, 0xC0, 0x80, 0xF1, 0x80, 0x7F, 0xBF, 0xF1, 0x80, 0xC0, 0xBF, 0xF3, 0x80, 0x7F, 0x80, 0xF3, 0x80, 0xC0, 0x80, 0xF3, 0x80, 0x7F, 0xBF, 0xF3, 0x80, 0xC0, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xF1, 0x7F, 0x80, 0x80, 0xF1, 0xC0, 0x80, 0x80, 0xF1, 0x7F, 0xBF, 0xBF, 0xF1, 0xC0, 0xBF, 0xBF, 0xF3, 0x7F, 0x80, 0x80, 0xF3, 0xC0, 0x80, 0x80, 0xF3, 0x7F, 0xBF, 0xBF, 0xF3, 0xC0, 0xBF, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 8, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xC2, 0xDF }, 0, 2, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x80, 0x80, 0xC1, 0x80, 0xC1, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0x7F, 0x7F, 0x7F, 0x7F, 0xC3, 0xA1, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 14, "\uFFFD\u007F\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u00E1\uFFFD\u007F\uFFFD\uFFFD" };
 
-            yield return new object[] { new byte[] { 0xF4, 0x80, 0x80, 0x7F, 0xF4, 0x80, 0x80, 0xC0, 0xF4, 0x8F, 0xBF, 0x7F, 0xF4, 0x8F, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xF4, 0x80, 0x7F, 0x80, 0xF4, 0x80, 0xC0, 0x80, 0xF4, 0x80, 0x7F, 0xBF, 0xF4, 0x80, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
-            yield return new object[] { new byte[] { 0xF4, 0x7F, 0x80, 0x80, 0xF4, 0x90, 0x80, 0x80, 0xF4, 0x7F, 0xBF, 0xBF, 0xF4, 0x90, 0xBF, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0xE0, 0xBF, 0x7F, 0xE0, 0xBF, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0x9F, 0x80, 0xE0, 0xC0, 0x80, 0xE0, 0x9F, 0xBF, 0xE0, 0xC0, 0xBF }, 0, 12, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0x7F, 0xE0, 0xBF, 0x7F, 0xC3, 0xA1, 0xE0, 0xBF, 0xC0 }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\u007F\uFFFD\u007F\u00E1\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xE1, 0x80, 0x7F, 0xE1, 0x80, 0xC0, 0xE1, 0xBF, 0x7F, 0xE1, 0xBF, 0xC0, 0xEC, 0x80, 0x7F, 0xEC, 0x80, 0xC0, 0xEC, 0xBF, 0x7F, 0xEC, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE1, 0x7F, 0x80, 0xE1, 0xC0, 0x80, 0xE1, 0x7F, 0xBF, 0xE1, 0xC0, 0xBF, 0xEC, 0x7F, 0x80, 0xEC, 0xC0, 0x80, 0xEC, 0x7F, 0xBF, 0xEC, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xED, 0x80, 0x7F, 0xED, 0x80, 0xC0, 0xED, 0x9F, 0x7F, 0xED, 0x9F, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xE8, 0x80, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\u8000\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xEE, 0x80, 0x7F, 0xEE, 0x80, 0xC0, 0xEE, 0xBF, 0x7F, 0xEE, 0xBF, 0xC0, 0xEF, 0x80, 0x7F, 0xEF, 0x80, 0xC0, 0xEF, 0xBF, 0x7F, 0xEF, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xEE, 0x7F, 0x80, 0xEE, 0xC0, 0x80, 0xEE, 0x7F, 0xBF, 0xEE, 0xC0, 0xBF, 0xEF, 0x7F, 0x80, 0xEF, 0xC0, 0x80, 0xEF, 0x7F, 0xBF, 0xEF, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xF0, 0x90, 0x80, 0x7F, 0xF0, 0x90, 0x80, 0xC0, 0xF0, 0xBF, 0xBF, 0x7F, 0xF0, 0xBF, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF0, 0x90, 0x7F, 0x80, 0xF0, 0x90, 0xC0, 0x80, 0xF0, 0x90, 0x7F, 0xBF, 0xF0, 0x90, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF0, 0x8F, 0x80, 0x80, 0xF0, 0xC0, 0x80, 0x80, 0xF0, 0x8F, 0xBF, 0xBF, 0xF0, 0xC0, 0xBF, 0xBF }, 0, 16, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xF1, 0x80, 0x80, 0x7F, 0xF1, 0x80, 0x80, 0xC0, 0xF1, 0xBF, 0xBF, 0x7F, 0xF1, 0xBF, 0xBF, 0xC0, 0xF3, 0x80, 0x80, 0x7F, 0xF3, 0x80, 0x80, 0xC0, 0xF3, 0xBF, 0xBF, 0x7F, 0xF3, 0xBF, 0xBF, 0xC0 }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF1, 0x80, 0x7F, 0x80, 0xF1, 0x80, 0xC0, 0x80, 0xF1, 0x80, 0x7F, 0xBF, 0xF1, 0x80, 0xC0, 0xBF, 0xF3, 0x80, 0x7F, 0x80, 0xF3, 0x80, 0xC0, 0x80, 0xF3, 0x80, 0x7F, 0xBF, 0xF3, 0x80, 0xC0, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF1, 0x7F, 0x80, 0x80, 0xF1, 0xC0, 0x80, 0x80, 0xF1, 0x7F, 0xBF, 0xBF, 0xF1, 0xC0, 0xBF, 0xBF, 0xF3, 0x7F, 0x80, 0x80, 0xF3, 0xC0, 0x80, 0x80, 0xF3, 0x7F, 0xBF, 0xBF, 0xF3, 0xC0, 0xBF, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xF4, 0x80, 0x80, 0x7F, 0xF4, 0x80, 0x80, 0xC0, 0xF4, 0x8F, 0xBF, 0x7F, 0xF4, 0x8F, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF4, 0x80, 0x7F, 0x80, 0xF4, 0x80, 0xC0, 0x80, 0xF4, 0x80, 0x7F, 0xBF, 0xF4, 0x80, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF4, 0x7F, 0x80, 0x80, 0xF4, 0x90, 0x80, 0x80, 0xF4, 0x7F, 0xBF, 0xBF, 0xF4, 0x90, 0xBF, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+            }
+            else
+            {
+                yield return new object[] { new byte[] { 0xED, 0xA0, 0x80 }, 0, 3, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xAF, 0xBF }, 0, 3, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xB0, 0x80 }, 0, 3, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xBF, 0xBF }, 0, 3, "\uFFFD\uFFFD" };
+
+                // Invalid surrogate pair (low/low, high/high, low/high)
+                yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xAF, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xB0, 0x80, 0xED, 0xB0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xED, 0xA0, 0x80 }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                // Too high scalar value in surrogates
+                yield return new object[] { new byte[] { 0xED, 0xA0, 0x80, 0xEE, 0x80, 0x80 }, 0, 6, "\uFFFD\uFFFD\uE000" };
+                yield return new object[] { new byte[] { 0xF4, 0x90, 0x80, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+
+                // These are examples of overlong sequences. This can cause security
+                // vulnerabilities (e.g. MS00-078) so it is important we parse these as invalid.
+                yield return new object[] { new byte[] { 0xC0 }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 0xC0, 0xAF }, 0, 2, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0x80, 0xBF }, 0, 3, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF0, 0x80, 0x80, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF8, 0x80, 0x80, 0x80, 0xBF }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xFC, 0x80, 0x80, 0x80, 0x80, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xC0, 0xBF }, 0, 2, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0x9C, 0x90 }, 0, 3, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF0, 0x8F, 0xA4, 0x80 }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xEF, 0x41 }, 0, 2, "\uFFFD\u0041" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0xAE }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0x41 }, 0, 3, "\uFFFD\u0041" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0x61 }, 0, 3, "\uFFFD\u0061" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0xEF, 0xBF, 0xAE }, 0, 5, "\uFFFD\uFFEE" };
+                yield return new object[] { new byte[] { 0xEF, 0xBF, 0xC0, 0xBF }, 0, 4, "\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xF0, 0xC4, 0x80 }, 0, 3, "\uFFFD\u0100" };
+
+                yield return new object[] { new byte[] { 176 }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 196 }, 0, 1, "\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0x52, 0x7C, 0x7B, 0x41, 0x6E, 0x47, 0x65, 0xA3, 0xA4 }, 0, 12, "\uFFFD\uFFFD\u0061\u0052\u007C\u007B\u0041\u006E\u0047\u0065\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xA3 }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 0xA3, 0xA4 }, 0, 2, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x65, 0xA3, 0xA4 }, 0, 3, "\u0065\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x47, 0x65, 0xA3, 0xA4 }, 0, 4, "\u0047\u0065\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0xA3, 0xA4 }, 0, 5, "\uFFFD\uFFFD\u0061\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xA4, 0xD0, 0x61, 0xA3 }, 0, 4, "\uFFFD\uFFFD\u0061\uFFFD" };
+                yield return new object[] { new byte[] { 0xD0, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD" };
+                yield return new object[] { new byte[] { 0xA4, 0x61, 0xA3 }, 0, 3, "\uFFFD\u0061\uFFFD" };
+                yield return new object[] { new byte[] { 0xD0, 0x61, 0x52, 0xA3 }, 0, 4, "\uFFFD\u0061\u0052\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xAA }, 0, 1, "\uFFFD" };
+                yield return new object[] { new byte[] { 0xAA, 0x41 }, 0, 2, "\uFFFD\u0041" };
+
+                yield return new object[] { new byte[] { 0xEF, 0xFF, 0xEE }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xEF, 0xFF, 0xAE }, 0, 3, "\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 5, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x80, 0x90, 0xA0, 0xB0, 0xC1 }, 0, 15, "\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x80, 0x90, 0xA0, 0xB0, 0xC1, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F }, 0, 15, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F\u007F" };
+
+                yield return new object[] { new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 8, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xC2, 0xDF }, 0, 2, "\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0x80, 0x80, 0xC1, 0x80, 0xC1, 0xBF }, 0, 6, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xC2, 0x7F, 0xC2, 0xC0, 0x7F, 0x7F, 0x7F, 0x7F, 0xC3, 0xA1, 0xDF, 0x7F, 0xDF, 0xC0 }, 0, 14, "\uFFFD\u007F\uFFFD\uFFFD\u007F\u007F\u007F\u007F\u00E1\uFFFD\u007F\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0xE0, 0xBF, 0x7F, 0xE0, 0xBF, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0x9F, 0x80, 0xE0, 0xC0, 0x80, 0xE0, 0x9F, 0xBF, 0xE0, 0xC0, 0xBF }, 0, 12, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE0, 0xA0, 0x7F, 0xE0, 0xA0, 0xC0, 0x7F, 0xE0, 0xBF, 0x7F, 0xC3, 0xA1, 0xE0, 0xBF, 0xC0 }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\u007F\uFFFD\u007F\u00E1\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xE1, 0x80, 0x7F, 0xE1, 0x80, 0xC0, 0xE1, 0xBF, 0x7F, 0xE1, 0xBF, 0xC0, 0xEC, 0x80, 0x7F, 0xEC, 0x80, 0xC0, 0xEC, 0xBF, 0x7F, 0xEC, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xE1, 0x7F, 0x80, 0xE1, 0xC0, 0x80, 0xE1, 0x7F, 0xBF, 0xE1, 0xC0, 0xBF, 0xEC, 0x7F, 0x80, 0xEC, 0xC0, 0x80, 0xEC, 0x7F, 0xBF, 0xEC, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xED, 0x80, 0x7F, 0xED, 0x80, 0xC0, 0xED, 0x9F, 0x7F, 0xED, 0x9F, 0xC0 }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 12, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xED, 0x7F, 0x80, 0xED, 0xA0, 0x80, 0xE8, 0x80, 0x80, 0xED, 0x7F, 0xBF, 0xED, 0xA0, 0xBF }, 0, 15, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u8000\uFFFD\u007F\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xEE, 0x80, 0x7F, 0xEE, 0x80, 0xC0, 0xEE, 0xBF, 0x7F, 0xEE, 0xBF, 0xC0, 0xEF, 0x80, 0x7F, 0xEF, 0x80, 0xC0, 0xEF, 0xBF, 0x7F, 0xEF, 0xBF, 0xC0 }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xEE, 0x7F, 0x80, 0xEE, 0xC0, 0x80, 0xEE, 0x7F, 0xBF, 0xEE, 0xC0, 0xBF, 0xEF, 0x7F, 0x80, 0xEF, 0xC0, 0x80, 0xEF, 0x7F, 0xBF, 0xEF, 0xC0, 0xBF }, 0, 24, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xF0, 0x90, 0x80, 0x7F, 0xF0, 0x90, 0x80, 0xC0, 0xF0, 0xBF, 0xBF, 0x7F, 0xF0, 0xBF, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF0, 0x90, 0x7F, 0x80, 0xF0, 0x90, 0xC0, 0x80, 0xF0, 0x90, 0x7F, 0xBF, 0xF0, 0x90, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF0, 0x8F, 0x80, 0x80, 0xF0, 0xC0, 0x80, 0x80, 0xF0, 0x8F, 0xBF, 0xBF, 0xF0, 0xC0, 0xBF, 0xBF }, 0, 16, "\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xF1, 0x80, 0x80, 0x7F, 0xF1, 0x80, 0x80, 0xC0, 0xF1, 0xBF, 0xBF, 0x7F, 0xF1, 0xBF, 0xBF, 0xC0, 0xF3, 0x80, 0x80, 0x7F, 0xF3, 0x80, 0x80, 0xC0, 0xF3, 0xBF, 0xBF, 0x7F, 0xF3, 0xBF, 0xBF, 0xC0 }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF1, 0x80, 0x7F, 0x80, 0xF1, 0x80, 0xC0, 0x80, 0xF1, 0x80, 0x7F, 0xBF, 0xF1, 0x80, 0xC0, 0xBF, 0xF3, 0x80, 0x7F, 0x80, 0xF3, 0x80, 0xC0, 0x80, 0xF3, 0x80, 0x7F, 0xBF, 0xF3, 0x80, 0xC0, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF1, 0x7F, 0x80, 0x80, 0xF1, 0xC0, 0x80, 0x80, 0xF1, 0x7F, 0xBF, 0xBF, 0xF1, 0xC0, 0xBF, 0xBF, 0xF3, 0x7F, 0x80, 0x80, 0xF3, 0xC0, 0x80, 0x80, 0xF3, 0x7F, 0xBF, 0xBF, 0xF3, 0xC0, 0xBF, 0xBF }, 0, 32, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+
+                yield return new object[] { new byte[] { 0xF4, 0x80, 0x80, 0x7F, 0xF4, 0x80, 0x80, 0xC0, 0xF4, 0x8F, 0xBF, 0x7F, 0xF4, 0x8F, 0xBF, 0xC0 }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF4, 0x80, 0x7F, 0x80, 0xF4, 0x80, 0xC0, 0x80, 0xF4, 0x80, 0x7F, 0xBF, 0xF4, 0x80, 0xC0, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD" };
+                yield return new object[] { new byte[] { 0xF4, 0x7F, 0x80, 0x80, 0xF4, 0x90, 0x80, 0x80, 0xF4, 0x7F, 0xBF, 0xBF, 0xF4, 0x90, 0xBF, 0xBF }, 0, 16, "\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD\u007F\uFFFD\uFFFD\uFFFD\uFFFD\uFFFD" };
+            }
         }
 
         [Theory]
@@ -228,6 +348,33 @@ namespace System.Text.Tests
 
             NegativeEncodingTests.Decode_Invalid(new UTF8Encoding(false, true), bytes, index, count);
             NegativeEncodingTests.Decode_Invalid(new UTF8Encoding(true, true), bytes, index, count);
+        }
+
+        [Theory]
+        [InlineData("", "ABCDEF")]
+        [InlineData("\uFFFD", "\uFFFDAB\uFFFDCD\uFFFDEF\uFFFD")]
+        [InlineData("?", "?AB?CD?EF?")]
+        [InlineData("\uFFFD?", "\uFFFD?AB\uFFFD?CD\uFFFD?EF\uFFFD?")]
+        public void Decode_InvalidChars_WithCustomReplacementFallback(string replacementString, string expected)
+        {
+            byte[] utf8Input = new byte[]
+            {
+                0xC0, // always an invalid byte
+                (byte)'A', (byte)'B',
+                0xF4, 0x80, 0xBF, // incomplete 4-byte sequence
+                (byte)'C', (byte)'D',
+                0xE0, // incomplete 3-byte sequence
+                (byte)'E', (byte)'F',
+                0xC2, // incomplete 2-byte sequence
+            };
+
+            Encoding utf8Encoding = Encoding.GetEncoding(
+                name: "utf-8",
+                encoderFallback: EncoderFallback.ExceptionFallback,
+                decoderFallback: new DecoderReplacementFallback(replacementString));
+
+            string actualUtf16Output = utf8Encoding.GetString(utf8Input); // pass in an invalid UTF-8 sequence
+            Assert.Equal(expected, actualUtf16Output);
         }
     }
 }
