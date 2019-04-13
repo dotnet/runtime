@@ -52,12 +52,17 @@ int host_startup_info_t::parse(
     return 0;
 }
 
-const bool host_startup_info_t::is_valid() const
+const bool host_startup_info_t::is_valid(host_mode_t mode) const
 {
-    return (
-        !host_path.empty() &&
-        !dotnet_root.empty() &&
-        !app_path.empty());
+    if (mode == host_mode_t::libhost)
+    {
+        // libhost allows empty app path
+        return !host_path.empty() && !dotnet_root.empty();
+    }
+
+    return !host_path.empty()
+        && !dotnet_root.empty()
+        && !app_path.empty();
 }
 
 const pal::string_t host_startup_info_t::get_app_name() const
