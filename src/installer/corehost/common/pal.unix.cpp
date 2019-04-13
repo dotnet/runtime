@@ -183,18 +183,6 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
-static
-bool is_executable(const pal::string_t& file_path)
-{
-    struct stat st;
-    if (::stat(file_path.c_str(), &st) < 0)
-    {
-        return false;
-    }
-
-    return ((st.st_mode & S_IEXEC) != 0);
-}
-
 bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
 {
     // No support for global directories in Unix.
