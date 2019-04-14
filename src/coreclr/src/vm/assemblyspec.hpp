@@ -34,7 +34,6 @@ class AssemblySpec  : public BaseAssemblySpec
     friend class AssemblyNameNative;
     
     AppDomain       *m_pAppDomain;
-    SBuffer          m_HashForControl;
     DWORD            m_dwHashAlg;
     DomainAssembly  *m_pParentAssembly;
 
@@ -187,7 +186,6 @@ class AssemblySpec  : public BaseAssemblySpec
         SetFallbackLoadContextBinderForRequestingAssembly(pSource->GetFallbackLoadContextBinderForRequestingAssembly());
         m_fPreferFallbackLoadContextBinder = pSource->GetPreferFallbackLoadContextBinder();
 
-        m_HashForControl = pSource->m_HashForControl;
         m_dwHashAlg = pSource->m_dwHashAlg;
     }
 
@@ -246,21 +244,6 @@ class AssemblySpec  : public BaseAssemblySpec
     {
         LIMITED_METHOD_CONTRACT;
         return m_pAppDomain;
-    }
-
-    HRESULT SetHashForControl(PBYTE pHashForControl, DWORD dwHashForControl, DWORD dwHashAlg)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            PRECONDITION(CheckPointer(pHashForControl));
-        }
-        CONTRACTL_END;
-
-        m_HashForControl.Set(pHashForControl, dwHashForControl);
-        m_dwHashAlg=dwHashAlg; 
-        return S_OK;
     }
 
     void ParseEncodedName();

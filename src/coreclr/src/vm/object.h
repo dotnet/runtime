@@ -1678,9 +1678,7 @@ class AssemblyNameBaseObject : public Object
     OBJECTREF     _codeBase;
     OBJECTREF     _version;
     OBJECTREF     _strongNameKeyPair;
-    U1ARRAYREF    _hashForControl;
     DWORD         _hashAlgorithm;
-    DWORD         _hashAlgorithmForControl;
     DWORD         _versionCompatibility;
     DWORD         _flags;
 
@@ -1698,8 +1696,6 @@ class AssemblyNameBaseObject : public Object
     OBJECTREF GetVersion() { LIMITED_METHOD_CONTRACT; return _version; }
     DWORD GetAssemblyHashAlgorithm() { LIMITED_METHOD_CONTRACT; return _hashAlgorithm; }
     DWORD GetFlags() { LIMITED_METHOD_CONTRACT; return _flags; }
-    U1ARRAYREF GetHashForControl() { LIMITED_METHOD_CONTRACT; return _hashForControl;}
-    DWORD GetHashAlgorithmForControl() { LIMITED_METHOD_CONTRACT; return _hashAlgorithmForControl; }
 };
 
 // VersionBaseObject
