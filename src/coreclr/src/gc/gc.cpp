@@ -8842,6 +8842,10 @@ public:
         plug_size_to_fit += (pad_in_front ? Align(min_obj_size) : 0);
 #endif //SHORT_PLUGS
 
+#ifdef RESPECT_LARGE_ALIGNMENT
+        plug_size_to_fit += switch_alignment_size(FALSE);
+#endif //RESPECT_LARGE_ALIGNMENT
+
         int plug_power2 = index_of_highest_set_bit (round_up_power2 (plug_size_to_fit + Align(min_obj_size)));
         ptrdiff_t i;
         uint8_t* new_address = 0;
