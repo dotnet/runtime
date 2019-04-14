@@ -44,7 +44,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
 
     <!-- Test Data -->
-    <PackageReference Include="System.IO.Compression.TestData" Version="1.0.6-prerelease" />
+    <PackageReference Include="System.IO.Compression.TestData" Version="1.0.7-prerelease" />
     <PackageReference Include="System.IO.Packaging.TestData" Version="1.0.0-prerelease" />
     <PackageReference Include="System.Security.Cryptography.X509Certificates.TestData" Version="1.0.2-prerelease" />
     <PackageReference Include="System.Net.TestData" Version="1.0.1-prerelease" />
