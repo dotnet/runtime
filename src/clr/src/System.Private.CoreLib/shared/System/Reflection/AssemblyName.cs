@@ -23,9 +23,7 @@ namespace System.Reflection
 
         private StrongNameKeyPair _strongNameKeyPair;
 
-        private byte[] _hashForControl;
         private AssemblyHashAlgorithm _hashAlgorithm;
-        private AssemblyHashAlgorithm _hashAlgorithmForControl;
 
         private AssemblyVersionCompatibility _versionCompatibility;
         private AssemblyNameFlags _flags;
@@ -142,8 +140,6 @@ namespace System.Reflection
                 _codeBase = _codeBase,
                 _hashAlgorithm = _hashAlgorithm,
                 _versionCompatibility = _versionCompatibility,
-                _hashForControl = _hashForControl,
-                _hashAlgorithmForControl = _hashAlgorithmForControl
             };
             return name;
         }
