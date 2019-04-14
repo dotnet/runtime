@@ -47,5 +47,13 @@ namespace System.Runtime.Loader
         public void SetProfileOptimizationRoot(string directoryPath) { }
         public void StartProfileOptimization(string profile) { }
         public void Unload() { }
+        public static AssemblyLoadContext CurrentContextualReflectionContext { get { throw null; } }
+        public ContextualReflectionScope EnterContextualReflection() { throw null; }
+        public static ContextualReflectionScope EnterContextualReflection(System.Reflection.Assembly activating) { throw null; }
+
+        public struct ContextualReflectionScope : IDisposable
+        {
+            public void Dispose() { }
+        }
     }
 }
