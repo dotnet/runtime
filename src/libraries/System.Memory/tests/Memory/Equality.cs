@@ -120,6 +120,111 @@ namespace System.MemoryTests
             Assert.True(readOnlyMemory.Equals(memoryAsObject));
         }
 
+        [Fact]
+        public static void EqualityThroughInterface_True()
+        {
+            int[] a = { 10, 11, 12, 13, 14 };
+            Memory<int> left = new Memory<int>(a, 2, 3);
+            Memory<int> right = new Memory<int>(a, 2, 3);
+            IEquatable<Memory<int>> leftAsEquatable = left;
+            IEquatable<Memory<int>> rightAsEquatable = right;
+
+            Assert.True(leftAsEquatable.Equals(right));
+            Assert.True(rightAsEquatable.Equals(left));
+        }
+
+        [Fact]
+        public static void EqualityThroughInterface_Reflexivity()
+        {
+            int[] array = { 42, 43, 44, 45, 46 };
+            Memory<int> left = new Memory<int>(array, 2, 3);
+            IEquatable<Memory<int>> leftAsEquatable = left;
+
+            Assert.True(leftAsEquatable.Equals(left));
+        }
+
+        [Fact]
+        public static void EqualityThroughInterface_IncludesLength()
+        {
+            int[] array = { 42, 43, 44, 45, 46 };
+            Memory<int> baseline = new Memory<int>(array, 2, 3);
+            Memory<int> equalRangeButLength = new Memory<int>(array, 2, 2);
+            IEquatable<Memory<int>> baselineAsEquatable = baseline;
+            IEquatable<Memory<int>> anotherOneAsEquatable = equalRangeButLength;
+
+            Assert.False(baselineAsEquatable.Equals(equalRangeButLength));
+            Assert.False(anotherOneAsEquatable.Equals(baseline));
+        }
+
+        [Fact]
+        public static void EqualityThroughInterface_IncludesBase()
+        {
+            int[] array = { 42, 43, 44, 45, 46 };
+            Memory<int> baseline = new Memory<int>(array, 2, 3);
+            Memory<int> equalLengthButRange = new Memory<int>(array, 1, 3);
+            IEquatable<Memory<int>> baselineAsEquatable = baseline;
+            IEquatable<Memory<int>> anotherOneAsEquatable = equalLengthButRange;
+
+            Assert.False(baselineAsEquatable.Equals(equalLengthButRange));
+            Assert.False(anotherOneAsEquatable.Equals(baseline));
+        }
+
+        [Fact]
+        public static void EqualityThroughInterface_ComparesRangeNotContent()
+        {
+            Memory<int> baseline = new Memory<int>(new [] { 1, 2, 3, 4, 5, 6 }, 2, 3);
+            Memory<int> duplicate = new Memory<int>(new [] { 1, 2, 3, 4, 5, 6 }, 2, 3);
+            IEquatable<Memory<int>> baselineAsEquatable = baseline;
+            IEquatable<Memory<int>> duplicateAsEquatable = duplicate;
+
+            Assert.False(baselineAsEquatable.Equals(duplicate));
+            Assert.False(duplicateAsEquatable.Equals(baseline));
+        }
+
+        [Fact]
+        public static void EqualityThroughInterface_Strings()
+        {
+            string[] array = { "A", "B", "C", "D", "E", "F" };
+            string[] anotherArray = { "A", "B", "C", "D", "E", "F" };
+
+            Memory<string> baseline = new Memory<string>(array, 2, 3);
+            IEquatable<Memory<string>> baselineAsEquatable = baseline;
+            Memory<string> equalRangeAndLength = new Memory<string>(array, 2, 3);
+            Memory<string> equalRangeButLength = new Memory<string>(array, 2, 2);
+            Memory<string> equalLengthButReference = new Memory<string>(array, 3, 3);
+            Memory<string> differentArraySegmentAsMemory = new Memory<string>(anotherArray, 2, 3);
+
+            Assert.True(baselineAsEquatable.Equals(baseline)); // Reflexivity
+            Assert.True(baselineAsEquatable.Equals(equalRangeAndLength)); // Range check & length check
+            Assert.False(baselineAsEquatable.Equals(equalRangeButLength)); // Length check
+            Assert.False(baselineAsEquatable.Equals(equalLengthButReference)); // Range check
+
+            Assert.True(baseline.Span.SequenceEqual(differentArraySegmentAsMemory.Span));
+            Assert.False(baselineAsEquatable.Equals(differentArraySegmentAsMemory)); // Doesn't check for content equality
+        }
+
+        [Fact]
+        public static void EqualityThroughInterface_Chars()
+        {
+            char[] array = { 'H', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!' };
+            char[] anotherArray = { 'H', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!' };
+
+            Memory<char> baseline = new Memory<char>(array, 2, 3);
+            IEquatable<Memory<char>> baselineAsEquatable = baseline;
+            Memory<char> equalRangeAndLength = new Memory<char>(array, 2, 3);
+            Memory<char> equalRangeButLength = new Memory<char>(array, 2, 2);
+            Memory<char> equalLengthButReference = new Memory<char>(array, 3, 3);
+            Memory<char> differentArraySegmentAsMemory = new Memory<char>(anotherArray, 2, 3);
+
+            Assert.True(baselineAsEquatable.Equals(baseline)); // Reflexivity
+            Assert.True(baselineAsEquatable.Equals(equalRangeAndLength)); // Range check & length check
+            Assert.False(baselineAsEquatable.Equals(equalRangeButLength)); // Length check
+            Assert.False(baselineAsEquatable.Equals(equalLengthButReference)); // Range check
+
+            Assert.True(baseline.Span.SequenceEqual(differentArraySegmentAsMemory.Span));
+            Assert.False(baselineAsEquatable.Equals(differentArraySegmentAsMemory)); // Doesn't check for content equality
+        }
+
         [Theory]
         [MemberData(nameof(ValidArraySegments))]
         public static void MemoryReferencingSameMemoryAreEqualInEveryAspect(byte[] bytes, int start, int length)

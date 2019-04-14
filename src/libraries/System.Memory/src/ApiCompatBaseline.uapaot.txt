@@ -1,0 +1,4 @@
+Compat issues with assembly System.Memory:
+CannotRemoveBaseTypeOrInterface : Type 'System.Memory<T>' does not implement interface 'System.IEquatable<System.Memory<T>>' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ReadOnlyMemory<T>' does not implement interface 'System.IEquatable<System.ReadOnlyMemory<T>>' in the implementation but it does in the contract.
+Total issues: 2
