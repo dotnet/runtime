@@ -3,7 +3,7 @@
 # See the LICENSE file in the project root for more information.
 
 cmake_minimum_required (VERSION 2.6)
-project(apphost)
+project(apphost)	
 set(DOTNET_PROJECT_NAME "apphost")
 
 # Add RPATH to the apphost binary that allows using local copies of shared libraries
@@ -20,10 +20,17 @@ set(SKIP_VERSIONING 1)
 
 set(SOURCES
     ../fxr/fx_ver.cpp
+    ./bundle/file_entry.cpp
+    ./bundle/manifest.cpp
+    ./bundle/bundle_runner.cpp
 )
 
 set(HEADERS
     ../fxr/fx_ver.h
+    ./bundle/file_type.h
+    ./bundle/file_entry.h
+    ./bundle/manifest.h
+    ./bundle/bundle_runner.h
 )
 
 include(../exe.cmake)

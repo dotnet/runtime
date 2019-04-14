@@ -20,10 +20,10 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public class FileEntry
     {
-        public FileType Type;
-        public string RelativePath; // Path of an embedded file, relative to the <app> dll.
         public long Offset;
         public long Size;
+        public FileType Type;
+        public string RelativePath; // Path of an embedded file, relative to the Bundle source-directory.
 
         public FileEntry(FileType fileType, string relativePath, long offset, long size)
         {
@@ -35,18 +35,18 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public void Write(BinaryWriter writer)
         {
-            writer.Write((byte) Type);
-            writer.Write(RelativePath);
             writer.Write(Offset);
             writer.Write(Size);
+            writer.Write((byte)Type);
+            writer.Write(RelativePath);
         }
 
         public static FileEntry Read(BinaryReader reader)
         {
-            FileType type = (FileType)reader.ReadByte();
-            string fileName = reader.ReadString();
             long offset = reader.ReadInt64();
             long size = reader.ReadInt64();
+            FileType type = (FileType)reader.ReadByte();
+            string fileName = reader.ReadString();
             return new FileEntry(type, fileName, offset, size);
         }
 

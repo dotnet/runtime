@@ -457,6 +457,23 @@ bool pal::get_module_path(dll_t mod, string_t* recv)
     return GetModuleFileNameWrapper(mod, recv);
 }
 
+bool pal::get_temp_directory(pal::string_t& tmp_dir)
+{
+    const size_t max_len = MAX_PATH + 1;
+    pal::char_t temp_path[max_len];
+
+    size_t len = GetTempPathW(max_len, temp_path);
+    if (len == 0)
+    {
+        return false;
+    }
+
+    assert(len < max_len);
+    tmp_dir.assign(temp_path);
+
+    return pal::realpath(&tmp_dir);
+}
+
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
 {
     out->clear();
