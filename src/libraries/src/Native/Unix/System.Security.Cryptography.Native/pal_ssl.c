@@ -364,6 +364,7 @@ int32_t CryptoNative_SetCiphers(SSL_CTX* ctx, const char* cipherList, const char
 
 const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite, int32_t* isTls12OrLower)
 {
+#if HAVE_OPENSSL_SET_CIPHERSUITES
     unsigned char cs[2];
     const SSL_CIPHER* cipher;
     const char* ret;
@@ -413,6 +414,12 @@ const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite
     }
 
     return ret;
+#else
+    (void)ssl;
+    (void)cipherSuite;
+    *isTls12OrLower = 0;
+    return NULL;
+#endif
 }
 
 int32_t CryptoNative_Tls13Supported()
