@@ -14,6 +14,8 @@
   
   <ItemGroup>
     <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
+    <!-- This project reference should be removed once SDK changes to bundle via publish are available -->
+    <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
   </ItemGroup>
 
   <ItemGroup>
