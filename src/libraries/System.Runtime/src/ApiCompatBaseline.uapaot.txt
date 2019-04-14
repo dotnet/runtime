@@ -14,3 +14,5 @@ MembersMustExist : Member 'System.Text.Rune.EncodeToUtf8(System.Span<System.Byte
 MembersMustExist : Member 'System.Text.Rune.TryEncodeToUtf8(System.Span<System.Byte>, System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Range.GetOffsetAndLength(System.Int32)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Range.OffsetAndLength' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Memory<T>' does not implement interface 'System.IEquatable<System.Memory<T>>' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.ReadOnlyMemory<T>' does not implement interface 'System.IEquatable<System.ReadOnlyMemory<T>>' in the implementation but it does in the contract.
