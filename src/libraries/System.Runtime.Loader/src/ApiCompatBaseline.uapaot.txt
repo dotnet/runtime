@@ -1,6 +1,5 @@
 Compat issues with assembly System.Runtime.Loader:
 CannotMakeTypeAbstract : Type 'System.Runtime.Loader.AssemblyLoadContext' is abstract in the implementation but is not abstract in the contract.
-TypesMustExist : Type 'System.Reflection.Metadata.AssemblyExtensions' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext..ctor(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext..ctor(System.String, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.add_Resolving(System.Func<System.Runtime.Loader.AssemblyLoadContext, System.Reflection.AssemblyName, System.Reflection.Assembly>)' does not exist in the implementation but it does exist in the contract.
@@ -27,5 +26,10 @@ MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.remove_Unlo
 MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.SetProfileOptimizationRoot(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.StartProfileOptimization(System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.Unload()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.CurrentContextualReflectionContext.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.EnterContextualReflection()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.EnterContextualReflection(System.Reflection.Assembly)' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Reflection.Metadata.AssemblyExtensions' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Runtime.Loader.AssemblyDependencyResolver' does not exist in the implementation but it does exist in the contract.
-Total Issues: 29
+TypesMustExist : Type 'System.Runtime.Loader.AssemblyLoadContext.ContextualReflectionScope' does not exist in the implementation but it does exist in the contract.
+Total Issues: 33
