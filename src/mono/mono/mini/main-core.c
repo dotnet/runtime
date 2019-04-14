@@ -6,17 +6,21 @@
 #include <mono/metadata/loader-internals.h>
 #include <mono/utils/mono-logger-internals.h>
 
-MONO_API int coreclr_initialize (const char* exePath, const char* appDomainFriendlyName,
+#ifndef STDAPICALLTYPE
+#define STDAPICALLTYPE
+#endif
+
+MONO_API int STDAPICALLTYPE coreclr_initialize (const char* exePath, const char* appDomainFriendlyName,
 	int propertyCount, const char** propertyKeys, const char** propertyValues,
 	void** hostHandle, unsigned int* domainId);
 
-MONO_API int coreclr_execute_assembly (void* hostHandle, unsigned int domainId,
+MONO_API int STDAPICALLTYPE coreclr_execute_assembly (void* hostHandle, unsigned int domainId,
 	int argc, const char** argv,
 	const char* managedAssemblyPath, unsigned int* exitCode);
 
-MONO_API int coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, int* latchedExitCode);
+MONO_API int STDAPICALLTYPE coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, int* latchedExitCode);
 
-MONO_API int coreclr_create_delegate (void* hostHandle, unsigned int domainId,
+MONO_API int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned int domainId,
 	const char* entryPointAssemblyName, const char* entryPointTypeName, const char* entryPointMethodName,
 	void** delegate);
 
@@ -170,7 +174,7 @@ parse_properties (int propertyCount, const char** propertyKeys, const char** pro
 			parse_native_dll_search_directories (propertyValues[i]);
 		} else if (!strcmp (propertyKeys[i], "System.Globalization.Invariant")) {
 			// TODO: Ideally we should propagate this through AppContext options
-			setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues[i], TRUE);
+			g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", propertyValues[i], TRUE);
 		} else {
 #if 0
 			// can't use mono logger, it's not initialized yet.
@@ -196,7 +200,7 @@ parse_properties (int propertyCount, const char** propertyKeys, const char** pro
 // Returns:
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
-int coreclr_initialize (const char* exePath, const char* appDomainFriendlyName,
+int STDAPICALLTYPE coreclr_initialize (const char* exePath, const char* appDomainFriendlyName,
 	int propertyCount, const char** propertyKeys, const char** propertyValues,
 	void** hostHandle, unsigned int* domainId)
 {
@@ -228,7 +232,7 @@ int coreclr_initialize (const char* exePath, const char* appDomainFriendlyName,
 // Returns:
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
-int coreclr_execute_assembly (void* hostHandle, unsigned int domainId,
+int STDAPICALLTYPE coreclr_execute_assembly (void* hostHandle, unsigned int domainId,
 	int argc, const char** argv,
 	const char* managedAssemblyPath, unsigned int* exitCode)
 {
@@ -272,7 +276,7 @@ int coreclr_execute_assembly (void* hostHandle, unsigned int domainId,
 // Returns:
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
-int coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, int* latchedExitCode)
+int STDAPICALLTYPE coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, int* latchedExitCode)
 {
 	mono_set_pinvoke_search_directories (0, NULL);
 	MonoCoreNativeLibPaths *dl = native_lib_paths;
@@ -300,7 +304,7 @@ int coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, int* latchedExi
 // Returns:
 //  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
 //
-int coreclr_create_delegate (void* hostHandle, unsigned int domainId,
+int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned int domainId,
 	const char* entryPointAssemblyName, const char* entryPointTypeName, const char* entryPointMethodName,
 	void** delegate)
 {
