@@ -12,7 +12,18 @@
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
-    <Compile Include="*.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.Errors.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.ActivityControl.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EtwEnableCallback.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EVENT_INFO_CLASS.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventActivityIdControl.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventRegister.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventSetInformation.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventTraceGuidsEx.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventUnregister.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventWriteString.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\*.cs" />
     <Compile Remove="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\TraceLogging\*.cs" />
