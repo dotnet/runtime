@@ -18,9 +18,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #if defined(_TARGET_AMD64_)
 #ifdef UNIX_AMD64_ABI
-int Compiler::mapRegNumToDwarfReg(regNumber reg)
+short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
-    int dwarfReg = DWARF_REG_ILLEGAL;
+    short dwarfReg = DWARF_REG_ILLEGAL;
 
     switch (reg)
     {
@@ -457,7 +457,6 @@ void Compiler::unwindSaveRegCFI(regNumber reg, unsigned offset)
         FuncInfoDsc* func = funCurrentFunc();
 
         unsigned int cbProlog = unwindGetCurrentOffset(func);
-        noway_assert((BYTE)cbProlog == cbProlog);
         createCfiCode(func, cbProlog, CFI_REL_OFFSET, mapRegNumToDwarfReg(reg), offset);
     }
 }
