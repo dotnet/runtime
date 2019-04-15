@@ -66,7 +66,10 @@ namespace System.Text.Json.Serialization
 
         private static byte[] WriteCoreBytes(object value, Type type, JsonSerializerOptions options)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
 
             byte[] result;
 
@@ -81,7 +84,11 @@ namespace System.Text.Json.Serialization
 
         private static string WriteCoreString(object value, Type type, JsonSerializerOptions options)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
+
             string result;
 
             using (var output = new ArrayBufferWriter<byte>(options.DefaultBufferSize))

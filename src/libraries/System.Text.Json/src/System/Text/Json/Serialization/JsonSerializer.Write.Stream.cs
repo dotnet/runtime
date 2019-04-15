@@ -45,7 +45,10 @@ namespace System.Text.Json.Serialization
 
         private static async Task WriteAsyncCore(object value, Type type, Stream utf8Json, JsonSerializerOptions options, CancellationToken cancellationToken)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
 
             var writerState = new JsonWriterState(options.GetWriterOptions());
 
