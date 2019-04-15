@@ -43,28 +43,13 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType == typeof(InstanceDescriptor) && value is decimal decimalValue)
             {
-                throw new ArgumentNullException(nameof(destinationType));
+                ConstructorInfo ctor = typeof(decimal).GetConstructor(new Type[] { typeof(int[]) });
+                Debug.Assert(ctor != null, "Expected constructor to exist.");
+                return new InstanceDescriptor(ctor, new object[] { decimal.GetBits(decimalValue) });
             }
 
-            if (destinationType == typeof(InstanceDescriptor) && value is decimal)
-            {
-
-                object[] args = new object[] { decimal.GetBits((decimal)value) };
-                MemberInfo member = typeof(decimal).GetConstructor(new Type[] { typeof(int[]) });
-
-                Debug.Assert(member != null, "Could not convert decimal to member. Did someone change method name / signature and not update DecimalConverter?");
-                if (member != null)
-                {
-                    return new InstanceDescriptor(member, args);
-                }
-                else
-                {
-                    return null;
-                }
-            }
-            
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
@@ -93,4 +78,3 @@ namespace System.ComponentModel
         }
     }
 }
-
