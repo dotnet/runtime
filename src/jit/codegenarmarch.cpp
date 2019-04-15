@@ -714,7 +714,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             BYTE* gcPtrs                        = gcPtrArray;
 
             unsigned gcPtrCount; // The count of GC pointers in the struct
-            int      structSize;
+            unsigned structSize;
             bool     isHfa;
 
             // This is the varNum for our load operations,
@@ -764,12 +764,40 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     hiReg = addrReg;
                 }
 #endif // _TARGET_ARM64_
+            }
 
+            if (source->OperIs(GT_OBJ))
+            {
+                // If the source is an OBJ node then we need to use the type information
+                // it provides (size and GC layout) even if the node wraps a lclvar. Due
+                // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
+                // the OBJ node has a different type than the lclvar.
                 CORINFO_CLASS_HANDLE objClass = source->gtObj.gtClass;
 
                 structSize = compiler->info.compCompHnd->getClassSize(objClass);
-                isHfa      = compiler->IsHfa(objClass);
+
+                // The codegen code below doesn't have proper support for struct sizes
+                // that are not multiple of the slot size. Call arg morphing handles this
+                // case by copying non-local values to temporary local variables.
+                // More generally, we can always round up the struct size when the OBJ node
+                // wraps a local variable because the local variable stack allocation size
+                // is also rounded up to be a multiple of the slot size.
+                if (varNode != nullptr)
+                {
+                    structSize = roundUp(structSize, TARGET_POINTER_SIZE);
+                }
+                else
+                {
+                    assert((structSize % TARGET_POINTER_SIZE) == 0);
+                }
+
+                isHfa = compiler->IsHfa(objClass);
+
 #ifdef _TARGET_ARM64_
+                // On ARM32, Lowering places the correct GC layout information in the
+                // GenTreePutArgStk node and the code above already use that. On ARM64,
+                // this information is not available (in order to keep GenTreePutArgStk
+                // nodes small) and we need to retrieve it from the VM here.
                 gcPtrCount = compiler->info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
 #endif
             }
@@ -3849,7 +3877,9 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         // Generate:
         //
-        //      mov rOffset, -pageSize
+        //      mov rOffset, -pageSize    // On arm, this turns out to be "movw r1, 0xf000; sxth r1, r1".
+        //                                // We could save 4 bytes in the prolog by using "movs r1, 0" at the
+        //                                // runtime expense of running a useless first loop iteration.
         //      mov rLimit, -frameSize
         // loop:
         //      ldr rTemp, [sp + rOffset] // rTemp = wzr on ARM64

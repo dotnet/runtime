@@ -1979,8 +1979,6 @@ namespace System.Reflection.Emit
             if (IsCreated())
                 return m_bakedRuntimeType;
 
-            ThrowIfCreated();
-
             if (m_typeInterfaces == null)
                 m_typeInterfaces = new List<Type>();
 

@@ -16,7 +16,7 @@ If any of these environment variable are present, we skip the registry look up a
 
 A couple things to note about this:
 - If you specify `CORECLR_PROFILER_PATH` _and_ register your profiler, then `CORECLR_PROFILER_PATH` always wins.  Even if `CORECLR_PROFILER_PATH` points to an invalid path, we will still use `CORECLR_PROFILER_PATH`, and just fail to load your profiler.
-- `CORECLR_R_PROFILER` is _always required_.  If you specify `CORECLR_PROFILER_PATH`, we skip the registry look up. We still need to know your profiler's CLSID, so we can pass it to your class factory's CreateInstance call.
+- `CORECLR_PROFILER` is _always required_.  If you specify `CORECLR_PROFILER_PATH`, we skip the registry look up. We still need to know your profiler's CLSID, so we can pass it to your class factory's CreateInstance call.
 
 
 ## Through the registry (Windows Only)

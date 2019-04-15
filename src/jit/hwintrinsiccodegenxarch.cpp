@@ -395,7 +395,7 @@ void CodeGen::genHWIntrinsic_R_RM(GenTreeHWIntrinsic* node, instruction ins, emi
 
     if (op2 != nullptr)
     {
-        // The Compare*OrderedScalar and Compare*UnorderedScalar intrinsics come down this
+        // The CompareScalarOrdered* and CompareScalarUnordered* intrinsics come down this
         // code path. They are all MultiIns, as the return value comes from the flags and
         // we have two operands instead.
 
@@ -1390,8 +1390,8 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
-        case NI_SSE_CompareEqualOrderedScalar:
-        case NI_SSE_CompareEqualUnorderedScalar:
+        case NI_SSE_CompareScalarOrderedEqual:
+        case NI_SSE_CompareScalarUnorderedEqual:
         {
             assert(baseType == TYP_FLOAT);
             regNumber   tmpReg = node->GetSingleTempReg();
@@ -1408,8 +1408,8 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE_CompareGreaterThanOrderedScalar:
-        case NI_SSE_CompareGreaterThanUnorderedScalar:
+        case NI_SSE_CompareScalarOrderedGreaterThan:
+        case NI_SSE_CompareScalarUnorderedGreaterThan:
         {
             assert(baseType == TYP_FLOAT);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType);
@@ -1420,8 +1420,8 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE_CompareGreaterThanOrEqualOrderedScalar:
-        case NI_SSE_CompareGreaterThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareScalarOrderedGreaterThanOrEqual:
+        case NI_SSE_CompareScalarUnorderedGreaterThanOrEqual:
         {
             assert(baseType == TYP_FLOAT);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType);
@@ -1432,8 +1432,8 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE_CompareLessThanOrderedScalar:
-        case NI_SSE_CompareLessThanUnorderedScalar:
+        case NI_SSE_CompareScalarOrderedLessThan:
+        case NI_SSE_CompareScalarUnorderedLessThan:
         {
             assert(baseType == TYP_FLOAT);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType);
@@ -1444,8 +1444,8 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE_CompareLessThanOrEqualOrderedScalar:
-        case NI_SSE_CompareLessThanOrEqualUnorderedScalar:
+        case NI_SSE_CompareScalarOrderedLessThanOrEqual:
+        case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
         {
             assert(baseType == TYP_FLOAT);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType);
@@ -1456,8 +1456,8 @@ void CodeGen::genSSEIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE_CompareNotEqualOrderedScalar:
-        case NI_SSE_CompareNotEqualUnorderedScalar:
+        case NI_SSE_CompareScalarOrderedNotEqual:
+        case NI_SSE_CompareScalarUnorderedNotEqual:
         {
             assert(baseType == TYP_FLOAT);
             regNumber   tmpReg = node->GetSingleTempReg();
@@ -1569,8 +1569,8 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE2_CompareEqualOrderedScalar:
-        case NI_SSE2_CompareEqualUnorderedScalar:
+        case NI_SSE2_CompareScalarOrderedEqual:
+        case NI_SSE2_CompareScalarUnorderedEqual:
         {
             assert(baseType == TYP_DOUBLE);
             regNumber   tmpReg = node->GetSingleTempReg();
@@ -1587,8 +1587,8 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE2_CompareGreaterThanOrderedScalar:
-        case NI_SSE2_CompareGreaterThanUnorderedScalar:
+        case NI_SSE2_CompareScalarOrderedGreaterThan:
+        case NI_SSE2_CompareScalarUnorderedGreaterThan:
         {
             assert(baseType == TYP_DOUBLE);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -1599,8 +1599,8 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE2_CompareGreaterThanOrEqualOrderedScalar:
-        case NI_SSE2_CompareGreaterThanOrEqualUnorderedScalar:
+        case NI_SSE2_CompareScalarOrderedGreaterThanOrEqual:
+        case NI_SSE2_CompareScalarUnorderedGreaterThanOrEqual:
         {
             assert(baseType == TYP_DOUBLE);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -1611,8 +1611,8 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE2_CompareLessThanOrderedScalar:
-        case NI_SSE2_CompareLessThanUnorderedScalar:
+        case NI_SSE2_CompareScalarOrderedLessThan:
+        case NI_SSE2_CompareScalarUnorderedLessThan:
         {
             assert(baseType == TYP_DOUBLE);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -1623,8 +1623,8 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE2_CompareLessThanOrEqualOrderedScalar:
-        case NI_SSE2_CompareLessThanOrEqualUnorderedScalar:
+        case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
+        case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
         {
             assert(baseType == TYP_DOUBLE);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
@@ -1635,8 +1635,8 @@ void CodeGen::genSSE2Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE2_CompareNotEqualOrderedScalar:
-        case NI_SSE2_CompareNotEqualUnorderedScalar:
+        case NI_SSE2_CompareScalarOrderedNotEqual:
+        case NI_SSE2_CompareScalarUnorderedNotEqual:
         {
             assert(baseType == TYP_DOUBLE);
             instruction ins    = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);

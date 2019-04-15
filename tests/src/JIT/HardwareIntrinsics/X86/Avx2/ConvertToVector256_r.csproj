@@ -27,18 +27,18 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConvertToVector256UInt16.Byte.cs" />
+    <Compile Include="ConvertToVector256Int16.Byte.cs" />
     <Compile Include="ConvertToVector256Int16.SByte.cs" />
-    <Compile Include="ConvertToVector256UInt32.Byte.cs" />
+    <Compile Include="ConvertToVector256Int32.Byte.cs" />
     <Compile Include="ConvertToVector256Int32.Int16.cs" />
     <Compile Include="ConvertToVector256Int32.SByte.cs" />
-    <Compile Include="ConvertToVector256UInt32.UInt16.cs" />
-    <Compile Include="ConvertToVector256UInt64.Byte.cs" />
+    <Compile Include="ConvertToVector256Int32.UInt16.cs" />
+    <Compile Include="ConvertToVector256Int64.Byte.cs" />
     <Compile Include="ConvertToVector256Int64.Int16.cs" />
     <Compile Include="ConvertToVector256Int64.Int32.cs" />
     <Compile Include="ConvertToVector256Int64.SByte.cs" />
-    <Compile Include="ConvertToVector256UInt64.UInt16.cs" />
-    <Compile Include="ConvertToVector256UInt64.UInt32.cs" />
+    <Compile Include="ConvertToVector256Int64.UInt16.cs" />
+    <Compile Include="ConvertToVector256Int64.UInt32.cs" />
     <Compile Include="Program.ConvertToVector256.cs" />
     <Compile Include="..\Shared\Program.cs" />
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />

@@ -76,13 +76,13 @@ public static class VectorMath
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Vector256<float> Log(Vector256<float> value)
     {
-        Vector256<float> invalidMask = Compare(value, Vector256<float>.Zero, FloatComparisonMode.LessThanOrEqualOrderedNonSignaling);
+        Vector256<float> invalidMask = Compare(value, Vector256<float>.Zero, FloatComparisonMode.OrderedLessThanOrEqualNonSignaling);
         Vector256<float> x = Max(value, MinNormPos.AsSingle());
         Vector256<int> ei = Avx2.ShiftRightLogical(x.AsInt32(), 23);
         x = Or(And(x, MantMask.AsSingle()), Point5);
         ei = Avx2.Subtract(ei, Ox7);
         Vector256<float> e = Add(ConvertToVector256Single(ei), One);
-        Vector256<float> mask = Compare(x, Sqrthf, FloatComparisonMode.LessThanOrderedNonSignaling);
+        Vector256<float> mask = Compare(x, Sqrthf, FloatComparisonMode.OrderedLessThanNonSignaling);
         Vector256<float> tmp = And(x, mask);
         x = Subtract(x, One);
         e = Subtract(e, And(One, mask));
