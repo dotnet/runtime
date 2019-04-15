@@ -5,18 +5,6 @@
 
 #include <comdef.h>
 
-struct SizeF
-{
-    float width;
-    float height;
-};
-
-struct Size
-{
-    BYTE width;
-    BYTE height;
-};
-
 struct HFA_4
 {
     float x;
@@ -163,17 +151,6 @@ INumericTesting : IUnknown
         /*[in]*/ int i11,
         /*[in]*/ int i12,
         /*[out]*/ int * result ) = 0;
-        virtual COM_DECLSPEC_NOTHROW SizeF STDMETHODCALLTYPE MakeSize(
-        /*[in]*/ float width,
-        /*[in]*/ float height) = 0;
-        virtual COM_DECLSPEC_NOTHROW Size STDMETHODCALLTYPE MakeSizeSmall(
-        /*[in]*/ BYTE width,
-        /*[in]*/ BYTE height) = 0;
-        virtual COM_DECLSPEC_NOTHROW HFA_4 STDMETHODCALLTYPE MakeHFA(
-        /*[in]*/ float x,
-        /*[in]*/ float y,
-        /*[in]*/ float z,
-        /*[in]*/ float w) = 0;
 };
 
 struct __declspec(uuid("7731cb31-e063-4cc8-bcd2-d151d6bc8f43"))
@@ -387,6 +364,8 @@ IErrorMarshalTesting : IUnknown
       virtual HRESULT STDMETHODCALLTYPE Throw_HResult (
         /*[in]*/ int hresultToReturn ) = 0;
       virtual int STDMETHODCALLTYPE Return_As_HResult (
+        /*[in]*/ int hresultToReturn ) = 0;
+      virtual int STDMETHODCALLTYPE Return_As_HResult_Struct (
         /*[in]*/ int hresultToReturn ) = 0;
 };
 
