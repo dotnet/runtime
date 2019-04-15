@@ -166,6 +166,7 @@ jobs:
             name: Hosted VS2017
 
         submitToHelix: true
+        buildExtraArguments: /p:RuntimeOS=win10
         # azure pipelines reporter only supports xunit results based tests.
         enableAzurePipelinesReporter: false
 
@@ -176,9 +177,9 @@ jobs:
           - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
             - allConfigurationsQueues: Windows.10.Amd64.ClientRS5
 
+        _jobFramework: -allConfigurations
         customBuildSteps:
           - script: build.cmd
-                    -restore
                     -build
                     -configuration $(_BuildConfig)
                     -ci
@@ -187,7 +188,6 @@ jobs:
                     -arch $(_architecture)
                     /p:RuntimeOS=win10
                     /p:ArchiveTests=Packages
-                    $(_windowsOfficialBuildArguments)
                     $(_msbuildCommonParameters)
             displayName: Build Packages and Tests
 
