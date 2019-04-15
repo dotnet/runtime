@@ -2,11 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
-  <PropertyGroup>
-    <Version>$(AppHostVersion)</Version>
-  </PropertyGroup>
-
-  <Import Project="$(MSBuildProjectName).props" />
+  <!--
+    Create AppHost Pack based on legacy DotNetAppHost package. This can be collapsed once the legacy
+    package is no longer used.
+  -->
+  <Import Project="..\..\Microsoft.NETCore.DotNetAppHost\Microsoft.NETCore.DotNetAppHost.props" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
