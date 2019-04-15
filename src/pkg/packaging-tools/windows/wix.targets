@@ -21,15 +21,15 @@
   <!-- Set up information to pass to WiX, depending on the type of installer being created. -->
   <Target Name="GetWixBuildConfiguration" DependsOnTargets="GetInstallerProperties">
 
-    <ItemGroup Condition="'$(FrameworkPackType)' == 'targeting'">
+    <ItemGroup Condition="'$(FrameworkPackType)' != ''">
       <DirectoryToHarvest
         Include="$(PackLayoutDir)"
         Name="install-files"
-        SubstituteVar="TargetingPackSrc"
+        SubstituteVar="PackSrc"
         ComponentGroupName="InstallFiles"
         DirectoryRef="DOTNETHOME" />
 
-      <WixSrcFile Include="$(MSBuildThisFileDirectory)targetingPack/product.wxs" />
+      <WixSrcFile Include="$(MSBuildThisFileDirectory)pack/product.wxs" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(GenerateSharedFramework)' == 'true'">

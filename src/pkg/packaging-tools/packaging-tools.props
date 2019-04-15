@@ -8,22 +8,35 @@
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Ref'))">
     <FrameworkPackType>targeting</FrameworkPackType>
 
-    <!--
-      Prevent 'runtime.<rid>.Microsoft.<framework>.App.Ref' packages from being built.
-
-      Not the same as HasRuntimePackages, which is used to set up ProjectReferences on the runtime
-      packages and generate assets such as the platform manifest.
-    -->
-    <BuildRuntimePackages>false</BuildRuntimePackages>
-
-    <PackageType>DotnetPlatform</PackageType>
-    <Version>$(ProductVersion)</Version>
-
     <!-- Include the platform manifest in the data dir. -->
     <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
     <FrameworkListTargetPath>data/</FrameworkListTargetPath>
+  </PropertyGroup>
 
-    <!-- Exclude runtime.json from the package. -->
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Host'))">
+    <FrameworkPackType>apphost</FrameworkPackType>
+
+    <!-- AppHost packs are only per-RID, e.g. 'Microsoft.NETCore.App.Host.win-x64'. -->
+    <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
+    <BuildLineupPackage>false</BuildLineupPackage>
+
+    <!--
+      Use generic package description: packaging tasks don't handle RID suffix nicely and expect an
+      individual description for each RID.
+    -->
+    <UseRuntimePackageDescription>true</UseRuntimePackageDescription>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(FrameworkPackType)' != ''">
+    <Version>$(ProductVersion)</Version>
+    <PackageType>DotnetPlatform</PackageType>
+
+    <!--
+      Prevent 'runtime.<rid>.Microsoft.<framework>.App.Ref' packages from being built, and disable
+      the runtime.json and lineup package infrastructure. Packs are either RID-agnostic or use
+      convention-based runtime packages, not runtime.json with a lineup package.
+    -->
+    <BuildRuntimePackages>false</BuildRuntimePackages>
     <IncludeRuntimeJson>false</IncludeRuntimeJson>
     <IsLineupPackage>false</IsLineupPackage>
 

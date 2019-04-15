@@ -26,9 +26,13 @@
     <CompressedFile Include="$(AssetOutputPath)**/*$(CompressedFileExtension)">
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </CompressedFile>
-    <RuntimePackageFile Include="$(PackageOutputPath)**/runtime.*.nupkg" >
-      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
-    </RuntimePackageFile>
+
+    <RuntimePackageFile
+      Include="
+        $(PackageOutputPath)**/runtime.*.nupkg;
+        $(PackageOutputPath)**/*.App.Host.*.nupkg"
+      RelativeBlobPath="$(BinariesRelativePath)"/>
+
     <RidAgnosticPackageFile Include="$(PackageOutputPath)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
       <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
     </RidAgnosticPackageFile>
