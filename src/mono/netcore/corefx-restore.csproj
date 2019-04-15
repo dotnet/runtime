@@ -31,6 +31,7 @@
     <PackageReference Include="System.Json" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.Net.WebSockets.WebSocketProtocol" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.Numerics.Tensors" Version="$(SystemNumericsTensorsVersion)" />
+    <PackageReference Include="System.Reflection.Context" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.Reflection.MetadataLoadContext" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.Security.Cryptography.Xml" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
