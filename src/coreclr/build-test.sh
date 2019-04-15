@@ -150,7 +150,7 @@ generate_layout()
     build_MSBuild_projects "Tests_Overlay_Managed" "${__ProjectDir}/tests/runtest.proj" "Creating test overlay" "/t:CreateTestOverlay"
 
     chmod +x $__BinDir/corerun
-    chmod +x $__BinDir/crossgen
+    chmod +x $__CrossgenExe
 
     # Make sure to copy over the pulled down packages
     cp -r $__BinDir/* $CORE_ROOT/ > /dev/null
@@ -176,7 +176,8 @@ precompile_coreroot_fx()
 
     local overlayDir=$CORE_ROOT
 
-    filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -type f )
+    # TODO: Remove System.Xml.XDocument.dll exclusion - it was added because "custom" xunit.console.dll fails when running from Core_Root with crossgen-d framework.
+    filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -not -name System.Xml.XDocument.dll -type f)
     for fileToPrecompile in ${filesToPrecompile}
     do
         local filename=${fileToPrecompile}
@@ -184,7 +185,7 @@ precompile_coreroot_fx()
                 continue
         fi
         echo Precompiling $filename
-        $overlayDir/crossgen /Platform_Assemblies_Paths $overlayDir $filename 1> $filename.stdout 2>$filename.stderr
+        $__CrossgenExe /Platform_Assemblies_Paths $overlayDir $filename 1> $filename.stdout 2>$filename.stderr
         local exitCode=$?
         if [[ $exitCode != 0 ]]; then
             if grep -q -e '0x80131018' $filename.stderr; then
@@ -964,9 +965,6 @@ __CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 
 __CrossArch="$__HostArch"
-if [[ "$__HostArch" == "x64" && "$__BuildArch" == "arm" ]]; then
-    __CrossArch="x86"
-fi
 if [ $__CrossBuild == 1 ]; then
     __CrossComponentBinDir="$__CrossComponentBinDir/$__CrossArch"
 fi

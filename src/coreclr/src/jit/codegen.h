@@ -1211,6 +1211,14 @@ protected:
 
     void genReturn(GenTree* treeNode);
 
+#if defined(_TARGET_XARCH_)
+    void genStackPointerConstantAdjustmentWithProbe(ssize_t spDelta, bool hideSpChangeFromEmitter, regNumber regTmp);
+    void genStackPointerConstantAdjustmentLoopWithProbe(ssize_t   spDelta,
+                                                        bool      hideSpChangeFromEmitter,
+                                                        regNumber regTmp);
+    void genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta, regNumber regTmp);
+#endif // defined(_TARGET_XARCH_)
+
     void genLclHeap(GenTree* tree);
 
     bool genIsRegCandidateLocal(GenTree* tree)

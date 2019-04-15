@@ -311,14 +311,6 @@ void Frame::Init()
 
 } // void Frame::Init()
 
-// static
-void Frame::Term()
-{
-    LIMITED_METHOD_CONTRACT;
-    delete s_pFrameVTables;
-    s_pFrameVTables = NULL;
-}
-
 #endif // DACCESS_COMPILE
 
 // Returns true if the Frame's VTablePtr is valid

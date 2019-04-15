@@ -509,9 +509,18 @@ namespace System.Runtime.Loader
         /// </remarks>
         public static ContextualReflectionScope EnterContextualReflection(Assembly? activating)
         {
-            return activating != null ?
-                GetLoadContext(activating)!.EnterContextualReflection() : // TODO-NULLABLE: https://github.com/dotnet/coreclr/issues/23952
-                new ContextualReflectionScope(null);
+            if (activating == null)
+                return new ContextualReflectionScope(null);
+
+            AssemblyLoadContext? assemblyLoadContext = GetLoadContext(activating);
+
+            if (assemblyLoadContext == null)
+            {
+                // All RuntimeAssemblies & Only RuntimeAssemblies have an AssemblyLoadContext
+                throw new ArgumentException(SR.Arg_MustBeRuntimeAssembly, nameof(activating));
+            }
+
+            return assemblyLoadContext.EnterContextualReflection();
         }
 
         /// <summary>Opaque disposable struct used to restore CurrentContextualReflectionContext</summary>

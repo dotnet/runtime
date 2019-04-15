@@ -538,61 +538,6 @@ void EEPolicy::ExitProcessViaShim(UINT exitCode)
     ExitProcess(exitCode);
 }
 
-
-//---------------------------------------------------------------------------------------
-// DisableRuntime disables this runtime, suspending all managed execution and preventing
-// threads from entering the runtime. This will cause the caller to block forever as well
-// unless sca is SCA_ReturnWhenShutdownComplete.
-//---------------------------------------------------------------------------------------
-void DisableRuntime(ShutdownCompleteAction sca)
-{
-    CONTRACTL
-    {
-        DISABLED(GC_TRIGGERS);
-        NOTHROW;
-    }
-    CONTRACTL_END;
-
-    FastInterlockExchange((LONG*)&g_fForbidEnterEE, TRUE);
-    
-    if (!g_fSuspendOnShutdown)
-    {
-        if (!IsGCThread())
-        {
-            if (ThreadStore::HoldingThreadStore(GetThread()))
-            {
-                ThreadSuspend::UnlockThreadStore();
-            }
-            ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_SHUTDOWN);
-        }
-
-        if (!g_fSuspendOnShutdown)
-        {
-            ThreadStore::TrapReturningThreads(TRUE);
-            g_fSuspendOnShutdown = TRUE;
-            ClrFlsSetThreadType(ThreadType_Shutdown);
-        }
-
-        // Don't restart runtime.  CLR is disabled.
-    }
-
-    GCX_PREEMP_NO_DTOR();
-    
-    ClrFlsClearThreadType(ThreadType_Shutdown);
-
-    if (g_pDebugInterface != NULL)
-    {
-        g_pDebugInterface->DisableDebugger();
-    }
-
-    if (sca == SCA_ExitProcessWhenShutdownComplete)
-    {
-        __SwitchToThread(INFINITE, CALLER_LIMITS_SPINNING);
-        _ASSERTE (!"Should not reach here");
-        SafeExitProcess(0);
-    }
-}
-
 //---------------------------------------------------------------------------------------
 // HandleExitProcessHelper is used to shutdown the runtime as specified by the given
 // action, then to exit the process. Note, however, that the process will not exit if
@@ -628,9 +573,6 @@ static void HandleExitProcessHelper(EPolicyAction action, UINT exitCode, Shutdow
     case eRudeExitProcess:
         g_fFastExitProcess = 2;
         SafeExitProcess(exitCode, TRUE, sca);
-        break;
-    case eDisableRuntime:
-        DisableRuntime(sca);
         break;
     default:
         _ASSERTE (!"Invalid policy");
@@ -686,7 +628,6 @@ void EEPolicy::PerformResourceConstraintAction(Thread *pThread, EPolicyAction ac
     case eExitProcess:
     case eFastExitProcess:
     case eRudeExitProcess:
-    case eDisableRuntime:
         HandleExitProcessFromEscalation(action, exitCode);
         break;
     default:
@@ -1040,13 +981,6 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
     }
 #endif // _DEBUG
 
-    // We're here logging a fatal error.  If the policy is to then do anything other than
-    //  disable the runtime (ie, if the policy is to terminate the runtime), we should give
-    //  Watson an opportunity to capture an error report.
-    // Presumably, hosts that are sophisticated enough to disable the runtime are also cognizant
-    //  of how they want to handle fatal errors in the runtime, including whether they want
-    //  to capture Watson information (for which they are responsible).
-    if (GetEEPolicy()->GetActionOnFailureNoHostNotification(FAIL_FatalRuntime) != eDisableRuntime)
     {
 #ifdef DEBUGGING_SUPPORTED
         //Give a managed debugger a chance if this fatal error is on a managed thread.
@@ -1278,10 +1212,6 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         case eRudeExitProcess:
             LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
 	        SafeExitProcess(exitCode, TRUE);
-            break;
-        case eDisableRuntime:
-            LogFatalError(exitCode, address, pszMessage, pExceptionInfo, errorSource, argExceptionString);
-            DisableRuntime(SCA_ExitProcessWhenShutdownComplete);
             break;
         default:
             _ASSERTE(!"Invalid action for FAIL_FatalRuntime");
