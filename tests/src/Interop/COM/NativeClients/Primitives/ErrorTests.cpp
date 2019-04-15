@@ -52,6 +52,30 @@ namespace
             THROW_FAIL_IF_FALSE(hr == hrMaybe);
         }
     }
+
+    void VerifyReturnHResultStruct(_In_ IErrorMarshalTesting *et)
+    {
+        ::printf("Verify preserved function signature\n");
+
+        HRESULT hrs[] =
+        {
+            E_NOTIMPL,
+            E_POINTER,
+            E_ACCESSDENIED,
+            E_INVALIDARG,
+            E_UNEXPECTED,
+            HRESULT{-1},
+            S_FALSE,
+            HRESULT{2}
+        };
+
+        for (int i = 0; i < ARRAYSIZE(hrs); ++i)
+        {
+            HRESULT hr = hrs[i];
+            HRESULT hrMaybe = et->Return_As_HResult_Struct(hr);
+            THROW_FAIL_IF_FALSE(hr == hrMaybe);
+        }
+    }
 }
 
 void Run_ErrorTests()
@@ -65,4 +89,5 @@ void Run_ErrorTests()
 
     VerifyExpectedException(errorMarshal);
     VerifyReturnHResult(errorMarshal);
+    VerifyReturnHResultStruct(errorMarshal);
 }
