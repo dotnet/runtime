@@ -541,6 +541,9 @@
   <data name="Arg_MustBePrimArray" xml:space="preserve">
     <value>Object must be an array of primitives.</value>
   </data>
+  <data name="Arg_MustBeRuntimeAssembly" xml:space="preserve">
+    <value>Object must be of type RuntimeAssembly.</value>
+  </data>
   <data name="Arg_MustBeSByte" xml:space="preserve">
     <value>Object must be of type SByte.</value>
   </data>

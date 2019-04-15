@@ -3094,12 +3094,7 @@ void ThreadpoolMgr::DeregisterWait(WaitInfo* pArgs)
 
     if (InterlockedDecrement(&waitInfo->refCount) == 0)
     {
-        // After we suspend EE during shutdown, a thread may be blocked in WaitForEndOfShutdown in alertable state.
-        // We don't allow a thread reenter runtime while processing APC or pumping message.
-        if (!g_fSuspendOnShutdown )
-        {
-            DeleteWait(waitInfo);
-        }
+        DeleteWait(waitInfo);
     }
     return;
 }

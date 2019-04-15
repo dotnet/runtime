@@ -30,11 +30,11 @@ internal sealed class SpherePacket256 : ObjectPacket256
         var eo = Centers - rayPacket256.Starts;
         var v = VectorPacket256.DotProduct(eo, rayPacket256.Dirs);
         var zero = Vector256<float>.Zero;
-        var vLessZeroMask = Compare(v, zero, FloatComparisonMode.LessThanOrderedNonSignaling);
+        var vLessZeroMask = Compare(v, zero, FloatComparisonMode.OrderedLessThanNonSignaling);
         var discs = Subtract(Multiply(Radiuses, Radiuses), Subtract(VectorPacket256.DotProduct(eo, eo), Multiply(v, v)));
-        var discLessZeroMask = Compare(discs, zero, FloatComparisonMode.LessThanOrderedNonSignaling);
+        var discLessZeroMask = Compare(discs, zero, FloatComparisonMode.OrderedLessThanNonSignaling);
         var dists = BlendVariable(Subtract(v, Sqrt(discs)), zero, Or(vLessZeroMask, discLessZeroMask));
-        var isZero = Compare(dists, zero, FloatComparisonMode.EqualOrderedNonSignaling);
+        var isZero = Compare(dists, zero, FloatComparisonMode.OrderedEqualNonSignaling);
         return BlendVariable(dists, Intersections.NullDistance, isZero);
     }
 }
