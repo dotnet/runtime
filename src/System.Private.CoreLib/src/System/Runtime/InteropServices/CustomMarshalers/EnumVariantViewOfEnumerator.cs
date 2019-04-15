@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 using System.Collections;
 using System.Runtime.InteropServices.ComTypes;
 
@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             }
         }
 
-        public int Next(int celt, object[] rgVar, IntPtr pceltFetched)
+        public int Next(int celt, object?[] rgVar, IntPtr pceltFetched)
         {
             int numElements = 0;
 

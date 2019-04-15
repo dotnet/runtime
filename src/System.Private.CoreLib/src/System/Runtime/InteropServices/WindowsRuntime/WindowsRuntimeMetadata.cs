@@ -2,16 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
-using System.Collections.Generic;
+#nullable enable
 using System.Collections.ObjectModel;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -19,9 +11,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private static EventHandler<DesignerNamespaceResolveEventArgs> DesignerNamespaceResolve;
 
-        internal static string[] OnDesignerNamespaceResolve(string namespaceName)
+        internal static string[]? OnDesignerNamespaceResolve(string namespaceName)
         {
-            EventHandler<DesignerNamespaceResolveEventArgs> eventHandler = DesignerNamespaceResolve;
+            EventHandler<DesignerNamespaceResolveEventArgs>? eventHandler = DesignerNamespaceResolve;
             if (eventHandler != null)
             {
                 foreach (EventHandler<DesignerNamespaceResolveEventArgs> handler in eventHandler.GetInvocationList())

@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
@@ -14,7 +12,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
     {
         private static readonly EnumeratorToEnumVariantMarshaler s_enumeratorToEnumVariantMarshaler = new EnumeratorToEnumVariantMarshaler();
 
-        public static ICustomMarshaler GetInstance(string cookie) => s_enumeratorToEnumVariantMarshaler;
+        public static ICustomMarshaler GetInstance(string? cookie) => s_enumeratorToEnumVariantMarshaler;
 
         private EnumeratorToEnumVariantMarshaler()
         {
@@ -68,7 +66,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
                     return enumVariantView.Enumerator;
                 }
 
-                return comObject as IEnumerator;
+                return (comObject as IEnumerator)!;
             }
 
             return ComDataHelpers.GetOrCreateManagedViewFromComData<IEnumVARIANT, EnumeratorViewOfEnumVariant>(comObject, var => new EnumeratorViewOfEnumVariant(var));

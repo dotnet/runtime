@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Security;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -72,24 +67,24 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Debug.Fail("This class is never instantiated");
         }
 
-        private sealed class NonGenericToGenericIterator : IIterator<object>
+        private sealed class NonGenericToGenericIterator : IIterator<object?>
         {
             private IBindableIterator iterator;
 
             public NonGenericToGenericIterator(IBindableIterator iterator)
             { this.iterator = iterator; }
 
-            public object Current { get { return iterator.Current; } }
+            public object? Current { get { return iterator.Current; } }
             public bool HasCurrent { get { return iterator.HasCurrent; } }
             public bool MoveNext() { return iterator.MoveNext(); }
-            public int GetMany(object[] items) { throw new NotSupportedException(); }
+            public int GetMany(object?[] items) { throw new NotSupportedException(); }
         }
 
         // This method is invoked when GetEnumerator is called on a WinRT-backed implementation of IEnumerable.
         internal IEnumerator GetEnumerator_Stub()
         {
             IBindableIterable _this = Unsafe.As<IBindableIterable>(this);
-            return new IteratorToEnumeratorAdapter<object>(new NonGenericToGenericIterator(_this.First()));
+            return new IteratorToEnumeratorAdapter<object?>(new NonGenericToGenericIterator(_this.First()));
         }
     }
 
@@ -104,7 +99,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     {
         private IIterator<T> m_iterator;
         private bool m_hadCurrent;
-        private T m_current;
+        private T m_current = default!; // TODO-NULLABLE-GENERIC
         private bool m_isInitialized;
 
         internal IteratorToEnumeratorAdapter(IIterator<T> iterator)
@@ -129,7 +124,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        object IEnumerator.Current
+        object? IEnumerator.Current
         {
             get
             {
