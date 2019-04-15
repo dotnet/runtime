@@ -63,7 +63,6 @@ FileStreamWriter::FileStreamWriter(const SString &outputFilePath)
         MODE_ANY;
     }
     CONTRACTL_END;
-
     m_pFileStream = new CFileStream();
     if (FAILED(m_pFileStream->OpenForWrite(outputFilePath)))
     {

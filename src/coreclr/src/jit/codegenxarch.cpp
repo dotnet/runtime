@@ -2171,7 +2171,8 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         return;
     }
 
-    const target_size_t pageSize = compiler->eeGetPageSize();
+    const target_size_t pageSize       = compiler->eeGetPageSize();
+    target_size_t       lastTouchDelta = 0; // What offset from the final SP was the last probe?
 
     if (frameSize == REGSIZE_BYTES)
     {
@@ -2182,19 +2183,25 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     {
         // Frame size is (0x0008..0x1000)
         inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
+        lastTouchDelta = frameSize;
     }
     else if (frameSize < compiler->getVeryLargeFrameSize())
     {
+        lastTouchDelta = frameSize;
+
         // Frame size is (0x1000..0x3000)
 
         getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -(int)pageSize);
+        lastTouchDelta -= pageSize;
 
         if (frameSize >= 0x2000)
         {
             getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, -2 * (int)pageSize);
+            lastTouchDelta -= pageSize;
         }
 
         inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
+        assert(lastTouchDelta == frameSize % pageSize);
     }
     else
     {
@@ -2230,6 +2237,7 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         // The encoding differs based on the architecture and what register is
         // used (namely, using RAX has a smaller encoding).
         //
+        //      xor eax,eax
         // loop:
         // For x86
         //      test [esp + eax], eax       3
@@ -2264,7 +2272,11 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         // Branch backwards to start of loop
         inst_IV(INS_jge, bytesForBackwardJump);
+
+        lastTouchDelta = frameSize % pageSize;
+
 #else // _TARGET_UNIX_
+
         // Code size for each instruction. We need this because the
         // backward branch is hard-coded with the number of bytes to branch.
         // The encoding differs based on the architecture and what register is
@@ -2317,6 +2329,9 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         inst_IV(INS_jge, bytesForBackwardJump); // Branch backwards to start of loop
 
         getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_SPBASE, initReg, frameSize); // restore stack pointer
+
+        lastTouchDelta               = 0; // The loop code above actually over-probes: it always probes beyond the final SP we need.
+
 #endif // _TARGET_UNIX_
 
         *pInitRegZeroed = false; // The initReg does not contain zero
@@ -2332,13 +2347,190 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
         inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
     }
 
+    if (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
+    {
+        // We haven't probed almost a complete page. If the next action on the stack might subtract from SP
+        // first, before touching the current SP, then we do one more probe at the very bottom. This can
+        // happen on x86, for example, when we copy an argument to the stack using a "SUB ESP; REP MOV"
+        // strategy.
+
+        getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, 0);
+    }
+
     compiler->unwindAllocStack(frameSize);
+
 #ifdef USING_SCOPE_INFO
     if (!doubleAlignOrFramePointerUsed())
     {
         psiAdjustStackLevel(frameSize);
     }
 #endif // USING_SCOPE_INFO
+}
+
+//------------------------------------------------------------------------
+// genStackPointerConstantAdjustmentWithProbe: add a specified constant value to the stack pointer,
+// and probe the stack as appropriate. Should only be called as a helper for
+// genStackPointerConstantAdjustmentLoopWithProbe.
+//
+// Arguments:
+//    spDelta                 - the value to add to SP. Must be negative or zero. If zero, the probe happens,
+//                              but the stack pointer doesn't move.
+//    hideSpChangeFromEmitter - if true, hide the SP adjustment from the emitter. This only applies to x86,
+//                              and requires that `regTmp` be valid.
+//    regTmp                  - an available temporary register. Will be trashed. Only used on x86.
+//                              Must be REG_NA on non-x86 platforms.
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genStackPointerConstantAdjustmentWithProbe(ssize_t   spDelta,
+                                                         bool      hideSpChangeFromEmitter,
+                                                         regNumber regTmp)
+{
+    assert(spDelta < 0);
+    assert((target_size_t)(-spDelta) <= compiler->eeGetPageSize());
+
+    getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
+
+    if (hideSpChangeFromEmitter)
+    {
+        // For x86, some cases don't want to use "sub ESP" because we don't want the emitter to track the adjustment
+        // to ESP. So do the work in the count register.
+        // TODO-CQ: manipulate ESP directly, to share code, reduce #ifdefs, and improve CQ. This would require
+        // creating a way to temporarily turn off the emitter's tracking of ESP, maybe marking instrDescs as "don't
+        // track".
+        assert(regTmp != REG_NA);
+        inst_RV_RV(INS_mov, regTmp, REG_SPBASE, TYP_I_IMPL);
+        inst_RV_IV(INS_sub, regTmp, -spDelta, EA_PTRSIZE);
+        inst_RV_RV(INS_mov, REG_SPBASE, regTmp, TYP_I_IMPL);
+    }
+    else
+    {
+        assert(regTmp == REG_NA);
+        inst_RV_IV(INS_sub, REG_SPBASE, -spDelta, EA_PTRSIZE);
+    }
+}
+
+//------------------------------------------------------------------------
+// genStackPointerConstantAdjustmentLoopWithProbe: Add a specified constant value to the stack pointer,
+// and probe the stack as appropriate. Generates one probe per page, up to the total amount required.
+// This will generate a sequence of probes in-line. It is required for the case where we need to expose
+// (not hide) the stack level adjustment. We can't use the dynamic loop in that case, because the total
+// stack adjustment would not be visible to the emitter. It would be possible to use this version for
+// multiple hidden constant stack level adjustments but we don't do that currently (we use the loop
+// version in genStackPointerDynamicAdjustmentWithProbe instead).
+//
+// Arguments:
+//    spDelta                 - the value to add to SP. Must be negative.
+//    hideSpChangeFromEmitter - if true, hide the SP adjustment from the emitter. This only applies to x86,
+//                              and requires that `regTmp` be valid.
+//    regTmp                  - an available temporary register. Will be trashed. Only used on x86.
+//                              Must be REG_NA on non-x86 platforms.
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genStackPointerConstantAdjustmentLoopWithProbe(ssize_t   spDelta,
+                                                             bool      hideSpChangeFromEmitter,
+                                                             regNumber regTmp)
+{
+    assert(spDelta < 0);
+
+    const target_size_t pageSize = compiler->eeGetPageSize();
+
+    ssize_t spRemainingDelta = spDelta;
+    do
+    {
+        ssize_t spOneDelta = -(ssize_t)min((target_size_t)-spRemainingDelta, pageSize);
+        genStackPointerConstantAdjustmentWithProbe(spOneDelta, hideSpChangeFromEmitter, regTmp);
+        spRemainingDelta -= spOneDelta;
+    } while (spRemainingDelta < 0);
+
+    // What offset from the final SP was the last probe? This depends on the fact that
+    // genStackPointerConstantAdjustmentWithProbe() probes first, then does "SUB SP".
+    target_size_t lastTouchDelta = (target_size_t)(-spDelta) % pageSize;
+    if ((lastTouchDelta == 0) || (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize))
+    {
+        // We haven't probed almost a complete page. If lastTouchDelta==0, then spDelta was an exact
+        // multiple of pageSize, which means we last probed exactly one page back. Otherwise, we probed
+        // the page, but very far from the end. If the next action on the stack might subtract from SP
+        // first, before touching the current SP, then we do one more probe at the very bottom. This can
+        // happen on x86, for example, when we copy an argument to the stack using a "SUB ESP; REP MOV"
+        // strategy.
+
+        getEmitter()->emitIns_AR_R(INS_test, EA_PTRSIZE, REG_EAX, REG_SPBASE, 0);
+    }
+}
+
+//------------------------------------------------------------------------
+// genStackPointerDynamicAdjustmentWithProbe: add a register value to the stack pointer,
+// and probe the stack as appropriate.
+//
+// Note that for x86, we hide the ESP adjustment from the emitter. To do that, currently,
+// requires a temporary register and extra code.
+//
+// Arguments:
+//    regSpDelta              - the register value to add to SP. The value in this register must be negative.
+//                              This register might be trashed.
+//    regTmp                  - an available temporary register. Will be trashed. Only used on x86.
+//                              Must be REG_NA on non-x86 platforms.
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genStackPointerDynamicAdjustmentWithProbe(regNumber regSpDelta, regNumber regTmp)
+{
+    assert(regSpDelta != REG_NA);
+    assert(regTmp != REG_NA);
+
+    // Tickle the pages to ensure that ESP is always valid and is
+    // in sync with the "stack guard page".  Note that in the worst
+    // case ESP is on the last byte of the guard page.  Thus you must
+    // touch ESP-0 first not ESP-0x1000.
+    //
+    // Another subtlety is that you don't want ESP to be exactly on the
+    // boundary of the guard page because PUSH is predecrement, thus
+    // call setup would not touch the guard page but just beyond it.
+    //
+    // Note that we go through a few hoops so that ESP never points to
+    // illegal pages at any time during the tickling process
+    //
+    //       add   regSpDelta, ESP          // reg now holds ultimate ESP
+    //       jb    loop                     // result is smaller than original ESP (no wrap around)
+    //       xor   regSpDelta, regSpDelta   // Overflow, pick lowest possible number
+    //  loop:
+    //       test  ESP, [ESP+0]             // tickle the page
+    //       mov   regTmp, ESP
+    //       sub   regTmp, eeGetPageSize()
+    //       mov   ESP, regTmp
+    //       cmp   ESP, regSpDelta
+    //       jae   loop
+    //       mov   ESP, regSpDelta
+
+    BasicBlock* loop = genCreateTempLabel();
+
+    inst_RV_RV(INS_add, regSpDelta, REG_SPBASE, TYP_I_IMPL);
+    inst_JMP(EJ_jb, loop);
+
+    instGen_Set_Reg_To_Zero(EA_PTRSIZE, regSpDelta);
+
+    genDefineTempLabel(loop);
+
+    // Tickle the decremented value. Note that it must be done BEFORE the update of ESP since ESP might already
+    // be on the guard page. It is OK to leave the final value of ESP on the guard page.
+    getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
+
+    // Subtract a page from ESP. This is a trick to avoid the emitter trying to track the
+    // decrement of the ESP - we do the subtraction in another reg instead of adjusting ESP directly.
+    inst_RV_RV(INS_mov, regTmp, REG_SPBASE, TYP_I_IMPL);
+    inst_RV_IV(INS_sub, regTmp, compiler->eeGetPageSize(), EA_PTRSIZE);
+    inst_RV_RV(INS_mov, REG_SPBASE, regTmp, TYP_I_IMPL);
+
+    inst_RV_RV(INS_cmp, REG_SPBASE, regSpDelta, TYP_I_IMPL);
+    inst_JMP(EJ_jae, loop);
+
+    // Move the final value to ESP
+    inst_RV_RV(INS_mov, REG_SPBASE, regSpDelta);
 }
 
 //------------------------------------------------------------------------
@@ -2380,8 +2572,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
 
-    unsigned    stackAdjustment = 0;
-    BasicBlock* loop            = nullptr;
+    unsigned stackAdjustment = 0;
 
     // compute the amount of memory to allocate to properly STACK_ALIGN.
     size_t amount = 0;
@@ -2503,9 +2694,11 @@ void CodeGen::genLclHeap(GenTree* tree)
             !compiler->info.compInitMem && (amount < compiler->eeGetPageSize()); // must be < not <=
 
 #ifdef _TARGET_X86_
-        bool needRegCntRegister = true;
+        bool needRegCntRegister      = true;
+        bool hideSpChangeFromEmitter = true;
 #else  // !_TARGET_X86_
-        bool needRegCntRegister = !doNoInitLessThanOnePageAlloc;
+        bool needRegCntRegister      = !doNoInitLessThanOnePageAlloc;
+        bool hideSpChangeFromEmitter = false;
 #endif // !_TARGET_X86_
 
         if (needRegCntRegister)
@@ -2529,23 +2722,9 @@ void CodeGen::genLclHeap(GenTree* tree)
             // Since the size is less than a page, simply adjust ESP.
             // ESP might already be in the guard page, so we must touch it BEFORE
             // the alloc, not after.
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef _TARGET_X86_
-            // For x86, we don't want to use "sub ESP" because we don't want the emitter to track the adjustment
-            // to ESP. So do the work in the count register.
-            // TODO-CQ: manipulate ESP directly, to share code, reduce #ifdefs, and improve CQ. This would require
-            // creating a way to temporarily turn off the emitter's tracking of ESP, maybe marking instrDescs as "don't
-            // track".
-            inst_RV_RV(INS_mov, regCnt, REG_SPBASE, TYP_I_IMPL);
-            getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
-            inst_RV_IV(INS_sub, regCnt, amount, EA_PTRSIZE);
-            inst_RV_RV(INS_mov, REG_SPBASE, regCnt, TYP_I_IMPL);
-#else  // !_TARGET_X86_
-            getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
-            inst_RV_IV(INS_sub, REG_SPBASE, amount, EA_PTRSIZE);
-#endif // !_TARGET_X86_
-
+            assert(amount < compiler->eeGetPageSize()); // must be < not <=
+            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)amount, hideSpChangeFromEmitter, regCnt);
             goto ALLOC_DONE;
         }
 
@@ -2561,7 +2740,6 @@ void CodeGen::genLclHeap(GenTree* tree)
         genSetRegToIcon(regCnt, amount, ((int)amount == amount) ? TYP_INT : TYP_LONG);
     }
 
-    loop = genCreateTempLabel();
     if (compiler->info.compInitMem)
     {
         // At this point 'regCnt' is set to the number of loop iterations for this loop, if each
@@ -2572,6 +2750,7 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(genIsValidIntReg(regCnt));
 
         // Loop:
+        BasicBlock* loop = genCreateTempLabel();
         genDefineTempLabel(loop);
 
         static_assert_no_msg((STACK_ALIGN % REGSIZE_BYTES) == 0);
@@ -2590,62 +2769,12 @@ void CodeGen::genLclHeap(GenTree* tree)
     else
     {
         // At this point 'regCnt' is set to the total number of bytes to localloc.
-        //
-        // We don't need to zero out the allocated memory. However, we do have
-        // to tickle the pages to ensure that ESP is always valid and is
-        // in sync with the "stack guard page".  Note that in the worst
-        // case ESP is on the last byte of the guard page.  Thus you must
-        // touch ESP+0 first not ESP+x01000.
-        //
-        // Another subtlety is that you don't want ESP to be exactly on the
-        // boundary of the guard page because PUSH is predecrement, thus
-        // call setup would not touch the guard page but just beyond it
-        //
-        // Note that we go through a few hoops so that ESP never points to
-        // illegal pages at any time during the tickling process
-        //
-        //       neg   REGCNT
-        //       add   REGCNT, ESP      // reg now holds ultimate ESP
-        //       jb    loop             // result is smaller than orignial ESP (no wrap around)
-        //       xor   REGCNT, REGCNT,  // Overflow, pick lowest possible number
-        //  loop:
-        //       test  ESP, [ESP+0]     // tickle the page
-        //       mov   REGTMP, ESP
-        //       sub   REGTMP, eeGetPageSize()
-        //       mov   ESP, REGTMP
-        //       cmp   ESP, REGCNT
-        //       jae   loop
-        //
-        //       mov   ESP, REG
-        //  end:
+        // Negate this value before calling the function to adjust the stack (which
+        // adds to ESP).
+
         inst_RV(INS_NEG, regCnt, TYP_I_IMPL);
-        inst_RV_RV(INS_add, regCnt, REG_SPBASE, TYP_I_IMPL);
-        inst_JMP(EJ_jb, loop);
-
-        instGen_Set_Reg_To_Zero(EA_PTRSIZE, regCnt);
-
-        genDefineTempLabel(loop);
-
-        // Tickle the decremented value, and move back to ESP,
-        // note that it has to be done BEFORE the update of ESP since
-        // ESP might already be on the guard page.  It is OK to leave
-        // the final value of ESP on the guard page
-        getEmitter()->emitIns_AR_R(INS_TEST, EA_4BYTE, REG_SPBASE, REG_SPBASE, 0);
-
-        // This is a harmless trick to avoid the emitter trying to track the
-        // decrement of the ESP - we do the subtraction in another reg instead
-        // of adjusting ESP directly.
         regNumber regTmp = tree->GetSingleTempReg();
-
-        inst_RV_RV(INS_mov, regTmp, REG_SPBASE, TYP_I_IMPL);
-        inst_RV_IV(INS_sub, regTmp, compiler->eeGetPageSize(), EA_PTRSIZE);
-        inst_RV_RV(INS_mov, REG_SPBASE, regTmp, TYP_I_IMPL);
-
-        inst_RV_RV(INS_cmp, REG_SPBASE, regCnt, TYP_I_IMPL);
-        inst_JMP(EJ_jae, loop);
-
-        // Move the final value to ESP
-        inst_RV_RV(INS_mov, REG_SPBASE, regCnt);
+        genStackPointerDynamicAdjustmentWithProbe(regCnt, regTmp);
     }
 
 ALLOC_DONE:
@@ -7508,7 +7637,27 @@ bool CodeGen::genAdjustStackForPutArgStk(GenTreePutArgStk* putArgStk)
     else
     {
         m_pushStkArg = false;
-        inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+
+        // If argSize is large, we need to probe the stack like we do in the prolog (genAllocLclFrame)
+        // or for localloc (genLclHeap), to ensure we touch the stack pages sequentially, and don't miss
+        // the stack guard pages. The prolog probes, but we don't know at this point how much higher
+        // the last probed stack pointer value is. We default a threshold. Any size below this threshold
+        // we are guaranteed the stack has been probed. Above this threshold, we don't know. The threshold
+        // should be high enough to cover all common cases. Increasing the threshold means adding a few
+        // more "lowest address of stack" probes in the prolog. Since this is relatively rare, add it to
+        // stress modes.
+
+        if ((argSize >= ARG_STACK_PROBE_THRESHOLD_BYTES) ||
+            compiler->compStressCompile(Compiler::STRESS_GENERIC_VARN, 5))
+        {
+            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)argSize, /* hideSpChangeFromEmitter */ false,
+                                                           REG_NA);
+        }
+        else
+        {
+            inst_RV_IV(INS_sub, REG_SPBASE, argSize, EA_PTRSIZE);
+        }
+
         AddStackLevel(argSize);
         return true;
     }

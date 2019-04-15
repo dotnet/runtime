@@ -638,14 +638,8 @@ namespace System.Reflection.Emit
             }
             catch
             {
-                // We go over all DynamicMethodDesc during AppDomain shutdown and make sure
-                // that everything associated with them is released. So it is ok to skip reregistration
-                // for finalization during appdomain shutdown
-                if (!Environment.HasShutdownStarted)
-                {
-                    // Try again later.
-                    GC.ReRegisterForFinalize(this);
-                }
+                // Try again later.
+                GC.ReRegisterForFinalize(this);
                 return;
             }
 
@@ -666,12 +660,9 @@ namespace System.Reflection.Emit
                 // It is not safe to destroy the method if the managed resolver is alive.
                 if (RuntimeMethodHandle.GetResolver(m_methodHandle) != null)
                 {
-                    if (!Environment.HasShutdownStarted)
-                    {
-                        // Somebody might have been holding a reference on us via weak handle.
-                        // We will keep trying. It will be hopefully released eventually.
-                        GC.ReRegisterForFinalize(this);
-                    }
+                    // Somebody might have been holding a reference on us via weak handle.
+                    // We will keep trying. It will be hopefully released eventually.
+                    GC.ReRegisterForFinalize(this);
                     return;
                 }
 

@@ -1613,9 +1613,9 @@ NOINLINE AssemblyBaseObject* GetRuntimeAssemblyHelper(LPVOID __me, DomainAssembl
 // AssemblyLoadContextBaseObject
 // This class is the base class for AssemblyLoadContext
 //
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 #include "pshpack4.h"
-#endif // (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#endif // defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 class AssemblyLoadContextBaseObject : public Object
 {
     friend class MscorlibBinder;
@@ -1653,9 +1653,9 @@ class AssemblyLoadContextBaseObject : public Object
   public:
     INT_PTR GetNativeAssemblyLoadContext() { LIMITED_METHOD_CONTRACT; return _nativeAssemblyLoadContext; }
 };
-#if (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#if defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 #include "poppack.h"
-#endif // (defined(_TARGET_X86_) || defined(_TARGET_ARM_)) && !defined(FEATURE_PAL)
+#endif // defined(_TARGET_X86_) && !defined(FEATURE_PAL)
 
 // AssemblyNameBaseObject 
 // This class is the base class for assembly names
@@ -1678,9 +1678,7 @@ class AssemblyNameBaseObject : public Object
     OBJECTREF     _codeBase;
     OBJECTREF     _version;
     OBJECTREF     _strongNameKeyPair;
-    U1ARRAYREF    _hashForControl;
     DWORD         _hashAlgorithm;
-    DWORD         _hashAlgorithmForControl;
     DWORD         _versionCompatibility;
     DWORD         _flags;
 
@@ -1698,8 +1696,6 @@ class AssemblyNameBaseObject : public Object
     OBJECTREF GetVersion() { LIMITED_METHOD_CONTRACT; return _version; }
     DWORD GetAssemblyHashAlgorithm() { LIMITED_METHOD_CONTRACT; return _hashAlgorithm; }
     DWORD GetFlags() { LIMITED_METHOD_CONTRACT; return _flags; }
-    U1ARRAYREF GetHashForControl() { LIMITED_METHOD_CONTRACT; return _hashForControl;}
-    DWORD GetHashAlgorithmForControl() { LIMITED_METHOD_CONTRACT; return _hashAlgorithmForControl; }
 };
 
 // VersionBaseObject

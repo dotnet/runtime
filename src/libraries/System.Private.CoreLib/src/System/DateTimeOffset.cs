@@ -625,8 +625,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            _dateTime = (DateTime)info.GetValue("DateTime", typeof(DateTime)); // Do not rename (binary serialization)
-            _offsetMinutes = (short)info.GetValue("OffsetMinutes", typeof(short)); // Do not rename (binary serialization)
+            _dateTime = (DateTime)info.GetValue("DateTime", typeof(DateTime))!; // Do not rename (binary serialization)
+            _offsetMinutes = (short)info.GetValue("OffsetMinutes", typeof(short))!; // Do not rename (binary serialization)
         }
 
         // Returns the hash code for this DateTimeOffset.

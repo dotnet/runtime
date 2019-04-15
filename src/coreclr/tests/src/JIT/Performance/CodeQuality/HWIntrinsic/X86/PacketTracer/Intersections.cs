@@ -33,7 +33,7 @@ internal struct Intersections
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool AllNullIntersections(Vector256<float> dis)
     {
-        var cmp = Compare(dis, NullDistance, FloatComparisonMode.EqualOrderedNonSignaling);
+        var cmp = Compare(dis, NullDistance, FloatComparisonMode.OrderedEqualNonSignaling);
         var zero = Vector256<int>.Zero;
         // efficiently generate an all-one mask vector by lower latency AVX2 ComapreEqual
         var mask = Avx2.CompareEqual(zero, zero); 

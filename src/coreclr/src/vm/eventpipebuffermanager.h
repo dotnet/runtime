@@ -71,9 +71,9 @@ private:
     unsigned int m_numBuffersLeaked;
     Volatile<LONG> m_numEventsStored;
     Volatile<LONG> m_numEventsDropped;
-    LONG m_numEventsWritten;
 #endif // _DEBUG
 
+    unsigned long m_numEventsWritten;
     // Allocate a new buffer for the specified thread.
     // This function will store the buffer in the thread's buffer list for future use and also return it here.
     // A NULL return value means that a buffer could not be allocated.

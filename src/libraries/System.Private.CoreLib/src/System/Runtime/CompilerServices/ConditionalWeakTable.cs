@@ -752,11 +752,9 @@ namespace System.Runtime.CompilerServices
 
             ~Container()
             {
-                // We're just freeing per-appdomain unmanaged handles here. If we're already shutting down the AD,
-                // don't bother. (Despite its name, Environment.HasShutdownStart also returns true if the current
-                // AD is finalizing.)  We also skip doing anything if the container is invalid, including if someone
+                // Skip doing anything if the container is invalid, including if somehow
                 // the container object was allocated but its associated table never set.
-                if (Environment.HasShutdownStarted || _invalid || _parent is null)
+                if (_invalid || _parent is null)
                 {
                     return;
                 }

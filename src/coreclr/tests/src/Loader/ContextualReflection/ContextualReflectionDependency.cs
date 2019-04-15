@@ -5,6 +5,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Loader;
 
 namespace ContextualReflectionTest
@@ -19,7 +20,7 @@ namespace ContextualReflectionTest
         void RunTestsIsolated();
     }
 
-    public class ConntextualReflectionProxy
+    public class ContextualReflectionProxy
     {
         public static AssemblyLoadContext CurrentContextualReflectionContext
         {
@@ -30,13 +31,21 @@ namespace ContextualReflectionTest
 #else
                 Type t = typeof (AssemblyLoadContext);
 
-                object result = t.InvokeMember("CurrentContextualReflectionContext",
-                    BindingFlags.Public | BindingFlags.Static | BindingFlags.GetProperty,
-                    null,
-                    null,
-                    new object [] {});
+                try
+                {
+                    object result = t.InvokeMember("CurrentContextualReflectionContext",
+                        BindingFlags.Public | BindingFlags.Static | BindingFlags.GetProperty,
+                        null,
+                        null,
+                        new object [] {});
 
-                return (AssemblyLoadContext) result;
+                    return (AssemblyLoadContext) result;
+                }
+                catch(Exception ex)
+                {
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                }
+                return null;
 #endif
             }
         }
@@ -48,13 +57,21 @@ namespace ContextualReflectionTest
 #else
             Type t = typeof (AssemblyLoadContext);
 
-            object result = t.InvokeMember("EnterContextualReflection",
-                BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance,
-                null,
-                alc,
-                new object [] {});
+            try
+            {
+                object result = t.InvokeMember("EnterContextualReflection",
+                    BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance,
+                    null,
+                    alc,
+                    new object [] {});
 
-            return (IDisposable) result;
+                return (IDisposable) result;
+            }
+            catch(Exception ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            }
+            return null;
 #endif
         }
 
@@ -65,13 +82,20 @@ namespace ContextualReflectionTest
 #else
             Type t = typeof (AssemblyLoadContext);
 
-            object result = t.InvokeMember("EnterContextualReflection",
-                BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Static,
-                null,
-                null,
-                new object [] {activating});
-
-            return (IDisposable) result;
+            try
+            {
+                object result = t.InvokeMember("EnterContextualReflection",
+                    BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Static,
+                    null,
+                    null,
+                    new object [] {activating});
+                return (IDisposable) result;
+            }
+            catch(Exception ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            }
+            return null;
 #endif
         }
     }

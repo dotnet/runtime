@@ -12,18 +12,18 @@ namespace JIT.HardwareIntrinsics.X86
         static Program()
         {
             TestList = new Dictionary<string, Action>() {
-                ["ConvertToVector256UInt16.Byte"] = ConvertToVector256UInt16Byte,
+                ["ConvertToVector256Int16.Byte"] = ConvertToVector256Int16Byte,
                 ["ConvertToVector256Int16.SByte"] = ConvertToVector256Int16SByte,
-                ["ConvertToVector256UInt32.Byte"] = ConvertToVector256UInt32Byte,
+                ["ConvertToVector256Int32.Byte"] = ConvertToVector256Int32Byte,
                 ["ConvertToVector256Int32.Int16"] = ConvertToVector256Int32Int16,
                 ["ConvertToVector256Int32.SByte"] = ConvertToVector256Int32SByte,
-                ["ConvertToVector256UInt32.UInt16"] = ConvertToVector256UInt32UInt16,
-                ["ConvertToVector256UInt64.Byte"] = ConvertToVector256UInt64Byte,
+                ["ConvertToVector256Int32.UInt16"] = ConvertToVector256Int32UInt16,
+                ["ConvertToVector256Int64.Byte"] = ConvertToVector256Int64Byte,
                 ["ConvertToVector256Int64.Int16"] = ConvertToVector256Int64Int16,
                 ["ConvertToVector256Int64.Int32"] = ConvertToVector256Int64Int32,
                 ["ConvertToVector256Int64.SByte"] = ConvertToVector256Int64SByte,
-                ["ConvertToVector256UInt64.UInt16"] = ConvertToVector256UInt64UInt16,
-                ["ConvertToVector256UInt64.UInt32"] = ConvertToVector256UInt64UInt32,
+                ["ConvertToVector256Int64.UInt16"] = ConvertToVector256Int64UInt16,
+                ["ConvertToVector256Int64.UInt32"] = ConvertToVector256Int64UInt32,
             };
         }
     }

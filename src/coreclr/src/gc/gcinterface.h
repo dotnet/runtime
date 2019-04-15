@@ -246,8 +246,6 @@ enum GCEventKeyword
       | GCEventKeyword_GCHandlePrivate
       | GCEventKeyword_GCHeapDump
       | GCEventKeyword_GCSampledObjectAllocationHigh
-      | GCEventKeyword_GCHeapDump
-      | GCEventKeyword_GCSampledObjectAllocationHigh
       | GCEventKeyword_GCHeapSurvivalAndMovement
       | GCEventKeyword_GCHeapCollect
       | GCEventKeyword_GCHeapAndTypeNames

@@ -896,15 +896,23 @@
             "methods": [
                 {
                     "name": "System.Text.Tests.EncoderConvert2.EncoderASCIIConvertMixedASCIIUnicodeCharArrayPartial",
-                    "reason": "https://github.com/dotnet/coreclr/issues/23020"
+                    "reason": "https://github.com/dotnet/coreclr/issues/23864"
                 },
                 {
                     "name": "System.Text.Tests.EncoderConvert2.EncoderUTF8ConvertMixedASCIIUnicodeCharArrayPartial",
-                    "reason": "https://github.com/dotnet/coreclr/issues/23020"
+                    "reason": "https://github.com/dotnet/coreclr/issues/23864"
                 },
                 {
                     "name": "System.Text.Tests.EncoderConvert2.EncoderUTF8ConvertUnicodeCharArrayPartial",
-                    "reason": "https://github.com/dotnet/coreclr/issues/23020"
+                    "reason": "https://github.com/dotnet/coreclr/issues/23864"
+                },
+                {
+                    "name": "System.Text.Tests.NegativeEncodingTests.GetByteCount_Invalid",
+                    "reason": "https://github.com/dotnet/coreclr/issues/23864"
+                },
+                {
+                    "name": "System.Text.Tests.UTF8EncodingDecode.Decode_InvalidBytes",
+                    "reason": "https://github.com/dotnet/coreclr/issues/23864"
                 }
             ]
         }
@@ -1357,7 +1365,11 @@
                 },
                 {
                     "name": "System.Tests.BufferTests.BlockCopy_Invalid",
-                    "reason" : "https://github.com/dotnet/coreclr/pull/23636"
+                    "reason": "https://github.com/dotnet/coreclr/pull/23636"
+                },
+                {
+                    "name": "System.Tests.VersionTests.Comparisons_NullArgument_ThrowsArgumentNullException",
+                    "reason":  "Version was improved to no longer throw from comparison operators"
                 },
             ]
         }

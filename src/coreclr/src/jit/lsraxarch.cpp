@@ -2457,14 +2457,14 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 break;
             }
 
-            case NI_SSE_CompareEqualOrderedScalar:
-            case NI_SSE_CompareEqualUnorderedScalar:
-            case NI_SSE_CompareNotEqualOrderedScalar:
-            case NI_SSE_CompareNotEqualUnorderedScalar:
-            case NI_SSE2_CompareEqualOrderedScalar:
-            case NI_SSE2_CompareEqualUnorderedScalar:
-            case NI_SSE2_CompareNotEqualOrderedScalar:
-            case NI_SSE2_CompareNotEqualUnorderedScalar:
+            case NI_SSE_CompareScalarOrderedEqual:
+            case NI_SSE_CompareScalarUnorderedEqual:
+            case NI_SSE_CompareScalarOrderedNotEqual:
+            case NI_SSE_CompareScalarUnorderedNotEqual:
+            case NI_SSE2_CompareScalarOrderedEqual:
+            case NI_SSE2_CompareScalarUnorderedEqual:
+            case NI_SSE2_CompareScalarOrderedNotEqual:
+            case NI_SSE2_CompareScalarUnorderedNotEqual:
             {
                 buildInternalIntRegisterDefForNode(intrinsicTree, allByteRegs());
                 setInternalRegsDelayFree = true;

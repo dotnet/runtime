@@ -18,9 +18,9 @@ internal static class ColorPacket256Helper
     public static Int32RGBPacket256 ConvertToIntRGB(this VectorPacket256 colors)
     {
 
-        var rsMask = Compare(colors.Xs, One, FloatComparisonMode.GreaterThanOrderedNonSignaling);
-        var gsMask = Compare(colors.Ys, One, FloatComparisonMode.GreaterThanOrderedNonSignaling);
-        var bsMask = Compare(colors.Zs, One, FloatComparisonMode.GreaterThanOrderedNonSignaling);
+        var rsMask = Compare(colors.Xs, One, FloatComparisonMode.OrderedGreaterThanNonSignaling);
+        var gsMask = Compare(colors.Ys, One, FloatComparisonMode.OrderedGreaterThanNonSignaling);
+        var bsMask = Compare(colors.Zs, One, FloatComparisonMode.OrderedGreaterThanNonSignaling);
 
         var rs = BlendVariable(colors.Xs, One, rsMask);
         var gs = BlendVariable(colors.Ys, One, gsMask);
