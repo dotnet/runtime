@@ -685,7 +685,7 @@ namespace System.Net.Test.Common
     {
         public static readonly Http11LoopbackServerFactory Singleton = new Http11LoopbackServerFactory();
 
-        public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync)
+        public override Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 30_000)
         {
             return LoopbackServer.CreateServerAsync((server, uri) => funcAsync(server, uri));
         }

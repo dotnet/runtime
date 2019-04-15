@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -21,6 +22,8 @@ namespace System.Net.Http.Functional.Tests
         private const string s_customCookieHeaderValue = "CustomCookie=456";
 
         private const string s_simpleContent = "Hello world!";
+
+        public HttpClientHandlerTest_Cookies(ITestOutputHelper output) : base(output) { }
 
         //
         // Send cookie tests
@@ -670,6 +673,8 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class HttpClientHandlerTest_Cookies_Http11 : HttpClientHandlerTestBase
     {
+        public HttpClientHandlerTest_Cookies_Http11(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         public async Task GetAsync_ReceiveMultipleSetCookieHeaders_CookieAdded()
         {

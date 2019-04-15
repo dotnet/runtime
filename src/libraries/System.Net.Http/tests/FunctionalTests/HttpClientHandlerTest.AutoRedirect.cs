@@ -17,7 +17,6 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class HttpClientHandlerTest_AutoRedirect : HttpClientHandlerTestBase
     {
-        readonly ITestOutputHelper _output;
         private const string ExpectedContent = "Test content";
         private const string Username = "testuser";
         private const string Password = "password";
@@ -61,10 +60,7 @@ namespace System.Net.Http.Functional.Tests
             new object[] { 308, "HEAD", "HEAD" },
         };
 
-        public HttpClientHandlerTest_AutoRedirect(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public HttpClientHandlerTest_AutoRedirect(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(RedirectStatusCodes))]

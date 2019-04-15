@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -22,6 +23,8 @@ namespace System.Net.Http.Functional.Tests
 
         private static Frame MakeDataFrame(int streamId, byte[] data, bool endStream = false) =>
             new DataFrame(data, (endStream ? FrameFlags.EndStream : FrameFlags.None), 0, streamId);
+
+        public HttpClientHandlerTest_TrailingHeaders_Test (ITestOutputHelper output) : base(output) { }
 
         [Theory]
         [InlineData(false)]

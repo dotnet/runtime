@@ -36,12 +36,7 @@ namespace System.Net.Http.Functional.Tests
         private static Uri s_authenticatedServer = DomainJoinedTestsEnabled ? 
             new Uri($"http://{Configuration.Http.DomainJoinedHttpHost}/test/auth/negotiate/showidentity.ashx") : null;
 
-        private readonly ITestOutputHelper _output;
-
-        public DefaultCredentialsTest(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public DefaultCredentialsTest(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(ServerAuthenticationTestsEnabled))]

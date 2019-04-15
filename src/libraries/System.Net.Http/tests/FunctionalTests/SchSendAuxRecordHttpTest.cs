@@ -15,12 +15,7 @@ namespace System.Net.Http.Functional.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "HttpsTestServer not compatible on UAP")]
     public abstract class SchSendAuxRecordHttpTest : HttpClientHandlerTestBase
     {
-        readonly ITestOutputHelper _output;
-        
-        public SchSendAuxRecordHttpTest(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]

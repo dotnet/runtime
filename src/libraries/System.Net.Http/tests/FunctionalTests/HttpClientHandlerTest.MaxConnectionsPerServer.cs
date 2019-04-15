@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -17,6 +18,8 @@ namespace System.Net.Http.Functional.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP connection management behavior is different due to WinRT")]
     public abstract class HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandlerTestBase
     {
+        public HttpClientHandler_MaxConnectionsPerServer_Test(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxConnectionsPerServer either returns two or int.MaxValue depending if ctor of HttpClientHandlerTest executed first. Disabling cause of random xunit execution order.")]
         public void Default_ExpectedValue()

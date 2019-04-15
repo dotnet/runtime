@@ -17,12 +17,7 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class ResponseStreamTest : HttpClientHandlerTestBase
     {
-        private readonly ITestOutputHelper _output;
-        
-        public ResponseStreamTest(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public ResponseStreamTest(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop("Uses external server")]
         [Theory]

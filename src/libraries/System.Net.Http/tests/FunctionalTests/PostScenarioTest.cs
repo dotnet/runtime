@@ -25,8 +25,6 @@ namespace System.Net.Http.Functional.Tests
         private static readonly Uri SecureBasicAuthServerUri =
             Configuration.Http.BasicAuthUriForCreds(true, UserName, Password);
 
-        private readonly ITestOutputHelper _output;
-
         public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
         public static readonly object[][] VerifyUploadServers = Configuration.Http.VerifyUploadServers;
 
@@ -37,10 +35,7 @@ namespace System.Net.Http.Functional.Tests
                     new object[] { SecureBasicAuthServerUri }
                 };
 
-        public PostScenarioTest(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public PostScenarioTest(ITestOutputHelper output) : base(output) { }
 
         [ActiveIssue(30057, TargetFrameworkMonikers.Uap)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework disposes request content after send")]

@@ -8,11 +8,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
    public abstract class HttpClientHandler_ResponseDrain_Test : HttpClientHandlerTestBase
     {
+        public HttpClientHandler_ResponseDrain_Test(ITestOutputHelper output) : base(output) { }
+
         protected virtual void SetResponseDrainTimeout(HttpClientHandler handler, TimeSpan time) { }
 
         [OuterLoop]
