@@ -42,7 +42,7 @@ struct com_activation_context
     void **class_factory_dest;
 };
 
-using com_activation_fn = int(*)(com_activation_context*);
+using com_activation_fn = int(STDMETHODCALLTYPE*)(com_activation_context*);
 
 namespace
 {
