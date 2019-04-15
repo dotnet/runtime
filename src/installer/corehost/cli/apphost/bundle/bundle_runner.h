@@ -16,10 +16,10 @@ namespace bundle
     {
     public:
         bundle_runner_t(const pal::string_t& bundle_path)
-            :m_bundle_path(bundle_path),
-            m_bundle_stream(nullptr),
-            m_manifest(nullptr),
-            m_num_embedded_files(0)
+            : m_bundle_stream(nullptr)
+            , m_manifest(nullptr)
+            , m_num_embedded_files(0)
+            , m_bundle_path(bundle_path)
         {
         }
 

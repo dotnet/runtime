@@ -29,8 +29,8 @@ public:
     typedef str_to_vector_map_t rid_fallback_graph_t;
 
     deps_json_t()
-        : m_valid(false)
-        , m_file_exists(false)
+        : m_file_exists(false)
+        , m_valid(false)
     {
     }
 

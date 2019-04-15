@@ -9,9 +9,9 @@
 #include "breadcrumbs.h"
 
 breadcrumb_writer_t::breadcrumb_writer_t(bool enabled, const std::unordered_set<pal::string_t> &files)
-    : m_status(false)
+    : m_files(files)
     , m_enabled(enabled)
-    , m_files(files)
+    , m_status(false)
 {
     if (enabled && !pal::get_default_breadcrumb_store(&m_breadcrumb_store))
     {
