@@ -54,6 +54,7 @@ namespace NetClient
             foreach (var hr in hrs)
             {
                 Assert.AreEqual(hr, this.server.Return_As_HResult(hr));
+                Assert.AreEqual(hr, this.server.Return_As_HResult_Struct(hr).hr);
             }
         }
     }
