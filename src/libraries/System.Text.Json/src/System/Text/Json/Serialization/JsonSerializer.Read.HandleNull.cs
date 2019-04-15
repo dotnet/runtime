@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
@@ -29,9 +30,15 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowJsonReaderException_DeserializeCannotBeNull(reader, state);
             }
 
-            if (state.Current.IsEnumerable() || state.Current.IsPropertyEnumerable())
+            if (state.Current.IsEnumerable())
             {
-                ReadStackFrame.SetReturnValue(null, options, ref state.Current);
+                ApplyObjectToEnumerable(null, options, ref state.Current);
+                return false;
+            }
+
+            if (state.Current.IsPropertyEnumerable())
+            {
+                state.Current.JsonPropertyInfo.ApplyNullValue(options, ref state);
                 return false;
             }
 

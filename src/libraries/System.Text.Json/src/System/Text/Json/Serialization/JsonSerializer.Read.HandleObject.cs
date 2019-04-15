@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.Text.Json.Serialization
 {
     public static partial class JsonSerializer
@@ -55,7 +57,7 @@ namespace System.Text.Json.Serialization
             }
 
             state.Pop();
-            ReadStackFrame.SetReturnValue(value, options, ref state.Current);
+            ApplyObjectToEnumerable(value, options, ref state.Current);
             return false;
         }
     }
