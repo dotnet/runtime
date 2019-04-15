@@ -663,46 +663,6 @@ namespace System.Text
             }
         }
 
-        public static OperationStatus DecodeUtf16(ReadOnlySpan<char> utf16Source, out Rune result, out int charsConsumed)
-        {
-            // [TODO] This method was renamed to DecodeFromUtf16. We'll leave this copy of
-            // the method here temporarily so that we don't break corefx consumers
-            // while the rename takes place.
-            // Tracking issue: https://github.com/dotnet/coreclr/issues/23319
-
-            return DecodeFromUtf16(utf16Source, out result, out charsConsumed);
-        }
-
-        public static OperationStatus DecodeUtf16FromEnd(ReadOnlySpan<char> utf16Source, out Rune result, out int charsConsumed)
-        {
-            // [TODO] This method was renamed to DecodeLastFromUtf16. We'll leave this copy of
-            // the method here temporarily so that we don't break corefx consumers
-            // while the rename takes place.
-            // Tracking issue: https://github.com/dotnet/coreclr/issues/23319
-
-            return DecodeLastFromUtf16(utf16Source, out result, out charsConsumed);
-        }
-
-        public static OperationStatus DecodeUtf8(ReadOnlySpan<byte> utf8Source, out Rune result, out int bytesConsumed)
-        {
-            // [TODO] This method was renamed to DecodeFromUtf8. We'll leave this copy of
-            // the method here temporarily so that we don't break corefx consumers
-            // while the rename takes place.
-            // Tracking issue: https://github.com/dotnet/coreclr/issues/23319
-
-            return DecodeFromUtf8(utf8Source, out result, out bytesConsumed);
-        }
-
-        public static OperationStatus DecodeUtf8FromEnd(ReadOnlySpan<byte> utf8Source, out Rune result, out int bytesConsumed)
-        {
-            // [TODO] This method was renamed to DecodeLastFromUtf8. We'll leave this copy of
-            // the method here temporarily so that we don't break corefx consumers
-            // while the rename takes place.
-            // Tracking issue: https://github.com/dotnet/coreclr/issues/23319
-
-            return DecodeLastFromUtf8(utf8Source, out result, out bytesConsumed);
-        }
-
         /// <summary>
         /// Encodes this <see cref="Rune"/> to a UTF-16 destination buffer.
         /// </summary>
@@ -985,16 +945,6 @@ namespace System.Text
             return false;
         }
 
-        public bool TryEncode(Span<char> destination, out int charsWritten)
-        {
-            // [TODO] This method was renamed to TryEncodeToUtf16. We'll leave this copy of
-            // the method here temporarily so that we don't break corefx consumers
-            // while the rename takes place.
-            // Tracking issue: https://github.com/dotnet/coreclr/issues/23319
-
-            return TryEncodeToUtf16(destination, out charsWritten);
-        }
-
         /// <summary>
         /// Encodes this <see cref="Rune"/> to a destination buffer as UTF-8 bytes.
         /// </summary>
@@ -1061,16 +1011,6 @@ namespace System.Text
 
             bytesWritten = default;
             return false;
-        }
-
-        public bool TryEncodeToUtf8Bytes(Span<byte> destination, out int bytesWritten)
-        {
-            // [TODO] This method was renamed to TryEncodeToUtf8. We'll leave this copy of
-            // the method here temporarily so that we don't break corefx consumers
-            // while the rename takes place.
-            // Tracking issue: https://github.com/dotnet/coreclr/issues/23319
-
-            return TryEncodeToUtf8(destination, out bytesWritten);
         }
 
         /// <summary>
