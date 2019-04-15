@@ -21,6 +21,18 @@ set(SOURCES
     ./nativehost.cpp
 )
 
+if(WIN32)
+    list(APPEND SOURCES
+        ./comhost_test.cpp)
+
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DELAYLOAD:nethost.dll")
+endif()
+
 include(../testexe.cmake)
 
 target_link_libraries(${DOTNET_PROJECT_NAME} nethost)
+
+# Specify non-default Windows libs to be used for Arm/Arm64 builds
+if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
+    target_link_libraries(${DOTNET_PROJECT_NAME} Advapi32.lib Ole32.lib OleAut32.lib)
+endif()

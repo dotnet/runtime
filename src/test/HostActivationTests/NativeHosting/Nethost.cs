@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build.Framework;
-using Microsoft.Win32;
-using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -131,12 +129,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .And.HaveStdOutContaining($"hostfxr_path: {hostFxrPath}".ToLower());
         }
 
-        public class SharedTestState : IDisposable
+        public class SharedTestState : SharedTestStateBase
         {
-            public string BaseDirectory { get; }
-            public string NativeHostPath { get; }
-            public RepoDirectoriesProvider RepoDirectories { get; }
-
             public string HostFxrPath { get; }
             public string InvalidInstallRoot { get; }
             public string ValidInstallRoot { get; }
@@ -145,17 +139,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                BaseDirectory = SharedFramework.CalculateUniqueTestDirectory(Path.Combine(TestArtifact.TestArtifactsPath, "nativeHosting"));
-                Directory.CreateDirectory(BaseDirectory);
-
-                string nativeHostName = RuntimeInformationExtensions.GetExeFileNameForCurrentPlatform("nativehost");
-                NativeHostPath = Path.Combine(BaseDirectory, nativeHostName);
-
-                // Copy over native host and nethost
-                RepoDirectories = new RepoDirectoriesProvider();
+                // Copy nethost next to native host
                 string nethostName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost");
-                File.Copy(Path.Combine(RepoDirectories.CorehostPackages, nethostName), Path.Combine(BaseDirectory, nethostName));
-                File.Copy(Path.Combine(RepoDirectories.Artifacts, "corehost_test", nativeHostName), NativeHostPath);
+                File.Copy(
+                    Path.Combine(RepoDirectories.CorehostPackages, nethostName),
+                    Path.Combine(Path.GetDirectoryName(NativeHostPath), nethostName));
 
                 InvalidInstallRoot = Path.Combine(BaseDirectory, "invalid");
                 Directory.CreateDirectory(InvalidInstallRoot);
@@ -184,14 +172,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 }
 
                 return Path.Combine(fxrRoot, "2.3.0", HostFxrName);
-            }
-
-            public void Dispose()
-            {
-                if (!TestArtifact.PreserveTestRuns() && Directory.Exists(BaseDirectory))
-                {
-                    Directory.Delete(BaseDirectory, true);
-                }
             }
         }
     }
