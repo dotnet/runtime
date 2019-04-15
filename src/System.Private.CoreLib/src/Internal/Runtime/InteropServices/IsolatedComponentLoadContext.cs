@@ -17,7 +17,7 @@ namespace Internal.Runtime.InteropServices
     {
         private readonly AssemblyDependencyResolver _resolver;
 
-        public IsolatedComponentLoadContext(string componentAssemblyPath)
+        public IsolatedComponentLoadContext(string componentAssemblyPath) : base($"IsolatedComponentLoadContext({componentAssemblyPath})")
         {
             _resolver = new AssemblyDependencyResolver(componentAssemblyPath);
         }
