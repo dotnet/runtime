@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
 // The worker functions in this file was optimized for performance. If you make changes
 // you should use care to consider all of the interesting cases.
 
@@ -11,6 +10,7 @@
 // The fast loops attempts to blaze through as fast as possible with optimistic range checks,
 // processing multiple characters at a time, and falling back to the slow loop for all special cases.
 
+#nullable enable
 using System;
 using System.Buffers;
 using System.Diagnostics;
@@ -139,7 +139,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException((index < 0) ? ExceptionArgument.index : ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (chars.Length - index < count)
+            if (chars!.Length - index < count) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -166,7 +166,7 @@ namespace System.Text
 
             fixed (char* pChars = chars)
             {
-                return GetByteCountCommon(pChars, chars.Length);
+                return GetByteCountCommon(pChars, chars!.Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
         }
 
@@ -233,7 +233,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetCharCountCommon
-        private protected sealed override unsafe int GetByteCountFast(char* pChars, int charsLength, EncoderFallback fallback, out int charsConsumed)
+        private protected sealed override unsafe int GetByteCountFast(char* pChars, int charsLength, EncoderFallback? fallback, out int charsConsumed)
         {
             // The number of UTF-8 code units may exceed the number of UTF-16 code units,
             // so we'll need to check for overflow before casting to Int32.
@@ -276,12 +276,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (s.Length - charIndex < charCount)
+            if (s!.Length - charIndex < charCount) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes.Length)
+            if ((uint)byteIndex > bytes!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
             }
@@ -326,12 +326,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (chars.Length - charIndex < charCount)
+            if (chars!.Length - charIndex < charCount) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes.Length)
+            if ((uint)byteIndex > bytes!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
             }
@@ -444,7 +444,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException((index < 0) ? ExceptionArgument.index : ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (bytes.Length - index < count)
+            if (bytes!.Length - index < count) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -511,12 +511,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (bytes.Length - byteIndex < byteCount)
+            if (bytes!.Length - byteIndex < byteCount) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            if ((uint)charIndex > (uint)chars.Length)
+            if ((uint)charIndex > (uint)chars!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_Index);
             }
@@ -614,7 +614,7 @@ namespace System.Text
             return (int)(pOutputBufferRemaining - pChars);
         }
 
-        private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS decoder)
+        private protected sealed override unsafe int GetCharsWithFallback(ReadOnlySpan<byte> bytes, int originalBytesLength, Span<char> chars, int originalCharsLength, DecoderNLS? decoder)
         {
             // We special-case DecoderReplacementFallback if it's telling us to write a single U+FFFD char,
             // since we believe this to be relatively common and we can handle it more efficiently than
@@ -673,7 +673,7 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (bytes.Length - index < count)
+            if (bytes!.Length - index < count) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -723,7 +723,7 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // called directly by GetCharCountCommon
-        private protected sealed override unsafe int GetCharCountFast(byte* pBytes, int bytesLength, DecoderFallback fallback, out int bytesConsumed)
+        private protected sealed override unsafe int GetCharCountFast(byte* pBytes, int bytesLength, DecoderFallback? fallback, out int bytesConsumed)
         {
             // The number of UTF-16 code units will never exceed the number of UTF-8 code units,
             // so the addition at the end of this method will not overflow.
