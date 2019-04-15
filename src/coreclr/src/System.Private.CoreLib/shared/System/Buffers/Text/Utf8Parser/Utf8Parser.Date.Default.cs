@@ -83,12 +83,6 @@ namespace System.Buffers.Text
                 offsetMinutes = (int)(digit1 * 10 + digit2);
             }
 
-            TimeSpan offset = new TimeSpan(hours: offsetHours, minutes: offsetMinutes, seconds: 0);
-            if (sign == Utf8Constants.Minus)
-            {
-                offset = -offset;
-            }
-
             if (!TryCreateDateTimeOffset(dateTime: dateTime, offsetNegative: sign == Utf8Constants.Minus, offsetHours: offsetHours, offsetMinutes: offsetMinutes, out value))
             {
                 bytesConsumed = 0;
