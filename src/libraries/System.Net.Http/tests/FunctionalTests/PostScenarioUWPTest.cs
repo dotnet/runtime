@@ -18,12 +18,7 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class PostScenarioUWPTest : HttpClientHandlerTestBase
     {
-        private readonly ITestOutputHelper _output;
-
-        public PostScenarioUWPTest(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public PostScenarioUWPTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public void Authentication_UseStreamContent_Throws()

@@ -7,6 +7,7 @@ using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -15,6 +16,8 @@ namespace System.Net.Http.Functional.Tests
     public abstract class HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandlerTestBase
     {
         private static bool ClientSupportsDHECipherSuites => (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1607OrGreater);
+
+        public HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public void SingletonReturnsTrue()

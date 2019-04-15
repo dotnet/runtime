@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -15,6 +16,8 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandlerTestBase
     {
+        public HttpClientHandler_MaxResponseHeadersLength_Test(ITestOutputHelper output) : base(output) { }
+
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not currently supported on UAP")]
         [Theory]
         [InlineData(0)]

@@ -9,11 +9,14 @@ using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientMiniStress : HttpClientHandlerTestBase
     {
+        public HttpClientMiniStress(ITestOutputHelper output) : base(output) { }
+
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [MemberData(nameof(GetStressOptions))]
         public void SingleClient_ManyGets_Sync(int numRequests, int dop, HttpCompletionOption completionOption)

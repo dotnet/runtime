@@ -8,6 +8,7 @@ using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -15,6 +16,8 @@ namespace System.Net.Http.Functional.Tests
     {
         protected virtual Stream GetStream(Stream s) => s;
         protected virtual Stream GetStream_ClientDisconnectOk(Stream s) => s;
+
+        public HttpProtocolTests(ITestOutputHelper output) : base(output) { }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Uap does not support 1.0")]
         [Fact]
@@ -642,6 +645,8 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class HttpProtocolTests_Dribble : HttpProtocolTests
     {
+        public HttpProtocolTests_Dribble(ITestOutputHelper output) : base(output) { }
+
         protected override Stream GetStream(Stream s) => new DribbleStream(s);
         protected override Stream GetStream_ClientDisconnectOk(Stream s) => new DribbleStream(s, true);
     }

@@ -19,8 +19,6 @@ namespace System.Net.Http.Functional.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Tests would need to be rewritten due to behavior differences with WinRT")]
     public abstract class HttpClientHandler_Authentication_Test : HttpClientHandlerTestBase
     {
-        private readonly ITestOutputHelper _output;
-
         private const string Username = "testusername";
         private const string Password = "testpassword";
         private const string Domain = "testdomain";
@@ -39,10 +37,7 @@ namespace System.Net.Http.Functional.Tests
             }
         };
 
-        public HttpClientHandler_Authentication_Test(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
 
         [Theory]
         [MemberData(nameof(Authentication_TestData))]

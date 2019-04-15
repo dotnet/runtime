@@ -10,11 +10,14 @@ using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandler_Cancellation_Test : HttpClientHandlerTestBase
     {
+        public HttpClientHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
+
         [Theory]
         [InlineData(false, CancellationMode.Token)]
         [InlineData(true, CancellationMode.Token)]

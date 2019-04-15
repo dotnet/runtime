@@ -16,14 +16,9 @@ namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandler_Decompression_Test : HttpClientHandlerTestBase
     {
-        private readonly ITestOutputHelper _output;
-
         public static readonly object[][] CompressedServers = System.Net.Test.Common.Configuration.Http.CompressedServers;
 
-        public HttpClientHandler_Decompression_Test(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public HttpClientHandler_Decompression_Test(ITestOutputHelper output) : base(output) { }
 
         public static IEnumerable<object[]> DecompressedResponse_MethodSpecified_DecompressedContentReturned_MemberData()
         {

@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -17,6 +18,8 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandlerTestBase
     {
+        public HttpClientHandler_DefaultProxyCredentials_Test(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         public void Default_Get_Null()
         {

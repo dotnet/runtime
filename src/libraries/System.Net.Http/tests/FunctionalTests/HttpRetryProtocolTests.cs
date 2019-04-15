@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -18,6 +19,8 @@ namespace System.Net.Http.Functional.Tests
 
         // Retry logic is supported by SocketsHttpHandler, CurlHandler, uap, and netfx.  Only WinHttp does not support. 
         private bool IsRetrySupported => !IsWinHttpHandler;
+
+        public HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         [ActiveIssue(26770, TargetFrameworkMonikers.NetFramework)]

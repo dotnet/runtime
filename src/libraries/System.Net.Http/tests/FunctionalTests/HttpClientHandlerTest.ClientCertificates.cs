@@ -26,12 +26,8 @@ namespace System.Net.Http.Functional.Tests
         public bool CanTestClientCertificates =>
             CanTestCertificates && BackendSupportsCustomCertificateHandling;
 
-        public HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) { }
 
-        private readonly ITestOutputHelper _output;
         [Fact]
         public void ClientCertificateOptions_Default()
         {

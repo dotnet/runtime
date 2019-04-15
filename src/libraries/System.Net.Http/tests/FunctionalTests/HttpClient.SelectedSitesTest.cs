@@ -8,11 +8,14 @@ using System.Reflection;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClient_SelectedSites_Test : HttpClientHandlerTestBase
     {
+        public HttpClient_SelectedSites_Test(ITestOutputHelper output) : base(output) { }
+
         public static bool IsSelectedSitesTestEnabled() 
         {
             string envVar = Environment.GetEnvironmentVariable("CORFX_NET_HTTP_SELECTED_SITES");

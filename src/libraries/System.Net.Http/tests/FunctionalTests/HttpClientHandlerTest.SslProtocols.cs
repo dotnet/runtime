@@ -11,6 +11,7 @@ using System.Security.Authentication;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -20,6 +21,8 @@ namespace System.Net.Http.Functional.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SslProtocols property requires .NET 4.7.2")]
     public abstract partial class HttpClientHandler_SslProtocols_Test : HttpClientHandlerTestBase
     {
+        public HttpClientHandler_SslProtocols_Test(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         public void DefaultProtocols_MatchesExpected()
         {
