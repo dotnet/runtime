@@ -25,11 +25,9 @@ jobs:
         variables:
           - group: Publish-Build-Assets
           - group: DotNet-Blob-Feed
-          - group: DotNet-MyGet-Publish
           - group: DotNet-Versions-Publish
           - _dotnetFeedUrl: https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json
           - _maestroApiEndpoint: https://maestro-prod.westus2.cloudapp.azure.com
-          - _mygetFeedUrl: https://dotnet.myget.org/F/dotnet-core/api/v2/package
           - _manifestsDir: ${{ parameters.artifactsDir }}/AssetManifests
           - _TeamName: DotNetCore
           - _SignType: real
@@ -95,13 +93,6 @@ jobs:
                     /p:MaestroApiEndpoint=https://maestro-prod.westus2.cloudapp.azure.com
                     /p:Configuration=${{ parameters.buildConfiguration }}
             displayName: Publish to Build Assets Registry
-
-          # - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 eng\publish.proj
-          #           -warnaserror:0 -ci
-          #           /t:NuGetPush
-          #           /p:NuGetSource=$(_mygetFeedUrl)
-          #           /p:NuGetApiKey=$(dotnet-myget-org-api-key)
-          #   displayName: Push to myget.org
 
           - script: powershell -ExecutionPolicy ByPass -NoProfile eng\common\msbuild.ps1 build.proj
                     -warnaserror:0 -ci
