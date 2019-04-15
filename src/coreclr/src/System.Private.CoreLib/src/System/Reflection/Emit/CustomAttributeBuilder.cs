@@ -14,12 +14,9 @@
 ===========================================================*/
 
 
-using System;
-using System.Reflection;
+using System.Buffers.Binary;
 using System.IO;
 using System.Text;
-using System.Runtime.InteropServices;
-using System.Globalization;
 using System.Diagnostics;
 
 namespace System.Reflection.Emit
@@ -305,7 +302,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void EmitType(BinaryWriter writer, Type type)
+        private static void EmitType(BinaryWriter writer, Type type)
         {
             if (type.IsPrimitive)
             {
@@ -377,7 +374,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void EmitString(BinaryWriter writer, string str)
+        private static void EmitString(BinaryWriter writer, string str)
         {
             // Strings are emitted with a length prefix in a compressed format (1, 2 or 4 bytes) as used internally by metadata.
             byte[] utf8Str = Encoding.UTF8.GetBytes(str);
@@ -388,20 +385,16 @@ namespace System.Reflection.Emit
             }
             else if (length <= 0x3fff)
             {
-                writer.Write((byte)((length >> 8) | 0x80));
-                writer.Write((byte)(length & 0xff));
+                writer.Write(BinaryPrimitives.ReverseEndianness((short)(length | 0x80_00)));
             }
             else
             {
-                writer.Write((byte)((length >> 24) | 0xc0));
-                writer.Write((byte)((length >> 16) & 0xff));
-                writer.Write((byte)((length >> 8) & 0xff));
-                writer.Write((byte)(length & 0xff));
+                writer.Write(BinaryPrimitives.ReverseEndianness(length | 0xC0_00_00_00));
             }
             writer.Write(utf8Str);
         }
 
-        private void EmitValue(BinaryWriter writer, Type type, object value)
+        private static void EmitValue(BinaryWriter writer, Type type, object value)
         {
             if (type.IsEnum)
             {
