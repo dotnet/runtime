@@ -14,7 +14,7 @@ internal static partial class Interop
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         private static unsafe extern SocketError WSASendTo(
-            IntPtr socketHandle,
+            SafeHandle socketHandle,
             WSABuffer* buffers,
             int bufferCount,
             out int bytesTransferred,
@@ -25,7 +25,7 @@ internal static partial class Interop
             IntPtr completionRoutine);
 
         internal static unsafe SocketError WSASendTo(
-            IntPtr socketHandle,
+            SafeHandle socketHandle,
             ref WSABuffer buffer,
             int bufferCount,
             out int bytesTransferred,
@@ -43,7 +43,7 @@ internal static partial class Interop
         }
 
         internal static unsafe SocketError WSASendTo(
-            IntPtr socketHandle,
+            SafeHandle socketHandle,
             WSABuffer[] buffers,
             int bufferCount,
             [Out] out int bytesTransferred,
