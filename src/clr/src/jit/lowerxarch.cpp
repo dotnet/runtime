@@ -2972,14 +2972,14 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                     {
                         switch (intrinsicId)
                         {
-                            case NI_SSE_CompareLessThanOrderedScalar:
-                            case NI_SSE_CompareLessThanUnorderedScalar:
-                            case NI_SSE_CompareLessThanOrEqualOrderedScalar:
-                            case NI_SSE_CompareLessThanOrEqualUnorderedScalar:
-                            case NI_SSE2_CompareLessThanOrderedScalar:
-                            case NI_SSE2_CompareLessThanUnorderedScalar:
-                            case NI_SSE2_CompareLessThanOrEqualOrderedScalar:
-                            case NI_SSE2_CompareLessThanOrEqualUnorderedScalar:
+                            case NI_SSE_CompareScalarOrderedLessThan:
+                            case NI_SSE_CompareScalarUnorderedLessThan:
+                            case NI_SSE_CompareScalarOrderedLessThanOrEqual:
+                            case NI_SSE_CompareScalarUnorderedLessThanOrEqual:
+                            case NI_SSE2_CompareScalarOrderedLessThan:
+                            case NI_SSE2_CompareScalarUnorderedLessThan:
+                            case NI_SSE2_CompareScalarOrderedLessThanOrEqual:
+                            case NI_SSE2_CompareScalarUnorderedLessThanOrEqual:
                             {
                                 // We need to swap the operands for CompareLessThanOrEqual
                                 node->gtOp1 = op2;
@@ -2990,7 +2990,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
 
                             default:
                             {
-                                // TODO-XArch-CQ: The Compare*OrderedScalar and Compare*UnorderedScalar methods
+                                // TODO-XArch-CQ: The CompareScalarOrdered* and CompareScalarUnordered* methods
                                 //                are commutative if you also inverse the intrinsic.
                                 break;
                             }

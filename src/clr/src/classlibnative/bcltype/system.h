@@ -69,9 +69,8 @@ public:
     static FCDECL3(VOID, FailFastWithExceptionAndSource, StringObject* refMessageUNSAFE, ExceptionObject* refExceptionUNSAFE, StringObject* errorSourceUNSAFE);
 
     // Returns the number of logical processors that can be used by managed code
-	static INT32 QCALLTYPE GetProcessorCount();
+    static INT32 QCALLTYPE GetProcessorCount();
 
-    static FCDECL0(FC_BOOL_RET, HasShutdownStarted);
     static FCDECL0(FC_BOOL_RET, IsServerGC);
 
 #ifdef FEATURE_COMINTEROP

@@ -488,6 +488,15 @@ typedef unsigned char   regNumberSmall;
   #define INS_stosp                INS_stosd
   #define INS_r_stosp              INS_r_stosd
 
+  // Any stack pointer adjustments larger than this (in bytes) when setting up outgoing call arguments
+  // requires a stack probe. Set it large enough so all normal stack arguments don't get a probe.
+  #define ARG_STACK_PROBE_THRESHOLD_BYTES 1024
+
+  // The number of bytes from the end the last probed page that must also be probed, to allow for some
+  // small SP adjustments without probes. If zero, then the stack pointer can point to the last byte/word
+  // on the stack guard page, and must be touched before any further "SUB SP".
+  #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES ARG_STACK_PROBE_THRESHOLD_BYTES
+
 #elif defined(_TARGET_AMD64_)
   // TODO-AMD64-CQ: Fine tune the following xxBlk threshold values:
  
@@ -888,6 +897,9 @@ typedef unsigned char   regNumberSmall;
   #define INS_r_movsp              INS_r_movsq
   #define INS_stosp                INS_stosq
   #define INS_r_stosp              INS_r_stosq
+
+  // AMD64 uses FEATURE_FIXED_OUT_ARGS so this can be zero.
+  #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
 
 #elif defined(_TARGET_ARM_)
 

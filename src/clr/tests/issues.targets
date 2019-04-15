@@ -298,6 +298,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/varargs/varargsupport_r/*">
             <Issue>Varargs supported on this platform</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveEvent/ResolveEventTests/*">
+            <Issue>23941</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveCallback/CallbackTests/*">
+            <Issue>23941</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows arm32 specific excludes -->

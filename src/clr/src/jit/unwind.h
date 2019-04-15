@@ -20,8 +20,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // You can increase this "max" number if necessary.
 
 #if defined(_TARGET_ARM_)
-const unsigned MAX_PROLOG_SIZE_BYTES = 40;
-const unsigned MAX_EPILOG_SIZE_BYTES = 40;
+const unsigned MAX_PROLOG_SIZE_BYTES = 44;
+const unsigned MAX_EPILOG_SIZE_BYTES = 44;
 #define UWC_END 0xFF // "end" unwind code
 #define UW_MAX_FRAGMENT_SIZE_BYTES (1U << 19)
 #define UW_MAX_CODE_WORDS_COUNT 15      // Max number that can be encoded in the "Code Words" field of the .pdata record
