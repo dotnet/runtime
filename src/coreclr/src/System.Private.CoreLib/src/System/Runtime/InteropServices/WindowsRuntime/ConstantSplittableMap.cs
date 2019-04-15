@@ -206,7 +206,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
             }
 
-            object? IEnumerator.Current // TODO-NULLABLE: 
+            object? IEnumerator.Current // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
             {
                 get
                 {
