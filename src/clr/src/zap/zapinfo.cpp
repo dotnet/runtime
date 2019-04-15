@@ -3864,7 +3864,7 @@ BOOL ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
         return TRUE; 
 #endif
 
-    if (IsReadyToRunCompilation() && !m_pImage->GetCompileInfo()->IsInCurrentVersionBubble(m_pEEJitInfo->getMethodModule(method)))
+    if (IsReadyToRunCompilation() && method != NULL && !m_pImage->GetCompileInfo()->IsInCurrentVersionBubble(m_pEEJitInfo->getMethodModule(method)))
     {
         // FUTURE: ZapSig::EncodeMethod does not yet handle cross module references for ReadyToRun
         // See zapsig.cpp around line 1217.
