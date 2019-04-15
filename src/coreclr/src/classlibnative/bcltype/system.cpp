@@ -356,18 +356,6 @@ INT32 QCALLTYPE SystemNative::GetProcessorCount()
     return processorCount;
 }
 
-FCIMPL0(FC_BOOL_RET, SystemNative::HasShutdownStarted)
-{
-    FCALL_CONTRACT;
-
-    // Return true if the EE has started to shutdown and is now going to
-    // aggressively finalize objects referred to by static variables OR
-    // if someone is unloading the current AppDomain AND we have started
-    // finalizing objects referred to by static variables.
-    FC_RETURN_BOOL(g_fEEShutDown & ShutDown_Finalize2);
-}
-FCIMPLEND
-
 // FailFast is supported in BCL.small as internal to support failing fast in places where EEE used to be thrown.
 //
 // Static message buffer used by SystemNative::FailFast to avoid reliance on a

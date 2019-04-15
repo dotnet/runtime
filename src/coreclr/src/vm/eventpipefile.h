@@ -21,6 +21,7 @@ public:
     ~EventPipeFile();
 
     void WriteEvent(EventPipeEventInstance &instance);
+    void Flush();
 
     const char *GetTypeName() override
     {

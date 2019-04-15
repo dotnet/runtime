@@ -30,6 +30,8 @@ nativeStringResourceTable_mscorrc_debug
 #PAL__flushall
 #PAL_free
 #PAL_fwprintf
+#PAL_GetLogicalCpuCountFromOS
+#PAL_GetNumaProcessorNode
 #PAL_GetPALDirectoryW
 #PAL_GetResourceString
 #PAL_get_stdout
@@ -122,6 +124,7 @@ nativeStringResourceTable_mscorrc_debug
 #GetLastError
 #GetLongPathNameW
 #GetModuleFileNameW
+#GetNumaHighestNodeNumber
 #GetProcAddress
 #GetProcessHeap
 #GetShortPathNameW
@@ -178,6 +181,7 @@ nativeStringResourceTable_mscorrc_debug
 #TlsGetValue
 #TlsSetValue
 #VirtualAlloc
+#VirtualAllocExNuma
 #VirtualFree
 #VirtualProtect
 #VirtualQuery

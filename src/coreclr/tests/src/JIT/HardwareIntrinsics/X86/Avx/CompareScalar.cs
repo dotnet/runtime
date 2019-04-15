@@ -28,12 +28,12 @@ namespace IntelHardwareIntrinsicTest
 
                     var vf1 = Unsafe.Read<Vector128<float>>(floatTable.inArray1Ptr);
                     var vf2 = Unsafe.Read<Vector128<float>>(floatTable.inArray2Ptr);
-                    var vf3 = Avx.CompareScalar(vf1, vf2, FloatComparisonMode.EqualOrderedNonSignaling);
+                    var vf3 = Avx.CompareScalar(vf1, vf2, FloatComparisonMode.OrderedEqualNonSignaling);
                     Unsafe.Write(floatTable.outArrayPtr, vf3);
 
                     var vd1 = Unsafe.Read<Vector128<double>>(doubleTable.inArray1Ptr);
                     var vd2 = Unsafe.Read<Vector128<double>>(doubleTable.inArray2Ptr);
-                    var vd3 = Avx.CompareScalar(vd1, vd2, FloatComparisonMode.EqualOrderedNonSignaling);
+                    var vd3 = Avx.CompareScalar(vd1, vd2, FloatComparisonMode.OrderedEqualNonSignaling);
                     Unsafe.Write(doubleTable.outArrayPtr, vd3);
 
 
