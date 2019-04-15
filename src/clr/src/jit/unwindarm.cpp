@@ -17,9 +17,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #if defined(_TARGET_ARM_) && defined(_TARGET_UNIX_)
-int Compiler::mapRegNumToDwarfReg(regNumber reg)
+short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
-    int dwarfReg = DWARF_REG_ILLEGAL;
+    short dwarfReg = DWARF_REG_ILLEGAL;
 
     switch (reg)
     {
