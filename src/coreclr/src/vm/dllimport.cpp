@@ -3956,7 +3956,10 @@ static void CreateNDirectStubWorker(StubState*         pss,
     BOOL fMarshalReturnValueFirst = FALSE;
 
     BOOL fReverseWithReturnBufferArg = FALSE;
-    bool isInstanceMethod = fStubNeedsCOM || fThisCall;
+    // Only consider ThisCall methods to be instance methods.
+    // Techinically COM methods are also instance methods, but we don't want to change the behavior of the built-in
+    // COM abi work because there are many users that rely on the current behavior (for example WPF).
+    bool isInstanceMethod = fThisCall;
     
     // We can only change fMarshalReturnValueFirst to true when we are NOT doing HRESULT-swapping!
     // When we are HRESULT-swapping, the managed return type is actually the type of the last parameter and not the return type.
