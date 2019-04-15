@@ -31,6 +31,17 @@ namespace Microsoft.Extensions.Primitives
         /// <inheritdoc />
         public IDisposable RegisterChangeCallback(Action<object> callback, object state)
         {
+#if NETCOREAPP3_0
+            try
+            {
+                return Token.UnsafeRegister(callback, state);
+            }
+            catch (ObjectDisposedException)
+            {
+                // Reset the flag so that we can indicate to future callers that this wouldn't work.
+                ActiveChangeCallbacks = false;
+            }
+#else
             // Don't capture the current ExecutionContext and its AsyncLocals onto the token registration causing them to live forever
             var restoreFlow = false;
             if (!ExecutionContext.IsFlowSuppressed())
@@ -56,7 +67,7 @@ namespace Microsoft.Extensions.Primitives
                     ExecutionContext.RestoreFlow();
                 }
             }
-
+#endif
             return NullDisposable.Instance;
         }
 
