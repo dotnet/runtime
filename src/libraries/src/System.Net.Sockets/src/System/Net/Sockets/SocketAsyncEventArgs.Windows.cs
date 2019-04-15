@@ -342,14 +342,13 @@ namespace System.Net.Sockets
 
                     SocketFlags flags = _socketFlags;
                     SocketError socketError = Interop.Winsock.WSARecv(
-                        handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                        handle,
                         ref wsaBuffer,
                         1,
                         out int bytesTransferred,
                         ref flags,
                         overlapped,
                         IntPtr.Zero);
-                    GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                     return ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped, cancellationToken);
                 }
@@ -369,14 +368,13 @@ namespace System.Net.Sockets
             {
                 SocketFlags flags = _socketFlags;
                 SocketError socketError = Interop.Winsock.WSARecv(
-                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                    handle,
                     _wsaBufferArray,
                     _bufferListInternal.Count,
                     out int bytesTransferred,
                     ref flags,
                     overlapped,
                     IntPtr.Zero);
-                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return ProcessIOCPResult(socketError == SocketError.Success, bytesTransferred, overlapped);
             }
@@ -414,7 +412,7 @@ namespace System.Net.Sockets
 
                     SocketFlags flags = _socketFlags;
                     SocketError socketError = Interop.Winsock.WSARecvFrom(
-                        handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                        handle,
                         ref wsaBuffer,
                         1,
                         out int bytesTransferred,
@@ -423,7 +421,6 @@ namespace System.Net.Sockets
                         PtrSocketAddressBufferSize,
                         overlapped,
                         IntPtr.Zero);
-                    GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                     return ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped);
                 }
@@ -443,7 +440,7 @@ namespace System.Net.Sockets
             {
                 SocketFlags flags = _socketFlags;
                 SocketError socketError = Interop.Winsock.WSARecvFrom(
-                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                    handle,
                     _wsaBufferArray,
                     _bufferListInternal.Count,
                     out int bytesTransferred,
@@ -452,7 +449,6 @@ namespace System.Net.Sockets
                     PtrSocketAddressBufferSize,
                     overlapped,
                     IntPtr.Zero);
-                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return ProcessIOCPResult(socketError == SocketError.Success, bytesTransferred, overlapped);
             }
@@ -609,14 +605,13 @@ namespace System.Net.Sockets
                     var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
 
                     SocketError socketError = Interop.Winsock.WSASend(
-                        handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                        handle,
                         ref wsaBuffer,
                         1,
                         out int bytesTransferred,
                         _socketFlags,
                         overlapped,
                         IntPtr.Zero);
-                    GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                     return ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped, cancellationToken);
                 }
@@ -635,14 +630,13 @@ namespace System.Net.Sockets
             try
             {
                 SocketError socketError = Interop.Winsock.WSASend(
-                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                    handle,
                     _wsaBufferArray,
                     _bufferListInternal.Count,
                     out int bytesTransferred,
                     _socketFlags,
                     overlapped,
                     IntPtr.Zero);
-                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return ProcessIOCPResult(socketError == SocketError.Success, bytesTransferred, overlapped);
             }
@@ -779,7 +773,7 @@ namespace System.Net.Sockets
                     var wsaBuffer = new WSABuffer { Length = _count, Pointer = (IntPtr)(bufferPtr + _offset) };
 
                     SocketError socketError = Interop.Winsock.WSASendTo(
-                        handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                        handle,
                         ref wsaBuffer,
                         1,
                         out int bytesTransferred,
@@ -788,7 +782,6 @@ namespace System.Net.Sockets
                         _socketAddress.Size,
                         overlapped,
                         IntPtr.Zero);
-                    GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                     return ProcessIOCPResultWithSingleBufferHandle(socketError, bytesTransferred, overlapped);
                 }
@@ -807,7 +800,7 @@ namespace System.Net.Sockets
             try
             {
                 SocketError socketError = Interop.Winsock.WSASendTo(
-                    handle.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                    handle,
                     _wsaBufferArray,
                     _bufferListInternal.Count,
                     out int bytesTransferred,
@@ -816,7 +809,6 @@ namespace System.Net.Sockets
                     _socketAddress.Size,
                     overlapped,
                     IntPtr.Zero);
-                GC.KeepAlive(handle); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 return ProcessIOCPResult(socketError == SocketError.Success, bytesTransferred, overlapped);
             }

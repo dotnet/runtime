@@ -14,6 +14,16 @@ internal static partial class Interop
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static unsafe extern SocketError WSARecv(
+            SafeHandle socketHandle,
+            WSABuffer* buffer,
+            int bufferCount,
+            out int bytesTransferred,
+            ref SocketFlags socketFlags,
+            NativeOverlapped* overlapped,
+            IntPtr completionRoutine);
+
+        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static unsafe extern SocketError WSARecv(
             IntPtr socketHandle,
             WSABuffer* buffer,
             int bufferCount,
@@ -23,7 +33,7 @@ internal static partial class Interop
             IntPtr completionRoutine);
 
         internal static unsafe SocketError WSARecv(
-            IntPtr socketHandle,
+            SafeHandle socketHandle,
             ref WSABuffer buffer,
             int bufferCount,
             out int bytesTransferred,
@@ -36,6 +46,22 @@ internal static partial class Interop
             // The WSABuffer struct should be unchanged anyway.
             WSABuffer localBuffer = buffer;
             return WSARecv(socketHandle, &localBuffer, bufferCount, out bytesTransferred, ref socketFlags, overlapped, completionRoutine);
+        }
+
+        internal static unsafe SocketError WSARecv(
+            SafeHandle socketHandle,
+            Span<WSABuffer> buffers,
+            int bufferCount,
+            out int bytesTransferred,
+            ref SocketFlags socketFlags,
+            NativeOverlapped* overlapped,
+            IntPtr completionRoutine)
+        {
+            Debug.Assert(!buffers.IsEmpty);
+            fixed (WSABuffer* buffersPtr = &MemoryMarshal.GetReference(buffers))
+            {
+                return WSARecv(socketHandle, buffersPtr, bufferCount, out bytesTransferred, ref socketFlags, overlapped, completionRoutine);
+            }
         }
 
         internal static unsafe SocketError WSARecv(
