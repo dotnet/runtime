@@ -16,6 +16,7 @@
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
 
     <BuildRuntimePackages>true</BuildRuntimePackages>
+    <BuildLineupPackage>true</BuildLineupPackage>
 
     <PackProjectDependencies>true</PackProjectDependencies>
   </PropertyGroup>
@@ -122,11 +123,26 @@
   <ItemGroup Condition="'$(HasRuntimePackages)' != 'false'">
     <_project Include="@(BuildRID)">
       <Platform Condition="'%(Platform)' == ''">x64</Platform>
-      <PackageTargetRuntime>%(Identity)</PackageTargetRuntime>
-      <AdditionalProperties>PackageTargetRuntime=%(Identity);NuGetRuntimeIdentifier=%(Identity);Platform=%(Platform)</AdditionalProperties>
+      <BuildRID>%(Identity)</BuildRID>
+      <PackageTargetRuntime>%(BuildRID)</PackageTargetRuntime>
+      <AdditionalProperties>PackageTargetRuntime=%(BuildRID);NuGetRuntimeIdentifier=%(BuildRID);Platform=%(Platform)</AdditionalProperties>
     </_project>
 
     <RuntimeProject Include="@(_project->'$(MSBuildProjectFullPath)')" />
+
+    <!--
+      Pack projects need package IDs like "Microsoft.NETCore.App.Host.Runtime.<rid>". The package
+      tooling statically uses the MSBuild project name as the package ID, allowing for a prefix, but
+      not a suffix. Set BaseId as a non-overridable global to force the desired ID in a way that the
+      rest of the packaging tooling automatically respects.
+
+      Force IdPrefix to '' to allow using the well-supported PackageTargetRuntime without adding the
+      undesired 'runtime.<rid>.' prefix to the package ID.
+    -->
+    <RidSpecificPackProject
+      Include="@(_project->'$(MSBuildProjectFullPath)')"
+      BaseId="$(MSBuildProjectName).%(BuildRID)"
+      AdditionalProperties="%(AdditionalProperties);BaseId=%(BaseId);IdPrefix=" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == '' and '$(HasRuntimePackages)' != 'false'">

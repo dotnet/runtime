@@ -236,20 +236,21 @@
     <ItemGroup>
       <!-- The pkg and src builds both build these projects. Add them to both phases. -->
       <PkgSrcProject Include="@(RuntimeProject)" Condition="'$(BuildRuntimePackages)' == 'true'" />
-      <PkgSrcProject Include="$(MSBuildProjectFullPath)" />
+      <PkgSrcProject Include="@(RidSpecificPackProject)" Condition="'$(BuildRidSpecificPacks)' == 'true'" />
+      <PkgSrcProject Include="$(MSBuildProjectFullPath)" Condition="'$(BuildLineupPackage)' == 'true'"/>
 
       <Project Include="@(PkgSrcProject)" Phase="pkg" />
       <Project Include="@(PkgSrcProject)" Phase="src" />
 
       <!--
-        Create targeting pack packages/installers. Similar to the runtime package, we only make one
-        Debian or RPM package for all distros of that type.
+        Create framework pack non-nuget packages/installers. Similar to the runtime package, we only
+        make one Debian or RPM package for all distros of that type.
       -->
       <Project
         Include="$(MSBuildProjectFullPath)"
         Phase="installer"
         Condition="
-          '$(FrameworkPackType)' == 'targeting' AND
+          '$(FrameworkPackType)' != '' AND
           '$(BuildDistroIndependentInstallers)' == 'true'" />
     </ItemGroup>
 

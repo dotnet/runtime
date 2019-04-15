@@ -278,8 +278,8 @@
   </Target>
 
   <!--
-    Copy the files in the package's data/ dir to a layout directory. This is what the targeting pack
-    installer will place in the dotnet install dir.
+    Copy the files in the package's data/ dir to a layout directory. This is what the pack installer
+    will place in the dotnet install dir.
 
     This extracts from the nupkg (zip) directly. An alternative would be using the PackageFile
     items, but there's some risk of handling TargetPath metadata and filtering symbols differently
@@ -298,27 +298,27 @@
     <RemoveDir Directories="$(PackLayoutDir)" />
 
     <PropertyGroup>
-      <TargetingPackNupkgFile>$(PackageOutputPath)$(Id).$(PackageVersion).nupkg</TargetingPackNupkgFile>
+      <FrameworkPackNupkgFile>$(PackageOutputPath)$(Id).$(PackageVersion).nupkg</FrameworkPackNupkgFile>
     </PropertyGroup>
 
-    <ZipFileGetEntries TargetArchive="$(TargetingPackNupkgFile)">
-      <Output TaskParameter="Entries" ItemName="TargetingPackNupkgEntries" />
+    <ZipFileGetEntries TargetArchive="$(FrameworkPackNupkgFile)">
+      <Output TaskParameter="Entries" ItemName="FrameworkPackNupkgEntries" />
     </ZipFileGetEntries>
 
     <ItemGroup>
-      <TargetingPackDataEntries
-        Include="@(TargetingPackNupkgEntries)"
+      <FrameworkPackDataEntries
+        Include="@(FrameworkPackNupkgEntries)"
         Condition="
-          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('data/')) OR
-          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('ref/')) OR
-          $([System.String]::new('%(TargetingPackNupkgEntries.Identity)').StartsWith('runtimes/'))" />
+          $([System.String]::new('%(FrameworkPackNupkgEntries.Identity)').StartsWith('data/')) OR
+          $([System.String]::new('%(FrameworkPackNupkgEntries.Identity)').StartsWith('ref/')) OR
+          $([System.String]::new('%(FrameworkPackNupkgEntries.Identity)').StartsWith('runtimes/'))" />
     </ItemGroup>
 
     <ZipFileExtractToDirectory
-      SourceArchive="$(TargetingPackNupkgFile)"
+      SourceArchive="$(FrameworkPackNupkgFile)"
       DestinationDirectory="$(PackLayoutDir)packs/$(Id)/$(Version)/"
       OverwriteDestination="true"
-      Include="@(TargetingPackDataEntries)" />
+      Include="@(FrameworkPackDataEntries)" />
   </Target>
 
   <Target Name="GenerateSharedFramework"

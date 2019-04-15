@@ -16,9 +16,11 @@
     <PropertyGroup Condition="'$(FrameworkPackType)' == 'targeting'">
       <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
       <WixProductMoniker>$(TargetingPackBrandName)</WixProductMoniker>
+    </PropertyGroup>
 
-      <MacOSComponentName>com.microsoft.$(ShortFrameworkName).pack.$(FrameworkPackType).$(ProductVersion).component.osx.x64</MacOSComponentName>
-      <MacOSSharedInstallDir>/usr/local/share/dotnet</MacOSSharedInstallDir>
+    <PropertyGroup Condition="'$(FrameworkPackType)' == 'apphost'">
+      <InstallerName>$(ShortFrameworkName)-apphost-pack</InstallerName>
+      <WixProductMoniker>$(AppHostPackBrandName)</WixProductMoniker>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(GenerateSharedFramework)' == 'true'">
@@ -27,6 +29,9 @@
     </PropertyGroup>
 
     <PropertyGroup>
+      <MacOSComponentName>com.microsoft.$(ShortFrameworkName).pack.$(FrameworkPackType).$(ProductVersion).component.osx.x64</MacOSComponentName>
+      <MacOSSharedInstallDir>/usr/local/share/dotnet</MacOSSharedInstallDir>
+
       <VersionedInstallerName>$(InstallerName)-$(ProductBandVersion)</VersionedInstallerName>
       <VersionedInstallerName>$(VersionedInstallerName.ToLowerInvariant())</VersionedInstallerName>
       <InstallerPackageRelease>1</InstallerPackageRelease>
