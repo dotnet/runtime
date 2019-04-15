@@ -17,12 +17,7 @@ namespace System.Net.Http.Functional.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP stack doesn't support .Proxy property")]
     public abstract class HttpClientHandler_Proxy_Test : HttpClientHandlerTestBase
     {
-        private readonly ITestOutputHelper _output;
-        
-        public HttpClientHandler_Proxy_Test(ITestOutputHelper output)
-        {
-            _output = output;
-        }
+        public HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
         [ActiveIssue(32809)]
         [OuterLoop("Uses external server")]

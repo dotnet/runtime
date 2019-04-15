@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -23,6 +24,8 @@ namespace System.Net.Http.Functional.Tests
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core.")]
     public abstract class DiagnosticsTest : HttpClientHandlerTestBase
     {
+        public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
+
         [Fact]
         public static void EventSource_ExistsWithCorrectId()
         {

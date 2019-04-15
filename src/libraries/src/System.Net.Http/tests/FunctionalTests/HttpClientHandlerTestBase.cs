@@ -7,10 +7,14 @@ using System.IO;
 using System.Reflection;
 using System.Net.Test.Common;
 
+using Xunit.Abstractions;
+
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandlerTestBase : FileCleanupTestBase
     {
+        public readonly ITestOutputHelper _output;
+
         protected virtual bool UseSocketsHttpHandler => true;
         protected virtual bool UseHttp2LoopbackServer => false;
 
@@ -18,6 +22,11 @@ namespace System.Net.Http.Functional.Tests
         protected bool IsCurlHandler => !UseSocketsHttpHandler && !PlatformDetection.IsWindows;
         protected bool IsNetfxHandler => PlatformDetection.IsWindows && PlatformDetection.IsFullFramework;
         protected bool IsUapHandler => PlatformDetection.IsWindows && PlatformDetection.IsUap;
+
+        public HttpClientHandlerTestBase(ITestOutputHelper output)
+        {
+            _output = output;
+        }
 
         protected HttpClient CreateHttpClient() => new HttpClient(CreateHttpClientHandler());
 

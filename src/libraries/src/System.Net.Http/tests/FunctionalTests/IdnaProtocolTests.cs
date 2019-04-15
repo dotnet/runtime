@@ -6,12 +6,15 @@ using System.Collections.Generic;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class IdnaProtocolTests : HttpClientHandlerTestBase
     {
         protected abstract bool SupportsIdna { get; }
+
+        public IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP does not support custom proxies.")]
         [Theory]

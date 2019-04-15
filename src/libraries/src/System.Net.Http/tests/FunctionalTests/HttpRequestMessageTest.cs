@@ -11,12 +11,15 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     public class HttpRequestMessageTest : HttpClientHandlerTestBase
     {
         Version _expectedRequestMessageVersion = !PlatformDetection.IsFullFramework ? new Version(2,0) : new Version(1, 1);
+
+        public HttpRequestMessageTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
         public void Ctor_Default_CorrectDefaults()

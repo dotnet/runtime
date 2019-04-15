@@ -10,11 +10,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tests;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     public abstract class HttpClientHandler_Asynchrony_Test : HttpClientHandlerTestBase
     {
+        public HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
+
         public static IEnumerable<object[]> ResponseHeadersRead_SynchronizationContextNotUsedByHandler_MemberData() =>
             from responseHeadersRead in new[] { false, true }
             from contentMode in Enum.GetValues(typeof(LoopbackServer.ContentMode)).Cast<LoopbackServer.ContentMode>()
