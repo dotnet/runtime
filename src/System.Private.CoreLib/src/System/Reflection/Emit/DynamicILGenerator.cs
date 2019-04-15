@@ -7,6 +7,7 @@
 namespace System.Reflection.Emit
 {
     using System;
+    using System.Buffers.Binary;
     using System.Globalization;
     using System.Diagnostics.SymbolStore;
     using System.Runtime.InteropServices;
@@ -723,10 +724,7 @@ namespace System.Reflection.Emit
 
                 if ((header & 0x40) != 0) // Fat
                 {
-                    byte[] size = new byte[4];
-                    for (int q = 0; q < 3; q++)
-                        size[q] = m_exceptionHeader[q + 1];
-                    EHCount = (BitConverter.ToInt32(size, 0) - 4) / 24;
+                    EHCount = (BinaryPrimitives.ReadInt32LittleEndian(m_exceptionHeader.AsSpan(1)) - 4) / 24;
                 }
                 else
                     EHCount = (m_exceptionHeader[1] - 2) / 12;
