@@ -58,7 +58,7 @@ namespace System.Reflection.Emit
                 m_pDocumentWriterSafeHandle = pDocumentWriterSafeHandle;
                 // The handle is actually a pointer to a native ISymUnmanagedDocumentWriter.
                 m_pDocWriter = (ISymUnmanagedDocumentWriter*)m_pDocumentWriterSafeHandle.DangerousGetHandle();
-                m_vtable = (ISymUnmanagedDocumentWriterVTable)(Marshal.PtrToStructure(m_pDocWriter->m_unmanagedVTable, typeof(ISymUnmanagedDocumentWriterVTable)));
+                m_vtable = (ISymUnmanagedDocumentWriterVTable)(Marshal.PtrToStructure(m_pDocWriter->m_unmanagedVTable, typeof(ISymUnmanagedDocumentWriterVTable)))!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
             }
 
             //------------------------------------------------------------------------------
@@ -359,7 +359,7 @@ namespace System.Reflection.Emit
             internal void InternalSetUnderlyingWriter(IntPtr ppUnderlyingWriter)
             {
                 m_pWriter = *((ISymUnmanagedWriter**)ppUnderlyingWriter);
-                m_vtable = (ISymUnmanagedWriterVTable)(Marshal.PtrToStructure(m_pWriter->m_unmanagedVTable, typeof(ISymUnmanagedWriterVTable)));
+                m_vtable = (ISymUnmanagedWriterVTable)(Marshal.PtrToStructure(m_pWriter->m_unmanagedVTable, typeof(ISymUnmanagedWriterVTable)))!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
             }
 
             //------------------------------------------------------------------------------

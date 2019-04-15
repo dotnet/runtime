@@ -566,8 +566,8 @@ namespace System
                     // read LastEntry   {(yearN, 1, 1) - MaxValue       }
 
                     // read the FirstEntry and LastEntry key values (ex: "1980", "2038")
-                    int first = (int)dynamicKey.GetValue(FirstEntryValue, -1);
-                    int last = (int)dynamicKey.GetValue(LastEntryValue, -1);
+                    int first = (int)dynamicKey.GetValue(FirstEntryValue, -1)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
+                    int last = (int)dynamicKey.GetValue(LastEntryValue, -1)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
 
                     if (first == -1 || last == -1 || first > last)
                     {

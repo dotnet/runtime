@@ -24,18 +24,14 @@ namespace System.Reflection
 
         private StrongNameKeyPair? _strongNameKeyPair;
 
-        private byte[]? _hashForControl;
         private AssemblyHashAlgorithm _hashAlgorithm;
-        private AssemblyHashAlgorithm _hashAlgorithmForControl;
 
         private AssemblyVersionCompatibility _versionCompatibility;
         private AssemblyNameFlags _flags;
 
         public AssemblyName()
         {
-            _hashAlgorithm = AssemblyHashAlgorithm.None;
             _versionCompatibility = AssemblyVersionCompatibility.SameMachine;
-            _flags = AssemblyNameFlags.None;
         }
 
         // Set and get the name of the assembly. If this is a weak Name
@@ -143,8 +139,6 @@ namespace System.Reflection
                 _codeBase = _codeBase,
                 _hashAlgorithm = _hashAlgorithm,
                 _versionCompatibility = _versionCompatibility,
-                _hashForControl = _hashForControl,
-                _hashAlgorithmForControl = _hashAlgorithmForControl
             };
             return name;
         }
