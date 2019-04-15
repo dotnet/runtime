@@ -158,6 +158,7 @@ if(WIN32)
     add_compile_options(/DEBUG)
     add_compile_options(/GS)
     add_compile_options(/W1)
+    add_compile_options(/we5038) # make reorder warnings into errors
     add_compile_options(/Zc:inline)
     add_compile_options(/fp:precise)
     add_compile_options(/EHsc)
@@ -189,6 +190,7 @@ if(WIN32)
     set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "${CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO} /NODEFAULTLIB:libucrt.lib /DEFAULTLIB:ucrt.lib")
 else()
     add_compile_options(-Wno-unused-local-typedef)
+    add_compile_options(-Werror=reorder)
 endif()
 
 # Older CMake doesn't support CMAKE_CXX_STANDARD and GCC/Clang need a switch to enable C++ 11

@@ -21,17 +21,17 @@ corehost_init_t::corehost_init_t(
     const std::vector<pal::string_t>& probe_paths,
     const host_mode_t mode,
     const fx_definition_vector_t& fx_definitions)
-    : m_host_command(host_command)
-    , m_host_info_host_path(host_info.host_path)
-    , m_host_info_dotnet_root(host_info.dotnet_root)
-    , m_host_info_app_path(host_info.app_path)
+    : m_tfm(get_app(fx_definitions).get_runtime_config().get_tfm())
     , m_deps_file(deps_file)
     , m_additional_deps_serialized(additional_deps_serialized)
     , m_is_framework_dependent(get_app(fx_definitions).get_runtime_config().get_is_framework_dependent())
     , m_probe_paths(probe_paths)
     , m_host_mode(mode)
     , m_host_interface()
-    , m_tfm(get_app(fx_definitions).get_runtime_config().get_tfm())
+    , m_host_command(host_command)
+    , m_host_info_host_path(host_info.host_path)
+    , m_host_info_dotnet_root(host_info.dotnet_root)
+    , m_host_info_app_path(host_info.app_path)
 {
     make_cstr_arr(m_probe_paths, &m_probe_paths_cstr);
 
