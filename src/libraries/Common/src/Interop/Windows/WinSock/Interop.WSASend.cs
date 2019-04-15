@@ -22,8 +22,18 @@ internal static partial class Interop
             NativeOverlapped* overlapped,
             IntPtr completionRoutine);
 
+        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
+        internal static extern unsafe SocketError WSASend(
+            SafeHandle socketHandle,
+            WSABuffer* buffers,
+            int bufferCount,
+            out int bytesTransferred,
+            SocketFlags socketFlags,
+            NativeOverlapped* overlapped,
+            IntPtr completionRoutine);
+
         internal static unsafe SocketError WSASend(
-            IntPtr socketHandle,
+            SafeHandle socketHandle,
             ref WSABuffer buffer,
             int bufferCount,
             out int bytesTransferred,
@@ -36,6 +46,22 @@ internal static partial class Interop
             // The WSABuffer struct should be unchanged anyway.
             WSABuffer localBuffer = buffer;
             return WSASend(socketHandle, &localBuffer, bufferCount, out bytesTransferred, socketFlags, overlapped, completionRoutine);
+        }
+
+        internal static unsafe SocketError WSASend(
+            SafeHandle socketHandle,
+            Span<WSABuffer> buffers,
+            int bufferCount,
+            out int bytesTransferred,
+            SocketFlags socketFlags,
+            NativeOverlapped* overlapped,
+            IntPtr completionRoutine)
+        {
+            Debug.Assert(!buffers.IsEmpty);
+            fixed (WSABuffer* buffersPtr = &MemoryMarshal.GetReference(buffers))
+            {
+                return WSASend(socketHandle, buffersPtr, bufferCount, out bytesTransferred, socketFlags, overlapped, completionRoutine);
+            }
         }
 
         internal static unsafe SocketError WSASend(
