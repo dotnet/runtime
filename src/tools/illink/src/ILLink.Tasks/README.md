@@ -30,17 +30,13 @@ The full set of options is described below.
 ## Building
 
 ```
-linker> ./corebuild/dotnet.{sh/ps1} restore illink.sln
-linker> ./corebuild/dotnet.{sh/ps1} pack src/ILLink.Tasks/ILLink.Tasks.csproj
+linker> ./eng/dotnet.{sh/ps1} build illink.sln
 ```
 
-The output package will be placed in
-`corebuild/integration/bin/nupkgs`. If you are building on unix, you
-will need to adjust
-[ILLink.Tasks.nuspec](ILLink.Tasks.nuspec). Replace
-the dll file includes with the following:
-
-`<file src="netcoreapp2.0/**/*.dll" target="tools/netcoreapp2.0" />`
+To produce a package:
+```
+linker> ./eng/dotnet.{sh/ps1} pack illink.sln
+```
 
 ## Using ILLink.Tasks
 

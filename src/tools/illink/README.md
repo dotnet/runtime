@@ -20,7 +20,14 @@ TODO
 
 ## Build & Test Status
 
+**Mono**
+
 [![Build Status](https://jenkins.mono-project.com/buildStatus/icon?job=test-linker-mainline)](https://jenkins.mono-project.com/job/test-linker-mainline/)
+
+
+**.NET Core**
+
+[![Build Status](https://dev.azure.com/dnceng/public/_apis/build/status/mono/linker-ci?branchName=master)](https://dev.azure.com/dnceng/public/_build/latest?definitionId=364&branchName=master)
 
 ## Link xml file examples
 

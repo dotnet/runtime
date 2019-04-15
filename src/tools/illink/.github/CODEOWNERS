@@ -6,8 +6,6 @@
 * @marek-safar
 
 /src/analyzer @radekdoulik
-/corebuild @sbomer
+/src/ILLink.Tasks @sbomer
 /src/linker @marek-safar @mrvoorhe
 /test @marek-safar @mrvoorhe
-
-netci.groovy @sbomer
