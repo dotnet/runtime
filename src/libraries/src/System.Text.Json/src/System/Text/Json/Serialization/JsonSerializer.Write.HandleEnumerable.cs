@@ -34,6 +34,17 @@ namespace System.Text.Json.Serialization
 
             if (state.Current.Enumerator == null)
             {
+                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue, options);
+
+                if (enumerable == null)
+                {
+                    // Write a null object or enumerable.
+                    writer.WriteNull(jsonPropertyInfo._name);
+                    return true;
+                }
+
+                state.Current.Enumerator = enumerable.GetEnumerator();
+
                 if (jsonPropertyInfo._name == null)
                 {
                     writer.WriteStartArray();
@@ -42,16 +53,9 @@ namespace System.Text.Json.Serialization
                 {
                     writer.WriteStartArray(jsonPropertyInfo._name);
                 }
-
-                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue, options);
-
-                if (enumerable != null)
-                {
-                    state.Current.Enumerator = enumerable.GetEnumerator();
-                }
             }
 
-            if (state.Current.Enumerator != null && state.Current.Enumerator.MoveNext())
+            if (state.Current.Enumerator.MoveNext())
             {
                 // Check for polymorphism.
                 if (elementClassInfo.ClassType == ClassType.Unknown)

@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization
         internal bool EnumerableCreated;
 
         // Support System.Array and other types that don't implement IList
-        internal List<object> TempEnumerableValues;
+        internal IList TempEnumerableValues;
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         internal int PropertyIndex;
@@ -93,10 +93,23 @@ namespace System.Text.Json.Serialization
 
         internal static object CreateEnumerableValue(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
+
             // If the property has an EnumerableConverter, then we use tempEnumerableValues.
-            if (state.Current.JsonPropertyInfo.EnumerableConverter != null)
+            if (jsonPropertyInfo.EnumerableConverter != null)
             {
-                state.Current.TempEnumerableValues = new List<object>();
+                IList converterList;
+                if (jsonPropertyInfo.ElementClassInfo.ClassType == ClassType.Value)
+                {
+                    converterList = jsonPropertyInfo.ElementClassInfo.GetPolicyProperty().CreateConverterList();
+                }
+                else
+                {
+                    converterList =  new List<object>();
+                }
+
+                state.Current.TempEnumerableValues = converterList;
+
                 return null;
             }
 
@@ -133,39 +146,6 @@ namespace System.Text.Json.Serialization
         {
             Debug.Assert(ReturnValue == null);
             ReturnValue = value;
-        }
-
-        internal static void SetReturnValue(object value, JsonSerializerOptions options, ref ReadStackFrame current, bool setPropertyDirectly = false)
-        {
-            if (current.IsEnumerable())
-            {
-                if (current.TempEnumerableValues != null)
-                {
-                    current.TempEnumerableValues.Add(value);
-                }
-                else
-                {
-                    ((IList)current.ReturnValue).Add(value);
-                }
-            }
-            else if (!setPropertyDirectly && current.IsPropertyEnumerable())
-            {
-                Debug.Assert(current.JsonPropertyInfo != null);
-                Debug.Assert(current.ReturnValue != null);
-                if (current.TempEnumerableValues != null)
-                {
-                    current.TempEnumerableValues.Add(value);
-                }
-                else
-                {
-                    ((IList)current.JsonPropertyInfo.GetValueAsObject(current.ReturnValue, options)).Add(value);
-                }
-            }
-            else
-            {
-                Debug.Assert(current.JsonPropertyInfo != null);
-                current.JsonPropertyInfo.SetValueAsObject(current.ReturnValue, value, options);
-            }
         }
     }
 }
