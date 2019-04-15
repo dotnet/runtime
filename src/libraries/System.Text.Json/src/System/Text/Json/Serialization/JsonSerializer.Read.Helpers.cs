@@ -11,7 +11,10 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref Utf8JsonReader reader)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
 
             ReadStack state = default;
             state.Current.Initialize(returnType, options);

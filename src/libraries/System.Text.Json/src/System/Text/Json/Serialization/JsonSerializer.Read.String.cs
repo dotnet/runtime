@@ -62,7 +62,10 @@ namespace System.Text.Json.Serialization
 
         private static object ParseCore(string json, Type returnType, JsonSerializerOptions options = null)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
 
             // todo: use an array pool here for smaller requests to avoid the alloc?
             byte[] jsonBytes = JsonReaderHelper.s_utf8Encoding.GetBytes(json);
