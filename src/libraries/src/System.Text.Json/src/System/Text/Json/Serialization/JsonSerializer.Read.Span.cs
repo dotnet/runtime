@@ -48,7 +48,10 @@ namespace System.Text.Json.Serialization
 
         private static object ParseCore(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions options)
         {
-            options ??= JsonSerializerOptions.s_defaultOptions;
+            if (options == null)
+            {
+                options = JsonSerializerOptions.s_defaultOptions;
+            }
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
             var reader = new Utf8JsonReader(utf8Json, isFinalBlock: true, readerState);
