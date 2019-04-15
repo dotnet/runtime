@@ -2,44 +2,52 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
-using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class SByteConverterTests : ConverterTestBase
+    public class SByteConverterTests : BaseNumberConverterTests
     {
-        private static TypeConverter s_converter = new SByteConverter();
+        public override TypeConverter Converter => new SByteConverter();
 
-        [Fact]
-        public static void ConvertFrom_WithContext()
+        public override IEnumerable<ConvertTest> ConvertToTestData()
         {
-            ConvertFrom_WithContext(new object[3, 3]
-                {
-                    { "1  ", (sbyte)1, null },
-                    { "&H6", (sbyte)6, null },
-                    { "-7", (sbyte)(-7), CultureInfo.InvariantCulture }
-                },
-                SByteConverterTests.s_converter);
+            yield return ConvertTest.Valid((sbyte)-1, "-1");
+            yield return ConvertTest.Valid((sbyte)2, (sbyte)2, CultureInfo.InvariantCulture);
+            yield return ConvertTest.Valid((sbyte)3, (float)3.0);
+
+            yield return ConvertTest.Valid((sbyte)-1, "?1", new CustomPositiveSymbolCulture());
+
+            yield return ConvertTest.CantConvertTo((sbyte)3, typeof(InstanceDescriptor));
+            yield return ConvertTest.CantConvertTo((sbyte)3, typeof(object));
         }
 
-        [Fact]
-        public static void ConvertFrom_WithContext_Negative()
+        public override IEnumerable<ConvertTest> ConvertFromTestData()
         {
-            AssertExtensions.Throws<ArgumentException, Exception>(
-                () => SByteConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, "8.0"));
-        }
+            yield return ConvertTest.Valid("1", (sbyte)1);
+            yield return ConvertTest.Valid(" -1 ", (sbyte)-1);
+            yield return ConvertTest.Valid("#2", (sbyte)2);
+            yield return ConvertTest.Valid(" #2 ", (sbyte)2);
+            yield return ConvertTest.Valid("0x3", (sbyte)3);
+            yield return ConvertTest.Valid("0X3", (sbyte)3);
+            yield return ConvertTest.Valid(" 0X3 ", (sbyte)3);
+            yield return ConvertTest.Valid("&h4", (sbyte)4);
+            yield return ConvertTest.Valid("&H4", (sbyte)4);
+            yield return ConvertTest.Valid(" &H4 ", (sbyte)4);
+            yield return ConvertTest.Valid("+5", (sbyte)5);
+            yield return ConvertTest.Valid(" +5 ", (sbyte)5);
 
-        [Fact]
-        public static void ConvertTo_WithContext()
-        {
-            ConvertTo_WithContext(new object[3, 3]
-                {
-                    { (sbyte)1, "1", null },
-                    { (sbyte)(-2), (sbyte)(-2), CultureInfo.InvariantCulture },
-                    { (sbyte)3, (float)3.0, null }
-                },
-                SByteConverterTests.s_converter);
+            yield return ConvertTest.Valid("!1", (sbyte)1, new CustomPositiveSymbolCulture());
+
+            yield return ConvertTest.Throws<ArgumentException, Exception>("128");
+            yield return ConvertTest.Throws<ArgumentException, Exception>("-129");
+
+            foreach (ConvertTest test in base.ConvertFromTestData())
+            {
+                yield return test;
+            }
         }
     }
 }

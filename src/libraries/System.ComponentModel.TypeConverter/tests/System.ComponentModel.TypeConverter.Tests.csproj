@@ -45,6 +45,7 @@
     <Compile Include="ArrayConverterTests.cs" />
     <Compile Include="AttributeCollectionTests.cs" />
     <Compile Include="AttributeProviderAttributeTests.cs" />
+    <Compile Include="BaseNumberConverterTests.cs" />
     <Compile Include="BindingListTests.cs" />
     <Compile Include="BooleanConverterTests.cs" />
     <Compile Include="ByteConvertersTests.cs" />

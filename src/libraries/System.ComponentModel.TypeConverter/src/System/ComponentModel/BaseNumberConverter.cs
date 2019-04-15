@@ -19,10 +19,7 @@ namespace System.ComponentModel
         /// <summary>
         /// The Type this converter is targeting (e.g. Int16, UInt32, etc.)
         /// </summary>
-        internal abstract Type TargetType
-        {
-            get;
-        }
+        internal abstract Type TargetType { get; }
 
         /// <summary>
         /// Convert the given value to a string using the given radix
@@ -33,7 +30,7 @@ namespace System.ComponentModel
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
         internal abstract object FromString(string value, NumberFormatInfo formatInfo);
-      
+
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>
@@ -53,8 +50,7 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            string text = value as string;
-            if (text != null)
+            if (value is string text)
             {
                 text = text.Trim();
 
@@ -64,8 +60,8 @@ namespace System.ComponentModel
                     {
                         return FromString(text.Substring(1), 16);
                     }
-                    else if (AllowHex && text.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-                             || text.StartsWith("&h", StringComparison.OrdinalIgnoreCase))
+                    else if (AllowHex && (text.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                             || text.StartsWith("&h", StringComparison.OrdinalIgnoreCase)))
                     {
                         return FromString(text.Substring(2), 16);
                     }
@@ -75,6 +71,7 @@ namespace System.ComponentModel
                         {
                             culture = CultureInfo.CurrentCulture;
                         }
+
                         NumberFormatInfo formatInfo = (NumberFormatInfo)culture.GetFormat(typeof(NumberFormatInfo));
                         return FromString(text, formatInfo);
                     }
@@ -84,6 +81,7 @@ namespace System.ComponentModel
                     throw new ArgumentException(SR.Format(SR.ConvertInvalidPrimitive, text, TargetType.Name), nameof(value), e);
                 }
             }
+
             return base.ConvertFrom(context, culture, value);
         }
 
@@ -103,6 +101,7 @@ namespace System.ComponentModel
                 {
                     culture = CultureInfo.CurrentCulture;
                 }
+
                 NumberFormatInfo formatInfo = (NumberFormatInfo)culture.GetFormat(typeof(NumberFormatInfo));
                 return ToString(value, formatInfo);
             }
@@ -111,13 +110,18 @@ namespace System.ComponentModel
             {
                 return Convert.ChangeType(value, destinationType, culture);
             }
+
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            return base.CanConvertTo(context, destinationType) || destinationType.IsPrimitive;
+            if (destinationType != null && destinationType.IsPrimitive)
+            {
+                return true;
+            }
+
+            return base.CanConvertTo(context, destinationType);
         }
     }
 }
-

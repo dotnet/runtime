@@ -2,71 +2,49 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
-using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class ByteConverterTests : ConverterTestBase
+    public class ByteConverterTests : BaseNumberConverterTests
     {
-        private static TypeConverter s_converter = new ByteConverter();
+        public override TypeConverter Converter => new ByteConverter();
 
-        [Fact]
-        public static void CanConvertFrom_WithContext()
+        public override IEnumerable<ConvertTest> ConvertToTestData()
         {
-            CanConvertFrom_WithContext(new object[2, 2]
-                {
-                    { typeof(string), true },
-                    { typeof(int), false }
-                },
-                ByteConverterTests.s_converter);
+            yield return ConvertTest.Valid((byte)1, "1");
+            yield return ConvertTest.Valid((byte)2, (byte)2, CultureInfo.InvariantCulture);
+            yield return ConvertTest.Valid((byte)3, (float)3.0);
+
+            yield return ConvertTest.CantConvertTo((byte)3, typeof(InstanceDescriptor));
+            yield return ConvertTest.CantConvertTo((byte)3, typeof(object));
         }
 
-        [Fact]
-        public static void CanConvertTo_WithContext()
+        public override IEnumerable<ConvertTest> ConvertFromTestData()
         {
-            CanConvertTo_WithContext(new object[3, 2]
-                {
-                    { typeof(string), true },
-                    { typeof(byte), true },
-                    { typeof(float), true }
-                },
-                ByteConverterTests.s_converter);
-        }
+            yield return ConvertTest.Valid("1", (byte)1);
+            yield return ConvertTest.Valid("#2", (byte)2);
+            yield return ConvertTest.Valid(" #2 ", (byte)2);
+            yield return ConvertTest.Valid("0x3", (byte)3);
+            yield return ConvertTest.Valid("0X3", (byte)3);
+            yield return ConvertTest.Valid(" 0X3 ", (byte)3);
+            yield return ConvertTest.Valid("&h4", (byte)4);
+            yield return ConvertTest.Valid("&H4", (byte)4);
+            yield return ConvertTest.Valid(" &H4 ", (byte)4);
+            yield return ConvertTest.Valid("+5", (byte)5);
+            yield return ConvertTest.Valid(" +5 ", (byte)5);
 
-        [Fact]
-        public static void ConvertFrom_WithContext()
-        {
-            ConvertFrom_WithContext(new object[7, 3]
-                {
-                    { "1  ", (byte)1, null },
-                    { "#2", (byte)2, null },
-                    { "0x3", (byte)3, null },
-                    { "0X4", (byte)4, null },
-                    { "&h5", (byte)5, null },
-                    { "&H6", (byte)6, null },
-                    { "+7", (byte)7, CultureInfo.InvariantCulture }
-                },
-                ByteConverterTests.s_converter);
-        }
+            yield return ConvertTest.Valid("!1", (byte)1, new CustomPositiveSymbolCulture());
 
-        [Fact]
-        public static void ConvertFrom_WithContext_Negative()
-        {
-            AssertExtensions.Throws<ArgumentException, Exception>(
-                () => ByteConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, "8.0"));
-        }
+            yield return ConvertTest.Throws<ArgumentException, Exception>("-1");
+            yield return ConvertTest.Throws<ArgumentException, Exception>("256");
 
-        [Fact]
-        public static void ConvertTo_WithContext()
-        {
-            ConvertTo_WithContext(new object[3, 3]
-                {
-                    { (byte)1, "1", null },
-                    { (byte)2, (byte)2, CultureInfo.InvariantCulture },
-                    { (byte)3, (float)3.0, null }
-                },
-                ByteConverterTests.s_converter);
+            foreach (ConvertTest test in base.ConvertFromTestData())
+            {
+                yield return test;
+            }
         }
     }
 }
