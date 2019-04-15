@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text.Json.Serialization.Policies;
 
@@ -137,7 +138,7 @@ namespace System.Text.Json.Serialization
                 // else there must be an outer object, so we'll return false here.
             }
 
-            ReadStackFrame.SetReturnValue(value, options, ref state.Current, setPropertyDirectly: setPropertyDirectly);
+            ApplyObjectToEnumerable(value, options, ref state.Current, setPropertyDirectly: setPropertyDirectly);
 
             if (!valueReturning)
             {
@@ -145,6 +146,74 @@ namespace System.Text.Json.Serialization
             }
 
             return false;
+        }
+
+        // If this method is changed, also change ApplyValueToEnumerable.
+        internal static void ApplyObjectToEnumerable(object value, JsonSerializerOptions options, ref ReadStackFrame frame, bool setPropertyDirectly = false)
+        {
+            if (frame.IsEnumerable())
+            {
+                if (frame.TempEnumerableValues != null)
+                {
+                    frame.TempEnumerableValues.Add(value);
+                }
+                else
+                {
+                    ((IList)frame.ReturnValue).Add(value);
+                }
+            }
+            else if (!setPropertyDirectly && frame.IsPropertyEnumerable())
+            {
+                Debug.Assert(frame.JsonPropertyInfo != null);
+                Debug.Assert(frame.ReturnValue != null);
+                if (frame.TempEnumerableValues != null)
+                {
+                    frame.TempEnumerableValues.Add(value);
+                }
+                else
+                {
+                    ((IList)frame.JsonPropertyInfo.GetValueAsObject(frame.ReturnValue, options)).Add(value);
+                }
+            }
+            else
+            {
+                Debug.Assert(frame.JsonPropertyInfo != null);
+                frame.JsonPropertyInfo.SetValueAsObject(frame.ReturnValue, value, options);
+            }
+        }
+
+        // If this method is changed, also change ApplyObjectToEnumerable.
+        internal static void ApplyValueToEnumerable<TProperty>(ref TProperty value, JsonSerializerOptions options, ref ReadStackFrame frame)
+        {
+            if (frame.IsEnumerable())
+            {
+                if (frame.TempEnumerableValues != null)
+                {
+                    ((IList<TProperty>)frame.TempEnumerableValues).Add(value);
+                }
+                else
+                {
+                    ((IList<TProperty>)frame.ReturnValue).Add(value);
+                }
+            }
+            else if (frame.IsPropertyEnumerable())
+            {
+                Debug.Assert(frame.JsonPropertyInfo != null);
+                Debug.Assert(frame.ReturnValue != null);
+                if (frame.TempEnumerableValues != null)
+                {
+                    ((IList<TProperty>)frame.TempEnumerableValues).Add(value);
+                }
+                else
+                {
+                    ((IList<TProperty>)frame.JsonPropertyInfo.GetValueAsObject(frame.ReturnValue, options)).Add(value);
+                }
+            }
+            else
+            {
+                Debug.Assert(frame.JsonPropertyInfo != null);
+                frame.JsonPropertyInfo.SetValueAsObject(frame.ReturnValue, value, options);
+            }
         }
     }
 }
