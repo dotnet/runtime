@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Runtime.InteropServices.ComTypes;
-
-using Variant = System.Runtime.InteropServices.Variant;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
@@ -42,7 +41,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
                     IntPtr.Zero);
             }
 
-            object resultAsObject = result.ToObject();
+            object? resultAsObject = result.ToObject();
             if (!(resultAsObject is IEnumVARIANT enumVariant))
             {
                 throw new InvalidOperationException(SR.InvalidOp_InvalidNewEnumVariant);
