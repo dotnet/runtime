@@ -434,6 +434,7 @@ void EventPipeBufferManager::WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_I
     SpinLockHolder _slh(&m_lock);
 
     // Naively walk the circular buffer, writing the event stream in timestamp order.
+    m_numEventsWritten = 0;
     while(true)
     {
         EventPipeEventInstance *pOldestInstance = NULL;
@@ -470,13 +471,14 @@ void EventPipeBufferManager::WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_I
 
         // Write the oldest event.
         pFile->WriteEvent(*pOldestInstance);
-#ifdef _DEBUG
-        m_numEventsWritten++;
-#endif // _DEBUG
 
+        m_numEventsWritten++;
         // Pop the event from the buffer.
         pOldestContainingList->PopNextEvent(stopTimeStamp);
     }
+
+    if (m_numEventsWritten > 0)
+        pFile->Flush();
 }
 
 EventPipeEventInstance* EventPipeBufferManager::GetNextEvent()

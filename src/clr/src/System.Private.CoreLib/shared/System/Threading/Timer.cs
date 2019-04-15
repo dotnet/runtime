@@ -678,17 +678,6 @@ namespace System.Threading
 
         ~TimerHolder()
         {
-            // If shutdown has started, another thread may be suspended while holding the timer lock.
-            // So we can't safely close the timer.  
-            //
-            // Similarly, we should not close the timer during AD-unload's live-object finalization phase.
-            // A rude abort may have prevented us from releasing the lock.
-            //
-            // Note that in either case, the Timer still won't fire, because ThreadPool threads won't be
-            // allowed to run anymore.
-            if (Environment.HasShutdownStarted)
-                return;
-
             _timer.Close();
         }
 

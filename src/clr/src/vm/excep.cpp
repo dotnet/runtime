@@ -4738,17 +4738,6 @@ LONG InternalUnhandledExceptionFilter_Worker(
         return EXCEPTION_CONTINUE_SEARCH;
     }
 
-
-    if (GetEEPolicy()->GetActionOnFailure(FAIL_FatalRuntime) == eDisableRuntime)
-    {
-        ETaskType type = ::GetCurrentTaskType();
-        if (type != TT_UNKNOWN && type != TT_USER)
-        {
-            LOG((LF_EH, LL_INFO100, "InternalUnhandledExceptionFilter_Worker: calling EEPolicy::HandleFatalError\n"));
-            EEPolicy::HandleFatalError(COR_E_EXECUTIONENGINE, (UINT_PTR)GetIP(pExceptionInfo->ContextRecord), NULL, pExceptionInfo);
-        }
-    }
-
     // We don't do anything when this is called from an unmanaged thread.
     Thread *pThread = GetThread();
 

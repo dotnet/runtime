@@ -28,16 +28,6 @@
 // Local prototypes.
 HRESULT FillErrorInfo(LPCWSTR szMsg, DWORD dwHelpContext);
 
-//*****************************************************************************
-// Function that we'll expose to the outside world to fire off the shutdown method
-//*****************************************************************************
-#ifdef SHOULD_WE_CLEANUP
-void ShutdownCompRC()
-{
-    CCompRC::ShutdownDefaultResourceDll();
-}
-#endif /* SHOULD_WE_CLEANUP */
-
 void GetResourceCultureCallbacks(
         FPGETTHREADUICULTURENAMES* fpGetThreadUICultureNames,
         FPGETTHREADUICULTUREID* fpGetThreadUICultureId)

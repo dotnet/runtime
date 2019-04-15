@@ -164,8 +164,9 @@
     <HelixConfiguration Condition=" '$(Scenario)' == 'normal' ">$(BuildType)</HelixConfiguration>
     <HelixConfiguration Condition=" '$(Scenario)' != 'normal' ">$(BuildType)-$(Scenario)</HelixConfiguration>
     <RunCrossGen Condition=" '$(RunCrossGen)' != 'true' ">false</RunCrossGen>
-    <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
-    <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(RunCrossGen)' == 'true' ">R2R </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(Scenario)' == 'normal' ">$(TestRunNamePrefix)$(BuildOS) $(BuildArch) $(BuildType) @ </TestRunNamePrefix>
+    <TestRunNamePrefix Condition=" '$(Scenario)' != 'normal' ">$(TestRunNamePrefix)$(BuildOS) $(BuildArch) $(BuildType) $(Scenario) @ </TestRunNamePrefix>
     <TimeoutPerTestInMilliseconds Condition=" '$(TimeoutPerTestInMinutes)' != '' ">$([System.TimeSpan]::FromMinutes($(TimeoutPerTestInMinutes)).TotalMilliseconds)</TimeoutPerTestInMilliseconds>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
     <XUnitRunnerArgs>-parallel collections -nocolor -noshadow -xml testResults.xml</XUnitRunnerArgs>
