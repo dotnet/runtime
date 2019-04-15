@@ -14,14 +14,14 @@ class fx_reference_t
 {
 public:
     fx_reference_t()
-        : fx_name(_X(""))
-        , fx_version(_X(""))
-        , fx_version_number()
-        , has_patch_roll_fwd(false)
+        : has_patch_roll_fwd(false)
         , patch_roll_fwd(false)
         , has_roll_fwd_on_no_candidate_fx(false)
-        , use_exact_version(false)
         , roll_fwd_on_no_candidate_fx((roll_fwd_on_no_candidate_fx_option)0)
+        , use_exact_version(false)
+        , fx_name(_X(""))
+        , fx_version(_X(""))
+        , fx_version_number()
         { }
 
     const pal::string_t& get_fx_name() const

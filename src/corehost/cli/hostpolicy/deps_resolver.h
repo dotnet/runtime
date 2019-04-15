@@ -49,10 +49,10 @@ public:
         bool is_framework_dependent)
         : m_fx_definitions(fx_definitions)
         , m_app_dir(args.app_root)
-        , m_managed_app(args.managed_application)
-        , m_is_framework_dependent(is_framework_dependent)
-        , m_core_servicing(args.core_servicing)
         , m_host_mode(args.host_mode)
+        , m_managed_app(args.managed_application)
+        , m_core_servicing(args.core_servicing)
+        , m_is_framework_dependent(is_framework_dependent)
     {
         int lowest_framework = m_fx_definitions.size() - 1;
         int root_framework = -1;

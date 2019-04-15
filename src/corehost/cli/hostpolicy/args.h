@@ -38,8 +38,8 @@ struct probe_config_t
         : probe_dir(probe_dir)
         , probe_deps_json(probe_deps_json)
         , fx_level(fx_level)
-        , only_serviceable_assets(only_serviceable_assets)
         , only_runtime_assets(only_runtime_assets)
+        , only_serviceable_assets(only_serviceable_assets)
         , probe_publish_dir(probe_publish_dir)
     {
     }
