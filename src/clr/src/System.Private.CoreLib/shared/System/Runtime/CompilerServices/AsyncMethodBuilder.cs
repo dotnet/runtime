@@ -895,7 +895,7 @@ namespace System.Runtime.CompilerServices
                 // For Boolean, we cache all possible values.
                 if (typeof(TResult) == typeof(bool)) // only the relevant branches are kept for each value-type generic instantiation
                 {
-                    bool value = (bool)(object?)result;
+                    bool value = (bool)(object)result!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
                     Task<bool> task = value ? AsyncTaskCache.TrueTask : AsyncTaskCache.FalseTask;
                     return Unsafe.As<Task<TResult>>(task); // UnsafeCast avoids type check we know will succeed
                 }
@@ -905,7 +905,7 @@ namespace System.Runtime.CompilerServices
                     // Compare to constants to avoid static field access if outside of cached range.
                     // We compare to the upper bound first, as we're more likely to cache miss on the upper side than on the 
                     // lower side, due to positive values being more common than negative as return values.
-                    int value = (int)(object?)result;
+                    int value = (int)(object)result!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
                     if (value < AsyncTaskCache.EXCLUSIVE_INT32_MAX &&
                         value >= AsyncTaskCache.INCLUSIVE_INT32_MIN)
                     {
@@ -915,16 +915,16 @@ namespace System.Runtime.CompilerServices
                 }
                 // For other known value types, we only special-case 0 / default(TResult).
                 else if (
-                    (typeof(TResult) == typeof(uint) && default == (uint)(object?)result) ||
-                    (typeof(TResult) == typeof(byte) && default(byte) == (byte)(object?)result) ||
-                    (typeof(TResult) == typeof(sbyte) && default(sbyte) == (sbyte)(object?)result) ||
-                    (typeof(TResult) == typeof(char) && default(char) == (char)(object?)result) ||
-                    (typeof(TResult) == typeof(long) && default == (long)(object?)result) ||
-                    (typeof(TResult) == typeof(ulong) && default == (ulong)(object?)result) ||
-                    (typeof(TResult) == typeof(short) && default(short) == (short)(object?)result) ||
-                    (typeof(TResult) == typeof(ushort) && default(ushort) == (ushort)(object?)result) ||
-                    (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object?)result) ||
-                    (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object?)result))
+                    (typeof(TResult) == typeof(uint) && default == (uint)(object)result!) ||
+                    (typeof(TResult) == typeof(byte) && default(byte) == (byte)(object)result!) ||
+                    (typeof(TResult) == typeof(sbyte) && default(sbyte) == (sbyte)(object)result!) ||
+                    (typeof(TResult) == typeof(char) && default(char) == (char)(object)result!) ||
+                    (typeof(TResult) == typeof(long) && default == (long)(object)result!) ||
+                    (typeof(TResult) == typeof(ulong) && default == (ulong)(object)result!) ||
+                    (typeof(TResult) == typeof(short) && default(short) == (short)(object)result!) ||
+                    (typeof(TResult) == typeof(ushort) && default(ushort) == (ushort)(object)result!) ||
+                    (typeof(TResult) == typeof(IntPtr) && default == (IntPtr)(object)result!) ||
+                    (typeof(TResult) == typeof(UIntPtr) && default == (UIntPtr)(object)result!)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
                 {
                     return s_defaultResultTask;
                 }
