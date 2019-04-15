@@ -35,7 +35,9 @@ Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket)
     if (bind(sock, (struct sockaddr*)(&sa), sizeof(sa)) != 0)
     {
         *retSocket = -1;
-        return (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
+        Error palError = (Error)(SystemNative_ConvertErrorPlatformToPal(errno));
+        close(sock);
+        return palError;
     }
 
     *retSocket = sock;
