@@ -4,10 +4,8 @@
 
 namespace System.Runtime.InteropServices
 {
-    [Flags]
-    public enum AssemblyRegistrationFlags
+    [AttributeUsage(AttributeTargets.Method, Inherited = false)]
+    public sealed class ComRegisterFunctionAttribute : Attribute
     {
-        None = 0x00000000,
-        SetCodeBase = 0x00000001,
     }
 }
