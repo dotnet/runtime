@@ -132,8 +132,7 @@
 //             where it will write it to 
 //
 //    All ETW writes eventually call
-//      EventWriteTransfer (native PINVOKE wrapper)
-//      EventWriteTransferWrapper (fixes compat problem if you pass null as the related activityID)
+//      EventWriteTransfer
 //         EventProvider.WriteEventRaw   - sets last error
 //         EventSource.WriteEventRaw     - Does EventSource exception handling logic
 //            WriteMultiMerge
@@ -498,6 +497,123 @@ namespace System.Diagnostics.Tracing
                 m_eventCommandExecuted -= value;
             }
         }
+
+#region ActivityID
+
+        /// <summary>
+        /// When a thread starts work that is on behalf of 'something else' (typically another 
+        /// thread or network request) it should mark the thread as working on that other work.
+        /// This API marks the current thread as working on activity 'activityID'. This API
+        /// should be used when the caller knows the thread's current activity (the one being
+        /// overwritten) has completed. Otherwise, callers should prefer the overload that
+        /// return the oldActivityThatWillContinue (below).
+        /// 
+        /// All events created with the EventSource on this thread are also tagged with the 
+        /// activity ID of the thread. 
+        /// 
+        /// It is common, and good practice after setting the thread to an activity to log an event
+        /// with a 'start' opcode to indicate that precise time/thread where the new activity 
+        /// started.
+        /// </summary>
+        /// <param name="activityId">A Guid that represents the new activity with which to mark 
+        /// the current thread</param>
+        public static void SetCurrentThreadActivityId(Guid activityId)
+        {
+            if (TplEventSource.Log != null)
+                TplEventSource.Log.SetActivityId(activityId);
+
+            // We ignore errors to keep with the convention that EventSources do not throw errors.
+            // Note we can't access m_throwOnWrites because this is a static method.  
+#if FEATURE_MANAGED_ETW
+#if FEATURE_PERFTRACING
+            // Set the activity id via EventPipe.
+            EventPipeInternal.EventActivityIdControl(
+                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+                ref activityId);
+#endif // FEATURE_PERFTRACING
+#if PLATFORM_WINDOWS
+            // Set the activity id via ETW.
+            Interop.Advapi32.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+                ref activityId);
+#endif // PLATFORM_WINDOWS
+#endif // FEATURE_MANAGED_ETW
+        }
+
+        /// <summary>
+        /// Retrieves the ETW activity ID associated with the current thread.
+        /// </summary>
+        public static Guid CurrentThreadActivityId
+        {
+            get
+            {
+                // We ignore errors to keep with the convention that EventSources do not throw 
+                // errors. Note we can't access m_throwOnWrites because this is a static method.
+                Guid retVal = new Guid();
+#if FEATURE_MANAGED_ETW
+#if PLATFORM_WINDOWS
+                Interop.Advapi32.EventActivityIdControl(
+                    Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
+                    ref retVal);
+#elif FEATURE_PERFTRACING
+                EventPipeInternal.EventActivityIdControl(
+                    (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_ID,
+                    ref retVal);
+#endif // PLATFORM_WINDOWS
+#endif // FEATURE_MANAGED_ETW
+                return retVal;
+            }
+        }
+
+        /// <summary>
+        /// When a thread starts work that is on behalf of 'something else' (typically another 
+        /// thread or network request) it should mark the thread as working on that other work.
+        /// This API marks the current thread as working on activity 'activityID'. It returns 
+        /// whatever activity the thread was previously marked with. There is a convention that
+        /// callers can assume that callees restore this activity mark before the callee returns. 
+        /// To encourage this, this API returns the old activity, so that it can be restored later.
+        /// 
+        /// All events created with the EventSource on this thread are also tagged with the 
+        /// activity ID of the thread. 
+        /// 
+        /// It is common, and good practice after setting the thread to an activity to log an event
+        /// with a 'start' opcode to indicate that precise time/thread where the new activity 
+        /// started.
+        /// </summary>
+        /// <param name="activityId">A Guid that represents the new activity with which to mark 
+        /// the current thread</param>
+        /// <param name="oldActivityThatWillContinue">The Guid that represents the current activity  
+        /// which will continue at some point in the future, on the current thread</param>
+        public static void SetCurrentThreadActivityId(Guid activityId, out Guid oldActivityThatWillContinue)
+        {
+            oldActivityThatWillContinue = activityId;
+#if FEATURE_MANAGED_ETW
+            // We ignore errors to keep with the convention that EventSources do not throw errors.
+            // Note we can't access m_throwOnWrites because this is a static method.  
+
+#if FEATURE_PERFTRACING && PLATFORM_WINDOWS
+            EventPipeInternal.EventActivityIdControl(
+                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_SET_ID,
+                    ref oldActivityThatWillContinue);
+#elif FEATURE_PERFTRACING
+            EventPipeInternal.EventActivityIdControl(
+                (uint)Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
+                    ref oldActivityThatWillContinue);
+#endif // FEATURE_PERFTRACING && PLATFORM_WINDOWS
+
+#if PLATFORM_WINDOWS
+            Interop.Advapi32.EventActivityIdControl(
+                Interop.Advapi32.ActivityControl.EVENT_ACTIVITY_CTRL_GET_SET_ID,
+                    ref oldActivityThatWillContinue);
+#endif // PLATFORM_WINDOWS
+#endif // FEATURE_MANAGED_ETW
+
+            // We don't call the activityDying callback here because the caller has declared that
+            // it is not dying.  
+            if (TplEventSource.Log != null)
+                TplEventSource.Log.SetActivityId(activityId);
+        }
+#endregion
 
 #region protected
         /// <summary>
@@ -1390,7 +1506,7 @@ namespace System.Diagnostics.Tracing
                     IntPtr providerMetadata = metadataHandle.AddrOfPinnedObject();
 
                     setInformationResult = m_etwProvider.SetInformation(
-                        UnsafeNativeMethods.ManifestEtw.EVENT_INFO_CLASS.SetTraits,
+                        Interop.Advapi32.EVENT_INFO_CLASS.SetTraits,
                         providerMetadata,
                         (uint)this.providerMetadata.Length);
 
@@ -2321,12 +2437,40 @@ namespace System.Diagnostics.Tracing
          root them and modify shared library definition to force export them.
          */
 #if ES_BUILD_PN
-       public
+        public
 #else
-       internal
+        internal
 #endif
         partial struct EventMetadata
         {
+#if ES_BUILD_PN
+            public EventMetadata(EventDescriptor descriptor,
+                EventTags tags,
+                bool enabledForAnyListener,
+                bool enabledForETW,
+                string name,
+                string message,
+                EventParameterType[] parameterTypes)
+            {
+                this.Descriptor = descriptor;
+                this.Tags = tags;
+                this.EnabledForAnyListener = enabledForAnyListener;
+                this.EnabledForETW = enabledForETW;
+#if FEATURE_PERFTRACING
+                this.EnabledForEventPipe = false;
+#endif
+                this.TriggersActivityTracking = 0;
+                this.Name = name;
+                this.Message = message;
+                this.Parameters = null;
+                this.TraceLoggingEventTypes = null;
+                this.ActivityOptions = EventActivityOptions.None;
+                this.ParameterTypes = parameterTypes;
+                this.HasRelatedActivityID = false;
+                this.EventHandle = IntPtr.Zero;
+            }
+#endif
+
             public EventDescriptor Descriptor;
             public IntPtr EventHandle;              // EventPipeEvent handle.
             public EventTags Tags;
@@ -2351,6 +2495,114 @@ namespace System.Diagnostics.Tracing
             public EventParameterType[] ParameterTypes;
 #endif
         };
+
+#if !ES_BUILD_PN
+        private int GetParameterCount(EventMetadata eventData)
+        {
+            return eventData.Parameters.Length;
+        }
+
+        private Type GetDataType(EventMetadata eventData, int parameterId)
+        {
+            return eventData.Parameters[parameterId].ParameterType;
+        }
+
+        private static readonly bool m_EventSourcePreventRecursion = false;
+#else
+        private int GetParameterCount(EventMetadata eventData)
+        {
+            int paramCount;
+            if(eventData.Parameters == null)
+            {
+                paramCount = eventData.ParameterTypes.Length;
+            }
+            else
+            {
+                paramCount = eventData.Parameters.Length;
+            }
+
+            return paramCount;
+        }
+
+        private Type GetDataType(EventMetadata eventData, int parameterId)
+        {
+            Type dataType;
+            if(eventData.Parameters == null)
+            {
+                dataType = EventTypeToType(eventData.ParameterTypes[parameterId]);
+            }
+            else
+            {
+                dataType = eventData.Parameters[parameterId].ParameterType;
+            }
+
+            return dataType;
+        }
+
+        private static readonly bool m_EventSourcePreventRecursion = true;
+
+        public enum EventParameterType
+        {
+            Boolean,
+            Byte,
+            SByte,
+            Char,
+            Int16,
+            UInt16,
+            Int32,
+            UInt32,
+            Int64,
+            UInt64,
+            IntPtr,
+            Single,
+            Double,
+            Decimal,
+            Guid,
+            String
+        }
+
+        private Type EventTypeToType(EventParameterType type)
+        {
+            switch (type)
+            {
+                case EventParameterType.Boolean:
+                    return typeof(bool);
+                case EventParameterType.Byte:
+                    return typeof(byte);
+                case EventParameterType.SByte:
+                    return typeof(sbyte);
+                case EventParameterType.Char:
+                    return typeof(char);
+                case EventParameterType.Int16:
+                    return typeof(short);
+                case EventParameterType.UInt16:
+                    return typeof(ushort);
+                case EventParameterType.Int32:
+                    return typeof(int);
+                case EventParameterType.UInt32:
+                    return typeof(uint);
+                case EventParameterType.Int64:
+                    return typeof(long);
+                case EventParameterType.UInt64:
+                    return typeof(ulong);
+                case EventParameterType.IntPtr:
+                    return typeof(IntPtr);
+                case EventParameterType.Single:
+                    return typeof(float);
+                case EventParameterType.Double:
+                    return typeof(double);
+                case EventParameterType.Decimal:
+                    return typeof(decimal);
+                case EventParameterType.Guid:
+                    return typeof(Guid);
+                case EventParameterType.String:
+                    return typeof(string);
+                default:
+                    // TODO: should I throw an exception here?
+                    return null;
+            }
+        }
+#endif
 
         // This is the internal entry point that code:EventListeners call when wanting to send a command to a
         // eventSource. The logic is as follows
@@ -5102,7 +5354,7 @@ namespace System.Diagnostics.Tracing
     /// ManifestBuilder is designed to isolate the details of the message of the event from the
     /// rest of EventSource.  This one happens to create XML. 
     /// </summary>
-    internal partial class ManifestBuilder
+    internal class ManifestBuilder
     {
         /// <summary>
         /// Build a manifest for 'providerName' with the given GUID, which will be packaged into 'dllName'.
@@ -5839,7 +6091,46 @@ namespace System.Diagnostics.Tracing
                 return typeName.Replace("win:Int", "win:UInt"); // ETW requires enums to be unsigned.  
             }
 
-            return GetTypeNameHelper(type);
+            switch (type.GetTypeCode())
+            {
+                case TypeCode.Boolean:
+                    return "win:Boolean";
+                case TypeCode.Byte:
+                    return "win:UInt8";
+                case TypeCode.Char:
+                case TypeCode.UInt16:
+                    return "win:UInt16";
+                case TypeCode.UInt32:
+                    return "win:UInt32";
+                case TypeCode.UInt64:
+                    return "win:UInt64";
+                case TypeCode.SByte:
+                    return "win:Int8";
+                case TypeCode.Int16:
+                    return "win:Int16";
+                case TypeCode.Int32:
+                    return "win:Int32";
+                case TypeCode.Int64:
+                    return "win:Int64";
+                case TypeCode.String:
+                    return "win:UnicodeString";
+                case TypeCode.Single:
+                    return "win:Float";
+                case TypeCode.Double:
+                    return "win:Double";
+                case TypeCode.DateTime:
+                    return "win:FILETIME";
+                default:
+                    if (type == typeof(Guid))
+                        return "win:GUID";
+                    else if (type == typeof(IntPtr))
+                        return "win:Pointer";
+                    else if ((type.IsArray || type.IsPointer) && type.GetElementType() == typeof(byte))
+                        return "win:Binary";
+
+                    ManifestError(SR.Format(SR.EventSource_UnsupportedEventTypeInManifest, type.Name), true);
+                    return string.Empty;
+            }
         }
 
         private static void UpdateStringBuilder(ref StringBuilder stringBuilder, string eventMessage, int startIndex, int count)
