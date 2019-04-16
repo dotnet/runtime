@@ -266,7 +266,7 @@ ILStubResolver::SetStubTargetMethodSig(
     }
     CONTRACTL_END;
 
-    NewHolder<BYTE> pNewSig = new BYTE[cbStubTargetSigLength];
+    NewArrayHolder<BYTE> pNewSig = new BYTE[cbStubTargetSigLength];
     
     memcpyNoGCRefs((void *)pNewSig, pStubTargetMethodSig, cbStubTargetSigLength);
     
@@ -313,9 +313,9 @@ ILStubResolver::AllocGeneratedIL(
 #if !defined(DACCESS_COMPILE)
     _ASSERTE(0 != cbCode);
 
-    NewHolder<BYTE>             pNewILCodeBuffer        = NULL;
-    NewHolder<BYTE>             pNewLocalSig            = NULL;
-    NewHolder<CompileTimeState> pNewCompileTimeState    = NULL;
+    NewArrayHolder<BYTE>             pNewILCodeBuffer        = NULL;
+    NewArrayHolder<BYTE>             pNewLocalSig            = NULL;
+    NewArrayHolder<CompileTimeState> pNewCompileTimeState    = NULL;
 
     pNewCompileTimeState = (CompileTimeState *)new BYTE[sizeof(CompileTimeState)];
     memset(pNewCompileTimeState, 0, sizeof(CompileTimeState));
