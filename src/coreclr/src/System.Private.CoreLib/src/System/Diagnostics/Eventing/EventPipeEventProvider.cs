@@ -19,7 +19,7 @@ namespace System.Diagnostics.Tracing
         // Register an event provider.
         unsafe uint IEventProvider.EventRegister(
             EventSource eventSource,
-            UnsafeNativeMethods.ManifestEtw.EtwEnableCallback enableCallback,
+            Interop.Advapi32.EtwEnableCallback enableCallback,
             void* callbackContext,
             ref long registrationHandle)
         {
@@ -48,9 +48,9 @@ namespace System.Diagnostics.Tracing
         }
 
         // Write an event.
-        unsafe int IEventProvider.EventWriteTransferWrapper(
+        unsafe EventProvider.WriteEventErrorCode IEventProvider.EventWriteTransfer(
             long registrationHandle,
-            ref EventDescriptor eventDescriptor,
+            in EventDescriptor eventDescriptor,
             IntPtr eventHandle,
             Guid* activityId,
             Guid* relatedActivityId,
@@ -63,7 +63,7 @@ namespace System.Diagnostics.Tracing
                 if (userDataCount == 0)
                 {
                     EventPipeInternal.WriteEventData(eventHandle, eventID, null, 0, activityId, relatedActivityId);
-                    return 0;
+                    return EventProvider.WriteEventErrorCode.NoError;
                 }
 
                 // If Channel == 11, this is a TraceLogging event.
@@ -77,11 +77,11 @@ namespace System.Diagnostics.Tracing
                 }
                 EventPipeInternal.WriteEventData(eventHandle, eventID, userData, (uint) userDataCount, activityId, relatedActivityId);
             }
-            return 0;
+            return EventProvider.WriteEventErrorCode.NoError;
         }
 
         // Get or set the per-thread activity ID.
-        int IEventProvider.EventActivityIdControl(UnsafeNativeMethods.ManifestEtw.ActivityControl ControlCode, ref Guid ActivityId)
+        int IEventProvider.EventActivityIdControl(Interop.Advapi32.ActivityControl ControlCode, ref Guid ActivityId)
         {
             return EventPipeInternal.EventActivityIdControl((uint)ControlCode, ref ActivityId);
         }

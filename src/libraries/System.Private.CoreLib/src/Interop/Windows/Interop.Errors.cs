@@ -18,6 +18,7 @@ internal partial class Interop
         internal const int ERROR_NOT_READY = 0x15;
         internal const int ERROR_SHARING_VIOLATION = 0x20;
         internal const int ERROR_HANDLE_EOF = 0x26;
+        internal const int ERROR_NOT_SUPPORTED = 0x32;
         internal const int ERROR_FILE_EXISTS = 0x50;
         internal const int ERROR_INVALID_PARAMETER = 0x57;
         internal const int ERROR_BROKEN_PIPE = 0x6D;
