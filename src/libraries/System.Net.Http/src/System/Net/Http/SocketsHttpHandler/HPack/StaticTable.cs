@@ -86,11 +86,12 @@ namespace System.Net.Http.HPack
                 value.Length != 0 ? Encoding.ASCII.GetBytes(value) : Array.Empty<byte>());
 
         // Values for encoding.
-        // Unused values are omitted, so entries like ":scheme: http" are not included.
+        // Unused values are omitted.
         public const int Authority = 1;
         public const int MethodGet = 2;
         public const int MethodPost = 3;
         public const int PathSlash = 4;
+        public const int SchemeHttp = 6;
         public const int SchemeHttps = 7;
         public const int AcceptCharset = 15;
         public const int AcceptEncoding = 16;

@@ -19,7 +19,7 @@ namespace System.Net.Http
     internal sealed partial class Http2Connection : HttpConnectionBase, IDisposable
     {
         private readonly HttpConnectionPool _pool;
-        private readonly SslStream _stream;
+        private readonly Stream _stream;
 
         // NOTE: These are mutable structs; do not make these readonly.
         private ArrayBuffer _incomingBuffer;
@@ -78,7 +78,7 @@ namespace System.Net.Http
         // this value, so this is not a hard maximum size.
         private const int UnflushedOutgoingBufferSize = 32 * 1024;
 
-        public Http2Connection(HttpConnectionPool pool, SslStream stream)
+        public Http2Connection(HttpConnectionPool pool, Stream stream)
         {
             _pool = pool;
             _stream = stream;
@@ -899,7 +899,7 @@ namespace System.Net.Http
                 WriteIndexedHeader(StaticTable.MethodGet, normalizedMethod.Method);
             }
 
-            WriteIndexedHeader(StaticTable.SchemeHttps);
+            WriteIndexedHeader(_stream is SslStream ? StaticTable.SchemeHttps : StaticTable.SchemeHttp);
 
             if (request.HasHeaders && request.Headers.Host != null)
             {

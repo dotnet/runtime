@@ -155,6 +155,12 @@ namespace System.Net.Http.Functional.Tests
                 "_maxHttpVersion",
                 BindingFlags.NonPublic | BindingFlags.Instance);
             field_maxHttpVersion.SetValue(_settings, new Version(2, 0));
+
+            // Allow HTTP/2.0 via unencrypted socket if ALPN is not supported on platform.
+            FieldInfo field_allowPlainHttp2 = type_HttpConnectionSettings.GetField(
+                "_allowUnencryptedHttp2",
+                BindingFlags.NonPublic | BindingFlags.Instance);
+            field_allowPlainHttp2.SetValue(_settings, !PlatformDetection.SupportsAlpn);
         }
 
         public static bool NativeHandlerSupportsSslConfiguration()
