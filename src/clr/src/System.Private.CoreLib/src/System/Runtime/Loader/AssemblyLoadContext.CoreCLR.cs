@@ -142,7 +142,7 @@ namespace System.Runtime.Loader
             {
                 throw new ArgumentException(SR.ArgumentNull_AssemblyNameName);
             }
-            if (string.IsNullOrEmpty(loadedSimpleName) || requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase))
+            if (string.IsNullOrEmpty(loadedSimpleName) || !requestedSimpleName.Equals(loadedSimpleName, StringComparison.InvariantCultureIgnoreCase))
             {
                 throw new InvalidOperationException(SR.Argument_CustomAssemblyLoadContextRequestedNameMismatch);
             }
