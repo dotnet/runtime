@@ -742,7 +742,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             if (source->OperGet() == GT_LCL_VAR)
             {
                 assert(varNode != nullptr);
-                LclVarDsc* varDsc = &compiler->lvaTable[varNode->GetLclNum()];
+                LclVarDsc* varDsc = compiler->lvaGetDesc(varNode);
 
                 // This struct also must live in the stack frame
                 // And it can't live in a register (SIMD)
