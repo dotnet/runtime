@@ -5975,7 +5975,7 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
         if (cnsOff == nullptr) // It must have folded into a zero offset
         {
             // Record in the general zero-offset map.
-            GetZeroOffsetFieldMap()->Set(addr, fieldSeq);
+            fgAddFieldSeqForZeroOffset(addr, fieldSeq);
         }
         else
         {
@@ -6398,14 +6398,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
             addr = gtNewLclvNode(lclNum, objRefType); // Use "tmpLcl" to create "addr" node.
         }
-        else if (fldOffset == 0)
-        {
-            // Generate the "addr" node.
-            addr = objRef;
-            FieldSeqNode* fieldSeq =
-                fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
-            GetZeroOffsetFieldMap()->Set(addr, fieldSeq);
-        }
         else
         {
             addr = objRef;
@@ -6647,19 +6639,55 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     }
     noway_assert(tree->gtOper == GT_IND);
 
-    // Pass down the current mac; if non null we are computing an address
-    GenTree* res = fgMorphSmpOp(tree, mac);
-
-    if (fldOffset == 0 && res->OperGet() == GT_IND)
+    if (fldOffset == 0)
     {
-        GenTree* addr = res->gtOp.gtOp1;
+        GenTree* addr = tree->gtOp.gtOp1;
+
+        // 'addr' may be a GT_COMMA. Skip over any comma nodes
+        addr = addr->gtEffectiveVal();
+
+#ifdef DEBUG
+        if (verbose)
+        {
+            printf("\nBefore calling fgAddFieldSeqForZeroOffset:\n");
+            gtDispTree(tree);
+        }
+#endif
+
+        // We expect 'addr' to be an address at this point.
+        // But there are also cases where we can see a GT_LCL_FLD or a GT_LCL_VAR:
+        //
+        //     [001076] ----G-------              /--*  FIELD     long   m_constArray
+        //     [001072] ----G-------              |  \--*  ADDR      byref
+        //     [001073] ----G-------              |     \--*  FIELD     struct blob
+        //     [001074] ------------              |        \--*  ADDR      byref
+        //     [001075] ------------              |           \--*  LCL_VAR   struct V18 loc11
+        //
+        //
+        assert((addr->TypeGet() == TYP_BYREF) || (addr->TypeGet() == TYP_I_IMPL) || (addr->OperGet() == GT_LCL_FLD) ||
+               (addr->OperGet() == GT_LCL_VAR));
+
         // Since we don't make a constant zero to attach the field sequence to, associate it with the "addr" node.
         FieldSeqNode* fieldSeq =
             fieldMayOverlap ? FieldSeqStore::NotAField() : GetFieldSeqStore()->CreateSingleton(symHnd);
         fgAddFieldSeqForZeroOffset(addr, fieldSeq);
     }
 
-    return res;
+    // Pass down the current mac; if non null we are computing an address
+    GenTree* result = fgMorphSmpOp(tree, mac);
+
+#ifdef DEBUG
+    if (fldOffset == 0)
+    {
+        if (verbose)
+        {
+            printf("\nAfter calling fgMorphSmpOp (zero fldOffset case):\n");
+            gtDispTree(result);
+        }
+    }
+#endif
+
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -12897,7 +12925,8 @@ DONE_MORPHING_CHILDREN:
                     /* Negate the constant and change the node to be "+" */
 
                     op2->gtIntConCommon.SetIconValue(-op2->gtIntConCommon.IconValue());
-                    oper = GT_ADD;
+                    op2->gtIntCon.gtFieldSeq = FieldSeqStore::NotAField();
+                    oper                     = GT_ADD;
                     tree->ChangeOper(oper);
                     goto CM_ADD_OP;
                 }
@@ -13472,13 +13501,25 @@ DONE_MORPHING_CHILDREN:
                         temp->AsLclFld()->gtFieldSeq =
                             GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
                     }
-                    else
+                    else // we have a GT_LCL_VAR
                     {
-                        temp->ChangeOper(GT_LCL_FLD); // Note that this makes the gtFieldSeq "NotAField"...
+                        assert(temp->OperGet() == GT_LCL_VAR);
+                        temp->ChangeOper(GT_LCL_FLD); // Note that this typically makes the gtFieldSeq "NotAField"...
                         temp->AsLclFld()->gtLclOffs = (unsigned short)ival1;
-                        if (fieldSeq != nullptr)
-                        { // If it does represent a field, note that.
-                            temp->AsLclFld()->gtFieldSeq = fieldSeq;
+
+                        if (temp->AsLclFld()->gtFieldSeq == FieldSeqStore::NotAField())
+                        {
+                            if (fieldSeq != nullptr)
+                            {
+                                // If it does represent a field, note that.
+                                temp->AsLclFld()->gtFieldSeq = fieldSeq;
+                            }
+                        }
+                        else
+                        {
+                            // Append 'fieldSeq' to the exsisting one
+                            temp->AsLclFld()->gtFieldSeq =
+                                GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
                         }
                     }
                     temp->gtType      = tree->gtType;
@@ -13689,7 +13730,7 @@ DONE_MORPHING_CHILDREN:
                         zeroFieldSeq = GetFieldSeqStore()->Append(existingZeroOffsetFldSeq, zeroFieldSeq);
                     }
                     // Transfer the annotation to the new GT_ADDR node.
-                    GetZeroOffsetFieldMap()->Set(op1, zeroFieldSeq, NodeToFieldSeqMap::Overwrite);
+                    fgAddFieldSeqForZeroOffset(op1, zeroFieldSeq);
                 }
                 commaNode->gtOp.gtOp2 = op1;
                 // Originally, I gave all the comma nodes type "byref".  But the ADDR(IND(x)) == x transform
@@ -18703,66 +18744,132 @@ private:
     }
 };
 
-void Compiler::fgAddFieldSeqForZeroOffset(GenTree* op1, FieldSeqNode* fieldSeq)
+//------------------------------------------------------------------------
+// fgAddFieldSeqForZeroOffset:
+//    Associate a fieldSeq (with a zero offset) with the GenTree node 'addr'
+//
+// Arguments:
+//    addr - A GenTree node
+//    fieldSeqZero - a fieldSeq (with a zero offset)
+//
+// Notes:
+//    Some GenTree nodes have internal fields that record the field sequence.
+//    If we have one of these nodes: GT_CNS_INT, GT_LCL_FLD
+//    we can append the field sequence using the gtFieldSeq
+//    If we have a GT_ADD of a GT_CNS_INT we can use the
+//    fieldSeq from child node.
+//    Otherwise we record 'fieldSeqZero' in the GenTree node using
+//    a Map:  GetFieldSeqStore()
+//    When doing so we take care to preserve any existing zero field sequence
+//
+void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZero)
 {
-    assert(op1->TypeGet() == TYP_BYREF || op1->TypeGet() == TYP_I_IMPL || op1->TypeGet() == TYP_REF);
+    // We expect 'addr' to be an address at this point.
+    // But there are also cases where we can see a GT_LCL_FLD or a GT_LCL_VAR:
+    //
+    //     [001076] ----G-------              /--*  FIELD     long   m_constArray
+    //     [001072] ----G-------              |  \--*  ADDR      byref
+    //     [001073] ----G-------              |     \--*  FIELD     struct blob
+    //     [001074] ------------              |        \--*  ADDR      byref
+    //     [001075] ------------              |           \--*  LCL_VAR   struct V18 loc11
+    //
+    //
+    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->OperGet() == GT_LCL_FLD ||
+           addr->OperGet() == GT_LCL_VAR);
 
-    switch (op1->OperGet())
+    FieldSeqNode* fieldSeqUpdate   = fieldSeqZero;
+    GenTree*      fieldSeqNode     = addr;
+    bool          fieldSeqRecorded = false;
+    bool          isMapAnnotation  = false;
+
+#ifdef DEBUG
+    if (verbose)
     {
+        printf("\nfgAddFieldSeqForZeroOffset for");
+        gtDispFieldSeq(fieldSeqZero);
+
+        printf("\naddr (Before)\n");
+        gtDispNode(addr, nullptr, nullptr, false);
+        gtDispCommonEndLine(addr);
+    }
+#endif // DEBUG
+
+    switch (addr->OperGet())
+    {
+        case GT_CNS_INT:
+            fieldSeqUpdate            = GetFieldSeqStore()->Append(addr->gtIntCon.gtFieldSeq, fieldSeqZero);
+            addr->gtIntCon.gtFieldSeq = fieldSeqUpdate;
+            fieldSeqRecorded          = true;
+            break;
+
+        case GT_LCL_FLD:
+        {
+            GenTreeLclFld* lclFld = addr->AsLclFld();
+            fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeqZero);
+            lclFld->gtFieldSeq    = fieldSeqUpdate;
+            fieldSeqRecorded      = true;
+            break;
+        }
+
         case GT_ADDR:
-            if (op1->gtOp.gtOp1->OperGet() == GT_LCL_FLD)
+            if (addr->gtOp.gtOp1->OperGet() == GT_LCL_FLD)
             {
-                GenTreeLclFld* lclFld = op1->gtOp.gtOp1->AsLclFld();
-                lclFld->gtFieldSeq    = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeq);
+                fieldSeqNode = addr->gtOp.gtOp1;
+
+                GenTreeLclFld* lclFld = addr->gtOp.gtOp1->AsLclFld();
+                fieldSeqUpdate        = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeqZero);
+                lclFld->gtFieldSeq    = fieldSeqUpdate;
+                fieldSeqRecorded      = true;
             }
             break;
 
         case GT_ADD:
-            if (op1->gtOp.gtOp1->OperGet() == GT_CNS_INT)
+            if (addr->gtOp.gtOp1->OperGet() == GT_CNS_INT)
             {
-                FieldSeqNode* op1Fs = op1->gtOp.gtOp1->gtIntCon.gtFieldSeq;
-                if (op1Fs != nullptr)
-                {
-                    op1Fs                                = GetFieldSeqStore()->Append(op1Fs, fieldSeq);
-                    op1->gtOp.gtOp1->gtIntCon.gtFieldSeq = op1Fs;
-                }
+                fieldSeqNode = addr->gtOp.gtOp1;
+
+                fieldSeqUpdate = GetFieldSeqStore()->Append(addr->gtOp.gtOp1->gtIntCon.gtFieldSeq, fieldSeqZero);
+                addr->gtOp.gtOp1->gtIntCon.gtFieldSeq = fieldSeqUpdate;
+                fieldSeqRecorded                      = true;
             }
-            else if (op1->gtOp.gtOp2->OperGet() == GT_CNS_INT)
+            else if (addr->gtOp.gtOp2->OperGet() == GT_CNS_INT)
             {
-                FieldSeqNode* op2Fs = op1->gtOp.gtOp2->gtIntCon.gtFieldSeq;
-                if (op2Fs != nullptr)
-                {
-                    op2Fs                                = GetFieldSeqStore()->Append(op2Fs, fieldSeq);
-                    op1->gtOp.gtOp2->gtIntCon.gtFieldSeq = op2Fs;
-                }
+                fieldSeqNode = addr->gtOp.gtOp2;
+
+                fieldSeqUpdate = GetFieldSeqStore()->Append(addr->gtOp.gtOp2->gtIntCon.gtFieldSeq, fieldSeqZero);
+                addr->gtOp.gtOp2->gtIntCon.gtFieldSeq = fieldSeqUpdate;
+                fieldSeqRecorded                      = true;
             }
             break;
-
-        case GT_CNS_INT:
-        {
-            FieldSeqNode* op1Fs = op1->gtIntCon.gtFieldSeq;
-            if (op1Fs != nullptr)
-            {
-                op1Fs                    = GetFieldSeqStore()->Append(op1Fs, fieldSeq);
-                op1->gtIntCon.gtFieldSeq = op1Fs;
-            }
-        }
-        break;
 
         default:
-            // Record in the general zero-offset map.
-
-            // The "op1" node might already be annotated with a zero-offset field sequence.
-            FieldSeqNode* existingZeroOffsetFldSeq = nullptr;
-            if (GetZeroOffsetFieldMap()->Lookup(op1, &existingZeroOffsetFldSeq))
-            {
-                // Append the zero field sequences
-                fieldSeq = GetFieldSeqStore()->Append(existingZeroOffsetFldSeq, fieldSeq);
-            }
-            // Set the new field sequence annotation for op1
-            GetZeroOffsetFieldMap()->Set(op1, fieldSeq, NodeToFieldSeqMap::Overwrite);
             break;
     }
+
+    if (fieldSeqRecorded == false)
+    {
+        // Record in the general zero-offset map.
+
+        // The "addr" node might already be annotated with a zero-offset field sequence.
+        FieldSeqNode* existingFieldSeq = nullptr;
+        if (GetZeroOffsetFieldMap()->Lookup(addr, &existingFieldSeq))
+        {
+            // Append the zero field sequences
+            fieldSeqUpdate = GetFieldSeqStore()->Append(existingFieldSeq, fieldSeqZero);
+        }
+        // Overwrite the field sequence annotation for op1
+        GetZeroOffsetFieldMap()->Set(addr, fieldSeqUpdate, NodeToFieldSeqMap::Overwrite);
+        fieldSeqRecorded = true;
+    }
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("     (After)\n");
+        gtDispNode(fieldSeqNode, nullptr, nullptr, false);
+        gtDispCommonEndLine(fieldSeqNode);
+    }
+#endif // DEBUG
 }
 
 //------------------------------------------------------------------------
