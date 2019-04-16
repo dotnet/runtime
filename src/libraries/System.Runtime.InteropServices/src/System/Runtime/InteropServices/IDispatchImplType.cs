@@ -4,10 +4,11 @@
 
 namespace System.Runtime.InteropServices
 {
-    [Flags]
-    public enum AssemblyRegistrationFlags
+    [Obsolete("The IDispatchImplAttribute is deprecated.", error: false)]
+    public enum IDispatchImplType
     {
-        None = 0x00000000,
-        SetCodeBase = 0x00000001,
+        CompatibleImpl = 2,
+        InternalImpl = 1,
+        SystemDefinedImpl = 0,
     }
 }

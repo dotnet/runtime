@@ -6,19 +6,11 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime.CompilerServices
 {
-    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
     public sealed partial class IUnknownConstantAttribute : CustomConstantAttribute
     {
         public IUnknownConstantAttribute() { }
 
         public override object Value => new UnknownWrapper(null);
-    }
-
-    [System.AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
-    public sealed partial class IDispatchConstantAttribute : CustomConstantAttribute
-    {
-        public IDispatchConstantAttribute() { }
-
-        public override object Value => new DispatchWrapper(null);
     }
 }
