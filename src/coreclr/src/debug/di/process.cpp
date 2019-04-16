@@ -7300,7 +7300,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
         if (bufferCopy != NULL)
         {
             memmove(buffer, bufferCopy, size);
-            delete bufferCopy;
+            delete [] bufferCopy;
         }
     }
 

@@ -1780,7 +1780,7 @@ mdToken Assembler::MakeMemberRef(mdToken cr, __in __nullterminated char* pszMemb
             }
         }
         //if(m_fOBJ)    m_pCurMethod->m_TRDList.PUSH(new TokenRelocDescr(m_CurPC,mr));
-        delete pszMemberName;
+        delete [] pszMemberName;
         delete sig;
     }
     return mr;
@@ -2164,7 +2164,7 @@ void Assembler::EmitBytes(BYTE *p, unsigned len)
 
 
         memcpy(pb,m_pOutputBuffer,m_CurPC);
-        delete m_pOutputBuffer;
+        delete [] m_pOutputBuffer;
         m_pOutputBuffer = pb;
         m_pCurOutputPos = &m_pOutputBuffer[m_CurPC];
         m_pEndOutputPos = &m_pOutputBuffer[newlen];

@@ -57,7 +57,7 @@ EventPipeEventSource::EventPipeEventSource()
 
     // Delete the metadata after the event is created.
     // The metadata blob will be copied into EventPipe-owned memory.
-    delete(pMetadata);
+    delete [] pMetadata;
 }
 
 EventPipeEventSource::~EventPipeEventSource()
