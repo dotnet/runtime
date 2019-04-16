@@ -176,8 +176,7 @@ precompile_coreroot_fx()
 
     local overlayDir=$CORE_ROOT
 
-    # TODO: Remove System.Xml.XDocument.dll exclusion - it was added because "custom" xunit.console.dll fails when running from Core_Root with crossgen-d framework.
-    filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -not -name System.Xml.XDocument.dll -type f)
+    filesToPrecompile=$(find -L $overlayDir -iname \*.dll -not -iname \*.ni.dll -not -iname \*-ms-win-\* -not -iname xunit.\* -type f)
     for fileToPrecompile in ${filesToPrecompile}
     do
         local filename=${fileToPrecompile}
