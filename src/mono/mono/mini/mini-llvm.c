@@ -1735,20 +1735,34 @@ typedef struct {
 	LLVMTypeRef type;
 } CallSite;
 
+static gboolean
+method_is_direct_callable (MonoMethod *method)
+{
+	if (method->wrapper_type == MONO_WRAPPER_ALLOC)
+		return TRUE;
+	return FALSE;
+}
+
 static LLVMValueRef
 get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
 {
 	LLVMValueRef callee;
 	char *callee_name = NULL;
 
-	if (ctx->module->static_link && ctx->module->assembly->image != mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL) {
-		MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
-		g_assert (info);
+	if (ctx->module->static_link && ctx->module->assembly->image != mono_get_corlib ()) {
+		if (type == MONO_PATCH_INFO_JIT_ICALL) {
+			MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
+			g_assert (info);
 
-		if (info->func != info->wrapper) {
-			type = MONO_PATCH_INFO_METHOD;
-			data = mono_icall_get_wrapper_method (info);
-			callee_name = mono_aot_get_mangled_method_name ((MonoMethod*)data);
+			if (info->func != info->wrapper) {
+				type = MONO_PATCH_INFO_METHOD;
+				data = mono_icall_get_wrapper_method (info);
+				callee_name = mono_aot_get_mangled_method_name ((MonoMethod*)data);
+			}
+		} else if (type == MONO_PATCH_INFO_METHOD) {
+			MonoMethod *method = (MonoMethod*)data;
+			if (method_is_direct_callable (method))
+				callee_name = mono_aot_get_mangled_method_name (method);
 		}
 	}
 
@@ -7414,7 +7428,7 @@ free_ctx (EmitContext *ctx)
 static gboolean
 is_externally_callable (EmitContext *ctx, MonoMethod *method)
 {
-	if (ctx->module->llvm_only && ctx->module->static_link && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+	if (ctx->module->llvm_only && ctx->module->static_link && (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE || method_is_direct_callable (method)))
 		return TRUE;
 	return FALSE;
 }
