@@ -44,6 +44,34 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Theory]
+        [InlineData("\u05D1\u05F1")]
+        [InlineData("jp\u30A5")]
+        public async Task SendAsync_InvalidHeader_Throw(string value)
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                HttpClientHandler handler = CreateHttpClientHandler();
+                using (HttpClient client = CreateHttpClient())
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                    Assert.True(request.Headers.TryAddWithoutValidation("bad", value));
+
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                }
+
+            },
+            async server =>
+            {
+                try
+                {
+                    // Client should abort at some point so this is going to throw.
+                    HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK).ConfigureAwait(false);
+                }
+                catch (IOException) { };
+            });
+        }
+
         [Fact]
         public async Task SendAsync_SpecialCharacterHeader_Success()
         {

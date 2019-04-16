@@ -565,7 +565,7 @@ namespace System.Net.Test.Common
 
                 if (line == null)
                 {
-                    throw new Exception("Unexpected EOF trying to read request header");
+                    throw new IOException("Unexpected EOF trying to read request header");
                 }
 
                 return lines;
