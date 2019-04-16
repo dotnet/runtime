@@ -2,13 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
+#nullable enable
 using System.Collections;
 using System.Diagnostics;
-using System.Reflection;
-using System.Security;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -17,7 +13,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         private T _value;
 
         public CLRIReferenceImpl(PropertyType type, T obj)
-            : base(type, obj)
+            : base(type, obj!)
         {
             Debug.Assert(obj != null, "Must not be null");
             _value = obj;
@@ -28,7 +24,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             get { return _value; }
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             if (_value != null)
             {
@@ -42,7 +38,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         object IGetProxyTarget.GetTarget()
         {
-            return (object)_value;
+            return _value!; // TODO-NULLABLE-GENERIC
         }
 
         // We have T in an IReference<T>.  Need to QI for IReference<T> with the appropriate GUID, call
@@ -55,7 +51,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Debug.Assert(wrapper != null);
             IReference<T> reference = (IReference<T>)wrapper;
             Debug.Assert(reference != null, "CLRIReferenceImpl::UnboxHelper - QI'ed for IReference<" + typeof(T) + ">, but that failed.");
-            return reference.Value;
+            return reference.Value!; // TODO-NULLABLE-GENERIC
         }
     }
 
@@ -83,7 +79,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             get { return _value; }
         }
 
-        public override string ToString()
+        public override string? ToString()
         {
             if (_value != null)
             {
@@ -296,11 +292,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (propType.HasValue)
             {
                 Type specificType = typeof(CLRIReferenceImpl<>).MakeGenericType(type);
-                return Activator.CreateInstance(specificType, new object[] { propType.GetValueOrDefault(), obj });
+                return Activator.CreateInstance(specificType, new object[] { propType.GetValueOrDefault(), obj })!;
             }
 
             Debug.Fail("We should not see non-WinRT type here");
-            return null;
+            return null!;
         }
 
         internal static object CreateIReferenceArray(Array obj)
@@ -367,7 +363,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 if (type.IsGenericType &&
                     type.GetGenericTypeDefinition() == typeof(System.Collections.Generic.KeyValuePair<,>))
                 {
-                    object[] objArray = new object[obj.Length];
+                    object?[] objArray = new object?[obj.Length];
                     for (int i = 0; i < objArray.Length; i++)
                     {
                         objArray[i] = obj.GetValue(i);
@@ -389,7 +385,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 // All WinRT value type will be Property.Other
                 Type specificType = typeof(CLRIReferenceArrayImpl<>).MakeGenericType(type);
-                return Activator.CreateInstance(specificType, new object[] { propType.GetValueOrDefault(), obj });
+                return Activator.CreateInstance(specificType, new object[] { propType.GetValueOrDefault(), obj })!;
             }
             else
             {
