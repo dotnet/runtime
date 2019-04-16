@@ -171,11 +171,28 @@ namespace System.Text.Unicode
                             // - 00 if the corresponding UTF-16 char was a high surrogate code unit;
                             // - 01 if the corresponding UTF-16 char was a low surrogate code unit;
                             // - ## (garbage) if the corresponding UTF-16 char was not a surrogate code unit.
+                            //   Since 'mask' already has 00 in these positions (since the corresponding char
+                            //   wasn't a surrogate), "mask AND mask2 == 00" holds for these positions.
 
                             uint mask2 = (uint)Sse2.MoveMask(Sse2.ShiftRightLogical(utf16Data, 3).AsByte());
 
-                            uint lowSurrogatesMask = mask2 & mask; // 01 only if was a low surrogate char, else 00
-                            uint highSurrogatesMask = (mask2 ^ mask) & 0x5555u; // 01 only if was a high surrogate char, else 00
+                            // 'lowSurrogatesMask' has its bits occur in pairs:
+                            // - 01 if the corresponding char was a low surrogate char,
+                            // - 00 if the corresponding char was a high surrogate char or not a surrogate at all.
+
+                            uint lowSurrogatesMask = mask2 & mask;
+
+                            // 'highSurrogatesMask' has its bits occur in pairs:
+                            // - 01 if the corresponding char was a high surrogate char,
+                            // - 00 if the corresponding char was a low surrogate char or not a surrogate at all.
+
+                            uint highSurrogatesMask = (mask2 ^ 0b_0101_0101_0101_0101u /* flip all even-numbered bits 00 <-> 01 */) & mask;
+
+                            Debug.Assert((highSurrogatesMask & lowSurrogatesMask) == 0,
+                                "A char cannot simultaneously be both a high and a low surrogate char.");
+
+                            Debug.Assert(((highSurrogatesMask | lowSurrogatesMask) & 0b_1010_1010_1010_1010u) == 0,
+                                "Only even bits (no odd bits) of the masks should be set.");
 
                             // Now check that each high surrogate is followed by a low surrogate and that each
                             // low surrogate follows a high surrogate. We make an exception for the case where
