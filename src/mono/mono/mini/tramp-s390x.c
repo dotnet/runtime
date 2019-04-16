@@ -178,7 +178,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guin
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
-	char *tramp_name;
+	const char *tramp_name;
 	guint8 *buf, *tramp, *code;
 	int i, offset, has_caller;
 	short *o[1];
@@ -374,7 +374,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	g_assert (info);
 	tramp_name = mono_get_generic_trampoline_name (tramp_type);
 	*info = mono_tramp_info_create (tramp_name, buf, buf - code, ji, unwind_ops);
-	g_free (tramp_name);
 
 	/* Sanity check */
 	g_assert ((buf - code) <= 512);

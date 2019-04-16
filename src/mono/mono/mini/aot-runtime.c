@@ -5823,11 +5823,10 @@ mono_aot_create_specific_trampoline (MonoImage *image, gpointer arg1, MonoTrampo
 	num_trampolines ++;
 
 	if (!generic_trampolines [tramp_type]) {
-		char *symbol;
+		const char *symbol;
 
 		symbol = mono_get_generic_trampoline_name (tramp_type);
 		generic_trampolines [tramp_type] = mono_aot_get_trampoline (symbol);
-		g_free (symbol);
 	}
 
 	tramp = (guint8 *)generic_trampolines [tramp_type];

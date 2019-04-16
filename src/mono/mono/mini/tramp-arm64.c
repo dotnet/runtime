@@ -107,7 +107,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	guint64 gregs_regset;
 	GSList *unwind_ops = NULL;
 	MonoJumpInfo *ji = NULL;
-	char *tramp_name;
+	const char *tramp_name;
 
 	buf_len = 768;
 	buf = code = mono_global_codeman_reserve (buf_len);
@@ -317,7 +317,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	if (info) {
 		tramp_name = mono_get_generic_trampoline_name (tramp_type);
 		*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
-		g_free (tramp_name);
 	}
 
 	return buf;

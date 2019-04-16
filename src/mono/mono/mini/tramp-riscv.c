@@ -69,9 +69,8 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	guint8 *buf = mono_global_codeman_reserve (1024), *code = buf;
 
 	if (info) {
-		char *name = mono_get_generic_trampoline_name (tramp_type);
+		const char *name = mono_get_generic_trampoline_name (tramp_type);
 		*info = mono_tramp_info_create (name, buf, code - buf, NULL, NULL);
-		g_free (name);
 	}
 
 	return buf;
