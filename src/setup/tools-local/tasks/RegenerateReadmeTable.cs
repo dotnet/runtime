@@ -180,6 +180,9 @@ namespace Microsoft.DotNet.Build.Tasks
             AddLink("zip", "zip");
             AddLink("tar.gz", "targz");
 
+            AddLink("NetHost (zip)", "nethost-zip");
+            AddLink("NetHost (tar.gz)", "nethost-targz");
+
             AddLink("Symbols (zip)", "symbols-zip");
             AddLink("Symbols (tar.gz)", "symbols-targz");
 
