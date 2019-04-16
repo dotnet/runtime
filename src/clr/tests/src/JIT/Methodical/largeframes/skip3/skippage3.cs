@@ -58,7 +58,7 @@ namespace BigFrames
             s.i2 = level;
             Escape(ref s);
 
-            if (level < 20)
+            if (level < 10)
             {
                 EatStackThenTest1(level + 1);
             }
