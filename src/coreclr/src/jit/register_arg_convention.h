@@ -58,7 +58,7 @@ public:
     // return ref to current register arg for this type
     unsigned& regArgNum(var_types type)
     {
-        return varTypeIsFloating(type) ? floatRegArgNum : intRegArgNum;
+        return varTypeUsesFloatArgReg(type) ? floatRegArgNum : intRegArgNum;
     }
 
     // Allocate a set of contiguous argument registers. "type" is either an integer
@@ -110,7 +110,7 @@ private:
     // return max register arg for this type
     unsigned maxRegArgNum(var_types type)
     {
-        return varTypeIsFloating(type) ? maxFloatRegArgNum : maxIntRegArgNum;
+        return varTypeUsesFloatArgReg(type) ? maxFloatRegArgNum : maxIntRegArgNum;
     }
 
     bool enoughAvailRegs(var_types type, unsigned numRegs = 1);

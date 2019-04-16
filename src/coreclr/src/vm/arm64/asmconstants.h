@@ -61,7 +61,7 @@ ASMCONSTANTS_C_ASSERT(SIZEOF__FloatArgumentRegisters == sizeof(FloatArgumentRegi
 #define CallDescrData__fpReturnSize             0x20
 #define CallDescrData__pTarget                  0x28
 #define CallDescrData__pRetBuffArg              0x30
-#define CallDescrData__returnValue              0x38
+#define CallDescrData__returnValue              0x40
 
 ASMCONSTANTS_C_ASSERT(CallDescrData__pSrc                 == offsetof(CallDescrData, pSrc))
 ASMCONSTANTS_C_ASSERT(CallDescrData__numStackSlots        == offsetof(CallDescrData, numStackSlots))

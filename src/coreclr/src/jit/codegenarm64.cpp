@@ -2023,10 +2023,10 @@ void CodeGen::genSimpleReturn(GenTree* treeNode)
     GenTree*  op1        = treeNode->gtGetOp1();
     var_types targetType = treeNode->TypeGet();
 
-    assert(!isStructReturn(treeNode));
+    assert(targetType != TYP_STRUCT);
     assert(targetType != TYP_VOID);
 
-    regNumber retReg = varTypeIsFloating(treeNode) ? REG_FLOATRET : REG_INTRET;
+    regNumber retReg = varTypeUsesFloatArgReg(treeNode) ? REG_FLOATRET : REG_INTRET;
 
     bool movRequired = (op1->gtRegNum != retReg);
 

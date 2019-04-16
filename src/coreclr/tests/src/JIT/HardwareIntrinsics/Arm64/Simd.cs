@@ -1355,7 +1355,6 @@ namespace Arm64intrisicsTest
                 testExtractOp<int,    Vector64< int   >>(name, (x) => Simd.Extract(x, 1), (x) => x[ 1]);
                 testExtractOp<uint,   Vector64< uint  >>(name, (x) => Simd.Extract(x, 0), (x) => x[ 0]);
                 testExtractOp<uint,   Vector64< uint  >>(name, (x) => Simd.Extract(x, 1), (x) => x[ 1]);
-#if Broken
 
                 // Test non-constant call
                 testExtractOp<float,  Vector128<float >>(name, (x) => simdExtract(x, 0), (x) => x[ 0]);
@@ -1472,7 +1471,6 @@ namespace Arm64intrisicsTest
                 testThrowsArgumentOutOfRangeException<ushort, Vector64< ushort>>(name, (x, y) => Simd.Extract(x, 4));
                 testThrowsArgumentOutOfRangeException<int,    Vector64< int   >>(name, (x, y) => Simd.Extract(x, 2));
                 testThrowsArgumentOutOfRangeException<uint,   Vector64< uint  >>(name, (x, y) => Simd.Extract(x, 2));
-#endif
 
                 testThrowsTypeNotSupported<Vector64< long >>(name, (x, y) => { return Simd.Extract(x, 1) > 1 ? x : y; });
                 testThrowsTypeNotSupported<Vector64< ulong>>(name, (x, y) => { return Simd.Extract(x, 1) > 1 ? x : y; });
@@ -1528,7 +1526,6 @@ namespace Arm64intrisicsTest
                 testPermuteOp<ushort, Vector64< ushort>>(name, (x, y) => Simd.Insert(x, 1, (ushort)2), (i, x, y) => (ushort)(i != 1 ? x[i] : 2));
                 testPermuteOp<int,    Vector64< int   >>(name, (x, y) => Simd.Insert(x, 1, (int   )2), (i, x, y) => (int   )(i != 1 ? x[i] : 2));
                 testPermuteOp<uint,   Vector64< uint  >>(name, (x, y) => Simd.Insert(x, 1, (uint  )2), (i, x, y) => (uint  )(i != 1 ? x[i] : 2));
-#if Broken
 
                 testPermuteOp<float,  Vector128<float >>(name, (x, y) => Simd.Insert(x, 3, Simd.Extract(y, 1)), (i, x, y) => (float )(i != 3 ? x[i] : y[1]));
                 testPermuteOp<double, Vector128<double>>(name, (x, y) => Simd.Insert(x, 0, Simd.Extract(y, 1)), (i, x, y) => (double)(i != 0 ? x[i] : y[1]));
@@ -1565,7 +1562,6 @@ namespace Arm64intrisicsTest
                 testThrowsArgumentOutOfRangeException<ushort, Vector64< ushort>, Vector64< ushort>>(name, (x, y) => Simd.Insert(x, 4, (ushort)1));
                 testThrowsArgumentOutOfRangeException<int,    Vector64< int   >, Vector64< int   >>(name, (x, y) => Simd.Insert(x, 2, (int   )1));
                 testThrowsArgumentOutOfRangeException<uint,   Vector64< uint  >, Vector64< uint  >>(name, (x, y) => Simd.Insert(x, 2, (uint  )1));
-#endif
 
                 testThrowsTypeNotSupported<Vector128<bool >>(name, (x, y) => Simd.Insert(x, 1,      true));
                 testThrowsTypeNotSupported<Vector64< long >>(name, (x, y) => Simd.Insert(x, 1, ( long )5));

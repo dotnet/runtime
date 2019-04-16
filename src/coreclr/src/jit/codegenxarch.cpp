@@ -1133,9 +1133,9 @@ void CodeGen::genStructReturn(GenTree* treeNode)
         unsigned regCount = retTypeDesc.GetReturnRegCount();
         assert(regCount == MAX_RET_REG_COUNT);
 
-        if (varTypeIsEnregisterableStruct(op1))
+        if (varTypeIsEnregisterable(op1))
         {
-            // Right now the only enregistrable structs supported are SIMD vector types.
+            // Right now the only enregisterable structs supported are SIMD vector types.
             assert(varTypeIsSIMD(op1));
             assert(op1->isUsedFromReg());
 
