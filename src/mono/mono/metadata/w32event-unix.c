@@ -37,7 +37,7 @@ struct MonoW32HandleNamedEvent {
 	MonoW32HandleNamespace sharedns;
 };
 
-static void event_handle_signal (MonoW32Handle *handle_data)
+static gint32 event_handle_signal (MonoW32Handle *handle_data)
 {
 	MonoW32HandleEvent *event_handle;
 
@@ -52,6 +52,7 @@ static void event_handle_signal (MonoW32Handle *handle_data)
 	} else {
 		mono_w32handle_set_signal_state (handle_data, TRUE, TRUE);
 	}
+	return MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 }
 
 static gboolean event_handle_own (MonoW32Handle *handle_data, gboolean *abandoned)

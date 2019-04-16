@@ -7,6 +7,9 @@
 
 #include <glib.h>
 
+#define WAIT_TOO_MANY_POSTS      ((gint) 0x0000012A)
+#define WAIT_NOT_OWNED_BY_CALLER ((gint) 0x0000012B)
+
 #ifndef HOST_WIN32
 
 #define WAIT_FAILED        ((gint) 0xFFFFFFFF)

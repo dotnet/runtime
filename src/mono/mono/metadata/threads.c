@@ -2196,6 +2196,10 @@ map_native_wait_result_to_managed (MonoW32HandleWaitRet val, gsize numobjects)
 		return WAIT_IO_COMPLETION;
 	} else if (val == MONO_W32HANDLE_WAIT_RET_TIMEOUT) {
 		return WAIT_TIMEOUT;
+	} else if (val == MONO_W32HANDLE_WAIT_RET_TOO_MANY_POSTS) {
+		return WAIT_TOO_MANY_POSTS;
+	} else if (val == MONO_W32HANDLE_WAIT_RET_NOT_OWNED_BY_CALLER) {
+		return WAIT_NOT_OWNED_BY_CALLER;
 	} else if (val == MONO_W32HANDLE_WAIT_RET_FAILED) {
 		/* WAIT_FAILED in waithandle.cs is different from WAIT_FAILED in Win32 API */
 		return MANAGED_WAIT_FAILED;

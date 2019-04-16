@@ -48,6 +48,8 @@ typedef enum {
 	MONO_W32HANDLE_WAIT_RET_ALERTED     = -1,
 	MONO_W32HANDLE_WAIT_RET_TIMEOUT     = -2,
 	MONO_W32HANDLE_WAIT_RET_FAILED      = -3,
+	MONO_W32HANDLE_WAIT_RET_TOO_MANY_POSTS = -4,
+	MONO_W32HANDLE_WAIT_RET_NOT_OWNED_BY_CALLER = -5
 } MonoW32HandleWaitRet;
 
 typedef struct 
@@ -55,7 +57,7 @@ typedef struct
 	void (*close)(gpointer data);
 
 	/* mono_w32handle_signal_and_wait */
-	void (*signal)(MonoW32Handle *handle_data);
+	gint32 (*signal)(MonoW32Handle *handle_data);
 
 	/* Called by mono_w32handle_wait_one and mono_w32handle_wait_multiple,
 	 * with the handle locked (shared handles aren't locked.)

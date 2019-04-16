@@ -1255,13 +1255,8 @@ NOHANDLES(ICALL(VOLATILE_25, "Write(uintptr&,uintptr)", ves_icall_System_Threadi
 NOHANDLES(ICALL(VOLATILE_26, "Write(ulong&,ulong)", ves_icall_System_Threading_Volatile_Write8))
 
 ICALL_TYPE(WAITH, "System.Threading.WaitHandle", WAITH_1)
-#if ENABLE_NETCORE
-HANDLES(WAITH_1, "SignalAndWaitCore", ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal, gint32, 3, (gpointer, gpointer, gint32))
-HANDLES(WAITH_2, "Wait_internal", ves_icall_System_Threading_WaitHandle_Wait_internal, gint32, 4, (gpointer_ptr, gint32, MonoBoolean, gint32))
-#else
 HANDLES(WAITH_1, "SignalAndWait_Internal", ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal, gint32, 3, (gpointer, gpointer, gint32))
 HANDLES(WAITH_2, "Wait_internal", ves_icall_System_Threading_WaitHandle_Wait_internal, gint32, 4, (gpointer_ptr, gint32, MonoBoolean, gint32))
-#endif
 
 ICALL_TYPE(TYPE, "System.Type", TYPE_1)
 HANDLES(TYPE_1, "internal_from_handle", ves_icall_System_Type_internal_from_handle, MonoReflectionType, 1, (MonoType_ref))

@@ -540,11 +540,13 @@ mono_w32handle_ops_typesize (MonoW32Type type)
 	return handle_ops [type]->typesize ();
 }
 
-static void
+static gint32
 mono_w32handle_ops_signal (MonoW32Handle *handle_data)
 {
 	if (handle_ops [handle_data->type] && handle_ops [handle_data->type]->signal)
-		handle_ops [handle_data->type]->signal (handle_data);
+		return handle_ops [handle_data->type]->signal (handle_data);
+
+	return MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 }
 
 static gboolean
@@ -1202,9 +1204,15 @@ mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, gu
 
 	mono_w32handle_lock_handles (handles_data, 2);
 
-	mono_w32handle_ops_signal (signal_handle_data);
+	gint32 signal_ret = mono_w32handle_ops_signal (signal_handle_data);
 
 	mono_w32handle_unlock (signal_handle_data);
+
+	if (signal_ret == MONO_W32HANDLE_WAIT_RET_TOO_MANY_POSTS ||
+		signal_ret == MONO_W32HANDLE_WAIT_RET_NOT_OWNED_BY_CALLER) {
+		ret = (MonoW32HandleWaitRet) signal_ret;
+		goto done;
+	}
 
 	if (mono_w32handle_test_capabilities (wait_handle_data, MONO_W32HANDLE_CAP_OWN)) {
 		if (own_if_owned (wait_handle_data, &abandoned)) {
