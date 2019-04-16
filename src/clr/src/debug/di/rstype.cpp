@@ -1549,7 +1549,7 @@ HRESULT CordbType::InitInstantiationTypeHandle(BOOL fForceInit)
         {
             ThrowHR(E_INVALIDARG);
         }
-        NewHolder<DebuggerIPCE_BasicTypeData> pArgTypeData(new DebuggerIPCE_BasicTypeData[bufferSize.Value()]); 
+        NewArrayHolder<DebuggerIPCE_BasicTypeData> pArgTypeData(new DebuggerIPCE_BasicTypeData[bufferSize.Value()]);
 
         // We will have already called Init on each of the type parameters further above. Now we build a
         // list of type information for each type parameter.
