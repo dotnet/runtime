@@ -3760,7 +3760,7 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	    header.has_clauses)
 		return FALSE;
 
-	if (cfg->method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
+	if (method->flags & METHOD_ATTRIBUTE_REQSECOBJ)
 		/* Used to mark methods containing StackCrawlMark locals */
 		return FALSE;
 

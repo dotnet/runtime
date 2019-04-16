@@ -4841,27 +4841,33 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_LDSFLD_O) LDSFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDSFLD_P) LDSFLD(p, gpointer); MINT_IN_BREAK;
 
-		MINT_IN_CASE(MINT_LDSFLD) {
-			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (imethod->domain, field);
-			EXCEPTION_CHECKPOINT;
-			stackval_from_data (field->type, sp, addr, FALSE);
-			ip += 2;
+		MINT_IN_CASE(MINT_LDSFLD_VT) {
+			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)];
+			gpointer addr = imethod->data_items [*(guint16*)(ip + 2)];
+			i32 = READ32(ip + 3);
+			INIT_VTABLE (vtable);
+			sp->data.p = vt_sp;
+
+			memcpy (vt_sp, addr, i32);
+			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
+			ip += 5;
 			++sp;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_LDSFLD_VT) {
-			// FIXME This is still 30 times slower than JIT. Could we optimize it even further ?
-			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)];
-			gpointer addr = imethod->data_items [*(guint16*)(ip + 2)];
-			MonoClass *klass = (MonoClass*) imethod->data_items [*(guint16*)(ip + 3)];
-			INIT_VTABLE (vtable);
-			sp->data.p = vt_sp;
-			mono_value_copy_internal (vt_sp, addr, klass);
 
-			int size = mono_class_value_size (klass, NULL);
-			vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
-			ip += 4;
+		MINT_IN_CASE(MINT_LDSSFLD_SLOW)
+		MINT_IN_CASE(MINT_LDSSFLD_VT_SLOW) {
+			gboolean is_vt = *ip == MINT_LDSSFLD_VT_SLOW;
+			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (imethod->domain, field);
+			EXCEPTION_CHECKPOINT;
+			if (is_vt) {
+				int size = READ32 (ip + 2);
+				sp->data.p = vt_sp;
+				vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
+			}
+			stackval_from_data (field->type, sp, addr, FALSE);
+			ip += (is_vt ? 4 : 2);
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -4885,26 +4891,34 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_STSFLD_P) STSFLD(p, gpointer); MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_STSFLD_O) STSFLD(p, gpointer); MINT_IN_BREAK;
 
-		MINT_IN_CASE(MINT_STSFLD) {
-			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
-			gpointer addr = mono_class_static_field_address (imethod->domain, field);
-			EXCEPTION_CHECKPOINT;
-			ip += 2;
-			--sp;
-			stackval_to_data (field->type, sp, addr, FALSE);
-			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_STSFLD_VT) {
 			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)];
 			gpointer addr = imethod->data_items [*(guint16*)(ip + 2)];
-			MonoClass *klass = (MonoClass*) imethod->data_items [*(guint16*)(ip + 3)];
+			i32 = READ32(ip + 3);
 			INIT_VTABLE (vtable);
-			mono_value_copy_internal (addr, sp [-1].data.vt, klass);
 
-			int size = mono_class_value_size (klass, NULL);
-			vt_sp -= ALIGN_TO (size, MINT_VT_ALIGNMENT);
+			memcpy (addr, sp [-1].data.vt, i32);
+			vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			ip += 4;
 			--sp;
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_STSSFLD_SLOW)
+		MINT_IN_CASE(MINT_STSSFLD_VT_SLOW) {
+			gboolean is_vt = *ip == MINT_STSSFLD_VT_SLOW;
+			MonoClassField *field = (MonoClassField*)imethod->data_items [* (guint16 *)(ip + 1)];
+			gpointer addr = mono_class_static_field_address (imethod->domain, field);
+			EXCEPTION_CHECKPOINT;
+			--sp;
+			stackval_to_data (field->type, sp, addr, FALSE);
+			if (is_vt) {
+				int size = READ32 (ip + 2);
+				vt_sp -= ALIGN_TO (size, MINT_VT_ALIGNMENT);
+				ip += 4;
+			} else {
+				ip += 2;
+			}
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_STOBJ_VT) {

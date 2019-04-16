@@ -1946,6 +1946,11 @@ get_call_table_entry (void *table, int index)
 	guint32 ins;
 	gint32 offset;
 
+	ins_addr = (guint32 *)table + (index * 2);
+	if ((guint32) *ins_addr == (guint32 ) 0xe51ff004) { // ldr pc, =<label>
+		return *((char **) (ins_addr + 1));
+	}
+
 	ins_addr = (guint32*)table + index;
 	ins = *ins_addr;
 	if ((ins >> ARMCOND_SHIFT) == ARMCOND_NV) {
@@ -1953,6 +1958,8 @@ get_call_table_entry (void *table, int index)
 		offset = (((int)(((ins & 0xffffff) << 1) | ((ins >> 24) & 0x1))) << 7) >> 7;
 		return (char*)ins_addr + (offset * 2) + 8 + 1;
 	} else {
+		g_assert ((ins >> ARMCOND_SHIFT) == ARMCOND_AL);
+		/* bl */
 		offset = (((int)ins & 0xffffff) << 8) >> 8;
 		return (char*)ins_addr + (offset * 4) + 8;
 	}
