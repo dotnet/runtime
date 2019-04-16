@@ -2238,7 +2238,7 @@ TypeHandle DacDbiInterfaceImpl::TypeDataWalk::FnPtrTypeArg(DebuggerIPCE_TypeArgD
 {
     // allocate space to store a list of type handles, one for the return type and one for each
     // of the parameter types of the function to which the FnPtr type refers. 
-    NewHolder<TypeHandle> pInst(new TypeHandle[sizeof(TypeHandle) * pFnPtrTypeInfo->numTypeArgs]);
+    NewArrayHolder<TypeHandle> pInst(new TypeHandle[sizeof(TypeHandle) * pFnPtrTypeInfo->numTypeArgs]);
     
     if (ReadLoadedTypeHandles(retrieveWhich, pFnPtrTypeInfo->numTypeArgs, pInst))
     {
@@ -3058,7 +3058,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactClassTypeHandle(DebuggerIPCE_ExpandedTyp
         ThrowHR(E_OUTOFMEMORY);
     }
 
-    NewHolder<TypeHandle> pInst(new TypeHandle[allocSize.Value()]);
+    NewArrayHolder<TypeHandle> pInst(new TypeHandle[allocSize.Value()]);
 
     // convert the type information for each parameter to its corresponding type handle
     // and store it in the list
@@ -3093,7 +3093,7 @@ TypeHandle DacDbiInterfaceImpl::GetExactFnPtrTypeHandle(ArgInfoList * pArgInfo)
     {
         ThrowHR(E_OUTOFMEMORY);
     }
-    NewHolder<TypeHandle> pInst(new TypeHandle[allocSize.Value()]);
+    NewArrayHolder<TypeHandle> pInst(new TypeHandle[allocSize.Value()]);
 
     // convert the type information for each parameter to its corresponding type handle
     // and store it in the list
