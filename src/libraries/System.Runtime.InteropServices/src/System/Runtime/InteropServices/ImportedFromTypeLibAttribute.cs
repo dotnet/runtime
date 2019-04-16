@@ -4,10 +4,11 @@
 
 namespace System.Runtime.InteropServices
 {
-    [Flags]
-    public enum AssemblyRegistrationFlags
+    [AttributeUsage(AttributeTargets.Assembly, Inherited = false)]
+    public sealed class ImportedFromTypeLibAttribute : Attribute
     {
-        None = 0x00000000,
-        SetCodeBase = 0x00000001,
+        public ImportedFromTypeLibAttribute(string tlbFile) => Value = tlbFile;
+
+        public string Value { get; }
     }
 }

@@ -4,8 +4,9 @@
 
 namespace System.Runtime.InteropServices
 {
-    [ComImport, Guid("00000003-0000-0000-C000-000000000046"),
-    InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [ComImport]
+    [Guid("00000003-0000-0000-C000-000000000046")]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     internal interface IMarshal
     {
         [PreserveSig]

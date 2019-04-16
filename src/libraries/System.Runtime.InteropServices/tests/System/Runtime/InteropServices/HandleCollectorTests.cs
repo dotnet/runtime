@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices
         [Fact]
         public static void Ctor_InitialThresholdGreaterThanMaximumThreshold_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new HandleCollector("InitialGreaterThanMax", 100, 1));
+            AssertExtensions.Throws<ArgumentException>("initialThreshold", null, () => new HandleCollector("InitialGreaterThanMax", 100, 1));
         }
 
         [Fact]

@@ -11,23 +11,25 @@ namespace System.Runtime.InteropServices
         private static readonly Guid CLSID_StdMarshal = new Guid("00000017-0000-0000-c000-000000000046");
         
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate int GetMarshalSizeMax_Delegate(IntPtr _this, ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out int pSize);
+        private delegate int GetMarshalSizeMaxDelegate(IntPtr _this, ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out int pSize);
         
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate int MarshalInterface_Delegate(IntPtr _this, IntPtr pStm, ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags);
+        private delegate int MarshalInterfaceDelegate(IntPtr _this, IntPtr pStm, ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags);
 
-        protected StandardOleMarshalObject() { }
+        protected StandardOleMarshalObject()
+        {
+        }
 
         private IntPtr GetStdMarshaler(ref Guid riid, int dwDestContext, int mshlflags)
         {
-            IntPtr pStandardMarshal = IntPtr.Zero;
-
             IntPtr pUnknown = Marshal.GetIUnknownForObject(this);
             if (pUnknown != IntPtr.Zero)
             {
                 try
                 {
-                    if (HResults.S_OK == Interop.Ole32.CoGetStandardMarshal(ref riid, pUnknown, dwDestContext, IntPtr.Zero, mshlflags, out pStandardMarshal))
+                    IntPtr pStandardMarshal = IntPtr.Zero;
+                    int hr = Interop.Ole32.CoGetStandardMarshal(ref riid, pUnknown, dwDestContext, IntPtr.Zero, mshlflags, out pStandardMarshal);
+                    if (hr == HResults.S_OK)
                     {
                         Debug.Assert(pStandardMarshal != IntPtr.Zero, "Failed to get marshaler for interface '" + riid.ToString() + "', CoGetStandardMarshal returned S_OK");
                         return pStandardMarshal;
@@ -38,7 +40,8 @@ namespace System.Runtime.InteropServices
                     Marshal.Release(pUnknown);
                 }
             }
-            throw new InvalidOperationException(SR.Format(SR.StandardOleMarshalObjectGetMarshalerFailed, riid.ToString()));
+
+            throw new InvalidOperationException(SR.Format(SR.StandardOleMarshalObjectGetMarshalerFailed, riid));
         }
 
         int IMarshal.GetUnmarshalClass(ref Guid riid, IntPtr pv, int dwDestContext, IntPtr pvDestContext, int mshlflags, out Guid pCid)
@@ -53,12 +56,16 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                // we must not wrap pStandardMarshal with an RCW because that would trigger QIs for random IIDs and the marshaler
-                // (aka stub manager object) does not really handle these well and we would risk triggering an AppVerifier break
+                // We must not wrap pStandardMarshal with an RCW because that
+                // would trigger QIs for random IIDs and the marshaler (aka stub
+                // manager object) does not really handle these well and we would
+                // risk triggering an AppVerifier break
                 IntPtr vtable = *(IntPtr*)pStandardMarshal.ToPointer();
-                IntPtr method = *((IntPtr*)vtable.ToPointer() + 4); // GetMarshalSizeMax is 4th slot
+                
+                // GetMarshalSizeMax is 4th slot
+                IntPtr method = *((IntPtr*)vtable.ToPointer() + 4);
 
-                GetMarshalSizeMax_Delegate del = (GetMarshalSizeMax_Delegate)Marshal.GetDelegateForFunctionPointer(method, typeof(GetMarshalSizeMax_Delegate));
+                GetMarshalSizeMaxDelegate del = (GetMarshalSizeMaxDelegate)Marshal.GetDelegateForFunctionPointer(method, typeof(GetMarshalSizeMaxDelegate));
                 return del(pStandardMarshal, ref riid, pv, dwDestContext, pvDestContext, mshlflags, out pSize);
             }
             finally
@@ -73,12 +80,14 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                // we must not wrap pStandardMarshal with an RCW because that would trigger QIs for random IIDs and the marshaler
-                // (aka stub manager object) does not really handle these well and we would risk triggering an AppVerifier break
+                // We must not wrap pStandardMarshal with an RCW because that
+                // would trigger QIs for random IIDs and the marshaler (aka stub
+                // manager object) does not really handle these well and we would
+                // risk triggering an AppVerifier break
                 IntPtr vtable = *(IntPtr*)pStandardMarshal.ToPointer();
                 IntPtr method = *((IntPtr*)vtable.ToPointer() + 5); // MarshalInterface is 5th slot
 
-                MarshalInterface_Delegate del = (MarshalInterface_Delegate)Marshal.GetDelegateForFunctionPointer(method, typeof(MarshalInterface_Delegate));
+                MarshalInterfaceDelegate del = (MarshalInterfaceDelegate)Marshal.GetDelegateForFunctionPointer(method, typeof(MarshalInterfaceDelegate));
                 return del(pStandardMarshal, pStm, ref riid, pv, dwDestContext, pvDestContext, mshlflags);
             }
             finally
