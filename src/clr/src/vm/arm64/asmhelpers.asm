@@ -705,8 +705,9 @@ NoFloatingPointRetVal
 
         ; x0 = fpRetSize
 
-        ; return value is stored before float argument registers
-        add         x1, sp, #(__PWTB_FloatArgumentRegisters - 0x20)
+        ; The return value is stored before float argument registers
+        ; The maximum size of a return value is 0x40 (HVA of 4x16)
+        add         x1, sp, #(__PWTB_FloatArgumentRegisters - 0x40)
         bl          setStubReturnValue
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
