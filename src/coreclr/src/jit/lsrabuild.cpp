@@ -1841,15 +1841,7 @@ void LinearScan::updateRegStateForArg(LclVarDsc* argDsc)
     {
         RegState* intRegState   = &compiler->codeGen->intRegState;
         RegState* floatRegState = &compiler->codeGen->floatRegState;
-        // In the case of AMD64 we'll still use the floating point registers
-        // to model the register usage for argument on vararg calls, so
-        // we will ignore the varargs condition to determine whether we use
-        // XMM registers or not for setting up the call.
-        bool isFloat = (isFloatRegType(argDsc->lvType)
-#ifndef _TARGET_AMD64_
-                        && !compiler->info.compIsVarArgs
-#endif
-                        && !compiler->opts.compUseSoftFP);
+        bool      isFloat       = emitter::isFloatReg(argDsc->lvArgReg);
 
         if (argDsc->lvIsHfaRegArg())
         {
@@ -3070,6 +3062,15 @@ int LinearScan::BuildReturn(GenTree* tree)
         regMaskTP useCandidates = RBM_NONE;
 
 #if FEATURE_MULTIREG_RET
+#ifdef _TARGET_ARM64_
+        if (varTypeIsSIMD(tree))
+        {
+            useCandidates = allSIMDRegs();
+            BuildUse(op1, useCandidates);
+            return 1;
+        }
+#endif // !_TARGET_ARM64_
+
         if (varTypeIsStruct(tree))
         {
             // op1 has to be either an lclvar or a multi-reg returning call
@@ -3209,7 +3210,7 @@ int LinearScan::BuildPutArgReg(GenTreeUnOp* node)
         GenTreeObj* obj  = op1->AsObj();
         GenTree*    addr = obj->Addr();
         unsigned    size = obj->gtBlkSize;
-        assert(size <= TARGET_POINTER_SIZE);
+        assert(size <= MAX_PASS_SINGLEREG_BYTES);
         if (addr->OperIsLocalAddr())
         {
             // We don't need a source register.

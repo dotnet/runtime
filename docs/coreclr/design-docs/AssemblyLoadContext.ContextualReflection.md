@@ -51,6 +51,7 @@ namespace System.Reflection
     {
         public static Assembly Load(string assemblyString);
         public static Assembly Load(AssemblyName assemblyRef);
+        public static Assembly LoadWithPartialName (string partialName);
     }
 }
 ```
@@ -65,8 +66,18 @@ namespace System
         public static Type GetType(string typeName);
     }
 }
+
+namespace System.Reflection
+{
+    public abstract partial class Assembly : ICustomAttributeProvider, ISerializable
+    {
+        public Type GetType(string typeName, bool throwOnError, bool ignoreCase);
+        public Type GetType(string typeName, bool throwOnError);
+        public Type GetType(string typeName);
+    }
+}
 ```
-#### Unamiguous APIs related to affected APIs
+#### Normally unamiguous APIs related to affected APIs
 ```C#
 namespace System
 {
@@ -78,9 +89,9 @@ namespace System
     }
 }
 ```
-In this case, `assemblyResolver` functionally specifies the explicit mechanism to load. This indicates the current assembly's `AssmblyLoadContext` is not being used. If the `assemblyResolver` is only serving as a first or last chance resolver, then these would also be in the set of affected APIs.
-#### Should be affected APIs
-Issue https://github.com/dotnet/coreclr/issues/22213, discusses scenarios in which various flavors of the API `GetType()` is not functioning correctly. As part of the analysis and fix of that issue, the set of affected APIs may increase.
+In this case, `assemblyResolver` functionally specifies the explicit mechanism to load.
+
+If the `assemblyResolver` is `null`, assembly loads for these occur when `typeName` includes a assembly-qualified type reference.
 ### Root cause analysis
 In .NET Framework, plugin isolation was provided by creating multiple `AppDomain` instances.  .NET Core dropped support for multiple `AppDomain` instances. Instead we introduced `AssemblyLoadContext`.
 
@@ -112,10 +123,10 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
-        private static readonly AsyncLocal<AssemblyLoadContext> asyncLocalActiveContext = new AsyncLocal<AssemblyLoadContext>(null);
+        private static readonly AsyncLocal<AssemblyLoadContext> _asyncLocalActiveContext;
         public static AssemblyLoadContext CurrentContextualReflectionContext
         {
-            get { return _asyncLocalCurrentContextualReflectionContext.Value; }
+            get { return _asyncLocalCurrentContextualReflectionContext?.Value; }
         }
     }
 }
@@ -203,7 +214,7 @@ namespace System.Runtime.Loader
 {
     public partial class AssemblyLoadContext
     {
-        public static AssemblyLoadContext CurrentContextualReflectionContext { get { return _asyncLocalCurrentContextualReflectionContext.Value; }}
+        public static AssemblyLoadContext CurrentContextualReflectionContext { get { return _asyncLocalCurrentContextualReflectionContext?.Value; }}
 
         public ContextualReflectionScope EnterContextualReflection();
 
@@ -218,62 +229,93 @@ namespace System.Runtime.Loader
 ```
 ## Design doc
 
-Mostly TBD.
+### Affected runtime native calls
 
-### Performance Consideration
-#### Avoiding native / managed transitions
+The affected runtime native calls correspond to the runtime's mechanism to load an assembly, and to get a type. Each affected native call is passed a managed reference to the CurrentContextualReflectionContext.  This prevents GC holes, while running the native code. The `CurrentContextualReflectionContext` acts as the mechanism for resolving assembly names to assemblies.
 
-My natural inclination would be to replace most native calls taking a `StackCrawlMark` with callS taking the `CurrentContextualReflectionContext`. When `CurrentContextualReflectionContext` is `null`, resolve the `StackCrawlMark` first, passing the result as the inferred context.
+### Unloadability
 
-However this may require mutiple native/managed transitions. Performance considerations may require Native calls which currently take a `StackCrawlMark` will need to be modified to also take `CurrentContextualReflectionContext`.
+`CurrentContextualReflectionContext` will hold an `AssemblyLoadContext` reference. This will prevent the context from being unloaded while it could be used. As an `AsyncLocal<AssemblyLoadContext>`, the setting will propagate to child threads and asynchronous tasks.
+After a thread or asynchronous task completes, the `AsyncLocal<AssemblyLoadContext>` will eventually be cleared, this will unblock the `AssemblyLoadContext` unload. The timing of this unload depends on the ThreadPool implementation.
 
-### Hypothetical Advanced/Problematic use cases
+### ContextualReflectionScope
 
-One could imagine complicated scenarios in which we need to handle ALCs on event callback boundaries. These are expected to be rare. The following are representative patterns that demonstrate the possibility to be support these more complicated usages.
-
-#### An incoming event handler into an AssemblyLoadContext
 ```C#
-void OnEvent()
+/// <summary>Opaque disposable struct used to restore CurrentContextualReflectionContext</summary>
+/// <remarks>
+/// This is an implmentation detail of the AssemblyLoadContext.EnterContextualReflection APIs.
+/// It is a struct, to avoid heap allocation.
+/// It is required to be public to avoid boxing.
+/// <see cref="System.Runtime.Loader.AssemblyLoadContext.EnterContextualReflection"/>
+/// </remarks>
+[EditorBrowsable(EditorBrowsableState.Never)]
+public struct ContextualReflectionScope : IDisposable
 {
-  using (alc.Activate())
-  {
-    ...
-  }
-}
-```
-#### An incoming event handler into a collectible AssemblyLoadContext
-```C#
-class WeakAssemblyLoadContextEventHandler
-{
-  WeakReference<AssemblyLoadContext> weakAlc;
+    private readonly AssemblyLoadContext _activated;
+    private readonly AssemblyLoadContext _predecessor;
+    private readonly bool _initialized;
 
-  void OnEvent()
-  {
-    AssemblyLoadContext alc;
-    if(weakAlc.TryGetTarget(out alc))
+    internal ContextualReflectionScope(AssemblyLoadContext activating)
     {
-      using (alc.Activate())
-      {
-        ...
-      }
+        _predecessor = AssemblyLoadContext.CurrentContextualReflectionContext;
+        AssemblyLoadContext.SetCurrentContextualReflectionContext(activating);
+        _activated = activating;
+        _initialized = true;
     }
-  }
+
+    public void Dispose()
+    {
+        if (_initialized)
+        {
+            // Do not clear initialized. Always restore the _predecessor in Dispose()
+            // _initialized = false;
+            AssemblyLoadContext.SetCurrentContextualReflectionContext(_predecessor);
+        }
+    }
 }
 ```
-#### A outgoing callback
+
+`_initialized` is included to prevent useful default construction. It prevents the `default(ContextualReflectionScope).Dispose()` case.
+
+`_predecessor` represents the previous value of `CurrentContextualReflectionContext`. It is used by `Dispose()` to restore the previous state.
+
+`_activated` is included as a potential aid to debugging. It serves no other useful purpose.
+
+This struct is implemented as a readonly struct. No state is modified after construction. This means `Dispose()` can be called multiple times. This means `using` blocks will always restore the previous `CurrentContextualReflectionContext` as exiting.
+
+### Unusual usage patterns
+
+There are some unusual usage patterns which are not recommended, but not prohibited. They all have reasonable behaviors.
+
+* Clear but never restore the CurrentContextualReflectionContext
 ```C#
-using (AssemblyLoadContext.Activate(null))
-{
-  Callback();
-}
+myAssemblyLoadContext.EnterContextualReflection(null);
 ```
-#### An outgoing event handler
+
+* Set but never clear the CurrentContextualReflectionContext
 ```C#
-void OnEvent()
+myAssemblyLoadContext.EnterContextualReflection();
+```
+
+* Manual dispose
+```C#
+myAssemblyLoadContext.EnterContextualReflection();
+
+scope.Dispose();
+```
+
+* Multiple dispose
+```C#
+ContextualReflectionScope scope = myAssemblyLoadContext.EnterContextualReflection();
+
+scope.Dispose(); // Will restore the context as set during `EnterContextualReflection()`
+scope.Dispose(); // Will restore the context as set during `EnterContextualReflection()`  (again)
+```
+
+* Early dispose
+```C#
+using (ContextualReflectionScope scope = myAssemblyLoadContext.EnterContextualReflection())
 {
-  using (AssemblyLoadContext.Activate(null))
-  {
-    ...
-  }
-}
+    scope.Dispose(); // Will restore the context as set during `EnterContextualReflection()`
+} // `using` will restore the context as set during `EnterContextualReflection()` (again)
 ```
