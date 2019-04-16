@@ -184,6 +184,7 @@
     <Compile Include="Memory\Strings.cs" />
     <Compile Include="Memory\ToArray.cs" />
     <Compile Include="Memory\ToString.cs" />
+    <Compile Include="Memory\Trim.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MemoryMarshal\AsBytesReadOnlySpan.cs" />
