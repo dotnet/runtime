@@ -350,13 +350,13 @@ public static class ConfigKnobsDoc
         "## Environment/Registry Configuration Knobs\n";
 
     public static string ClrConfigSectionInfo =
-        "This table was machine-generated using `clr-configuration-knobs.csx` script from repository commit [GIT_SHORT_HASH](https://github.com/dotnet/coreclr/commit/GIT_LONG_HASH) on DATE_CREATED. It might be out of date. To generate latest documentation run `{dotnet} csi clr-configuration-knobs.csx` from this file directory.\n";
+        "This table was machine-generated using `clr-configuration-knobs.csx` script from repository commit [GIT_SHORT_HASH](https://github.com/dotnet/coreclr/commit/GIT_LONG_HASH) on DATE_CREATED. It might be out of date. To generate latest documentation run `dotnet-script clr-configuration-knobs.csx` from this file directory.\n";
 
     public static string ClrConfigSectionUsage =
         "When using these configurations from environment variables, the variables need to have the `COMPlus_` prefix in their names. e.g. To set DumpJittedMethods to 1, add the environment variable `COMPlus_DumpJittedMethods=1`.\n\nSee also [Setting configuration variables](../building/viewing-jit-dumps.md#setting-configuration-variables) for more information.\n";
 
     public static string ClrConfigTableHeader =
-        "\nName | Description | Type | Class | Default Value | Flags \n" +
+        "\nName | Description | Type | Class | Default Value | Flags\n" +
         "-----|-------------|------|-------|---------------|-------\n";
 
     public static string PalConfigurationKnobs =
@@ -421,10 +421,10 @@ public static class ConfigKnobsDoc
                 foreach (string key in catKnobs.Keys)
                 {
                     var knob = catKnobs[key];
-                    writer.Write($"`{knob.Name}` | {knob.Description} | `{knob.Type}` | ");
-                    writer.Write(knob.Class.Length > 0 ? $"`{knob.Class}` | " : " | ");
-                    writer.Write(knob.DefaultValue.Length > 0 ? $"`{knob.DefaultValue}` | " : " | ");
-                    writer.WriteLine($"{ knob.Flags}");
+                    writer.Write($"`{knob.Name}` | {knob.Description} | `{knob.Type}` |");
+                    writer.Write(knob.Class.Length > 0 ? $" `{knob.Class}` |" : " |");
+                    writer.Write(knob.DefaultValue.Length > 0 ? $" `{knob.DefaultValue}` |" : " |");
+                    writer.WriteLine(knob.Flags.Length > 0 ? $" {knob.Flags}" : string.Empty);
                     count++;
                 }
 
