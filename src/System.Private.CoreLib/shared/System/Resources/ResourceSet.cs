@@ -38,7 +38,7 @@ namespace System.Resources
         {
             // To not inconvenience people subclassing us, we should allocate a new
             // hashtable here just so that Table is set to something.
-            CommonInit();
+            Table = new Hashtable();
         }
 
         // For RuntimeResourceSet, ignore the Table parameter - it's a wasted 
@@ -52,9 +52,9 @@ namespace System.Resources
         // on disk.
         // 
         public ResourceSet(string fileName)
+            : this()
         {
             Reader = new ResourceReader(fileName);
-            CommonInit();
             ReadResources();
         }
 
@@ -63,24 +63,19 @@ namespace System.Resources
         // of data.
         // 
         public ResourceSet(Stream stream)
+            : this()
         {
             Reader = new ResourceReader(stream);
-            CommonInit();
             ReadResources();
         }
 
         public ResourceSet(IResourceReader reader)
+            : this()
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
             Reader = reader;
-            CommonInit();
             ReadResources();
-        }
-
-        private void CommonInit()
-        {
-            Table = new Hashtable();
         }
 
         // Closes and releases any resources used by this ResourceSet, if any.

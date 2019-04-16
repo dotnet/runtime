@@ -1173,6 +1173,58 @@ bool MethodTable::IsHFA()
 #endif // !FEATURE_HFA
 
 //*******************************************************************************
+int MethodTable::GetVectorSize()
+{
+    // This is supported for finding HVA types for Arm64. In order to support the altjit,
+    // we support this on 64-bit platforms (i.e. Arm64 and X64).
+#ifdef _TARGET_64BIT_
+    if (IsIntrinsicType())
+    {
+        LPCUTF8 namespaceName;
+        LPCUTF8 className = GetFullyQualifiedNameInfo(&namespaceName);
+        int vectorSize = 0;
+
+        if (strcmp(className, "Vector`1") == 0)
+        {
+            vectorSize = GetNumInstanceFieldBytes();
+            _ASSERTE(strcmp(namespaceName, "System.Numerics") == 0);
+            return vectorSize;
+        }
+        if (strcmp(className, "Vector128`1") == 0)
+        {
+            vectorSize = 16;
+        }
+        else if (strcmp(className, "Vector256`1") == 0)
+        {
+            vectorSize = 32;
+        }
+        else if (strcmp(className, "Vector64`1") == 0)
+        {
+            vectorSize = 8;
+        }
+        if (vectorSize != 0)
+        {
+            // We need to verify that T (the element or "base" type) is a primitive type.
+            TypeHandle typeArg = GetInstantiation()[0];
+            CorElementType corType = typeArg.GetSignatureCorElementType();
+            bool isSupportedElementType = (corType >= ELEMENT_TYPE_I1 && corType <= ELEMENT_TYPE_R8);
+            // These element types are not supported for Vector64<T>.
+            if ((vectorSize == 8) && (corType == ELEMENT_TYPE_I8 || corType == ELEMENT_TYPE_U8 || corType == ELEMENT_TYPE_R8))
+            {
+                isSupportedElementType = false;
+            }
+            if (isSupportedElementType)
+            {
+                _ASSERTE(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
+                return vectorSize;
+            }
+        }
+    }
+#endif // _TARGET_64BIT_
+    return 0;
+}
+
+//*******************************************************************************
 CorElementType MethodTable::GetHFAType()
 {
     CONTRACTL
@@ -1191,17 +1243,28 @@ CorElementType MethodTable::GetHFAType()
         _ASSERTE(pMT->IsValueType());
         _ASSERTE(pMT->GetNumInstanceFields() > 0);
 
+        int vectorSize = pMT->GetVectorSize();
+        if (vectorSize != 0)
+        {
+            return (vectorSize == 8) ? ELEMENT_TYPE_R8 : ELEMENT_TYPE_VALUETYPE;
+        }
+
         PTR_FieldDesc pFirstField = pMT->GetApproxFieldDescListRaw();
 
         CorElementType fieldType = pFirstField->GetFieldType();
-        
+
         // All HFA fields have to be of the same type, so we can just return the type of the first field
         switch (fieldType)
         {
         case ELEMENT_TYPE_VALUETYPE:
             pMT = pFirstField->LookupApproxFieldTypeHandle().GetMethodTable();
+            vectorSize = pMT->GetVectorSize();
+            if (vectorSize != 0)
+            {
+                return (vectorSize == 8) ? ELEMENT_TYPE_R8 : ELEMENT_TYPE_VALUETYPE;
+            }
             break;
-            
+
         case ELEMENT_TYPE_R4:
         case ELEMENT_TYPE_R8:
             return fieldType;
@@ -1212,7 +1275,7 @@ CorElementType MethodTable::GetHFAType()
             _ASSERTE(false);
             return ELEMENT_TYPE_END;
         }
-    }    
+    }
 }
 
 bool MethodTable::IsNativeHFA()
@@ -1231,6 +1294,7 @@ CorElementType MethodTable::GetNativeHFAType()
 //
 // When FEATURE_HFA is defined, we cache the value; otherwise we recompute it with each
 // call. The latter is only for the armaltjit and the arm64altjit.
+//
 bool
 #if defined(FEATURE_HFA)
 EEClass::CheckForHFA(MethodTable ** pByValueClassCache)
@@ -1243,25 +1307,18 @@ EEClass::CheckForHFA()
     // This method should be called for valuetypes only
     _ASSERTE(GetMethodTable()->IsValueType());
 
-    // The SIMD Intrinsic types are meant to be handled specially and should not be treated as HFA
-    if (GetMethodTable()->IsIntrinsicType())
-    {
-        LPCUTF8 namespaceName;
-        LPCUTF8 className = GetMethodTable()->GetFullyQualifiedNameInfo(&namespaceName);
 
-        if ((strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector128`1") == 0) ||
-            (strcmp(className, "Vector64`1") == 0))
-        {
-            assert(strcmp(namespaceName, "System.Runtime.Intrinsics") == 0);
-            return false;
-        }
-       
-        if ((strcmp(className, "Vector`1") == 0) && (strcmp(namespaceName, "System.Numerics") == 0))
-        {
-            return false;
-        }
+    // The opaque Vector types appear to have multiple fields, but need to be treated
+    // as an opaque type of a single vector.
+    if (GetMethodTable()->GetVectorSize() != 0)
+    {
+#if defined(FEATURE_HFA)
+        GetMethodTable()->SetIsHFA();
+#endif
+        return true;
     }
 
+    int elemSize = 0;
     CorElementType hfaType = ELEMENT_TYPE_END;
 
     FieldDesc *pFieldDescList = GetFieldDescList();
@@ -1278,11 +1335,41 @@ EEClass::CheckForHFA()
         switch (fieldType)
         {
         case ELEMENT_TYPE_VALUETYPE:
+            {
+#ifdef _TARGET_ARM64_
+            // hfa/hva types are unique by size, except for Vector64 which we can conveniently
+                // treat as if it were a double for ABI purposes. However, it only qualifies as
+                // an HVA if all fields are the same type. This will ensure that we only
+                // consider it an HVA if all the fields are ELEMENT_TYPE_VALUETYPE (which have been
+                // determined above to be vectors) of the same size.
+                MethodTable* pMT;
 #if defined(FEATURE_HFA)
-            fieldType = pByValueClassCache[i]->GetHFAType();
+                pMT = pByValueClassCache[i];
 #else
-            fieldType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
+                pMT = pFD->LookupApproxFieldTypeHandle().AsMethodTable();
 #endif
+                int thisElemSize = pMT->GetVectorSize();
+                if (thisElemSize != 0)
+                {
+                    if (elemSize == 0)
+                    {
+                        elemSize = thisElemSize;
+                    }
+                    else if ((thisElemSize != elemSize) || (hfaType != ELEMENT_TYPE_VALUETYPE))
+                    {
+                        return false;
+                    }
+                }
+                else
+#endif // _TARGET_ARM64_
+                {
+#if defined(FEATURE_HFA)
+                    fieldType = pByValueClassCache[i]->GetHFAType();
+#else
+                    fieldType = pFD->LookupApproxFieldTypeHandle().AsMethodTable()->GetHFAType();
+#endif
+                }
+            }
             break;
 
         case ELEMENT_TYPE_R4:
@@ -1326,13 +1413,30 @@ EEClass::CheckForHFA()
         }
     }
 
-    if (hfaType == ELEMENT_TYPE_END)
+    switch (hfaType)
+    {
+    case ELEMENT_TYPE_R4:
+        elemSize = 4;
+        break;
+    case ELEMENT_TYPE_R8:
+        elemSize = 8;
+        break;
+#ifdef _TARGET_ARM64_
+    case ELEMENT_TYPE_VALUETYPE:
+        // Should already have set elemSize, but be conservative
+        if (elemSize == 0)
+        {
+            return false;
+        }
+        break;
+#endif
+    default:
+        // ELEMENT_TYPE_END
         return false;
+    }
         
     if (!hasZeroOffsetField) // If the struct doesn't have a zero-offset field, it's not an HFA.
         return false;
-
-    int elemSize = (hfaType == ELEMENT_TYPE_R8) ? sizeof(double) : sizeof(float);
 
     // Note that we check the total size, but do not perform any checks on number of fields:
     // - Type of fields can be HFA valuetype itself
@@ -1348,7 +1452,7 @@ EEClass::CheckForHFA()
     if (totalSize / elemSize > 4)
         return false;
 
-    // All the above tests passed. It's HFA!
+    // All the above tests passed. It's HFA(/HVA)!
 #if defined(FEATURE_HFA)
     GetMethodTable()->SetIsHFA();
 #endif
@@ -1421,7 +1525,16 @@ CorElementType EEClassLayoutInfo::GetNativeHFATypeRaw()
     if (hfaType == ELEMENT_TYPE_END)
         return ELEMENT_TYPE_END;
 
-    int elemSize = (hfaType == ELEMENT_TYPE_R8) ? sizeof(double) : sizeof(float);
+    int elemSize = 1;
+    switch (hfaType)
+    {
+    case ELEMENT_TYPE_R4: elemSize = sizeof(float); break;
+    case ELEMENT_TYPE_R8: elemSize = sizeof(double); break;
+#ifdef _TARGET_ARM64_
+    case ELEMENT_TYPE_VALUETYPE: elemSize = 16; break;
+#endif
+    default: _ASSERTE(!"Invalid HFA Type");
+    }
 
     // Note that we check the total size, but do not perform any checks on number of fields:
     // - Type of fields can be HFA valuetype itself

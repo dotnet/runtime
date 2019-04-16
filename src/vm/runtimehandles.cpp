@@ -3033,7 +3033,7 @@ FCIMPL5(ReflectMethodObject*, ModuleHandle::GetDynamicMethod, ReflectMethodObjec
 
     U1ARRAYREF dataArray = (U1ARRAYREF)sig;
     DWORD sigSize = dataArray->GetNumComponents();
-    NewHolder<BYTE> pSig(new BYTE[sigSize]);
+    NewArrayHolder<BYTE> pSig(new BYTE[sigSize]);
     memcpy(pSig, dataArray->GetDataPtr(), sigSize);
 
     DWORD length = gc.nameRef->GetStringLength();

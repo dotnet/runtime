@@ -60,22 +60,24 @@ public:
     //  fieldBytes - size of the structure
     void CopyHFAStructToRegister(void *src, int fieldBytes)
     {
-        // We are either copying either a float or double HFA and need to
+        // We are copying a float, double or vector HFA/HVA and need to
         // enregister each field.
 
         int floatRegCount = m_argLocDescForStructInRegs->m_cFloatReg;
-        bool typeFloat = m_argLocDescForStructInRegs->m_isSinglePrecision;
+        int hfaFieldSize = m_argLocDescForStructInRegs->m_hfaFieldSize;
         UINT64* dest = (UINT64*) this->GetDestinationAddress();
 
         for (int i = 0; i < floatRegCount; ++i) 
         {
             // Copy 4 or 8 bytes from src.
-            UINT64 val = typeFloat ? *((UINT32*)src + i) : *((UINT64*)src + i);
+            UINT64 val = (hfaFieldSize == 4) ? *((UINT32*)src) : *((UINT64*)src);
             // Always store 8 bytes
             *(dest++) = val;
-            // For now, always zero the next 8 bytes.
-            // (When HVAs are supported we will get the next 8 bytes from src.)
-            *(dest++) = 0;
+            // Either zero the next 8 bytes or get the next 8 bytes from src for 16-byte vector.
+            *(dest++) = (hfaFieldSize == 16) ? *((UINT64*)src + 1) : 0;
+
+            // Increment src by the appropriate amount.
+            src = (void*)((char*)src + hfaFieldSize);
         }
     }
 

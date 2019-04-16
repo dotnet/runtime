@@ -208,7 +208,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         assert(retTypeDesc != nullptr);
         dstCandidates = retTypeDesc->GetABIReturnRegs();
     }
-    else if (varTypeIsFloating(registerType))
+    else if (varTypeUsesFloatArgReg(registerType))
     {
         dstCandidates = RBM_FLOATRET;
     }

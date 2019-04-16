@@ -21,6 +21,12 @@ public: // IErrorMarshalTesting
         return hresultToReturn;
     }
 
+    int STDMETHODCALLTYPE Return_As_HResult_Struct(
+        /*[in]*/ int hresultToReturn)
+    {
+        return hresultToReturn;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,

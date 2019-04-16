@@ -2383,7 +2383,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else
     {
-        assert(!varTypeIsStruct(call));
+        assert(call->gtType != TYP_STRUCT);
 
         if (call->gtType == TYP_REF)
         {
@@ -2537,9 +2537,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
                 // TCB in REG_PINVOKE_TCB. fgMorphCall() sets the correct argument registers.
                 returnReg = REG_PINVOKE_TCB;
             }
+            else if (compiler->opts.compUseSoftFP)
+            {
+                returnReg = REG_INTRET;
+            }
             else
 #endif // _TARGET_ARM_
-                if (varTypeIsFloating(returnType) && !compiler->opts.compUseSoftFP)
+                if (varTypeUsesFloatArgReg(returnType))
             {
                 returnReg = REG_FLOATRET;
             }
@@ -3529,8 +3533,13 @@ bool CodeGen::isStructReturn(GenTree* treeNode)
     // For the GT_RET_FILT, the return is always
     // a bool or a void, for the end of a finally block.
     noway_assert(treeNode->OperGet() == GT_RETURN || treeNode->OperGet() == GT_RETFILT);
+    var_types returnType = treeNode->TypeGet();
 
-    return varTypeIsStruct(treeNode);
+#ifdef _TARGET_ARM64_
+    return varTypeIsStruct(returnType) && (compiler->info.compRetNativeType == TYP_STRUCT);
+#else
+    return varTypeIsStruct(returnType);
+#endif
 }
 
 //------------------------------------------------------------------------

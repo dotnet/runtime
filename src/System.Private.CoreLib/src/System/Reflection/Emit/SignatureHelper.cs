@@ -6,6 +6,7 @@
 
 using System.Text;
 using System;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -483,8 +484,6 @@ namespace System.Reflection.Emit
 
         private void AddData(int data)
         {
-            // A managed representation of CorSigCompressData; 
-
             if (m_currSig + 4 > m_signature.Length)
             {
                 m_signature = ExpandArray(m_signature);
@@ -492,19 +491,17 @@ namespace System.Reflection.Emit
 
             if (data <= 0x7F)
             {
-                m_signature[m_currSig++] = (byte)(data & 0xFF);
+                m_signature[m_currSig++] = (byte)data;
             }
-            else if (data <= 0x3FFF)
+            else if (data <= 0x3F_FF)
             {
-                m_signature[m_currSig++] = (byte)((data >> 8) | 0x80);
-                m_signature[m_currSig++] = (byte)(data & 0xFF);
+                BinaryPrimitives.WriteInt16BigEndian(m_signature.AsSpan(m_currSig), (short)(data | 0x80_00));
+                m_currSig += 2;
             }
-            else if (data <= 0x1FFFFFFF)
+            else if (data <= 0x1F_FF_FF_FF)
             {
-                m_signature[m_currSig++] = (byte)((data >> 24) | 0xC0);
-                m_signature[m_currSig++] = (byte)((data >> 16) & 0xFF);
-                m_signature[m_currSig++] = (byte)((data >> 8) & 0xFF);
-                m_signature[m_currSig++] = (byte)((data) & 0xFF);
+                BinaryPrimitives.WriteInt32BigEndian(m_signature.AsSpan(m_currSig), (int)(data | 0xC0_00_00_00));
+                m_currSig += 4;
             }
             else
             {

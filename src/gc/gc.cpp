@@ -8809,10 +8809,6 @@ public:
 #endif //_DEBUG
 
     uint8_t* fit (uint8_t* old_loc,
-#ifdef SHORT_PLUGS
-               BOOL set_padding_on_saved_p,
-               mark* pinned_plug_entry,
-#endif //SHORT_PLUGS
                size_t plug_size
                REQD_ALIGN_AND_OFFSET_DCL)
     {
@@ -8836,11 +8832,11 @@ public:
         size_t plug_size_to_fit = plug_size;
 
         // best fit is only done for gen1 to gen2 and we do not pad in gen2.
-        int pad_in_front = 0;
-
-#ifdef SHORT_PLUGS
-        plug_size_to_fit += (pad_in_front ? Align(min_obj_size) : 0);
-#endif //SHORT_PLUGS
+        // however we must account for requirements of large alignment. 
+        // which may result in realignment padding.
+#ifdef RESPECT_LARGE_ALIGNMENT
+        plug_size_to_fit += switch_alignment_size(FALSE);
+#endif //RESPECT_LARGE_ALIGNMENT
 
         int plug_power2 = index_of_highest_set_bit (round_up_power2 (plug_size_to_fit + Align(min_obj_size)));
         ptrdiff_t i;
@@ -8880,29 +8876,17 @@ retry:
         {
             size_t free_space_size = 0;
             pad = 0;
-#ifdef SHORT_PLUGS
-            BOOL short_plugs_padding_p = FALSE;
-#endif //SHORT_PLUGS
+
             BOOL realign_padding_p = FALSE;
 
             if (bucket_free_space[i].is_plug)
             {
                 mark* m = (mark*)(bucket_free_space[i].start);
                 uint8_t* plug_free_space_start = pinned_plug (m) - pinned_len (m);
-                
-#ifdef SHORT_PLUGS
-                if ((pad_in_front & USE_PADDING_FRONT) &&
-                    (((plug_free_space_start - pin_allocation_context_start_region (m))==0) ||
-                    ((plug_free_space_start - pin_allocation_context_start_region (m))>=DESIRED_PLUG_LENGTH)))
-                {
-                    pad = Align (min_obj_size);
-                    short_plugs_padding_p = TRUE;
-                }
-#endif //SHORT_PLUGS
 
-                if (!((old_loc == 0) || same_large_alignment_p (old_loc, plug_free_space_start+pad)))
+                if (!((old_loc == 0) || same_large_alignment_p (old_loc, plug_free_space_start)))
                 {
-                    pad += switch_alignment_size (pad != 0);
+                    pad += switch_alignment_size (FALSE);
                     realign_padding_p = TRUE;
                 }
 
@@ -8928,14 +8912,6 @@ retry:
                                 (pinned_plug (m) - pinned_len (m)), 
                                 index_of_highest_set_bit (new_free_space_size)));
 #endif //SIMPLE_DPRINTF
-
-#ifdef SHORT_PLUGS
-                    if (short_plugs_padding_p)
-                    {
-                        pin_allocation_context_start_region (m) = plug_free_space_start;
-                        set_padding_in_expand (old_loc, set_padding_on_saved_p, pinned_plug_entry);
-                    }
-#endif //SHORT_PLUGS
 
                     if (realign_padding_p)
                     {
@@ -14136,10 +14112,6 @@ uint8_t* gc_heap::allocate_in_expanded_heap (generation* gen,
         dprintf (SEG_REUSE_LOG_1, ("reallocating 0x%Ix in expanded heap, size: %Id", 
                     old_loc, size));
         return bestfit_seg->fit (old_loc, 
-#ifdef SHORT_PLUGS
-                                 set_padding_on_saved_p,
-                                 pinned_plug_entry,
-#endif //SHORT_PLUGS
                                  size REQD_ALIGN_AND_OFFSET_ARG);
     }
 
@@ -19333,7 +19305,7 @@ recheck:
                 uint8_t** tmp = new (nothrow) uint8_t* [new_size];
                 if (tmp)
                 {
-                    delete background_mark_stack_array;
+                    delete [] background_mark_stack_array;
                     background_mark_stack_array = tmp;
                     background_mark_stack_array_length = new_size;
                     background_mark_stack_tos = background_mark_stack_array;
