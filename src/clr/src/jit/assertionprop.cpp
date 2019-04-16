@@ -75,7 +75,7 @@ void Compiler::optAddCopies()
         // We only add copies for non temp local variables
         // that have a single def and that can possibly be enregistered
 
-        if (varDsc->lvIsTemp || !varDsc->lvSingleDef || !varTypeCanReg(typ))
+        if (varDsc->lvIsTemp || !varDsc->lvSingleDef || !varTypeIsEnregisterable(typ))
         {
             continue;
         }

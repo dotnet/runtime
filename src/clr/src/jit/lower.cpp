@@ -5691,10 +5691,11 @@ void Lowering::ContainCheckRet(GenTreeOp* ret)
         {
             GenTreeLclVarCommon* lclVarCommon = op1->AsLclVarCommon();
             LclVarDsc*           varDsc       = &(comp->lvaTable[lclVarCommon->gtLclNum]);
-            assert(varDsc->lvIsMultiRegRet);
+            // This must be a multi-reg return or an HFA of a single element.
+            assert(varDsc->lvIsMultiRegRet || (varDsc->lvIsHfa() && varTypeIsValidHfaType(varDsc->lvType)));
 
             // Mark var as contained if not enregistrable.
-            if (!varTypeIsEnregisterableStruct(op1))
+            if (!varTypeIsEnregisterable(op1))
             {
                 MakeSrcContained(ret, op1);
             }

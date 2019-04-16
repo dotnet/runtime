@@ -2172,7 +2172,7 @@ HRESULT MDInternalRO::GetPropertyInfoForMethodDef(  // Result.
     // Lazy initialization of m_pMethodSemanticsMap
     if ((ridMax > 10) && (m_pMethodSemanticsMap == NULL))
     {
-        NewHolder<CMethodSemanticsMap> pMethodSemanticsMap = new (nothrow) CMethodSemanticsMap[ridMax];
+        NewArrayHolder<CMethodSemanticsMap> pMethodSemanticsMap = new (nothrow) CMethodSemanticsMap[ridMax];
         if (pMethodSemanticsMap != NULL)
         {
             // Fill the table in MethodSemantics order.

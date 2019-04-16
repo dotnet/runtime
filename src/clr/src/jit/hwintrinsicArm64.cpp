@@ -214,8 +214,8 @@ GenTree* Compiler::addRangeCheckIfNeeded(GenTree* immOp, unsigned int max, bool 
 {
     assert(immOp != nullptr);
 
-    // Need to range check only if we're must expand and don't have an appropriate constant
-    if (mustExpand && (!immOp->IsCnsIntOrI() || (immOp->AsIntConCommon()->IconValue() < max)))
+    // Need to range check only if we're must expand.
+    if (mustExpand)
     {
         GenTree* upperBoundNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, max);
         GenTree* index          = nullptr;
@@ -463,20 +463,40 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
             return gtNewSimdHWIntrinsicNode(simdType, op1, intrinsic, simdBaseType, simdSizeBytes);
 
         case HWIntrinsicInfo::SimdExtractOp:
-            op2 =
-                addRangeCheckIfNeeded(impPopStack().val, getSIMDVectorLength(simdSizeBytes, simdBaseType), mustExpand);
+        {
+            int vectorLength = getSIMDVectorLength(simdSizeBytes, simdBaseType);
+            op2              = impStackTop().val;
+            if (!mustExpand && (!op2->IsCnsIntOrI() || op2->AsIntConCommon()->IconValue() >= vectorLength))
+            {
+                // This is either an out-of-range constant or a non-constant.
+                // We won't expand it; it will be handled recursively, at which point 'mustExpand'
+                // will be true.
+                return nullptr;
+            }
+            op2 = impPopStack().val;
+            op2 = addRangeCheckIfNeeded(op2, vectorLength, mustExpand);
             op1 = impSIMDPopStack(simdType);
 
             return gtNewScalarHWIntrinsicNode(JITtype2varType(sig->retType), op1, op2, intrinsic);
-
+        }
         case HWIntrinsicInfo::SimdInsertOp:
+        {
+            int vectorLength = getSIMDVectorLength(simdSizeBytes, simdBaseType);
+            op2              = impStackTop(1).val;
+            if (!mustExpand && (!op2->IsCnsIntOrI() || op2->AsIntConCommon()->IconValue() >= vectorLength))
+            {
+                // This is either an out-of-range constant or a non-constant.
+                // We won't expand it; it will be handled recursively, at which point 'mustExpand'
+                // will be true.
+                return nullptr;
+            }
             op3 = impPopStack().val;
-            op2 =
-                addRangeCheckIfNeeded(impPopStack().val, getSIMDVectorLength(simdSizeBytes, simdBaseType), mustExpand);
+            op2 = impPopStack().val;
+            op2 = addRangeCheckIfNeeded(op2, vectorLength, mustExpand);
             op1 = impSIMDPopStack(simdType);
 
             return gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, intrinsic, simdBaseType, simdSizeBytes);
-
+        }
         case HWIntrinsicInfo::Sha1HashOp:
             op3 = impSIMDPopStack(simdType);
             op2 = impPopStack().val;

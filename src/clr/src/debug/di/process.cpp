@@ -7300,7 +7300,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
         if (bufferCopy != NULL)
         {
             memmove(buffer, bufferCopy, size);
-            delete bufferCopy;
+            delete [] bufferCopy;
         }
     }
 
@@ -9578,7 +9578,7 @@ void Ls_Rs_BaseBuffer::CopyLSDataToRSWorker(ICorDebugDataTarget * pTarget)
         ThrowHR(E_INVALIDARG);
     }
 
-    NewHolder<BYTE> pData(new BYTE[cbCacheSize]);
+    NewArrayHolder<BYTE> pData(new BYTE[cbCacheSize]);
 
     ULONG32 cbRead;
     HRESULT hrRead = pTarget->ReadVirtual(PTR_TO_CORDB_ADDRESS(m_pbLS), pData, cbCacheSize , &cbRead);

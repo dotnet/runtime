@@ -36,7 +36,7 @@ public:
         end = &start[initialAlloc];
     }
     
-    ~OutString() { delete start; }
+    ~OutString() { delete [] start; }
     
     // shortcut for printing decimal  
     OutString& operator<<(int i) { return(dec(i)); }
