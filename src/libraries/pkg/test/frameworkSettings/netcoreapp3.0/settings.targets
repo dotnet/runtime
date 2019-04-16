@@ -5,6 +5,16 @@
     <!-- use the most recent MS.NETCore.App we have from upstack -->
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SDK doesn't honor RuntimeFrameworkVersion for targeting pack-->
+    <KnownFrameworkReference Update="Microsoft.NETCore.App" TargetingPackVersion="$(RuntimeFrameworkVersion)" />
+
+    <!-- Temporary till SDK supports transitive framework references. -->
+    <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
+    <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+  </ItemGroup>
+
   <!-- Unix CoreLib contains EventRegistrationToken but no other
        types from System.Runtime.InteropServices.WindowsRuntime.
        https://github.com/dotnet/corefx/issues/35792 -->
