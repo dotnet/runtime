@@ -57,7 +57,7 @@
     <HelixType Condition="'$(TargetGroup)' == 'uapaot' AND '$(OfficialBuildId)' != ''">test/functional/ilc/</HelixType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == '' AND '$(TargetGroup)' == 'AllConfigurations'">
+  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetGroup)' == 'AllConfigurations'">
     <HelixPreCommands>set DOTNET_CLI_TELEMETRY_OPTOUT=1;set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1;set DOTNET_MULTILEVEL_LOOKUP=0</HelixPreCommands>
 
     <HelixCommand>%HELIX_CORRELATION_PAYLOAD%\tools\dotnet.exe msbuild %HELIX_CORRELATION_PAYLOAD%\test.msbuild</HelixCommand>
@@ -66,17 +66,24 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\</HelixCommand>
   </PropertyGroup>
 
+  <!-- Define which workloads require global tools. -->
+  <PropertyGroup Condition="'$(UseGlobalTools)' == ''">
+    <UseGlobalTools Condition="'$(Coverage)' == 'true'">true</UseGlobalTools>
+  </PropertyGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == ''">
+  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetsWindows)' == 'true'">
     <!--
       For windows we need to use call, since the command is going to be called from a bat script created by Helix
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
       if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
-      The arguments passed in to the run script in order are the runtime directory, the dotnet root directory (for
-      helix submissions same as the runtime directory) and the global tools directory.
     -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd %HELIX_CORRELATION_PAYLOAD% %HELIX_CORRELATION_PAYLOAD% %HELIX_CORRELATION_PAYLOAD%\tools</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh $HELIX_CORRELATION_PAYLOAD $HELIX_CORRELATION_PAYLOAD $HELIX_CORRELATION_PAYLOAD/tools</HelixCommand>
+    <HelixCommand>call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD% --dotnet-root %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(UseGlobalTools)' == 'true'">$(HelixCommand) --global-tools-dir "%HELIX_CORRELATION_PAYLOAD%\tools"</HelixCommand>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetsWindows)' != 'true'">
+    <HelixCommand>./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD" --dotnet-root "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <HelixCommand Condition="'$(UseGlobalTools)' == 'true'">$(HelixCommand) --global-tools-dir "$HELIX_CORRELATION_PAYLOAD/tools"</HelixCommand>
   </PropertyGroup>
 
   <!-- We need to include all dlls in the runtime path as inputs to make it really incremental
@@ -84,11 +91,6 @@
   <ItemGroup>
     <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
   </ItemGroup>
-
-  <!-- Define which workloads require global tools. -->
-  <PropertyGroup>
-    <UseGlobalTools Condition="'$(UseGlobalTools)' == '' AND '$(Coverage)' == 'true'">true</UseGlobalTools>
-  </PropertyGroup>
 
   <!-- Add global tools to runtime -->
   <ItemGroup Condition="'$(UseGlobalTools)' == 'true'">
