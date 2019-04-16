@@ -7539,8 +7539,27 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				if (LLVMGetInstructionParent (v) == NULL)
 					LLVMInsertIntoBuilder (builder, v);
 			}
-		
-			LLVMDeleteFunction (ctx->lmethod);
+
+			if (ctx->module->llvm_only && ctx->module->static_link) {
+				// Keep a stub for the function since it might be called directly
+				int nbbs = LLVMCountBasicBlocks (ctx->lmethod);
+				LLVMBasicBlockRef *bblocks = g_new0 (LLVMBasicBlockRef, nbbs);
+				LLVMGetBasicBlocks (ctx->lmethod, bblocks);
+				for (int i = 0; i < nbbs; ++i)
+					LLVMDeleteBasicBlock (bblocks [i]);
+
+				LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock (ctx->lmethod, "ENTRY");
+				builder = create_builder (ctx);
+				LLVMPositionBuilderAtEnd (builder, entry_bb);
+				ctx->builder = builder;
+
+				LLVMTypeRef sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
+				LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mini_llvmonly_throw_nullref_exception");
+				emit_call (ctx, cfg->bb_entry, &builder, callee, NULL, 0);
+				LLVMBuildUnreachable (builder);
+			} else {
+				LLVMDeleteFunction (ctx->lmethod);
+			}
 		}
 	}
 
