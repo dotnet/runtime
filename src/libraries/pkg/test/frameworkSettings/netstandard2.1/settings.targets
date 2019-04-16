@@ -1,0 +1,90 @@
+<Project>
+  <!-- Issue https://github.com/dotnet/corefx/issues/36719 NS2.1 overlaps with existing ns2.0 libs -->
+  <ItemGroup>
+    <!-- System.Buffers -->
+    <IgnoredTypes Include="System.Buffers.ArrayPool`1" />
+
+    <!-- System.Memory -->
+    <IgnoredTypes Include="System.Buffers.Binary.BinaryPrimitives" />
+    <IgnoredTypes Include="System.Buffers.BuffersExtensions" />
+    <IgnoredTypes Include="System.Buffers.IBufferWriter`1" />
+    <IgnoredTypes Include="System.Buffers.IMemoryOwner`1" />
+    <IgnoredTypes Include="System.Buffers.IPinnable" />
+    <IgnoredTypes Include="System.Buffers.MemoryHandle" />
+    <IgnoredTypes Include="System.Buffers.MemoryManager`1" />
+    <IgnoredTypes Include="System.Buffers.MemoryPool`1" />
+    <IgnoredTypes Include="System.Buffers.OperationStatus" />
+    <IgnoredTypes Include="System.Buffers.ReadOnlySequence`1" />
+    <IgnoredTypes Include="System.Buffers.ReadOnlySequence`1/Enumerator" />
+    <IgnoredTypes Include="System.Buffers.ReadOnlySequenceSegment`1" />
+    <IgnoredTypes Include="System.Buffers.StandardFormat" />
+    <IgnoredTypes Include="System.Buffers.Text.Base64" />
+    <IgnoredTypes Include="System.Buffers.Text.Utf8Formatter" />
+    <IgnoredTypes Include="System.Buffers.Text.Utf8Parser" />
+    <IgnoredTypes Include="System.Memory`1" />
+    <IgnoredTypes Include="System.MemoryExtensions" />
+    <IgnoredTypes Include="System.ReadOnlyMemory`1" />
+    <IgnoredTypes Include="System.ReadOnlySpan`1" />
+    <IgnoredTypes Include="System.ReadOnlySpan`1/Enumerator" />
+    <IgnoredTypes Include="System.Runtime.InteropServices.MemoryMarshal" />
+    <IgnoredTypes Include="System.Runtime.InteropServices.SequenceMarshal" />
+    <IgnoredTypes Include="System.SequencePosition" />
+    <IgnoredTypes Include="System.Span`1" />
+    <IgnoredTypes Include="System.Span`1/Enumerator" />
+
+    <!-- System.Numerics.Vectors -->
+    <IgnoredTypes Include="System.Numerics.Matrix3x2" />
+    <IgnoredTypes Include="System.Numerics.Matrix4x4" />
+    <IgnoredTypes Include="System.Numerics.Plane" />
+    <IgnoredTypes Include="System.Numerics.Quaternion" />
+    <IgnoredTypes Include="System.Numerics.Vector" />
+    <IgnoredTypes Include="System.Numerics.Vector`1" />
+    <IgnoredTypes Include="System.Numerics.Vector2" />
+    <IgnoredTypes Include="System.Numerics.Vector3" />
+    <IgnoredTypes Include="System.Numerics.Vector4" />
+
+    <!-- System.Reflection.DispatchProxy -->
+    <IgnoredTypes Include="System.Reflection.DispatchProxy" />
+
+    <!-- System.Reflection.Emit -->
+    <IgnoredTypes Include="System.Reflection.Emit.AssemblyBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.AssemblyBuilderAccess" />
+    <IgnoredTypes Include="System.Reflection.Emit.ConstructorBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.EnumBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.EventBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.FieldBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.GenericTypeParameterBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.MethodBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.ModuleBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.PropertyBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.TypeBuilder" />
+
+    <!-- System.Reflection.Emit.ILGeneration -->
+    <IgnoredTypes Include="System.Reflection.Emit.CustomAttributeBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.ILGenerator" />
+    <IgnoredTypes Include="System.Reflection.Emit.Label" />
+    <IgnoredTypes Include="System.Reflection.Emit.LocalBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.ParameterBuilder" />
+    <IgnoredTypes Include="System.Reflection.Emit.SignatureHelper" />
+
+    <!-- System.Reflection.Emit.Lightweight -->
+    <IgnoredTypes Include="System.Reflection.Emit.DynamicMethod" />
+
+    <!-- System.Threading.Tasks.Extensions -->
+    <IgnoredTypes Include="System.Runtime.CompilerServices.AsyncMethodBuilderAttribute" />
+    <IgnoredTypes Include="System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder" />
+    <IgnoredTypes Include="System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder`1" />
+    <IgnoredTypes Include="System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable" />
+    <IgnoredTypes Include="System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable/ConfiguredValueTaskAwaiter" />
+    <IgnoredTypes Include="System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable`1" />
+    <IgnoredTypes Include="System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable`1/ConfiguredValueTaskAwaiter" />
+    <IgnoredTypes Include="System.Runtime.CompilerServices.ValueTaskAwaiter" />
+    <IgnoredTypes Include="System.Runtime.CompilerServices.ValueTaskAwaiter`1" />
+    <IgnoredTypes Include="System.Threading.Tasks.Sources.IValueTaskSource" />
+    <IgnoredTypes Include="System.Threading.Tasks.Sources.IValueTaskSource`1" />
+    <IgnoredTypes Include="System.Threading.Tasks.Sources.ValueTaskSourceOnCompletedFlags" />
+    <IgnoredTypes Include="System.Threading.Tasks.Sources.ValueTaskSourceStatus" />
+    <IgnoredTypes Include="System.Threading.Tasks.ValueTask" />
+    <IgnoredTypes Include="System.Threading.Tasks.ValueTask`1" />
+  </ItemGroup>
+</Project>
