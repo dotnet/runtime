@@ -13,6 +13,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 namespace System.Runtime.InteropServices {
     using System;
     using System.Reflection;
@@ -29,7 +30,7 @@ namespace System.Runtime.InteropServices {
         // implementations of get_InnerException to be provided by the base class. It works only if Exception.get_InnerException
         // is virtual.
         //
-        Exception InnerException {
+        Exception? InnerException {
             get;
         }
    }

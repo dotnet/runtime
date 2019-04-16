@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Runtime.InteropServices.ComTypes
 {
     [Guid("0000010b-0000-0000-C000-000000000046")]
@@ -16,7 +17,7 @@ namespace System.Runtime.InteropServices.ComTypes
         [PreserveSig]
         int IsDirty();
         void Load([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, int dwMode);
-        void Save([MarshalAs(UnmanagedType.LPWStr)] string pszFileName, [MarshalAs(UnmanagedType.Bool)] bool fRemember);
+        void Save([MarshalAs(UnmanagedType.LPWStr)] string? pszFileName, [MarshalAs(UnmanagedType.Bool)] bool fRemember);
         void SaveCompleted([MarshalAs(UnmanagedType.LPWStr)] string pszFileName);
         void GetCurFile([MarshalAs(UnmanagedType.LPWStr)] out string ppszFileName);
     }
