@@ -1950,12 +1950,12 @@ namespace Mono.Linker.Steps {
 				break;
 
 			case MethodAction.ConvertToThrow:
-				MarkAndCacheNotSupportedCtorString ();
+				MarkAndCacheConvertToThrowExceptionCtor ();
 				break;
 			}
 		}
 
-		void MarkAndCacheNotSupportedCtorString ()
+		protected virtual void MarkAndCacheConvertToThrowExceptionCtor ()
 		{
 			if (_context.MarkedKnownMembers.NotSupportedExceptionCtorString != null)
 				return;
@@ -2124,7 +2124,7 @@ namespace Mono.Linker.Steps {
 		protected virtual void MarkMethodBody (MethodBody body)
 		{
 			if (_context.IsOptimizationEnabled (CodeOptimizations.UnreachableBodies) && IsUnreachableBody (body)) {
-				MarkAndCacheNotSupportedCtorString ();
+				MarkAndCacheConvertToThrowExceptionCtor ();
 				_unreachableBodies.Add (body);
 				return;
 			}
