@@ -518,11 +518,6 @@ class Application {
         // Demos Finalize on Shutdown symantics (this demo is inline) 
         Display(0, "\n\nDemo start: Finalize on shutdown.", +1);
 
-        // Normally, when an application terminates, the GC does NOT collect and run finalizers.
-        // The line below forces the GC to do complete object cleanup
-        // GC.RequestFinalizeOnShutdown(); // For default behavior, comment out this line
-        // NOTE: Once you request FinalizeOnShutdown, you cannot change your mind.
-
         // When Main returns, obj will have its Finalize method called.
         BaseObj obj = new BaseObj("Shutdown");
 
