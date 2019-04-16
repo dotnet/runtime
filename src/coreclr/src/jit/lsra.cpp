@@ -740,7 +740,7 @@ BasicBlock* LinearScan::getNextCandidateFromWorkList()
 }
 
 //------------------------------------------------------------------------
-// setBlockSequence:Determine the block order for register allocation.
+// setBlockSequence: Determine the block order for register allocation.
 //
 // Arguments:
 //    None
@@ -756,9 +756,16 @@ BasicBlock* LinearScan::getNextCandidateFromWorkList()
 
 void LinearScan::setBlockSequence()
 {
-    // Reset the "visited" flag on each block.
+    assert(!blockSequencingDone); // The method should be called only once.
+
     compiler->EnsureBasicBlockEpoch();
+#ifdef DEBUG
+    blockEpoch = compiler->GetCurBasicBlockEpoch();
+#endif // DEBUG
+
+    // Initialize the "visited" blocks set.
     bbVisitedSet = BlockSetOps::MakeEmpty(compiler);
+
     BlockSet readySet(BlockSetOps::MakeEmpty(compiler));
     BlockSet predSet(BlockSetOps::MakeEmpty(compiler));
 
@@ -1094,10 +1101,14 @@ BasicBlock* LinearScan::startBlockSequence()
     {
         setBlockSequence();
     }
+    else
+    {
+        clearVisitedBlocks();
+    }
+
     BasicBlock* curBB = compiler->fgFirstBB;
     curBBSeqNum       = 0;
     curBBNum          = curBB->bbNum;
-    clearVisitedBlocks();
     assert(blockSequence[0] == compiler->fgFirstBB);
     markBlockVisited(curBB);
     return curBB;
@@ -1172,8 +1183,6 @@ void LinearScan::doLinearScan()
         enregisterLocalVars = false;
     }
 
-    unsigned lsraBlockEpoch = compiler->GetCurBasicBlockEpoch();
-
     splitBBNumToTargetBBNumMap = nullptr;
 
     // This is complicated by the fact that physical registers have refs associated
@@ -1189,13 +1198,15 @@ void LinearScan::doLinearScan()
 
     DBEXEC(VERBOSE, lsraDumpIntervals("after buildIntervals"));
 
-    clearVisitedBlocks();
     initVarRegMaps();
     allocateRegisters();
     allocationPassComplete = true;
     compiler->EndPhase(PHASE_LINEAR_SCAN_ALLOC);
     resolveRegisters();
     compiler->EndPhase(PHASE_LINEAR_SCAN_RESOLVE);
+
+    assert(blockSequencingDone); // Should do at least one traversal.
+    assert(blockEpoch == compiler->GetCurBasicBlockEpoch());
 
 #if TRACK_LSRA_STATS
     if ((JitConfig.DisplayLsraStats() != 0)
@@ -1211,7 +1222,6 @@ void LinearScan::doLinearScan()
     DBEXEC(VERBOSE, TupleStyleDump(LSRA_DUMP_POST));
 
     compiler->compLSRADone = true;
-    noway_assert(lsraBlockEpoch = compiler->GetCurBasicBlockEpoch());
 }
 
 //------------------------------------------------------------------------
