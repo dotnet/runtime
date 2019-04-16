@@ -174,9 +174,9 @@ inline bool varTypeIsI(T vt)
 }
 
 template <class T>
-inline bool varTypeCanReg(T vt)
+inline bool varTypeIsEnregisterable(T vt)
 {
-    return ((varTypeClassification[TypeGet(vt)] & (VTF_INT | VTF_I | VTF_FLT)) != 0);
+    return (TypeGet(vt) != TYP_STRUCT);
 }
 
 template <class T>
@@ -271,9 +271,56 @@ inline bool varTypeIsStruct(T vt)
 }
 
 template <class T>
-inline bool varTypeIsEnregisterableStruct(T vt)
+inline bool varTypeUsesFloatReg(T vt)
 {
-    return (TypeGet(vt) != TYP_STRUCT);
+    // Note that not all targets support SIMD, but if they don't, varTypeIsSIMD will
+    // always return false.
+    return varTypeIsFloating(vt) || varTypeIsSIMD(vt);
+}
+
+template <class T>
+inline bool varTypeUsesFloatArgReg(T vt)
+{
+#ifdef _TARGET_ARM64_
+    // Arm64 passes SIMD types in floating point registers.
+    return varTypeUsesFloatReg(vt);
+#else
+    // Other targets pass them as regular structs - by reference or by value.
+    return varTypeIsFloating(vt);
+#endif
+}
+
+//------------------------------------------------------------------------
+// varTypeIsValidHfaType: Determine if the type is a valid HFA type
+//
+// Arguments:
+//    vt - the type of interest
+//
+// Return Value:
+//    Returns true iff the type is a valid HFA type.
+//
+// Notes:
+//    This should only be called with the return value from GetHfaType().
+//    The only valid values are TYP_UNDEF, for which this returns false,
+//    TYP_FLOAT, TYP_DOUBLE, or (ARM64-only) TYP_SIMD*.
+//
+template <class T>
+inline bool varTypeIsValidHfaType(T vt)
+{
+#ifdef FEATURE_HFA
+    bool isValid = (TypeGet(vt) != TYP_UNDEF);
+    if (isValid)
+    {
+#ifdef _TARGET_ARM64_
+        assert(varTypeUsesFloatReg(vt));
+#else  // !_TARGET_ARM64_
+        assert(varTypeIsFloating(vt));
+#endif // !_TARGET_ARM64_
+    }
+    return isValid;
+#else  // !FEATURE_HFA
+    return false;
+#endif // !FEATURE_HFA
 }
 
 /*****************************************************************************/

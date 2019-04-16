@@ -573,8 +573,8 @@ bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
 //     of size 'structSize'.
 //     We examine 'clsHnd' to check the GC layout of the struct and
 //     return TYP_REF for structs that simply wrap an object.
-//     If the struct is a one element HFA, we will return the
-//     proper floating point type.
+//     If the struct is a one element HFA/HVA, we will return the
+//     proper floating point or vector type.
 //
 // Arguments:
 //    structSize - the size of the struct type, cannot be zero
@@ -592,13 +592,64 @@ bool Compiler::isSingleFloat32Struct(CORINFO_CLASS_HANDLE clsHnd)
 //    same way as any other 8-byte struct
 //    For ARM32 if we have an HFA struct that wraps a 64-bit double
 //    we will return TYP_DOUBLE.
+//    For vector calling conventions, a vector is considered a "primitive"
+//    type, as it is passed in a single register.
 //
 var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS_HANDLE clsHnd, bool isVarArg)
 {
     assert(structSize != 0);
 
-    var_types useType;
+    var_types useType = TYP_UNKNOWN;
 
+// Start by determining if we have an HFA/HVA with a single element.
+#ifdef FEATURE_HFA
+#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+    // Arm64 Windows VarArg methods arguments will not classify HFA types, they will need to be treated
+    // as if they are not HFA types.
+    if (!isVarArg)
+#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+    {
+        switch (structSize)
+        {
+            case 4:
+            case 8:
+#ifdef _TARGET_ARM64_
+            case 16:
+#endif // _TARGET_ARM64_
+            {
+                var_types hfaType;
+#ifdef ARM_SOFTFP
+                // For ARM_SOFTFP, HFA is unsupported so we need to check in another way.
+                // This matters only for size-4 struct because bigger structs would be processed with RetBuf.
+                if (isSingleFloat32Struct(clsHnd))
+                {
+                    hfaType = TYP_FLOAT;
+                }
+#else  // !ARM_SOFTFP
+                hfaType = GetHfaType(clsHnd);
+#endif // ARM_SOFTFP
+                // We're only interested in the case where the struct size is equal to the size of the hfaType.
+                if (varTypeIsValidHfaType(hfaType))
+                {
+                    if (genTypeSize(hfaType) == structSize)
+                    {
+                        useType = hfaType;
+                    }
+                    else
+                    {
+                        return TYP_UNKNOWN;
+                    }
+                }
+            }
+        }
+        if (useType != TYP_UNKNOWN)
+        {
+            return useType;
+        }
+    }
+#endif // FEATURE_HFA
+
+    // Now deal with non-HFA/HVA structs.
     switch (structSize)
     {
         case 1:
@@ -618,15 +669,8 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 
 #ifdef _TARGET_64BIT_
         case 4:
-            if (IsHfa(clsHnd))
-            {
-                // A structSize of 4 with IsHfa, it must be an HFA of one float
-                useType = TYP_FLOAT;
-            }
-            else
-            {
-                useType = TYP_INT;
-            }
+            // We dealt with the one-float HFA above. All other 4-byte structs are handled as INT.
+            useType = TYP_INT;
             break;
 
 #if !defined(_TARGET_XARCH_) || defined(UNIX_AMD64_ABI)
@@ -640,86 +684,13 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 #endif // _TARGET_64BIT_
 
         case TARGET_POINTER_SIZE:
-#ifdef ARM_SOFTFP
-            // For ARM_SOFTFP, HFA is unsupported so we need to check in another way
-            // This matters only for size-4 struct cause bigger structs would be processed with RetBuf
-            if (isSingleFloat32Struct(clsHnd))
-#else // !ARM_SOFTFP
-            if (IsHfa(clsHnd)
-#if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
-                // Arm64 Windows VarArg methods arguments will not
-                // classify HFA types, they will need to be treated
-                // as if they are not HFA types.
-                && !isVarArg
-#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
-                )
-#endif // ARM_SOFTFP
-            {
-#ifdef _TARGET_64BIT_
-                var_types hfaType = GetHfaType(clsHnd);
-
-                // A structSize of 8 with IsHfa, we have two possiblities:
-                // An HFA of one double or an HFA of two floats
-                //
-                // Check and exclude the case of an HFA of two floats
-                if (hfaType == TYP_DOUBLE)
-                {
-                    // We have an HFA of one double
-                    useType = TYP_DOUBLE;
-                }
-                else
-                {
-                    assert(hfaType == TYP_FLOAT);
-
-                    // We have an HFA of two floats
-                    // This should be passed or returned in two FP registers
-                    useType = TYP_UNKNOWN;
-                }
-#else  // a 32BIT target
-                // A structSize of 4 with IsHfa, it must be an HFA of one float
-                useType = TYP_FLOAT;
-#endif // _TARGET_64BIT_
-            }
-            else
-            {
-                BYTE gcPtr = 0;
-                // Check if this pointer-sized struct is wrapping a GC object
-                info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
-                useType = getJitGCType(gcPtr);
-            }
-            break;
-
-#ifdef _TARGET_ARM_
-        case 8:
-            if (IsHfa(clsHnd))
-            {
-                var_types hfaType = GetHfaType(clsHnd);
-
-                // A structSize of 8 with IsHfa, we have two possiblities:
-                // An HFA of one double or an HFA of two floats
-                //
-                // Check and exclude the case of an HFA of two floats
-                if (hfaType == TYP_DOUBLE)
-                {
-                    // We have an HFA of one double
-                    useType = TYP_DOUBLE;
-                }
-                else
-                {
-                    assert(hfaType == TYP_FLOAT);
-
-                    // We have an HFA of two floats
-                    // This should be passed or returned in two FP registers
-                    useType = TYP_UNKNOWN;
-                }
-            }
-            else
-            {
-                // We don't have an HFA
-                useType = TYP_UNKNOWN;
-            }
-            break;
-#endif // _TARGET_ARM_
+        {
+            BYTE gcPtr = 0;
+            // Check if this pointer-sized struct is wrapping a GC object
+            info.compCompHnd->getClassGClayout(clsHnd, &gcPtr);
+            useType = getJitGCType(gcPtr);
+        }
+        break;
 
         default:
             useType = TYP_UNKNOWN;
@@ -802,11 +773,11 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     else
 #endif // UNIX_AMD64_ABI
 
-        // The largest primitive type is 8 bytes (TYP_DOUBLE)
+        // The largest arg passed in a single register is MAX_PASS_SINGLEREG_BYTES,
         // so we can skip calling getPrimitiveTypeForStruct when we
         // have a struct that is larger than that.
         //
-        if (structSize <= sizeof(double))
+        if (structSize <= MAX_PASS_SINGLEREG_BYTES)
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
@@ -829,14 +800,21 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
         //
         if (structSize <= MAX_PASS_MULTIREG_BYTES)
         {
-            // Structs that are HFA's are passed by value in multiple registers
-            if (IsHfa(clsHnd)
+            // Structs that are HFA/HVA's are passed by value in multiple registers.
+            // Arm64 Windows VarArg methods arguments will not classify HFA/HVA types, they will need to be treated
+            // as if they are not HFA/HVA types.
+            var_types hfaType;
 #if defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
-                && !isVarArg // Arm64 Windows VarArg methods arguments will not
-                             // classify HFA types, they will need to be treated
-                             // as if they are not HFA types.
-#endif                       // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
-                )
+            if (isVarArg)
+            {
+                hfaType = TYP_UNDEF;
+            }
+            else
+#endif // defined(_TARGET_WINDOWS_) && defined(_TARGET_ARM64_)
+            {
+                hfaType = GetHfaType(clsHnd);
+            }
+            if (varTypeIsValidHfaType(hfaType))
             {
                 // HFA's of count one should have been handled by getPrimitiveTypeForStruct
                 assert(GetHfaCount(clsHnd) >= 2);
@@ -851,7 +829,6 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             {
 
 #ifdef UNIX_AMD64_ABI
-
                 // The case of (structDesc.eightByteCount == 1) should have already been handled
                 if ((structDesc.eightByteCount > 1) || !structDesc.passedInRegisters)
                 {
@@ -1035,10 +1012,10 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     // Check for cases where a small struct is returned in a register
     // via a primitive type.
     //
-    // The largest primitive type is 8 bytes (TYP_DOUBLE)
+    // The largest "primitive type" is MAX_PASS_SINGLEREG_BYTES
     // so we can skip calling getPrimitiveTypeForStruct when we
     // have a struct that is larger than that.
-    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= sizeof(double)))
+    if (canReturnInRegister && (useType == TYP_UNKNOWN) && (structSize <= MAX_PASS_SINGLEREG_BYTES))
     {
         // We set the "primitive" useType based upon the structSize
         // and also examine the clsHnd to see if it is an HFA of count one
@@ -1070,7 +1047,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
     // because when HFA are enabled, normally we would use two FP registers to pass or return it
     //
     // But if we don't have support for multiple register return types, we have to change this.
-    // Since we what we have an 8-byte struct (float + float)  we change useType to TYP_I_IMPL
+    // Since what we have is an 8-byte struct (float + float)  we change useType to TYP_I_IMPL
     // so that the struct is returned instead using an 8-byte integer register.
     //
     if ((FEATURE_MULTIREG_RET == 0) && (useType == TYP_UNKNOWN) && (structSize == (2 * sizeof(float))) && IsHfa(clsHnd))

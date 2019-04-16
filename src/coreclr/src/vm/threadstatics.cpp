@@ -647,7 +647,7 @@ PTR_ThreadLocalModule ThreadStatics::AllocateAndInitTLM(ModuleIndex index, PTR_T
     _ASSERTE(pThreadLocalBlock != NULL);
     _ASSERTE(pModule != NULL);
 
-    NewHolder<ThreadLocalModule> pThreadLocalModule = AllocateTLM(pModule);
+    NewArrayHolder<ThreadLocalModule> pThreadLocalModule = AllocateTLM(pModule);
 
     pThreadLocalBlock->AllocateThreadStaticHandles(pModule, pThreadLocalModule);
 

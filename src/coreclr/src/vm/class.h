@@ -414,8 +414,11 @@ class EEClassLayoutInfo
 #endif // UNIX_AMD64_ABI
 #ifdef FEATURE_HFA
             // HFA type of the unmanaged layout
+            // Note that these are not flags, they are discrete values.
             e_R4_HFA                    = 0x10,
             e_R8_HFA                    = 0x20,
+            e_16_HFA                    = 0x30,
+            e_HFATypeFlags              = 0x30,
 #endif
         };
 
@@ -526,15 +529,19 @@ class EEClassLayoutInfo
         bool IsNativeHFA()
         {
             LIMITED_METHOD_CONTRACT;
-            return (m_bFlags & (e_R4_HFA | e_R8_HFA)) != 0;
+            return (m_bFlags & e_HFATypeFlags) != 0;
         }
 
         CorElementType GetNativeHFAType()
         {
             LIMITED_METHOD_CONTRACT;
-            if (IsNativeHFA())                      
-                return (m_bFlags & e_R4_HFA) ? ELEMENT_TYPE_R4 : ELEMENT_TYPE_R8;
-            return ELEMENT_TYPE_END;
+            switch (m_bFlags & e_HFATypeFlags)
+            {
+            case e_R4_HFA: return ELEMENT_TYPE_R4;
+            case e_R8_HFA: return ELEMENT_TYPE_R8;
+            case e_16_HFA: return ELEMENT_TYPE_VALUETYPE;
+            default:       return ELEMENT_TYPE_END;
+            }
         }
 #else // !FEATURE_HFA
         bool IsNativeHFA()
@@ -580,7 +587,15 @@ class EEClassLayoutInfo
         void SetNativeHFAType(CorElementType hfaType)
         {
             LIMITED_METHOD_CONTRACT;
-            m_bFlags |= (hfaType == ELEMENT_TYPE_R4) ? e_R4_HFA : e_R8_HFA;
+            // We should call this at most once.
+            _ASSERTE((m_bFlags & e_HFATypeFlags) == 0);
+            switch (hfaType)
+            {
+            case ELEMENT_TYPE_R4: m_bFlags |= e_R4_HFA; break;
+            case ELEMENT_TYPE_R8: m_bFlags |= e_R8_HFA; break;
+            case ELEMENT_TYPE_VALUETYPE: m_bFlags |= e_16_HFA; break;
+            default: _ASSERTE(!"Invalid HFA Type");
+            }
         }
 #endif
 #ifdef UNIX_AMD64_ABI

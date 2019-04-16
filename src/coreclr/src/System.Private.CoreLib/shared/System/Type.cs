@@ -281,8 +281,9 @@ namespace System
         }
         protected virtual TypeCode GetTypeCodeImpl()
         {
-            if (this != UnderlyingSystemType && UnderlyingSystemType != null)
-                return Type.GetTypeCode(UnderlyingSystemType);
+            Type systemType = UnderlyingSystemType;
+            if (this != systemType && systemType != null)
+                return Type.GetTypeCode(systemType);
 
             return TypeCode.Object;
         }
