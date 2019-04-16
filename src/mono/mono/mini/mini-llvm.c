@@ -1740,6 +1740,17 @@ method_is_direct_callable (MonoMethod *method)
 {
 	if (method->wrapper_type == MONO_WRAPPER_ALLOC)
 		return TRUE;
+	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type)
+		return FALSE;
+	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		return FALSE;
+	/* Can't enable this as the callee might fail llvm compilation */
+	/*
+	if (!method->is_inflated && (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_PUBLIC) && (method->flags & METHOD_ATTRIBUTE_PUBLIC))
+		return TRUE;
+	*/
 	return FALSE;
 }
 
@@ -1761,7 +1772,7 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 			}
 		} else if (type == MONO_PATCH_INFO_METHOD) {
 			MonoMethod *method = (MonoMethod*)data;
-			if (method_is_direct_callable (method))
+			if (m_class_get_image (method->klass) != ctx->module->assembly->image && method_is_direct_callable (method))
 				callee_name = mono_aot_get_mangled_method_name (method);
 		}
 	}
