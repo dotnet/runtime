@@ -92,15 +92,48 @@ namespace System
         public static int ToLowerInvariant(this System.ReadOnlySpan<char> source, System.Span<char> destination) { throw null; }
         public static int ToUpper(this System.ReadOnlySpan<char> source, System.Span<char> destination, System.Globalization.CultureInfo culture) { throw null; }
         public static int ToUpperInvariant(this System.ReadOnlySpan<char> source, System.Span<char> destination) { throw null; }
+        public static System.Memory<char> Trim(this System.Memory<char> memory) { throw null; }
+        public static System.ReadOnlyMemory<char> Trim(this System.ReadOnlyMemory<char> memory) { throw null; }
         public static System.ReadOnlySpan<char> Trim(this System.ReadOnlySpan<char> span) { throw null; }
         public static System.ReadOnlySpan<char> Trim(this System.ReadOnlySpan<char> span, char trimChar) { throw null; }
         public static System.ReadOnlySpan<char> Trim(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> trimChars) { throw null; }
+        public static System.Span<char> Trim(this System.Span<char> span) { throw null; }
+        public static System.Memory<char> TrimEnd(this System.Memory<char> memory) { throw null; }
+        public static System.ReadOnlyMemory<char> TrimEnd(this System.ReadOnlyMemory<char> memory) { throw null; }
         public static System.ReadOnlySpan<char> TrimEnd(this System.ReadOnlySpan<char> span) { throw null; }
         public static System.ReadOnlySpan<char> TrimEnd(this System.ReadOnlySpan<char> span, char trimChar) { throw null; }
         public static System.ReadOnlySpan<char> TrimEnd(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> trimChars) { throw null; }
+        public static System.Span<char> TrimEnd(this System.Span<char> span) { throw null; }
+        public static System.Memory<T> TrimEnd<T>(this System.Memory<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.Memory<T> TrimEnd<T>(this System.Memory<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlyMemory<T> TrimEnd<T>(this System.ReadOnlyMemory<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlyMemory<T> TrimEnd<T>(this System.ReadOnlyMemory<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlySpan<T> TrimEnd<T>(this System.ReadOnlySpan<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlySpan<T> TrimEnd<T>(this System.ReadOnlySpan<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.Span<T> TrimEnd<T>(this System.Span<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.Span<T> TrimEnd<T>(this System.Span<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.Memory<char> TrimStart(this System.Memory<char> memory) { throw null; }
+        public static System.ReadOnlyMemory<char> TrimStart(this System.ReadOnlyMemory<char> memory) { throw null; }
         public static System.ReadOnlySpan<char> TrimStart(this System.ReadOnlySpan<char> span) { throw null; }
         public static System.ReadOnlySpan<char> TrimStart(this System.ReadOnlySpan<char> span, char trimChar) { throw null; }
         public static System.ReadOnlySpan<char> TrimStart(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> trimChars) { throw null; }
+        public static System.Span<char> TrimStart(this System.Span<char> span) { throw null; }
+        public static System.Memory<T> TrimStart<T>(this System.Memory<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.Memory<T> TrimStart<T>(this System.Memory<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlyMemory<T> TrimStart<T>(this System.ReadOnlyMemory<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlyMemory<T> TrimStart<T>(this System.ReadOnlyMemory<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlySpan<T> TrimStart<T>(this System.ReadOnlySpan<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlySpan<T> TrimStart<T>(this System.ReadOnlySpan<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.Span<T> TrimStart<T>(this System.Span<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.Span<T> TrimStart<T>(this System.Span<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.Memory<T> Trim<T>(this System.Memory<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.Memory<T> Trim<T>(this System.Memory<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlyMemory<T> Trim<T>(this System.ReadOnlyMemory<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlyMemory<T> Trim<T>(this System.ReadOnlyMemory<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlySpan<T> Trim<T>(this System.ReadOnlySpan<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.ReadOnlySpan<T> Trim<T>(this System.ReadOnlySpan<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
+        public static System.Span<T> Trim<T>(this System.Span<T> memory, System.ReadOnlySpan<T> trimElements) where T : System.IEquatable<T> { throw null; }
+        public static System.Span<T> Trim<T>(this System.Span<T> memory, T trimElement) where T : System.IEquatable<T> { throw null; }
     }
     public readonly partial struct SequencePosition : System.IEquatable<System.SequencePosition>
     {
