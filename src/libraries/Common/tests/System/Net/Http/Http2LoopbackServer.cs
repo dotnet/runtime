@@ -665,7 +665,7 @@ namespace System.Net.Test.Common
     {
         public IPAddress Address { get; set; } = IPAddress.Loopback;
         public int ListenBacklog { get; set; } = 1;
-        public bool UseSsl { get; set; } = true;
+        public bool UseSsl { get; set; } = PlatformDetection.SupportsAlpn;
         public SslProtocols SslProtocols { get; set; } = SslProtocols.Tls12;
     }
 

@@ -12,7 +12,9 @@ namespace System.Net.Http
     {
         private const string Http2SupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2SUPPORT";
         private const string Http2SupportAppCtxSettingName = "System.Net.Http.SocketsHttpHandler.Http2Support";
-        
+        private const string Http2UnencryptedSupportEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_HTTP2UNENCRYPTEDSUPPORT";
+        private const string Http2UnencryptedSupportAppCtxSettingName = "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport";
+
         internal DecompressionMethods _automaticDecompression = HttpHandlerDefaults.DefaultAutomaticDecompression;
 
         internal bool _useCookies = HttpHandlerDefaults.DefaultUseCookies;
@@ -40,13 +42,17 @@ namespace System.Net.Http
 
         internal Version _maxHttpVersion;
 
+        internal bool _allowUnencryptedHttp2;
+
         internal SslClientAuthenticationOptions _sslOptions;
 
         internal IDictionary<string, object> _properties;
 
         public HttpConnectionSettings()
         {
-            _maxHttpVersion = AllowHttp2 ? HttpVersion.Version20 : HttpVersion.Version11;
+            bool allowHttp2 = AllowHttp2;
+            _maxHttpVersion = allowHttp2 ? HttpVersion.Version20 : HttpVersion.Version11;
+            _allowUnencryptedHttp2 = allowHttp2 && AllowUnencryptedHttp2;
         }
 
         /// <summary>Creates a copy of the settings but with some values normalized to suit the implementation.</summary>
@@ -92,6 +98,7 @@ namespace System.Net.Http
                 _sslOptions = _sslOptions?.ShallowClone(), // shallow clone the options for basic prevention of mutation issues while processing
                 _useCookies = _useCookies,
                 _useProxy = _useProxy,
+                _allowUnencryptedHttp2 = _allowUnencryptedHttp2,
             };
         }
 
@@ -110,6 +117,29 @@ namespace System.Net.Http
                 if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
                 {
                     // Allow HTTP/2.0 protocol.
+                    return true;
+                }
+
+                // Default to a maximum of HTTP/1.1.
+                return false;
+            }
+        }
+
+        private static bool AllowUnencryptedHttp2
+        {
+            get
+            {
+                // First check for the AppContext switch, giving it priority over the environment variable.
+                if (AppContext.TryGetSwitch(Http2UnencryptedSupportAppCtxSettingName, out bool allowHttp2))
+                {
+                    return allowHttp2;
+                }
+
+                // AppContext switch wasn't used. Check the environment variable.
+                string envVar = Environment.GetEnvironmentVariable(Http2UnencryptedSupportEnvironmentVariableSettingName);
+                if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
+                {
+                    // Allow HTTP/2.0 protocol for HTTP endpoints.
                     return true;
                 }
 
