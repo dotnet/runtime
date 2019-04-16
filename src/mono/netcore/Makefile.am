@@ -107,6 +107,11 @@ xtestall: update-corefx-tests $(foreach workingtest, $(foreach test, $(wildcard 
 xtestpass: update-corefx-tests $(foreach workingtest, $(foreach test, $(wildcard corefx/tests/extracted/*), \
 		$(filter $(PASSING_COREFX_TESTS), $(notdir $(test)))), $(addprefix xtest-, $(workingtest)))
 
+build-local-corefx-test-%: check-env
+	cd $(COREFX_ROOT)/src/$*/tests && dotnet build -o "$(CURDIR)/corefx/tests/extracted/tmp"
+	cp $(CURDIR)/corefx/tests/extracted/tmp/$*.Tests.{dll,pdb} $(CURDIR)/corefx/tests/extracted/$*.Tests/
+	rm -rf $(CURDIR)/corefx/tests/extracted/tmp
+
 #
 # console test runner (obsolete)
 #

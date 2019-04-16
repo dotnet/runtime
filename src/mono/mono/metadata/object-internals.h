@@ -1509,6 +1509,21 @@ typedef struct {
 
 TYPED_HANDLE_DECL (MonoReflectionCustomAttr);
 
+#if ENABLE_NETCORE
+typedef struct {
+	MonoObject object;
+	guint32 utype;
+	gint32 safe_array_subtype;
+	MonoReflectionType *marshal_safe_array_user_defined_subtype;
+	gint32 IidParameterIndex;
+	guint32 array_subtype;
+	gint16 size_param_index;
+	gint32 size_const;
+	MonoString *marshal_type;
+	MonoReflectionType *marshal_type_ref;
+	MonoString *marshal_cookie;
+} MonoReflectionMarshalAsAttribute;
+#else
 typedef struct {
 	MonoObject object;
 	MonoString *marshal_cookie;
@@ -1522,6 +1537,7 @@ typedef struct {
 	gint32 IidParameterIndex;
 	gint16 size_param_index;
 } MonoReflectionMarshalAsAttribute;
+#endif
 
 /* Safely access System.Runtime.InteropServices.MarshalAsAttribute */
 TYPED_HANDLE_DECL (MonoReflectionMarshalAsAttribute);
