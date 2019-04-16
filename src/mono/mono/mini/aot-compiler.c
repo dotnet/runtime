@@ -6531,6 +6531,7 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	MonoJumpInfo *patch_info;
 	guint8 *p, *buf;
 	guint32 offset;
+	gboolean needs_ctx = FALSE;
 
 	method = cfg->orig_method;
 
@@ -6583,6 +6584,9 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 			continue;
 		}
 
+		if (acfg->aot_opts.llvm_only && patch_info->type == MONO_PATCH_INFO_METHOD)
+			needs_ctx = TRUE;
+
 		/* This shouldn't allocate a new offset */
 		offset = lookup_got_offset (acfg, cfg->compile_llvm, patch_info);
 		if (offset >= acfg->nshared_got_entries)
@@ -6595,6 +6599,8 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 	buf_size = (patches->len < 1000) ? 40960 : 40960 + (patches->len * 64);
 	p = buf = (guint8 *)g_malloc (buf_size);
 
+	MonoGenericContext *ctx = mono_method_get_context (cfg->method);
+
 	guint8 flags = 0;
 	if (mono_class_get_cctor (method->klass))
 		flags |= MONO_AOT_METHOD_FLAG_HAS_CCTOR;
@@ -6602,9 +6608,13 @@ emit_method_info (MonoAotCompile *acfg, MonoCompile *cfg)
 		flags |= MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE;
 	if (n_patches)
 		flags |= MONO_AOT_METHOD_FLAG_HAS_PATCHES;
+	if (needs_ctx && ctx)
+		flags |= MONO_AOT_METHOD_FLAG_HAS_CTX;
 	encode_value (flags, p, &p);
 	if (flags & MONO_AOT_METHOD_FLAG_HAS_CCTOR)
 		encode_klass_ref (acfg, method->klass, p, &p);
+	if (needs_ctx && ctx)
+		encode_generic_context (acfg, ctx, p, &p);
 
 	if (n_patches) {
 		encode_value (n_patches, p, &p);

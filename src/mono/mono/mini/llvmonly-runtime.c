@@ -769,13 +769,12 @@ mini_llvmonly_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, 
 }
 
 static void
-init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoClass *init_class, MonoGenericContext *context,
-					  gboolean lookup_context)
+init_llvmonly_method (MonoAotModule *amodule, guint32 method_index, MonoClass *init_class)
 {
 	ERROR_DECL (error);
 	gboolean res;
 
-	res = mono_aot_init_llvmonly_method (amodule, method_index, init_class, context, lookup_context, error);
+	res = mono_aot_init_llvmonly_method (amodule, method_index, init_class, error);
 	if (!res || !is_ok (error)) {
 		MonoException *ex = mono_error_convert_to_exception (error);
 		if (ex) {
@@ -795,7 +794,7 @@ mini_llvm_init_method (gpointer aot_module, guint32 method_index)
 {
 	MonoAotModule *amodule = (MonoAotModule *)aot_module;
 
-	init_llvmonly_method (amodule, method_index, NULL, NULL, FALSE);
+	init_llvmonly_method (amodule, method_index, NULL);
 }
 
 /* Same for gshared methods with a this pointer */
@@ -809,12 +808,7 @@ mini_llvm_init_gshared_method_this (gpointer aot_module, guint32 method_index, M
 	g_assert (this_obj);
 	klass = this_obj->vtable->klass;
 
-	/*
-	 * We can't obtain the context from THIS_OBJ since it can point to a child class etc., so
-	 * we depend on these methods to be called indirectly which causes them to be added
-	 * to extra_methods.
-	 */
-	init_llvmonly_method (amodule, method_index, klass, NULL, TRUE);
+	init_llvmonly_method (amodule, method_index, klass);
 }
 
 /* Same for gshared methods with an mrgctx arg */
@@ -822,16 +816,8 @@ void
 mini_llvm_init_gshared_method_mrgctx (gpointer aot_module, guint32 method_index, MonoMethodRuntimeGenericContext *rgctx)
 {
 	MonoAotModule *amodule = (MonoAotModule *)aot_module;
-	MonoGenericContext context = { NULL, NULL };
-	MonoClass *klass = rgctx->class_vtable->klass;
 
-	if (mono_class_is_ginst (klass))
-		context.class_inst = mono_class_get_generic_class (klass)->context.class_inst;
-	else if (mono_class_is_gtd (klass))
-		context.class_inst = mono_class_get_generic_container (klass)->context.class_inst;
-	context.method_inst = rgctx->method_inst;
-
-	init_llvmonly_method (amodule, method_index, rgctx->class_vtable->klass, &context, FALSE);
+	init_llvmonly_method (amodule, method_index, rgctx->class_vtable->klass);
 }
 
 /* Same for gshared methods with a vtable arg */
@@ -843,7 +829,7 @@ mini_llvm_init_gshared_method_vtable (gpointer aot_module, guint32 method_index,
 
 	klass = vtable->klass;
 
-	init_llvmonly_method (amodule, method_index, klass, NULL, TRUE);
+	init_llvmonly_method (amodule, method_index, klass);
 }
 
 static GENERATE_GET_CLASS_WITH_CACHE (nullref, "System", "NullReferenceException")

@@ -246,7 +246,7 @@ static void
 compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **code_end);
 
 static gboolean
-init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context, MonoError *error);
+init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoError *error);
 
 static MonoJumpInfo*
 decode_patches (MonoAotModule *amodule, MonoMemPool *mp, int n_patches, gboolean llvm, guint32 *got_offsets);
@@ -4242,7 +4242,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	if (!(is_llvm_code (amodule, code) && (amodule->info.flags & MONO_AOT_FILE_FLAG_LLVM_ONLY)) ||
 		(mono_llvm_only && method && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED)) {
-		res = init_method (amodule, method_index, method, NULL, NULL, error);
+		res = init_method (amodule, method_index, method, NULL, error);
 		if (!res)
 			goto cleanup;
 	}
@@ -4518,7 +4518,7 @@ mono_aot_find_method_index (MonoMethod *method)
 }
 
 static gboolean
-init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoGenericContext *context, MonoError *error)
+init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, MonoClass *init_class, MonoError *error)
 {
 	MonoDomain *domain = mono_domain_get ();
 	MonoMemPool *mp;
@@ -4528,6 +4528,10 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	guint8 *p;
 	MonoJitInfo *jinfo = NULL;
 	guint8 *code, *info;
+	MonoGenericContext *context;
+	MonoGenericContext ctx;
+
+	memset (&ctx, 0, sizeof (ctx));
 
 	error_init (error);
 
@@ -4545,6 +4549,13 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
 	//FIXME old code would use the class from @method if not null and ignore the one encoded. I don't know if we need to honor that -- @kumpera
 	if (method)
 		klass_to_run_ctor = method->klass;
+
+	context = NULL;
+	if (flags & MONO_AOT_METHOD_FLAG_HAS_CTX) {
+		decode_generic_context (amodule, &ctx, p, &p, error);
+		mono_error_assert_ok (error);
+		context = &ctx;
+	}
 
 	if (flags & MONO_AOT_METHOD_FLAG_HAS_PATCHES)
 		n_patches = decode_value (p, &p);
@@ -4656,25 +4667,14 @@ init_method (MonoAotModule *amodule, guint32 method_index, MonoMethod *method, M
  * mono_aot_init_llvmonly_method:
  *
  *   Initialize the method identified by METHOD_INDEX in llvmonly mode.
- * If LOOKUP_CONTEXT is TRUE, assume the method is in extra_methods, and load the context from there.
  */
 gboolean
-mono_aot_init_llvmonly_method (gpointer aot_module, guint32 method_index, MonoClass *init_class, MonoGenericContext *context,
-							   gboolean lookup_context, MonoError *error)
+mono_aot_init_llvmonly_method (gpointer aot_module, guint32 method_index, MonoClass *init_class, MonoError *error)
 {
 	MonoAotModule *amodule = (MonoAotModule*)aot_module;
 	MonoMethod *method = NULL;
 
-	if (lookup_context) {
-		amodule_lock (amodule);
-		method = (MonoMethod *)g_hash_table_lookup (amodule->extra_methods, GUINT_TO_POINTER (method_index));
-		amodule_unlock (amodule);
-
-		g_assert (method);
-		context = mono_method_get_context (method);
-		g_assert (context);
-	}
-	return init_method (amodule, method_index, method, init_class, context, error);
+	return init_method (amodule, method_index, method, init_class, error);
 }
 
 /*

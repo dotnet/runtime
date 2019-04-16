@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 158
+#define MONO_AOT_FILE_VERSION 159
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 
@@ -80,7 +80,8 @@ typedef enum {
 	MONO_AOT_METHOD_FLAG_NONE = 0,
 	MONO_AOT_METHOD_FLAG_HAS_CCTOR = 1,
 	MONO_AOT_METHOD_FLAG_GSHAREDVT_VARIABLE = 2,
-	MONO_AOT_METHOD_FLAG_HAS_PATCHES = 4
+	MONO_AOT_METHOD_FLAG_HAS_PATCHES = 4,
+	MONO_AOT_METHOD_FLAG_HAS_CTX = 8
 } MonoAotMethodFlags;
 
 typedef enum {
@@ -273,8 +274,7 @@ mono_aot_register_jit_icall (const char *name, T addr)
 #endif // __cplusplus
 
 guint32  mono_aot_find_method_index         (MonoMethod *method);
-gboolean mono_aot_init_llvmonly_method      (gpointer amodule, guint32 method_index, MonoClass *init_class,
-											 MonoGenericContext *context, gboolean lookup_context, MonoError *error);
+gboolean mono_aot_init_llvmonly_method      (gpointer amodule, guint32 method_index, MonoClass *init_class, MonoError *error);
 GHashTable *mono_aot_get_weak_field_indexes (MonoImage *image);
 MonoAotMethodFlags mono_aot_get_method_flags (guint8 *code);
 
