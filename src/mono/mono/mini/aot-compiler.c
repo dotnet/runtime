@@ -9311,7 +9311,7 @@ append_mangled_method (GString *s, MonoMethod *method)
 
 		return append_mangled_signature (s, mono_method_signature_internal (method));
 	} else {
-		g_string_append_printf (s, "_");
+		g_string_append_printf (s, "%s", m_class_get_image (method->klass)->assembly->aname.name);
 		append_mangled_klass (s, method->klass);
 		g_string_append_printf (s, "_%s_", method->name);
 		if (!append_mangled_signature (s, mono_method_signature_internal (method))) {
