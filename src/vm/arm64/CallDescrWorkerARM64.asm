@@ -93,7 +93,7 @@ LNoFloatingPoint
         bne     LNoDoubleReturn
 
 LFloatReturn
-        str     d0, [x19, #(CallDescrData__returnValue + 0)]
+        str     q0, [x19, #(CallDescrData__returnValue + 0)]
         b       LReturnDone
 
 LNoDoubleReturn
@@ -116,6 +116,16 @@ LNoFloatHFAReturn
         b       LReturnDone
 
 LNoDoubleHFAReturn
+
+        ;;VectorHFAReturn  return case
+        cmp     w3, #64
+        bne     LNoVectorHFAReturn
+
+        stp     q0, q1, [x19, #(CallDescrData__returnValue + 0)]
+        stp     q2, q3, [x19, #(CallDescrData__returnValue + 0x20)]
+        b       LReturnDone
+
+LNoVectorHFAReturn
 
         EMIT_BREAKPOINT ; Unreachable
 
