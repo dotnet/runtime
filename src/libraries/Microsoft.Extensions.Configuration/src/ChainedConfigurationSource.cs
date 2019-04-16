@@ -14,6 +14,12 @@ namespace Microsoft.Extensions.Configuration
         public IConfiguration Configuration { get; set; }
 
         /// <summary>
+        /// Whether the chained configuration should be disposed when the
+        /// configuration provider gets disposed.
+        /// </summary>
+        public bool ShouldDisposeConfiguration { get; set; }
+
+        /// <summary>
         /// Builds the <see cref="ChainedConfigurationProvider"/> for this source.
         /// </summary>
         /// <param name="builder">The <see cref="IConfigurationBuilder"/>.</param>

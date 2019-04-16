@@ -884,6 +884,54 @@ namespace Microsoft.Extensions.Hosting.Internal
             }
         }
 
+        [Fact]
+        public void Dispose_DisposesAppConfigurationProviders()
+        {
+            var providerMock = new Mock<ConfigurationProvider>().As<IDisposable>();
+            providerMock.Setup(d => d.Dispose());
+
+            var sourceMock = new Mock<IConfigurationSource>();
+            sourceMock.Setup(s => s.Build(It.IsAny<IConfigurationBuilder>()))
+                .Returns((ConfigurationProvider)providerMock.Object);
+
+            var host = CreateBuilder()
+                .ConfigureAppConfiguration(configuration =>
+                {
+                    configuration.Add(sourceMock.Object);
+                })
+                .Build();
+
+            providerMock.Verify(c => c.Dispose(), Times.Never);
+
+            host.Dispose();
+
+            providerMock.Verify(c => c.Dispose(), Times.AtLeastOnce());
+        }
+
+        [Fact]
+        public void Dispose_DisposesHostConfigurationProviders()
+        {
+            var providerMock = new Mock<ConfigurationProvider>().As<IDisposable>();
+            providerMock.Setup(d => d.Dispose());
+
+            var sourceMock = new Mock<IConfigurationSource>();
+            sourceMock.Setup(s => s.Build(It.IsAny<IConfigurationBuilder>()))
+                .Returns((ConfigurationProvider)providerMock.Object);
+
+            var host = CreateBuilder()
+                .ConfigureHostConfiguration(configuration =>
+                {
+                    configuration.Add(sourceMock.Object);
+                })
+                .Build();
+
+            providerMock.Verify(c => c.Dispose(), Times.Never);
+
+            host.Dispose();
+
+            providerMock.Verify(c => c.Dispose(), Times.AtLeastOnce());
+        }
+
         private IHostBuilder CreateBuilder(IConfiguration config = null)
         {
             return new HostBuilder().ConfigureHostConfiguration(builder => builder.AddConfiguration(config ?? new ConfigurationBuilder().Build()));
