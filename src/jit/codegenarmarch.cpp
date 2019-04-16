@@ -704,6 +704,22 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     varNode  = addrNode->AsLclVarCommon();
                     addrNode = nullptr;
                 }
+                else // addrNode is used
+                {
+                    // Generate code to load the address that we need into a register
+                    genConsumeAddress(addrNode);
+                    addrReg = addrNode->gtRegNum;
+
+#ifdef _TARGET_ARM64_
+                    // If addrReg equal to loReg, swap(loReg, hiReg)
+                    // This reduces code complexity by only supporting one addrReg overwrite case
+                    if (loReg == addrReg)
+                    {
+                        loReg = hiReg;
+                        hiReg = addrReg;
+                    }
+#endif // _TARGET_ARM64_
+                }
             }
 
             // Either varNode or addrNOde must have been setup above,
@@ -717,21 +733,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             unsigned structSize;
             bool     isHfa;
 
-            // This is the varNum for our load operations,
-            // only used when we have a multireg struct with a LclVar source
-            unsigned varNumInp = BAD_VAR_NUM;
-
 #ifdef _TARGET_ARM_
             // On ARM32, size of reference map can be larger than MAX_ARG_REG_COUNT
             gcPtrs     = treeNode->gtGcPtrs;
             gcPtrCount = treeNode->gtNumberReferenceSlots;
 #endif
             // Setup the structSize, isHFa, and gcPtrCount
-            if (varNode != nullptr)
+            if (source->OperGet() == GT_LCL_VAR)
             {
-                varNumInp = varNode->gtLclNum;
-                assert(varNumInp < compiler->lvaCount);
-                LclVarDsc* varDsc = &compiler->lvaTable[varNumInp];
+                assert(varNode != nullptr);
+                LclVarDsc* varDsc = compiler->lvaGetDesc(varNode);
 
                 // This struct also must live in the stack frame
                 // And it can't live in a register (SIMD)
@@ -747,27 +758,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     gcPtrs[i]   = varDsc->lvGcLayout[i];
 #endif // _TARGET_ARM_
             }
-            else // addrNode is used
+            else // we must have a GT_OBJ
             {
-                assert(addrNode != nullptr);
+                assert(source->OperGet() == GT_OBJ);
 
-                // Generate code to load the address that we need into a register
-                genConsumeAddress(addrNode);
-                addrReg = addrNode->gtRegNum;
-
-#ifdef _TARGET_ARM64_
-                // If addrReg equal to loReg, swap(loReg, hiReg)
-                // This reduces code complexity by only supporting one addrReg overwrite case
-                if (loReg == addrReg)
-                {
-                    loReg = hiReg;
-                    hiReg = addrReg;
-                }
-#endif // _TARGET_ARM64_
-            }
-
-            if (source->OperIs(GT_OBJ))
-            {
                 // If the source is an OBJ node then we need to use the type information
                 // it provides (size and GC layout) even if the node wraps a lclvar. Due
                 // to struct reinterpretation (e.g. Unsafe.As<X, Y>) it is possible that
@@ -834,8 +828,8 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 if (varNode != nullptr)
                 {
                     // Load from our varNumImp source
-                    emit->emitIns_R_R_S_S(INS_ldp, emitTypeSize(type0), emitTypeSize(type1), loReg, hiReg, varNumInp,
-                                          structOffset);
+                    emit->emitIns_R_R_S_S(INS_ldp, emitTypeSize(type0), emitTypeSize(type1), loReg, hiReg,
+                                          varNode->GetLclNum(), structOffset);
                 }
                 else
                 {
@@ -869,7 +863,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 if (varNode != nullptr)
                 {
                     // Load from our varNumImp source
-                    emit->emitIns_R_S(INS_ldr, emitTypeSize(type), loReg, varNumInp, structOffset);
+                    emit->emitIns_R_S(INS_ldr, emitTypeSize(type), loReg, varNode->GetLclNum(), structOffset);
                 }
                 else
                 {
@@ -908,7 +902,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                     if (varNode != nullptr)
                     {
                         // Load from our varNumImp source
-                        emit->emitIns_R_S(ins_Load(nextType), nextAttr, loReg, varNumInp, structOffset);
+                        emit->emitIns_R_S(ins_Load(nextType), nextAttr, loReg, varNode->GetLclNum(), structOffset);
                     }
                     else
                     {
