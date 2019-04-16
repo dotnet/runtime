@@ -4177,6 +4177,12 @@ mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *
 	corlib = invoke_assembly_preload_hook (aname, NULL);
 	/* MonoCore preload hook should know how to find it */
 	/* FIXME: AOT compiler comes here without an installed hook. */
+	if (!corlib) {
+		if (assemblies_path) { // Custom assemblies path set via MONO_PATH or mono_set_assemblies_path
+			char *corlib_name = g_strdup_printf ("%s.dll", MONO_ASSEMBLY_CORLIB_NAME);
+			corlib = load_in_path (corlib_name, (const char**)assemblies_path, &req, status);
+		}
+	}
 	g_assert (corlib);
 #else
 	// A nonstandard preload hook may provide a special mscorlib assembly
