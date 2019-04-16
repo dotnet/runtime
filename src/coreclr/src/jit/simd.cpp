@@ -121,7 +121,7 @@ int Compiler::getSIMDTypeAlignment(var_types simdType)
 //
 var_types Compiler::getBaseTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
-    assert(featureSIMD);
+    assert(supportSIMDTypes());
 
     if (m_simdHandleCache == nullptr)
     {

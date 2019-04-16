@@ -23273,7 +23273,7 @@ GenTreeStmt* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     if (varTypeIsStruct(argType))
                     {
                         structHnd = gtGetStructHandleIfPresent(argNode);
-                        noway_assert(structHnd != NO_CLASS_HANDLE);
+                        noway_assert((structHnd != NO_CLASS_HANDLE) || (argType != TYP_STRUCT));
                     }
 
                     // Unsafe value cls check is not needed for
