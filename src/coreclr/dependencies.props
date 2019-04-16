@@ -33,7 +33,7 @@
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview5-27615-71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
-    <XunitPackageVersion>2.4.1</XunitPackageVersion>
+    <XunitPackageVersion>2.4.1-pre.build.4059</XunitPackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.36</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
     <IbcMergePackageVersion>4.6.0-alpha-00001</IbcMergePackageVersion>
