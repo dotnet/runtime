@@ -9342,11 +9342,7 @@ mono_llvm_fixup_aot_module (void)
 		LLVMValueRef indexes [2], got_entry_addr, load;
 		char *name;
 
-		/*
-		 * FIXME: Support inflated methods, it asserts in mono_aot_init_gshared_method_this () because the method is not in
-		 * amodule->extra_methods.
-		 */
-		if (lmethod && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && !method->is_inflated) {
+		if (lmethod && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
 			mono_llvm_replace_uses_of (placeholder, lmethod);
 			g_hash_table_insert (patches_to_null, site->ji, site->ji);
 		} else {
