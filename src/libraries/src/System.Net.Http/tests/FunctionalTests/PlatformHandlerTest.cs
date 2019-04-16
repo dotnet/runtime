@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
 using Xunit;
@@ -12,6 +13,8 @@ namespace System.Net.Http.Functional.Tests
 
     public class PlatformHandler_HttpClientHandler : HttpClientHandlerTestBase
     {
+        protected override bool UseSocketsHttpHandler => false;
+
         public PlatformHandler_HttpClientHandler(ITestOutputHelper output) : base(output) { }
 
         [Theory]

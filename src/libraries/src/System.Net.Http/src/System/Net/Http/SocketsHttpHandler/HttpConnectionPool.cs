@@ -28,7 +28,7 @@ namespace System.Net.Http
         private readonly int _port;
         private readonly Uri _proxyUri;
         internal readonly byte[] _encodedAuthorityHostHeader;
-        
+
         /// <summary>List of idle connections stored in the pool.</summary>
         private readonly List<CachedConnection> _idleConnections = new List<CachedConnection>();
         /// <summary>The maximum number of connections allowed to be associated with the pool.</summary>
@@ -77,8 +77,7 @@ namespace System.Net.Http
                     Debug.Assert(port != 0);
                     Debug.Assert(sslHostName == null);
                     Debug.Assert(proxyUri == null);
-
-                    _http2Enabled = false;
+                    _http2Enabled = _poolManager.Settings._allowUnencryptedHttp2;
                     break;
 
                 case HttpConnectionKind.Https:
@@ -140,6 +139,10 @@ namespace System.Net.Http
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
                 _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);
                 Debug.Assert(Encoding.ASCII.GetString(_hostHeaderValueBytes) == hostHeader);
+                if (sslHostName == null)
+                {
+                    _encodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(StaticTable.Authority, hostHeader);
+                }
             }
 
             if (sslHostName != null)
@@ -328,7 +331,7 @@ namespace System.Net.Http
         private async ValueTask<(HttpConnectionBase connection, bool isNewConnection, HttpResponseMessage failureResponse)>
             GetHttp2ConnectionAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel);
+            Debug.Assert(_kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.Http);
 
             // See if we have an HTTP2 connection
             Http2Connection http2Connection = _http2Connection;
@@ -399,6 +402,22 @@ namespace System.Net.Http
                     if (failureResponse != null)
                     {
                         return (null, true, failureResponse);
+                    }
+
+                    if (_kind == HttpConnectionKind.Http)
+                    {
+                        http2Connection = new Http2Connection(this, stream);
+                        await http2Connection.SetupAsync().ConfigureAwait(false);
+
+                        Debug.Assert(_http2Connection == null);
+                        _http2Connection = http2Connection;
+
+                        if (NetEventSource.IsEnabled)
+                        {
+                            Trace("New unencrypted HTTP2 connection established.");
+                        }
+
+                        return (_http2Connection, true, null);
                     }
 
                     sslStream = (SslStream)stream;
