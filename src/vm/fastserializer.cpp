@@ -12,7 +12,7 @@
 // As a result of work on V3 of Event Pipe (https://github.com/Microsoft/perfview/pull/532) it got removed
 // if you need it, please use git to restore it
 
-IpcStreamWriter::IpcStreamWriter(IpcStream *pStream) : _pStream(pStream)
+IpcStreamWriter::IpcStreamWriter(uint64_t id, IpcStream *pStream) : _pStream(pStream)
 {
     CONTRACTL
     {
@@ -22,6 +22,17 @@ IpcStreamWriter::IpcStreamWriter(IpcStream *pStream) : _pStream(pStream)
         PRECONDITION(_pStream != nullptr);
     }
     CONTRACTL_END;
+
+    if (_pStream == nullptr)
+        return;
+
+    uint32_t nBytesWritten = 0;
+    bool fSuccess = _pStream->Write(&id, sizeof(id), nBytesWritten);
+    if (!fSuccess)
+    {
+        delete _pStream;
+        _pStream = nullptr;
+    }
 }
 
 IpcStreamWriter::~IpcStreamWriter()
@@ -50,6 +61,8 @@ bool IpcStreamWriter::Write(const void *lpBuffer, const uint32_t nBytesToWrite, 
     CONTRACTL_END;
 
     if (_pStream == nullptr)
+        return false;
+    if (lpBuffer == nullptr || nBytesToWrite == 0)
         return false;
     return _pStream->Write(lpBuffer, nBytesToWrite, nBytesWritten);
 }
