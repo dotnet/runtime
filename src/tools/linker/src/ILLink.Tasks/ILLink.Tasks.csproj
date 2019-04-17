@@ -1,103 +1,30 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$(MSBuildThisFileDirectory)../../eng/Versions.props" Condition=" '$(ArcadeBuild)' != 'true' " />
   <PropertyGroup>
-    <!-- net46 build is disabled until cecil uses SDK-style projects. -->
-    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp2.0;net472</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(OS)' != 'Windows_NT' ">netcoreapp2.0</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <BaseOutputPath>bin/</BaseOutputPath>
     <PackageOutputPath>$(BaseOutputPath)nupkgs</PackageOutputPath>
     <IsPackable>true</IsPackable>
-    <!-- IsTool true causes the build output to be placed in the
-         package's tools folder. This allows projects to reference the
-         tasks package without including the tasks dll in their
-         output. -->
-    <!-- TODO: This has no effect currently, because we are using a
-         custom .nuspec with the tools path hardcoded. Uncomment this
-         once we are able to remove the custom .nuspec workaround. -->
-    <!-- <IsTool>true</IsTool> -->
-
-    <!-- We want to package the tasks package together with its
-         package dependencies, the linker, and the linker's
-         dependencies, in order to prevent projects that consume the
-         tasks package from pulling in the linker. To do this, we need
-         to include project references and package references in the
-         package, and prevent any of these references from being
-         marked as dependencies in the tasks package.
-
-         To include the linker in the package, we want to package the
-         tasks project together with its project references. This is
-         not supported by the pack targets
-         (https://github.com/dotnet/cli/issues/1290,
-         https://github.com/dotnet/cli/issues/3959), so we work around
-         this by explicitly setting the package path to include the
-         build output. Using the publish directory will also cause
-         dependencies from package references to be packaged.
-
-         To prevent the linker from being marked as a package
-         dependency, we can't use PrivateAssets="All", because this
-         removes it from the publish output as well, due to an issue
-         in the SDK (https://github.com/dotnet/sdk/issues/952). To
-         work around this, we use a custom .nuspec that doesn't
-         declare any dependencies. This also prevents package
-         references from being marked as dependencies. -->
-    <!-- TODO: Remove the custom .nuspec once the P2P PrivateAssets
-         issue is fixed. -->
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <NuspecFileName>ILLink.Tasks.nuspec</NuspecFileName>
-    <NuspecFile>$(BaseOutputPath)$(NuspecFileName)</NuspecFile>
-    <NuspecProperties>id=$(AssemblyName);authors=$(AssemblyName);description=linker tasks;</NuspecProperties>
+    <Description>MSBuild tasks for running the IL Linker</Description>
+    <Authors>$(AssemblyName)</Authors>
+    <!-- Don't include the build output. Instead, we want to include
+         the TargetFramework-specific publish output. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- We want to package the tasks package together with its
+         transitive dependencies and the linker, without marking them
+         as dependencies in the tasks package.
+
+         Pack doesn't support including project references
+         (https://github.com/NuGet/Home/issues/3891), so we work
+         around this by explicitly including the publish output in the
+         package. -->
+    <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);_LayoutPackage</TargetsForTfmSpecificContentInPackage>
   </PropertyGroup>
-
-  <!-- TODO: Remove this workaround once we're able to avoid using a
-       custom .nuspec. We may still need a similar workaround to
-       dynamically include the publish output in the package contents.
-
-       We can't specify the output path to package in the static
-       nuspec properties, because the project's output path gets set
-       at a later point. To work around this, we add the output path
-       to the nuspec properties dynamically as part of the pack
-       target. We use the same workaround to set the version in the
-       .nuspec file.
-
-       We can't insert this into the pack target by modifying
-       PackDependsOn, since GenerateNuspec is always prepended to
-       PackDependsOn, which would cause the nuspec file to be
-       generated before our extra properties are added.
-
-       Instead, we use GenerateNuspecDependsOn. We could probably also
-       use BeforeTargets="GenerateNuspec". -->
-  <PropertyGroup>
-    <GenerateNuspecDependsOn>SetDynamicNuspecProperties;BinPlacePackageDeps;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
-  </PropertyGroup>
-  <Target Name="SetDynamicNuspecProperties"
-          DependsOnTargets="LayoutPackage">
-    <PropertyGroup>
-      <NuspecProperties>$(NuspecProperties)version=$(Version);</NuspecProperties>
-    </PropertyGroup>
-  </Target>
-
-  <!-- This target is necessary because the .nuspec includes the full
-       path of the selected dlls in the package layout. We want the
-       assets to be included in the package without the bin prefix, so
-       we place the .nuspec and the included targets alongside the
-       publish directories in the bin directory. -->
-  <Target Name="BinPlacePackageDeps">
-    <Copy SourceFiles="$(NuspecFileName)" DestinationFolder="$(BaseOutputPath)" />
-    <Copy SourceFiles="ILLink.Tasks.targets" DestinationFolder="$(BaseOutputPath)" />
-  </Target>
-
-  <Target Name="LayoutPackage">
-    <ItemGroup>
-      <TFMsToPublish Include="$(TargetFrameworks)" />
-      <ProjectsToPublish Include="$(MSBuildProjectFile)">
-        <AdditionalProperties>TargetFramework=%(TFMsToPublish.Identity);PublishDir=$(BaseOutputPath)%(TFMsToPublish.Identity)</AdditionalProperties>
-      </ProjectsToPublish>
-    </ItemGroup>
-    <MSBuild Projects="@(ProjectsToPublish)" Targets="Publish" />
-  </Target>
 
   <ItemGroup>
-    <Compile Include="AdapterLogger.cs" />
     <Compile Include="LinkTask.cs" />
     <Compile Include="CheckEmbeddedRootDescriptor.cs" />
     <Compile Include="CompareSizes.cs" />
@@ -110,59 +37,53 @@
     <Compile Include="FindNativeDeps.cs" />
     <Compile Include="SetAssemblyActions.cs" />
     <Compile Include="Utils.cs" />
-    <Content Include="Sdk\Sdk.props">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ILLink.Tasks.targets">
+      <PackagePath>build</PackagePath>
+    </Content>
+    <Content Include="Sdk/Sdk.props">
+      <PackagePath>Sdk</PackagePath>
     </Content>
   </ItemGroup>
 
-  <!-- TODO: Uncomment this once we can avoid hard-coding this in a
-       custom .nuspec. -->
-  <!-- Targets under the build directory of the package automatically
-       get included in the consumer's build.
-  -->
-  <!--
-      <ItemGroup>
-        <Content Include="ILLink.Tasks.targets">
-          <PackagePath>build</PackagePath>
-        </Content>
-      </ItemGroup>
-  -->
+  <Target Name="_LayoutPackage">
 
-  <!-- TODO: Use this to set the package contents once we can avoid
-       using a custom .nuspec. -->
-  <!-- We can't glob everything in the output path for two reasons:
+    <PropertyGroup>
+      <PublishDir>$(BaseOutputPath)$(TargetFramework)</PublishDir>
+    </PropertyGroup>
 
-       1. Content gets expanded before "Build" is called during
-       "Pack". We could work around this by creating our own target to
-       call build and then pack, but it would be nice to avoid
-       changing the build/package pipeline.
+    <ItemGroup>
+      <ProjectsToPublish Include="$(MSBuildProjectFile)">
+        <AdditionalProperties>TargetFramework=$(TargetFramework);PublishDir=$(PublishDir)</AdditionalProperties>
+      </ProjectsToPublish>
+    </ItemGroup>
 
-       2. We'll try to include the tasks dll twice. This only causes a
-       warning during pack, but should be avoided.
+    <!-- Clean the publish directory in case there are any left-over
+         artifacts (publish does not work incrementally). -->
+    <ItemGroup>
+      <_FilesToDelete Remove="@(_FilesToDelete)" />
+      <_FilesToDelete Include="$(PublishDir)/*.dll" />
+      <_FilesToDelete Include="$(PublishDir)/*.json" />
+    </ItemGroup>
+    <Delete Files="@(_FilesToDelete)" />
 
-       <Content Include="$(OutputPath)*.dll;$(OutputPath)*.json">
-         <PackagePath>tools</PackagePath>
-       </Content>
+    <MSBuild Projects="@(ProjectsToPublish)" Targets="Publish" />
+    <ItemGroup>
+      <TfmSpecificPackageFile Include="$(PublishDir)/ILLink.*.dll" PackagePath="tools\$(TargetFramework)" />
+      <TfmSpecificPackageFile Include="$(PublishDir)/Mono.Cecil.*.dll" PackagePath="tools\$(TargetFramework)" />
+      <TfmSpecificPackageFile Include="$(PublishDir)/illink.dll" PackagePath="tools\$(TargetFramework)"
+                              Condition=" '$(TargetFramework)' == 'netcoreapp2.0' " />
+      <TfmSpecificPackageFile Include="$(PublishDir)/*.json" PackagePath="tools\$(TargetFramework)" />
+    </ItemGroup>
 
-       There may also be a better ItemGroup to use than
-       Content. Content semantics mean to output with the build, which
-       isn't our goal. Instead, we want to include these dependencies
-       in the package without necessarily including them in the build.
-  -->
-  <!--
-      <ItemGroup>
-        <Content Include="$(OutputPath)illink.dll;$(OutputPath)Mono.Cecil.dll">
-          <PackagePath>tools</PackagePath>
-        </Content>
-       </ItemGroup>
-   -->
+  </Target>
 
   <ItemGroup>
-    <!-- TODO: Once https://github.com/dotnet/sdk/issues/952 is fixed,
-         use PrivateAssets="All" to prevent this project reference
-         from being marked as a dependency of the tasks package (while
-         still including it in the publish output). -->
-    <ProjectReference Include="../linker/Mono.Linker.csproj">
+    <ProjectReference Include="../linker/Mono.Linker.csproj"
+                      PrivateAssets="All"
+                      Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
       <!-- SetConfiguration isn't required when the configuration is
            already set in the solution. Setting it here allows packing
            the tasks csproj on its own. This lets us avoid some of the
@@ -185,9 +106,12 @@
       -->
       <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>
     </ProjectReference>
-    <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj" />
+    <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj"
+                      PrivateAssets="All" />
 
-    <ProjectReference Include="../ILLink.CustomSteps/ILLink.CustomSteps.csproj">
+    <ProjectReference Include="../ILLink.CustomSteps/ILLink.CustomSteps.csproj"
+                      PrivateAssets="All"
+                      Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
       <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>
     </ProjectReference>
   </ItemGroup>
@@ -205,11 +129,6 @@
 
   <ItemGroup>
 
-    <!-- TODO: Once we can avoid using a custom .nuspec, we should be
-         able to set PrivateAssets="All" on these packages to prevent
-         them from becoming package dependencies, and use an msbuild
-         itemgroup to include their assets in the package instead of
-         passing the publish path to the .nuspec. -->
     <!-- We use private assets for the Microsoft.Build packages to
          prevent them from being published with the tasks dll, because
          these are already a part of the SDK. -->
