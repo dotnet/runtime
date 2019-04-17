@@ -4,7 +4,10 @@
 
 using System.Collections.Generic;
 using System.Reflection;
-using System.Security;
+
+// This type is obsolete, and is expected to be used in very specific ways or it may
+// throw null reference exceptions.
+#pragma warning disable CS8610
 
 namespace System.Runtime.InteropServices
 {
@@ -14,7 +17,7 @@ namespace System.Runtime.InteropServices
 
         public ComAwareEventInfo(Type type, string eventName)
         {
-            _innerEventInfo = type.GetEvent(eventName);
+            _innerEventInfo = type.GetEvent(eventName)!;
         }
 
         public override void AddEventHandler(object target, Delegate handler)
@@ -50,15 +53,15 @@ namespace System.Runtime.InteropServices
 
         public override EventAttributes Attributes => _innerEventInfo.Attributes;
 
-        public override MethodInfo GetAddMethod(bool nonPublic) => _innerEventInfo.GetAddMethod(nonPublic);
+        public override MethodInfo? GetAddMethod(bool nonPublic) => _innerEventInfo.GetAddMethod(nonPublic);
 
-        public override MethodInfo[] GetOtherMethods(bool nonPublic) => _innerEventInfo.GetOtherMethods(nonPublic);
+        public override MethodInfo[]? GetOtherMethods(bool nonPublic) => _innerEventInfo.GetOtherMethods(nonPublic);
 
-        public override MethodInfo GetRaiseMethod(bool nonPublic) => _innerEventInfo.GetRaiseMethod(nonPublic);
+        public override MethodInfo? GetRaiseMethod(bool nonPublic) => _innerEventInfo.GetRaiseMethod(nonPublic);
 
-        public override MethodInfo GetRemoveMethod(bool nonPublic) => _innerEventInfo.GetRemoveMethod(nonPublic);
+        public override MethodInfo? GetRemoveMethod(bool nonPublic) => _innerEventInfo.GetRemoveMethod(nonPublic);
 
-        public override Type DeclaringType => _innerEventInfo.DeclaringType;
+        public override Type? DeclaringType => _innerEventInfo.DeclaringType;
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
@@ -83,11 +86,11 @@ namespace System.Runtime.InteropServices
 
         public override string Name => _innerEventInfo.Name;
 
-        public override Type ReflectedType => _innerEventInfo.ReflectedType;
+        public override Type? ReflectedType => _innerEventInfo.ReflectedType;
 
         private static void GetDataForComInvocation(EventInfo eventInfo, out Guid sourceIid, out int dispid)
         {
-            object[] comEventInterfaces = eventInfo.DeclaringType.GetCustomAttributes(typeof(ComEventInterfaceAttribute), inherit: false);
+            object[] comEventInterfaces = eventInfo.DeclaringType!.GetCustomAttributes(typeof(ComEventInterfaceAttribute), inherit: false);
 
             if (comEventInterfaces == null || comEventInterfaces.Length == 0)
             {
@@ -102,8 +105,8 @@ namespace System.Runtime.InteropServices
             Type sourceInterface = ((ComEventInterfaceAttribute)comEventInterfaces[0]).SourceInterface;
             Guid guid = sourceInterface.GUID;
 
-            MethodInfo methodInfo = sourceInterface.GetMethod(eventInfo.Name);
-            Attribute dispIdAttribute = Attribute.GetCustomAttribute(methodInfo, typeof(DispIdAttribute));
+            MethodInfo methodInfo = sourceInterface.GetMethod(eventInfo.Name)!;
+            Attribute? dispIdAttribute = Attribute.GetCustomAttribute(methodInfo, typeof(DispIdAttribute));
             if (dispIdAttribute == null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_NoDispIdAttribute);
