@@ -782,7 +782,11 @@ namespace System.Net.WebSockets
             lock (StateUpdateLock)
             {
                 _receivedCloseFrame = true;
-                if (_state < WebSocketState.CloseReceived)
+                if (_sentCloseFrame && _state < WebSocketState.Closed)
+                {
+                    _state = WebSocketState.Closed;
+                }
+                else if (_state < WebSocketState.CloseReceived)
                 {
                     _state = WebSocketState.CloseReceived;
                 }
@@ -1153,7 +1157,11 @@ namespace System.Net.WebSockets
             lock (StateUpdateLock)
             {
                 _sentCloseFrame = true;
-                if (_state <= WebSocketState.CloseReceived)
+                if (_receivedCloseFrame && _state < WebSocketState.Closed)
+                {
+                    _state = WebSocketState.Closed;
+                }
+                else if (_state < WebSocketState.CloseSent)
                 {
                     _state = WebSocketState.CloseSent;
                 }
