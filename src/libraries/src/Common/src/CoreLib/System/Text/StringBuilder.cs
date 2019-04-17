@@ -1083,7 +1083,7 @@ namespace System.Text
                 {
                     while (count > 0)
                     {
-                        ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, valuePtr, value.Length);
+                        ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, valuePtr, value.Length);
                         --count;
                     }
 
@@ -1847,7 +1847,7 @@ namespace System.Text
             if (span.Length != Length)
                 return false;
 
-            StringBuilder sbChunk = this;
+            StringBuilder? sbChunk = this;
             int offset = 0;
 
             do
@@ -1860,7 +1860,6 @@ namespace System.Text
                 if (!chunk.EqualsOrdinal(span.Slice(span.Length - offset, chunk_length)))
                     return false;
 
-                Debug.Assert(sbChunk.m_ChunkPrevious != null);
                 sbChunk = sbChunk.m_ChunkPrevious;
             } while (sbChunk != null);
 
@@ -1911,7 +1910,7 @@ namespace System.Text
             int indexInChunk = startIndex - chunk.m_ChunkOffset;
             while (count > 0)
             {
-                Debug.Assert(chunk != null);
+                Debug.Assert(chunk != null, "chunk was null in replace");
                 // Look for a match in the chunk,indexInChunk pointer
                 if (StartsWith(chunk, indexInChunk, count, oldValue))
                 {
@@ -1943,7 +1942,7 @@ namespace System.Text
                     int indexBeforeAdjustment = index;
 
                     // See if we accumulated any replacements, if so apply them.
-                    Debug.Assert(replacements != null);
+                    Debug.Assert(replacements != null || replacementsCount == 0, "replacements was null and replacementsCount != 0");
                     ReplaceAllInChunk(replacements, replacementsCount, chunk, oldValue.Length, newValue);
                     // The replacement has affected the logical index.  Adjust it.
                     index += ((newValue.Length - oldValue.Length) * replacementsCount);
@@ -2088,7 +2087,7 @@ namespace System.Text
                 StringBuilder chunk;
                 int indexInChunk;
                 MakeRoom(index, valueCount, out chunk, out indexInChunk, false);
-                ReplaceInPlaceAtChunk(ref chunk, ref indexInChunk, value, valueCount);
+                ReplaceInPlaceAtChunk(ref chunk!, ref indexInChunk, value, valueCount);
             }
         }
 
@@ -2103,7 +2102,7 @@ namespace System.Text
         /// <remarks>
         /// This routine is very efficient because it does replacements in bulk.
         /// </remarks>
-        private void ReplaceAllInChunk(int[] replacements, int replacementsCount, StringBuilder sourceChunk, int removeCount, string value)
+        private void ReplaceAllInChunk(int[]? replacements, int replacementsCount, StringBuilder sourceChunk, int removeCount, string value)
         {
             if (replacementsCount <= 0)
             {
@@ -2114,6 +2113,7 @@ namespace System.Text
             {
                 fixed (char* valuePtr = value)
                 {
+                    Debug.Assert(replacements != null, "replacements was null when replacementsCount > 0");
                     // calculate the total amount of extra space or space needed for all the replacements.
                     long longDelta = (value.Length - removeCount) * (long)replacementsCount;
                     int delta = (int)longDelta;
@@ -2131,7 +2131,7 @@ namespace System.Text
                     for (;;)
                     {
                         // Copy in the new string for the ith replacement
-                        ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, valuePtr, value.Length);
+                        ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, valuePtr, value.Length);
                         int gapStart = replacements[i] + removeCount;
                         i++;
                         if (i >= replacementsCount)
@@ -2147,7 +2147,7 @@ namespace System.Text
                         {
                             // Copy the gap data between the current replacement and the next replacement
                             fixed (char* sourcePtr = &sourceChunk.m_ChunkChars[gapStart])
-                                ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, sourcePtr, gapEnd - gapStart);
+                                ReplaceInPlaceAtChunk(ref targetChunk!, ref targetIndexInChunk, sourcePtr, gapEnd - gapStart);
                         }
                         else
                         {
@@ -2213,12 +2213,13 @@ namespace System.Text
         /// </param>
         /// <param name="value">The pointer to the start of the character buffer.</param>
         /// <param name="count">The number of characters in the buffer.</param>
-        private unsafe void ReplaceInPlaceAtChunk(ref StringBuilder chunk, ref int indexInChunk, char* value, int count)
+        private unsafe void ReplaceInPlaceAtChunk(ref StringBuilder? chunk, ref int indexInChunk, char* value, int count)
         {
             if (count != 0)
             {
                 for (;;)
                 {
+                    Debug.Assert(chunk != null, "chunk should not be null at this point");
                     int lengthInChunk = chunk.m_ChunkLength - indexInChunk;
                     Debug.Assert(lengthInChunk >= 0, "Index isn't in the chunk.");
 
@@ -2229,9 +2230,7 @@ namespace System.Text
                     indexInChunk += lengthToCopy;
                     if (indexInChunk >= chunk.m_ChunkLength)
                     {
-                        StringBuilder? nextChunk = Next(chunk);
-                        Debug.Assert(nextChunk != null, "we should never get past last chunk because range should already be validated before calling");
-                        chunk = nextChunk;
+                        chunk = Next(chunk);
                         indexInChunk = 0;
                     }
                     count -= lengthToCopy;
