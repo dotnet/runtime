@@ -341,6 +341,7 @@ OPDEF(MINT_ISINST_COMMON, "isinst.common", 2, MintOpClassToken)
 OPDEF(MINT_NEWARR, "newarr", 2, MintOpClassToken) 
 OPDEF(MINT_BOX, "box", 3, MintOpTwoShorts)
 OPDEF(MINT_BOX_VT, "box.vt", 3, MintOpTwoShorts)
+OPDEF(MINT_BOX_NULLABLE, "box.nullable", 3, MintOpTwoShorts)
 OPDEF(MINT_UNBOX, "unbox", 2, MintOpClassToken) 
 OPDEF(MINT_LDTOKEN, "ldtoken", 2, MintOpClassToken) /* not really */
 OPDEF(MINT_LDFTN, "ldftn", 2, MintOpMethodToken) 
