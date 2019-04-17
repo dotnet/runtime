@@ -1280,6 +1280,10 @@ void Compiler::lvaInitVarDsc(LclVarDsc*              varDsc,
         varDsc->lvStructGcCount = 1;
     }
 
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+    varDsc->lvIsImplicitByRef = 0;
+#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+
 // Set the lvType (before this point it is TYP_UNDEF).
 
 #ifdef FEATURE_HFA
@@ -2163,6 +2167,10 @@ void Compiler::StructPromotionHelper::PromoteStructVar(unsigned lclNum)
         fieldVarDsc->lvParentLcl     = lclNum;
         fieldVarDsc->lvIsParam       = varDsc->lvIsParam;
 #if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+
+        // Reset the implicitByRef flag.
+        fieldVarDsc->lvIsImplicitByRef = 0;
+
         // Do we have a parameter that can be enregistered?
         //
         if (varDsc->lvIsRegArg)
@@ -2490,11 +2498,12 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
             varDsc->lvExactSize = info.compCompHnd->getHeapClassSize(typeHnd);
         }
 
-        size_t lvSize = varDsc->lvSize();
-        assert((lvSize % TARGET_POINTER_SIZE) ==
-               0); // The struct needs to be a multiple of TARGET_POINTER_SIZE bytes for getClassGClayout() to be valid.
-        varDsc->lvGcLayout = getAllocator(CMK_LvaTable).allocate<BYTE>(lvSize / TARGET_POINTER_SIZE);
-        unsigned  numGCVars;
+        // Normalize struct types, and fill in GC info for all types
+        unsigned lvSize = varDsc->lvSize();
+        // The struct needs to be a multiple of TARGET_POINTER_SIZE bytes for getClassGClayout() to be valid.
+        assert((lvSize % TARGET_POINTER_SIZE) == 0);
+        varDsc->lvGcLayout     = getAllocator(CMK_LvaTable).allocate<BYTE>(lvSize / TARGET_POINTER_SIZE);
+        unsigned  numGCVars    = 0;
         var_types simdBaseType = TYP_UNKNOWN;
         if (isValueClass)
         {
@@ -2510,10 +2519,27 @@ void Compiler::lvaSetStruct(unsigned varNum, CORINFO_CLASS_HANDLE typeHnd, bool 
         {
             numGCVars = 7;
         }
+
         varDsc->lvStructGcCount = numGCVars;
 
         if (isValueClass)
         {
+
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+            // Mark implicit byref struct parameters
+            if (varDsc->lvIsParam && !varDsc->lvIsStructField)
+            {
+                structPassingKind howToReturnStruct;
+                getArgTypeForStruct(typeHnd, &howToReturnStruct, this->info.compIsVarArgs, varDsc->lvExactSize);
+
+                if (howToReturnStruct == SPK_ByReference)
+                {
+                    JITDUMP("Marking V%02i as a byref parameter\n", varNum);
+                    varDsc->lvIsImplicitByRef = 1;
+                }
+            }
+#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+
 #if FEATURE_SIMD
             if (simdBaseType != TYP_UNKNOWN)
             {
