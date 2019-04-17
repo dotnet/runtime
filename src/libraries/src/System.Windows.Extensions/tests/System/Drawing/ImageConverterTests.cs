@@ -152,6 +152,15 @@ namespace System.ComponentModel.TypeConverterTests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void ConvertTo_FromBitmapToByteArray()
+        {
+            Bitmap value = new Bitmap(64, 64);
+            ImageConverter converter = new ImageConverter();
+            byte[] converted = (byte[])converter.ConvertTo(value, typeof(byte[]));
+            Assert.NotNull(converted);
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ConvertTo_ThrowsNotSupportedException()
         {
             Assert.Throws<NotSupportedException>(() => _imgConv.ConvertTo(null, CultureInfo.InvariantCulture, _image, typeof(Rectangle)));
