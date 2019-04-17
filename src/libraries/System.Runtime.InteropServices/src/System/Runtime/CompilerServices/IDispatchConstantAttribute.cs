@@ -11,6 +11,8 @@ namespace System.Runtime.CompilerServices
     {
         public IDispatchConstantAttribute() { }
 
+#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public override object Value => new DispatchWrapper(null);
+#pragma warning restore CS8608
     }
 }
