@@ -261,6 +261,20 @@
         }
     },
     {
+        "name": "System.Diagnostics.StackTrace.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Diagnostics.Tests.StackTraceTests.ToString_NullFrame_ThrowsNullReferenceException",
+                    "reason": "outdated"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.Diagnostics.Tracing.Tests",
         "enabled": true,
         "exclusions": {
