@@ -320,6 +320,18 @@ namespace System.Text.Json.Serialization
     {
         public JsonIgnoreAttribute() { }
     }
+    public abstract partial class JsonNamingPolicy
+    {
+        protected JsonNamingPolicy() { }
+        public static System.Text.Json.Serialization.JsonNamingPolicy CamelCase { get { throw null; } }
+        public abstract string ConvertName(string name);
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
+    public sealed partial class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonPropertyNameAttribute(string propertyName) { }
+        public string Name { get { throw null; } set { } }
+    }
     public static partial class JsonSerializer
     {
         public static object Parse(System.ReadOnlySpan<byte> utf8Json, System.Type returnType, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
@@ -340,9 +352,12 @@ namespace System.Text.Json.Serialization
         public JsonSerializerOptions() { }
         public bool AllowTrailingCommas { get { throw null; } set { } }
         public int DefaultBufferSize { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonNamingPolicy DictionaryKeyPolicy { get { throw null; } set { } }
         public bool IgnoreNullValues { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
+        public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
     }

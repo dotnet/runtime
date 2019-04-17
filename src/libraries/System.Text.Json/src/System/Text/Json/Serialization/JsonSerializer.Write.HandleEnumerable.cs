@@ -39,19 +39,19 @@ namespace System.Text.Json.Serialization
                 if (enumerable == null)
                 {
                     // Write a null object or enumerable.
-                    writer.WriteNull(jsonPropertyInfo._name);
+                    writer.WriteNull(jsonPropertyInfo.Name);
                     return true;
                 }
 
                 state.Current.Enumerator = enumerable.GetEnumerator();
 
-                if (jsonPropertyInfo._name == null)
+                if (jsonPropertyInfo.Name == null)
                 {
                     writer.WriteStartArray();
                 }
                 else
                 {
-                    writer.WriteStartArray(jsonPropertyInfo._name);
+                    writer.WriteStartArray(jsonPropertyInfo.Name);
                 }
             }
 

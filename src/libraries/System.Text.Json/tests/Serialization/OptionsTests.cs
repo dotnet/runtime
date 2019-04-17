@@ -18,16 +18,22 @@ namespace System.Text.Json.Serialization.Tests
             // Verify defaults and ensure getters do not throw.
             Assert.False(options.AllowTrailingCommas);
             Assert.Equal(16 * 1024, options.DefaultBufferSize);
+            Assert.Equal(null, options.DictionaryKeyPolicy);
             Assert.False(options.IgnoreNullValues);
             Assert.Equal(0, options.MaxDepth);
+            Assert.Equal(false, options.PropertyNameCaseInsensitive);
+            Assert.Equal(null, options.PropertyNamingPolicy);
             Assert.Equal(JsonCommentHandling.Disallow, options.ReadCommentHandling);
             Assert.False(options.WriteIndented);
 
-            // Setters should throw
+            // Setters should always throw; we don't check to see if the value is the same or not.
             Assert.Throws<InvalidOperationException>(() => options.AllowTrailingCommas = options.AllowTrailingCommas);
             Assert.Throws<InvalidOperationException>(() => options.DefaultBufferSize = options.DefaultBufferSize);
+            Assert.Throws<InvalidOperationException>(() => options.DictionaryKeyPolicy = options.DictionaryKeyPolicy);
             Assert.Throws<InvalidOperationException>(() => options.IgnoreNullValues = options.IgnoreNullValues);
             Assert.Throws<InvalidOperationException>(() => options.MaxDepth = options.MaxDepth);
+            Assert.Throws<InvalidOperationException>(() => options.PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive);
+            Assert.Throws<InvalidOperationException>(() => options.PropertyNamingPolicy = options.PropertyNamingPolicy);
             Assert.Throws<InvalidOperationException>(() => options.ReadCommentHandling = options.ReadCommentHandling);
             Assert.Throws<InvalidOperationException>(() => options.WriteIndented = options.WriteIndented);
         }
