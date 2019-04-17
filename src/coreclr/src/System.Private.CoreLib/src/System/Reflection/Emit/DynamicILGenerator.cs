@@ -724,7 +724,12 @@ namespace System.Reflection.Emit
 
                 if ((header & 0x40) != 0) // Fat
                 {
-                    EHCount = (BinaryPrimitives.ReadInt32LittleEndian(m_exceptionHeader.AsSpan(1)) - 4) / 24;
+                    // Positions 1..3 of m_exceptionHeader are a 24-bit little-endian integer.
+                    int size = m_exceptionHeader[3] << 16;
+                    size |= m_exceptionHeader[2] << 8;
+                    size |= m_exceptionHeader[1];
+
+                    EHCount = (size - 4) / 24;
                 }
                 else
                     EHCount = (m_exceptionHeader[1] - 2) / 12;
