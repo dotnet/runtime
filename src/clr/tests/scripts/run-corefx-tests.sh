@@ -327,9 +327,9 @@ run_test()
 
     echo
     echo "Running tests in $dirName"
-    echo "${TimeoutTool}./RunTests.sh $Runtime"
+    echo "${TimeoutTool}./RunTests.sh --runtime-path $Runtime"
     echo
-    ${TimeoutTool}./RunTests.sh "$Runtime"
+    ${TimeoutTool}./RunTests.sh --runtime-path "$Runtime"
     exitCode=$?
 
     if [ $exitCode -ne 0 ] ; then
