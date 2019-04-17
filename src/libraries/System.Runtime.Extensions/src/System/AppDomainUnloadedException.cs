@@ -17,13 +17,13 @@ namespace System
             HResult = COR_E_APPDOMAINUNLOADED;
         }
 
-        public AppDomainUnloadedException(string message)
+        public AppDomainUnloadedException(string? message)
             : base(message)
         {
             HResult = COR_E_APPDOMAINUNLOADED;
         }
 
-        public AppDomainUnloadedException(string message, Exception innerException)
+        public AppDomainUnloadedException(string? message, Exception? innerException)
             : base(message, innerException)
         {
             HResult = COR_E_APPDOMAINUNLOADED;

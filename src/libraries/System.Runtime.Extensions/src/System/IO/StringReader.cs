@@ -10,18 +10,13 @@ namespace System.IO
     // This class implements a text reader that reads from a string.
     public class StringReader : TextReader
     {
-        private string _s;
+        private string? _s;
         private int _pos;
         private int _length;
 
         public StringReader(string s)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
-
-            _s = s;
+            _s = s ?? throw new ArgumentNullException(nameof(s));
             _length = s.Length;
         }
 
@@ -174,7 +169,7 @@ namespace System.IO
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the underlying string has been reached.
         //
-        public override string ReadLine()
+        public override string? ReadLine()
         {
             if (_s == null)
             {
@@ -211,7 +206,7 @@ namespace System.IO
         }
 
         #region Task based Async APIs
-        public override Task<string> ReadLineAsync()
+        public override Task<string?> ReadLineAsync()
         {
             return Task.FromResult(ReadLine());
         }

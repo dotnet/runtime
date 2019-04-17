@@ -10,6 +10,6 @@ namespace System.Security.Permissions
         protected SecurityAttribute(SecurityAction action) { }
         public SecurityAction Action { get; set; }
         public bool Unrestricted { get; set; }
-        public abstract IPermission CreatePermission();
+        public abstract IPermission? CreatePermission();
     }
 }

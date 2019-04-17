@@ -6,7 +6,7 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    public abstract class ContextBoundObject : System.MarshalByRefObject
+    public abstract class ContextBoundObject : MarshalByRefObject
     {
         protected ContextBoundObject() { }
     }
@@ -19,11 +19,11 @@ namespace System
         {
         }
 
-        public ContextMarshalException(string message) : this(message, null)
+        public ContextMarshalException(string? message) : this(message, null)
         {
         }
 
-        public ContextMarshalException(string message, Exception inner) : base(message, inner)
+        public ContextMarshalException(string? message, Exception? inner) : base(message, inner)
         {
             HResult = HResults.COR_E_CONTEXTMARSHAL;
         }
@@ -34,7 +34,7 @@ namespace System
     }
 
     [AttributeUsage(AttributeTargets.Field, Inherited = false)]
-    public partial class ContextStaticAttribute : System.Attribute
+    public partial class ContextStaticAttribute : Attribute
     {
         public ContextStaticAttribute() { }
     }
