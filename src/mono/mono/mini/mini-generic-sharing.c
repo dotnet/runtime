@@ -1834,21 +1834,25 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 MonoMethod*
 mini_get_interp_lmf_wrapper (const char *name, gpointer target)
 {
+	static MonoMethod *cache [2];
+	g_assert (target == (gpointer)mono_interp_to_native_trampoline || target == (gpointer)mono_interp_entry_from_trampoline);
+	const int index = target == (gpointer)mono_interp_to_native_trampoline;
+
 	MonoMethod *res, *cached;
 	MonoMethodSignature *sig;
 	MonoMethodBuilder *mb;
 	WrapperInfo *info;
-	static GHashTable *cache = NULL;
-	MonoType *int_type = mono_get_int_type ();
 
 	gshared_lock ();
-	if (!cache)
-		cache = g_hash_table_new_full (NULL, NULL, NULL, NULL);
-	res = (MonoMethod *) g_hash_table_lookup (cache, target);
+
+	res = cache [index];
+
 	gshared_unlock ();
 
 	if (res)
 		return res;
+
+	MonoType *int_type = mono_get_int_type ();
 
 	char *wrapper_name = g_strdup_printf ("__interp_lmf_%s", name);
 	mb = mono_mb_new (mono_defaults.object_class, wrapper_name, MONO_WRAPPER_OTHER);
@@ -1875,12 +1879,12 @@ mini_get_interp_lmf_wrapper (const char *name, gpointer target)
 	res = mono_mb_create (mb, sig, 4, info);
 
 	gshared_lock ();
-	cached = (MonoMethod *) g_hash_table_lookup (cache, target);
+	cached = cache [index];
 	if (cached) {
 		mono_free_method (res);
 		res = cached;
 	} else {
-		g_hash_table_insert (cache, target, res);
+		cache [index] = res;
 	}
 	gshared_unlock ();
 	mono_mb_free (mb);
