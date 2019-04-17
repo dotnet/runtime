@@ -704,7 +704,7 @@ var_types Compiler::getPrimitiveTypeForStruct(unsigned structSize, CORINFO_CLASS
 // getArgTypeForStruct:
 //     Get the type that is used to pass values of the given struct type.
 //     If you have already retrieved the struct size then it should be
-//     passed as the optional third argument, as this allows us to avoid
+//     passed as the optional fourth argument, as this allows us to avoid
 //     an extra call to getClassSize(clsHnd)
 //
 // Arguments:

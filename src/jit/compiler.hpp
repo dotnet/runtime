@@ -1756,8 +1756,15 @@ inline void LclVarDsc::incRefCnts(BasicBlock::weight_t weight, Compiler* comp, R
         if (weight != 0)
         {
             // We double the weight of internal temps
-            //
-            if (lvIsTemp && (weight * 2 > weight))
+
+            bool doubleWeight = lvIsTemp;
+
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+            // and, for the time being, implict byref params
+            doubleWeight |= lvIsImplicitByRef;
+#endif // defined(_TARGET_AMD64_) || defined(_TARGET_ARM64_)
+
+            if (doubleWeight && (weight * 2 > weight))
             {
                 weight *= 2;
             }
