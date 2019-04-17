@@ -5698,11 +5698,10 @@ gboolean
 mono_aot_direct_icalls_enabled_for_method (MonoCompile *cfg, MonoMethod *method)
 {
 	gboolean enable_icall = FALSE;
-	if (cfg->compile_aot) {
+	if (cfg->compile_aot)
 		enable_icall = lookup_external_icall_symbol_name_aot (method) ? TRUE : FALSE;
-	} else {
+	else
 		enable_icall = FALSE;
-	}
 
 	return enable_icall;
 }
@@ -13824,6 +13823,13 @@ mono_aot_is_shared_got_offset (int offset)
 
 int
 mono_compile_deferred_assemblies (guint32 opts, const char *aot_options, gpointer **aot_state)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+gboolean
+mono_aot_direct_icalls_enabled_for_method (MonoCompile *cfg, MonoMethod *method)
 {
 	g_assert_not_reached ();
 	return 0;
