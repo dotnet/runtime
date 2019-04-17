@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{4B93E684-0630-45F4-8F63-6C7788C9892F}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TestDataPackageVersion>1.0.7</TestDataPackageVersion>
+    <TestDataPackageVersion>1.0.9</TestDataPackageVersion>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
   </PropertyGroup>
