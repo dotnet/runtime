@@ -1735,20 +1735,45 @@ typedef struct {
 	LLVMTypeRef type;
 } CallSite;
 
+static gboolean
+method_is_direct_callable (MonoMethod *method)
+{
+	if (method->wrapper_type == MONO_WRAPPER_ALLOC)
+		return TRUE;
+	if (method->string_ctor)
+		return FALSE;
+	if (method->wrapper_type)
+		return FALSE;
+	if ((method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL) || (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		return FALSE;
+	/* Can't enable this as the callee might fail llvm compilation */
+	/*
+	if (!method->is_inflated && (mono_class_get_flags (method->klass) & TYPE_ATTRIBUTE_PUBLIC) && (method->flags & METHOD_ATTRIBUTE_PUBLIC))
+		return TRUE;
+	*/
+	return FALSE;
+}
+
 static LLVMValueRef
 get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
 {
 	LLVMValueRef callee;
 	char *callee_name = NULL;
 
-	if (ctx->module->static_link && ctx->module->assembly->image != mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL) {
-		MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
-		g_assert (info);
+	if (ctx->module->static_link && ctx->module->assembly->image != mono_get_corlib ()) {
+		if (type == MONO_PATCH_INFO_JIT_ICALL) {
+			MonoJitICallInfo *info = mono_find_jit_icall_by_name ((const char*)data);
+			g_assert (info);
 
-		if (info->func != info->wrapper) {
-			type = MONO_PATCH_INFO_METHOD;
-			data = mono_icall_get_wrapper_method (info);
-			callee_name = mono_aot_get_mangled_method_name ((MonoMethod*)data);
+			if (info->func != info->wrapper) {
+				type = MONO_PATCH_INFO_METHOD;
+				data = mono_icall_get_wrapper_method (info);
+				callee_name = mono_aot_get_mangled_method_name ((MonoMethod*)data);
+			}
+		} else if (type == MONO_PATCH_INFO_METHOD) {
+			MonoMethod *method = (MonoMethod*)data;
+			if (m_class_get_image (method->klass) != ctx->module->assembly->image && method_is_direct_callable (method))
+				callee_name = mono_aot_get_mangled_method_name (method);
 		}
 	}
 
@@ -7414,7 +7439,7 @@ free_ctx (EmitContext *ctx)
 static gboolean
 is_externally_callable (EmitContext *ctx, MonoMethod *method)
 {
-	if (ctx->module->llvm_only && ctx->module->static_link && method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
+	if (ctx->module->llvm_only && ctx->module->static_link && (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE || method_is_direct_callable (method)))
 		return TRUE;
 	return FALSE;
 }
@@ -7514,8 +7539,27 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				if (LLVMGetInstructionParent (v) == NULL)
 					LLVMInsertIntoBuilder (builder, v);
 			}
-		
-			LLVMDeleteFunction (ctx->lmethod);
+
+			if (ctx->module->llvm_only && ctx->module->static_link) {
+				// Keep a stub for the function since it might be called directly
+				int nbbs = LLVMCountBasicBlocks (ctx->lmethod);
+				LLVMBasicBlockRef *bblocks = g_new0 (LLVMBasicBlockRef, nbbs);
+				LLVMGetBasicBlocks (ctx->lmethod, bblocks);
+				for (int i = 0; i < nbbs; ++i)
+					LLVMDeleteBasicBlock (bblocks [i]);
+
+				LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock (ctx->lmethod, "ENTRY");
+				builder = create_builder (ctx);
+				LLVMPositionBuilderAtEnd (builder, entry_bb);
+				ctx->builder = builder;
+
+				LLVMTypeRef sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
+				LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mini_llvmonly_throw_nullref_exception");
+				emit_call (ctx, cfg->bb_entry, &builder, callee, NULL, 0);
+				LLVMBuildUnreachable (builder);
+			} else {
+				LLVMDeleteFunction (ctx->lmethod);
+			}
 		}
 	}
 
@@ -9342,11 +9386,7 @@ mono_llvm_fixup_aot_module (void)
 		LLVMValueRef indexes [2], got_entry_addr, load;
 		char *name;
 
-		/*
-		 * FIXME: Support inflated methods, it asserts in mono_aot_init_gshared_method_this () because the method is not in
-		 * amodule->extra_methods.
-		 */
-		if (lmethod && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) && !method->is_inflated) {
+		if (lmethod && !(method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)) {
 			mono_llvm_replace_uses_of (placeholder, lmethod);
 			g_hash_table_insert (patches_to_null, site->ji, site->ji);
 		} else {
