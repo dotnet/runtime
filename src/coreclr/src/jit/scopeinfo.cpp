@@ -301,14 +301,17 @@ void CodeGenInterface::siVarLoc::siFillStackVarLoc(
             // size is not 1, 2, 4 or 8 bytes in size. During fgMorph, the compiler modifies
             // the IR to comply with the ABI and therefore changes the type of the lclVar
             // that holds the struct from TYP_STRUCT to TYP_BYREF but it gives us a hint that
-            // this is still a struct by setting the lvIsTemp flag.
+            // this is still a struct by setting the lvIsImplicitByref flag.
             // The same is true for ARM64 and structs > 16 bytes.
-            // (See Compiler::fgMarkImplicitByRefArgs in Morph.cpp for further detail)
+            //
+            // See lvaSetStruct for further detail.
+            //
             // Now, the VM expects a special enum for these type of local vars: VLT_STK_BYREF
             // to accomodate for this situation.
-            if (varDsc->lvType == TYP_BYREF && varDsc->lvIsTemp)
+            if (varDsc->lvIsImplicitByRef)
             {
                 assert(varDsc->lvIsParam);
+                assert(varDsc->lvType == TYP_BYREF);
                 this->vlType = VLT_STK_BYREF;
             }
             else
