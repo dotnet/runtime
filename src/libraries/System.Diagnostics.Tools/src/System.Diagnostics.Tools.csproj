@@ -4,6 +4,7 @@
     <AssemblyName>System.Diagnostics.Tools</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <DefineConstants>$(DefineConstants);SYSTEM_DIAGNOSTICS_TOOLS</DefineConstants>
+    <NullableContextOptions>enable</NullableContextOptions>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
