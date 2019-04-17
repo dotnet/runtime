@@ -81,7 +81,7 @@ if %errorlevel% EQU 0 (
     echo COREFX TEST %_t3% EXCLUDED
     set /A _skipped=_skipped + 1
 ) else (
-    call :run %1\RunTests.cmd %_runtime_path%
+    call :run %1\RunTests.cmd --runtime-path %_runtime_path%
 )
 goto :eof
 
