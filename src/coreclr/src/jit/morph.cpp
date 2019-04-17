@@ -4695,9 +4695,9 @@ GenTree* Compiler::fgMorphMultiregStructArg(GenTree* arg, fgArgTabEntry* fgEntry
             // We have a HFA struct.
             // Note that GetHfaType may not be the same as elemType, since TYP_SIMD8 is handled the same as TYP_DOUBLE.
             var_types useElemType = elemType;
-#ifdef _TARGET_ARM64_
+#if defined(_TARGET_ARM64_) & defined(FEATURE_SIMD)
             useElemType = (elemType == TYP_SIMD8) ? TYP_DOUBLE : useElemType;
-#endif // _TARGET_ARM64_
+#endif // _TARGET_ARM64_ && FEATURE_SIMD
             noway_assert(useElemType == varDsc->GetHfaType());
             noway_assert(elemSize == genTypeSize(elemType));
             noway_assert(elemCount == (varDsc->lvExactSize / elemSize));
