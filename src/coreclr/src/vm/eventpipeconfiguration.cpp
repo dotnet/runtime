@@ -319,7 +319,8 @@ EventPipeSession *EventPipeConfiguration::CreateSession(
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION((numProviders == 0) || (numProviders > 0 && pProviders != nullptr));
+        PRECONDITION(circularBufferSizeInMB > 0);
+        PRECONDITION(numProviders > 0 && pProviders != nullptr);
     }
     CONTRACTL_END;
 

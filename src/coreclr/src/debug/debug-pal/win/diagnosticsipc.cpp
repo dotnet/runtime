@@ -73,7 +73,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
     return new IpcStream(hPipe);
 }
 
-void IpcStream::DiagnosticsIpc::Unlink(ErrorCallback callback)
+void IpcStream::DiagnosticsIpc::Unlink(ErrorCallback)
 {
 }
 

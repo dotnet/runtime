@@ -12,9 +12,9 @@ class EventPipeSessionProvider;
 
 enum class EventPipeSessionType
 {
-    File,
-    Streaming,
-    IpcStream
+    File,       // EventToFile
+    Streaming,  // EventToEventListener
+    IpcStream   // EventToIpc
 };
 
 class EventPipeSession
