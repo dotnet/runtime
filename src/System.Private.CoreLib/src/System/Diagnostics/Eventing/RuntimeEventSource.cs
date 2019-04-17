@@ -43,13 +43,13 @@ namespace System.Diagnostics.Tracing
                 // overhead by at all times even when counters aren't enabled.
 
                 // On disable, PollingCounters will stop polling for values so it should be fine to leave them around.
-                _cpuTimeCounter = _cpuTimeCounter ?? new PollingCounter("CPU Usage", this, () => RuntimeEventSourceHelper.GetCpuUsage());
-                _workingSetCounter = _workingSetCounter ?? new PollingCounter("Working Set", this, () => Environment.WorkingSet);
-                _gcHeapSizeCounter = _gcHeapSizeCounter ?? new PollingCounter("GC Heap Size", this, () => GC.GetTotalMemory(false));
-                _gen0GCCounter = _gen0GCCounter ?? new IncrementingPollingCounter("Gen 0 GC Count", this, () => GC.CollectionCount(0));
-                _gen1GCCounter = _gen1GCCounter ?? new IncrementingPollingCounter("Gen 1 GC Count", this, () => GC.CollectionCount(1));
-                _gen2GCCounter = _gen2GCCounter ?? new IncrementingPollingCounter("Gen 2 GC Count", this, () => GC.CollectionCount(2));
-                _exceptionCounter = _exceptionCounter ?? new IncrementingPollingCounter("Exception Count", this, () => Exception.GetExceptionCount());
+                _cpuTimeCounter = _cpuTimeCounter ?? new PollingCounter("cpu-usage", this, () => RuntimeEventSourceHelper.GetCpuUsage()) { DisplayName = "CPU Usage" };
+                _workingSetCounter = _workingSetCounter ?? new PollingCounter("working-set", this, () => (double)(Environment.WorkingSet / 1000000)) { DisplayName = "Working Set" };
+                _gcHeapSizeCounter = _gcHeapSizeCounter ?? new PollingCounter("gc-heap-size", this, () => (double)(GC.GetTotalMemory(false) / 1000000)) { DisplayName = "GC Heap Size" };
+                _gen0GCCounter = _gen0GCCounter ?? new IncrementingPollingCounter("gen-0-gc-count", this, () => GC.CollectionCount(0)) { DisplayName = "Gen 0 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
+                _gen1GCCounter = _gen1GCCounter ?? new IncrementingPollingCounter("gen-1-gc-count", this, () => GC.CollectionCount(1)) { DisplayName = "Gen 1 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
+                _gen2GCCounter = _gen2GCCounter ?? new IncrementingPollingCounter("gen-2-gc-count", this, () => GC.CollectionCount(2)) { DisplayName = "Gen 2 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
+                _exceptionCounter = _exceptionCounter ?? new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
             }
         }
     }
