@@ -75,8 +75,8 @@ void copyFlags(GenTree* dst, GenTree* src, unsigned mask)
 void Rationalizer::RewriteSIMDOperand(LIR::Use& use, bool keepBlk)
 {
 #ifdef FEATURE_SIMD
-    // No lowering is needed for non-SIMD nodes, so early out if featureSIMD is not enabled.
-    if (!comp->featureSIMD)
+    // No lowering is needed for non-SIMD nodes, so early out if SIMD types are not supported.
+    if (!comp->supportSIMDTypes())
     {
         return;
     }
