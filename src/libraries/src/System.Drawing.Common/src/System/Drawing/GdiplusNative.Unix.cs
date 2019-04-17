@@ -32,7 +32,13 @@ namespace System.Drawing
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
                     libraryName = "libgdiplus.dylib";
+
+#if netcoreapp20
                     lib = Interop.Libdl.dlopen(libraryName, Interop.Libdl.RTLD_LAZY);
+#else // use managed NativeLibrary API from .NET Core 3 onwards
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    NativeLibrary.TryLoad(libraryName, assembly, default, out lib);
+#endif
                 }
                 else
                 {
@@ -41,13 +47,23 @@ namespace System.Drawing
                     // a global configuration setting. We prefer the "unversioned" shared object name, and fallback to
                     // the name suffixed with ".0".
                     libraryName = "libgdiplus.so";
+
+#if netcoreapp20
                     lib = Interop.Libdl.dlopen(libraryName, Interop.Libdl.RTLD_LAZY);
                     if (lib == IntPtr.Zero)
                     {
                         lib = Interop.Libdl.dlopen("libgdiplus.so.0", Interop.Libdl.RTLD_LAZY);
                     }
+#else // use managed NativeLibrary API from .NET Core 3 onwards
+                    var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+                    if (!NativeLibrary.TryLoad(libraryName, assembly, default, out lib))
+                    {
+                         NativeLibrary.TryLoad("libgdiplus.so.0", assembly, default, out lib);
+                    }
+#endif
                 }
 
+#if netcoreapp20
                 // If we couldn't find libgdiplus in the system search path, try to look for libgdiplus in the
                 // NuGet package folders. This matches the DllImport behavior.
                 if (lib == IntPtr.Zero)
@@ -59,20 +75,18 @@ namespace System.Drawing
                         var searchPath = Path.Combine(searchDirectory, libraryName);
 
                         lib = Interop.Libdl.dlopen(searchPath, Interop.Libdl.RTLD_LAZY);
-
                         if (lib != IntPtr.Zero)
                         {
                             break;
                         }
                     }
                 }
+#endif
 
                 // This function may return a null handle. If it does, individual functions loaded from it will throw a DllNotFoundException,
                 // but not until an attempt is made to actually use the function (rather than load it). This matches how PInvokes behave.
                 return lib;
             }
-
-            private static IntPtr LoadFunctionPointer(IntPtr nativeLibraryHandle, string functionName) => Interop.Libdl.dlsym(nativeLibraryHandle, functionName);
 
             private static void PlatformInitialize()
             {
