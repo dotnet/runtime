@@ -10204,7 +10204,7 @@ var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
     {
 #ifdef FEATURE_HFA
         CorInfoType corType = info.compCompHnd->getHFAType(hClass);
-#ifdef _TARGET_ARM64_
+#if defined(_TARGET_ARM64_) && defined(FEATURE_SIMD)
         if (corType == CORINFO_TYPE_VALUECLASS)
         {
             // This is a vector type.
@@ -10215,7 +10215,7 @@ var_types Compiler::GetHfaType(CORINFO_CLASS_HANDLE hClass)
             compFloatingPointUsed = true;
         }
         else
-#endif // _TARGET_ARM64_
+#endif // _TARGET_ARM64_ && FEATURE_SIMD
             if (corType != CORINFO_TYPE_UNDEF)
         {
             result = JITtype2varType(corType);
