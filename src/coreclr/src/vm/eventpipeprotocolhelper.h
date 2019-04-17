@@ -16,10 +16,8 @@ class EventPipeProtocolHelper
 {
 public:
     // IPC event handlers.
-    static void EnableFileTracingEventHandler(IpcStream *pStream);
-    static void DisableFileTracingEventHandler(IpcStream *pStream);
-
-    static void AttachTracingEventHandler(IpcStream *pStream);
+    static void StopTracing(IpcStream *pStream);
+    static void CollectTracing(IpcStream *pStream); // `dotnet-trace collect`
 
 private:
     const static uint32_t DefaultCircularBufferMB = 1024; // 1 GB

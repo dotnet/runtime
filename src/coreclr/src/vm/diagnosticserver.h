@@ -18,11 +18,9 @@ enum class DiagnosticMessageType : uint32_t
 
     ///////////////////////////////////////////////////////////////////////////
     // EventPipe
-    EnableEventPipe = 1024,
-    DisableEventPipe,
-    StreamEventPipe,
-    AttachEventPipe,
-    DetachEventPipe,
+    StartEventPipeTracing = 1024, // To file
+    StopEventPipeTracing,
+    CollectEventPipeTracing, // To IPC
 
     ///////////////////////////////////////////////////////////////////////////
     // Profiler = 2048
