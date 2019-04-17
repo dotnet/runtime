@@ -4710,7 +4710,6 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				addr = (char*)o + field->offset;
 
 			sp [-1].data.p = vt_sp;
-			memcpy(sp [-1].data.p, (char *)o + * (guint16 *)(ip + 1), i32);
 			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 			memcpy(sp [-1].data.p, addr, i32);
 			MINT_IN_BREAK;
@@ -4802,7 +4801,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 #ifndef DISABLE_REMOTING
 			if (mono_object_is_transparent_proxy (o)) {
 				MonoClass *klass = ((MonoTransparentProxy*)o)->remote_class->proxy_class;
-				mono_store_remote_field_checked (o, klass, field, &sp [-1].data, error);
+				mono_store_remote_field_checked (o, klass, field, sp [-1].data.p, error);
 				mono_error_cleanup (error); /* FIXME: don't swallow the error */
 			} else
 #endif
