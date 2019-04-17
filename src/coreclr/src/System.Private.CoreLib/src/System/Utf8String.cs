@@ -84,25 +84,6 @@ namespace System
             }
         }
 
-        /// <summary>
-        /// Gets the <see cref="Char8"/> at the specified position.
-        /// </summary>
-        public Char8 this[Index index]
-        {
-            get
-            {
-                // Just like String, we don't allow indexing into the null terminator itself.
-
-                int actualIndex = index.GetOffset(Length);
-                return this[actualIndex];
-            }
-        }
-
-        /// <summary>
-        /// Gets a substring of this <see cref="Utf8String"/> based on the provided <paramref name="range"/>.
-        /// </summary>
-        public Utf8String this[Range range] => Substring(range);
-
         /*
          * METHODS
          */
