@@ -65,6 +65,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\VerboseTestLogging.cs">
       <Link>Common\System\Net\VerboseTestLogging.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackProxyServer.cs">
+      <Link>Common\System\Net\Http\LoopbackProxyServer.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.cs">
       <Link>Common\System\Net\Http\LoopbackServer.cs</Link>
     </Compile>
@@ -120,7 +123,6 @@
     <Compile Include="HttpProtocolTests.cs" />
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
-    <Compile Include="LoopbackProxyServer.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />

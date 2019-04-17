@@ -28,6 +28,9 @@
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.WebSockets.cs">
       <Link>Common\System\Net\Configuration.WebSockets.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackProxyServer.cs">
+      <Link>Common\System\Net\Http\LoopbackProxyServer.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackServer.cs">
       <Link>Common\System\Net\Http\LoopbackServer.cs</Link>
     </Compile>
