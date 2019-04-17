@@ -1680,20 +1680,6 @@ namespace System
             return InternalSubString(startIndex, length);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public string Substring(Index startIndex)
-        {
-            int actualIndex = startIndex.GetOffset(Length);
-            return Substring(actualIndex);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public string Substring(Range range)
-        {
-            (int start, int length) = range.GetOffsetAndLength(Length);
-            return Substring(start, length);
-        }
-
         private unsafe string InternalSubString(int startIndex, int length)
         {
             Debug.Assert(startIndex >= 0 && startIndex <= this.Length, "StartIndex is out of range!");

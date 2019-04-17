@@ -282,35 +282,6 @@ namespace System
         }
 
         /// <summary>
-        /// Forms a slice out of the given memory, beginning at 'startIndex'
-        /// </summary>
-        /// <param name="startIndex">The index at which to begin this slice.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Memory<T> Slice(Index startIndex)
-        {
-            int actualIndex = startIndex.GetOffset(_length);
-            return Slice(actualIndex);
-        }
-
-        /// <summary>
-        /// Forms a slice out of the given memory using the range start and end indexes.
-        /// </summary>
-        /// <param name="range">The range used to slice the memory using its start and end indexes.</param>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Memory<T> Slice(Range range)
-        {
-            (int start, int length) = range.GetOffsetAndLength(_length);
-            // It is expected for _index + start to be negative if the memory is already pre-pinned.
-            return new Memory<T>(_object, _index + start, length);
-        }
-
-        /// <summary>
-        /// Forms a slice out of the given memory using the range start and end indexes.
-        /// </summary>
-        /// <param name="range">The range used to slice the memory using its start and end indexes.</param>
-        public Memory<T> this[Range range] => Slice(range);
-
-        /// <summary>
         /// Returns a span from the memory.
         /// </summary>
         public unsafe Span<T> Span
