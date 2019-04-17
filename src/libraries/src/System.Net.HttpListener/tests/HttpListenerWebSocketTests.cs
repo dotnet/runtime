@@ -172,6 +172,7 @@ namespace System.Net.Tests
             yield return new object[] { WebSocketCloseStatus.MandatoryExtension, "StatusDescription", WebSocketCloseStatus.MandatoryExtension };
         }
 
+        [ActiveIssue(36963)]
         [ConditionalTheory(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue(20396, TestPlatforms.AnyUnix)]
         [MemberData(nameof(CloseStatus_Valid_TestData))]
         public async Task CloseOutputAsync_HandshakeStartedFromClient_Success(WebSocketCloseStatus status, string statusDescription, WebSocketCloseStatus expectedCloseStatus)
