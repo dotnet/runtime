@@ -20,7 +20,7 @@ namespace System.Threading
             return (int)_flags + _readerLevel + _writerLevel + _threadID;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is LockCookie && Equals((LockCookie)obj);
         }

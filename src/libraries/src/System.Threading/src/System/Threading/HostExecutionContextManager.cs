@@ -12,9 +12,9 @@ namespace System.Threading
         /// separating itself from the <see cref="ExecutionContext"/> to minimize unnecessary additions there.
         /// </summary>
         [ThreadStatic]
-        private static HostExecutionContext t_currentContext;
+        private static HostExecutionContext? t_currentContext;
 
-        public virtual HostExecutionContext Capture()
+        public virtual HostExecutionContext? Capture()
         {
             // Not hosted, so always capture null
             return null;
@@ -55,7 +55,7 @@ namespace System.Threading
         private sealed class HostExecutionContextSwitcher
         {
             public readonly HostExecutionContext _currentContext;
-            public AsyncLocal<bool> _asyncLocal;
+            public AsyncLocal<bool>? _asyncLocal;
 
             public HostExecutionContextSwitcher(HostExecutionContext currentContext)
             {

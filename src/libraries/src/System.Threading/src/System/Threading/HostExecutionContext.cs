@@ -10,12 +10,12 @@ namespace System.Threading
         {
         }
 
-        public HostExecutionContext(object state)
+        public HostExecutionContext(object? state)
         {
             State = state;
         }
 
-        protected internal object State
+        protected internal object? State
         {
             get;
             set;
