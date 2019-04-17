@@ -18,7 +18,6 @@ class EventPipeProvider
     // Declare friends.
     friend class EventPipe;
     friend class EventPipeConfiguration;
-    friend class SampleProfiler;
 
 private:
     // The name of the provider.
