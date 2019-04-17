@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Resources;
 using System.Runtime.CompilerServices;
 
@@ -18,14 +19,14 @@ namespace System
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool UsingResourceKeys() => false;
 
-        internal static string GetResourceString(string resourceKey, string defaultString = null)
+        internal static string GetResourceString(string resourceKey, string? defaultString = null)
         {
             if (UsingResourceKeys())
             {
                 return defaultString ?? resourceKey;
             }
 
-            string resourceString = null;
+            string? resourceString = null;
             try
             {
                 resourceString = ResourceManager.GetString(resourceKey);
@@ -37,10 +38,10 @@ namespace System
                 return defaultString;
             }
 
-            return resourceString;
+            return resourceString!; // only null if missing resources
         }
 
-        internal static string Format(string resourceFormat, object p1)
+        internal static string Format(string resourceFormat, object? p1)
         {
             if (UsingResourceKeys())
             {
@@ -50,7 +51,7 @@ namespace System
             return string.Format(resourceFormat, p1);
         }
 
-        internal static string Format(string resourceFormat, object p1, object p2)
+        internal static string Format(string resourceFormat, object? p1, object? p2)
         {
             if (UsingResourceKeys())
             {
@@ -60,7 +61,7 @@ namespace System
             return string.Format(resourceFormat, p1, p2);
         }
 
-        internal static string Format(string resourceFormat, object p1, object p2, object p3)
+        internal static string Format(string resourceFormat, object? p1, object? p2, object? p3)
         {
             if (UsingResourceKeys())
             {
@@ -70,7 +71,7 @@ namespace System
             return string.Format(resourceFormat, p1, p2, p3);
         }
 
-        internal static string Format(string resourceFormat, params object[] args)
+        internal static string Format(string resourceFormat, params object?[]? args)
         {
             if (args != null)
             {
@@ -85,7 +86,7 @@ namespace System
             return resourceFormat;
         }
 
-        internal static string Format(IFormatProvider provider, string resourceFormat, object p1)
+        internal static string Format(IFormatProvider? provider, string resourceFormat, object? p1)
         {
             if (UsingResourceKeys())
             {
@@ -95,7 +96,7 @@ namespace System
             return string.Format(provider, resourceFormat, p1);
         }
 
-        internal static string Format(IFormatProvider provider, string resourceFormat, object p1, object p2)
+        internal static string Format(IFormatProvider? provider, string resourceFormat, object? p1, object? p2)
         {
             if (UsingResourceKeys())
             {
@@ -105,7 +106,7 @@ namespace System
             return string.Format(provider, resourceFormat, p1, p2);
         }
 
-        internal static string Format(IFormatProvider provider, string resourceFormat, object p1, object p2, object p3)
+        internal static string Format(IFormatProvider? provider, string resourceFormat, object? p1, object? p2, object? p3)
         {
             if (UsingResourceKeys())
             {
@@ -115,7 +116,7 @@ namespace System
             return string.Format(provider, resourceFormat, p1, p2, p3);
         }
 
-        internal static string Format(IFormatProvider provider, string resourceFormat, params object[] args)
+        internal static string Format(IFormatProvider? provider, string resourceFormat, params object?[]? args)
         {
             if (args != null)
             {

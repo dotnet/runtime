@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Globalization;
@@ -30,7 +29,7 @@ namespace System.CodeDom.Compiler
 
         public override Encoding Encoding => _writer.Encoding;
 
-        public override string NewLine
+        public override string? NewLine // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
         {
             get { return _writer.NewLine; }
             set { _writer.NewLine = value; }
@@ -60,7 +59,7 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        public override void Write(string s)
+        public override void Write(string? s)
         {
             OutputTabs();
             _writer.Write(s);
@@ -78,7 +77,7 @@ namespace System.CodeDom.Compiler
             _writer.Write(value);
         }
 
-        public override void Write(char[] buffer)
+        public override void Write(char[]? buffer)
         {
             OutputTabs();
             _writer.Write(buffer);
@@ -114,36 +113,36 @@ namespace System.CodeDom.Compiler
             _writer.Write(value);
         }
 
-        public override void Write(object value)
+        public override void Write(object? value)
         {
             OutputTabs();
             _writer.Write(value);
         }
 
-        public override void Write(string format, object arg0)
+        public override void Write(string format, object? arg0)
         {
             OutputTabs();
             _writer.Write(format, arg0);
         }
 
-        public override void Write(string format, object arg0, object arg1)
+        public override void Write(string format, object? arg0, object? arg1)
         {
             OutputTabs();
             _writer.Write(format, arg0, arg1);
         }
 
-        public override void Write(string format, params object[] arg)
+        public override void Write(string format, params object?[] arg)
         {
             OutputTabs();
             _writer.Write(format, arg);
         }
 
-        public void WriteLineNoTabs(string s)
+        public void WriteLineNoTabs(string? s)
         {
             _writer.WriteLine(s);
         }
 
-        public override void WriteLine(string s)
+        public override void WriteLine(string? s)
         {
             OutputTabs();
             _writer.WriteLine(s);
@@ -171,7 +170,7 @@ namespace System.CodeDom.Compiler
             _tabsPending = true;
         }
 
-        public override void WriteLine(char[] buffer)
+        public override void WriteLine(char[]? buffer)
         {
             OutputTabs();
             _writer.WriteLine(buffer);
@@ -213,28 +212,28 @@ namespace System.CodeDom.Compiler
             _tabsPending = true;
         }
 
-        public override void WriteLine(object value)
+        public override void WriteLine(object? value)
         {
             OutputTabs();
             _writer.WriteLine(value);
             _tabsPending = true;
         }
 
-        public override void WriteLine(string format, object arg0)
+        public override void WriteLine(string format, object? arg0)
         {
             OutputTabs();
             _writer.WriteLine(format, arg0);
             _tabsPending = true;
         }
 
-        public override void WriteLine(string format, object arg0, object arg1)
+        public override void WriteLine(string format, object? arg0, object? arg1)
         {
             OutputTabs();
             _writer.WriteLine(format, arg0, arg1);
             _tabsPending = true;
         }
 
-        public override void WriteLine(string format, params object[] arg)
+        public override void WriteLine(string format, params object?[] arg)
         {
             OutputTabs();
             _writer.WriteLine(format, arg);
