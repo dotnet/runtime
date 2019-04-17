@@ -53,12 +53,12 @@ public:
 class IpcStreamWriter final : public StreamWriter
 {
 public:
-    IpcStreamWriter(IpcStream *pStream);
+    IpcStreamWriter(uint64_t id, IpcStream *pStream);
     ~IpcStreamWriter();
     bool Write(const void *lpBuffer, const uint32_t nBytesToWrite, uint32_t &nBytesWritten) const;
 
 private:
-    IpcStream *const _pStream;
+    IpcStream *_pStream;
 };
 
 //!

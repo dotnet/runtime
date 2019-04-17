@@ -21,6 +21,7 @@ class MethodDesc;
 struct EventPipeProviderConfiguration;
 class EventPipeSession;
 class IpcStream;
+enum class EventPipeSessionType;
 
 // EVENT_FILTER_DESCRIPTOR (This type does not exist on non-Windows platforms.)
 //  https://docs.microsoft.com/en-us/windows/desktop/api/evntprov/ns-evntprov-_event_filter_descriptor
@@ -28,6 +29,7 @@ class IpcStream;
 //  determines which events are reported and traced. The structure gives the
 //  event provider greater control over the selection of events for reporting
 //  and tracing.
+// TODO: EventFilterDescriptor and EventData (defined below) are the same.
 struct EventFilterDescriptor
 {
     // A pointer to the filter data.
@@ -231,7 +233,6 @@ public:
 };
 
 typedef UINT64 EventPipeSessionID;
-typedef void (*FlushTimerCallback)();
 
 class EventPipe
 {
@@ -255,14 +256,9 @@ public:
         uint32_t circularBufferSizeInMB,
         uint64_t profilerSamplingRateInNanoseconds,
         const EventPipeProviderConfiguration *pProviders,
-        uint32_t numProviders);
-
-    static EventPipeSessionID Enable(
-        IpcStream *pStream,
-        uint32_t circularBufferSizeInMB,
-        uint64_t profilerSamplingRateInNanoseconds,
-        const EventPipeProviderConfiguration *pProviders,
-        uint32_t numProviders);
+        uint32_t numProviders,
+        EventPipeSessionType sessionType,
+        IpcStream *const pStream);
 
     // Disable tracing via the event pipe.
     static void Disable(EventPipeSessionID id);
@@ -311,12 +307,12 @@ private:
 
     // Enable the specified EventPipe session.
     static EventPipeSessionID Enable(
+        LPCWSTR strOutputPath,
         EventPipeSession *const pSession,
-        WAITORTIMERCALLBACK callback = nullptr,
-        DWORD dueTime = 0,
-        DWORD period = 0);
+        EventPipeSessionType sessionType,
+        IpcStream *const pStream);
 
-    static void CreateFlushTimerCallback(WAITORTIMERCALLBACK Callback, DWORD DueTime, DWORD Period);
+    static void CreateFlushTimerCallback();
 
     static void DeleteFlushTimerCallback();
 
