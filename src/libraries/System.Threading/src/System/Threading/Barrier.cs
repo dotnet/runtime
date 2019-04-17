@@ -28,7 +28,7 @@ namespace System.Threading
         /// Initializes a new instance of the <see cref="BarrierPostPhaseException"/> class.
         /// </summary>
         public BarrierPostPhaseException()
-            : this((string)null)
+            : this((string?)null)
         {
         }
 
@@ -36,7 +36,7 @@ namespace System.Threading
         /// Initializes a new instance of the <see cref="BarrierPostPhaseException"/> class with the specified inner exception.
         /// </summary>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
-        public BarrierPostPhaseException(Exception innerException)
+        public BarrierPostPhaseException(Exception? innerException)
             : this(null, innerException)
         {
         }
@@ -45,7 +45,7 @@ namespace System.Threading
         /// Initializes a new instance of the <see cref="BarrierPostPhaseException"/> class with a specified error message.
         /// </summary>
         /// <param name="message">A string that describes the exception.</param>
-        public BarrierPostPhaseException(string message)
+        public BarrierPostPhaseException(string? message)
             : this(message, null)
         {
         }
@@ -55,7 +55,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="message">A string that describes the exception.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
-        public BarrierPostPhaseException(string message, Exception innerException)
+        public BarrierPostPhaseException(string? message, Exception? innerException)
             : base(message == null ? SR.BarrierPostPhaseException : message, innerException)
         {
         }
@@ -130,16 +130,16 @@ namespace System.Threading
         private ManualResetEventSlim _evenEvent;
 
         // The execution context of the creator thread
-        private ExecutionContext _ownerThreadContext;
+        private ExecutionContext? _ownerThreadContext;
 
         // The EC callback that invokes the post phase action
-        private static ContextCallback s_invokePostPhaseAction;
+        private static ContextCallback? s_invokePostPhaseAction;
 
         // Post phase action after each phase
-        private Action<Barrier> _postPhaseAction;
+        private Action<Barrier>? _postPhaseAction;
 
         // In case the post phase action throws an exception, wraps it in BarrierPostPhaseException
-        private Exception _exception;
+        private Exception? _exception;
 
         // This is the ManagedThreadID of the postPhaseAction caller thread, this is used to determine if the SignalAndWait, Dispose or Add/RemoveParticipant caller thread is
         // the same thread as the postPhaseAction thread which means this method was called from the postPhaseAction which is illegal.
@@ -213,7 +213,7 @@ namespace System.Threading
         /// will not be released to the next phase until the postPhaseAction delegate
         /// has completed execution.
         /// </remarks>
-        public Barrier(int participantCount, Action<Barrier> postPhaseAction)
+        public Barrier(int participantCount, Action<Barrier>? postPhaseAction)
         {
             // the count must be non negative value
             if (participantCount < 0 || participantCount > MAX_PARTICIPANTS)
@@ -766,7 +766,7 @@ namespace System.Threading
                     {
                         var currentContext = _ownerThreadContext;
 
-                        ContextCallback handler = s_invokePostPhaseAction;
+                        ContextCallback? handler = s_invokePostPhaseAction;
                         if (handler == null)
                         {
                             s_invokePostPhaseAction = handler = InvokePostPhaseAction;
@@ -802,10 +802,10 @@ namespace System.Threading
         /// Helper method to call the post phase action
         /// </summary>
         /// <param name="obj"></param>
-        private static void InvokePostPhaseAction(object obj)
+        private static void InvokePostPhaseAction(object? obj)
         {
-            var thisBarrier = (Barrier)obj;
-            thisBarrier._postPhaseAction(thisBarrier);
+            var thisBarrier = (Barrier)obj!;
+            thisBarrier._postPhaseAction!(thisBarrier);
         }
 
         /// <summary>
