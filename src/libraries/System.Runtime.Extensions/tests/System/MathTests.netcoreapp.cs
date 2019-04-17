@@ -599,7 +599,7 @@ namespace System.Tests
         [InlineData(-0.0, 0.0, 0.0)]
         [InlineData(2.0, -3.0, -3.0)]
         [InlineData(3.0, -2.0, 3.0)]
-        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
         public static void MaxMagnitude(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.MaxMagnitude(x, y), 0.0);
@@ -612,7 +612,7 @@ namespace System.Tests
         [InlineData(-0.0, 0.0, -0.0)]
         [InlineData(2.0, -3.0, 2.0)]
         [InlineData(3.0, -2.0, -2.0)]
-        [InlineData(double.PositiveInfinity, double.NaN, double.PositiveInfinity)]
+        [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
         public static void MinMagnitude(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.MinMagnitude(x, y), 0.0);
