@@ -2877,14 +2877,16 @@ mono_reflection_marshal_as_attribute_from_marshal_spec (MonoDomain *domain, Mono
 	switch (utype) {
 	case MONO_NATIVE_LPARRAY:
 		MONO_HANDLE_SETVAL (minfo, array_subtype, guint32, spec->data.array_data.elem_type);
-		MONO_HANDLE_SETVAL (minfo, size_const, gint32, spec->data.array_data.num_elem);
+		if (spec->data.array_data.num_elem != -1)
+			MONO_HANDLE_SETVAL (minfo, size_const, gint32, spec->data.array_data.num_elem);
 		if (spec->data.array_data.param_num != -1)
 			MONO_HANDLE_SETVAL (minfo, size_param_index, gint16, spec->data.array_data.param_num);
 		break;
 
 	case MONO_NATIVE_BYVALTSTR:
 	case MONO_NATIVE_BYVALARRAY:
-		MONO_HANDLE_SETVAL (minfo, size_const, gint32, spec->data.array_data.num_elem);
+		if (spec->data.array_data.num_elem != -1)
+			MONO_HANDLE_SETVAL (minfo, size_const, gint32, spec->data.array_data.num_elem);
 		break;
 
 	case MONO_NATIVE_CUSTOM:
