@@ -12991,24 +12991,31 @@ DONE_MORPHING_CHILDREN:
                     op1->gtOp.gtOp2->gtOper == GT_CNS_INT && op2->gtOp.gtOp2->gtOper == GT_CNS_INT &&
                     !op1->gtOverflow() && !op2->gtOverflow())
                 {
-                    cns1 = op1->gtOp.gtOp2;
-                    cns2 = op2->gtOp.gtOp2;
-                    cns1->gtIntCon.gtIconVal += cns2->gtIntCon.gtIconVal;
-#ifdef _TARGET_64BIT_
-                    if (cns1->TypeGet() == TYP_INT)
+                    // Don't create a byref pointer that may point outside of the ref object.
+                    // If a GC happens, the byref won't get updated. This can happen if one
+                    // of the int components is negative. It also requires the address generation
+                    // be in a fully-interruptible code region.
+                    if (!varTypeIsGC(op1->gtOp.gtOp1->TypeGet()) && !varTypeIsGC(op2->gtOp.gtOp1->TypeGet()))
                     {
-                        // we need to properly re-sign-extend or truncate after adding two int constants above
-                        cns1->AsIntCon()->TruncateOrSignExtend32();
-                    }
+                        cns1 = op1->gtOp.gtOp2;
+                        cns2 = op2->gtOp.gtOp2;
+                        cns1->gtIntCon.gtIconVal += cns2->gtIntCon.gtIconVal;
+#ifdef _TARGET_64BIT_
+                        if (cns1->TypeGet() == TYP_INT)
+                        {
+                            // we need to properly re-sign-extend or truncate after adding two int constants above
+                            cns1->AsIntCon()->TruncateOrSignExtend32();
+                        }
 #endif //_TARGET_64BIT_
 
-                    tree->gtOp.gtOp2 = cns1;
-                    DEBUG_DESTROY_NODE(cns2);
+                        tree->gtOp.gtOp2 = cns1;
+                        DEBUG_DESTROY_NODE(cns2);
 
-                    op1->gtOp.gtOp2 = op2->gtOp.gtOp1;
-                    op1->gtFlags |= (op1->gtOp.gtOp2->gtFlags & GTF_ALL_EFFECT);
-                    DEBUG_DESTROY_NODE(op2);
-                    op2 = tree->gtOp.gtOp2;
+                        op1->gtOp.gtOp2 = op2->gtOp.gtOp1;
+                        op1->gtFlags |= (op1->gtOp.gtOp2->gtFlags & GTF_ALL_EFFECT);
+                        DEBUG_DESTROY_NODE(op2);
+                        op2 = tree->gtOp.gtOp2;
+                    }
                 }
 
                 if (op2->IsCnsIntOrI() && varTypeIsIntegralOrI(typ))
@@ -14036,39 +14043,36 @@ GenTree* Compiler::fgMorphSmpOpOptional(GenTreeOp* tree)
     if (fgGlobalMorph && (oper == GT_ADD) && !tree->gtOverflow() && (op1->gtOper == GT_ADD) && !op1->gtOverflow() &&
         varTypeIsIntegralOrI(typ))
     {
+        GenTree* ad1 = op1->gtOp.gtOp1;
         GenTree* ad2 = op1->gtOp.gtOp2;
 
-        if (op2->OperIsConst() == 0 && ad2->OperIsConst() != 0)
+        if (!op2->OperIsConst() && ad2->OperIsConst())
         {
-            // This takes
-            //       + (tree)
-            //      / \.
-            //     /   \.
-            //    /     \.
-            //   + (op1) op2
-            //  / \.
-            //     \.
-            //     ad2
+            //  This takes
+            //        + (tree)
+            //       / \.
+            //      /   \.
+            //     /     \.
+            //    + (op1) op2
+            //   / \.
+            //  /   \.
+            // ad1  ad2
             //
-            // And it swaps ad2 and op2.  If (op2) is varTypeIsGC, then this implies that (tree) is
-            // varTypeIsGC.  If (op1) is not, then when we swap (ad2) and (op2), then we have a TYP_INT node
-            // (op1) with a child that is varTypeIsGC.  If we encounter that situation, make (op1) the same
-            // type as (tree).
-            //
-            // Also, if (ad2) is varTypeIsGC then (tree) must also be (since op1 is), so no fixing is
-            // necessary
+            // and it swaps ad2 and op2.
 
-            if (varTypeIsGC(op2->TypeGet()))
+            // Don't create a byref pointer that may point outside of the ref object.
+            // If a GC happens, the byref won't get updated. This can happen if one
+            // of the int components is negative. It also requires the address generation
+            // be in a fully-interruptible code region.
+            if (!varTypeIsGC(ad1->TypeGet()) && !varTypeIsGC(op2->TypeGet()))
             {
-                noway_assert(varTypeIsGC(typ));
-                op1->gtType = typ;
+                tree->gtOp2 = ad2;
+
+                op1->gtOp.gtOp2 = op2;
+                op1->gtFlags |= op2->gtFlags & GTF_ALL_EFFECT;
+
+                op2 = tree->gtOp2;
             }
-            tree->gtOp2 = ad2;
-
-            op1->gtOp.gtOp2 = op2;
-            op1->gtFlags |= op2->gtFlags & GTF_ALL_EFFECT;
-
-            op2 = tree->gtOp2;
         }
     }
 
