@@ -255,7 +255,19 @@ void Compiler::lvaInitTypeRef()
 
         lvaInitVarDsc(varDsc, varNum, corInfoType, typeHnd, localsSig, &info.compMethodInfo->locals);
 
-        varDsc->lvPinned  = ((corInfoTypeWithMod & CORINFO_TYPE_MOD_PINNED) != 0);
+        if ((corInfoTypeWithMod & CORINFO_TYPE_MOD_PINNED) != 0)
+        {
+            if ((corInfoType == CORINFO_TYPE_CLASS) || (corInfoType == CORINFO_TYPE_BYREF))
+            {
+                JITDUMP("Setting lvPinned for V%02u\n", varNum);
+                varDsc->lvPinned = 1;
+            }
+            else
+            {
+                JITDUMP("Ignoring pin for non-GC type V%02u\n", varNum);
+            }
+        }
+
         varDsc->lvOnFrame = true; // The final home for this local variable might be our local stack frame
 
         if (corInfoType == CORINFO_TYPE_CLASS)
