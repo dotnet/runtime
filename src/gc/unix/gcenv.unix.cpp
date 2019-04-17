@@ -88,8 +88,8 @@ FOR_ALL_NUMA_FUNCTIONS
 #define SYSCONF_GET_NUMPROCS _SC_NPROCESSORS_ONLN
 #endif
 
-// The cached number of logical CPUs observed.
-static uint32_t g_logicalCpuCount = 0;
+// The cached total number of CPUs that can be used in the OS.
+static uint32_t g_totalCpuCount = 0;
 
 // The cached number of CPUs available for the current process.
 static uint32_t g_currentProcessCpuCount = 0;
@@ -220,7 +220,7 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
-    g_logicalCpuCount = cpuCount;
+    g_totalCpuCount = cpuCount;
 
     //
     // support for FlusProcessWriteBuffers
@@ -289,7 +289,7 @@ bool GCToOSInterface::Initialize()
 
     if (st == 0)
     {
-        for (size_t i = 0; i < g_logicalCpuCount; i++)
+        for (size_t i = 0; i < g_totalCpuCount; i++)
         {
             if (CPU_ISSET(i, &cpuSet))
             {
@@ -307,14 +307,20 @@ bool GCToOSInterface::Initialize()
 
 #else // HAVE_SCHED_GETAFFINITY
 
-    g_currentProcessCpuCount = g_logicalCpuCount;
+    g_currentProcessCpuCount = g_totalCpuCount;
 
-    for (size_t i = 0; i < g_logicalCpuCount; i++)
+    for (size_t i = 0; i < g_totalCpuCount; i++)
     {
         g_processAffinitySet.Add(i);
     }
 
 #endif // HAVE_SCHED_GETAFFINITY
+
+    uint32_t cpuLimit;
+    if (GetCpuLimit(&cpuLimit) && cpuLimit < g_currentProcessCpuCount)
+    {
+        g_currentProcessCpuCount = cpuLimit;
+    }
 
     NUMASupportInitialize();
 
@@ -889,7 +895,7 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 {
     // Calculated in GCToOSInterface::Initialize using
     // sysconf(_SC_NPROCESSORS_ONLN)
-    return g_logicalCpuCount;
+    return g_totalCpuCount;
 }
 
 bool GCToOSInterface::CanEnableGCNumaAware()
@@ -909,7 +915,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     bool success = false;
 
     uint16_t availableProcNumber = 0;
-    for (size_t procNumber = 0; procNumber < g_logicalCpuCount; procNumber++)
+    for (size_t procNumber = 0; procNumber < g_totalCpuCount; procNumber++)
     {
         if (g_processAffinitySet.Contains(procNumber))
         {
