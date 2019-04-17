@@ -1780,7 +1780,7 @@ public:
             {
                 size <<= 1;
             }
-#endif
+#endif // FEATURE_SIMD
 #endif // _TARGET_ARM64_
         }
 #endif // FEATURE_HFA
