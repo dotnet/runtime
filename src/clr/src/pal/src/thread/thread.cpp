@@ -2948,13 +2948,8 @@ PAL_SetCurrentThreadAffinity(WORD procNo)
     cpu_set_t cpuSet;
     CPU_ZERO(&cpuSet);
 
-    int st = pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
-
-    if (st == 0)
-    {
-        CPU_SET(procNo, &cpuSet);
-        st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
-    }
+    CPU_SET(procNo, &cpuSet);
+    int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
 
     return st == 0;
 #else  // HAVE_PTHREAD_GETAFFINITY_NP
