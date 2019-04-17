@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Net.Http.Functional.Tests
+namespace System.Net.Test.Common
 {
     /// <summary>
     /// Provides a test-only HTTP proxy. Handles multiple connections/requests and CONNECT tunneling for HTTPS
@@ -210,7 +210,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     byte[] buffer = new byte[8000];
                     int bytesRead;
-                    while ((bytesRead = await clientStream.ReadAsync(buffer)) > 0)
+                    while ((bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
                         await serverStream.WriteAsync(buffer, 0, bytesRead);
                     }
@@ -228,7 +228,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     byte[] buffer = new byte[8000];
                     int bytesRead;
-                    while ((bytesRead = await serverStream.ReadAsync(buffer)) > 0)
+                    while ((bytesRead = await serverStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                     {
                         await clientStream.WriteAsync(buffer, 0, bytesRead);
                     }

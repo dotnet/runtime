@@ -16,7 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
     {
         public ConnectTest(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(UnavailableWebSocketServers))]
         public async Task ConnectAsync_NotWebSocketServer_ThrowsWebSocketExceptionWithMessage(Uri server, string exceptionMessage, WebSocketError errorCode)
         {
@@ -40,21 +40,21 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task EchoBinaryMessage_Success(Uri server)
         {
             await WebSocketHelper.TestEcho(server, WebSocketMessageType.Binary, TimeOutMilliseconds, _output);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task EchoTextMessage_Success(Uri server)
         {
             await WebSocketHelper.TestEcho(server, WebSocketMessageType.Text, TimeOutMilliseconds, _output);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
         public async Task ConnectAsync_AddCustomHeaders_Success(Uri server)
         {
@@ -92,7 +92,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [ActiveIssue(18784, TargetFrameworkMonikers.NetFramework)]
-        [OuterLoop]
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported))]
         public async Task ConnectAsync_AddHostHeader_Success()
         {
@@ -136,7 +136,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoHeadersServers))]
         public async Task ConnectAsync_CookieHeaders_Success(Uri server)
         {
@@ -185,7 +185,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_PassNoSubProtocol_ServerRequires_ThrowsWebSocketException(Uri server)
         {
@@ -210,7 +210,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ConnectAsync_PassMultipleSubProtocols_ServerRequires_ConnectionUsesAgreedSubProtocol(Uri server)
         {
@@ -247,6 +247,26 @@ namespace System.Net.WebSockets.Client.Tests
             {
                 Assert.True(await LoopbackHelper.WebSocketHandshakeAsync(connection));
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
+        }
+
+        [OuterLoop("Uses external servers")]
+        [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
+        public async Task ConnectAndCloseAsync_UseProxyServer_ExpectedClosedState(Uri server)
+        {
+            using (var cws = new ClientWebSocket())
+            using (var cts = new CancellationTokenSource(TimeOutMilliseconds))
+            using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create())
+            {
+                cws.Options.Proxy = new WebProxy(proxyServer.Uri);
+                await cws.ConnectAsync(server, cts.Token);
+
+                string expectedCloseStatusDescription = "Client close status";
+                await cws.CloseAsync(WebSocketCloseStatus.NormalClosure, expectedCloseStatusDescription, cts.Token);
+
+                Assert.Equal(WebSocketState.Closed, cws.State);
+                Assert.Equal(WebSocketCloseStatus.NormalClosure, cws.CloseStatus);
+                Assert.Equal(expectedCloseStatusDescription, cws.CloseStatusDescription);
+            }
         }
     }
 }
