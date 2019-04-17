@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace System.Reflection
@@ -47,7 +46,7 @@ namespace System.Reflection
             return type.GetEvents(Everything);
         }
 
-        public static FieldInfo GetRuntimeField(this Type type, string name)
+        public static FieldInfo? GetRuntimeField(this Type type, string name)
         {
             if (type == null) 
             {
@@ -56,7 +55,7 @@ namespace System.Reflection
             return type.GetField(name);
         }
 
-        public static MethodInfo GetRuntimeMethod(this Type type, string name, Type[] parameters)
+        public static MethodInfo? GetRuntimeMethod(this Type type, string name, Type[] parameters)
         {
             if (type == null) 
             {
@@ -65,7 +64,7 @@ namespace System.Reflection
             return type.GetMethod(name, parameters);
         }
 
-        public static PropertyInfo GetRuntimeProperty(this Type type, string name)
+        public static PropertyInfo? GetRuntimeProperty(this Type type, string name)
         {
             if (type == null) 
             {
@@ -74,7 +73,7 @@ namespace System.Reflection
             return type.GetProperty(name);
         }
 
-        public static EventInfo GetRuntimeEvent(this Type type, string name)
+        public static EventInfo? GetRuntimeEvent(this Type type, string name)
         {
             if (type == null) 
             {
@@ -83,7 +82,7 @@ namespace System.Reflection
             return type.GetEvent(name);
         }
 
-        public static MethodInfo GetRuntimeBaseDefinition(this MethodInfo method)
+        public static MethodInfo? GetRuntimeBaseDefinition(this MethodInfo method)
         {
             if (method == null) 
             {
@@ -101,7 +100,7 @@ namespace System.Reflection
             return typeInfo.GetInterfaceMap(interfaceType);
         }
 
-        public static MethodInfo GetMethodInfo(this Delegate del)
+        public static MethodInfo? GetMethodInfo(this Delegate del)
         {
             if (del == null) 
             {
