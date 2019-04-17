@@ -2487,8 +2487,8 @@ interp_emit_ldobj (TransformData *td, MonoClass *klass)
 
 	if (mt == MINT_TYPE_VT) {
 		interp_add_ins (td, MINT_LDOBJ_VT);
-		td->last_ins->data [0] = get_data_item_index(td, klass);
 		size = mono_class_value_size (klass, NULL);
+		WRITE32_INS (td->last_ins, 0, &size);
 		PUSH_VT (td, size);
 	} else {
 		int opcode;
@@ -4062,8 +4062,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 #endif
 					interp_add_ins (td, opcode);
 					td->last_ins->data [0] = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
-					if (mt == MINT_TYPE_VT)
-						td->last_ins->data [1] = get_data_item_index (td, field);
+					if (mt == MINT_TYPE_VT) {
+						int size = mono_class_value_size (field_klass, NULL);
+						WRITE32_INS (td->last_ins, 1, &size);
+					}
 				}
 			}
 			if (mt == MINT_TYPE_VT) {
@@ -4135,11 +4137,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					interp_add_ins (td, opcode);
 					td->last_ins->data [0] = m_class_is_valuetype (klass) ? field->offset - MONO_ABI_SIZEOF (MonoObject) : field->offset;
 					if (mt == MINT_TYPE_VT) {
-						td->last_ins->data [1] = get_data_item_index (td, field);
-
 						/* the vtable of the field might not be initialized at this point */
 						mono_class_vtable_checked (domain, field_klass, error);
 						goto_if_nok (error, exit);
+
+						td->last_ins->data [1] = get_data_item_index (td, field_klass);
 					}
 				}
 			}
@@ -4526,8 +4528,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					int size = mono_class_value_size (klass, NULL);
 					ENSURE_I4 (td, 1);
 					SIMPLE_OP (td, MINT_LDELEM_VT);
-					td->last_ins->data [0] = get_data_item_index (td, klass);
-					WRITE32_INS (td->last_ins, 1, &size);
+					WRITE32_INS (td->last_ins, 0, &size);
 					--td->sp;
 					SET_TYPE (td->sp - 1, STACK_TYPE_VT, klass);
 					PUSH_VT (td, size);

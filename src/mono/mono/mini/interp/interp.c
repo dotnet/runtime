@@ -4243,20 +4243,15 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_CPOBJ_VT) {
 			c = (MonoClass*)imethod->data_items[* (guint16 *)(ip + 1)];
-			g_assert (m_class_is_valuetype (c));
-			/* if this assertion fails, we need to add a write barrier */
-			g_assert (!MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (c)));
-			stackval_from_data (m_class_get_byval_arg (c), &sp [-2], sp [-1].data.p, FALSE);
+			mono_value_copy_internal (sp [-2].data.vt, sp [-1].data.vt, c);
 			ip += 2;
 			sp -= 2;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDOBJ_VT) {
-			int size;
-			c = (MonoClass*)imethod->data_items[* (guint16 *)(ip + 1)];
-			ip += 2;
-			size = mono_class_value_size (c, NULL);
-			mono_value_copy_internal (vt_sp, sp [-1].data.p, c);
+			int size = READ32(ip + 1);
+			ip += 3;
+			memcpy (vt_sp, sp [-1].data.p, size);
 			sp [-1].data.p = vt_sp;
 			vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			MINT_IN_BREAK;
@@ -4648,14 +4643,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			if (!o)
 				THROW_EX (mono_get_exception_null_reference (), ip);
 
-			MonoClassField *field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 2)];
-			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
-			i32 = mono_class_value_size (klass, NULL);
-
+			int size = READ32(ip + 2);
 			sp [-1].data.p = vt_sp;
-			memcpy (sp [-1].data.p, (char *)o + * (guint16 *)(ip + 1), i32);
-			vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
-			ip += 3;
+			memcpy (sp [-1].data.p, (char *)o + * (guint16 *)(ip + 1), size);
+			vt_sp += ALIGN_TO (size, MINT_VT_ALIGNMENT);
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 
@@ -4751,8 +4743,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				THROW_EX (mono_get_exception_null_reference (), ip);
 			sp -= 2;
 
-			MonoClassField *field = (MonoClassField*)imethod->data_items[* (guint16 *)(ip + 2)];
-			MonoClass *klass = mono_class_from_mono_type_internal (field->type);
+			MonoClass *klass = (MonoClass*)imethod->data_items[* (guint16 *)(ip + 2)];
 			i32 = mono_class_value_size (klass, NULL);
 
 			guint16 offset = * (guint16 *)(ip + 1);
@@ -5194,13 +5185,13 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				sp [0].data.p = mono_array_get_fast (o, gpointer, aindex);
 				break;
 			case MINT_LDELEM_VT: {
-				MonoClass *klass_vt = (MonoClass*)imethod->data_items [*(guint16 *) (ip + 1)];
-				i32 = READ32 (ip + 2);
+				i32 = READ32 (ip + 1);
 				char *src_addr = mono_array_addr_with_size_fast ((MonoArray *) o, i32, aindex);
 				sp [0].data.vt = vt_sp;
-				stackval_from_data (m_class_get_byval_arg (klass_vt), sp, src_addr, FALSE);
+				// Copying to vtstack. No wbarrier needed
+				memcpy (sp [0].data.vt, src_addr, i32);
 				vt_sp += ALIGN_TO (i32, MINT_VT_ALIGNMENT);
-				ip += 3;
+				ip += 2;
 				break;
 			}
 			default:
@@ -5275,7 +5266,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				i32 = READ32 (ip + 2);
 				char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, i32, aindex);
 
-				stackval_to_data (m_class_get_byval_arg (klass_vt), &sp [2], dst_addr, FALSE);
+				mono_value_copy_internal (dst_addr, sp [2].data.vt, klass_vt);
 				vt_sp -= ALIGN_TO (i32, MINT_VT_ALIGNMENT);
 				ip += 3;
 				break;
