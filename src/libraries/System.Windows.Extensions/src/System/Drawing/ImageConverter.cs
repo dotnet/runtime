@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 
@@ -48,13 +49,35 @@ namespace System.Drawing
                 {
                     using (MemoryStream ms = new MemoryStream())
                     {
-                        image.Save(ms, image.RawFormat);
+                        ImageFormat dest = image.RawFormat;
+                        // Jpeg loses data, so we don't want to use it to serialize.
+                        if (dest == ImageFormat.Jpeg)
+                        {
+                            dest = ImageFormat.Png;
+                        }
+
+                        // If we don't find an Encoder (for things like Icon), we
+                        // just switch back to PNG.
+                        ImageCodecInfo codec = FindEncoder(dest) ?? FindEncoder(ImageFormat.Png);
+                        image.Save(ms, codec, null);
                         return ms.ToArray();
                     }
                 }
             }
 
             throw GetConvertFromException(value);
+        }
+
+        // Find any random encoder which supports this format.
+        private static ImageCodecInfo FindEncoder(ImageFormat imageformat)
+        {
+            ImageCodecInfo[] codecs = ImageCodecInfo.GetImageEncoders();
+            foreach (ImageCodecInfo codec in codecs)
+            {
+                if (codec.FormatID.Equals(imageformat.Guid))
+                    return codec;
+            }
+            return null;
         }
 
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
