@@ -10,8 +10,6 @@
 //
 //===========================================================================*/
 
-using System;
-
 namespace System
 {
     // Note: FACILITY_URT is defined as 0x13 (0x8013xxxx).  Within that
