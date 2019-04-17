@@ -1082,8 +1082,9 @@ public:
 #ifdef FEATURE_HFA
         assert(lvIsHfa());
         return HfaTypeFromElemKind(_lvHfaElemKind);
-#endif // FEATURE_HFA
+#else
         return TYP_UNDEF;
+#endif // FEATURE_HFA
     }
 
     void SetHfaType(var_types type)
@@ -1642,8 +1643,9 @@ public:
     {
 #ifdef FEATURE_HFA
         return HfaTypeFromElemKind(_hfaElemKind);
-#endif // FEATURE_HFA
+#else
         return TYP_UNDEF;
+#endif // FEATURE_HFA
     }
 
     void SetHfaType(var_types type, unsigned hfaSlots)
@@ -1773,10 +1775,12 @@ public:
                 // Round up in case of odd HFA count.
                 size = (size + 1) >> 1;
             }
+#ifdef FEATURE_SIMD
             else if (hfaType == TYP_SIMD16)
             {
                 size <<= 1;
             }
+#endif // FEATURE_SIMD
 #endif // _TARGET_ARM64_
         }
 #endif // FEATURE_HFA
