@@ -56,9 +56,10 @@ namespace System.Net.Http.Functional.Tests
                 Debug.Assert(useSocketsHttpHandler == IsSocketsHttpHandler(handler), "Unexpected handler.");
             }
 
+            TestHelper.EnsureHttp2Feature(handler, useHttp2LoopbackServer);
+
             if (useHttp2LoopbackServer)
             {
-                TestHelper.EnsureHttp2Feature(handler);
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
 
