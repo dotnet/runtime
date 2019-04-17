@@ -55,10 +55,10 @@ namespace System
         //
         // ReadOnlySequence .ctor validation Throws coalesced to enable inlining of the .ctor
         //
-        public static void ThrowArgumentValidationException<T>(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment)
+        public static void ThrowArgumentValidationException<T>(ReadOnlySequenceSegment<T>? startSegment, int startIndex, ReadOnlySequenceSegment<T>? endSegment)
             => throw CreateArgumentValidationException(startSegment, startIndex, endSegment);
 
-        private static Exception CreateArgumentValidationException<T>(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment)
+        private static Exception CreateArgumentValidationException<T>(ReadOnlySequenceSegment<T>? startSegment, int startIndex, ReadOnlySequenceSegment<T>? endSegment)
         {
             if (startSegment == null)
                 return CreateArgumentNullException(ExceptionArgument.startSegment);
@@ -72,10 +72,10 @@ namespace System
                 return CreateArgumentOutOfRangeException(ExceptionArgument.endIndex);
         }
 
-        public static void ThrowArgumentValidationException(Array array, int start)
+        public static void ThrowArgumentValidationException(Array? array, int start)
             => throw CreateArgumentValidationException(array, start);
 
-        private static Exception CreateArgumentValidationException(Array array, int start)
+        private static Exception CreateArgumentValidationException(Array? array, int start)
         {
             if (array == null)
                 return CreateArgumentNullException(ExceptionArgument.array);

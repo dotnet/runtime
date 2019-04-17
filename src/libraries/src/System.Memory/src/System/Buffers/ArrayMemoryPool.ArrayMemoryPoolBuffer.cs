@@ -8,7 +8,7 @@ namespace System.Buffers
     {
         private sealed class ArrayMemoryPoolBuffer : IMemoryOwner<T>
         {
-            private T[] _array;
+            private T[]? _array;
 
             public ArrayMemoryPoolBuffer(int size)
             {
@@ -19,19 +19,19 @@ namespace System.Buffers
             {
                 get
                 {
-                    T[] array = _array;
+                    T[]? array = _array;
                     if (array == null)
                     {
                         ThrowHelper.ThrowObjectDisposedException_ArrayMemoryPoolBuffer();
                     }
 
-                    return new Memory<T>(array);
+                    return new Memory<T>(array!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 }
             }
 
             public void Dispose()
             {
-                T[] array = _array;
+                T[]? array = _array;
                 if (array != null)
                 {
                     _array = null;

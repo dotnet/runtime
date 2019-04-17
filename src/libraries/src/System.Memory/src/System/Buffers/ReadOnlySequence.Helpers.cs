@@ -14,7 +14,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGetBuffer(in SequencePosition position, out ReadOnlyMemory<T> memory, out SequencePosition next)
         {
-            object positionObject = position.GetObject();
+            object? positionObject = position.GetObject();
             next = default;
 
             if (positionObject == null)
@@ -24,7 +24,7 @@ namespace System.Buffers
             }
 
             SequenceType type = GetSequenceType();
-            object endObject = _endObject;
+            object? endObject = _endObject;
             int startIndex = GetIndex(position);
             int endIndex = GetIndex(_endInteger);
 
@@ -36,12 +36,12 @@ namespace System.Buffers
 
                 if (startSegment != endObject)
                 {
-                    ReadOnlySequenceSegment<T> nextSegment = startSegment.Next;
+                    ReadOnlySequenceSegment<T>? nextSegment = startSegment.Next;
 
                     if (nextSegment == null)
                         ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
 
-                    next = new SequencePosition(nextSegment, 0);
+                    next = new SequencePosition(nextSegment!, 0); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                     memory = startSegment.Memory.Slice(startIndex);
                 }
                 else
@@ -81,7 +81,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ReadOnlyMemory<T> GetFirstBuffer()
         {
-            object startObject = _startObject;
+            object? startObject = _startObject;
 
             if (startObject == null)
                 return default;
@@ -157,7 +157,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ReadOnlySpan<T> GetFirstSpan()
         {
-            object startObject = _startObject;
+            object? startObject = _startObject;
 
             if (startObject == null)
                 return default;
@@ -235,8 +235,8 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal SequencePosition Seek(long offset, ExceptionArgument exceptionArgument = ExceptionArgument.offset)
         {
-            object startObject = _startObject;
-            object endObject = _endObject;
+            object? startObject = _startObject;
+            object? endObject = _endObject;
             int startIndex = GetIndex(_startInteger);
             int endIndex = GetIndex(_endInteger);
 
@@ -255,7 +255,7 @@ namespace System.Buffers
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
 
                 // End of segment. Move to start of next.
-                return SeekMultiSegment(startSegment.Next, endObject, endIndex, offset - currentLength, exceptionArgument);
+                return SeekMultiSegment(startSegment.Next!, endObject!, endIndex, offset - currentLength, exceptionArgument);
             }
 
             Debug.Assert(startObject == endObject);
@@ -271,8 +271,8 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private SequencePosition Seek(in SequencePosition start, long offset)
         {
-            object startObject = start.GetObject();
-            object endObject = _endObject;
+            object? startObject = start.GetObject();
+            object? endObject = _endObject;
             int startIndex = GetIndex(start);
             int endIndex = GetIndex(_endInteger);
 
@@ -291,7 +291,7 @@ namespace System.Buffers
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
 
                 // End of segment. Move to start of next.
-                return SeekMultiSegment(startSegment.Next, endObject, endIndex, offset - currentLength, ExceptionArgument.offset);
+                return SeekMultiSegment(startSegment.Next!, endObject!, endIndex, offset - currentLength, ExceptionArgument.offset);
             }
 
             Debug.Assert(startObject == endObject);
@@ -305,9 +305,9 @@ namespace System.Buffers
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static SequencePosition SeekMultiSegment(ReadOnlySequenceSegment<T> currentSegment, object endObject, int endIndex, long offset, ExceptionArgument argument)
+        private static SequencePosition SeekMultiSegment(ReadOnlySequenceSegment<T>? currentSegment, object endObject, int endIndex, long offset, ExceptionArgument argument)
         {
-            Debug.Assert(currentSegment != null);
+            Debug.Assert(currentSegment != null); // currentSegment parameter is marked as nullable as the parameter is reused/reassigned in the body
             Debug.Assert(offset >= 0);
 
             while (currentSegment != null && currentSegment != endObject)
@@ -335,8 +335,8 @@ namespace System.Buffers
         {
             uint sliceStartIndex = (uint)GetIndex(position);
 
-            object startObject = _startObject;
-            object endObject = _endObject;
+            object? startObject = _startObject;
+            object? endObject = _endObject;
 
             uint startIndex = (uint)GetIndex(_startInteger);
             uint endIndex = (uint)GetIndex(_endInteger);
@@ -353,21 +353,21 @@ namespace System.Buffers
             {
                 // Multi-Segment Sequence
                 // Storing this in a local since it is used twice within InRange()
-                ulong startRange = (ulong)(((ReadOnlySequenceSegment<T>)startObject).RunningIndex + startIndex);
+                ulong startRange = (ulong)(((ReadOnlySequenceSegment<T>)startObject!).RunningIndex + startIndex);
                 if (!InRange(
-                    (ulong)(((ReadOnlySequenceSegment<T>)position.GetObject()).RunningIndex + sliceStartIndex),
+                    (ulong)(((ReadOnlySequenceSegment<T>)position.GetObject()!).RunningIndex + sliceStartIndex),
                     startRange,
-                    (ulong)(((ReadOnlySequenceSegment<T>)endObject).RunningIndex + endIndex)))
+                    (ulong)(((ReadOnlySequenceSegment<T>)endObject!).RunningIndex + endIndex)))
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
                 }
             }
         }
 
-        private void BoundsCheck(uint sliceStartIndex, object sliceStartObject, uint sliceEndIndex, object sliceEndObject)
+        private void BoundsCheck(uint sliceStartIndex, object? sliceStartObject, uint sliceEndIndex, object? sliceEndObject)
         {
-            object startObject = _startObject;
-            object endObject = _endObject;
+            object? startObject = _startObject;
+            object? endObject = _endObject;
 
             uint startIndex = (uint)GetIndex(_startInteger);
             uint endIndex = (uint)GetIndex(_endInteger);
@@ -390,14 +390,14 @@ namespace System.Buffers
                 // This optimization works because we know sliceStartIndex, sliceEndIndex, startIndex, and endIndex are all >= 0
                 Debug.Assert(sliceStartIndex >= 0 && startIndex >= 0 && endIndex >= 0);
 
-                ulong sliceStartRange = (ulong)(((ReadOnlySequenceSegment<T>)sliceStartObject).RunningIndex + sliceStartIndex);
-                ulong sliceEndRange = (ulong)(((ReadOnlySequenceSegment<T>)sliceEndObject).RunningIndex + sliceEndIndex);
+                ulong sliceStartRange = (ulong)(((ReadOnlySequenceSegment<T>)sliceStartObject!).RunningIndex + sliceStartIndex);
+                ulong sliceEndRange = (ulong)(((ReadOnlySequenceSegment<T>)sliceEndObject!).RunningIndex + sliceEndIndex);
 
                 if (sliceStartRange > sliceEndRange)
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
 
-                if (sliceStartRange < (ulong)(((ReadOnlySequenceSegment<T>)startObject).RunningIndex + startIndex)
-                    || sliceEndRange > (ulong)(((ReadOnlySequenceSegment<T>)endObject).RunningIndex + endIndex))
+                if (sliceStartRange < (ulong)(((ReadOnlySequenceSegment<T>)startObject!).RunningIndex + startIndex)
+                    || sliceEndRange > (ulong)(((ReadOnlySequenceSegment<T>)endObject!).RunningIndex + endIndex))
                 {
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
                 }
@@ -483,15 +483,15 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private long GetLength()
         {
-            object startObject = _startObject;
-            object endObject = _endObject;
+            object? startObject = _startObject;
+            object? endObject = _endObject;
             int startIndex = GetIndex(_startInteger);
             int endIndex = GetIndex(_endInteger);
 
             if (startObject != endObject)
             {
-                var startSegment = (ReadOnlySequenceSegment<T>)startObject;
-                var endSegment = (ReadOnlySequenceSegment<T>)endObject;
+                var startSegment = (ReadOnlySequenceSegment<T>)startObject!;
+                var endSegment = (ReadOnlySequenceSegment<T>)endObject!;
                 // (End offset) - (start offset)
                 return (endSegment.RunningIndex + endIndex) - (startSegment.RunningIndex + startIndex);
             }
@@ -500,9 +500,9 @@ namespace System.Buffers
             return endIndex - startIndex;
         }
 
-        internal bool TryGetReadOnlySequenceSegment(out ReadOnlySequenceSegment<T> startSegment, out int startIndex, out ReadOnlySequenceSegment<T> endSegment, out int endIndex)
+        internal bool TryGetReadOnlySequenceSegment(out ReadOnlySequenceSegment<T>? startSegment, out int startIndex, out ReadOnlySequenceSegment<T>? endSegment, out int endIndex)
         {
-            object startObject = _startObject;
+            object? startObject = _startObject;
 
             // Default or not MultiSegment
             if (startObject == null || GetSequenceType() != SequenceType.MultiSegment)
@@ -538,7 +538,7 @@ namespace System.Buffers
             return true;
         }
 
-        internal bool TryGetString(out string text, out int start, out int length)
+        internal bool TryGetString(out string? text, out int start, out int length)
         {
             if (typeof(T) != typeof(char) || GetSequenceType() != SequenceType.String)
             {
@@ -618,7 +618,7 @@ namespace System.Buffers
         {
             first = default;
             next = default;
-            object startObject = _startObject;
+            object? startObject = _startObject;
             int startIndex = _startInteger;
 
             if (startObject != null)
