@@ -13,13 +13,13 @@ namespace System
     /// </summary>
     public readonly struct SequencePosition : IEquatable<SequencePosition>
     {
-        private readonly object _object;
+        private readonly object? _object;
         private readonly int _integer;
 
         /// <summary>
         /// Creates new <see cref="SequencePosition"/>
         /// </summary>
-        public SequencePosition(object @object, int integer)
+        public SequencePosition(object? @object, int integer)
         {
             _object = @object;
             _integer = integer;
@@ -29,7 +29,7 @@ namespace System
         /// Returns object part of this <see cref="SequencePosition"/>
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public object GetObject() => _object;
+        public object? GetObject() => _object;
 
         /// <summary>
         /// Returns integer part of this <see cref="SequencePosition"/>
@@ -48,7 +48,7 @@ namespace System
         /// <see cref="SequencePosition"/> equality does not guarantee that they point to the same location in <see cref="System.Buffers.ReadOnlySequence{T}" />
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj) => obj is SequencePosition other && this.Equals(other);
+        public override bool Equals(object? obj) => obj is SequencePosition other && this.Equals(other);
 
         /// <inheritdoc />
         [EditorBrowsable(EditorBrowsableState.Never)]

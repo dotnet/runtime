@@ -17,7 +17,7 @@ namespace System.Buffers
         /// <summary>
         /// The next node.
         /// </summary>
-        public ReadOnlySequenceSegment<T> Next { get; protected set; }
+        public ReadOnlySequenceSegment<T>? Next { get; protected set; }
 
         /// <summary>
         /// The sum of node length before current.
