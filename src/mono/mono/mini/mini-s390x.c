@@ -3633,14 +3633,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RCALL:
 		case OP_CALL: {
 			call = (MonoCallInst*)ins;
-			if (ins->flags & MONO_INST_HAS_METHOD)
-				mono_add_patch_info (cfg, code-cfg->native_code,
-						     MONO_PATCH_INFO_METHOD, 
-						     call->method);
-			else
-				mono_add_patch_info (cfg, code-cfg->native_code,
-						     MONO_PATCH_INFO_ABS, 
-						     call->fptr);
+			mono_call_add_patch_info (cfg, call, code - cfg->native_code);
 			S390_CALL_TEMPLATE (code, s390_r14);
 		}
 			break;

@@ -22,6 +22,15 @@ static const gboolean debug_tailcall_break_compile = FALSE; // break in method_t
 static const gboolean debug_tailcall_break_run = FALSE;     // insert breakpoint in generated code
 
 void
+mono_call_add_patch_info (MonoCompile *cfg, MonoCallInst *call, int ip)
+{
+	if (call->inst.flags & MONO_INST_HAS_METHOD)
+		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_METHOD, call->method);
+	else
+		mono_add_patch_info (cfg, ip, MONO_PATCH_INFO_ABS, call->fptr);
+}
+
+void
 mini_test_tailcall (MonoCompile *cfg, gboolean tailcall)
 {
 	// A lot of tests say "tailcall" throughout their verbose output.

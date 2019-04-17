@@ -706,14 +706,14 @@ mono_arm_emit_ldrx (guint8 *code, int rt, int rn, int imm)
 }
 
 static guint8*
-emit_call (MonoCompile *cfg, guint8* code, guint32 patch_type, gconstpointer data)
+emit_call (MonoCompile *cfg, guint8* code, MonoJumpInfoType patch_type, gconstpointer data)
 {
 	/*
 	mono_add_patch_info_rel (cfg, code - cfg->native_code, patch_type, data, MONO_R_ARM64_IMM);
 	code = emit_imm64_template (code, ARMREG_LR);
 	arm_blrx (code, ARMREG_LR);
 	*/
-	mono_add_patch_info_rel (cfg, code - cfg->native_code, (MonoJumpInfoType)patch_type, data, MONO_R_ARM64_BL);
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, patch_type, data, MONO_R_ARM64_BL);
 	arm_bl (code, code);
 	cfg->thunk_area += THUNK_SIZE;
 	return code;

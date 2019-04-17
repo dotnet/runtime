@@ -3802,12 +3802,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			case OP_VCALL2:
 			case OP_VOIDCALL:
 			case OP_CALL:
+				mono_call_add_patch_info (cfg, call, offset);
 				if (ins->flags & MONO_INST_HAS_METHOD) {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_METHOD, call->method);
 					mips_load (code, mips_t9, call->method);
 				}
 				else {
-					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_ABS, call->fptr);
 					mips_load (code, mips_t9, call->fptr);
 				}
 				mips_jalr (code, mips_t9, mips_ra);
