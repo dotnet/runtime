@@ -61,9 +61,6 @@ namespace BINDER_SPACE
     {
         const int iPublicKeyTokenLength = 8;
 
-        const int iPublicKeyMinLength = 0;
-        const int iPublicKeyMaxLength = 2048;
-
         const int iVersionMax = 65535;
         const int iVersionParts = 4;
 
@@ -143,10 +140,7 @@ namespace BINDER_SPACE
 
         inline BOOL ValidatePublicKey(SString &publicKey)
         {
-            
-            return ((publicKey.GetCount() >= (iPublicKeyMinLength * 2)) &&
-                    (publicKey.GetCount() <= (iPublicKeyMaxLength * 2)) &&
-                    ValidateHex(publicKey));
+            return ValidateHex(publicKey);
         }
 
         const struct {
