@@ -65,6 +65,7 @@ namespace System.Runtime.InteropServices
                     return new FunctionLoadResult<T>(FunctionLoadResultKind.LibraryNotFound, null);
                 }
 
+#if netcoreapp20
                 IntPtr funcPtr = LoadFunctionPointer(nativeLibraryHandle, funcName);
                 if (funcPtr == IntPtr.Zero)
                 {
@@ -74,6 +75,11 @@ namespace System.Runtime.InteropServices
                 {
                     return new FunctionLoadResult<T>(FunctionLoadResultKind.Success, Marshal.GetDelegateForFunctionPointer<T>(funcPtr));
                 }
+#else // use managed NativeLibrary API from .NET Core 3 onwards
+                return NativeLibrary.TryGetExport(nativeLibraryHandle, funcName, out var funcPtr)
+                    ? new FunctionLoadResult<T>(FunctionLoadResultKind.Success, Marshal.GetDelegateForFunctionPointer<T>(funcPtr))
+                    : new FunctionLoadResult<T>(FunctionLoadResultKind.FunctionNotFound, null);
+#endif
             });
 
             return new FunctionWrapper<T>(lazyDelegate, libName, funcName);
