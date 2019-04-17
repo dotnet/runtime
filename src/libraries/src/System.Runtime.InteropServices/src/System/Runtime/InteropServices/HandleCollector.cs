@@ -16,12 +16,12 @@ namespace System.Runtime.InteropServices
         private int[] _gcCounts = new int[3];
         private int _gcGeneration = 0;
 
-        public HandleCollector(string name, int initialThreshold) :
+        public HandleCollector(string? name, int initialThreshold) :
             this(name, initialThreshold, int.MaxValue)
         {
         }
 
-        public HandleCollector(string name, int initialThreshold, int maximumThreshold)
+        public HandleCollector(string? name, int initialThreshold, int maximumThreshold)
         {
             if (initialThreshold < 0)
             {

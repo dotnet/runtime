@@ -11,6 +11,8 @@ namespace System.Runtime.CompilerServices
     {
         public IUnknownConstantAttribute() { }
 
+#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public override object Value => new UnknownWrapper(null);
+#pragma warning restore CS8608
     }
 }

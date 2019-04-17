@@ -83,6 +83,6 @@ namespace System.Runtime.InteropServices.ComTypes
         ///     Creates an object that can be used to enumerate the current advisory connections.
         /// </summary>
         [PreserveSig]
-        int EnumDAdvise(out IEnumSTATDATA enumAdvise);
+        int EnumDAdvise(out IEnumSTATDATA? enumAdvise);
     }
 }
