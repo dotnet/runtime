@@ -291,7 +291,7 @@ namespace System.Net.Http.Headers
             return current;
         }
 
-        internal static DateTimeOffset? GetDateTimeOffsetValue(HeaderDescriptor descriptor, HttpHeaders store)
+        internal static DateTimeOffset? GetDateTimeOffsetValue(HeaderDescriptor descriptor, HttpHeaders store, DateTimeOffset? defaultValue = null)
         {
             Debug.Assert(store != null);
 
@@ -300,6 +300,11 @@ namespace System.Net.Http.Headers
             {
                 return (DateTimeOffset)storedValue;
             }
+            else if (defaultValue != null && store.Contains(descriptor))
+            {
+                return defaultValue;
+            }
+
             return null;
         }
 

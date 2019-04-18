@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading;
@@ -20,6 +21,8 @@ namespace System.Net.Http.Functional.Tests
     public abstract class HttpClientHandlerTest_Headers : HttpClientHandlerTestBase
     {
         public HttpClientHandlerTest_Headers(ITestOutputHelper output) : base(output) { }
+
+        private sealed class DerivedHttpHeaders : HttpHeaders { }
 
         [Fact]
         public async Task SendAsync_UserAgent_CorrectlyWritten()
@@ -92,6 +95,63 @@ namespace System.Net.Http.Functional.Tests
                 string header = requestData.GetSingleHeaderValue("x-Special_name");
                 Assert.Equal(header, headerValue);
             });
+        }
+
+        [Fact]
+        public async Task GetAsync_MissingExpires_ReturnNull()
+        {
+             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+             {
+                using (var client = CreateHttpClient())
+                {
+                    HttpResponseMessage response = await client.GetAsync(uri);
+                    Assert.Null(response.Content.Headers.Expires);
+                }
+            },
+            async server =>
+            {
+                await server.HandleRequestAsync(HttpStatusCode.OK);
+            });
+        }
+
+        [Theory]
+        [InlineData("Thu, 01 Dec 1994 16:00:00 GMT", true)]
+        [InlineData("-1", false)]
+        [InlineData("0", false)]
+        public async Task SendAsync_Expires_Success(string value, bool isValid)
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = CreateHttpClient())
+                {
+                    var message = new HttpRequestMessage(HttpMethod.Get, uri);
+                    HttpResponseMessage response = await client.SendAsync(message);
+                    Assert.NotNull(response.Content.Headers.Expires);
+                    // Invalid date should be converted to MinValue so everything is expired.
+                    Assert.Equal(isValid ? DateTime.Parse(value) : DateTimeOffset.MinValue, response.Content.Headers.Expires);
+                }
+            },
+            async server =>
+            {
+                IList<HttpHeaderData> headers = new HttpHeaderData[] { new HttpHeaderData("Expires", value) };
+
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK, headers);
+            });
+        }
+
+        [Theory]
+        [InlineData("-1", false)]
+        [InlineData("Thu, 01 Dec 1994 16:00:00 GMT", true)]
+        public void HeadersAdd_CustomExpires_Success(string value, bool isValid)
+        {
+            var headers = new DerivedHttpHeaders();
+            if (!isValid)
+            {
+                Assert.Throws<FormatException>(() => headers.Add("Expires", value));
+            }
+            Assert.True(headers.TryAddWithoutValidation("Expires", value));
+            Assert.Equal(1, Enumerable.Count(headers.GetValues("Expires")));
+            Assert.Equal(value, headers.GetValues("Expires").First());
         }
 
         [OuterLoop("Uses external server")]
