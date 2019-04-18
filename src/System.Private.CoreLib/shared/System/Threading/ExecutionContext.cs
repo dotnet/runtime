@@ -394,8 +394,8 @@ namespace System.Threading
                 if (previousChangeNotifications != null && nextChangeNotifications != null)
                 {
                     // Notifications can't exist without values
-                    Debug.Assert(previousExecutionCtx!.m_localValues != null); // TODO-NULLABLE: Compiler can't see that we're only here when this is non-null
-                    Debug.Assert(nextExecutionCtx!.m_localValues != null); // TODO-NULLABLE: Compiler can't see that we're only here when this is non-null
+                    Debug.Assert(previousExecutionCtx!.m_localValues != null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2388
+                    Debug.Assert(nextExecutionCtx!.m_localValues != null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2388
                     // Both contexts have change notifications, check previousExecutionCtx first
                     foreach (IAsyncLocal local in previousChangeNotifications)
                     {
@@ -429,7 +429,7 @@ namespace System.Threading
                 else if (previousChangeNotifications != null)
                 {
                     // Notifications can't exist without values
-                    Debug.Assert(previousExecutionCtx!.m_localValues != null); // TODO-NULLABLE: Compiler can't see that we're only here when this is non-null
+                    Debug.Assert(previousExecutionCtx!.m_localValues != null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2388
                     // No current values, so just check previous against null
                     foreach (IAsyncLocal local in previousChangeNotifications)
                     {
@@ -443,9 +443,9 @@ namespace System.Threading
                 else // Implied: nextChangeNotifications != null
                 {
                     // Notifications can't exist without values
-                    Debug.Assert(nextExecutionCtx!.m_localValues != null); // TODO-NULLABLE: Compiler can't see that we're only here when this is non-null
+                    Debug.Assert(nextExecutionCtx!.m_localValues != null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2388
                     // No previous values, so just check current against null
-                    foreach (IAsyncLocal local in nextChangeNotifications!) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34665
+                    foreach (IAsyncLocal local in nextChangeNotifications!) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2388
                     {
                         nextExecutionCtx.m_localValues.TryGetValue(local, out object? currentValue);
                         if (currentValue != null)
@@ -545,7 +545,7 @@ namespace System.Threading
                 {
                     int newNotificationIndex = newChangeNotifications.Length;
                     Array.Resize(ref newChangeNotifications, newNotificationIndex + 1);
-                    newChangeNotifications[newNotificationIndex] = local;
+                    newChangeNotifications![newNotificationIndex] = local; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 }
             }
 

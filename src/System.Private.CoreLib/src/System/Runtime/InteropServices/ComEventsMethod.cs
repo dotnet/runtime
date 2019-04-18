@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Reflection;
 
 namespace System.Runtime.InteropServices
@@ -30,7 +28,7 @@ namespace System.Runtime.InteropServices
         {
             private bool _once = false;
             private int _expectedParamsCount;
-            private Type[] _cachedTargetTypes;
+            private Type?[]? _cachedTargetTypes;
 
             public DelegateWrapper(Delegate d)
             {
@@ -39,7 +37,7 @@ namespace System.Runtime.InteropServices
 
             public Delegate Delegate { get; set; }
 
-            public object Invoke(object[] args)
+            public object? Invoke(object[] args)
             {
                 if (Delegate == null)
                 {
@@ -58,7 +56,7 @@ namespace System.Runtime.InteropServices
                     {
                         if (_cachedTargetTypes[i] != null)
                         {
-                            args[i] = Enum.ToObject(_cachedTargetTypes[i], args[i]);
+                            args[i] = Enum.ToObject(_cachedTargetTypes[i]!, args[i]); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                         }
                     }
                 }
@@ -73,10 +71,10 @@ namespace System.Runtime.InteropServices
 
                 bool needToHandleCoercion = false;
 
-                var targetTypes = new List<Type>();
+                var targetTypes = new List<Type?>();
                 foreach (ParameterInfo pi in parameters)
                 {
-                    Type targetType = null;
+                    Type? targetType = null;
 
                     // recognize only 'ref Enum' signatures and cache
                     // both enum type and the underlying type.
@@ -106,14 +104,14 @@ namespace System.Runtime.InteropServices
         private List<DelegateWrapper> _delegateWrappers = new List<DelegateWrapper>();
 
         private readonly int _dispid;
-        private ComEventsMethod _next;
+        private ComEventsMethod? _next;
 
         public ComEventsMethod(int dispid)
         {
             _dispid = dispid;
         }
 
-        public static ComEventsMethod Find(ComEventsMethod methods, int dispid)
+        public static ComEventsMethod? Find(ComEventsMethod? methods, int dispid)
         {
             while (methods != null && methods._dispid != dispid)
             {
@@ -123,24 +121,25 @@ namespace System.Runtime.InteropServices
             return methods;
         }
 
-        public static ComEventsMethod Add(ComEventsMethod methods, ComEventsMethod method)
+        public static ComEventsMethod Add(ComEventsMethod? methods, ComEventsMethod method)
         {
             method._next = methods;
             return method;
         }
 
-        public static ComEventsMethod Remove(ComEventsMethod methods, ComEventsMethod method)
+        public static ComEventsMethod? Remove(ComEventsMethod methods, ComEventsMethod method)
         {
             Debug.Assert(methods != null, "removing method from empty methods collection");
             Debug.Assert(method != null, "specify method is null");
 
             if (methods == method)
             {
-                methods = methods._next;
+                return methods._next;
             }
             else
             {
-                ComEventsMethod current = methods;
+                ComEventsMethod? current = methods;
+
                 while (current != null && current._next != method)
                 {
                     current = current._next;
@@ -150,9 +149,9 @@ namespace System.Runtime.InteropServices
                 {
                     current._next = method._next;
                 }
-            }
 
-            return methods;
+                return methods;
+            }
         }
 
         public bool Empty
@@ -175,7 +174,7 @@ namespace System.Runtime.InteropServices
                 {
                     if (wrapper.Delegate.GetType() == d.GetType())
                     {
-                        wrapper.Delegate = Delegate.Combine(wrapper.Delegate, d);
+                        wrapper.Delegate = Delegate.Combine(wrapper.Delegate, d)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                         return;
                     }
                 }
@@ -191,7 +190,7 @@ namespace System.Runtime.InteropServices
             {
                 // Find delegate wrapper index
                 int removeIdx = -1;
-                DelegateWrapper wrapper = null;
+                DelegateWrapper? wrapper = null;
                 for (int i = 0; i < _delegateWrappers.Count; i++)
                 {
                     DelegateWrapper wrapperMaybe = _delegateWrappers[i];
@@ -210,7 +209,7 @@ namespace System.Runtime.InteropServices
                 }
 
                 // Update wrapper or remove from collection
-                Delegate newDelegate = Delegate.Remove(wrapper.Delegate, d);
+                Delegate? newDelegate = Delegate.Remove(wrapper!.Delegate, d);
                 if (newDelegate != null)
                 {
                     wrapper.Delegate = newDelegate;
@@ -222,10 +221,10 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public object Invoke(object[] args)
+        public object? Invoke(object[] args)
         {
             Debug.Assert(!Empty);
-            object result = null;
+            object? result = null;
 
             lock (_delegateWrappers)
             {

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Globalization;
@@ -699,7 +700,7 @@ namespace System.Text
             return bytesWritten;
         }
 
-        public override bool Equals(object obj) => (obj is Rune other) && this.Equals(other);
+        public override bool Equals(object? obj) => (obj is Rune other) && this.Equals(other);
 
         public bool Equals(Rune other) => (this == other);
 
@@ -782,7 +783,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             }
 
-            if ((uint)index >= (uint)input.Length)
+            if ((uint)index >= (uint)input!.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRange_IndexException();
             }
@@ -1151,7 +1152,7 @@ namespace System.Text
             }
             else
             {
-                return (GetUnicodeCategoryNonAscii(value) == UnicodeCategory.DecimalDigitNumber);
+                return GetUnicodeCategoryNonAscii(value) == UnicodeCategory.DecimalDigitNumber;
             }
         }
 
@@ -1187,7 +1188,7 @@ namespace System.Text
             }
             else
             {
-                return (GetUnicodeCategoryNonAscii(value) == UnicodeCategory.LowercaseLetter);
+                return GetUnicodeCategoryNonAscii(value) == UnicodeCategory.LowercaseLetter;
             }
         }
 
@@ -1226,7 +1227,7 @@ namespace System.Text
             }
             else
             {
-                return (GetUnicodeCategoryNonAscii(value) == UnicodeCategory.UppercaseLetter);
+                return GetUnicodeCategoryNonAscii(value) == UnicodeCategory.UppercaseLetter;
             }
         }
 
@@ -1265,7 +1266,7 @@ namespace System.Text
                 return ToLowerInvariant(value);
             }
 
-            return ChangeCaseCultureAware(value, culture.TextInfo, toUpper: false);
+            return ChangeCaseCultureAware(value, culture!.TextInfo, toUpper: false);
         }
 
         public static Rune ToLowerInvariant(Rune value)
@@ -1308,7 +1309,7 @@ namespace System.Text
                 return ToUpperInvariant(value);
             }
 
-            return ChangeCaseCultureAware(value, culture.TextInfo, toUpper: true);
+            return ChangeCaseCultureAware(value, culture!.TextInfo, toUpper: true);
         }
 
         public static Rune ToUpperInvariant(Rune value)

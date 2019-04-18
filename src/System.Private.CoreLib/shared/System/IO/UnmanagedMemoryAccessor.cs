@@ -13,8 +13,7 @@
 **
 ===========================================================*/
 
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+#nullable enable
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
@@ -25,7 +24,7 @@ namespace System.IO
     /// this gives better throughput; benchmarks showed about 12-15% better.
     public class UnmanagedMemoryAccessor : IDisposable
     {
-        private SafeBuffer _buffer;
+        private SafeBuffer _buffer = null!; // initialized in helper called by ctor
         private long _offset;
         private long _capacity;
         private FileAccess _access;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
@@ -15,7 +16,7 @@ namespace System.Runtime.CompilerServices
         /// <remarks>This is explicitly exposed as a field instead of a property to enable loading the address of the field.</remarks>
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1051:DoNotDeclareVisibleInstanceFields")]
-        public T Value;
+        public T Value = default!; // TODO-NULLABLE-GENERIC
 
         /// <summary>
         /// Initializes a new StrongBox which can receive a value when used in a reference call.
@@ -33,7 +34,7 @@ namespace System.Runtime.CompilerServices
             Value = value;
         }
 
-        object IStrongBox.Value
+        object? IStrongBox.Value
         {
             get
             {
@@ -41,7 +42,7 @@ namespace System.Runtime.CompilerServices
             }
             set
             {
-                Value = (T)value;
+                Value = (T)value!; // TODO-NULLABLE-GENERIC
             }
         }
     }
@@ -54,6 +55,6 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Gets or sets the value the object references.
         /// </summary>
-        object Value { get; set; }
+        object? Value { get; set; }
     }
 }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Text;
 using System.Threading;
 using System.Globalization;
@@ -36,14 +37,14 @@ namespace System.IO
         private string CoreNewLineStr = Environment.NewLine;
 
         // Can be null - if so, ask for the Thread's CurrentCulture every time.
-        private IFormatProvider _internalFormatProvider;
+        private IFormatProvider? _internalFormatProvider;
 
         protected TextWriter()
         {
             _internalFormatProvider = null;  // Ask for CurrentCulture all the time.
         }
 
-        protected TextWriter(IFormatProvider formatProvider)
+        protected TextWriter(IFormatProvider? formatProvider)
         {
             _internalFormatProvider = formatProvider;
         }
@@ -117,7 +118,7 @@ namespace System.IO
         /// the TextWriter to be readable by a TextReader, only one of the following line
         /// terminator strings should be used: "\r", "\n", or "\r\n".
         /// </remarks>
-        public virtual string NewLine
+        public virtual string? NewLine // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
         {
             get { return CoreNewLineStr; }
             set
@@ -145,7 +146,7 @@ namespace System.IO
         // Write(char) for each of the characters in the character array.
         // If the character array is null, nothing is written.
         //
-        public virtual void Write(char[] buffer)
+        public virtual void Write(char[]? buffer)
         {
             if (buffer != null)
             {
@@ -268,7 +269,7 @@ namespace System.IO
         // Writes a string to the text stream. If the given string is null, nothing
         // is written to the text stream.
         //
-        public virtual void Write(string value)
+        public virtual void Write(string? value)
         {
             if (value != null)
             {
@@ -282,7 +283,7 @@ namespace System.IO
         // string representation, and the resulting string is then written to the
         // output stream.
         //
-        public virtual void Write(object value)
+        public virtual void Write(object? value)
         {
             if (value != null)
             {
@@ -300,7 +301,7 @@ namespace System.IO
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
-        public virtual void Write(StringBuilder value)
+        public virtual void Write(StringBuilder? value)
         {
             if (value != null)
             {
@@ -312,7 +313,7 @@ namespace System.IO
         // Writes out a formatted string.  Uses the same semantics as
         // string.Format.
         //
-        public virtual void Write(string format, object arg0)
+        public virtual void Write(string format, object? arg0)
         {
             Write(string.Format(FormatProvider, format, arg0));
         }
@@ -320,7 +321,7 @@ namespace System.IO
         // Writes out a formatted string.  Uses the same semantics as
         // string.Format.
         //
-        public virtual void Write(string format, object arg0, object arg1)
+        public virtual void Write(string format, object? arg0, object? arg1)
         {
             Write(string.Format(FormatProvider, format, arg0, arg1));
         }
@@ -328,7 +329,7 @@ namespace System.IO
         // Writes out a formatted string.  Uses the same semantics as
         // string.Format.
         //
-        public virtual void Write(string format, object arg0, object arg1, object arg2)
+        public virtual void Write(string format, object? arg0, object? arg1, object? arg2)
         {
             Write(string.Format(FormatProvider, format, arg0, arg1, arg2));
         }
@@ -336,7 +337,7 @@ namespace System.IO
         // Writes out a formatted string.  Uses the same semantics as
         // string.Format.
         //
-        public virtual void Write(string format, params object[] arg)
+        public virtual void Write(string format, params object?[] arg)
         {
             Write(string.Format(FormatProvider, format, arg));
         }
@@ -361,7 +362,7 @@ namespace System.IO
         // Writes an array of characters followed by a line terminator to the text
         // stream.
         //
-        public virtual void WriteLine(char[] buffer)
+        public virtual void WriteLine(char[]? buffer)
         {
             Write(buffer);
             WriteLine();
@@ -464,7 +465,7 @@ namespace System.IO
 
         // Writes a string followed by a line terminator to the text stream.
         //
-        public virtual void WriteLine(string value)
+        public virtual void WriteLine(string? value)
         {
             if (value != null)
             {
@@ -477,7 +478,7 @@ namespace System.IO
         /// Equivalent to WriteLine(stringBuilder.ToString()) however it uses the
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
-        public virtual void WriteLine(StringBuilder value)
+        public virtual void WriteLine(StringBuilder? value)
         {
             Write(value);
             WriteLine();
@@ -486,7 +487,7 @@ namespace System.IO
         // Writes the text representation of an object followed by a line
         // terminator to the text stream.
         //
-        public virtual void WriteLine(object value)
+        public virtual void WriteLine(object? value)
         {
             if (value == null)
             {
@@ -510,7 +511,7 @@ namespace System.IO
         // Writes out a formatted string and a new line.  Uses the same
         // semantics as string.Format.
         //
-        public virtual void WriteLine(string format, object arg0)
+        public virtual void WriteLine(string format, object? arg0)
         {
             WriteLine(string.Format(FormatProvider, format, arg0));
         }
@@ -518,7 +519,7 @@ namespace System.IO
         // Writes out a formatted string and a new line.  Uses the same
         // semantics as string.Format.
         //
-        public virtual void WriteLine(string format, object arg0, object arg1)
+        public virtual void WriteLine(string format, object? arg0, object? arg1)
         {
             WriteLine(string.Format(FormatProvider, format, arg0, arg1));
         }
@@ -526,7 +527,7 @@ namespace System.IO
         // Writes out a formatted string and a new line.  Uses the same
         // semantics as string.Format.
         //
-        public virtual void WriteLine(string format, object arg0, object arg1, object arg2)
+        public virtual void WriteLine(string format, object? arg0, object? arg1, object? arg2)
         {
             WriteLine(string.Format(FormatProvider, format, arg0, arg1, arg2));
         }
@@ -534,7 +535,7 @@ namespace System.IO
         // Writes out a formatted string and a new line.  Uses the same
         // semantics as string.Format.
         //
-        public virtual void WriteLine(string format, params object[] arg)
+        public virtual void WriteLine(string format, params object?[] arg)
         {
             WriteLine(string.Format(FormatProvider, format, arg));
         }
@@ -545,18 +546,18 @@ namespace System.IO
             var tuple = new Tuple<TextWriter, char>(this, value);
             return Task.Factory.StartNew(state =>
             {
-                var t = (Tuple<TextWriter, char>)state;
+                var t = (Tuple<TextWriter, char>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 t.Item1.Write(t.Item2);
             },
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        public virtual Task WriteAsync(string value)
+        public virtual Task WriteAsync(string? value)
         {
-            var tuple = new Tuple<TextWriter, string>(this, value);
+            var tuple = new Tuple<TextWriter, string?>(this, value);
             return Task.Factory.StartNew(state =>
             {
-                var t = (Tuple<TextWriter, string>)state;
+                var t = (Tuple<TextWriter, string?>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 t.Item1.Write(t.Item2);
             },
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
@@ -567,7 +568,7 @@ namespace System.IO
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
-        public virtual Task WriteAsync(StringBuilder value, CancellationToken cancellationToken = default)
+        public virtual Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
             return
                 cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
@@ -583,7 +584,7 @@ namespace System.IO
             }
         }
 
-        public Task WriteAsync(char[] buffer)
+        public Task WriteAsync(char[]? buffer)
         {
             if (buffer == null)
             {
@@ -598,7 +599,7 @@ namespace System.IO
             var tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
             return Task.Factory.StartNew(state =>
             {
-                var t = (Tuple<TextWriter, char[], int, int>)state;
+                var t = (Tuple<TextWriter, char[], int, int>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 t.Item1.Write(t.Item2, t.Item3, t.Item4);
             },
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
@@ -606,11 +607,11 @@ namespace System.IO
 
         public virtual Task WriteAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                WriteAsync(array.Array, array.Offset, array.Count) :
+            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ? // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                WriteAsync(array.Array!, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
                 {
-                    var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state;
+                    var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     t.Item1.Write(t.Item2.Span);
                 }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
@@ -619,18 +620,18 @@ namespace System.IO
             var tuple = new Tuple<TextWriter, char>(this, value);
             return Task.Factory.StartNew(state =>
             {
-                var t = (Tuple<TextWriter, char>)state;
+                var t = (Tuple<TextWriter, char>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 t.Item1.WriteLine(t.Item2);
             },
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
-        public virtual Task WriteLineAsync(string value)
+        public virtual Task WriteLineAsync(string? value)
         {
-            var tuple = new Tuple<TextWriter, string>(this, value);
+            var tuple = new Tuple<TextWriter, string?>(this, value);
             return Task.Factory.StartNew(state =>
             {
-                var t = (Tuple<TextWriter, string>)state;
+                var t = (Tuple<TextWriter, string?>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 t.Item1.WriteLine(t.Item2);
             },
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
@@ -641,7 +642,7 @@ namespace System.IO
         /// StringBuilder.GetChunks() method to avoid creating the intermediate string
         /// </summary>
         /// <param name="value">The string (as a StringBuilder) to write to the stream</param>
-        public virtual Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default)
+        public virtual Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default)
         {
             return
                 cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
@@ -658,7 +659,7 @@ namespace System.IO
             }
         }
 
-        public Task WriteLineAsync(char[] buffer)
+        public Task WriteLineAsync(char[]? buffer)
         {
             if (buffer == null)
             {
@@ -673,7 +674,7 @@ namespace System.IO
             var tuple = new Tuple<TextWriter, char[], int, int>(this, buffer, index, count);
             return Task.Factory.StartNew(state =>
             {
-                var t = (Tuple<TextWriter, char[], int, int>)state;
+                var t = (Tuple<TextWriter, char[], int, int>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 t.Item1.WriteLine(t.Item2, t.Item3, t.Item4);
             },
             tuple, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
@@ -681,11 +682,11 @@ namespace System.IO
 
         public virtual Task WriteLineAsync(ReadOnlyMemory<char> buffer, CancellationToken cancellationToken = default) =>
             cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                WriteLineAsync(array.Array, array.Offset, array.Count) :
+            MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ? // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                WriteLineAsync(array.Array!, array.Offset, array.Count) :
                 Task.Factory.StartNew(state =>
                 {
-                    var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state;
+                    var t = (Tuple<TextWriter, ReadOnlyMemory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     t.Item1.WriteLine(t.Item2.Span);
                 }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
 
@@ -698,7 +699,7 @@ namespace System.IO
         {
             return Task.Factory.StartNew(state =>
             {
-                ((TextWriter)state).Flush();
+                ((TextWriter)state!).Flush(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             },
             this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
@@ -722,7 +723,7 @@ namespace System.IO
             {
             }
 
-            public override void Write(string value)
+            public override void Write(string? value)
             {
             }
 
@@ -732,11 +733,11 @@ namespace System.IO
             }
 
             // Not strictly necessary, but for perf reasons
-            public override void WriteLine(string value)
+            public override void WriteLine(string? value)
             {
             }
 
-            public override void WriteLine(object value)
+            public override void WriteLine(object? value)
             {
             }
 
@@ -762,11 +763,11 @@ namespace System.IO
                 _out = t;
             }
 
-            public override Encoding Encoding =>  _out.Encoding;
+            public override Encoding Encoding => _out.Encoding;
 
             public override IFormatProvider FormatProvider => _out.FormatProvider;
 
-            public override string NewLine
+            public override string? NewLine
             {
                 [MethodImpl(MethodImplOptions.Synchronized)]
                 get { return _out.NewLine; }
@@ -792,7 +793,7 @@ namespace System.IO
             public override void Write(char value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(char[] buffer) => _out.Write(buffer);
+            public override void Write(char[]? buffer) => _out.Write(buffer);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void Write(char[] buffer, int index, int count) => _out.Write(buffer, index, count);
@@ -825,25 +826,25 @@ namespace System.IO
             public override void Write(decimal value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(string value) => _out.Write(value);
+            public override void Write(string? value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(StringBuilder value) => _out.Write(value);
+            public override void Write(StringBuilder? value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(object value) => _out.Write(value);
+            public override void Write(object? value) => _out.Write(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(string format, object arg0) => _out.Write(format, arg0);
+            public override void Write(string format, object? arg0) => _out.Write(format, arg0);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(string format, object arg0, object arg1) => _out.Write(format, arg0, arg1);
+            public override void Write(string format, object? arg0, object? arg1) => _out.Write(format, arg0, arg1);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(string format, object arg0, object arg1, object arg2) => _out.Write(format, arg0, arg1, arg2);
+            public override void Write(string format, object? arg0, object? arg1, object? arg2) => _out.Write(format, arg0, arg1, arg2);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void Write(string format, object[] arg) => _out.Write(format, arg);
+            public override void Write(string format, object?[] arg) => _out.Write(format, arg);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine() => _out.WriteLine();
@@ -855,7 +856,7 @@ namespace System.IO
             public override void WriteLine(decimal value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(char[] buffer) => _out.WriteLine(buffer);
+            public override void WriteLine(char[]? buffer) => _out.WriteLine(buffer);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override void WriteLine(char[] buffer, int index, int count) => _out.WriteLine(buffer, index, count);
@@ -885,25 +886,25 @@ namespace System.IO
             public override void WriteLine(double value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(string value) => _out.WriteLine(value);
+            public override void WriteLine(string? value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(StringBuilder value) => _out.WriteLine(value);
+            public override void WriteLine(StringBuilder? value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(object value) => _out.WriteLine(value);
+            public override void WriteLine(object? value) => _out.WriteLine(value);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(string format, object arg0) => _out.WriteLine(format, arg0);
+            public override void WriteLine(string format, object? arg0) => _out.WriteLine(format, arg0);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(string format, object arg0, object arg1) => _out.WriteLine(format, arg0, arg1);
+            public override void WriteLine(string format, object? arg0, object? arg1) => _out.WriteLine(format, arg0, arg1);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(string format, object arg0, object arg1, object arg2) => _out.WriteLine(format, arg0, arg1, arg2);
+            public override void WriteLine(string format, object? arg0, object? arg1, object? arg2) => _out.WriteLine(format, arg0, arg1, arg2);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override void WriteLine(string format, object[] arg) => _out.WriteLine(format, arg);
+            public override void WriteLine(string format, object?[] arg) => _out.WriteLine(format, arg);
 
             //
             // On SyncTextWriter all APIs should run synchronously, even the async ones.
@@ -924,14 +925,14 @@ namespace System.IO
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override Task WriteAsync(string value)
+            public override Task WriteAsync(string? value)
             {
                 Write(value);
                 return Task.CompletedTask;
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override Task WriteAsync(StringBuilder value, CancellationToken cancellationToken = default)
+            public override Task WriteAsync(StringBuilder? value, CancellationToken cancellationToken = default)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -988,14 +989,14 @@ namespace System.IO
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override Task WriteLineAsync(string value)
+            public override Task WriteLineAsync(string? value)
             {
                 WriteLine(value);
                 return Task.CompletedTask;
             }
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override Task WriteLineAsync(StringBuilder value, CancellationToken cancellationToken = default)
+            public override Task WriteLineAsync(StringBuilder? value, CancellationToken cancellationToken = default)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {

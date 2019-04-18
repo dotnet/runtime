@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Globalization;
 
 namespace System.Reflection
@@ -11,7 +12,7 @@ namespace System.Reflection
         // This class can only be created from inside the EE.
         private RuntimeExceptionHandlingClause() { }
         
-        private RuntimeMethodBody _methodBody;
+        private RuntimeMethodBody _methodBody = null!;
         private ExceptionHandlingClauseOptions _flags;
         private int _tryOffset;
         private int _tryLength;
@@ -37,14 +38,14 @@ namespace System.Reflection
             }
         }
 
-        public override Type CatchType
+        public override Type? CatchType
         {
             get
             {
                 if (_flags != ExceptionHandlingClauseOptions.Clause)
                     throw new InvalidOperationException(SR.Arg_EHClauseNotClause);
 
-                Type type = null;
+                Type? type = null;
 
                 if (!MetadataToken.IsNullToken(_catchMetadataToken))
                 {

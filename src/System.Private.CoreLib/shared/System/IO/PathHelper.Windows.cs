@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -126,7 +127,7 @@ namespace System.IO
             }
         }
 
-        internal static string TryExpandShortFileName(ref ValueStringBuilder outputBuilder, string originalPath)
+        internal static string TryExpandShortFileName(ref ValueStringBuilder outputBuilder, string? originalPath)
         {
             // We guarantee we'll expand short names for paths that only partially exist. As such, we need to find the part of the path that actually does exist. To
             // avoid allocating like crazy we'll create only one input array and modify the contents with embedded nulls.

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 /*============================================================
 **
 ** 
@@ -21,7 +22,7 @@ using System.Diagnostics;
 
 namespace System.Resources
 {
-    internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<string>, IEqualityComparer<string>
+    internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<string?>, IEqualityComparer<string?> // TODO-NULLABLE: IEqualityComparer.GetHashCode does not accept nulls but Equals does
     {
         internal static readonly FastResourceComparer Default = new FastResourceComparer();
 
@@ -32,8 +33,9 @@ namespace System.Resources
             return FastResourceComparer.HashFunction(s);
         }
 
-        public int GetHashCode(string key)
+        public int GetHashCode(string? key) // TODO-NULLABLE: argument should be non-nullable but IEqualityComparer.Equals accepts null
         {
+            Debug.Assert(key != null, "TODO-NULLABLE");
             return FastResourceComparer.HashFunction(key);
         }
 
@@ -52,29 +54,29 @@ namespace System.Resources
         }
 
         // Compares Strings quickly in a case-sensitive way
-        public int Compare(object a, object b)
+        public int Compare(object? a, object? b)
         {
             if (a == b) return 0;
-            string sa = (string)a;
-            string sb = (string)b;
+            string? sa = (string?)a;
+            string? sb = (string?)b;
             return string.CompareOrdinal(sa, sb);
         }
 
-        public int Compare(string a, string b)
+        public int Compare(string? a, string? b)
         {
             return string.CompareOrdinal(a, b);
         }
 
-        public bool Equals(string a, string b)
+        public bool Equals(string? a, string? b)
         {
             return string.Equals(a, b);
         }
 
-        public new bool Equals(object a, object b)
+        public new bool Equals(object? a, object? b)
         {
             if (a == b) return true;
-            string sa = (string)a;
-            string sb = (string)b;
+            string? sa = (string?)a;
+            string? sb = (string?)b;
             return string.Equals(sa, sb);
         }
 

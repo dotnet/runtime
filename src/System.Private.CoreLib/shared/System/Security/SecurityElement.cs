@@ -328,12 +328,12 @@ namespace System.Security
                 IEnumerator lhs = _children.GetEnumerator();
                 IEnumerator rhs = other._children.GetEnumerator();
 
-                SecurityElement e1, e2;
+                SecurityElement? e1, e2;
                 while (lhs.MoveNext())
                 {
                     rhs.MoveNext();
-                    e1 = (SecurityElement)lhs.Current;
-                    e2 = (SecurityElement)rhs.Current;
+                    e1 = (SecurityElement?)lhs.Current;
+                    e2 = (SecurityElement?)rhs.Current;
                     if (e1 == null || !e1.Equal(e2))
                         return false;
                 }
@@ -617,7 +617,7 @@ namespace System.Security
             // an invalid tag simply won't be found.
             if (_children == null)
                 return null;
-            foreach (SecurityElement current in _children)
+            foreach (SecurityElement? current in _children)
             {
                 if (current != null && string.Equals(current.Tag, tag))
                     return current;
@@ -639,9 +639,9 @@ namespace System.Security
             if (_children == null)
                 return null;
 
-            foreach (SecurityElement child in Children!)
+            foreach (SecurityElement? child in Children!)
             {
-                string? text = child.SearchForTextOfTag(tag);
+                string? text = child?.SearchForTextOfTag(tag);
                 if (text != null)
                     return text;
             }

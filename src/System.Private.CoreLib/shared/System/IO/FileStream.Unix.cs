@@ -59,7 +59,7 @@ namespace System.IO
                 Interop.Sys.Permissions.S_IROTH | Interop.Sys.Permissions.S_IWOTH;
 
             // Open the file and store the safe handle.
-            return SafeFileHandle.Open(_path, openFlags, (int)OpenPermissions);
+            return SafeFileHandle.Open(_path!, openFlags, (int)OpenPermissions);
         }
 
         private static bool GetDefaultIsAsync(SafeFileHandle handle) => handle.IsAsync ?? DefaultIsAsync;

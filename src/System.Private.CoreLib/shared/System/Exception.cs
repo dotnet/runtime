@@ -41,8 +41,8 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
 
             _message = info.GetString("Message"); // Do not rename (binary serialization)
-            _data = (IDictionary)(info.GetValueNoThrow("Data", typeof(IDictionary))); // Do not rename (binary serialization)
-            _innerException = (Exception)(info.GetValue("InnerException", typeof(Exception))); // Do not rename (binary serialization)
+            _data = (IDictionary?)(info.GetValueNoThrow("Data", typeof(IDictionary))); // Do not rename (binary serialization)
+            _innerException = (Exception?)(info.GetValue("InnerException", typeof(Exception))); // Do not rename (binary serialization)
             _helpURL = info.GetString("HelpURL"); // Do not rename (binary serialization)
             _stackTraceString = info.GetString("StackTraceString"); // Do not rename (binary serialization)
             _HResult = info.GetInt32("HResult"); // Do not rename (binary serialization)

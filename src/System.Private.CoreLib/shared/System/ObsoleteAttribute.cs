@@ -11,8 +11,7 @@
 ** 
 ===========================================================*/
 
-using System;
-
+#nullable enable
 namespace System
 {
     // This attribute is attached to members that are not to be used any longer.
@@ -26,7 +25,7 @@ namespace System
         , Inherited = false)]
     public sealed class ObsoleteAttribute : Attribute
     {
-        private string _message;
+        private string? _message;
         private bool _error;
 
         public ObsoleteAttribute()
@@ -35,19 +34,19 @@ namespace System
             _error = false;
         }
 
-        public ObsoleteAttribute(string message)
+        public ObsoleteAttribute(string? message)
         {
             _message = message;
             _error = false;
         }
 
-        public ObsoleteAttribute(string message, bool error)
+        public ObsoleteAttribute(string? message, bool error)
         {
             _message = message;
             _error = error;
         }
 
-        public string Message
+        public string? Message
         {
             get { return _message; }
         }

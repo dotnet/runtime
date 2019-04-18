@@ -323,7 +323,7 @@ namespace System.Threading
 
             public static LocalDataStoreSlot AllocateSlot()
             {
-                return new LocalDataStoreSlot(new ThreadLocal<object>());
+                return new LocalDataStoreSlot(new ThreadLocal<object?>());
             }
 
             private static Dictionary<string, LocalDataStoreSlot> EnsureNameToSlotMap()

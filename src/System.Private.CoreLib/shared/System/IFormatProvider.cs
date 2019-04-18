@@ -11,13 +11,12 @@
 **
 ============================================================*/
 
-using System;
-
+#nullable enable
 namespace System
 {
     public interface IFormatProvider
     {
         // Interface does not need to be marked with the serializable attribute
-        object GetFormat(Type formatType);
+        object? GetFormat(Type? formatType);
     }
 }

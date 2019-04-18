@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -50,15 +51,15 @@ namespace System
                     GetLocalTimeZoneFromWin32Data(timeZoneInformation, dstDisabled: false);
             }
 
-            private volatile OffsetAndRule _oneYearLocalFromUtc;
+            private volatile OffsetAndRule? _oneYearLocalFromUtc;
 
             public OffsetAndRule GetOneYearLocalFromUtc(int year)
             {
-                OffsetAndRule oneYearLocFromUtc = _oneYearLocalFromUtc;
+                OffsetAndRule? oneYearLocFromUtc = _oneYearLocalFromUtc;
                 if (oneYearLocFromUtc == null || oneYearLocFromUtc.Year != year)
                 {
                     TimeZoneInfo currentYear = GetCurrentOneYearLocal();
-                    AdjustmentRule rule = currentYear._adjustmentRules == null ? null : currentYear._adjustmentRules[0];
+                    AdjustmentRule? rule = currentYear._adjustmentRules == null ? null : currentYear._adjustmentRules[0];
                     oneYearLocFromUtc = new OffsetAndRule(year, currentYear.BaseUtcOffset, rule);
                     _oneYearLocalFromUtc = oneYearLocFromUtc;
                 }
@@ -70,9 +71,9 @@ namespace System
         {
             public readonly int Year;
             public readonly TimeSpan Offset;
-            public readonly AdjustmentRule Rule;
+            public readonly AdjustmentRule? Rule;
 
-            public OffsetAndRule(int year, TimeSpan offset, AdjustmentRule rule)
+            public OffsetAndRule(int year, TimeSpan offset, AdjustmentRule? rule)
             {
                 Year = year;
                 Offset = offset;
@@ -97,15 +98,13 @@ namespace System
         {
             Debug.Assert(Monitor.IsEntered(cachedData));
 
-            using (RegistryKey reg = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
+            using (RegistryKey? reg = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
             {
                 if (reg != null)
                 {
                     foreach (string keyName in reg.GetSubKeyNames())
                     {
-                        TimeZoneInfo value;
-                        Exception ex;
-                        TryGetTimeZone(keyName, false, out value, out ex, cachedData);  // populate the cache
+                        TryGetTimeZone(keyName, false, out _, out _, cachedData);  // populate the cache
                     }
                 }
             }
@@ -128,7 +127,7 @@ namespace System
             {
                 // only create the adjustment rule if DST is enabled
                 REG_TZI_FORMAT regZone = new REG_TZI_FORMAT(zone);
-                AdjustmentRule rule = CreateAdjustmentRuleFromTimeZoneInformation(regZone, DateTime.MinValue.Date, DateTime.MaxValue.Date, zone.Bias);
+                AdjustmentRule? rule = CreateAdjustmentRuleFromTimeZoneInformation(regZone, DateTime.MinValue.Date, DateTime.MaxValue.Date, zone.Bias);
                 if (rule != null)
                 {
                     _adjustmentRules = new[] { rule };
@@ -152,7 +151,7 @@ namespace System
         /// <summary>
         /// Converts a REG_TZI_FORMAT struct to an AdjustmentRule.
         /// </summary>
-        private static AdjustmentRule CreateAdjustmentRuleFromTimeZoneInformation(in REG_TZI_FORMAT timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
+        private static AdjustmentRule? CreateAdjustmentRuleFromTimeZoneInformation(in REG_TZI_FORMAT timeZoneInformation, DateTime startDate, DateTime endDate, int defaultBaseUtcOffset)
         {
             bool supportsDst = timeZoneInformation.StandardDate.Month != 0;
 
@@ -209,11 +208,11 @@ namespace System
         /// Helper function that searches the registry for a time zone entry
         /// that matches the TimeZoneInformation struct.
         /// </summary>
-        private static string FindIdFromTimeZoneInformation(in TIME_ZONE_INFORMATION timeZone, out bool dstDisabled)
+        private static string? FindIdFromTimeZoneInformation(in TIME_ZONE_INFORMATION timeZone, out bool dstDisabled)
         {
             dstDisabled = false;
 
-            using (RegistryKey key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
+            using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive, writable: false))
             {
                 if (key == null)
                 {
@@ -259,29 +258,24 @@ namespace System
             string dynamicTimeZoneKeyName = dynamicTimeZoneInformation.GetTimeZoneKeyName();
             if (dynamicTimeZoneKeyName.Length != 0)
             {
-                TimeZoneInfo zone;
-                Exception ex;
-
-                if (TryGetTimeZone(dynamicTimeZoneKeyName, dynamicTimeZoneInformation.DynamicDaylightTimeDisabled != 0, out zone, out ex, cachedData) == TimeZoneInfoResult.Success)
+                if (TryGetTimeZone(dynamicTimeZoneKeyName, dynamicTimeZoneInformation.DynamicDaylightTimeDisabled != 0, out TimeZoneInfo? zone, out _, cachedData) == TimeZoneInfoResult.Success)
                 {
                     // successfully loaded the time zone from the registry
-                    return zone;
+                    return zone!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 }
             }
 
             var timeZoneInformation = new TIME_ZONE_INFORMATION(dynamicTimeZoneInformation);
 
             // the key name was not returned or it pointed to a bogus entry - search for the entry ourselves
-            string id = FindIdFromTimeZoneInformation(timeZoneInformation, out bool dstDisabled);
+            string? id = FindIdFromTimeZoneInformation(timeZoneInformation, out bool dstDisabled);
 
             if (id != null)
             {
-                TimeZoneInfo zone;
-                Exception ex;
-                if (TryGetTimeZone(id, dstDisabled, out zone, out ex, cachedData) == TimeZoneInfoResult.Success)
+                if (TryGetTimeZone(id, dstDisabled, out TimeZoneInfo? zone, out _, cachedData) == TimeZoneInfoResult.Success)
                 {
                     // successfully loaded the time zone from the registry
-                    return zone;
+                    return zone!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 }
             }
 
@@ -347,8 +341,8 @@ namespace System
                 throw new TimeZoneNotFoundException(SR.Format(SR.TimeZoneNotFound_MissingData, id));
             }
 
-            TimeZoneInfo value;
-            Exception e;
+            TimeZoneInfo? value;
+            Exception? e;
 
             TimeZoneInfoResult result;
 
@@ -361,7 +355,7 @@ namespace System
 
             if (result == TimeZoneInfoResult.Success)
             {
-                return value;
+                return value!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             }
             else if (result == TimeZoneInfoResult.InvalidTimeZoneException)
             {
@@ -523,7 +517,7 @@ namespace System
         ///  2. A REG_TZI_FORMAT struct containing the default rule.
         ///  3. An AdjustmentRule[] out-parameter.
         /// </summary>
-        private static bool TryCreateAdjustmentRules(string id, in REG_TZI_FORMAT defaultTimeZoneInformation, out AdjustmentRule[] rules, out Exception e, int defaultBaseUtcOffset)
+        private static bool TryCreateAdjustmentRules(string id, in REG_TZI_FORMAT defaultTimeZoneInformation, out AdjustmentRule[]? rules, out Exception? e, int defaultBaseUtcOffset)
         {
             rules = null;
             e = null;
@@ -551,11 +545,11 @@ namespace System
                 // * "<year2>"    REG_BINARY REG_TZI_FORMAT
                 // * "<year3>"    REG_BINARY REG_TZI_FORMAT
                 //
-                using (RegistryKey dynamicKey = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive + "\\" + id + "\\Dynamic DST", writable: false))
+                using (RegistryKey? dynamicKey = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive + "\\" + id + "\\Dynamic DST", writable: false))
                 {
                     if (dynamicKey == null)
                     {
-                        AdjustmentRule rule = CreateAdjustmentRuleFromTimeZoneInformation(
+                        AdjustmentRule? rule = CreateAdjustmentRuleFromTimeZoneInformation(
                             defaultTimeZoneInformation, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
                         if (rule != null)
                         {
@@ -572,8 +566,8 @@ namespace System
                     // read LastEntry   {(yearN, 1, 1) - MaxValue       }
 
                     // read the FirstEntry and LastEntry key values (ex: "1980", "2038")
-                    int first = (int)dynamicKey.GetValue(FirstEntryValue, -1);
-                    int last = (int)dynamicKey.GetValue(LastEntryValue, -1);
+                    int first = (int)dynamicKey.GetValue(FirstEntryValue, -1)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
+                    int last = (int)dynamicKey.GetValue(LastEntryValue, -1)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
 
                     if (first == -1 || last == -1 || first > last)
                     {
@@ -591,7 +585,7 @@ namespace System
                     if (first == last)
                     {
                         // there is just 1 dynamic rule for this time zone.
-                        AdjustmentRule rule = CreateAdjustmentRuleFromTimeZoneInformation(dtzi, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
+                        AdjustmentRule? rule = CreateAdjustmentRuleFromTimeZoneInformation(dtzi, DateTime.MinValue.Date, DateTime.MaxValue.Date, defaultBaseUtcOffset);
                         if (rule != null)
                         {
                             rules = new[] { rule };
@@ -602,7 +596,7 @@ namespace System
                     List<AdjustmentRule> rulesList = new List<AdjustmentRule>(1);
 
                     // there are more than 1 dynamic rules for this time zone.
-                    AdjustmentRule firstRule = CreateAdjustmentRuleFromTimeZoneInformation(
+                    AdjustmentRule? firstRule = CreateAdjustmentRuleFromTimeZoneInformation(
                         dtzi,
                         DateTime.MinValue.Date,        // MinValue
                         new DateTime(first, 12, 31),   // December 31, <FirstYear>
@@ -620,7 +614,7 @@ namespace System
                         {
                             return false;
                         }
-                        AdjustmentRule middleRule = CreateAdjustmentRuleFromTimeZoneInformation(
+                        AdjustmentRule? middleRule = CreateAdjustmentRuleFromTimeZoneInformation(
                             dtzi,
                             new DateTime(i, 1, 1),    // January  01, <Year>
                             new DateTime(i, 12, 31),  // December 31, <Year>
@@ -637,7 +631,7 @@ namespace System
                     {
                         return false;
                     }
-                    AdjustmentRule lastRule = CreateAdjustmentRuleFromTimeZoneInformation(
+                    AdjustmentRule? lastRule = CreateAdjustmentRuleFromTimeZoneInformation(
                         dtzi,
                         new DateTime(last, 1, 1),    // January  01, <LastYear>
                         DateTime.MaxValue.Date,      // MaxValue
@@ -702,7 +696,7 @@ namespace System
         {
             dstDisabled = false;
 
-            using (RegistryKey key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive + "\\" + id, writable: false))
+            using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive + "\\" + id, writable: false))
             {
                 if (key == null)
                 {
@@ -741,7 +735,7 @@ namespace System
                 //
                 if (result)
                 {
-                    string registryStandardName = key.GetValue(StandardValue, string.Empty) as string;
+                    string? registryStandardName = key.GetValue(StandardValue, string.Empty) as string;
                     result = string.Equals(registryStandardName, timeZone.GetStandardName(), StringComparison.Ordinal);
                 }
                 return result;
@@ -859,16 +853,16 @@ namespace System
         /// resource dll(s).  When the keys do not exist, the function falls back to reading from the standard
         /// key-values
         /// </summary>
-        private static void GetLocalizedNamesByRegistryKey(RegistryKey key, out string displayName, out string standardName, out string daylightName)
+        private static void GetLocalizedNamesByRegistryKey(RegistryKey key, out string? displayName, out string? standardName, out string? daylightName)
         {
             displayName = string.Empty;
             standardName = string.Empty;
             daylightName = string.Empty;
 
             // read the MUI_ registry keys
-            string displayNameMuiResource = key.GetValue(MuiDisplayValue, string.Empty) as string;
-            string standardNameMuiResource = key.GetValue(MuiStandardValue, string.Empty) as string;
-            string daylightNameMuiResource = key.GetValue(MuiDaylightValue, string.Empty) as string;
+            string? displayNameMuiResource = key.GetValue(MuiDisplayValue, string.Empty) as string;
+            string? standardNameMuiResource = key.GetValue(MuiStandardValue, string.Empty) as string;
+            string? daylightNameMuiResource = key.GetValue(MuiDaylightValue, string.Empty) as string;
 
             // try to load the strings from the native resource DLL(s)
             if (!string.IsNullOrEmpty(displayNameMuiResource))
@@ -905,7 +899,7 @@ namespace System
         /// Helper function that takes a string representing a time_zone_name registry key name
         /// and returns a TimeZoneInfo instance.
         /// </summary>
-        private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo value, out Exception e)
+        private static TimeZoneInfoResult TryGetTimeZoneFromLocalMachine(string id, out TimeZoneInfo? value, out Exception? e)
         {
             e = null;
 
@@ -934,7 +928,7 @@ namespace System
             //                       add "%windir%\system32\" after "@"
             // * TZI,         REG_BINARY REG_TZI_FORMAT
             //
-            using (RegistryKey key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive + "\\" + id, writable: false))
+            using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(TimeZonesRegistryHive + "\\" + id, writable: false))
             {
                 if (key == null)
                 {
@@ -950,14 +944,14 @@ namespace System
                     return TimeZoneInfoResult.InvalidTimeZoneException;
                 }
 
-                AdjustmentRule[] adjustmentRules;
+                AdjustmentRule[]? adjustmentRules;
                 if (!TryCreateAdjustmentRules(id, defaultTimeZoneInformation, out adjustmentRules, out e, defaultTimeZoneInformation.Bias))
                 {
                     value = null;
                     return TimeZoneInfoResult.InvalidTimeZoneException;
                 }
 
-                GetLocalizedNamesByRegistryKey(key, out string displayName, out string standardName, out string daylightName);
+                GetLocalizedNamesByRegistryKey(key, out string? displayName, out string? standardName, out string? daylightName);
 
                 try
                 {

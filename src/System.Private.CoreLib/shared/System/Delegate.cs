@@ -13,7 +13,7 @@ namespace System
     {
         public virtual object Clone() => MemberwiseClone();
 
-        public static Delegate? Combine(Delegate? a, Delegate? b)
+        public static Delegate? Combine(Delegate? a, Delegate? b) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
             if (a is null)
                 return b;
@@ -21,7 +21,7 @@ namespace System
             return a.CombineImpl(b);
         }
 
-        public static Delegate? Combine(params Delegate?[]? delegates)
+        public static Delegate? Combine(params Delegate?[]? delegates) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
             if (delegates == null || delegates.Length == 0)
                 return null;

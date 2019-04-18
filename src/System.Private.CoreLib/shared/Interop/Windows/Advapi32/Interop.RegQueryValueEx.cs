@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #if REGISTRY_ASSEMBLY
 using Microsoft.Win32.SafeHandles;
 #else
@@ -18,17 +19,17 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
-            string lpValueName,
-            int[] lpReserved,
+            string? lpValueName,
+            int[]? lpReserved,
             ref int lpType,
-            [Out] byte[] lpData,
+            [Out] byte[]? lpData,
             ref int lpcbData);
 
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
-            string lpValueName,
-            int[] lpReserved,
+            string? lpValueName,
+            int[]? lpReserved,
             ref int lpType,
             ref int lpData,
             ref int lpcbData);
@@ -36,8 +37,8 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
-            string lpValueName,
-            int[] lpReserved,
+            string? lpValueName,
+            int[]? lpReserved,
             ref int lpType,
             ref long lpData,
             ref int lpcbData);
@@ -45,10 +46,10 @@ internal partial class Interop
         [DllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, BestFitMapping = false, EntryPoint = "RegQueryValueExW")]
         internal static extern int RegQueryValueEx(
             SafeRegistryHandle hKey,
-            string lpValueName,
-            int[] lpReserved,
+            string? lpValueName,
+            int[]? lpReserved,
             ref int lpType,
-            [Out] char[] lpData,
+            [Out] char[]? lpData,
             ref int lpcbData);
     }
 }

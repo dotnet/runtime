@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 using System.Collections;
-using System.Collections.Generic;
 using System.Runtime.InteropServices.ComTypes;
-using System.Text;
 
 namespace System.Runtime.InteropServices.CustomMarshalers
 {
@@ -15,7 +13,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
         private readonly IEnumVARIANT _enumVariantObject;
         private bool _fetchedLastObject;
         private object[] _nextArray = new object[1];
-        private object _current;
+        private object? _current;
 
         public EnumeratorViewOfEnumVariant(IEnumVARIANT enumVariantObject)
         {
@@ -24,7 +22,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             _current = null;
         }
 
-        public object Current => _current;
+        public object? Current => _current; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
 
         public unsafe bool MoveNext()
         {

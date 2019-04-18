@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
+#nullable enable
 namespace System
 {
     [Serializable]
@@ -38,12 +39,12 @@ namespace System
             return new ReadOnlyCollection<T>(array);
         }
 
-        public static void Resize<T>(ref T[] array, int newSize)
+        public static void Resize<T>(ref T[]? array, int newSize) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
             if (newSize < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.newSize, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            T[] larray = array;
+            T[]? larray = array;
             if (larray == null)
             {
                 array = new T[newSize];
@@ -64,7 +65,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
             }
-            if (lengths.Length == 0)
+            if (lengths!.Length == 0) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
             int[] intLengths = new int[lengths.Length];
@@ -106,7 +107,7 @@ namespace System
             Copy(sourceArray, isourceIndex, destinationArray, idestinationIndex, ilength);
         }
 
-        public object GetValue(long index)
+        public object? GetValue(long index)
         {
             int iindex = (int)index;
             if (index != iindex)
@@ -115,7 +116,7 @@ namespace System
             return this.GetValue(iindex);
         }
 
-        public object GetValue(long index1, long index2)
+        public object? GetValue(long index1, long index2)
         {
             int iindex1 = (int)index1;
             int iindex2 = (int)index2;
@@ -128,7 +129,7 @@ namespace System
             return this.GetValue(iindex1, iindex2);
         }
 
-        public object GetValue(long index1, long index2, long index3)
+        public object? GetValue(long index1, long index2, long index3)
         {
             int iindex1 = (int)index1;
             int iindex2 = (int)index2;
@@ -144,11 +145,11 @@ namespace System
             return this.GetValue(iindex1, iindex2, iindex3);
         }
 
-        public object GetValue(params long[] indices)
+        public object? GetValue(params long[] indices)
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices.Length)
+            if (Rank != indices!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
             int[] intIndices = new int[indices.Length];
@@ -165,7 +166,7 @@ namespace System
             return this.GetValue(intIndices);
         }
 
-        public void SetValue(object value, long index)
+        public void SetValue(object? value, long index)
         {
             int iindex = (int)index;
 
@@ -175,7 +176,7 @@ namespace System
             this.SetValue(value, iindex);
         }
 
-        public void SetValue(object value, long index1, long index2)
+        public void SetValue(object? value, long index1, long index2)
         {
             int iindex1 = (int)index1;
             int iindex2 = (int)index2;
@@ -204,11 +205,11 @@ namespace System
             this.SetValue(value, iindex1, iindex2, iindex3);
         }
 
-        public void SetValue(object value, params long[] indices)
+        public void SetValue(object? value, params long[] indices)
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices.Length)
+            if (Rank != indices!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
             int[] intIndices = new int[indices.Length];
@@ -240,45 +241,36 @@ namespace System
         }
 
         // Number of elements in the Array.
-        int ICollection.Count
-        { get { return Length; } }
-
+        int ICollection.Count { get { return Length; } }
 
         // Returns an object appropriate for synchronizing access to this 
         // Array.
-        public object SyncRoot
-        { get { return this; } }
+        public object SyncRoot { get { return this; } }
 
         // Is this Array read-only?
-        public bool IsReadOnly
-        { get { return false; } }
+        public bool IsReadOnly { get { return false; } }
 
-        public bool IsFixedSize
-        {
-            get { return true; }
-        }
+        public bool IsFixedSize { get { return true; } }
 
         // Is this Array synchronized (i.e., thread-safe)?  If you want a synchronized
         // collection, you can use SyncRoot as an object to synchronize your 
         // collection with.  You could also call GetSynchronized() 
         // to get a synchronized wrapper around the Array.
-        public bool IsSynchronized
-        { get { return false; } }
+        public bool IsSynchronized { get { return false; } }
 
-
-        object IList.this[int index]
+        object? IList.this[int index]
         {
             get { return GetValue(index); }
             set { SetValue(value, index); }
         }
 
-        int IList.Add(object value)
+        int IList.Add(object? value)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
             return default;
         }
 
-        bool IList.Contains(object value)
+        bool IList.Contains(object? value)
         {
             return Array.IndexOf(this, value) >= this.GetLowerBound(0);
         }
@@ -288,17 +280,17 @@ namespace System
             Array.Clear(this, this.GetLowerBound(0), this.Length);
         }
 
-        int IList.IndexOf(object value)
+        int IList.IndexOf(object? value)
         {
             return Array.IndexOf(this, value);
         }
 
-        void IList.Insert(int index, object value)
+        void IList.Insert(int index, object? value)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
 
-        void IList.Remove(object value)
+        void IList.Remove(object? value)
         {
             ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_FixedSizeCollection);
         }
@@ -315,14 +307,14 @@ namespace System
             return MemberwiseClone();
         }
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null)
             {
                 return 1;
             }
 
-            Array o = other as Array;
+            Array? o = other as Array;
 
             if (o == null || this.Length != o.Length)
             {
@@ -332,10 +324,10 @@ namespace System
             int i = 0;
             int c = 0;
 
-            while (i < o.Length && c == 0)
+            while (i < o!.Length && c == 0) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
-                object left = GetValue(i);
-                object right = o.GetValue(i);
+                object? left = GetValue(i);
+                object? right = o.GetValue(i);
 
                 c = comparer.Compare(left, right);
                 i++;
@@ -344,7 +336,7 @@ namespace System
             return c;
         }
 
-        bool IStructuralEquatable.Equals(object other, IEqualityComparer comparer)
+        bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
             if (other == null)
             {
@@ -364,8 +356,8 @@ namespace System
             int i = 0;
             while (i < o.Length)
             {
-                object left = GetValue(i);
-                object right = o.GetValue(i);
+                object? left = GetValue(i);
+                object? right = o.GetValue(i);
 
                 if (!comparer.Equals(left, right))
                 {
@@ -391,7 +383,7 @@ namespace System
 
             for (int i = (this.Length >= 8 ? this.Length - 8 : 0); i < this.Length; i++)
             {
-                ret = CombineHashCodes(ret, comparer.GetHashCode(GetValue(i)));
+                ret = CombineHashCodes(ret, comparer!.GetHashCode(GetValue(i))); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
 
             return ret;
@@ -410,11 +402,11 @@ namespace System
         // negative result to produce the index of the first element (if any) that
         // is larger than the given search value.
         // 
-        public static int BinarySearch(Array array, object value)
+        public static int BinarySearch(Array array, object? value)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            return BinarySearch(array, array.GetLowerBound(0), array.Length, value, null);
+            return BinarySearch(array!, array!.GetLowerBound(0), array.Length, value, null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         // Searches a section of an array for a given element using a binary search
@@ -430,7 +422,7 @@ namespace System
         // negative result to produce the index of the first element (if any) that
         // is larger than the given search value.
         // 
-        public static int BinarySearch(Array array, int index, int length, object value)
+        public static int BinarySearch(Array array, int index, int length, object? value)
         {
             return BinarySearch(array, index, length, value, null);
         }
@@ -449,11 +441,11 @@ namespace System
         // negative result to produce the index of the first element (if any) that
         // is larger than the given search value.
         // 
-        public static int BinarySearch(Array array, object value, IComparer comparer)
+        public static int BinarySearch(Array array, object? value, IComparer? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            return BinarySearch(array, array.GetLowerBound(0), array.Length, value, comparer);
+            return BinarySearch(array!, array!.GetLowerBound(0), array.Length, value, comparer); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         // Searches a section of an array for a given element using a binary search
@@ -471,11 +463,11 @@ namespace System
         // negative result to produce the index of the first element (if any) that
         // is larger than the given search value.
         // 
-        public static int BinarySearch(Array array, int index, int length, object value, IComparer comparer)
+        public static int BinarySearch(Array array, int index, int length, object? value, IComparer? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            int lb = array.GetLowerBound(0);
+            int lb = array!.GetLowerBound(0); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             if (index < lb)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             if (length < 0)
@@ -560,14 +552,14 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            return BinarySearch<T>(array, 0, array.Length, value, null);
+            return BinarySearch<T>(array!, 0, array!.Length, value, null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
-        public static int BinarySearch<T>(T[] array, T value, System.Collections.Generic.IComparer<T> comparer)
+        public static int BinarySearch<T>(T[] array, T value, System.Collections.Generic.IComparer<T>? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            return BinarySearch<T>(array, 0, array.Length, value, comparer);
+            return BinarySearch<T>(array!, 0, array!.Length, value, comparer); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static int BinarySearch<T>(T[] array, int index, int length, T value)
@@ -575,7 +567,7 @@ namespace System
             return BinarySearch<T>(array, index, length, value, null);
         }
 
-        public static int BinarySearch<T>(T[] array, int index, int length, T value, System.Collections.Generic.IComparer<T> comparer)
+        public static int BinarySearch<T>(T[] array, int index, int length, T value, System.Collections.Generic.IComparer<T>? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
@@ -584,7 +576,7 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
 
-            if (array.Length - index < length)
+            if (array!.Length - index < length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
             return ArraySortHelper<T>.Default.BinarySearch(array, index, length, value, comparer);
@@ -602,10 +594,10 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
             }
 
-            TOutput[] newArray = new TOutput[array.Length];
+            TOutput[] newArray = new TOutput[array!.Length]; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             for (int i = 0; i < array.Length; i++)
             {
-                newArray[i] = converter(array[i]);
+                newArray[i] = converter!(array[i]); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
             return newArray;
         }
@@ -622,7 +614,7 @@ namespace System
             if (array != null && array.Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             // Note: Array.Copy throws a RankException and we want a consistent ArgumentException for all the IList CopyTo methods.
-            Array.Copy(this, GetLowerBound(0), array, index, Length);
+            Array.Copy(this, GetLowerBound(0), array!, index, Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public void CopyTo(Array array, long index)
@@ -656,7 +648,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < array!.Length; i++) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 array[i] = value;
             }
@@ -669,19 +661,19 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (startIndex < 0 || startIndex > array.Length)
+            if (startIndex < 0 || startIndex > array!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
 
-            if (count < 0 || startIndex > array.Length - count)
+            if (count < 0 || startIndex > array!.Length - count) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
             for (int i = startIndex; i < startIndex + count; i++)
             {
-                array[i] = value;
+                array![i] = value; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
         }
 
@@ -697,14 +689,14 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < array!.Length; i++) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
-                if (match(array[i]))
+                if (match!(array[i])) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     return array[i];
                 }
             }
-            return default;
+            return default!; // TODO-NULLABLE-GENERIC
         }
 
         public static T[] FindAll<T>(T[] array, Predicate<T> match)
@@ -720,9 +712,9 @@ namespace System
             }
 
             List<T> list = new List<T>();
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < array!.Length; i++) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
-                if (match(array[i]))
+                if (match!(array[i])) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     list.Add(array[i]);
                 }
@@ -737,7 +729,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            return FindIndex(array, 0, array.Length, match);
+            return FindIndex(array!, 0, array!.Length, match); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static int FindIndex<T>(T[] array, int startIndex, Predicate<T> match)
@@ -747,7 +739,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            return FindIndex(array, startIndex, array.Length - startIndex, match);
+            return FindIndex(array!, startIndex, array!.Length - startIndex, match); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static int FindIndex<T>(T[] array, int startIndex, int count, Predicate<T> match)
@@ -757,12 +749,12 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (startIndex < 0 || startIndex > array.Length)
+            if (startIndex < 0 || startIndex > array!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
 
-            if (count < 0 || startIndex > array.Length - count)
+            if (count < 0 || startIndex > array!.Length - count) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
@@ -775,7 +767,7 @@ namespace System
             int endIndex = startIndex + count;
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (match(array[i]))
+                if (match!(array![i])) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                     return i;
             }
             return -1;
@@ -793,14 +785,14 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            for (int i = array.Length - 1; i >= 0; i--)
+            for (int i = array!.Length - 1; i >= 0; i--) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
-                if (match(array[i]))
+                if (match!(array[i])) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     return array[i];
                 }
             }
-            return default;
+            return default!; // TODO-NULLABLE-GENERIC
         }
 
         public static int FindLastIndex<T>(T[] array, Predicate<T> match)
@@ -810,7 +802,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            return FindLastIndex(array, array.Length - 1, array.Length, match);
+            return FindLastIndex(array!, array!.Length - 1, array.Length, match); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static int FindLastIndex<T>(T[] array, int startIndex, Predicate<T> match)
@@ -820,7 +812,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            return FindLastIndex(array, startIndex, startIndex + 1, match);
+            return FindLastIndex(array!, startIndex, startIndex + 1, match); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static int FindLastIndex<T>(T[] array, int startIndex, int count, Predicate<T> match)
@@ -835,7 +827,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            if (array.Length == 0)
+            if (array!.Length == 0) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 // Special case for 0 length List
                 if (startIndex != -1)
@@ -861,7 +853,7 @@ namespace System
             int endIndex = startIndex - count;
             for (int i = startIndex; i > endIndex; i--)
             {
-                if (match(array[i]))
+                if (match!(array[i])) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     return i;
                 }
@@ -881,9 +873,9 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
             }
 
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < array!.Length; i++) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
-                action(array[i]);
+                action!(array[i]); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
         }
 
@@ -891,11 +883,11 @@ namespace System
         // The array is searched forwards, and the elements of the array are
         // compared to the given value using the Object.Equals method.
         // 
-        public static int IndexOf(Array array, object value)
+        public static int IndexOf(Array array, object? value)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            return IndexOf(array, value, array.GetLowerBound(0), array.Length);
+            return IndexOf(array!, value, array!.GetLowerBound(0), array.Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         // Returns the index of the first occurrence of a given value in a range of
@@ -904,11 +896,11 @@ namespace System
         // elements of the array are compared to the given value using the
         // Object.Equals method.
         // 
-        public static int IndexOf(Array array, object value, int startIndex)
+        public static int IndexOf(Array array, object? value, int startIndex)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            int lb = array.GetLowerBound(0);
+            int lb = array!.GetLowerBound(0); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             return IndexOf(array, value, startIndex, array.Length - startIndex + lb);
         }
 
@@ -918,11 +910,11 @@ namespace System
         // elements of the array are compared to the given value using the
         // Object.Equals method.
         // 
-        public static int IndexOf(Array array, object value, int startIndex, int count)
+        public static int IndexOf(Array array, object? value, int startIndex, int count)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if (array.Rank != 1)
+            if (array!.Rank != 1) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
 
             int lb = array.GetLowerBound(0);
@@ -939,7 +931,7 @@ namespace System
                 return retVal;
 #endif
 
-            object[] objArray = array as object[];
+            object[]? objArray = array as object[];
             int endIndex = startIndex + count;
             if (objArray != null)
             {
@@ -965,7 +957,7 @@ namespace System
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    object obj = array.GetValue(i);
+                    object? obj = array.GetValue(i);
                     if (obj == null)
                     {
                         if (value == null)
@@ -992,7 +984,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            return IndexOf(array, value, 0, array.Length);
+            return IndexOf(array!, value, 0, array!.Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static int IndexOf<T>(T[] array, T value, int startIndex)
@@ -1002,7 +994,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            return IndexOf(array, value, startIndex, array.Length - startIndex);
+            return IndexOf(array!, value, startIndex, array!.Length - startIndex); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static int IndexOf<T>(T[] array, T value, int startIndex, int count)
@@ -1012,7 +1004,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if ((uint)startIndex > (uint)array.Length)
+            if ((uint)startIndex > (uint)array!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
             }
@@ -1056,11 +1048,11 @@ namespace System
         // The array is searched backwards, and the elements of the array are
         // compared to the given value using the Object.Equals method.
         // 
-        public static int LastIndexOf(Array array, object value)
+        public static int LastIndexOf(Array array, object? value)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            int lb = array.GetLowerBound(0);
+            int lb = array!.GetLowerBound(0); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             return LastIndexOf(array, value, array.Length - 1 + lb, array.Length);
         }
 
@@ -1069,11 +1061,11 @@ namespace System
         // startIndex and ending at index 0. The elements of the array are
         // compared to the given value using the Object.Equals method.
         // 
-        public static int LastIndexOf(Array array, object value, int startIndex)
+        public static int LastIndexOf(Array array, object? value, int startIndex)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            int lb = array.GetLowerBound(0);
+            int lb = array!.GetLowerBound(0); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             return LastIndexOf(array, value, startIndex, startIndex + 1 - lb);
         }
 
@@ -1083,11 +1075,11 @@ namespace System
         // the array are compared to the given value using the Object.Equals
         // method.
         // 
-        public static int LastIndexOf(Array array, object value, int startIndex, int count)
+        public static int LastIndexOf(Array array, object? value, int startIndex, int count)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            int lb = array.GetLowerBound(0);
+            int lb = array!.GetLowerBound(0); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             if (array.Length == 0)
             {
                 return lb - 1;
@@ -1110,7 +1102,7 @@ namespace System
                 return retVal;
 #endif
 
-            object[] objArray = array as object[];
+            object[]? objArray = array as object[];
             int endIndex = startIndex - count + 1;
             if (objArray != null)
             {
@@ -1136,7 +1128,7 @@ namespace System
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    object obj = array.GetValue(i);
+                    object? obj = array.GetValue(i);
                     if (obj == null)
                     {
                         if (value == null)
@@ -1159,7 +1151,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            return LastIndexOf(array, value, array.Length - 1, array.Length);
+            return LastIndexOf(array!, value, array!.Length - 1, array.Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static int LastIndexOf<T>(T[] array, T value, int startIndex)
@@ -1169,7 +1161,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
             // if array is empty and startIndex is 0, we need to pass 0 as count
-            return LastIndexOf(array, value, startIndex, (array.Length == 0) ? 0 : (startIndex + 1));
+            return LastIndexOf(array!, value, startIndex, (array!.Length == 0) ? 0 : (startIndex + 1)); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static int LastIndexOf<T>(T[] array, T value, int startIndex, int count)
@@ -1179,7 +1171,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (array.Length == 0)
+            if (array!.Length == 0) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 //
                 // Special case for 0 length List
@@ -1251,7 +1243,7 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Reverse(array, array.GetLowerBound(0), array.Length);
+            Reverse(array!, array!.GetLowerBound(0), array.Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         // Reverses the elements in a range of an array. Following a call to this
@@ -1264,7 +1256,7 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            int lowerBound = array.GetLowerBound(0);
+            int lowerBound = array!.GetLowerBound(0); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             if (index < lowerBound)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             if (length < 0)
@@ -1294,7 +1286,7 @@ namespace System
                 int j = index + length - 1;
                 while (i < j)
                 {
-                    object temp = array.GetValue(i);
+                    object? temp = array.GetValue(i);
                     array.SetValue(array.GetValue(j), i);
                     array.SetValue(temp, j);
                     i++;
@@ -1307,7 +1299,7 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Reverse(array, 0, array.Length);
+            Reverse(array!, 0, array!.Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static void Reverse<T>(T[] array, int index, int length)
@@ -1318,7 +1310,7 @@ namespace System
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             if (length < 0)
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-            if (array.Length - index < length)
+            if (array!.Length - index < length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
             if (length <= 1)
@@ -1344,7 +1336,7 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Sort(array, null, array.GetLowerBound(0), array.Length, null);
+            Sort(array!, null, array!.GetLowerBound(0), array.Length, null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         // Sorts the elements of two arrays based on the keys in the first array.
@@ -1353,11 +1345,11 @@ namespace System
         // keys to each other using the IComparable interface, which must be
         // implemented by all elements of the keys array.
         // 
-        public static void Sort(Array keys, Array items)
+        public static void Sort(Array keys, Array? items)
         {
             if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
-            Sort(keys, items, keys.GetLowerBound(0), keys.Length, null);
+            Sort(keys!, items, keys!.GetLowerBound(0), keys.Length, null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         // Sorts the elements in a section of an array. The sort compares the
@@ -1375,7 +1367,7 @@ namespace System
         // keys to each other using the IComparable interface, which must be
         // implemented by all elements of the keys array.
         // 
-        public static void Sort(Array keys, Array items, int index, int length)
+        public static void Sort(Array keys, Array? items, int index, int length)
         {
             Sort(keys, items, index, length, null);
         }
@@ -1386,11 +1378,11 @@ namespace System
         // IComparable interface, which in that case must be implemented by
         // all elements of the array.
         // 
-        public static void Sort(Array array, IComparer comparer)
+        public static void Sort(Array array, IComparer? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Sort(array, null, array.GetLowerBound(0), array.Length, comparer);
+            Sort(array!, null, array!.GetLowerBound(0), array.Length, comparer);
         }
 
         // Sorts the elements of two arrays based on the keys in the first array.
@@ -1401,11 +1393,11 @@ namespace System
         // the IComparable interface, which in that case must be implemented
         // by all elements of the keys array.
         // 
-        public static void Sort(Array keys, Array items, IComparer comparer)
+        public static void Sort(Array keys, Array? items, IComparer? comparer)
         {
             if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
-            Sort(keys, items, keys.GetLowerBound(0), keys.Length, comparer);
+            Sort(keys!, items, keys!.GetLowerBound(0), keys.Length, comparer); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         // Sorts the elements in a section of an array. The sort compares the
@@ -1414,7 +1406,7 @@ namespace System
         // the IComparable interface, which in that case must be implemented
         // by all elements in the given section of the array.
         // 
-        public static void Sort(Array array, int index, int length, IComparer comparer)
+        public static void Sort(Array array, int index, int length, IComparer? comparer)
         {
             Sort(array, null, index, length, comparer);
         }
@@ -1427,11 +1419,11 @@ namespace System
         // the IComparable interface, which in that case must be implemented
         // by all elements of the given section of the keys array.
         // 
-        public static void Sort(Array keys, Array items, int index, int length, IComparer comparer)
+        public static void Sort(Array keys, Array? items, int index, int length, IComparer? comparer)
         {
             if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
-            if (keys.Rank != 1 || (items != null && items.Rank != 1))
+            if (keys!.Rank != 1 || (items != null && items.Rank != 1)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
             int keysLowerBound = keys.GetLowerBound(0);
             if (items != null && keysLowerBound != items.GetLowerBound(0))
@@ -1444,7 +1436,6 @@ namespace System
             if (keys.Length - (index - keysLowerBound) < length || (items != null && (index - keysLowerBound) > items.Length - length))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-
             if (length > 1)
             {
                 SortImpl(keys, items, index, length, comparer ?? Comparer.Default);
@@ -1455,14 +1446,14 @@ namespace System
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Sort<T>(array, 0, array.Length, null);
+            Sort<T>(array!, 0, array!.Length, null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items)
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items)
         {
             if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
-            Sort<TKey, TValue>(keys, items, 0, keys.Length, null);
+            Sort<TKey, TValue>(keys!, items, 0, keys!.Length, null); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static void Sort<T>(T[] array, int index, int length)
@@ -1470,26 +1461,26 @@ namespace System
             Sort<T>(array, index, length, null);
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, int index, int length)
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, int index, int length)
         {
             Sort<TKey, TValue>(keys, items, index, length, null);
         }
 
-        public static void Sort<T>(T[] array, System.Collections.Generic.IComparer<T> comparer)
+        public static void Sort<T>(T[] array, System.Collections.Generic.IComparer<T>? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            Sort<T>(array, 0, array.Length, comparer);
+            Sort<T>(array!, 0, array!.Length, comparer); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, System.Collections.Generic.IComparer<TKey> comparer)
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, System.Collections.Generic.IComparer<TKey>? comparer)
         {
             if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
-            Sort<TKey, TValue>(keys, items, 0, keys.Length, comparer);
+            Sort<TKey, TValue>(keys!, items, 0, keys!.Length, comparer); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
-        public static void Sort<T>(T[] array, int index, int length, System.Collections.Generic.IComparer<T> comparer)
+        public static void Sort<T>(T[] array, int index, int length, System.Collections.Generic.IComparer<T>? comparer)
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
@@ -1497,7 +1488,7 @@ namespace System
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             if (length < 0)
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-            if (array.Length - index < length)
+            if (array!.Length - index < length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
             if (length > 1)
@@ -1516,7 +1507,7 @@ namespace System
             }
         }
 
-        public static void Sort<TKey, TValue>(TKey[] keys, TValue[] items, int index, int length, System.Collections.Generic.IComparer<TKey> comparer)
+        public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, int index, int length, System.Collections.Generic.IComparer<TKey>? comparer)
         {
             if (keys == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
@@ -1524,7 +1515,7 @@ namespace System
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             if (length < 0)
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-            if (keys.Length - index < length || (items != null && index > items.Length - length))
+            if (keys!.Length - index < length || (items != null && index > items.Length - length)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
             if (length > 1)
@@ -1561,7 +1552,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
 
-            ArraySortHelper<T>.Sort(array, 0, array.Length, comparison);
+            ArraySortHelper<T>.Sort(array!, 0, array!.Length, comparison); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static bool TrueForAll<T>(T[] array, Predicate<T> match)
@@ -1576,9 +1567,9 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
 
-            for (int i = 0; i < array.Length; i++)
+            for (int i = 0; i < array!.Length; i++) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
-                if (!match(array[i]))
+                if (!match!(array[i])) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     return false;
                 }
@@ -1591,10 +1582,10 @@ namespace System
         private readonly struct SorterObjectArray
         {
             private readonly object[] keys;
-            private readonly object[] items;
+            private readonly object?[]? items;
             private readonly IComparer comparer;
 
-            internal SorterObjectArray(object[] keys, object[] items, IComparer comparer)
+            internal SorterObjectArray(object[] keys, object?[]? items, IComparer comparer)
             {
                 this.keys = keys;
                 this.items = items;
@@ -1612,7 +1603,7 @@ namespace System
                         keys[b] = temp;
                         if (items != null)
                         {
-                            object item = items[a];
+                            object? item = items[a];
                             items[a] = items[b];
                             items[b] = item;
                         }
@@ -1628,7 +1619,7 @@ namespace System
 
                 if (items != null)
                 {
-                    object item = items[i];
+                    object? item = items[i];
                     items[i] = items[j];
                     items[j] = item;
                 }
@@ -1746,7 +1737,7 @@ namespace System
             private void DownHeap(int i, int n, int lo)
             {
                 object d = keys[lo + i - 1];
-                object dt = (items != null) ? items[lo + i - 1] : null;
+                object? dt = (items != null) ? items[lo + i - 1] : null;
                 int child;
                 while (i <= n / 2)
                 {
@@ -1770,7 +1761,8 @@ namespace System
             private void InsertionSort(int lo, int hi)
             {
                 int i, j;
-                object t, ti;
+                object t;
+                object? ti;
                 for (i = lo; i < hi; i++)
                 {
                     j = i;
@@ -1796,10 +1788,10 @@ namespace System
         private readonly struct SorterGenericArray
         {
             private readonly Array keys;
-            private readonly Array items;
+            private readonly Array? items;
             private readonly IComparer comparer;
 
-            internal SorterGenericArray(Array keys, Array items, IComparer comparer)
+            internal SorterGenericArray(Array keys, Array? items, IComparer comparer)
             {
                 this.keys = keys;
                 this.items = items;
@@ -1812,12 +1804,12 @@ namespace System
                 {
                     if (comparer.Compare(keys.GetValue(a), keys.GetValue(b)) > 0)
                     {
-                        object key = keys.GetValue(a);
+                        object? key = keys.GetValue(a);
                         keys.SetValue(keys.GetValue(b), a);
                         keys.SetValue(key, b);
                         if (items != null)
                         {
-                            object item = items.GetValue(a);
+                            object? item = items.GetValue(a);
                             items.SetValue(items.GetValue(b), a);
                             items.SetValue(item, b);
                         }
@@ -1827,13 +1819,13 @@ namespace System
 
             private void Swap(int i, int j)
             {
-                object t1 = keys.GetValue(i);
+                object? t1 = keys.GetValue(i);
                 keys.SetValue(keys.GetValue(j), i);
                 keys.SetValue(t1, j);
 
                 if (items != null)
                 {
-                    object t2 = items.GetValue(i);
+                    object? t2 = items.GetValue(i);
                     items.SetValue(items.GetValue(j), i);
                     items.SetValue(t2, j);
                 }
@@ -1913,7 +1905,7 @@ namespace System
                 SwapIfGreaterWithItems(lo, hi);
                 SwapIfGreaterWithItems(mid, hi);
 
-                object pivot = keys.GetValue(mid);
+                object? pivot = keys.GetValue(mid);
                 Swap(mid, hi - 1);
                 int left = lo, right = hi - 1;  // We already partitioned lo and hi and put the pivot in hi - 1.  And we pre-increment & decrement below.
 
@@ -1950,8 +1942,8 @@ namespace System
 
             private void DownHeap(int i, int n, int lo)
             {
-                object d = keys.GetValue(lo + i - 1);
-                object dt = (items != null) ? items.GetValue(lo + i - 1) : null;
+                object? d = keys.GetValue(lo + i - 1);
+                object? dt = (items != null) ? items.GetValue(lo + i - 1) : null;
                 int child;
                 while (i <= n / 2)
                 {
@@ -1977,7 +1969,8 @@ namespace System
             private void InsertionSort(int lo, int hi)
             {
                 int i, j;
-                object t, dt;
+                object? t;
+                object? dt;
                 for (i = lo; i < hi; i++)
                 {
                     j = i;

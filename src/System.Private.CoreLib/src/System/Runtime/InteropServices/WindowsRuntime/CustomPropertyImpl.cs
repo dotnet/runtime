@@ -2,17 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
-using System.Security;
+#nullable enable
 using System.Reflection;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
-using System.StubHelpers;
-using System.Globalization;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -88,7 +79,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             InvokeInternal(target, new object[] { indexValue, value }, false);
         }
 
-        private object InvokeInternal(object target, object[] args, bool getValue)
+        private object InvokeInternal(object target, object[]? args, bool getValue)
         {
             // Forward to the right object if we are dealing with a proxy
             if (target is IGetProxyTarget proxy)
@@ -114,7 +105,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                         accessor,
                         accessor.DeclaringType.FullName));
 
-            RuntimeMethodInfo rtMethod = accessor as RuntimeMethodInfo;
+            RuntimeMethodInfo? rtMethod = accessor as RuntimeMethodInfo;
             if (rtMethod == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo);
 

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -178,7 +179,7 @@ namespace System.IO
         // contain the terminating carriage return and/or line feed. The returned
         // value is null if the end of the input stream has been reached.
         //
-        public virtual string ReadLine()
+        public virtual string? ReadLine()
         {
             StringBuilder sb = new StringBuilder();
             while (true)
@@ -205,11 +206,11 @@ namespace System.IO
         }
 
         #region Task based Async APIs
-        public virtual Task<string> ReadLineAsync()
+        public virtual Task<string?> ReadLineAsync()
         {
-            return Task<string>.Factory.StartNew(state =>
+            return Task<string?>.Factory.StartNew(state =>
             {
-                return ((TextReader)state).ReadLine();
+                return ((TextReader)state!).ReadLine(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             },
             this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
@@ -253,10 +254,10 @@ namespace System.IO
 
         public virtual ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                ReadAsync(array.Array, array.Offset, array.Count) :
+                ReadAsync(array.Array!, array.Offset, array.Count) : // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 Task<int>.Factory.StartNew(state =>
                 {
-                    var t = (Tuple<TextReader, Memory<char>>)state;
+                    var t = (Tuple<TextReader, Memory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     return t.Item1.Read(t.Item2.Span);
                 }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
@@ -265,7 +266,7 @@ namespace System.IO
             var tuple = new Tuple<TextReader, Memory<char>>(this, buffer);
             return new ValueTask<int>(Task<int>.Factory.StartNew(state =>
             {
-                var t = (Tuple<TextReader, Memory<char>>)state;
+                var t = (Tuple<TextReader, Memory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 return t.Item1.Read(t.Item2.Span);
             },
             tuple, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
@@ -291,10 +292,10 @@ namespace System.IO
 
         public virtual ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                ReadBlockAsync(array.Array, array.Offset, array.Count) :
+                ReadBlockAsync(array.Array!, array.Offset, array.Count) : // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 Task<int>.Factory.StartNew(state =>
                 {
-                    var t = (Tuple<TextReader, Memory<char>>)state;
+                    var t = (Tuple<TextReader, Memory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     return t.Item1.ReadBlock(t.Item2.Span);
                 }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
@@ -320,7 +321,7 @@ namespace System.IO
                 return 0;
             }
 
-            public override string ReadLine()
+            public override string? ReadLine()
             {
                 return null;
             }
@@ -367,7 +368,7 @@ namespace System.IO
             public override int ReadBlock(char[] buffer, int index, int count) => _in.ReadBlock(buffer, index, count);
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override string ReadLine() => _in.ReadLine();
+            public override string? ReadLine() => _in.ReadLine();
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override string ReadToEnd() => _in.ReadToEnd();
@@ -377,7 +378,7 @@ namespace System.IO
             //
 
             [MethodImpl(MethodImplOptions.Synchronized)]
-            public override Task<string> ReadLineAsync() => Task.FromResult(ReadLine());
+            public override Task<string?> ReadLineAsync() => Task.FromResult(ReadLine());
 
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task<string> ReadToEndAsync() => Task.FromResult(ReadToEnd());

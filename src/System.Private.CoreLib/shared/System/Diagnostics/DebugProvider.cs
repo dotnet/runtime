@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 // Do not remove this, it is needed to retain calls to these conditional methods in release builds
 #define DEBUG
 
@@ -12,7 +13,7 @@ namespace System.Diagnostics
     /// </summary>
     public partial class DebugProvider
     {
-        public virtual void Fail(string message, string detailMessage)
+        public virtual void Fail(string? message, string? detailMessage)
         {
             string stackTrace;
             try
@@ -27,7 +28,7 @@ namespace System.Diagnostics
             FailCore(stackTrace, message, detailMessage, "Assertion Failed");
         }
 
-        internal void WriteAssert(string stackTrace, string message, string detailMessage)
+        internal void WriteAssert(string stackTrace, string? message, string? detailMessage)
         {
             WriteLine(SR.DebugAssertBanner + Environment.NewLine
                    + SR.DebugAssertShortMessage + Environment.NewLine
@@ -37,7 +38,7 @@ namespace System.Diagnostics
                    + stackTrace);
         }
 
-        public virtual void Write(string message)
+        public virtual void Write(string? message)
         {
             lock (s_lock)
             {
@@ -59,7 +60,7 @@ namespace System.Diagnostics
             }
         }
         
-        public virtual void WriteLine(string message)
+        public virtual void WriteLine(string? message)
         {
             Write(message + Environment.NewLine);
         }
@@ -72,17 +73,17 @@ namespace System.Diagnostics
 
         private sealed class DebugAssertException : Exception
         {
-            internal DebugAssertException(string stackTrace) :
+            internal DebugAssertException(string? stackTrace) :
                 base(Environment.NewLine + stackTrace)
             {
             }
 
-            internal DebugAssertException(string message, string stackTrace) :
+            internal DebugAssertException(string? message, string? stackTrace) :
                 base(message + Environment.NewLine + Environment.NewLine + stackTrace)
             {
             }
 
-            internal DebugAssertException(string message, string detailMessage, string stackTrace) :
+            internal DebugAssertException(string? message, string? detailMessage, string? stackTrace) :
                 base(message + Environment.NewLine + detailMessage + Environment.NewLine + Environment.NewLine + stackTrace)
             {
             }
@@ -90,20 +91,20 @@ namespace System.Diagnostics
 
         private bool _needIndent = true;
 
-        private string _indentString;
+        private string? _indentString;
 
         private string GetIndentString()
         {
             int indentCount = Debug.IndentSize * Debug.IndentLevel;
             if (_indentString?.Length == indentCount)
             {
-                return _indentString;
+                return _indentString!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34942
             }
             return _indentString = new string(' ', indentCount);
         }
 
         // internal and not readonly so that the tests can swap this out.
-        internal static Action<string, string, string, string> s_FailCore = null;
-        internal static Action<string> s_WriteCore = null;
+        internal static Action<string, string?, string?, string>? s_FailCore = null;
+        internal static Action<string>? s_WriteCore = null;
     }
 }

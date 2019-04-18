@@ -82,7 +82,7 @@ namespace System.Globalization
                 return null;
             }
 
-            CultureInfo toReturn;
+            CultureInfo? toReturn;
 
             try
             {

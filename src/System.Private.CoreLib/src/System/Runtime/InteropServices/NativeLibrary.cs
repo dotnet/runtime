@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -179,7 +180,7 @@ namespace System.Runtime.InteropServices
         /// Therefore, this table uses weak assembly pointers to indirectly achieve 
         /// similar behavior.
         /// </summary>
-        private static ConditionalWeakTable<Assembly, DllImportResolver> s_nativeDllResolveMap = null;
+        private static ConditionalWeakTable<Assembly, DllImportResolver>? s_nativeDllResolveMap;
 
         /// <summary>
         /// Set a callback for resolving native library imports from an assembly.
@@ -210,7 +211,7 @@ namespace System.Runtime.InteropServices
 
             try
             {
-                s_nativeDllResolveMap.Add(assembly, resolver);
+                s_nativeDllResolveMap!.Add(assembly, resolver); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             }
             catch (ArgumentException)
             {
