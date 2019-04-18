@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal abstract class BaseAsyncStream : Stream
+    internal abstract class HttpBaseStream : Stream
     {
         public sealed override bool CanSeek => false;
 
@@ -78,10 +79,16 @@ namespace System.Net.Http
             }
         }
 
+        public sealed override int ReadByte()
+        {
+            byte b = 0;
+            return Read(MemoryMarshal.CreateSpan(ref b, 1)) == 1 ? b : -1;
+        }
+
         public sealed override int Read(byte[] buffer, int offset, int count)
         {
             ValidateBufferArgs(buffer, offset, count);
-            return ReadAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
+            return Read(buffer.AsSpan(offset, count));
         }
 
         public sealed override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
@@ -90,11 +97,18 @@ namespace System.Net.Http
             return ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public sealed override void Write(byte[] buffer, int offset, int count)
+        public override void Write(byte[] buffer, int offset, int count)
         {
+            // This does sync-over-async, but it also should only end up being used in strange
+            // situations.  Either a derived stream overrides this anyway, so the implementation won't be used,
+            // or it's being called as part of HttpContent.SerializeToStreamAsync, which means custom
+            // content is explicitly choosing to make a synchronous call as part of an asynchronous method.
             ValidateBufferArgs(buffer, offset, count);
             WriteAsync(new Memory<byte>(buffer, offset, count), CancellationToken.None).GetAwaiter().GetResult();
         }
+
+        public sealed override void WriteByte(byte value) =>
+            Write(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
 
         public sealed override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -102,18 +116,20 @@ namespace System.Net.Http
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public sealed override void Flush() => FlushAsync().GetAwaiter().GetResult();
+        public override void Flush() { }
 
-        public sealed override void CopyTo(Stream destination, int bufferSize) =>
-            CopyToAsync(destination, bufferSize, CancellationToken.None).GetAwaiter().GetResult();
+        public override Task FlushAsync(CancellationToken cancellationToken) => NopAsync(cancellationToken);
 
+        protected static Task NopAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+            Task.CompletedTask;
 
         //
         // Methods which must be implemented by derived classes
         //
 
+        public abstract override int Read(Span<byte> buffer);
         public abstract override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken);
-        public abstract override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken);
-        public abstract override Task FlushAsync(CancellationToken cancellationToken);
+        public abstract override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken);
     }
 }

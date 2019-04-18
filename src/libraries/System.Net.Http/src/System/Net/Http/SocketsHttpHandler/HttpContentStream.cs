@@ -4,7 +4,7 @@
 
 namespace System.Net.Http
 {
-    internal abstract class HttpContentStream : BaseAsyncStream
+    internal abstract class HttpContentStream : HttpBaseStream
     {
         protected HttpConnection _connection;
 
