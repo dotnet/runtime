@@ -8,7 +8,7 @@ namespace System.Diagnostics.SymbolStore
     {
         // Find a document. Language, vendor, and document type are
         // optional.
-        ISymbolDocument GetDocument(string url,
+        ISymbolDocument? GetDocument(string url,
                                     Guid language,
                                     Guid languageVendor,
                                     Guid documentType);
@@ -23,12 +23,12 @@ namespace System.Diagnostics.SymbolStore
         SymbolToken UserEntryPoint { get; }
     
         // Get a symbol reader method given the id of a method.
-        ISymbolMethod GetMethod(SymbolToken method);
+        ISymbolMethod? GetMethod(SymbolToken method);
     
         // Get a symbol reader method given the id of a method and an E&C
         // version number. Version numbers start a 1 and are incremented
         // each time the method is changed due to an E&C operation.
-        ISymbolMethod GetMethod(SymbolToken method, int version);
+        ISymbolMethod? GetMethod(SymbolToken method, int version);
     
         // Return a non-local variable given its parent and name.
         ISymbolVariable[] GetVariables(SymbolToken parent);
