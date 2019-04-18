@@ -934,16 +934,19 @@ namespace System.IO.Pipelines
             // state as writing
             AllocateWriteHeadIfNeeded(0);
 
-            if (source.Length <= _writingHeadMemory.Length)
+            lock (_sync)
             {
-                source.CopyTo(_writingHeadMemory);
+                if (source.Length <= _writingHeadMemory.Length)
+                {
+                    source.CopyTo(_writingHeadMemory);
 
-                AdvanceCore(source.Length);
-            }
-            else
-            {
-                // This is the multi segment copy
-                WriteMultiSegment(source.Span);
+                    AdvanceCore(source.Length);
+                }
+                else
+                {
+                    // This is the multi segment copy
+                    WriteMultiSegment(source.Span);
+                }
             }
 
             return FlushAsync(cancellationToken);

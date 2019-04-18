@@ -232,5 +232,33 @@ namespace System.IO.Pipelines.Tests
 
             pipe.Reader.Complete();
         }
+
+        [Fact]
+        public async Task CompleteWithLargeWriteThrows()
+        {
+            var pipe = new Pipe();
+            pipe.Reader.Complete();
+
+            var task = Task.Run(async () =>
+            {
+                await Task.Delay(10);
+                pipe.Writer.Complete();
+            });
+
+            try
+            {
+                for (int i = 0; i < 1000; i++)
+                {
+                    var buffer = new byte[10000000];
+                    await pipe.Writer.WriteAsync(buffer);
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                // Complete while writing
+            }
+
+            await task;
+        }
     }
 }
