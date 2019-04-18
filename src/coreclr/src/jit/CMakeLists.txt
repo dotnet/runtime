@@ -275,7 +275,7 @@ else()
   clr_unknown_arch()
 endif()
 
-set( SOURCES
+set(SOURCES
   ${JIT_SOURCES}
   ${JIT_HEADERS}
   ${JIT_RESOURCES}
@@ -291,34 +291,19 @@ convert_to_absolute_path(JIT_ARM_SOURCES ${JIT_ARM_SOURCES})
 convert_to_absolute_path(JIT_I386_SOURCES ${JIT_I386_SOURCES})
 convert_to_absolute_path(JIT_ARM64_SOURCES ${JIT_ARM64_SOURCES})
 
+
 if(WIN32)
   add_precompiled_header(jitpch.h ../jitpch.cpp SOURCES)
-
-  # Create .def file containing a list of exports preceeded by
-  # 'EXPORTS'.  The file "ClrJit.exports" already contains the list, so we
-  # massage it into the correct format here to create "ClrJit.exports.def".
+  set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports)
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/ClrJit.exports.def)
-  set(JIT_EXPORTS_FILE_TEMP ${JIT_EXPORTS_FILE}.txt)
-  file(READ "ClrJit.exports" exports_list)
-  file(WRITE ${JIT_EXPORTS_FILE_TEMP} "LIBRARY CLRJIT\n")
-  file(APPEND ${JIT_EXPORTS_FILE_TEMP} "EXPORTS\n")
-  file(APPEND ${JIT_EXPORTS_FILE_TEMP} ${exports_list})
-
-  # Copy the file only if it has changed.
-  execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${JIT_EXPORTS_FILE_TEMP} ${JIT_EXPORTS_FILE})
+  preprocess_def_file (${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
   set(SHARED_LIB_SOURCES ${SOURCES} ${JIT_EXPORTS_FILE})
 else()
-  set(JIT_EXPORTS_IN_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports.in)
-  file(READ "${CMAKE_CURRENT_LIST_DIR}/ClrJit.exports" jit_exports)
-  file(READ "${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports" pal_exports)
-  file(WRITE ${JIT_EXPORTS_IN_FILE} ${jit_exports})
-  file(APPEND ${JIT_EXPORTS_IN_FILE} "\n")
-  file(APPEND ${JIT_EXPORTS_IN_FILE} ${pal_exports})
+  set(CLRJIT_EXPORTS ${CMAKE_CURRENT_LIST_DIR}/ClrJit.PAL.exports)
 
   set(JIT_EXPORTS_FILE ${CMAKE_CURRENT_BINARY_DIR}/clrjit.exports)
-  generate_exports_file(${JIT_EXPORTS_IN_FILE} ${JIT_EXPORTS_FILE})
+  generate_exports_file(${CLRJIT_EXPORTS} ${JIT_EXPORTS_FILE})
 
   if(CMAKE_SYSTEM_NAME STREQUAL Linux OR CMAKE_SYSTEM_NAME STREQUAL FreeBSD OR CMAKE_SYSTEM_NAME STREQUAL NetBSD)
     # This is required to force using our own PAL, not one that we are loaded with.
