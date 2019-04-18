@@ -321,10 +321,10 @@ namespace System.Collections.Concurrent
 
             //deferred allocating in MoveNext() with initial value 0, to avoid false sharing
             //we also use the fact that: (_currentChunkSize==null) means MoveNext is never called on this enumerator 
-            protected SharedInt _currentChunkSize;
+            protected SharedInt? _currentChunkSize;
 
             //deferring allocation in MoveNext() with initial value -1, to avoid false sharing
-            protected SharedInt _localOffset;
+            protected SharedInt? _localOffset;
 
             private const int CHUNK_DOUBLING_RATE = 3; // Double the chunk size every this many grabs
             private int _doublingCountdown; // Number of grabs remaining until chunk size doubles
@@ -401,7 +401,7 @@ namespace System.Collections.Concurrent
             /// <summary>
             /// Get the current element in the current partition. Property required by IEnumerator interface
             /// </summary>
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get
                 {
@@ -429,6 +429,7 @@ namespace System.Collections.Concurrent
                     _currentChunkSize = new SharedInt(0);
                     _doublingCountdown = CHUNK_DOUBLING_RATE;
                 }
+                Debug.Assert(_currentChunkSize != null);
 
                 if (_localOffset.Value < _currentChunkSize.Value - 1)
                 //attempt to grab the next element from the local chunk
@@ -553,7 +554,7 @@ namespace System.Collections.Concurrent
                 private readonly IEnumerator<TSource> _sharedReader;
                 private SharedLong _sharedIndex;//initial value -1
 
-                private volatile KeyValuePair<long, TSource>[] _fillBuffer;  // intermediate buffer to reduce locking
+                private volatile KeyValuePair<long, TSource>[]? _fillBuffer;  // intermediate buffer to reduce locking
                 private volatile int _fillBufferSize;               // actual number of elements in _FillBuffer. Will start
                                                                      // at _FillBuffer.Length, and might be reduced during the last refill
                 private volatile int _fillBufferCurrentPosition;    //shared value to be accessed by Interlock.Increment only
@@ -570,7 +571,7 @@ namespace System.Collections.Concurrent
 
                 // If dynamic partitioning, then _activePartitionCount == null
                 // If static partitioning, then it keeps track of active partition count
-                private SharedInt _activePartitionCount;
+                private SharedInt? _activePartitionCount;
 
                 // records whether or not the user has requested single-chunking behavior
                 private readonly bool _useSingleChunking;
@@ -641,7 +642,7 @@ namespace System.Collections.Concurrent
 
 
                     // making a local defensive copy of the fill buffer reference, just in case it gets nulled out
-                    KeyValuePair<long, TSource>[] fillBufferLocalRef = _fillBuffer;
+                    KeyValuePair<long, TSource>[]? fillBufferLocalRef = _fillBuffer;
                     if (fillBufferLocalRef == null) return;
 
                     // first do a quick check, and give up if the current position is at the end
@@ -885,12 +886,12 @@ namespace System.Collections.Concurrent
             {
                 //---- fields ----
                 //cached local copy of the current chunk
-                private KeyValuePair<long, TSource>[] _localList; //defer allocating to avoid false sharing
+                private KeyValuePair<long, TSource>[]? _localList; //defer allocating to avoid false sharing
 
                 // the values of the following two fields are passed in from
                 // outside(already initialized) by the constructor, 
                 private readonly SharedBool _hasNoElementsLeft;
-                private readonly SharedInt _activePartitionCount;
+                private readonly SharedInt? _activePartitionCount;
                 private InternalPartitionEnumerable _enumerable;
 
                 //constructor
@@ -898,7 +899,7 @@ namespace System.Collections.Concurrent
                     IEnumerator<TSource> sharedReader,
                     SharedLong sharedIndex,
                     SharedBool hasNoElementsLeft,
-                    SharedInt activePartitionCount,
+                    SharedInt? activePartitionCount,
                     InternalPartitionEnumerable enumerable,
                     bool useSingleChunking)
                     : base(sharedReader, sharedIndex, useSingleChunking)
@@ -941,7 +942,7 @@ namespace System.Collections.Concurrent
 
 #pragma warning disable 0420 // TODO: https://github.com/dotnet/corefx/issues/35022
                     // make the actual call to the enumerable that grabs a chunk
-                    return _enumerable.GrabChunk(_localList, requestedChunkSize, ref _currentChunkSize.Value);
+                    return _enumerable.GrabChunk(_localList, requestedChunkSize, ref _currentChunkSize!.Value);
 #pragma warning restore 0420
                 }
 
@@ -969,7 +970,7 @@ namespace System.Collections.Concurrent
                             throw new InvalidOperationException(SR.PartitionerStatic_CurrentCalledBeforeMoveNext);
                         }
                         Debug.Assert(_localList != null);
-                        Debug.Assert(_localOffset.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
+                        Debug.Assert(_localOffset!.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
                         return (_localList[_localOffset.Value]);
                     }
                 }
@@ -1133,8 +1134,8 @@ namespace System.Collections.Concurrent
                         //set up local indexes.
                         //_currentChunkSize is always set to requestedChunkSize when source data had 
                         //enough elements of what we requested
-                        _currentChunkSize.Value = (int)(newSharedIndex - oldSharedIndex);
-                        _localOffset.Value = -1;
+                        _currentChunkSize!.Value = (int)(newSharedIndex - oldSharedIndex);
+                        _localOffset!.Value = -1;
                         _startIndex = (int)(oldSharedIndex + 1);
                         return true;
                     }
@@ -1242,7 +1243,7 @@ namespace System.Collections.Concurrent
                             throw new InvalidOperationException(SR.PartitionerStatic_CurrentCalledBeforeMoveNext);
                         }
 
-                        Debug.Assert(_localOffset.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
+                        Debug.Assert(_localOffset!.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
                         return new KeyValuePair<long, TSource>(_startIndex + _localOffset.Value,
                             _sharedReader[_startIndex + _localOffset.Value]);
                     }
@@ -1326,7 +1327,7 @@ namespace System.Collections.Concurrent
                             throw new InvalidOperationException(SR.PartitionerStatic_CurrentCalledBeforeMoveNext);
                         }
 
-                        Debug.Assert(_localOffset.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
+                        Debug.Assert(_localOffset!.Value >= 0 && _localOffset.Value < _currentChunkSize.Value);
                         return new KeyValuePair<long, TSource>(_startIndex + _localOffset.Value,
                             _sharedReader[_startIndex + _localOffset.Value]);
                     }
@@ -1492,7 +1493,7 @@ namespace System.Collections.Concurrent
                 }
             }
 
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get
                 {
@@ -1676,7 +1677,7 @@ namespace System.Collections.Concurrent
             // Because of the lack of typeof(T).IsValueType we need two pieces of information
             // to determine this. default(T) will return a non null for Value Types, except those
             // using Nullable<>, that is why we need a second condition.
-            if (default(TSource) != null || Nullable.GetUnderlyingType(typeof(TSource)) != null)
+            if (default(TSource)! != null || Nullable.GetUnderlyingType(typeof(TSource)) != null) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 // Marshal.SizeOf fails for value types that don't have explicit layouts. We
                 // just fall back to some arbitrary constant in that case. Is there a better way?
