@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         /// <remarks>
         /// Product runtime binaries are not added. All the added mock framework will contain is a mock version of host policy.
         /// </remarks>
-        public DotNetBuilder AddMicrosoftNETCoreAppFramework(string version)
+        public DotNetBuilder AddMicrosoftNETCoreAppFrameworkMockHostPolicy(string version)
         {
             // ./shared/Microsoft.NETCore.App/<version> - create a mock of the root framework
             string netCoreAppPath = Path.Combine(_path, "shared", "Microsoft.NETCore.App", version);
@@ -62,6 +62,68 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Path.Combine(netCoreAppPath, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy")),
                 true);
 
+            return this;
+        }
+
+        /// <summary>
+        /// Add a mock of the Microsoft.NETCore.App framework with the specified version
+        /// </summary>
+        /// <param name="version">Version to add</param>
+        /// <remarks>
+        /// Product runtime binaries are not added. All the added mock framework will contain is hostpolicy,
+        /// a mock version of coreclr, and a minimal Microsoft.NETCore.App.deps.json.
+        /// </remarks>
+        public DotNetBuilder AddMicrosoftNETCoreAppFrameworkMockCoreClr(string version)
+        {
+            // ./shared/Microsoft.NETCore.App/<version> - create a mock of the root framework
+            string netCoreAppPath = Path.Combine(_path, "shared", "Microsoft.NETCore.App", version);
+            Directory.CreateDirectory(netCoreAppPath);
+
+            // ./shared/Microsoft.NETCore.App/<version>/hostpolicy.dll - this is the real component and will load CoreClr library
+            string hostPolicyFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
+            File.Copy(
+                Path.Combine(_repoDirectories.Artifacts, "corehost", hostPolicyFileName),
+                Path.Combine(netCoreAppPath, hostPolicyFileName),
+                true);
+
+            // ./shared/Microsoft.NETCore.App/<version>/coreclr.dll - this is a mock, will not actually run CoreClr
+            string coreclrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("coreclr");
+            string mockCoreclrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr");
+            File.Copy(
+                Path.Combine(_repoDirectories.Artifacts, "corehost_test", mockCoreclrFileName),
+                Path.Combine(netCoreAppPath, coreclrFileName),
+                true);
+
+            string netCoreAppPathDepsJson = Path.Combine(netCoreAppPath, "Microsoft.NETCore.App.deps.json");
+
+            string currentRid = _repoDirectories.TargetRID;
+
+            string depsJsonBody = $@"{{
+              ""runtimeTarget"": "".NETCoreApp"",
+              ""targets"": {{
+                "".NETCoreApp"": {{
+                  ""Microsoft.NETCore.App/{version}"": {{
+                    ""native"": {{
+                      ""runtimes/{currentRid}/native/{coreclrFileName}"": {{ }}
+                    }}
+                  }},
+                  ""runtime.{currentRid}.Microsoft.NETCore.DotNetHostPolicy/{version}"": {{
+                    ""native"": {{
+                      ""runtimes/{currentRid}/native/{hostPolicyFileName}"": {{}}
+                    }}
+                  }}
+                }}
+              }},
+              ""libraries"": {{
+                ""Microsoft.NETCore.App/{version}"": {{
+                  ""type"": ""package"",
+                  ""serviceable"": true,
+                  ""sha512"": """"
+                }}
+              }}
+            }}";
+
+            File.WriteAllText(netCoreAppPathDepsJson, depsJsonBody);
             return this;
         }
 

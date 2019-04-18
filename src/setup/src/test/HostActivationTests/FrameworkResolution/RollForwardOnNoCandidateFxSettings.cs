@@ -234,7 +234,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             public SharedTestState()
             {
                 DotNetWithFrameworks = DotNet("WithOneFramework")
-                    .AddMicrosoftNETCoreAppFramework("5.1.3")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.1.3")
                     .AddFramework(
                         MiddleWare, "2.1.2", 
                         runtimeConfig => runtimeConfig.WithFramework(MicrosoftNETCoreApp, "5.1.3"))
