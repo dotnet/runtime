@@ -1902,6 +1902,9 @@ mono_marshal_get_proxy_cancast (MonoClass *klass)
 	mb->method->save_lmf = 1;
 
 #ifndef DISABLE_JIT
+
+	mono_remoting_marshal_init (); // register icalls
+
 	/* get the real proxy from the transparent proxy*/
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_ldflda (mb, MONO_STRUCT_OFFSET (MonoTransparentProxy, rp));
