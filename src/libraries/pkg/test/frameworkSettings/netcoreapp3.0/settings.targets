@@ -4,6 +4,7 @@
     <NETCoreAppMaximumVersion>3.0</NETCoreAppMaximumVersion>
     <!-- use the most recent MS.NETCore.App we have from upstack -->
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppPackageVersion)</RuntimeFrameworkVersion>
+    <DisableImplicitNETCorePlatformsReference>true</DisableImplicitNETCorePlatformsReference>
   </PropertyGroup>
 
   <ItemGroup>
