@@ -53,6 +53,7 @@ namespace System.Diagnostics.Tracing
         public bool DisableEvent(int eventId) { throw null; }
         public bool EnableEvent(int eventId) { throw null; }
     }
+#if !PROJECTN
     public abstract partial class DiagnosticCounter : System.IDisposable
     {
         public DiagnosticCounter(string name, System.Diagnostics.Tracing.EventSource eventSource) { }
@@ -62,13 +63,14 @@ namespace System.Diagnostics.Tracing
         public string Name { get { throw null; } }
         public System.Diagnostics.Tracing.EventSource EventSource { get { throw null; } }
     }
-
+#endif
     public partial class EventCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
         public EventCounter(string name, System.Diagnostics.Tracing.EventSource eventSource) : base(name, eventSource) { }
         public void WriteMetric(float value) { }
         public void WriteMetric(double value) { }
     }
+#if !PROJECTN
     public partial class PollingCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
         public PollingCounter(string name, System.Diagnostics.Tracing.EventSource eventSource, Func<double> metricProvider) : base(name, eventSource) { }
@@ -84,6 +86,7 @@ namespace System.Diagnostics.Tracing
         public IncrementingPollingCounter(string name, System.Diagnostics.Tracing.EventSource eventSource, Func<double> totalValueProvider) : base(name, eventSource) { }
         public TimeSpan DisplayRateTimeScale { get { throw null; } set { } }
     }
+#endif
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=false)]
     public partial class EventDataAttribute : System.Attribute
     {
