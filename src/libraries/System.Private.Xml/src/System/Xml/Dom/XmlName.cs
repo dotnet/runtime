@@ -182,18 +182,7 @@ namespace System.Xml
             int hashCode = 0;
             if (name != null)
             {
-                unchecked
-                {
-                    for (int i = name.Length - 1; i >= 0; i--)
-                    {
-                        char ch = name[i];
-                        if (ch == ':') break;
-                        hashCode += (hashCode << 7) ^ ch;
-                    }
-                    hashCode -= hashCode >> 17;
-                    hashCode -= hashCode >> 11;
-                    hashCode -= hashCode >> 5;
-                }
+                return string.GetHashCode(name.AsSpan(name.LastIndexOf(':') + 1));
             }
             return hashCode;
         }
