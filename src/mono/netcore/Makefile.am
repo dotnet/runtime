@@ -8,14 +8,32 @@ NETCORETESTS_VERSION := 4.6.0-preview5.19209.12
 # Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L13
 NETCOREAPP_VERSION := 3.0.0-preview5-27609-17
 
-NETCORESDK_FILE := dotnet-runtime-$(NETCOREAPP_VERSION)-@RID@.tar.gz
+if HOST_WIN32
+NETCORESDK_EXT = zip
+UNZIPCMD = python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1], 'r').extractall()"
+XUNIT_FLAGS =
+endif
+
+if HOST_DARWIN
+NETCORESDK_EXT = tar.gz
+UNZIPCMD = tar -xvf
+XUNIT_FLAGS = -notrait category=nonosxtests
+endif
+
+if HOST_LINUX
+NETCORESDK_EXT = tar.gz
+UNZIPCMD = tar -xvf
+XUNIT_FLAGS = -notrait category=nonlinuxtests
+endif
+
+NETCORESDK_FILE := dotnet-runtime-$(NETCOREAPP_VERSION)-@RID@.$(NETCORESDK_EXT)
 URL := https://dotnetcli.blob.core.windows.net/dotnet/Runtime/$(NETCOREAPP_VERSION)/$(NETCORESDK_FILE)
 FEED_BASE_URL := https://dotnetfeed.blob.core.windows.net/dotnet-core
 TEST_ASSETS_URL = $(FEED_BASE_URL)/corefx-tests/$(NETCORETESTS_VERSION)/OSX.x64/netcoreapp/corefx-test-assets.xml
 
 $(NETCORESDK_FILE):
 	curl $(URL) --output $(NETCORESDK_FILE)
-	tar -xvf $(NETCORESDK_FILE)
+	$(UNZIPCMD) $(NETCORESDK_FILE)
 
 update-corefx: corefx/.stamp-dl-corefx-$(NETCORETESTS_VERSION)
 
@@ -46,10 +64,10 @@ bcl:
 
 runtime:
 	$(MAKE) -C ../mono
-	cp ../mono/mini/.libs/libmonosgen-2.0@PLATFORM_AOT_SUFFIX@ $(SHAREDRUNTIME)/libcoreclr@PLATFORM_AOT_SUFFIX@
+	cp ../mono/mini/.libs/libmonosgen-2.0@PLATFORM_AOT_SUFFIX@ $(SHAREDRUNTIME)/@PLATFORM_AOT_PREFIX@coreclr@PLATFORM_AOT_SUFFIX@
 
 link-mono:
-	cp ../mono/mini/.libs/libmonosgen-2.0@PLATFORM_AOT_SUFFIX@ $(SHAREDRUNTIME)/libcoreclr@PLATFORM_AOT_SUFFIX@
+	cp ../mono/mini/.libs/libmonosgen-2.0@PLATFORM_AOT_SUFFIX@ $(SHAREDRUNTIME)/@PLATFORM_AOT_PREFIX@coreclr@PLATFORM_AOT_SUFFIX@
 	cp ../mcs/class/System.Private.CoreLib/bin/@COREARCH@/System.Private.CoreLib.{dll,pdb} $(SHAREDRUNTIME)
 
 prepare: $(NETCORESDK_FILE) update-corefx link-mono
