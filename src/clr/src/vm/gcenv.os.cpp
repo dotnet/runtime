@@ -32,10 +32,6 @@ uint32_t g_pageSizeUnixInl = 0;
 
 static AffinitySet g_processAffinitySet;
 
-#ifdef FEATURE_PAL
-static uint32_t g_currentProcessCpuCount;
-#endif // FEATURE_PAL
-
 class GroupProcNo
 {
     uint16_t m_groupProc;
@@ -111,15 +107,15 @@ bool GCToOSInterface::Initialize()
 #ifdef FEATURE_PAL
     g_pageSizeUnixInl = GetOsPageSize();
 
-    g_currentProcessCpuCount = PAL_GetLogicalCpuCountFromOS();
+    uint32_t currentProcessCpuCount = PAL_GetLogicalCpuCountFromOS();
     if (PAL_GetCurrentThreadAffinitySet(AffinitySet::BitsetDataSize, g_processAffinitySet.GetBitsetData()))
     {
-        assert(g_currentProcessCpuCount == g_processAffinitySet.Count());
+        assert(currentProcessCpuCount == g_processAffinitySet.Count());
     }
     else
     {
         // There is no way to get affinity on the current OS, set the affinity set to reflect all processors
-        for (size_t i = 0; i < g_currentProcessCpuCount; i++)
+        for (size_t i = 0; i < currentProcessCpuCount; i++)
         {
             g_processAffinitySet.Add(i);
         }
@@ -582,7 +578,7 @@ uint32_t GCToOSInterface::GetCurrentProcessCpuCount()
                 GCToOSInterface::GetTotalProcessorCount():
                 ::GetCurrentProcessCpuCount();
 #else // !FEATURE_PAL
-    return g_currentProcessCpuCount;
+    return ::GetCurrentProcessCpuCount();
 #endif // !FEATURE_PAL
 }
 
