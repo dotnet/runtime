@@ -3359,6 +3359,52 @@ emit_native_icall_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 }
 #endif
 
+static void 
+mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *csig, gboolean set_default)
+{
+	MonoMethodSignature *sig;
+	int i;
+
+#ifdef TARGET_WIN32
+	/* 
+	 * Under windows, delegates passed to native code must use the STDCALL
+	 * calling convention.
+	 */
+	if (set_default)
+		csig->call_convention = MONO_CALL_STDCALL;
+#endif
+
+	sig = mono_method_signature_internal (method);
+
+	int cmod_count = 0;
+	if (sig->ret)
+		cmod_count = mono_type_custom_modifier_count (sig->ret);
+
+	/* Change default calling convention if needed */
+	/* Why is this a modopt ? */
+	if (cmod_count == 0)
+		return;
+
+	for (i = 0; i < cmod_count; ++i) {
+		ERROR_DECL (error);
+		gboolean required;
+		MonoType *cmod_type = mono_type_get_custom_modifier (sig->ret, i, &required, error);
+		mono_error_assert_ok (error);
+		MonoClass *cmod_class = mono_class_from_mono_type_internal (cmod_type);
+		if ((m_class_get_image (cmod_class) == mono_defaults.corlib) && !strcmp (m_class_get_name_space (cmod_class), "System.Runtime.CompilerServices")) {
+			const char *cmod_class_name = m_class_get_name (cmod_class);
+			if (!strcmp (cmod_class_name, "CallConvCdecl"))
+				csig->call_convention = MONO_CALL_C;
+			else if (!strcmp (cmod_class_name, "CallConvStdcall"))
+				csig->call_convention = MONO_CALL_STDCALL;
+			else if (!strcmp (cmod_class_name, "CallConvFastcall"))
+				csig->call_convention = MONO_CALL_FASTCALL;
+			else if (!strcmp (cmod_class_name, "CallConvThiscall"))
+				csig->call_convention = MONO_CALL_THISCALL;
+		}
+	}
+}
+
 /**
  * mono_marshal_get_native_wrapper:
  * \param method The \c MonoMethod to wrap.
@@ -3537,14 +3583,16 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	if (!aot)
 		g_assert (piinfo->addr);
 
+	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
+	mono_marshal_set_callconv_from_modopt (method, csig, FALSE);
+
 	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
-	mono_marshal_emit_native_wrapper (get_method_image (mb->method), mb, sig, piinfo, mspecs, piinfo->addr, aot, check_exceptions, FALSE);
+	mono_marshal_emit_native_wrapper (get_method_image (mb->method), mb, csig, piinfo, mspecs, piinfo->addr, aot, check_exceptions, FALSE);
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_PINVOKE);
 	info->d.managed_to_native.method = method;
 
-	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
 	csig->pinvoke = 0;
 	res = mono_mb_create_and_cache_full (cache, method, mb, csig, csig->param_count + 16,
 										 info, NULL);
@@ -3734,51 +3782,6 @@ emit_managed_wrapper_noilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke
 }
 #endif
 
-static void 
-mono_marshal_set_callconv_from_modopt (MonoMethod *method, MonoMethodSignature *csig)
-{
-	MonoMethodSignature *sig;
-	int i;
-
-#ifdef TARGET_WIN32
-	/* 
-	 * Under windows, delegates passed to native code must use the STDCALL
-	 * calling convention.
-	 */
-	csig->call_convention = MONO_CALL_STDCALL;
-#endif
-
-	sig = mono_method_signature_internal (method);
-
-	int cmod_count = 0;
-	if (sig->ret)
-		cmod_count = mono_type_custom_modifier_count (sig->ret);
-
-	/* Change default calling convention if needed */
-	/* Why is this a modopt ? */
-	if (cmod_count == 0)
-		return;
-
-	for (i = 0; i < cmod_count; ++i) {
-		ERROR_DECL (error);
-		gboolean required;
-		MonoType *cmod_type = mono_type_get_custom_modifier (sig->ret, i, &required, error);
-		mono_error_assert_ok (error);
-		MonoClass *cmod_class = mono_class_from_mono_type_internal (cmod_type);
-		if ((m_class_get_image (cmod_class) == mono_defaults.corlib) && !strcmp (m_class_get_name_space (cmod_class), "System.Runtime.CompilerServices")) {
-			const char *cmod_class_name = m_class_get_name (cmod_class);
-			if (!strcmp (cmod_class_name, "CallConvCdecl"))
-				csig->call_convention = MONO_CALL_C;
-			else if (!strcmp (cmod_class_name, "CallConvStdcall"))
-				csig->call_convention = MONO_CALL_STDCALL;
-			else if (!strcmp (cmod_class_name, "CallConvFastcall"))
-				csig->call_convention = MONO_CALL_FASTCALL;
-			else if (!strcmp (cmod_class_name, "CallConvThiscall"))
-				csig->call_convention = MONO_CALL_THISCALL;
-		}
-	}
-}
-
 /**
  * mono_marshal_get_managed_wrapper:
  * Generates IL code to call managed methods from unmanaged code 
@@ -3844,7 +3847,7 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 	m.csig = csig;
 	m.image = get_method_image (method);
 
-	mono_marshal_set_callconv_from_modopt (invoke, csig);
+	mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
 
 	/* The attribute is only available in Net 2.0 */
 	if (mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {
@@ -3991,7 +3994,7 @@ mono_marshal_get_vtfixup_ftnptr (MonoImage *image, guint32 token, guint16 type)
 		m.csig = csig;
 		m.image = image;
 
-		mono_marshal_set_callconv_from_modopt (method, csig);
+		mono_marshal_set_callconv_from_modopt (method, csig, TRUE);
 
 		/* FIXME: Implement VTFIXUP_TYPE_FROM_UNMANAGED_RETAIN_APPDOMAIN. */
 
