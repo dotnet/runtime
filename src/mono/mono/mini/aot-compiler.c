@@ -289,6 +289,7 @@ typedef struct MonoAotCompile {
 	GHashTable *method_to_cfg;
 	GHashTable *token_info_hash;
 	GHashTable *method_to_pinvoke_import;
+	GHashTable *method_to_external_icall_symbol_name;
 	GPtrArray *extra_methods;
 	GPtrArray *image_table;
 	GPtrArray *globals;
@@ -400,6 +401,11 @@ typedef struct {
 
 /* This points to the current acfg in LLVM mode */
 static MonoAotCompile *llvm_acfg;
+
+/* Cache of decoded method external icall symbol names. */
+/* Owned by acfg, but kept in this static as well since it is */
+/* accessed by code paths not having access to acfg. */
+static GHashTable *method_to_external_icall_symbol_name;
 
 // This, instead of an array of pointers, to optimize away a pointer and a relocation per string.
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
@@ -5642,6 +5648,79 @@ add_generic_instances (MonoAotCompile *acfg)
 	}
 }
 
+static char *
+decode_direct_icall_symbol_name_attribute (MonoMethod *method)
+{
+	ERROR_DECL (error);
+
+	int j = 0;
+	char *symbol_name = NULL;
+
+	MonoCustomAttrInfo *cattr = mono_custom_attrs_from_method_checked (method, error);
+	if (mono_error_ok(error) && cattr) {
+		for (j = 0; j < cattr->num_attrs; j++)
+			if (cattr->attrs [j].ctor && !strcmp (m_class_get_name (cattr->attrs [j].ctor->klass), "MonoDirectICallSymbolNameAttribute"))
+				break;
+
+		if (j < cattr->num_attrs) {
+			MonoCustomAttrEntry *e = &cattr->attrs [j];
+			MonoMethodSignature *sig = mono_method_signature_internal (e->ctor);
+			if (e->data && sig && sig->param_count == 1 && sig->params [0]->type == MONO_TYPE_STRING) {
+				/*
+				* Decode the cattr manually since we can't create objects
+				* during aot compilation.
+				*/
+
+				/* Skip prolog */
+				const char *p = ((const char*)e->data) + 2;
+				int slen = mono_metadata_decode_value (p, &p);
+
+				symbol_name = (char *)g_memdup (p, slen + 1);
+				if (symbol_name)
+					symbol_name [slen] = 0;
+			}
+		}
+	}
+
+	return symbol_name;
+}
+static const char*
+lookup_external_icall_symbol_name_aot (MonoMethod *method)
+{
+	g_assert (method_to_external_icall_symbol_name);
+
+	gpointer key, value;
+	if (g_hash_table_lookup_extended (method_to_external_icall_symbol_name, method, &key, &value))
+		return (const char*)value;
+
+	char *symbol_name = decode_direct_icall_symbol_name_attribute (method);
+	g_hash_table_insert (method_to_external_icall_symbol_name, method, symbol_name);
+
+	return symbol_name;
+}
+
+static const char*
+lookup_icall_symbol_name_aot (MonoMethod *method)
+{
+	const char * symbol_name = mono_lookup_icall_symbol (method);
+	if (!symbol_name)
+		symbol_name = lookup_external_icall_symbol_name_aot (method);
+
+	return symbol_name;
+}
+
+gboolean
+mono_aot_direct_icalls_enabled_for_method (MonoCompile *cfg, MonoMethod *method)
+{
+	gboolean enable_icall = FALSE;
+	if (cfg->compile_aot)
+		enable_icall = lookup_external_icall_symbol_name_aot (method) ? TRUE : FALSE;
+	else
+		enable_icall = FALSE;
+
+	return enable_icall;
+}
+
 /*
  * is_direct_callable:
  *
@@ -5996,7 +6075,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				} else if (patch_info->type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
 					if (!got_only && is_direct_callable (acfg, method, patch_info)) {
 						if (!(patch_info->data.method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-							direct_pinvoke = mono_lookup_icall_symbol (patch_info->data.method);
+							direct_pinvoke = lookup_icall_symbol_name_aot (patch_info->data.method);
 						else
 							direct_pinvoke = get_pinvoke_import (acfg, patch_info->data.method);
 						if (direct_pinvoke) {
@@ -9374,7 +9453,7 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 		} else if (type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
 			MonoMethod *method = (MonoMethod *)data;
 			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-				sym = mono_lookup_icall_symbol (method);
+				sym = lookup_icall_symbol_name_aot (method);
 			else if (llvm_acfg->aot_opts.direct_pinvoke)
 				sym = get_pinvoke_import (llvm_acfg, method);
 		} else if (type == MONO_PATCH_INFO_JIT_ICALL) {
@@ -9409,7 +9488,7 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 		} else if (type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
 			MonoMethod *method = (MonoMethod *)data;
 			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
-				sym = mono_lookup_icall_symbol (method);
+				sym = lookup_icall_symbol_name_aot (method);
 		}
 		if (sym)
 			return g_strdup (sym);
@@ -12448,6 +12527,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	acfg->method_to_cfg = g_hash_table_new (NULL, NULL);
 	acfg->token_info_hash = g_hash_table_new_full (NULL, NULL, NULL, NULL);
 	acfg->method_to_pinvoke_import = g_hash_table_new_full (NULL, NULL, NULL, g_free);
+	acfg->method_to_external_icall_symbol_name = g_hash_table_new_full (NULL, NULL, NULL, g_free);
 	acfg->image_hash = g_hash_table_new (NULL, NULL);
 	acfg->image_table = g_ptr_array_new ();
 	acfg->globals = g_ptr_array_new ();
@@ -12476,6 +12556,7 @@ acfg_create (MonoAssembly *ass, guint32 opts)
 	init_got_info (&acfg->got_info);
 	init_got_info (&acfg->llvm_got_info);
 
+	method_to_external_icall_symbol_name = acfg->method_to_external_icall_symbol_name;
 	return acfg;
 }
 
@@ -12519,6 +12600,7 @@ acfg_free (MonoAotCompile *acfg)
 	g_hash_table_destroy (acfg->method_to_cfg);
 	g_hash_table_destroy (acfg->token_info_hash);
 	g_hash_table_destroy (acfg->method_to_pinvoke_import);
+	g_hash_table_destroy (acfg->method_to_external_icall_symbol_name);
 	g_hash_table_destroy (acfg->image_hash);
 	g_hash_table_destroy (acfg->unwind_info_offsets);
 	g_hash_table_destroy (acfg->method_label_hash);
@@ -12531,6 +12613,8 @@ acfg_free (MonoAotCompile *acfg)
 	got_info_free (&acfg->llvm_got_info);
 	arch_free_unwind_info_section_cache (acfg);
 	mono_mempool_destroy (acfg->mempool);
+
+	method_to_external_icall_symbol_name = NULL;
 	g_free (acfg);
 }
 
@@ -13764,6 +13848,13 @@ mono_aot_is_shared_got_offset (int offset)
 
 int
 mono_compile_deferred_assemblies (guint32 opts, const char *aot_options, gpointer **aot_state)
+{
+	g_assert_not_reached ();
+	return 0;
+}
+
+gboolean
+mono_aot_direct_icalls_enabled_for_method (MonoCompile *cfg, MonoMethod *method)
 {
 	g_assert_not_reached ();
 	return 0;
