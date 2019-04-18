@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Tests
@@ -110,6 +111,24 @@ namespace System.Tests
 
             index1 = new Index(50, fromEnd: true);
             Assert.Equal("^" + 50.ToString(), index1.ToString());
+        }
+
+        [Fact]
+        public static void CollectionTest()
+        {
+            int [] array = new int [] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+            List<int> list = new List<int>(array);
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                Assert.Equal(i, list[Index.FromStart(i)]);
+                Assert.Equal(list.Count - i - 1, list[^(i + 1)]);
+
+                Assert.Equal(i, array[Index.FromStart(i)]);
+                Assert.Equal(list.Count - i - 1, array[^(i + 1)]);
+
+                Assert.Equal(array.AsSpan().Slice(i, array.Length - i).ToArray(), array[i..]);
+            }
         }
     }
 }

@@ -60,4 +60,23 @@ CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xm
 CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xml.Serialization.XmlNamespaceDeclarationsAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]' in the implementation.
 MembersMustExist : Member 'System.Range.GetOffsetAndLength(System.Int32)' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Range.OffsetAndLength' does not exist in the implementation but it does exist in the contract.
-Total Issues: 61
+MembersMustExist : Member 'System.Memory<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Memory<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Memory<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlyMemory<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlyMemory<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlyMemory<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlySpan<T>.Item.get(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlySpan<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlySpan<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.ReadOnlySpan<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Item.get(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Span<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Chars.get(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Chars.get(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Substring(System.Index)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.String.Substring(System.Range)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Utf8String.Slice(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 80
