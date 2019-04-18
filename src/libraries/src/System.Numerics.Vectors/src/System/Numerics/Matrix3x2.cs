@@ -771,7 +771,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this matrix; False otherwise.</returns>
-        public override readonly bool Equals(object obj)
+        public override readonly bool Equals(object? obj)
         {
             if (obj is Matrix3x2)
             {

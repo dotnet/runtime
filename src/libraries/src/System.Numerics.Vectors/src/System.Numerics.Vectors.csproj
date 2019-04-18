@@ -7,6 +7,7 @@
     <HasIntrinsics Condition="'$(TargetsNetCoreApp)'=='true'">true</HasIntrinsics>
     <DefineConstants Condition="'$(HasIntrinsics)'=='true'">$(DefineConstants);HAS_INTRINSICS</DefineConstants>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <NullableContextOptions>enable</NullableContextOptions>
   </PropertyGroup>
   <!-- Shared -->
   <ItemGroup>
