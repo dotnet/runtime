@@ -44,7 +44,7 @@ namespace System.Collections.Concurrent
         private class Node
         {
             internal readonly T _value; // Value of the node.
-            internal Node _next; // Next pointer.
+            internal Node? _next; // Next pointer.
 
             /// <summary>
             /// Constructs a new node with the specified value and no next node.
@@ -57,7 +57,7 @@ namespace System.Collections.Concurrent
             }
         }
 
-        private volatile Node _head; // The stack is a singly linked list, and only remembers the head.
+        private volatile Node? _head; // The stack is a singly linked list, and only remembers the head.
         private const int BACKOFF_MAX_YIELDS = 8; // Arbitrary number to cap backoff.
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace System.Collections.Concurrent
         private void InitializeFromCollection(IEnumerable<T> collection)
         {
             // We just copy the contents of the collection to our stack.
-            Node lastNode = null;
+            Node? lastNode = null;
             foreach (T element in collection)
             {
                 Node newNode = new Node(element);
@@ -148,7 +148,7 @@ namespace System.Collections.Concurrent
                 // they are being dequeued. If we ever changed this (e.g. to pool nodes somehow),
                 // we'd need to revisit this implementation.
 
-                for (Node curr = _head; curr != null; curr = curr._next)
+                for (Node? curr = _head; curr != null; curr = curr._next)
                 {
                     count++; //we don't handle overflow, to be consistent with existing generic collection types in CLR
                 }
@@ -446,14 +446,14 @@ namespace System.Collections.Concurrent
         /// the top of the <see cref="T:System.Collections.Concurrent.ConcurrentStack{T}"/> or an
         /// unspecified value if the operation failed.</param>
         /// <returns>true if and object was returned successfully; otherwise, false.</returns>
-        public bool TryPeek(out T result)
+        public bool TryPeek(out T result) // TODO-NULLABLE-GENERIC
         {
-            Node head = _head;
+            Node? head = _head;
 
             // If the stack is empty, return false; else return the element and true.
             if (head == null)
             {
-                result = default(T);
+                result = default(T)!; // TODO-NULLABLE-GENERIC
                 return false;
             }
             else
@@ -473,13 +473,13 @@ namespace System.Collections.Concurrent
         /// <returns>true if an element was removed and returned from the top of the <see
         /// cref="ConcurrentStack{T}"/>
         /// successfully; otherwise, false.</returns>
-        public bool TryPop(out T result)
+        public bool TryPop(out T result) // TODO-NULLABLE-GENERIC
         {
-            Node head = _head;
+            Node? head = _head;
             //stack is empty
             if (head == null)
             {
-                result = default(T);
+                result = default(T)!; // TODO-NULLABLE-GENERIC
                 return false;
             }
             if (Interlocked.CompareExchange(ref _head, head._next, head) == head)
@@ -558,11 +558,11 @@ namespace System.Collections.Concurrent
             if (count == 0)
                 return 0;
 
-            Node poppedHead;
+            Node? poppedHead;
             int nodesCount = TryPopCore(count, out poppedHead);
             if (nodesCount > 0)
             {
-                CopyRemovedItems(poppedHead, items, startIndex, nodesCount);
+                CopyRemovedItems(poppedHead!, items, startIndex, nodesCount);
             }
             return nodesCount;
         }
@@ -572,17 +572,17 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <param name="result">The popped item</param>
         /// <returns>True if succeeded, false otherwise</returns>
-        private bool TryPopCore(out T result)
+        private bool TryPopCore(out T result) // TODO-NULLABLE-GENERIC
         {
-            Node poppedNode;
+            Node? poppedNode;
 
             if (TryPopCore(1, out poppedNode) == 1)
             {
-                result = poppedNode._value;
+                result = poppedNode!._value; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 return true;
             }
 
-            result = default(T);
+            result = default(T)!; // TODO-NULLABLE-GENERIC
             return false;
         }
 
@@ -597,16 +597,16 @@ namespace System.Collections.Concurrent
         /// </param>
         /// <returns>The number of objects successfully popped from the top of
         /// the <see cref="ConcurrentStack{T}"/>.</returns>
-        private int TryPopCore(int count, out Node poppedHead)
+        private int TryPopCore(int count, out Node? poppedHead) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
             SpinWait spin = new SpinWait();
 
             // Try to CAS the head with its current next.  We stop when we succeed or
             // when we notice that the stack is empty, whichever comes first.
-            Node head;
+            Node? head;
             Node next;
             int backoff = 1;
-            Random r = null;
+            Random? r = null;
             while (true)
             {
                 head = _head;
@@ -671,10 +671,10 @@ namespace System.Collections.Concurrent
         /// <param name="nodesCount">The number of nodes.</param>
         private static void CopyRemovedItems(Node head, T[] collection, int startIndex, int nodesCount)
         {
-            Node current = head;
+            Node? current = head;
             for (int i = startIndex; i < startIndex + nodesCount; i++)
             {
-                collection[i] = current._value;
+                collection[i] = current!._value;
                 current = current._next;
             }
         }
@@ -703,7 +703,7 @@ namespace System.Collections.Concurrent
         /// cref="ConcurrentStack{T}"/>.</returns>
         public T[] ToArray()
         {
-            Node curr = _head;
+            Node? curr = _head;
             return curr == null ?
                 Array.Empty<T>() :
                 ToList(curr).ToArray();
@@ -723,7 +723,7 @@ namespace System.Collections.Concurrent
         /// Returns an array containing a snapshot of the list's contents starting at the specified node.
         /// </summary>
         /// <returns>A list of the stack's contents starting at the specified node.</returns>
-        private List<T> ToList(Node curr)
+        private List<T> ToList(Node? curr)
         {
             List<T> list = new List<T>();
 
@@ -759,9 +759,9 @@ namespace System.Collections.Concurrent
             return GetEnumerator(_head);
         }
 
-        private IEnumerator<T> GetEnumerator(Node head)
+        private IEnumerator<T> GetEnumerator(Node? head)
         {
-            Node current = head;
+            Node? current = head;
             while (current != null)
             {
                 yield return current._value;
