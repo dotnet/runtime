@@ -12,6 +12,8 @@ if(WIN32)
   add_definitions(-DFX_VER_INTERNALNAME_STR=clrjit.dll)
 endif(WIN32)
 
+set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
+
 add_library_clr(clrjit
    SHARED
    ${SHARED_LIB_SOURCES}
