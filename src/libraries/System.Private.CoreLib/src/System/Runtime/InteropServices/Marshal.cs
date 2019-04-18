@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using System.Diagnostics;
+#nullable enable
 using System.Security;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using Microsoft.Win32;
 
 using Internal.Runtime.CompilerServices;
 
@@ -39,7 +37,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((IntPtr)cb);
 
-        public static unsafe string PtrToStringAnsi(IntPtr ptr)
+        public static unsafe string? PtrToStringAnsi(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero || IsWin32Atom(ptr))
             {
@@ -63,7 +61,7 @@ namespace System.Runtime.InteropServices
             return new string((sbyte*)ptr, 0, len);
         }
 
-        public static unsafe string PtrToStringUni(IntPtr ptr)
+        public static unsafe string? PtrToStringUni(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero || IsWin32Atom(ptr))
             {
@@ -87,7 +85,7 @@ namespace System.Runtime.InteropServices
             return new string((char*)ptr, 0, len);
         }
 
-        public static unsafe string PtrToStringUTF8(IntPtr ptr)
+        public static unsafe string? PtrToStringUTF8(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero || IsWin32Atom(ptr))
             {
@@ -98,7 +96,8 @@ namespace System.Runtime.InteropServices
             return string.CreateStringFromEncoding((byte*)ptr, nbBytes, Encoding.UTF8);
         }
 
-        public static unsafe string PtrToStringUTF8(IntPtr ptr, int byteLen)
+        // TODO-NULLABLE: This has different behavior from the other PtrToString(IntPtr, int) functions
+        public static unsafe string? PtrToStringUTF8(IntPtr ptr, int byteLen)
         {
             if (ptr == IntPtr.Zero)
             {
@@ -114,7 +113,7 @@ namespace System.Runtime.InteropServices
 
         public static int SizeOf(object structure)
         {
-            if (structure == null)
+            if (structure is null)
             {
                 throw new ArgumentNullException(nameof(structure));
             }
@@ -124,7 +123,7 @@ namespace System.Runtime.InteropServices
 
         public static int SizeOf<T>(T structure)
         {
-            if (structure == null)
+            if (structure is null)
             {
                 throw new ArgumentNullException(nameof(structure));
             }
@@ -134,7 +133,7 @@ namespace System.Runtime.InteropServices
 
         public static int SizeOf(Type t)
         {
-            if (t == null)
+            if (t is null)
             {
                 throw new ArgumentNullException(nameof(t));
             }
@@ -159,7 +158,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement(Array arr, int index)
         {
-            if (arr == null)
+            if (arr is null)
                 throw new ArgumentNullException(nameof(arr));
 
             void* pRawData = Unsafe.AsPointer(ref arr.GetRawArrayData());
@@ -168,7 +167,7 @@ namespace System.Runtime.InteropServices
 
         public static unsafe IntPtr UnsafeAddrOfPinnedArrayElement<T>(T[] arr, int index)
         {
-            if (arr == null)
+            if (arr is null)
                 throw new ArgumentNullException(nameof(arr));
 
             void* pRawData = Unsafe.AsPointer(ref arr.GetRawSzArrayData());
@@ -219,7 +218,7 @@ namespace System.Runtime.InteropServices
 
         private static unsafe void CopyToNative<T>(T[] source, int startIndex, IntPtr destination, int length)
         {
-            if (source == null)
+            if (source is null)
                 throw new ArgumentNullException(nameof(source));
             if (destination == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(destination));
@@ -273,7 +272,7 @@ namespace System.Runtime.InteropServices
         {
             if (source == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(source));
-            if (destination == null)
+            if (destination is null)
                 throw new ArgumentNullException(nameof(destination));
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -509,7 +508,7 @@ namespace System.Runtime.InteropServices
 
         public static void Prelink(MethodInfo m)
         {
-            if (m == null)
+            if (m is null)
             {
                 throw new ArgumentNullException(nameof(m));
             }
@@ -519,38 +518,37 @@ namespace System.Runtime.InteropServices
 
         public static void PrelinkAll(Type c)
         {
-            if (c == null)
+            if (c is null)
             {
                 throw new ArgumentNullException(nameof(c));
             }
 
             MethodInfo[] mi = c.GetMethods();
-            if (mi != null)
+
+            for (int i = 0; i < mi.Length; i++)
             {
-                for (int i = 0; i < mi.Length; i++)
-                {
-                    Prelink(mi[i]);
-                }
+                Prelink(mi[i]);
             }
         }
 
         public static void StructureToPtr<T>(T structure, IntPtr ptr, bool fDeleteOld)
         {
-            StructureToPtr((object)structure, ptr, fDeleteOld);
+            // TODO-NULLABLE-GENERIC: T cannot be null
+            StructureToPtr((object)structure!, ptr, fDeleteOld);
         }
 
         /// <summary>
         /// Creates a new instance of "structuretype" and marshals data from a
         /// native memory block to it.
         /// </summary>
-        public static object PtrToStructure(IntPtr ptr, Type structureType)
+        public static object? PtrToStructure(IntPtr ptr, Type structureType)
         {
             if (ptr == IntPtr.Zero)
             {
                 return null;
             }
 
-            if (structureType == null)
+            if (structureType is null)
             {
                 throw new ArgumentNullException(nameof(structureType));
             }
@@ -576,19 +574,21 @@ namespace System.Runtime.InteropServices
 
         public static void PtrToStructure<T>(IntPtr ptr, T structure)
         {
-            PtrToStructure(ptr, (object)structure);
+            // TODO-NULLABLE-GENERIC: T cannot be null
+            PtrToStructure(ptr, (object)structure!);
         }
 
-        public static T PtrToStructure<T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T));
+        // TODO-NULLABLE-GENERIC: T can be null
+        public static T PtrToStructure<T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
         /// <summary>
         /// Converts the HRESULT to a CLR exception.
         /// </summary>
-        public static Exception GetExceptionForHR(int errorCode) =>  GetExceptionForHR(errorCode, IntPtr.Zero);
+        public static Exception? GetExceptionForHR(int errorCode) => GetExceptionForHR(errorCode, IntPtr.Zero);
 
-        public static Exception GetExceptionForHR(int errorCode, IntPtr errorInfo)
+        public static Exception? GetExceptionForHR(int errorCode, IntPtr errorInfo)
         {
             if (errorCode >= 0)
             {
@@ -605,7 +605,7 @@ namespace System.Runtime.InteropServices
         {
             if (errorCode < 0)
             {
-                throw GetExceptionForHR(errorCode, IntPtr.Zero);
+                throw GetExceptionForHR(errorCode, IntPtr.Zero)!;
             }
         }
 
@@ -613,13 +613,13 @@ namespace System.Runtime.InteropServices
         {
             if (errorCode < 0)
             {
-                throw GetExceptionForHR(errorCode, errorInfo);
+                throw GetExceptionForHR(errorCode, errorInfo)!;
             }
         }
 
         public static IntPtr SecureStringToBSTR(SecureString s)
         {
-            if (s == null)
+            if (s is null)
             {
                 throw new ArgumentNullException(nameof(s));
             }
@@ -629,7 +629,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr SecureStringToCoTaskMemAnsi(SecureString s)
         {
-            if (s == null)
+            if (s is null)
             {
                 throw new ArgumentNullException(nameof(s));
             }
@@ -639,7 +639,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr SecureStringToCoTaskMemUnicode(SecureString s)
         {
-            if (s == null)
+            if (s is null)
             {
                 throw new ArgumentNullException(nameof(s));
             }
@@ -649,7 +649,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr SecureStringToGlobalAllocAnsi(SecureString s)
         {
-            if (s == null)
+            if (s is null)
             {
                 throw new ArgumentNullException(nameof(s));
             }
@@ -659,7 +659,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr SecureStringToGlobalAllocUnicode(SecureString s)
         {
-            if (s == null)
+            if (s is null)
             {
                 throw new ArgumentNullException(nameof(s));
             }
@@ -667,9 +667,9 @@ namespace System.Runtime.InteropServices
             return s.MarshalToString(globalAlloc: true, unicode: true); ;
         }
 
-        public static unsafe IntPtr StringToHGlobalAnsi(string s)
+        public static unsafe IntPtr StringToHGlobalAnsi(string? s)
         {
-            if (s == null)
+            if (s is null)
             {
                 return IntPtr.Zero;
             }
@@ -689,9 +689,9 @@ namespace System.Runtime.InteropServices
             return hglobal;
         }
 
-        public static unsafe IntPtr StringToHGlobalUni(string s)
+        public static unsafe IntPtr StringToHGlobalUni(string? s)
         {
-            if (s == null)
+            if (s is null)
             {
                 return IntPtr.Zero;
             }
@@ -713,9 +713,9 @@ namespace System.Runtime.InteropServices
             return hglobal;
         }
 
-        private static unsafe IntPtr StringToHGlobalUTF8(string s)
+        private static unsafe IntPtr StringToHGlobalUTF8(string? s)
         {
-            if (s == null)
+            if (s is null)
             {
                 return IntPtr.Zero;
             }
@@ -737,9 +737,9 @@ namespace System.Runtime.InteropServices
             return pMem;
         }
 
-        public static unsafe IntPtr StringToCoTaskMemUni(string s)
+        public static unsafe IntPtr StringToCoTaskMemUni(string? s)
         {
-            if (s == null)
+            if (s is null)
             {
                 return IntPtr.Zero;
             }
@@ -761,9 +761,9 @@ namespace System.Runtime.InteropServices
             return hglobal;
         }
 
-        public static unsafe IntPtr StringToCoTaskMemUTF8(string s)
+        public static unsafe IntPtr StringToCoTaskMemUTF8(string? s)
         {
-            if (s == null)
+            if (s is null)
             {
                 return IntPtr.Zero;
             }
@@ -785,9 +785,9 @@ namespace System.Runtime.InteropServices
             return pMem;
         }
 
-        public static unsafe IntPtr StringToCoTaskMemAnsi(string s)
+        public static unsafe IntPtr StringToCoTaskMemAnsi(string? s)
         {
-            if (s == null)
+            if (s is null)
             {
                 return IntPtr.Zero;
             }
@@ -814,7 +814,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static Guid GenerateGuidForType(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -833,7 +833,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static string GenerateProgIdForType(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -846,7 +846,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
             }
 
-            ProgIdAttribute progIdAttribute = type.GetCustomAttribute<ProgIdAttribute>();
+            ProgIdAttribute? progIdAttribute = type.GetCustomAttribute<ProgIdAttribute>();
             if (progIdAttribute != null)
             {
                 return progIdAttribute.Value ?? string.Empty;
@@ -862,7 +862,7 @@ namespace System.Runtime.InteropServices
             {
                 throw new ArgumentNullException(nameof(ptr));
             }
-            if (t == null)
+            if (t is null)
             {
                 throw new ArgumentNullException(nameof(t));
             }
@@ -875,7 +875,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(t));
             }
 
-            Type c = t.BaseType;
+            Type? c = t.BaseType;
             if (c != typeof(Delegate) && c != typeof(MulticastDelegate))
             {
                 throw new ArgumentException(SR.Arg_MustBeDelegate, nameof(t));
@@ -891,7 +891,7 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr GetFunctionPointerForDelegate(Delegate d)
         {
-            if (d == null)
+            if (d is null)
             {
                 throw new ArgumentNullException(nameof(d));
             }
@@ -901,7 +901,8 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d)
         {
-            return GetFunctionPointerForDelegate((Delegate)(object)d);
+            // TODO-NULLABLE-GENERIC: T cannot be null
+            return GetFunctionPointerForDelegate((Delegate)(object)d!);
         }
 
         public static int GetHRForLastWin32Error()

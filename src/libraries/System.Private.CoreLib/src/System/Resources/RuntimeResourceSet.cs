@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 /*============================================================
 **
 ** 
@@ -173,19 +174,19 @@ namespace System.Resources
         // for arbitrarily long times, since the object is usually a string
         // literal that will live for the lifetime of the appdomain.  The
         // value is a ResourceLocator instance, which might cache the object.
-        private Dictionary<string, ResourceLocator> _resCache;
+        private Dictionary<string, ResourceLocator>? _resCache; // TODO-NULLABLE: should not be nulled out in Dispose
 
 
         // For our special load-on-demand reader, cache the cast.  The 
         // RuntimeResourceSet's implementation knows how to treat this reader specially.
-        private ResourceReader _defaultReader;
+        private ResourceReader? _defaultReader; // TODO-NULLABLE: should not be nulled out in Dispose
 
         // This is a lookup table for case-insensitive lookups, and may be null.
         // Consider always using a case-insensitive resource cache, as we don't
         // want to fill this out if we can avoid it.  The problem is resource
         // fallback will somewhat regularly cause us to look up resources that 
         // don't exist.
-        private Dictionary<string, ResourceLocator> _caseInsensitiveTable;
+        private Dictionary<string, ResourceLocator>? _caseInsensitiveTable;
 
         // If we're not using our custom reader, then enumerate through all
         // the resources once, adding them into the table.
@@ -256,36 +257,36 @@ namespace System.Resources
         }
 
 
-        public override string GetString(string key)
+        public override string? GetString(string key)
         {
-            object o = GetObject(key, false, true);
-            return (string)o;
+            object? o = GetObject(key, false, true);
+            return (string?)o;
         }
 
-        public override string GetString(string key, bool ignoreCase)
+        public override string? GetString(string key, bool ignoreCase)
         {
-            object o = GetObject(key, ignoreCase, true);
-            return (string)o;
+            object? o = GetObject(key, ignoreCase, true);
+            return (string?)o;
         }
 
-        public override object GetObject(string key)
+        public override object? GetObject(string key)
         {
             return GetObject(key, false, false);
         }
 
-        public override object GetObject(string key, bool ignoreCase)
+        public override object? GetObject(string key, bool ignoreCase)
         {
             return GetObject(key, ignoreCase, false);
         }
 
-        private object GetObject(string key, bool ignoreCase, bool isString)
+        private object? GetObject(string key, bool ignoreCase, bool isString)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
             if (Reader == null || _resCache == null)
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_ResourceSet);
 
-            object value = null;
+            object? value = null;
             ResourceLocator resLocation;
 
             lock (Reader)
@@ -361,7 +362,10 @@ namespace System.Resources
                             ResourceLocator resLoc = new ResourceLocator(-1, entry.Value);
                             _resCache.Add(readKey, resLoc);
                             if (ignoreCase)
+                            {
+                                Debug.Assert(_caseInsensitiveTable != null);
                                 _caseInsensitiveTable.Add(readKey, resLoc);
+                            }
                         }
                         // Only close the reader if it is NOT our default one,
                         // since we need it around to resolve ResourceLocators.
@@ -371,6 +375,7 @@ namespace System.Resources
                     else
                     {
                         Debug.Assert(ignoreCase, "This should only happen for case-insensitive lookups");
+                        Debug.Assert(_caseInsensitiveTable != null);
                         ResourceReader.ResourceEnumerator en = _defaultReader.GetEnumeratorInternal();
                         while (en.MoveNext())
                         {
@@ -383,7 +388,7 @@ namespace System.Resources
                     }
                     _haveReadFromReader = true;
                 }
-                object obj = null;
+                object? obj = null;
                 bool found = false;
                 bool keyInWrongCase = false;
                 if (_defaultReader != null)
@@ -396,6 +401,7 @@ namespace System.Resources
                 }
                 if (!found && ignoreCase)
                 {
+                    Debug.Assert(_caseInsensitiveTable != null);
                     if (_caseInsensitiveTable.TryGetValue(key, out resLocation))
                     {
                         found = true;
@@ -410,16 +416,17 @@ namespace System.Resources
         // The last parameter indicates whether the lookup required a 
         // case-insensitive lookup to succeed, indicating we shouldn't add 
         // the ResourceLocation to our case-sensitive cache.
-        private object ResolveResourceLocator(ResourceLocator resLocation, string key, Dictionary<string, ResourceLocator> copyOfCache, bool keyInWrongCase)
+        private object? ResolveResourceLocator(ResourceLocator resLocation, string key, Dictionary<string, ResourceLocator> copyOfCache, bool keyInWrongCase)
         {
             // We need to explicitly resolve loosely linked manifest
             // resources, and we need to resolve ResourceLocators with null objects.
-            object value = resLocation.Value;
+            object? value = resLocation.Value;
             if (value == null)
             {
                 ResourceTypeCode typeCode;
                 lock (Reader)
                 {
+                    Debug.Assert(_defaultReader != null);
                     value = _defaultReader.LoadObject(resLocation.DataPosition, out typeCode);
                 }
                 if (!keyInWrongCase && ResourceLocator.CanCache(typeCode))

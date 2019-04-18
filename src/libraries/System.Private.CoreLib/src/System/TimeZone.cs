@@ -18,6 +18,7 @@
 **
 ============================================================*/
 
+#nullable enable
 using System;
 using System.Text;
 using System.Threading;
@@ -29,10 +30,10 @@ namespace System
     [Obsolete("System.TimeZone has been deprecated.  Please investigate the use of System.TimeZoneInfo instead.")]
     public abstract class TimeZone
     {
-        private static volatile TimeZone currentTimeZone = null;
+        private static volatile TimeZone? currentTimeZone = null;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static object s_InternalSyncObject;
+        private static object? s_InternalSyncObject;
         private static object InternalSyncObject
         {
             get
@@ -40,9 +41,9 @@ namespace System
                 if (s_InternalSyncObject == null)
                 {
                     object o = new object();
-                    Interlocked.CompareExchange<object>(ref s_InternalSyncObject, o, null);
+                    Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
                 }
-                return s_InternalSyncObject;
+                return s_InternalSyncObject!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             }
         }
 
@@ -57,7 +58,7 @@ namespace System
             {
                 //Grabbing the cached value is required at the top of this function so that
                 //we don't incur a race condition with the ResetTimeZone method below.
-                TimeZone tz = currentTimeZone;
+                TimeZone? tz = currentTimeZone;
                 if (tz == null)
                 {
                     lock (InternalSyncObject)

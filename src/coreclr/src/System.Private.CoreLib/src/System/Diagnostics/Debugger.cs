@@ -5,6 +5,7 @@
 // The Debugger class is a part of the System.Diagnostics package
 // and is used for communicating with a debugger.
 
+#nullable enable
 using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics
@@ -73,13 +74,13 @@ namespace System.Diagnostics
         // desired events are actually reported to the debugger.
         //
         // Constant representing the default category
-        public static readonly string DefaultCategory = null;
+        public static readonly string? DefaultCategory = null;
 
         // Posts a message for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not
         // report the message depending on its settings.
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void Log(int level, string category, string message);
+        public static extern void Log(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled
         //

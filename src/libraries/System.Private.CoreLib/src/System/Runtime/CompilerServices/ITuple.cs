@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
@@ -17,6 +18,6 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Get the element at position <param name="index"/>.
         /// </summary>
-        object this[int index] { get; }
+        object? this[int index] { get; }
     }
 }

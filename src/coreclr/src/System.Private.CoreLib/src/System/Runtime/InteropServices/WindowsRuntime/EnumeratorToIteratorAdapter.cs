@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -44,14 +40,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Debug.Fail("This class is never instantiated");
         }
 
-        internal sealed class NonGenericToGenericEnumerator : IEnumerator<object>
+        internal sealed class NonGenericToGenericEnumerator : IEnumerator<object?>
         {
             private IEnumerator enumerator;
 
             public NonGenericToGenericEnumerator(IEnumerator enumerator)
             { this.enumerator = enumerator; }
 
-            public object Current { get { return enumerator.Current; } }
+            public object? Current { get { return enumerator.Current; } }
             public bool MoveNext() { return enumerator.MoveNext(); }
             public void Reset() { enumerator.Reset(); }
             public void Dispose() { }
@@ -61,7 +57,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         internal IBindableIterator First_Stub()
         {
             IEnumerable _this = Unsafe.As<IEnumerable>(this);
-            return new EnumeratorToIteratorAdapter<object>(new NonGenericToGenericEnumerator(_this.GetEnumerator()));
+            return new EnumeratorToIteratorAdapter<object?>(new NonGenericToGenericEnumerator(_this.GetEnumerator()));
         }
     }
 
@@ -99,11 +95,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        object IBindableIterator.Current
+        object? IBindableIterator.Current
         {
             get
             {
-                return (object)((IIterator<T>)this).Current;
+                return ((IIterator<T>)this).Current;
             }
         }
 
@@ -154,7 +150,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (typeof(T) == typeof(string))
             {
-                string[] stringItems = items as string[];
+                string[] stringItems = (items as string[])!;
 
                 // Fill the rest of the array with string.Empty to avoid marshaling failure
                 for (int i = index; i < items.Length; ++i)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
@@ -76,7 +77,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[] instantiation)
+        public static void PrepareMethod(RuntimeMethodHandle method, RuntimeTypeHandle[]? instantiation)
         {
             unsafe
             {
@@ -97,7 +98,7 @@ namespace System.Runtime.CompilerServices
         public static extern int GetHashCode(object o);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public new static extern bool Equals(object o1, object o2);
+        public new static extern bool Equals(object? o1, object? o2);
 
         public static int OffsetToStringData
         {
@@ -136,9 +137,9 @@ namespace System.Runtime.CompilerServices
         public static extern bool TryEnsureSufficientExecutionStack();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object userData);
+        public static extern void ExecuteCodeWithGuaranteedCleanup(TryCode code, CleanupCode backoutCode, object? userData);
 
-        internal static void ExecuteBackoutCodeHelper(object backoutCode, object userData, bool exceptionThrown)
+        internal static void ExecuteBackoutCodeHelper(object backoutCode, object? userData, bool exceptionThrown)
         {
             ((CleanupCode)backoutCode)(userData, exceptionThrown);
         }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Diagnostics;
 using System.Threading;
@@ -16,7 +17,7 @@ namespace System.Text
     internal static partial class EncodingTable
     {
         private static readonly Hashtable s_nameToCodePage = Hashtable.Synchronized(new Hashtable(StringComparer.OrdinalIgnoreCase));
-        private static CodePageDataItem[] s_codePageToCodePageData;
+        private static CodePageDataItem?[]? s_codePageToCodePageData;
 
         /*=================================GetCodePageFromName==========================
         **Action: Given a encoding name, return the correct code page number for this encoding.
@@ -120,11 +121,11 @@ namespace System.Text
             return arrayEncodingInfo;
         }
 
-        internal static CodePageDataItem GetCodePageDataItem(int codePage)
+        internal static CodePageDataItem? GetCodePageDataItem(int codePage)
         {
             if (s_codePageToCodePageData == null)
             {
-                Interlocked.CompareExchange(ref s_codePageToCodePageData, new CodePageDataItem[s_mappedCodePages.Length], null);
+                Interlocked.CompareExchange<CodePageDataItem?[]?>(ref s_codePageToCodePageData, new CodePageDataItem[s_mappedCodePages.Length], null);
             }
 
             // Keep in sync with s_mappedCodePages
@@ -159,10 +160,10 @@ namespace System.Text
                     return null;
             }
 
-            CodePageDataItem data = s_codePageToCodePageData[index];
+            CodePageDataItem? data = s_codePageToCodePageData![index]; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             if (data == null)
             {
-                Interlocked.CompareExchange(ref s_codePageToCodePageData[index], InternalGetCodePageDataItem(codePage, index), null);
+                Interlocked.CompareExchange<CodePageDataItem?>(ref s_codePageToCodePageData[index], InternalGetCodePageDataItem(codePage, index), null);
                 data = s_codePageToCodePageData[index];
             }
 
@@ -184,7 +185,7 @@ namespace System.Text
 
         private static string GetDisplayName(int codePage, int englishNameIndex)
         {
-            string displayName = SR.GetResourceString("Globalization_cp_" + codePage.ToString());
+            string? displayName = SR.GetResourceString("Globalization_cp_" + codePage.ToString());
             if (string.IsNullOrEmpty(displayName))
                 displayName = s_englishNames.Substring(s_englishNameIndices[englishNameIndex], s_englishNameIndices[englishNameIndex + 1] - s_englishNameIndices[englishNameIndex]);
 

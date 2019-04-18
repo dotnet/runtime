@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System
@@ -16,7 +17,7 @@ namespace System
     {
         internal const int NullUnity = 0x0002;
         private readonly int _unityType;
-        private readonly string _data;
+        private readonly string? _data;
 
         /// <summary>
         /// A helper method that returns the SerializationInfo that a class utilizing 

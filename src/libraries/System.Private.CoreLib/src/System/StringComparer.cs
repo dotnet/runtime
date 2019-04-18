@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,7 +12,7 @@ namespace System
 {
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string>, IEqualityComparer<string>
+    public abstract class StringComparer : IComparer, IEqualityComparer, IComparer<string?>, IEqualityComparer<string?>
     {
         private static readonly CultureAwareComparer s_invariantCulture = new CultureAwareComparer(CultureInfo.InvariantCulture, CompareOptions.None);
         private static readonly CultureAwareComparer s_invariantCultureIgnoreCase = new CultureAwareComparer(CultureInfo.InvariantCulture, CompareOptions.IgnoreCase);
@@ -108,7 +109,7 @@ namespace System
             return new CultureAwareComparer(culture, options);
         }
 
-        public int Compare(object x, object y)
+        public int Compare(object? x, object? y)
         {
             if (x == y) return 0;
             if (x == null) return -1;
@@ -130,7 +131,7 @@ namespace System
             throw new ArgumentException(SR.Argument_ImplementIComparable);
         }
 
-        public new bool Equals(object x, object y)
+        public new bool Equals(object? x, object? y)
         {
             if (x == y) return true;
             if (x == null || y == null) return false;
@@ -159,9 +160,9 @@ namespace System
             return obj.GetHashCode();
         }
 
-        public abstract int Compare(string x, string y);
-        public abstract bool Equals(string x, string y);
-        public abstract int GetHashCode(string obj);
+        public abstract int Compare(string? x, string? y);
+        public abstract bool Equals(string? x, string? y);
+        public abstract int GetHashCode(string? obj); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
     }
 
     [Serializable]
@@ -188,7 +189,7 @@ namespace System
 
         private CultureAwareComparer(SerializationInfo info, StreamingContext context)
         {
-            _compareInfo = (CompareInfo)info.GetValue("_compareInfo", typeof(CompareInfo));
+            _compareInfo = (CompareInfo)info.GetValue("_compareInfo", typeof(CompareInfo))!;
             bool ignoreCase = info.GetBoolean("_ignoreCase");
 
             var obj = info.GetValueNoThrow("_options", typeof(CompareOptions));
@@ -199,7 +200,7 @@ namespace System
             _options |= ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None;
         }
 
-        public override int Compare(string x, string y)
+        public override int Compare(string? x, string? y)
         {
             if (object.ReferenceEquals(x, y)) return 0;
             if (x == null) return -1;
@@ -207,14 +208,14 @@ namespace System
             return _compareInfo.Compare(x, y, _options);
         }
 
-        public override bool Equals(string x, string y)
+        public override bool Equals(string? x, string? y)
         {
             if (object.ReferenceEquals(x, y)) return true;
             if (x == null || y == null) return false;
             return _compareInfo.Compare(x, y, _options) == 0;
         }
 
-        public override int GetHashCode(string obj)
+        public override int GetHashCode(string? obj) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         {
             if (obj == null)
             {
@@ -224,7 +225,7 @@ namespace System
         }
 
         // Equals method for the comparer itself.
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return
                 obj is CultureAwareComparer comparer &&
@@ -256,7 +257,7 @@ namespace System
             _ignoreCase = ignoreCase;
         }
 
-        public override int Compare(string x, string y)
+        public override int Compare(string? x, string? y)
         {
             if (ReferenceEquals(x, y))
                 return 0;
@@ -273,7 +274,7 @@ namespace System
             return string.CompareOrdinal(x, y);
         }
 
-        public override bool Equals(string x, string y)
+        public override bool Equals(string? x, string? y)
         {
             if (ReferenceEquals(x, y))
                 return true;
@@ -291,7 +292,7 @@ namespace System
             return x.Equals(y);
         }
 
-        public override int GetHashCode(string obj)
+        public override int GetHashCode(string? obj) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         {
             if (obj == null)
             {
@@ -300,14 +301,14 @@ namespace System
 
             if (_ignoreCase)
             {
-                return obj.GetHashCodeOrdinalIgnoreCase();
+                return obj!.GetHashCodeOrdinalIgnoreCase(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
 
-            return obj.GetHashCode();
+            return obj!.GetHashCode(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         // Equals method for the comparer itself. 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is OrdinalComparer comparer))
             {
@@ -330,17 +331,17 @@ namespace System
         {
         }
 
-        public override int Compare(string x, string y) => string.CompareOrdinal(x, y);
+        public override int Compare(string? x, string? y) => string.CompareOrdinal(x, y);
 
-        public override bool Equals(string x, string y) => string.Equals(x, y);
+        public override bool Equals(string? x, string? y) => string.Equals(x, y);
 
-        public override int GetHashCode(string obj)
+        public override int GetHashCode(string? obj) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         {
             if (obj == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
             }
-            return obj.GetHashCode();
+            return obj!.GetHashCode(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -357,9 +358,9 @@ namespace System
         {
         }
 
-        public override int Compare(string x, string y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
+        public override int Compare(string? x, string? y) => string.Compare(x, y, StringComparison.OrdinalIgnoreCase);
 
-        public override bool Equals(string x, string y)
+        public override bool Equals(string? x, string? y)
         {
             if (ReferenceEquals(x, y))
             {
@@ -379,13 +380,13 @@ namespace System
             return CompareInfo.EqualsOrdinalIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
         }
 
-        public override int GetHashCode(string obj)
+        public override int GetHashCode(string? obj) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         {
             if (obj == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
             }
-            return obj.GetHashCodeOrdinalIgnoreCase();
+            return obj!.GetHashCodeOrdinalIgnoreCase(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)

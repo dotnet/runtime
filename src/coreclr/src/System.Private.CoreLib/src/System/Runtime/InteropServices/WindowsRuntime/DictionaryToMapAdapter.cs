@@ -2,17 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
-using System.Security;
-using System.Reflection;
-using System.Collections;
+#nullable enable
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -41,6 +34,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (!keyFound)
             {
+                Debug.Assert(key != null);
                 Exception e = new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
                 e.HResult = HResults.E_BOUNDS;
                 throw e;
@@ -95,6 +89,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (!removed)
             {
+                Debug.Assert(key != null);
                 Exception e = new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
                 e.HResult = HResults.E_BOUNDS;
                 throw e;

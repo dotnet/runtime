@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -57,7 +58,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable"/>.</summary>
             public void OnCompleted(Action continuation)
             {
-                object obj = _value._obj;
+                object? obj = _value._obj;
                 Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
 
                 if (obj is Task t)
@@ -79,7 +80,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable"/>.</summary>
             public void UnsafeOnCompleted(Action continuation)
             {
-                object obj = _value._obj;
+                object? obj = _value._obj;
                 Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
 
                 if (obj is Task t)
@@ -99,7 +100,7 @@ namespace System.Runtime.CompilerServices
 
             void IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
             {
-                object obj = _value._obj;
+                object? obj = _value._obj;
                 Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
 
                 if (obj is Task t)
@@ -163,7 +164,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
             public void OnCompleted(Action continuation)
             {
-                object obj = _value._obj;
+                object? obj = _value._obj;
                 Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
                 if (obj is Task<TResult> t)
@@ -185,7 +186,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
             public void UnsafeOnCompleted(Action continuation)
             {
-                object obj = _value._obj;
+                object? obj = _value._obj;
                 Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
                 if (obj is Task<TResult> t)
@@ -205,7 +206,7 @@ namespace System.Runtime.CompilerServices
 
             void IStateMachineBoxAwareAwaiter.AwaitUnsafeOnCompleted(IAsyncStateMachineBox box)
             {
-                object obj = _value._obj;
+                object? obj = _value._obj;
                 Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
                 if (obj is Task<TResult> t)

@@ -2,16 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
-using System.Security;
-using System.Reflection;
+#nullable enable
 using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -47,12 +39,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         public IBindableIterator First()
         {
             IEnumerator enumerator = list.GetEnumerator();
-            return new EnumeratorToIteratorAdapter<object>(new EnumerableToBindableIterableAdapter.NonGenericToGenericEnumerator(enumerator));
+            return new EnumeratorToIteratorAdapter<object?>(new EnumerableToBindableIterableAdapter.NonGenericToGenericEnumerator(enumerator));
         }
 
         // IBindableVectorView implementation:
 
-        public object GetAt(uint index)
+        public object? GetAt(uint index)
         {
             EnsureIndexInt32(index, list.Count);
 

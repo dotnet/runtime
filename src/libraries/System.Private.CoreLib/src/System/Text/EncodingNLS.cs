@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections;
 using System.Diagnostics;
@@ -66,7 +67,7 @@ namespace System.Text
         public override unsafe int GetByteCount(string s)
         {
             // Validate input
-            if (s==null)
+            if (s == null)
                 throw new ArgumentNullException(nameof(s));
 
             fixed (char* pChars = s)

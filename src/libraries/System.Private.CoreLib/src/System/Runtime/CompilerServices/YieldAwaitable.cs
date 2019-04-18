@@ -21,8 +21,7 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Security;
+#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading;
@@ -129,10 +128,10 @@ namespace System.Runtime.CompilerServices
                 // Otherwise, this is the same logic as in QueueContinuation, except using
                 // an IAsyncStateMachineBox instead of an Action, and only for flowContext:false.
 
-                SynchronizationContext syncCtx = SynchronizationContext.Current;
+                SynchronizationContext? syncCtx = SynchronizationContext.Current;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
-                    syncCtx.Post(s => ((IAsyncStateMachineBox)s).MoveNext(), box);
+                    syncCtx.Post(s => ((IAsyncStateMachineBox)s!).MoveNext(), box); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 }
                 else
                 {
@@ -143,7 +142,7 @@ namespace System.Runtime.CompilerServices
                     }
                     else
                     {
-                        Task.Factory.StartNew(s => ((IAsyncStateMachineBox)s).MoveNext(), box, default, TaskCreationOptions.PreferFairness, scheduler);
+                        Task.Factory.StartNew(s => ((IAsyncStateMachineBox)s!).MoveNext(), box, default, TaskCreationOptions.PreferFairness, scheduler); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     }
                 }
             }
@@ -155,7 +154,7 @@ namespace System.Runtime.CompilerServices
                 return continuation;
 #else
                 int continuationId = Task.NewId();
-                Task currentTask = Task.InternalCurrent;
+                Task? currentTask = Task.InternalCurrent;
                 // fire the correlation ETW event
                 TplEventSource.Log.AwaitTaskContinuationScheduled(TaskScheduler.Current.Id, (currentTask != null) ? currentTask.Id : 0, continuationId);
 
@@ -188,7 +187,7 @@ namespace System.Runtime.CompilerServices
             private static readonly SendOrPostCallback s_sendOrPostCallbackRunAction = RunAction;
             /// <summary>Runs an Action delegate provided as state.</summary>
             /// <param name="state">The Action delegate to invoke.</param>
-            private static void RunAction(object state) { ((Action)state)(); }
+            private static void RunAction(object? state) { ((Action)state!)(); }
 
             /// <summary>Ends the await operation.</summary>
             public void GetResult() { } // Nop. It exists purely because the compiler pattern demands it.

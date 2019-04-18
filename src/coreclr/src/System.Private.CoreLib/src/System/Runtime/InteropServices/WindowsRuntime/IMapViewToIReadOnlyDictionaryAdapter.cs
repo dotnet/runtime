@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
-using System.Security;
+#nullable enable
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -79,7 +74,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // throw an exception from Lookup.
             if (!_this.HasKey(key))
             {
-                value = default;
+                value = default!; // TODO-NULLABLE-GENERIC
                 return false;
             }
 
@@ -92,7 +87,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 if (HResults.E_BOUNDS == ex.HResult)
                 {
-                    value = default;
+                    value = default!; // TODO-NULLABLE-GENERIC
                     return false;
                 }
                 throw;
@@ -199,7 +194,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        object IEnumerator.Current
+        object? IEnumerator.Current
         {
             get { return ((IEnumerator<TKey>)this).Current; }
         }
@@ -298,7 +293,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return enumeration.MoveNext();
         }
 
-        object IEnumerator.Current
+        object? IEnumerator.Current
         {
             get { return ((IEnumerator<TValue>)this).Current; }
         }

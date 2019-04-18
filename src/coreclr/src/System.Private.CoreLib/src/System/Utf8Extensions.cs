@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
@@ -24,7 +25,7 @@ namespace System
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> AsBytes(this Utf8String text)
+        public static ReadOnlySpan<byte> AsBytes(this Utf8String? text)
         {
             if (text == null)
                 return default;
@@ -42,7 +43,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> AsBytes(this Utf8String text, int start)
+        public static ReadOnlySpan<byte> AsBytes(this Utf8String? text, int start)
         {
             if (text == null)
             {
@@ -68,7 +69,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<byte> AsBytes(this Utf8String text, int start, int length)
+        public static ReadOnlySpan<byte> AsBytes(this Utf8String? text, int start, int length)
         {
             if (text == null)
             {
@@ -95,7 +96,7 @@ namespace System
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<Char8> AsSpan(this Utf8String text)
+        public static ReadOnlySpan<Char8> AsSpan(this Utf8String? text)
         {
             if (text == null)
                 return default;
@@ -113,7 +114,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<Char8> AsSpan(this Utf8String text, int start)
+        public static ReadOnlySpan<Char8> AsSpan(this Utf8String? text, int start)
         {
             if (text == null)
             {
@@ -139,7 +140,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<Char8> AsSpan(this Utf8String text, int start, int length)
+        public static ReadOnlySpan<Char8> AsSpan(this Utf8String? text, int start, int length)
         {
             if (text == null)
             {
@@ -163,7 +164,7 @@ namespace System
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String text)
+        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text)
         {
             if (text == null)
                 return default;
@@ -178,7 +179,7 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
         /// </exception>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String text, int start)
+        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text, int start)
         {
             if (text == null)
             {
@@ -196,7 +197,7 @@ namespace System
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <param name="startIndex">The index at which to begin this slice.</param>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String text, Index startIndex)
+        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text, Index startIndex)
         {
             if (text == null)
             {
@@ -221,7 +222,7 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
         /// </exception>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String text, int start, int length)
+        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text, int start, int length)
         {
             if (text == null)
             {
@@ -245,7 +246,7 @@ namespace System
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <param name="range">The range used to indicate the start and length of the sliced string.</param>
-        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String text, Range range)
+        public static ReadOnlyMemory<Char8> AsMemory(this Utf8String? text, Range range)
         {
             if (text == null)
             {
@@ -265,7 +266,7 @@ namespace System
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
-        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String text)
+        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String? text)
         {
             if (text == null)
                 return default;
@@ -280,7 +281,7 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index is not in range (&lt;0 or &gt;text.Length).
         /// </exception>
-        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String text, int start)
+        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String? text, int start)
         {
             if (text == null)
             {
@@ -298,7 +299,7 @@ namespace System
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <param name="startIndex">The index at which to begin this slice.</param>
-        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String text, Index startIndex)
+        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String? text, Index startIndex)
         {
             if (text == null)
             {
@@ -323,7 +324,7 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> index or <paramref name="length"/> is not in range.
         /// </exception>
-        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String text, int start, int length)
+        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String? text, int start, int length)
         {
             if (text == null)
             {
@@ -347,7 +348,7 @@ namespace System
         /// <summary>Creates a new <see cref="ReadOnlyMemory{T}"/> over the portion of the target <see cref="Utf8String"/>.</summary>
         /// <param name="text">The target <see cref="Utf8String"/>.</param>
         /// <param name="range">The range used to indicate the start and length of the sliced string.</param>
-        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String text, Range range)
+        public static ReadOnlyMemory<byte> AsMemoryBytes(this Utf8String? text, Range range)
         {
             if (text == null)
             {

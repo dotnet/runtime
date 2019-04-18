@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Security;
 using System.Runtime.InteropServices;
@@ -57,7 +58,7 @@ namespace System.Reflection.Emit
                 m_pDocumentWriterSafeHandle = pDocumentWriterSafeHandle;
                 // The handle is actually a pointer to a native ISymUnmanagedDocumentWriter.
                 m_pDocWriter = (ISymUnmanagedDocumentWriter*)m_pDocumentWriterSafeHandle.DangerousGetHandle();
-                m_vtable = (ISymUnmanagedDocumentWriterVTable)(Marshal.PtrToStructure(m_pDocWriter->m_unmanagedVTable, typeof(ISymUnmanagedDocumentWriterVTable)));
+                m_vtable = (ISymUnmanagedDocumentWriterVTable)(Marshal.PtrToStructure(m_pDocWriter->m_unmanagedVTable, typeof(ISymUnmanagedDocumentWriterVTable)))!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
             }
 
             //------------------------------------------------------------------------------
@@ -90,7 +91,7 @@ namespace System.Reflection.Emit
                 int hr = m_vtable.SetCheckSum(m_pDocWriter, algorithmId, (uint)checkSum.Length, checkSum);
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
             }
 
@@ -165,7 +166,7 @@ namespace System.Reflection.Emit
             //------------------------------------------------------------------------------
             // DefineDocument() wrapper
             //------------------------------------------------------------------------------
-            ISymbolDocumentWriter ISymbolWriter.DefineDocument(string url,
+            ISymbolDocumentWriter? ISymbolWriter.DefineDocument(string url,
                                                                Guid language,
                                                                Guid languageVendor,
                                                                Guid documentType)
@@ -175,7 +176,7 @@ namespace System.Reflection.Emit
                 int hr = m_vtable.DefineDocument(m_pWriter, url, ref language, ref languageVendor, ref documentType, out psymUnmanagedDocumentWriter);
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
                 if (psymUnmanagedDocumentWriter.IsInvalid)
                 {
@@ -192,7 +193,7 @@ namespace System.Reflection.Emit
                 int hr = m_vtable.OpenMethod(m_pWriter, method.GetToken());
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
             }
 
@@ -204,7 +205,7 @@ namespace System.Reflection.Emit
                 int hr = m_vtable.CloseMethod(m_pWriter);
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
             }
 
@@ -259,10 +260,10 @@ namespace System.Reflection.Emit
                 // Regardless, this cast is important for security - we cannot allow our caller to provide
                 // arbitrary instances of this interface.
                 SymDocumentWriter docwriter = (SymDocumentWriter)document;
-                int hr = m_vtable.DefineSequencePoints(m_pWriter, docwriter.GetUnmanaged(), spCount, offsets, lines, columns, endLines, endColumns);
+                int hr = m_vtable.DefineSequencePoints(m_pWriter, docwriter.GetUnmanaged(), spCount!, offsets!, lines!, columns!, endLines!, endColumns!);
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
             }
 
@@ -275,7 +276,7 @@ namespace System.Reflection.Emit
                 int hr = m_vtable.OpenScope(m_pWriter, startOffset, out ret);
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
                 return ret;
             }
@@ -288,7 +289,7 @@ namespace System.Reflection.Emit
                 int hr = m_vtable.CloseScope(m_pWriter, endOffset);
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
             }
 
@@ -318,7 +319,7 @@ namespace System.Reflection.Emit
                                                       endOffset);
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
             }
 
@@ -330,7 +331,7 @@ namespace System.Reflection.Emit
                 int hr = m_vtable.SetSymAttribute(m_pWriter, parent.GetToken(), name, data.Length, data);
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
             }
 
@@ -342,7 +343,7 @@ namespace System.Reflection.Emit
                 int hr = m_vtable.UsingNamespace(m_pWriter, name);
                 if (hr < 0)
                 {
-                    throw Marshal.GetExceptionForHR(hr);
+                    throw Marshal.GetExceptionForHR(hr)!;
                 }
             }
 
@@ -358,7 +359,7 @@ namespace System.Reflection.Emit
             internal void InternalSetUnderlyingWriter(IntPtr ppUnderlyingWriter)
             {
                 m_pWriter = *((ISymUnmanagedWriter**)ppUnderlyingWriter);
-                m_vtable = (ISymUnmanagedWriterVTable)(Marshal.PtrToStructure(m_pWriter->m_unmanagedVTable, typeof(ISymUnmanagedWriterVTable)));
+                m_vtable = (ISymUnmanagedWriterVTable)(Marshal.PtrToStructure(m_pWriter->m_unmanagedVTable, typeof(ISymUnmanagedWriterVTable)))!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
             }
 
             //------------------------------------------------------------------------------

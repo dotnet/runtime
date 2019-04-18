@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -56,11 +57,11 @@ namespace System.Globalization
 
             // String Arrays
             // Formats
-            ret &= CallEnumCalendarInfo(localeName, calendarId, CAL_SSHORTDATE, LOCALE_SSHORTDATE | useOverrides, out this.saShortDates);
-            ret &= CallEnumCalendarInfo(localeName, calendarId, CAL_SLONGDATE, LOCALE_SLONGDATE | useOverrides, out this.saLongDates);
+            ret &= CallEnumCalendarInfo(localeName, calendarId, CAL_SSHORTDATE, LOCALE_SSHORTDATE | useOverrides, out this.saShortDates!);
+            ret &= CallEnumCalendarInfo(localeName, calendarId, CAL_SLONGDATE, LOCALE_SLONGDATE | useOverrides, out this.saLongDates!);
 
             // Get the YearMonth pattern.
-            ret &= CallEnumCalendarInfo(localeName, calendarId, CAL_SYEARMONTH, LOCALE_SYEARMONTH, out this.saYearMonths);
+            ret &= CallEnumCalendarInfo(localeName, calendarId, CAL_SYEARMONTH, LOCALE_SYEARMONTH, out this.saYearMonths!);
 
             // Day & Month Names
             // These are all single calType entries, 1 per day, so we have to make 7 or 13 calls to collect all the names
@@ -90,8 +91,8 @@ namespace System.Globalization
             // Calendar Parts Names
             // This doesn't get always get localized names for gregorian (not available in windows < 7)
             // so: eg: coreclr on win < 7 won't get these
-            CallEnumCalendarInfo(localeName, calendarId, CAL_SERASTRING, 0, out this.saEraNames);
-            CallEnumCalendarInfo(localeName, calendarId, CAL_SABBREVERASTRING, 0, out this.saAbbrevEraNames);
+            CallEnumCalendarInfo(localeName, calendarId, CAL_SERASTRING, 0, out this.saEraNames!);
+            CallEnumCalendarInfo(localeName, calendarId, CAL_SABBREVERASTRING, 0, out this.saAbbrevEraNames!);
 
             //
             // Calendar Era Info
@@ -100,10 +101,10 @@ namespace System.Globalization
             //
 
             // Clean up the escaping of the formats
-            this.saShortDates = CultureData.ReescapeWin32Strings(this.saShortDates);
-            this.saLongDates = CultureData.ReescapeWin32Strings(this.saLongDates);
-            this.saYearMonths = CultureData.ReescapeWin32Strings(this.saYearMonths);
-            this.sMonthDay = CultureData.ReescapeWin32String(this.sMonthDay);
+            this.saShortDates = CultureData.ReescapeWin32Strings(this.saShortDates)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            this.saLongDates = CultureData.ReescapeWin32Strings(this.saLongDates)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            this.saYearMonths = CultureData.ReescapeWin32Strings(this.saYearMonths)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            this.sMonthDay = CultureData.ReescapeWin32String(this.sMonthDay)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
 
             return ret;
         }
@@ -247,7 +248,7 @@ namespace System.Globalization
             }
         }
 
-        private static bool CallGetCalendarInfoEx(string localeName, CalendarId calendar, uint calType, out int data)
+        private static bool CallGetCalendarInfoEx(string? localeName, CalendarId calendar, uint calType, out int data)
         {
             return (Interop.Kernel32.GetCalendarInfoEx(localeName, (uint)calendar, IntPtr.Zero, calType | CAL_RETURN_NUMBER, IntPtr.Zero, 0, out data) != 0);
         }
@@ -276,8 +277,8 @@ namespace System.Globalization
         // Context for EnumCalendarInfoExEx callback.
         private struct EnumData
         {
-            public string userOverride;
-            public List<string> strings;
+            public string? userOverride;
+            public List<string>? strings;
         }
 
         // EnumCalendarInfoExEx callback itself.
@@ -291,7 +292,10 @@ namespace System.Globalization
 
                 // If we had a user override, check to make sure this differs
                 if (context.userOverride != calendarInfo)
+                {
+                    Debug.Assert(context.strings != null);
                     context.strings.Add(calendarInfo);
+                }
 
                 return Interop.BOOL.TRUE;
             }
@@ -301,7 +305,7 @@ namespace System.Globalization
             }
         }
 
-        private static unsafe bool CallEnumCalendarInfo(string localeName, CalendarId calendar, uint calType, uint lcType, out string[] data)
+        private static unsafe bool CallEnumCalendarInfo(string localeName, CalendarId calendar, uint calType, uint lcType, out string[]? data)
         {
             EnumData context = new EnumData();
             context.userOverride = null;
@@ -319,7 +323,7 @@ namespace System.Globalization
                 if (userCalendar == calendar)
                 {
                     // They matched, get the user override since locale & calendar match
-                    string res = CultureData.GetLocaleInfoEx(localeName, lcType);
+                    string? res = CultureData.GetLocaleInfoEx(localeName, lcType);
 
                     // if it succeeded remember the override for the later callers
                     if (res != null)
@@ -340,6 +344,7 @@ namespace System.Globalization
             }
 
             // Now we have a list of data, fail if we didn't find anything.
+            Debug.Assert(context.strings != null);
             if (context.strings.Count == 0)
             {
                 data = null;

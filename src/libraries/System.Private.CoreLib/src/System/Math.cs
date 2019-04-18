@@ -13,6 +13,7 @@
 
 //This class contains only static members and doesn't require serialization.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;

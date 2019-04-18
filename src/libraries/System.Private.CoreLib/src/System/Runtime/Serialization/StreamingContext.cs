@@ -2,24 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Runtime.Serialization
 {
     public readonly struct StreamingContext
     {
-        private readonly object _additionalContext;
+        private readonly object? _additionalContext;
         private readonly StreamingContextStates _state;
 
         public StreamingContext(StreamingContextStates state) : this(state, null)
         {
         }
 
-        public StreamingContext(StreamingContextStates state, object additional)
+        public StreamingContext(StreamingContextStates state, object? additional)
         {
             _state = state;
             _additionalContext = additional;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is StreamingContext))
             {
@@ -33,7 +34,7 @@ namespace System.Runtime.Serialization
 
         public StreamingContextStates State => _state;
 
-        public object Context => _additionalContext;
+        public object? Context => _additionalContext;
     }
 
     [Flags]
