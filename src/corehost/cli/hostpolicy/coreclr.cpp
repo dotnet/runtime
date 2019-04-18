@@ -99,12 +99,14 @@ pal::hresult_t coreclr_t::create(
     std::vector<const char*> keys(propertyCount);
     std::vector<std::vector<char>> values_strs(propertyCount);
     std::vector<const char*> values(propertyCount);
-    std::function<void (int,const pal::string_t &,const pal::string_t &)> callback = [&] (int index, const pal::string_t& key, const pal::string_t& value)
+    int index = 0;
+    std::function<void (const pal::string_t &,const pal::string_t &)> callback = [&] (const pal::string_t& key, const pal::string_t& value)
     {
         pal::pal_clrstring(key, &keys_strs[index]);
         keys[index] = keys_strs[index].data();
         pal::pal_clrstring(value, &values_strs[index]);
         values[index] = values_strs[index].data();
+        ++index;
     };
     properties.enumerate(callback);
 
@@ -208,30 +210,46 @@ namespace
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");
 }
 
-coreclr_property_bag_t::coreclr_property_bag_t()
-{
-    // Optimize the bag for at least twice as many common properties.
-    const size_t init_size = 2 * static_cast<size_t>(common_property::Last);
-    _keys.reserve(init_size);
-    _values.reserve(init_size);
-}
-
-void coreclr_property_bag_t::add(common_property key, const pal::char_t *value)
+const pal::char_t* coreclr_property_bag_t::common_property_to_string(common_property key)
 {
     int idx = static_cast<int>(key);
     assert(0 <= idx && idx < static_cast<int>(common_property::Last));
 
-    add(PropertyNameMapping[idx], value);
+    return PropertyNameMapping[idx];
 }
 
-void coreclr_property_bag_t::add(const pal::char_t *key, const pal::char_t *value)
+coreclr_property_bag_t::coreclr_property_bag_t()
+{
+    // Optimize the bag for at least twice as many common properties.
+    const size_t init_size = 2 * static_cast<size_t>(common_property::Last);
+    _properties.reserve(init_size);
+}
+
+bool coreclr_property_bag_t::add(common_property key, const pal::char_t *value)
+{
+    int idx = static_cast<int>(key);
+    assert(0 <= idx && idx < static_cast<int>(common_property::Last));
+
+    return add(PropertyNameMapping[idx], value);
+}
+
+bool coreclr_property_bag_t::add(const pal::char_t *key, const pal::char_t *value)
 {
     if (key == nullptr || value == nullptr)
-        return;
+        return false;
 
-    assert(_keys.size() == _values.size());
-    _keys.push_back(key);
-    _values.push_back(value);
+    auto iter = _properties.find(key);
+    if (iter == _properties.cend())
+    {
+        _properties.emplace(key, value);
+        return true;
+    }
+    else
+    {
+        trace::verbose(_X("Overwriting property %s. New value: '%s'. Old value: '%s'."), key, value, (*iter).second.c_str());
+        _properties[key] = value;
+        return false;
+    }
 }
 
 bool coreclr_property_bag_t::try_get(common_property key, const pal::char_t **value)
@@ -245,32 +263,39 @@ bool coreclr_property_bag_t::try_get(common_property key, const pal::char_t **va
 bool coreclr_property_bag_t::try_get(const pal::char_t *key, const pal::char_t **value)
 {
     assert(key != nullptr && value != nullptr);
-    for (int i = 0; i < count(); ++i)
-    {
-        if (0 == pal::strcasecmp(_keys[i].c_str(), key))
-        {
-            *value = _values[i].c_str();
-            return true;
-        }
-    }
+    auto iter = _properties.find(key);
+    if (iter == _properties.cend())
+        return false;
 
-    return false;
+    *value = (*iter).second.c_str();
+    return true;
+}
+
+void coreclr_property_bag_t::remove(const pal::char_t *key)
+{
+    if (key == nullptr)
+        return;
+
+    auto iter = _properties.find(key);
+    if (iter == _properties.cend())
+        return;
+
+    _properties.erase(iter);
 }
 
 void coreclr_property_bag_t::log_properties() const
 {
-    for (int i = 0; i < count(); ++i)
-        trace::verbose(_X("Property %s = %s"), _keys[i].c_str(), _values[i].c_str());
+    for (auto &kv : _properties)
+        trace::verbose(_X("Property %s = %s"), kv.first.c_str(), kv.second.c_str());
 }
 
 int coreclr_property_bag_t::count() const
 {
-    assert(_keys.size() == _values.size());
-    return static_cast<int>(_keys.size());
+    return static_cast<int>(_properties.size());
 }
 
-void coreclr_property_bag_t::enumerate(std::function<void(int, const pal::string_t&, const pal::string_t&)> &callback) const
+void coreclr_property_bag_t::enumerate(std::function<void(const pal::string_t&, const pal::string_t&)> &callback) const
 {
-    for (int i = 0; i < count(); ++i)
-        callback(i, _keys[i], _values[i]);
+    for (auto &kv : _properties)
+        callback(kv.first, kv.second);
 }
