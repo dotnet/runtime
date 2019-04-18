@@ -133,7 +133,7 @@ namespace System.Net.Http.Headers
 
         public DateTimeOffset? Expires
         {
-            get { return HeaderUtilities.GetDateTimeOffsetValue(KnownHeaders.Expires.Descriptor, this); }
+            get { return HeaderUtilities.GetDateTimeOffsetValue(KnownHeaders.Expires.Descriptor, this, DateTimeOffset.MinValue); }
             set { SetOrRemoveParsedValue(KnownHeaders.Expires.Descriptor, value); }
         }
 
