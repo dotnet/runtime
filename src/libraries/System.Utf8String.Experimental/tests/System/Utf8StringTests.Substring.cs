@@ -29,16 +29,17 @@ namespace System.Tests
 
             void Substring_IndexCore(Utf8String s, Utf8String expected)
             {
-                Assert.Equal(expected, s.Substring(index));
+                Range r = new Range(index, ^0);
+                Assert.Equal(expected, s[r]);
 
                 if (index.Value == 0)
                 {
-                    Assert.Same(index.IsFromEnd ? Utf8String.Empty : s, s.Substring(index));
+                    Assert.Same(index.IsFromEnd ? Utf8String.Empty : s, s[r]);
                 }
 
                 if (index.Value == s.Length)
                 {
-                    Assert.Same(index.IsFromEnd ? s : Utf8String.Empty, s.Substring(index));
+                    Assert.Same(index.IsFromEnd ? s : Utf8String.Empty, s[r]);
                 }
             };
 
@@ -88,18 +89,15 @@ namespace System.Tests
         {
             void Substring_RangeCore(Utf8String s, Range range, Utf8String expected)
             {
-                Assert.Equal(expected, s.Substring(range));
                 Assert.Equal(expected, s[range]);
 
                 if (expected.Length == s.Length)
                 {
-                    Assert.Same(s, s.Substring(range));
                     Assert.Same(s, s[range]);
                 }
 
                 if (expected.Length == 0)
                 {
-                    Assert.Same(Utf8String.Empty, s.Substring(range));
                     Assert.Same(Utf8String.Empty, s[range]);
                 }
             };

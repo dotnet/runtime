@@ -84,9 +84,7 @@ namespace System
         public static implicit operator ReadOnlySpan<Char8>(Utf8String value) => throw null;
         public static bool operator ==(Utf8String left, Utf8String right) => throw null;
         public static bool operator !=(Utf8String left, Utf8String right) => throw null;
-        public Char8 this[Index index] => throw null;
         public Char8 this[int index] => throw null;
-        public Utf8String this[Range range] => throw null;
         public int Length => throw null;
         public bool Contains(char value) => throw null;
         public bool Contains(System.Text.Rune value) => throw null;
@@ -101,12 +99,12 @@ namespace System
         public int IndexOf(char value) => throw null;
         public int IndexOf(System.Text.Rune value) => throw null;
         public static bool IsNullOrEmpty(Utf8String value) => throw null;
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] // for compiler use only
+        public Utf8String Slice(int startIndex, int length) => throw null;
         public bool StartsWith(char value) => throw null;
         public bool StartsWith(System.Text.Rune value) => throw null;
-        public Utf8String Substring(Index startIndex) => throw null;
         public Utf8String Substring(int startIndex) => throw null;
         public Utf8String Substring(int startIndex, int length) => throw null;
-        public Utf8String Substring(Range range) => throw null;
         public byte[] ToByteArray() => throw null;
         public byte[] ToByteArray(int startIndex, int length) => throw null;
         public override string ToString() => throw null;
