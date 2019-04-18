@@ -22,11 +22,11 @@ namespace System.MemoryTests
                 Assert.Equal(memory.Slice(i, a.Length - i), memory[range]);
                 Assert.Equal(roMemory.Slice(i, a.Length - i), roMemory[range]);
 
-                Assert.Equal(memory.Slice(i), memory.Slice(Index.FromStart(i)));
-                Assert.Equal(roMemory.Slice(i), roMemory.Slice(Index.FromStart(i)));
+                Assert.Equal(memory.Slice(i), memory[i..]);
+                Assert.Equal(roMemory.Slice(i), roMemory[i..]);
 
-                Assert.Equal(memory.Slice(i, a.Length - i), memory.Slice(range));
-                Assert.Equal(roMemory.Slice(i, a.Length - i), roMemory.Slice(range));
+                Assert.Equal(memory.Slice(i, a.Length - i), memory[range]);
+                Assert.Equal(roMemory.Slice(i, a.Length - i), roMemory[range]);
             }
 
             range = new Range(Index.FromStart(0), Index.FromStart(a.Length + 1));

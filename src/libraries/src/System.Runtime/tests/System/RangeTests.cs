@@ -103,5 +103,68 @@ namespace System.Tests
             range1 = new Range(new Index(10, fromEnd: false), new Index(20, fromEnd: true));
             Assert.Equal(10.ToString() + "..^" + 20.ToString(), range1.ToString());
         }
+
+        [Fact]
+        public static void CustomTypeTest()
+        {
+            CustomRangeTester crt = new CustomRangeTester(new int [] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+            for (int i = 0; i < crt.Length; i++)
+            {
+                Assert.Equal(crt[i], crt[Index.FromStart(i)]);
+                Assert.Equal(crt[crt.Length - i - 1], crt[^(i + 1)]);
+
+                Assert.True(crt.Slice(i, crt.Length - i).Equals(crt[i..^0]), $"Index = {i} and {crt.Slice(i, crt.Length - i)} != {crt[i..^0]}");
+            }
+        }
+
+        // CustomRangeTester is a custom class which containing the members Length, Slice and int indexer.
+        // Having these members allow the C# compiler to support
+        //      this[Index]
+        //      this[Range]
+        private class CustomRangeTester : IEquatable<CustomRangeTester>
+        {
+            private int [] _data;
+
+            public CustomRangeTester(int [] data) => _data = data;
+            public int Length => _data.Length;
+            public int this[int index] => _data[index];
+            public CustomRangeTester Slice(int start, int length) => new CustomRangeTester(_data.AsSpan().Slice(start, length).ToArray());
+
+            public int [] Data => _data;
+
+            public bool Equals (CustomRangeTester other)
+            {
+                if (_data.Length == other.Data.Length)
+                {
+                    for (int i = 0; i < _data.Length; i++)
+                    {
+                        if (_data[i] != other.Data[i])
+                        {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+
+                return false;
+            }
+
+            public override string ToString()
+            {
+                if (Length == 0)
+                {
+                    return "[]";
+                }
+
+                string s = "[" + _data[0];
+
+                for (int i = 1; i < Length; i++)
+                {
+                    s = s + ", " + _data[i];
+                }
+
+                return s + "]";
+            }
+        }
     }
 }
