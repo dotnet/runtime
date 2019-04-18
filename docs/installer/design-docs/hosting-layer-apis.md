@@ -11,6 +11,133 @@ The `char_t` strings in the below API descriptions are defined based on the plat
 
 All exported functions and function pointers in the `hostfxr` library use the `__cdecl` calling convention on the x86 platform.
 
+### .NET Core 1.0+
+
+``` C
+int hostfxr_main(const int argc, const char_t *argv[])
+```
+
+Run an application.
+* `argc` / `argv` - command-line arguments
+
+This function does not return until the application completes execution.
+
+### .NET Core 2.0+
+
+``` C
+int32_t hostfxr_resolve_sdk(
+    const char_t *exe_dir,
+    const char_t *working_dir,
+    char_t buffer[],
+    int32_t buffer_size)
+```
+
+Obsolete. Use `hostfxr_resolve_sdk2`.
+
+### .NET Core 2.1+
+
+``` C
+int hostfxr_main_startupinfo(
+    const int argc,
+    const char_t *argv[],
+    const char_t *host_path,
+    const char_t *dotnet_root,
+    const char_t *app_path)
+```
+
+Run an application.
+* `argc` / `argv` - command-line arguments
+* `host_path` - path to the host application
+* `dotnet_root` - path to the .NET Core installation root
+* `app_path` - path to the application to run
+
+This function does not return until the application completes execution.
+
+``` C
+enum hostfxr_resolve_sdk2_flags_t
+{
+    disallow_prerelease = 0x1,
+};
+
+enum hostfxr_resolve_sdk2_result_key_t
+{
+    resolved_sdk_dir = 0,
+    global_json_path = 1,
+};
+
+typedef void (*hostfxr_resolve_sdk2_result_fn)(
+    hostfxr_resolve_sdk2_result_key_t key,
+    const char_t* value);
+
+int32_t hostfxr_resolve_sdk2(
+    const char_t *exe_dir,
+    const char_t *working_dir,
+    int32_t flags,
+    hostfxr_resolve_sdk2_result_fn result)
+```
+
+Determine the directory location of the SDK, accounting for global.json and multi-level lookup policy.
+* `exe_dir` - main directory where SDKs are located in `sdk\[version]` sub-folders.
+* `working_dir` - directory where the search for `global.json` will start and proceed upwards
+* `flags` - flags that influence resolution
+  * `disallow_prerelease` - do not allow resolution to return a pre-release SDK version unless a pre-release version was specified via `global.json`
+* `result` - callback invoked to return resolved values. The callback may be invoked more than once. Strings passed to the callback are valid only for the duration of the call.
+
+If resolution succeeds, `result` will be invoked with `resolved_sdk_dir` key and the value will hold the path to the resolved SDK directory. If resolution does not succeed, `result` will be invoked with `resolved_sdk_dir` key and the value will be `nullptr`.
+
+If `global.json` is used, `result` will be invoked with `global_json_path` key and the value will hold the path to `global.json`. If there was no `global.json` found, or the contents of global.json did not impact resolution (e.g. no version specified), then `result` will not be invoked with `global_json_path` key.
+
+``` C
+typedef void (*hostfxr_get_available_sdks_result_fn)(
+    int32_t sdk_count,
+    const char_t *sdk_dirs[]);
+
+int32_t hostfxr_get_available_sdks(
+    const char_t *exe_dir,
+    hostfxr_get_available_sdks_result_fn result)
+```
+
+Get the list of all available SDKs ordered by ascending version.
+* `exe_dir` - path to the dotnet executable
+* `result` - callback invoked to return the list of SDKs by their directory paths. String array and its elements are valid only for the duration of the call.
+
+``` C
+int32_t hostfxr_get_native_search_directories(
+    const int argc,
+    const char_t *argv[],
+    char_t buffer[],
+    int32_t buffer_size,
+    int32_t *required_buffer_size)
+```
+
+Get the native search directories of the runtime based upon the specified app.
+* `argc` / `argv` - command-line arguments
+* `buffer` - buffer to populate with the native search directories (including a null terminator).
+* `buffer_size` - size of `buffer` in `char_t` units
+* `required_buffer_size` - if `buffer` is too small, this will be populated with the minimum required buffer size (including a null terminator). Otherwise, this will be set to 0.
+
+The native search directories will be a list of paths separated by `PATH_SEPARATOR`, which is a semicolon (;) on Windows and a colon (:) otherwise.
+
+If `buffer_size` is less than the minimum required buffer size, this function will return `HostApiBufferTooSmall` and `buffer` will be unchanged.
+
+### .NET Core 3.0+
+
+``` C
+typedef void(*hostfxr_error_writer_fn)(const char_t *message);
+
+hostfxr_error_writer_fn hostfxr_set_error_writer(hostfxr_error_writer_fn error_writer)
+```
+
+Set a callback which will be used to report error messages. By default no callback is registered and the errors are written to standard error.
+* `error_writer` - callback function which will be invoked every time an error is reported. When set to `nullptr`, this function unregisters any previously registered callback and the default behaviour is restored.
+
+The return value is the previously registered callback (which is now unregistered) or `nullptr` if there was no previously registered callback.
+
+The error writer is registered per-thread. On each thread, only one callback can be registered. Subsequent registrations overwrite the previous ones.
+
+If `hostfxr` invokes functions in `hostpolicy` as part of its operation, the error writer will be propagated to `hostpolicy` for the duration of the call. This means that errors from both `hostfxr` and `hostpolicy` will be reported through the same error writer.
+
+
 ## Host Policy
 
 All exported functions and function pointers in the `hostpolicy` library use the `__cdecl` calling convention on the x86 platform.
