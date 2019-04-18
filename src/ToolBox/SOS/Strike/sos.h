@@ -752,6 +752,8 @@ namespace sos
          */
         GCHeap();
 
+        ~GCHeap();
+
         /* Returns an ObjectIterator which allows you to walk the objects on the managed heap.
          * This ObjectIterator is valid for the duration of the GCHeap's lifetime.  Note that
          * if you specify an address at which you wish to start walking the heap it need

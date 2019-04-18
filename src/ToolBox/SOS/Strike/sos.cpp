@@ -795,6 +795,11 @@ namespace sos
         }
     }
 
+    GCHeap::~GCHeap()
+    {
+        delete [] mHeaps;
+    }
+
     ObjectIterator GCHeap::WalkHeap(TADDR start, TADDR stop) const
     {
         return ObjectIterator(mHeaps, mNumHeaps, start, stop);
