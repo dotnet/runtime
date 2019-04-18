@@ -22,6 +22,7 @@ public:
 
     void WriteEvent(EventPipeEventInstance &instance);
     void Flush();
+    bool HasErrors() const;
 
     const char *GetTypeName() override
     {

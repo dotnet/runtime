@@ -305,6 +305,8 @@ private:
     // The counterpart to WriteEvent which after the payload is constructed
     static void WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId = NULL, LPCGUID pRelatedActivityId = NULL);
 
+    static void DisableInternal(EventPipeSessionID id);
+
     // Enable the specified EventPipe session.
     static EventPipeSessionID Enable(
         LPCWSTR strOutputPath,

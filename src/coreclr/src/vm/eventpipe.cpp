@@ -351,6 +351,19 @@ void EventPipe::Disable(EventPipeSessionID id)
 
     // Take the lock before disabling tracing.
     CrstHolder _crst(GetLock());
+    DisableInternal(reinterpret_cast<EventPipeSessionID>(s_pSession));
+}
+
+void EventPipe::DisableInternal(EventPipeSessionID id)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(GetLock()->OwnedByCurrentThread());
+    }
+    CONTRACTL_END;
 
     if (s_pConfig != NULL && s_pConfig->Enabled())
     {
@@ -503,6 +516,8 @@ void WINAPI EventPipe::FlushTimer(PVOID parameter, BOOLEAN timerFired)
     }
     CONTRACTL_END;
 
+    GCX_PREEMP();
+
     // Take the lock control lock to make sure that tracing isn't disabled during this operation.
     CrstHolder _crst(GetLock());
 
@@ -512,8 +527,6 @@ void WINAPI EventPipe::FlushTimer(PVOID parameter, BOOLEAN timerFired)
     // Make sure that we should actually switch files.
     if (!Enabled() || s_pSession->GetSessionType() != EventPipeSessionType::IpcStream)
         return;
-
-    GCX_PREEMP();
 
     if (CLRGetTickCount64() > (s_lastFlushSwitchTime + 100))
     {
@@ -525,6 +538,16 @@ void WINAPI EventPipe::FlushTimer(PVOID parameter, BOOLEAN timerFired)
         s_pBufferManager->WriteAllBuffersToFile(s_pFile, stopTimeStamp);
 
         s_lastFlushSwitchTime = CLRGetTickCount64();
+    }
+
+    if (s_pFile->HasErrors())
+    {
+        EX_TRY
+        {
+            DisableInternal(reinterpret_cast<EventPipeSessionID>(s_pSession));
+        }
+        EX_CATCH {}
+        EX_END_CATCH(SwallowAllExceptions);
     }
 }
 

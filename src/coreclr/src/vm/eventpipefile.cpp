@@ -66,6 +66,12 @@ EventPipeFile::~EventPipeFile()
     delete m_pSerializer;
 }
 
+bool EventPipeFile::HasErrors() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return (m_pSerializer == nullptr) || m_pSerializer->HasWriteErrors();
+}
+
 void EventPipeFile::WriteEvent(EventPipeEventInstance &instance)
 {
     CONTRACTL
