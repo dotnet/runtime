@@ -7,7 +7,6 @@
     <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
       <Link>CommonTest\System\IO\WrappedMemoryStream.cs</Link>
     </Compile>
-    <Compile Include="ArrayBufferWriter.cs" />
     <Compile Include="BitStackTests.cs" />
     <Compile Include="BufferFactory.cs" />
     <Compile Include="BufferSegment.cs" />
@@ -21,8 +20,7 @@
     <Compile Include="JsonNumberTestData.cs" />
     <Compile Include="JsonReaderStateAndOptionsTests.cs" />
     <Compile Include="JsonTestHelper.cs" />
-    <Compile Include="JsonWriterStateTests.cs" />
-    <Compile Include="ResizableArray.cs" />
+    <Compile Include="JsonWriterOptionsTests.cs" />
     <Compile Include="Serialization\Array.ReadTests.cs" />
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
@@ -57,6 +55,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\src\System\Text\Json\BitStack.cs" Link="BitStack.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNETStandard)' == 'true'">
+    <Compile Include="$(CommonPath)\System\Buffers\ArrayBufferWriter.cs">
+      <Link>CommonTest\System\Buffers\ArrayBufferWriter.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="Newtonsoft.Json" />    

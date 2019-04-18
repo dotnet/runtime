@@ -940,11 +940,11 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public void WriteAsProperty(ReadOnlySpan<char> propertyName, ref Utf8JsonWriter writer)
+        public void WriteAsProperty(ReadOnlySpan<char> propertyName, Utf8JsonWriter writer)
         {
             CheckValidInstance();
 
-            _parent.WriteElementTo(_idx, ref writer, propertyName);
+            _parent.WriteElementTo(_idx, writer, propertyName);
         }
 
         /// <summary>
@@ -960,11 +960,11 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public void WriteAsProperty(ReadOnlySpan<byte> utf8PropertyName, ref Utf8JsonWriter writer)
+        public void WriteAsProperty(ReadOnlySpan<byte> utf8PropertyName, Utf8JsonWriter writer)
         {
             CheckValidInstance();
 
-            _parent.WriteElementTo(_idx, ref writer, utf8PropertyName);
+            _parent.WriteElementTo(_idx, writer, utf8PropertyName);
         }
 
         /// <summary>
@@ -977,11 +977,11 @@ namespace System.Text.Json
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public void WriteAsValue(ref Utf8JsonWriter writer)
+        public void WriteAsValue(Utf8JsonWriter writer)
         {
             CheckValidInstance();
 
-            _parent.WriteElementTo(_idx, ref writer);
+            _parent.WriteElementTo(_idx, writer);
         }
 
         /// <summary>

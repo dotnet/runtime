@@ -22,12 +22,12 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        public override void Write(float value, ref Utf8JsonWriter writer)
+        public override void Write(float value, Utf8JsonWriter writer)
         {
             writer.WriteNumberValue(value);
         }
 
-        public override void Write(Span<byte> escapedPropertyName, float value, ref Utf8JsonWriter writer)
+        public override void Write(Span<byte> escapedPropertyName, float value, Utf8JsonWriter writer)
         {
             writer.WriteNumber(escapedPropertyName, value);
         }

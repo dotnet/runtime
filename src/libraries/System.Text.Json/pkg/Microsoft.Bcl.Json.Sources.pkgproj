@@ -14,7 +14,7 @@
        the Common SR.cs into SourcePackageFiles. -->
   <Target Name="GetSourcesToPackage" BeforeTargets="ExpandProjectReferences">
     <ItemGroup>
-      <_ProjectsToBuild Include="../src/System.Text.Json.csproj" UndefineProperties="Configuration" />
+      <_ProjectsToBuild Include="../src/System.Text.Json.csproj" UndefineProperties="Configuration" AdditionalProperties="TargetGroup=netstandard"/>
     </ItemGroup>
 
     <MSBuild Projects="@(_ProjectsToBuild)"

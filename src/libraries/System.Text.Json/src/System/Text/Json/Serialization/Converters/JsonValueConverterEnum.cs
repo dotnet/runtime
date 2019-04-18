@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        public override void Write(TValue value, ref Utf8JsonWriter writer)
+        public override void Write(TValue value, Utf8JsonWriter writer)
         {
             if (TreatAsString)
             {
@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public override void Write(Span<byte> escapedPropertyName, TValue value, ref Utf8JsonWriter writer)
+        public override void Write(Span<byte> escapedPropertyName, TValue value, Utf8JsonWriter writer)
         {
             if (TreatAsString)
             {

@@ -3,18 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Buffers.Text;
 using System.Diagnostics;
 
 namespace System.Text.Json
 {
-    public ref partial struct Utf8JsonWriter
+    public sealed partial class Utf8JsonWriter
     {
         /// <summary>
         /// Writes the property name and value (as a JSON number) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
         /// <param name="utf8FormattedNumber">The value to be written as a JSON number as part of the name/value pair.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -30,9 +32,11 @@ namespace System.Text.Json
         internal void WriteNumber(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> utf8FormattedNumber)
         {
             JsonWriterHelper.ValidateProperty(propertyName);
+            JsonWriterHelper.ValidateValue(utf8FormattedNumber);
             JsonWriterHelper.ValidateNumber(utf8FormattedNumber);
 
             WriteNumberEscape(propertyName, utf8FormattedNumber);
+
             SetFlagToAddListSeparatorBeforeNextItem();
             _tokenType = JsonTokenType.Number;
         }
@@ -42,6 +46,9 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON object to be written.</param>
         /// <param name="utf8FormattedNumber">The value to be written as a JSON number as part of the name/value pair.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -57,9 +64,11 @@ namespace System.Text.Json
         internal void WriteNumber(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> utf8FormattedNumber)
         {
             JsonWriterHelper.ValidateProperty(utf8PropertyName);
+            JsonWriterHelper.ValidateValue(utf8FormattedNumber);
             JsonWriterHelper.ValidateNumber(utf8FormattedNumber);
 
             WriteNumberEscape(utf8PropertyName, utf8FormattedNumber);
+
             SetFlagToAddListSeparatorBeforeNextItem();
             _tokenType = JsonTokenType.Number;
         }
@@ -68,7 +77,7 @@ namespace System.Text.Json
         {
             int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName);
 
-            Debug.Assert(propertyIdx >= -1 && propertyIdx < int.MaxValue / 2);
+            Debug.Assert(propertyIdx >= -1 && propertyIdx < propertyName.Length);
 
             if (propertyIdx != -1)
             {
@@ -84,7 +93,7 @@ namespace System.Text.Json
         {
             int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName);
 
-            Debug.Assert(propertyIdx >= -1 && propertyIdx < int.MaxValue / 2);
+            Debug.Assert(propertyIdx >= -1 && propertyIdx < utf8PropertyName.Length);
 
             if (propertyIdx != -1)
             {
@@ -104,21 +113,11 @@ namespace System.Text.Json
             char[] propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
-            Span<char> escapedPropertyName;
-            if (length > StackallocThreshold)
-            {
-                propertyArray = ArrayPool<char>.Shared.Rent(length);
-                escapedPropertyName = propertyArray;
-            }
-            else
-            {
-                // Cannot create a span directly since it gets passed to instance methods on a ref struct.
-                unsafe
-                {
-                    char* ptr = stackalloc char[length];
-                    escapedPropertyName = new Span<char>(ptr, length);
-                }
-            }
+
+            Span<char> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
+                stackalloc char[length] :
+                (propertyArray = ArrayPool<char>.Shared.Rent(length));
+
             JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
 
             WriteNumberByOptions(escapedPropertyName.Slice(0, written), value);
@@ -137,21 +136,11 @@ namespace System.Text.Json
             byte[] propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
-            Span<byte> escapedPropertyName;
-            if (length > StackallocThreshold)
-            {
-                propertyArray = ArrayPool<byte>.Shared.Rent(length);
-                escapedPropertyName = propertyArray;
-            }
-            else
-            {
-                // Cannot create a span directly since it gets passed to instance methods on a ref struct.
-                unsafe
-                {
-                    byte* ptr = stackalloc byte[length];
-                    escapedPropertyName = new Span<byte>(ptr, length);
-                }
-            }
+
+            Span<byte> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (propertyArray = ArrayPool<byte>.Shared.Rent(length));
+
             JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
 
             WriteNumberByOptions(escapedPropertyName.Slice(0, written), value);
@@ -165,74 +154,27 @@ namespace System.Text.Json
         private void WriteNumberByOptions(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> value)
         {
             ValidateWritingProperty();
-            if (_writerOptions.Indented)
+            if (Options.Indented)
             {
-                WriteNumberIndented(propertyName, value);
+                WriteLiteralIndented(propertyName, value);
             }
             else
             {
-                WriteNumberMinimized(propertyName, value);
+                WriteLiteralMinimized(propertyName, value);
             }
         }
 
         private void WriteNumberByOptions(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> value)
         {
             ValidateWritingProperty();
-            if (_writerOptions.Indented)
+            if (Options.Indented)
             {
-                WriteNumberIndented(utf8PropertyName, value);
+                WriteLiteralIndented(utf8PropertyName, value);
             }
             else
             {
-                WriteNumberMinimized(utf8PropertyName, value);
+                WriteLiteralMinimized(utf8PropertyName, value);
             }
-        }
-
-        private void WriteNumberMinimized(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> value)
-        {
-            int idx = WritePropertyNameMinimized(escapedPropertyName);
-
-            WriteNumberValueFormatLoop(value, ref idx);
-
-            Advance(idx);
-        }
-
-        private void WriteNumberMinimized(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> value)
-        {
-            int idx = WritePropertyNameMinimized(escapedPropertyName);
-
-            WriteNumberValueFormatLoop(value, ref idx);
-
-            Advance(idx);
-        }
-
-        private void WriteNumberIndented(ReadOnlySpan<char> escapedPropertyName, ReadOnlySpan<byte> value)
-        {
-            int idx = WritePropertyNameIndented(escapedPropertyName);
-
-            WriteNumberValueFormatLoop(value, ref idx);
-
-            Advance(idx);
-        }
-
-        private void WriteNumberIndented(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> value)
-        {
-            int idx = WritePropertyNameIndented(escapedPropertyName);
-
-            WriteNumberValueFormatLoop(value, ref idx);
-
-            Advance(idx);
-        }
-
-        private void WriteNumberValueFormatLoop(ReadOnlySpan<byte> value, ref int idx)
-        {
-            if (_buffer.Length - idx - value.Length < 0)
-            {
-                AdvanceAndGrow(ref idx, value.Length);
-            }
-
-            value.CopyTo(_buffer.Slice(idx));
-            idx += value.Length;
         }
     }
 }

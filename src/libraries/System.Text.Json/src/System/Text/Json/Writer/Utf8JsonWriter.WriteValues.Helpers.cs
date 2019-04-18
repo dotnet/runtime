@@ -6,11 +6,11 @@ using System.Diagnostics;
 
 namespace System.Text.Json
 {
-    public ref partial struct Utf8JsonWriter
+    public sealed partial class Utf8JsonWriter
     {
         private void ValidateWritingValue()
         {
-            if (!_writerOptions.SkipValidation)
+            if (!Options.SkipValidation)
             {
                 if (_inObject)
                 {
@@ -24,45 +24,6 @@ namespace System.Text.Json
                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueAfterPrimitive, currentDepth: default, token: default, _tokenType);
                     }
                 }
-            }
-        }
-
-        private int WriteCommaAndFormattingPreamble()
-        {
-            int idx = 0;
-            WriteListSeparator(ref idx);
-            WriteFormattingPreamble(ref idx);
-            return idx;
-        }
-
-        private void WriteFormattingPreamble(ref int idx)
-        {
-            if (_tokenType != JsonTokenType.None)
-                WriteNewLine(ref idx);
-
-            int indent = Indentation;
-            while (true)
-            {
-                bool result = JsonWriterHelper.TryWriteIndentation(_buffer.Slice(idx), indent, out int bytesWritten);
-                idx += bytesWritten;
-                if (result)
-                {
-                    break;
-                }
-                indent -= bytesWritten;
-                AdvanceAndGrow(ref idx);
-            }
-        }
-
-        private void WriteListSeparator(ref int idx)
-        {
-            if (_currentDepth < 0)
-            {
-                if (_buffer.Length <= idx)
-                {
-                    GrowAndEnsure();
-                }
-                _buffer[idx++] = JsonConstants.ListSeparator;
             }
         }
     }

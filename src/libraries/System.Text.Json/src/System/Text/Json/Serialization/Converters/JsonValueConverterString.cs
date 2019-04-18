@@ -20,12 +20,12 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        public override void Write(string value, ref Utf8JsonWriter writer)
+        public override void Write(string value, Utf8JsonWriter writer)
         {
             writer.WriteStringValue(value);
         }
 
-        public override void Write(Span<byte> escapedPropertyName, string value, ref Utf8JsonWriter writer)
+        public override void Write(Span<byte> escapedPropertyName, string value, Utf8JsonWriter writer)
         {
             writer.WriteString(escapedPropertyName, value);
         }

@@ -153,6 +153,20 @@ namespace System
 }
 namespace System.Buffers
 {
+    public sealed partial class ArrayBufferWriter<T> : System.Buffers.IBufferWriter<T>
+    {
+        public ArrayBufferWriter() { }
+        public ArrayBufferWriter(int initialCapacity) { }
+        public int Capacity { get { throw null; } }
+        public int FreeCapacity { get { throw null; } }
+        public int WrittenCount { get { throw null; } }
+        public System.ReadOnlyMemory<T> WrittenMemory { get { throw null; } }
+        public System.ReadOnlySpan<T> WrittenSpan { get { throw null; } }
+        public void Advance(int count) { }
+        public void Clear() { }
+        public System.Memory<T> GetMemory(int sizeHint = 0) { throw null; }
+        public System.Span<T> GetSpan(int sizeHint = 0) { throw null; }
+    }
     public static partial class BuffersExtensions
     {
         public static void CopyTo<T>(this in System.Buffers.ReadOnlySequence<T> source, System.Span<T> destination) { }

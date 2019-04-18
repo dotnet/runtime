@@ -7,7 +7,7 @@ namespace System.Text.Json.Serialization.Policies
     internal abstract class JsonValueConverter<TValue>
     {
         public abstract bool TryRead(Type valueType, ref Utf8JsonReader reader, out TValue value);
-        public abstract void Write(TValue value, ref Utf8JsonWriter writer);
-        public abstract void Write(Span<byte> escapedPropertyName, TValue value, ref Utf8JsonWriter writer);
+        public abstract void Write(TValue value, Utf8JsonWriter writer);
+        public abstract void Write(Span<byte> escapedPropertyName, TValue value, Utf8JsonWriter writer);
     }
 }

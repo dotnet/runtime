@@ -4,63 +4,75 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Text.Json
 {
     /// <summary>
     /// Provides a high-performance API for forward-only, non-cached writing of UTF-8 encoded JSON text.
-    /// It writes the text sequentially with no caching and adheres to the JSON RFC
-    /// by default (https://tools.ietf.org/html/rfc8259), with the exception of writing comments.
     /// </summary>
     /// <remarks>
-    /// When the user attempts to write invalid JSON and validation is enabled, it throws
-    /// a <see cref="InvalidOperationException"/> with a context specific error message.
-    /// Since this type is a ref struct, it does not directly support async. However, it does provide
-    /// support for reentrancy to write partial data, and continue writing in chunks.
-    /// To be able to format the output with indentation and whitespace OR to skip validation, create an instance of 
-    /// <see cref="JsonWriterState"/> and pass that in to the writer.
+    /// It writes the text sequentially with no caching and adheres to the JSON RFC
+    /// by default (https://tools.ietf.org/html/rfc8259), with the exception of writing comments.
     /// </remarks>
-    public ref partial struct Utf8JsonWriter
+    /// <remarks>
+    /// When the user attempts to write invalid JSON and validation is enabled, it throws
+    /// an <see cref="InvalidOperationException"/> with a context specific error message.
+    /// </remarks>
+    /// <remarks>
+    /// To be able to format the output with indentation and whitespace OR to skip validation, create an instance of 
+    /// <see cref="JsonWriterOptions"/> and pass that in to the writer.
+    /// </remarks>
+    public sealed partial class Utf8JsonWriter : IDisposable
+#if BUILDING_INBOX_LIBRARY
+        , IAsyncDisposable
+#endif
     {
-        private const int StackallocThreshold = 256;
+        // Depending on OS, either '\r\n' OR '\n'
+        private static readonly int s_newLineLength = Environment.NewLine.Length;
+
         private const int DefaultGrowthSize = 4096;
 
-        private readonly IBufferWriter<byte> _output;
-        private int _buffered;
-        private Span<byte> _buffer;
+        private IBufferWriter<byte> _output;
+        private Stream _stream;
+        private ArrayBufferWriter<byte> _arrayBufferWriter;
 
-        /// <summary>
-        /// Returns the total amount of bytes written by the <see cref="Utf8JsonWriter"/> so far
-        /// for the current instance of the <see cref="Utf8JsonWriter"/>.
-        /// This includes data that has been written beyond what has already been committed.
-        /// </summary>
-        public long BytesWritten
-        {
-            get
-            {
-                Debug.Assert(BytesCommitted <= long.MaxValue - _buffered);
-                return BytesCommitted + _buffered;
-            }
-        }
-
-        /// <summary>
-        /// Returns the total amount of bytes committed to the output by the <see cref="Utf8JsonWriter"/> so far
-        /// for the current instance of the <see cref="Utf8JsonWriter"/>.
-        /// This is how much the IBufferWriter has advanced.
-        /// </summary>
-        public long BytesCommitted { get; private set; }
+        private Memory<byte> _memory;
 
         private bool _inObject;
         private bool _isNotPrimitive;
         private JsonTokenType _tokenType;
-        private readonly JsonWriterOptions _writerOptions;
         private BitStack _bitStack;
 
         // The highest order bit of _currentDepth is used to discern whether we are writing the first item in a list or not.
         // if (_currentDepth >> 31) == 1, add a list separator before writing the item
         // else, no list separator is needed since we are writing the first item.
         private int _currentDepth;
+
+        /// <summary>
+        /// Returns the amount of bytes written by the <see cref="Utf8JsonWriter"/> so far
+        /// that have not yet been flushed to the output and committed.
+        /// </summary>
+        public int BytesPending { get; private set; }
+
+        /// <summary>
+        /// Returns the amount of bytes committed to the output by the <see cref="Utf8JsonWriter"/> so far.
+        /// </summary>
+        /// <remarks>
+        /// In the case of IBufferwriter, this is how much the IBufferWriter has advanced.
+        /// In the case of Stream, this is how much data has been written to the stream.
+        /// </remarks>
+        public long BytesCommitted { get; private set; }
+
+        /// <summary>
+        /// Gets the custom behavior when writing JSON using
+        /// the <see cref="Utf8JsonWriter"/> which indicates whether to format the output
+        /// while writing and whether to skip structural JSON validation or not.
+        /// </summary>
+        public JsonWriterOptions Options { get; }
 
         private int Indentation => CurrentDepth * JsonConstants.SpacesPerIndent;
 
@@ -71,99 +83,308 @@ namespace System.Text.Json
         public int CurrentDepth => _currentDepth & JsonConstants.RemoveFlagsBitMask;
 
         /// <summary>
-        /// Returns the current snapshot of the <see cref="Utf8JsonWriter"/> state which must
-        /// be captured by the caller and passed back in to the <see cref="Utf8JsonWriter"/> ctor with more data.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown when there is JSON data that has been written and buffered but not yet flushed to the <see cref="IBufferWriter{Byte}" />.	
-        /// Getting the state for creating a new <see cref="Utf8JsonWriter"/> without first committing the data that has been written	
-        /// would result in an inconsistent state. Call Flush before getting the current state.	
-        /// </exception>
-        /// <remarks>
-        /// Unlike the <see cref="Utf8JsonWriter"/>, which is a ref struct, the state can survive
-        /// across async/await boundaries and hence this type is required to provide support for reading
-        /// in more data asynchronously before continuing with a new instance of the <see cref="Utf8JsonWriter"/>.
-        /// </remarks>
-        public JsonWriterState GetCurrentState()
-        {
-            if (_buffered != 0)
-            {
-                throw ThrowHelper.GetInvalidOperationException_CallFlushFirst(_buffered);
-            }
-            return new JsonWriterState
-            {
-                _bytesWritten = BytesWritten,
-                _bytesCommitted = BytesCommitted,
-                _inObject = _inObject,
-                _isNotPrimitive = _isNotPrimitive,
-                _tokenType = _tokenType,
-                _currentDepth = _currentDepth,
-                _writerOptions = _writerOptions,
-                _bitStack = _bitStack,
-            };
-        }
-
-        /// <summary>
         /// Constructs a new <see cref="Utf8JsonWriter"/> instance with a specified <paramref name="bufferWriter"/>.
         /// </summary>
         /// <param name="bufferWriter">An instance of <see cref="IBufferWriter{Byte}" /> used as a destination for writing JSON text into.</param>
-        /// <param name="state">If this is the first call to the ctor, pass in a default state. Otherwise,
-        /// capture the state from the previous instance of the <see cref="Utf8JsonWriter"/> and pass that back.</param>
+        /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonWriter"/>
+        /// By default, the <see cref="Utf8JsonWriter"/> writes JSON minimized (i.e. with no extra whitespace)
+        /// and validates that the JSON being written is structurally valid according to JSON RFC.</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="IBufferWriter{Byte}" /> that is passed in is null.
         /// </exception>
-        /// <remarks>
-        /// Since this type is a ref struct, it is a stack-only type and all the limitations of ref structs apply to it.
-        /// This is the reason why the ctor accepts a <see cref="JsonWriterState"/>.
-        /// </remarks>
-        public Utf8JsonWriter(IBufferWriter<byte> bufferWriter, JsonWriterState state = default)
+        public Utf8JsonWriter(IBufferWriter<byte> bufferWriter, JsonWriterOptions options = default)
         {
             _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
-            _buffered = 0;
-            BytesCommitted = 0;
-            _buffer = _output.GetSpan();
+            _stream = default;
+            _arrayBufferWriter = default;
 
-            _inObject = state._inObject;
-            _isNotPrimitive = state._isNotPrimitive;
-            _tokenType = state._tokenType;
-            _writerOptions = state._writerOptions;
-            _bitStack = state._bitStack;
+            BytesPending = default;
+            BytesCommitted = default;
+            _memory = default;
 
-            _currentDepth = state._currentDepth;
-        }
+            _inObject = default;
+            _isNotPrimitive = default;
+            _tokenType = default;
+            _currentDepth = default;
+            Options = options;
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Advance(int count)
-        {
-            Debug.Assert(count >= 0 && _buffered <= int.MaxValue - count);
-
-            _buffered += count;
-            _buffer = _buffer.Slice(count);
+            // Only allocate if the user writes a JSON payload beyond the depth that the _allocationFreeContainer can handle.
+            // This way we avoid allocations in the common, default cases, and allocate lazily.
+            _bitStack = default;
         }
 
         /// <summary>
-        /// Advances the underlying <see cref="IBufferWriter{Byte}" /> based on what has been written so far.
+        /// Constructs a new <see cref="Utf8JsonWriter"/> instance with a specified <paramref name="utf8Json"/>.
         /// </summary>
-        /// <param name="isFinalBlock">Let's the writer know whether more data will be written. This is used to validate
-        /// that the JSON written so far is structurally valid if no more data is to follow.</param>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown when incomplete JSON has been written and <paramref name="isFinalBlock"/> is true.
-        /// (for example when an open object or array needs to be closed).
+        /// <param name="utf8Json">An instance of <see cref="Stream" /> used as a destination for writing JSON text into.</param>
+        /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonWriter"/>
+        /// By default, the <see cref="Utf8JsonWriter"/> writes JSON minimized (i.e. with no extra whitespace)
+        /// and validates that the JSON being written is structurally valid according to JSON RFC.</param>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
         /// </exception>
-        public void Flush(bool isFinalBlock = true)
+        public Utf8JsonWriter(Stream utf8Json, JsonWriterOptions options = default)
         {
-            if (isFinalBlock && !_writerOptions.SkipValidation && (CurrentDepth != 0 || _tokenType == JsonTokenType.None))
-                ThrowHelper.ThrowInvalidOperationException_DepthNonZeroOrEmptyJson(_currentDepth);
+            if (utf8Json == null)
+                throw new ArgumentNullException(nameof(utf8Json));
+            if (!utf8Json.CanWrite)
+                throw new ArgumentException(SR.StreamNotWritable);
+
+            _stream = utf8Json;
+            _arrayBufferWriter = new ArrayBufferWriter<byte>();
+            _output = _arrayBufferWriter;
+
+            BytesPending = default;
+            BytesCommitted = default;
+            _memory = default;
+
+            _inObject = default;
+            _isNotPrimitive = default;
+            _tokenType = default;
+            _currentDepth = default;
+            Options = options;
+
+            // Only allocate if the user writes a JSON payload beyond the depth that the _allocationFreeContainer can handle.
+            // This way we avoid allocations in the common, default cases, and allocate lazily.
+            _bitStack = default;
+        }
+
+        /// <summary>
+        /// Resets the <see cref="Utf8JsonWriter"/> internal state so that it can be re-used.
+        /// </summary>
+        /// <remarks>
+        /// The <see cref="Utf8JsonWriter"/> will continue to use the original writer options
+        /// and the original output as the destination (either <see cref="IBufferWriter{Byte}" /> or <see cref="Stream" />).
+        /// </remarks>
+        public void Reset()
+        {
+            if (_arrayBufferWriter != null)
+            {
+                _arrayBufferWriter.Clear();
+            }
+            ResetHelper();
+        }
+
+        /// <summary>
+        /// Resets the <see cref="Utf8JsonWriter"/> internal state so that it can be re-used with the new instance of <see cref="Stream" />.
+        /// </summary>
+        /// <param name="utf8Json">An instance of <see cref="Stream" /> used as a destination for writing JSON text into.</param>
+        /// <remarks>
+        /// The <see cref="Utf8JsonWriter"/> will continue to use the original writer options
+        /// but now write to the passed in <see cref="Stream" /> as the new destination.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The instance of <see cref="Utf8JsonWriter"/> has been disposed.
+        /// </exception>
+        public void Reset(Stream utf8Json)
+        {
+            CheckNotDisposed();
+
+            if (utf8Json == null)
+                throw new ArgumentNullException(nameof(utf8Json));
+            if (!utf8Json.CanWrite)
+                throw new ArgumentException(SR.StreamNotWritable);
+
+            _stream = utf8Json;
+            if (_arrayBufferWriter == null)
+            {
+                _arrayBufferWriter = new ArrayBufferWriter<byte>();
+            }
+            else
+            {
+                _arrayBufferWriter.Clear();
+            }
+            _output = _arrayBufferWriter;
+
+            ResetHelper();
+        }
+
+        /// <summary>
+        /// Resets the <see cref="Utf8JsonWriter"/> internal state so that it can be re-used with the new instance of <see cref="IBufferWriter{Byte}" />.
+        /// </summary>
+        /// <param name="bufferWriter">An instance of <see cref="IBufferWriter{Byte}" /> used as a destination for writing JSON text into.</param>
+        /// <remarks>
+        /// The <see cref="Utf8JsonWriter"/> will continue to use the original writer options
+        /// but now write to the passed in <see cref="IBufferWriter{Byte}" /> as the new destination.
+        /// </remarks>
+        /// <exception cref="ArgumentNullException">
+        /// Thrown when the instance of <see cref="IBufferWriter{Byte}" /> that is passed in is null.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The instance of <see cref="Utf8JsonWriter"/> has been disposed.
+        /// </exception>
+        public void Reset(IBufferWriter<byte> bufferWriter)
+        {
+            CheckNotDisposed();
+
+            _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
+            _stream = default;
+
+            if (_arrayBufferWriter != null)
+            {
+                _arrayBufferWriter.Clear();
+            }
+
+            _arrayBufferWriter = default;
+
+            ResetHelper();
+        }
+
+        private void ResetHelper()
+        {
+            BytesPending = default;
+            BytesCommitted = default;
+            _memory = default;
+
+            _inObject = default;
+            _isNotPrimitive = default;
+            _tokenType = default;
+            _currentDepth = default;
+
+            // Only allocate if the user writes a JSON payload beyond the depth that the _allocationFreeContainer can handle.
+            // This way we avoid allocations in the common, default cases, and allocate lazily.
+            _bitStack = default;
+        }
+
+        private void CheckNotDisposed()
+        {
+            if (_output == null)
+            {
+                throw new ObjectDisposedException(nameof(Utf8JsonWriter));
+            }
+        }
+
+        /// <summary>
+        /// Commits the JSON text written so far which makes it visible to the output destination.
+        /// </summary>
+        /// <remarks>
+        /// In the case of IBufferWriter, this advances the underlying <see cref="IBufferWriter{Byte}" /> based on what has been written so far.
+        /// In the case of Stream, this writes the data to the stream and flushes it.
+        /// </remarks>
+        public void Flush()
+        {
+            FlushHelper();
+
+            if (_stream != null)
+            {
+                FlushHelperStream();
+                _stream.Flush();
+            }
+
+            _memory = default;
+            BytesCommitted += BytesPending;
+            BytesPending = 0;
+        }
+
+        /// <summary>
+        /// Commits any left over JSON text that has not yet been flushed and releases all resources used by the current instance.
+        /// </summary>
+        /// <remarks>
+        /// In the case of IBufferWriter, this advances the underlying <see cref="IBufferWriter{Byte}" /> based on what has been written so far.
+        /// In the case of Stream, this writes the data to the stream and flushes it.
+        /// </remarks>
+        /// <remarks>
+        /// The <see cref="Utf8JsonWriter"/> instance cannot be re-used after disposing.
+        /// </remarks>
+        public void Dispose()
+        {
+            if (_output == null)
+            {
+                return;
+            }
 
             Flush();
+            ResetHelper();
+
+            _stream = null;
+            _arrayBufferWriter = null;
+            _output = null;
+        }
+
+#if BUILDING_INBOX_LIBRARY
+        /// <summary>
+        /// Asynchronously commits any left over JSON text that has not yet been flushed and releases all resources used by the current instance.
+        /// </summary>
+        /// <remarks>
+        /// In the case of IBufferWriter, this advances the underlying <see cref="IBufferWriter{Byte}" /> based on what has been written so far.
+        /// In the case of Stream, this writes the data to the stream and flushes it.
+        /// </remarks>
+        /// <remarks>
+        /// The <see cref="Utf8JsonWriter"/> instance cannot be re-used after disposing.
+        /// </remarks>
+        public async ValueTask DisposeAsync()
+        {
+            if (_output == null)
+            {
+                return;
+            }
+
+            await FlushAsync().ConfigureAwait(false);
+            ResetHelper();
+
+            _stream = null;
+            _arrayBufferWriter = null;
+            _output = null;
+        }
+#endif
+
+        /// <summary>
+        /// Asynchronously commits the JSON text written so far which makes it visible to the output destination.
+        /// </summary>
+        /// <remarks>
+        /// In the case of IBufferWriter, this advances the underlying <see cref="IBufferWriter{Byte}" /> based on what has been written so far.
+        /// In the case of Stream, this writes the data to the stream and flushes it asynchronously, while monitoring cancellation requests.
+        /// </remarks>
+        public async Task FlushAsync(CancellationToken cancellationToken = default)
+        {
+            FlushHelper();
+
+            if (_stream != null)
+            {
+                Debug.Assert(_arrayBufferWriter != null);
+                Debug.Assert(BytesPending == _arrayBufferWriter.WrittenCount);
+                if (BytesPending != 0)
+                {
+#if BUILDING_INBOX_LIBRARY
+                    await _stream.WriteAsync(_arrayBufferWriter.WrittenMemory, cancellationToken).ConfigureAwait(false);
+#else
+                    Debug.Assert(_arrayBufferWriter.WrittenMemory.Length == _arrayBufferWriter.WrittenCount);
+                    await _stream.WriteAsync(_arrayBufferWriter.WrittenMemory.ToArray(), 0, _arrayBufferWriter.WrittenCount, cancellationToken).ConfigureAwait(false);
+#endif
+                    _arrayBufferWriter.Clear();
+                }
+                await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+            }
+
+            _memory = default;
+            BytesCommitted += BytesPending;
+            BytesPending = 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Flush()
+        private void FlushHelperStream()
         {
-            _output.Advance(_buffered);
-            BytesCommitted += _buffered;
-            _buffered = 0;
+            Debug.Assert(_arrayBufferWriter != null);
+            Debug.Assert(BytesPending == _arrayBufferWriter.WrittenCount);
+            if (BytesPending != 0)
+            {
+#if BUILDING_INBOX_LIBRARY
+                _stream.Write(_arrayBufferWriter.WrittenSpan);
+#else
+                Debug.Assert(_arrayBufferWriter.WrittenSpan.Length == _arrayBufferWriter.WrittenCount);
+                _stream.Write(_arrayBufferWriter.WrittenSpan.ToArray(), 0, _arrayBufferWriter.WrittenCount);
+#endif
+                _arrayBufferWriter.Clear();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void FlushHelper()
+        {
+            _output.Advance(BytesPending);
         }
 
         /// <summary>
@@ -197,7 +418,7 @@ namespace System.Text.Json
             if (CurrentDepth >= JsonConstants.MaxWriterDepth)
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.DepthTooLarge, _currentDepth, token: default, tokenType: default);
 
-            if (_writerOptions.IndentedOrNotSkipValidation)
+            if (Options.IndentedOrNotSkipValidation)
             {
                 WriteStartSlow(token);
             }
@@ -213,32 +434,26 @@ namespace System.Text.Json
 
         private void WriteStartMinimized(byte token)
         {
-            int idx = 0;
+            if (_memory.Length - BytesPending < 2)  // 1 start token, and optionally, 1 list separator
+            {
+                Grow(2);
+            }
+
+            Span<byte> output = _memory.Span;
             if (_currentDepth < 0)
             {
-                if (_buffer.Length <= idx)
-                {
-                    GrowAndEnsure();
-                }
-                _buffer[idx++] = JsonConstants.ListSeparator;
+                output[BytesPending++] = JsonConstants.ListSeparator;
             }
-
-            if (_buffer.Length <= idx)
-            {
-                AdvanceAndGrow(ref idx);
-            }
-            _buffer[idx++] = token;
-
-            Advance(idx);
+            output[BytesPending++] = token;
         }
 
         private void WriteStartSlow(byte token)
         {
-            Debug.Assert(_writerOptions.Indented || !_writerOptions.SkipValidation);
+            Debug.Assert(Options.Indented || !Options.SkipValidation);
 
-            if (_writerOptions.Indented)
+            if (Options.Indented)
             {
-                if (!_writerOptions.SkipValidation)
+                if (!Options.SkipValidation)
                 {
                     ValidateStart();
                     UpdateBitStackOnStart(token);
@@ -247,7 +462,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(!_writerOptions.SkipValidation);
+                Debug.Assert(!Options.SkipValidation);
                 ValidateStart();
                 UpdateBitStackOnStart(token);
                 WriteStartMinimized(token);
@@ -273,46 +488,42 @@ namespace System.Text.Json
 
         private void WriteStartIndented(byte token)
         {
-            int idx = 0;
+            int indent = Indentation;
+            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+
+            int minRequired = indent + 1;   // 1 start token
+            int maxRequired = minRequired + 3; // Optionally, 1 list separator and 1-2 bytes for new line
+
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
+
+            Span<byte> output = _memory.Span;
+
             if (_currentDepth < 0)
             {
-                if (_buffer.Length <= idx)
-                {
-                    GrowAndEnsure();
-                }
-                _buffer[idx++] = JsonConstants.ListSeparator;
+                output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
             if (_tokenType != JsonTokenType.None)
-                WriteNewLine(ref idx);
-
-            int indent = Indentation;
-            while (true)
             {
-                bool result = JsonWriterHelper.TryWriteIndentation(_buffer.Slice(idx), indent, out int bytesWritten);
-                idx += bytesWritten;
-                if (result)
-                {
-                    break;
-                }
-                indent -= bytesWritten;
-                AdvanceAndGrow(ref idx);
+                WriteNewLine(output);
             }
 
-            if (_buffer.Length <= idx)
-            {
-                AdvanceAndGrow(ref idx);
-            }
-            _buffer[idx++] = token;
+            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            BytesPending += indent;
 
-            Advance(idx);
+            output[BytesPending++] = token;
         }
 
         /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.
         /// </summary>
         /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON array to be written.</param>
-        /// <param name="escape">If this is set to false, the writer assumes the property name is properly escaped and skips the escaping step.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -320,18 +531,11 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
         /// OR if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
-        public void WriteStartArray(ReadOnlySpan<byte> utf8PropertyName, bool escape = true)
+        public void WriteStartArray(ReadOnlySpan<byte> utf8PropertyName)
         {
             ValidatePropertyNameAndDepth(utf8PropertyName);
 
-            if (escape)
-            {
-                WriteStartEscape(utf8PropertyName, JsonConstants.OpenBracket);
-            }
-            else
-            {
-                WriteStartByOptions(utf8PropertyName, JsonConstants.OpenBracket);
-            }
+            WriteStartEscape(utf8PropertyName, JsonConstants.OpenBracket);
 
             _currentDepth &= JsonConstants.RemoveFlagsBitMask;
             _currentDepth++;
@@ -343,7 +547,9 @@ namespace System.Text.Json
         /// Writes the beginning of a JSON object with a property name as the key.
         /// </summary>
         /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON object to be written.</param>
-        /// <param name="escape">If this is set to false, the writer assumes the property name is properly escaped and skips the escaping step.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -351,18 +557,11 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
         /// OR if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
-        public void WriteStartObject(ReadOnlySpan<byte> utf8PropertyName, bool escape = true)
+        public void WriteStartObject(ReadOnlySpan<byte> utf8PropertyName)
         {
             ValidatePropertyNameAndDepth(utf8PropertyName);
 
-            if (escape)
-            {
-                WriteStartEscape(utf8PropertyName, JsonConstants.OpenBrace);
-            }
-            else
-            {
-                WriteStartByOptions(utf8PropertyName, JsonConstants.OpenBrace);
-            }
+            WriteStartEscape(utf8PropertyName, JsonConstants.OpenBrace);
 
             _currentDepth &= JsonConstants.RemoveFlagsBitMask;
             _currentDepth++;
@@ -374,7 +573,7 @@ namespace System.Text.Json
         {
             int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName);
 
-            Debug.Assert(propertyIdx >= -1 && propertyIdx < int.MaxValue / 2);
+            Debug.Assert(propertyIdx >= -1 && propertyIdx < utf8PropertyName.Length);
 
             if (propertyIdx != -1)
             {
@@ -389,24 +588,15 @@ namespace System.Text.Json
         private void WriteStartByOptions(ReadOnlySpan<byte> utf8PropertyName, byte token)
         {
             ValidateWritingProperty(token);
-            int idx;
-            if (_writerOptions.Indented)
+
+            if (Options.Indented)
             {
-                idx = WritePropertyNameIndented(utf8PropertyName);
+                WritePropertyNameIndented(utf8PropertyName, token);
             }
             else
             {
-                idx = WritePropertyNameMinimized(utf8PropertyName);
+                WritePropertyNameMinimized(utf8PropertyName, token);
             }
-
-            if (1 > _buffer.Length - idx)
-            {
-                AdvanceAndGrow(ref idx, 1);
-            }
-
-            _buffer[idx++] = token;
-
-            Advance(idx);
         }
 
         private void WriteStartEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, byte token, int firstEscapeIndexProp)
@@ -417,21 +607,10 @@ namespace System.Text.Json
             byte[] propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
-            Span<byte> escapedPropertyName;
-            if (length > StackallocThreshold)
-            {
-                propertyArray = ArrayPool<byte>.Shared.Rent(length);
-                escapedPropertyName = propertyArray;
-            }
-            else
-            {
-                // Cannot create a span directly since it gets passed to instance methods on a ref struct.
-                unsafe
-                {
-                    byte* ptr = stackalloc byte[length];
-                    escapedPropertyName = new Span<byte>(ptr, length);
-                }
-            }
+
+            Span<byte> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (propertyArray = ArrayPool<byte>.Shared.Rent(length));
 
             JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
 
@@ -447,7 +626,9 @@ namespace System.Text.Json
         /// Writes the beginning of a JSON array with a property name as the key.
         /// </summary>
         /// <param name="propertyName">The UTF-16 encoded property name of the JSON array to be transcoded and written as UTF-8.</param>
-        /// <param name="escape">If this is set to false, the writer assumes the property name is properly escaped and skips the escaping step.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -455,14 +636,16 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
         /// OR if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
-        public void WriteStartArray(string propertyName, bool escape = true)
-            => WriteStartArray(propertyName.AsSpan(), escape);
+        public void WriteStartArray(string propertyName)
+            => WriteStartArray(propertyName.AsSpan());
 
         /// <summary>
         /// Writes the beginning of a JSON object with a property name as the key.
         /// </summary>
         /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="escape">If this is set to false, the writer assumes the property name is properly escaped and skips the escaping step.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -470,14 +653,16 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
         /// OR if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
-        public void WriteStartObject(string propertyName, bool escape = true)
-            => WriteStartObject(propertyName.AsSpan(), escape);
+        public void WriteStartObject(string propertyName)
+            => WriteStartObject(propertyName.AsSpan());
 
         /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.
         /// </summary>
         /// <param name="propertyName">The UTF-16 encoded property name of the JSON array to be transcoded and written as UTF-8.</param>
-        /// <param name="escape">If this is set to false, the writer assumes the property name is properly escaped and skips the escaping step.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -485,18 +670,11 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
         /// OR if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
-        public void WriteStartArray(ReadOnlySpan<char> propertyName, bool escape = true)
+        public void WriteStartArray(ReadOnlySpan<char> propertyName)
         {
             ValidatePropertyNameAndDepth(propertyName);
 
-            if (escape)
-            {
-                WriteStartEscape(propertyName, JsonConstants.OpenBracket);
-            }
-            else
-            {
-                WriteStartByOptions(propertyName, JsonConstants.OpenBracket);
-            }
+            WriteStartEscape(propertyName, JsonConstants.OpenBracket);
 
             _currentDepth &= JsonConstants.RemoveFlagsBitMask;
             _currentDepth++;
@@ -508,7 +686,9 @@ namespace System.Text.Json
         /// Writes the beginning of a JSON object with a property name as the key.
         /// </summary>
         /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="escape">If this is set to false, the writer assumes the property name is properly escaped and skips the escaping step.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -516,18 +696,11 @@ namespace System.Text.Json
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
         /// OR if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
-        public void WriteStartObject(ReadOnlySpan<char> propertyName, bool escape = true)
+        public void WriteStartObject(ReadOnlySpan<char> propertyName)
         {
             ValidatePropertyNameAndDepth(propertyName);
 
-            if (escape)
-            {
-                WriteStartEscape(propertyName, JsonConstants.OpenBrace);
-            }
-            else
-            {
-                WriteStartByOptions(propertyName, JsonConstants.OpenBrace);
-            }
+            WriteStartEscape(propertyName, JsonConstants.OpenBrace);
 
             _currentDepth &= JsonConstants.RemoveFlagsBitMask;
             _currentDepth++;
@@ -539,7 +712,7 @@ namespace System.Text.Json
         {
             int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName);
 
-            Debug.Assert(propertyIdx >= -1 && propertyIdx < int.MaxValue / 2);
+            Debug.Assert(propertyIdx >= -1 && propertyIdx < propertyName.Length);
 
             if (propertyIdx != -1)
             {
@@ -554,24 +727,15 @@ namespace System.Text.Json
         private void WriteStartByOptions(ReadOnlySpan<char> propertyName, byte token)
         {
             ValidateWritingProperty(token);
-            int idx;
-            if (_writerOptions.Indented)
+
+            if (Options.Indented)
             {
-                idx = WritePropertyNameIndented(propertyName);
+                WritePropertyNameIndented(propertyName, token);
             }
             else
             {
-                idx = WritePropertyNameMinimized(propertyName);
+                WritePropertyNameMinimized(propertyName, token);
             }
-
-            if (1 > _buffer.Length - idx)
-            {
-                AdvanceAndGrow(ref idx, 1);
-            }
-
-            _buffer[idx++] = token;
-
-            Advance(idx);
         }
 
         private void WriteStartEscapeProperty(ReadOnlySpan<char> propertyName, byte token, int firstEscapeIndexProp)
@@ -582,21 +746,11 @@ namespace System.Text.Json
             char[] propertyArray = null;
 
             int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
-            Span<char> escapedPropertyName;
-            if (length > StackallocThreshold)
-            {
-                propertyArray = ArrayPool<char>.Shared.Rent(length);
-                escapedPropertyName = propertyArray;
-            }
-            else
-            {
-                // Cannot create a span directly since it gets passed to instance methods on a ref struct.
-                unsafe
-                {
-                    char* ptr = stackalloc char[length];
-                    escapedPropertyName = new Span<char>(ptr, length);
-                }
-            }
+
+            Span<char> escapedPropertyName = length <= JsonConstants.StackallocThreshold ?
+                stackalloc char[length] :
+                (propertyArray = ArrayPool<char>.Shared.Rent(length));
+
             JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
 
             WriteStartByOptions(escapedPropertyName.Slice(0, written), token);
@@ -633,7 +787,7 @@ namespace System.Text.Json
 
         private void WriteEnd(byte token)
         {
-            if (_writerOptions.IndentedOrNotSkipValidation)
+            if (Options.IndentedOrNotSkipValidation)
             {
                 WriteEndSlow(token);
             }
@@ -652,22 +806,22 @@ namespace System.Text.Json
 
         private void WriteEndMinimized(byte token)
         {
-            if (_buffer.Length < 1)
+            if (_memory.Length - BytesPending < 1) // 1 end token
             {
-                GrowAndEnsure();
+                Grow(1);
             }
 
-            _buffer[0] = token;
-            Advance(1);
+            Span<byte> output = _memory.Span;
+            output[BytesPending++] = token;
         }
 
         private void WriteEndSlow(byte token)
         {
-            Debug.Assert(_writerOptions.Indented || !_writerOptions.SkipValidation);
+            Debug.Assert(Options.Indented || !Options.SkipValidation);
 
-            if (_writerOptions.Indented)
+            if (Options.Indented)
             {
-                if (!_writerOptions.SkipValidation)
+                if (!Options.SkipValidation)
                 {
                     ValidateEnd(token);
                 }
@@ -675,7 +829,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(!_writerOptions.SkipValidation);
+                Debug.Assert(!Options.SkipValidation);
                 ValidateEnd(token);
                 WriteEndMinimized(token);
             }
@@ -716,10 +870,8 @@ namespace System.Text.Json
             }
             else
             {
-                int idx = 0;
-                WriteNewLine(ref idx);
-
                 int indent = Indentation;
+
                 // Necessary if WriteEndX is called without a corresponding WriteStartX first.
                 if (indent != 0)
                 {
@@ -727,46 +879,37 @@ namespace System.Text.Json
                     // current depth yet, explicitly subtract here.
                     indent -= JsonConstants.SpacesPerIndent;
                 }
-                while (true)
+
+                Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+                Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.None);
+
+                int maxRequired = indent + 3; // 1 end token, 1-2 bytes for new line
+
+                if (_memory.Length - BytesPending < maxRequired)
                 {
-                    bool result = JsonWriterHelper.TryWriteIndentation(_buffer.Slice(idx), indent, out int bytesWritten);
-                    idx += bytesWritten;
-                    if (result)
-                    {
-                        break;
-                    }
-                    indent -= bytesWritten;
-                    AdvanceAndGrow(ref idx);
+                    Grow(maxRequired);
                 }
 
-                if (_buffer.Length <= idx)
-                {
-                    AdvanceAndGrow(ref idx);
-                }
-                _buffer[idx++] = token;
+                Span<byte> output = _memory.Span;
 
-                Advance(idx);
+                WriteNewLine(output);
+
+                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                BytesPending += indent;
+
+                output[BytesPending++] = token;
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void WriteNewLine(ref int idx)
+        private void WriteNewLine(Span<byte> output)
         {
             // Write '\r\n' OR '\n', depending on OS
-            if (Environment.NewLine.Length == 2)
+            if (s_newLineLength == 2)
             {
-                if (_buffer.Length <= idx)
-                {
-                    AdvanceAndGrow(ref idx);
-                }
-                _buffer[idx++] = JsonConstants.CarriageReturn;
+                output[BytesPending++] = JsonConstants.CarriageReturn;
             }
-
-            if (_buffer.Length <= idx)
-            {
-                AdvanceAndGrow(ref idx);
-            }
-            _buffer[idx++] = JsonConstants.LineFeed;
+            output[BytesPending++] = JsonConstants.LineFeed;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -785,61 +928,43 @@ namespace System.Text.Json
             }
         }
 
-        private void GrowAndEnsure()
+        private void Grow(int requiredSize)
         {
-            Flush();
-            int previousSpanLength = _buffer.Length;
-            Debug.Assert(previousSpanLength < DefaultGrowthSize);
-            _buffer = _output.GetSpan(DefaultGrowthSize);
-            if (_buffer.Length <= previousSpanLength)
+            Debug.Assert(requiredSize > 0);
+
+            if (_memory.Length == 0)
             {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.FailedToGetLargerSpan);
-            }
-        }
-
-        private void GrowAndEnsure(int minimumSize)
-        {
-            Flush();
-            Debug.Assert(minimumSize < DefaultGrowthSize);
-            _buffer = _output.GetSpan(DefaultGrowthSize);
-            if (_buffer.Length < minimumSize)
-            {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.FailedToGetMinimumSizeSpan, minimumSize);
-            }
-        }
-
-        private void AdvanceAndGrow(ref int alreadyWritten)
-        {
-            Debug.Assert(alreadyWritten >= 0);
-            Advance(alreadyWritten);
-            GrowAndEnsure();
-            alreadyWritten = 0;
-        }
-
-        private void AdvanceAndGrow(ref int alreadyWritten, int minimumSize)
-        {
-            Debug.Assert(minimumSize >= 1 && minimumSize <= 128);
-            Advance(alreadyWritten);
-            GrowAndEnsure(minimumSize);
-            alreadyWritten = 0;
-        }
-
-        private void CopyLoop(ReadOnlySpan<byte> span, ref int idx)
-        {
-            while (true)
-            {
-                if (span.Length <= _buffer.Length - idx)
+                Debug.Assert(BytesPending == 0);
+                _memory = _output.GetMemory();
+                if (_memory.Length >= requiredSize)
                 {
-                    span.CopyTo(_buffer.Slice(idx));
-                    idx += span.Length;
-                    break;
+                    return;
                 }
-
-                span.Slice(0, _buffer.Length - idx).CopyTo(_buffer.Slice(idx));
-                span = span.Slice(_buffer.Length - idx);
-                idx = _buffer.Length;
-                AdvanceAndGrow(ref idx);
             }
+
+            FlushHelper();
+
+            int sizeHint = Math.Max(DefaultGrowthSize, requiredSize);
+
+            if (_stream != null)
+            {
+                FlushHelperStream();
+                _memory = _output.GetMemory(sizeHint);
+
+                Debug.Assert(_memory.Length >= sizeHint);
+            }
+            else
+            {
+                _memory = _output.GetMemory(sizeHint);
+
+                if (_memory.Length < sizeHint)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NeedLargerSpan();
+                }
+            }
+
+            BytesCommitted += BytesPending;
+            BytesPending = 0;
         }
 
         private void SetFlagToAddListSeparatorBeforeNextItem()
