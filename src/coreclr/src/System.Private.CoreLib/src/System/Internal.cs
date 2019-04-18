@@ -11,6 +11,7 @@
 ** 
 ===========================================================*/
 
+#nullable disable // Code in this file isn't actually executed
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Collections.Generic;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -981,7 +982,7 @@ namespace System
         /// Creates a new span over the target array.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> AsSpan<T>(this T[] array)
+        public static Span<T> AsSpan<T>(this T[]? array)
         {
             return new Span<T>(array);
         }
@@ -999,7 +1000,7 @@ namespace System
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Span<T> AsSpan<T>(this T[] array, int start, int length)
+        public static Span<T> AsSpan<T>(this T[]? array, int start, int length)
         {
             return new Span<T>(array, start, length);
         }
@@ -1084,7 +1085,7 @@ namespace System
         /// <summary>
         /// Creates a new memory over the target array.
         /// </summary>
-        public static Memory<T> AsMemory<T>(this T[] array) => new Memory<T>(array);
+        public static Memory<T> AsMemory<T>(this T[]? array) => new Memory<T>(array);
 
         /// <summary>
         /// Creates a new memory over the portion of the target array beginning
@@ -1097,13 +1098,13 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=array.Length).
         /// </exception>
-        public static Memory<T> AsMemory<T>(this T[] array, int start) => new Memory<T>(array, start);
+        public static Memory<T> AsMemory<T>(this T[]? array, int start) => new Memory<T>(array, start);
 
         /// <summary>
         /// Creates a new memory over the portion of the target array starting from
         /// 'startIndex' to the end of the array.
         /// </summary>
-        public static Memory<T> AsMemory<T>(this T[] array, Index startIndex)
+        public static Memory<T> AsMemory<T>(this T[]? array, Index startIndex)
         {
             if (array == null)
             {
@@ -1129,13 +1130,13 @@ namespace System
         /// <exception cref="System.ArgumentOutOfRangeException">
         /// Thrown when the specified <paramref name="start"/> or end index is not in the range (&lt;0 or &gt;=Length).
         /// </exception>
-        public static Memory<T> AsMemory<T>(this T[] array, int start, int length) => new Memory<T>(array, start, length);
+        public static Memory<T> AsMemory<T>(this T[]? array, int start, int length) => new Memory<T>(array, start, length);
 
         /// <summary>
         /// Creates a new memory over the portion of the target array beginning at inclusive start index of the range
         /// and ending at the exclusive end index of the range.
         /// </summary>
-        public static Memory<T> AsMemory<T>(this T[] array, Range range)
+        public static Memory<T> AsMemory<T>(this T[]? array, Range range)
         {
             if (array == null)
             {
@@ -1209,7 +1210,7 @@ namespace System
         /// </exception>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyTo<T>(this T[] source, Span<T> destination)
+        public static void CopyTo<T>(this T[]? source, Span<T> destination)
         {
             new ReadOnlySpan<T>(source).CopyTo(destination);
         }
@@ -1226,7 +1227,7 @@ namespace System
         /// </exception>
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void CopyTo<T>(this T[] source, Memory<T> destination)
+        public static void CopyTo<T>(this T[]? source, Memory<T> destination)
         {
             source.CopyTo(destination.Span);
         }

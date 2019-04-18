@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Runtime;
 using System.Diagnostics;
@@ -85,13 +86,13 @@ namespace System.Text
             }
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (value is EncoderReplacementFallback that)
             {
-                return (_strDefault == that._strDefault);
+                return _strDefault == that._strDefault;
             }
-            return (false);
+            return false;
         }
 
         public override int GetHashCode()
@@ -99,8 +100,6 @@ namespace System.Text
             return _strDefault.GetHashCode();
         }
     }
-
-
 
     public sealed class EncoderReplacementFallbackBuffer : EncoderFallbackBuffer
     {
@@ -112,6 +111,7 @@ namespace System.Text
         // Construction
         public EncoderReplacementFallbackBuffer(EncoderReplacementFallback fallback)
         {
+            // TODO-NULLABLE: NullReferenceException
             // 2X in case we're a surrogate pair
             _strDefault = fallback.DefaultString + fallback.DefaultString;
         }

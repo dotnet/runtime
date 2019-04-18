@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Globalization;
 
 namespace System.Reflection
@@ -15,7 +16,7 @@ namespace System.Reflection
         public virtual int HandlerOffset => 0;
         public virtual int HandlerLength => 0;
         public virtual int FilterOffset => throw new InvalidOperationException(SR.Arg_EHClauseNotFilter);
-        public virtual Type CatchType => null;
+        public virtual Type? CatchType => null;
 
         public override string ToString()
         {

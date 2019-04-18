@@ -14,6 +14,7 @@
 **
 ============================================================*/
 
+#nullable enable
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -29,8 +30,8 @@ namespace System.IO
         private readonly Stream _stream;
         private readonly byte[] _buffer;
         private readonly Decoder _decoder;
-        private byte[] _charBytes;
-        private char[] _charBuffer;
+        private byte[]? _charBytes;
+        private char[]? _charBuffer;
         private int _maxCharsSize;  // From MaxCharBytesSize & Encoding
 
         // Performance optimization for Read() w/ Unicode.  Speeds us up by ~40% 
@@ -305,7 +306,7 @@ namespace System.IO
                 _charBuffer = new char[_maxCharsSize];
             }
 
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             do
             {
                 readLength = ((stringLength - currPos) > MaxCharBytesSize) ? MaxCharBytesSize : (stringLength - currPos);
@@ -396,7 +397,7 @@ namespace System.IO
                 }
 
                 int position = 0;
-                byte[] byteBuffer = null;
+                byte[]? byteBuffer = null;
                 if (_isMemoryStream)
                 {
                     Debug.Assert(_stream is MemoryStream);
@@ -580,7 +581,7 @@ namespace System.IO
         // reasons. More about the subject in: https://github.com/dotnet/coreclr/pull/22102
         protected virtual void FillBuffer(int numBytes)
         {
-            if (_buffer != null && (numBytes < 0 || numBytes > _buffer.Length))
+            if (numBytes < 0 || numBytes > _buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(numBytes), SR.ArgumentOutOfRange_BinaryReaderFillBuffer);
             }

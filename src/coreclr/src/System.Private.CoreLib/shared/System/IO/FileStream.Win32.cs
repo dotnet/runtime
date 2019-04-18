@@ -41,6 +41,7 @@ namespace System.IO
 
             using (DisableMediaInsertionPrompt.Create())
             {
+                Debug.Assert(_path != null);
                 return ValidateFileHandle(
                     Interop.Kernel32.CreateFile(_path, fAccess, share, ref secAttrs, mode, flagsAndAttributes, IntPtr.Zero));
             }

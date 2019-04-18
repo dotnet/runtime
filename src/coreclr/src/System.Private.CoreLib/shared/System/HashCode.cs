@@ -41,6 +41,7 @@ https://raw.githubusercontent.com/Cyan4973/xxHash/5c174cfa4e45a42f94082dc0d4539b
 
 */
 
+#nullable enable
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Numerics;
@@ -301,7 +302,7 @@ namespace System
             Add(value?.GetHashCode() ?? 0);
         }
 
-        public void Add<T>(T value, IEqualityComparer<T> comparer)
+        public void Add<T>(T value, IEqualityComparer<T>? comparer)
         {
             Add(comparer != null ? comparer.GetHashCode(value) : (value?.GetHashCode() ?? 0));
         }
@@ -417,7 +418,7 @@ namespace System
 
         [Obsolete("HashCode is a mutable struct and should not be compared with other HashCodes.", error: true)]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj) => throw new NotSupportedException(SR.HashCode_EqualityNotSupported);
+        public override bool Equals(object? obj) => throw new NotSupportedException(SR.HashCode_EqualityNotSupported);
 #pragma warning restore 0809
     }
 }

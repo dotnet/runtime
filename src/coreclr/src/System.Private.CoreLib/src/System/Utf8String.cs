@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -13,7 +14,7 @@ namespace System
     /// <summary>
     /// Represents an immutable string of UTF-8 code units.
     /// </summary>
-    public sealed partial class Utf8String : IEquatable<Utf8String>
+    public sealed partial class Utf8String : IEquatable<Utf8String?>
     {
         /*
          * STATIC FIELDS
@@ -36,22 +37,22 @@ namespace System
         /// <summary>
         /// Compares two <see cref="Utf8String"/> instances for equality using a <see cref="StringComparison.Ordinal"/> comparer.
         /// </summary>
-        public static bool operator ==(Utf8String left, Utf8String right) => Equals(left, right);
+        public static bool operator ==(Utf8String? left, Utf8String? right) => Equals(left, right);
 
         /// <summary>
         /// Compares two <see cref="Utf8String"/> instances for inequality using a <see cref="StringComparison.Ordinal"/> comparer.
         /// </summary>
-        public static bool operator !=(Utf8String left, Utf8String right) => !Equals(left, right);
+        public static bool operator !=(Utf8String? left, Utf8String? right) => !Equals(left, right);
 
         /// <summary>
         /// Projects a <see cref="Utf8String"/> instance as a <see cref="ReadOnlySpan{Byte}"/>.
         /// </summary>
-        public static explicit operator ReadOnlySpan<byte>(Utf8String value) => value.AsBytes();
+        public static explicit operator ReadOnlySpan<byte>(Utf8String? value) => value.AsBytes();
 
         /// <summary>
         /// Projects a <see cref="Utf8String"/> instance as a <see cref="ReadOnlySpan{Char8}"/>.
         /// </summary>
-        public static implicit operator ReadOnlySpan<Char8>(Utf8String value) => value.AsSpan();
+        public static implicit operator ReadOnlySpan<Char8>(Utf8String? value) => value.AsSpan();
 
         /*
          * INSTANCE PROPERTIES
@@ -110,7 +111,7 @@ namespace System
         /// <summary>
         /// Performs an equality comparison using a <see cref="StringComparison.Ordinal"/> comparer.
         /// </summary>
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is Utf8String other && this.Equals(other);
         }
@@ -118,7 +119,7 @@ namespace System
         /// <summary>
         /// Performs an equality comparison using a <see cref="StringComparison.Ordinal"/> comparer.
         /// </summary>
-        public bool Equals(Utf8String value)
+        public bool Equals(Utf8String? value)
         {
             // First, a very quick check for referential equality.
 
@@ -137,7 +138,7 @@ namespace System
         /// <summary>
         /// Compares two <see cref="Utf8String"/> instances using a <see cref="StringComparison.Ordinal"/> comparer.
         /// </summary>
-        public static bool Equals(Utf8String left, Utf8String right)
+        public static bool Equals(Utf8String? left, Utf8String? right)
         {
             // First, a very quick check for referential equality.
 
@@ -179,7 +180,7 @@ namespace System
         /// Returns <see langword="true"/> if <paramref name="value"/> is <see langword="null"/> or zero length;
         /// <see langword="false"/> otherwise.
         /// </summary>
-        public static bool IsNullOrEmpty(Utf8String value)
+        public static bool IsNullOrEmpty(Utf8String? value)
         {
             // Copied from String.IsNullOrEmpty. See that method for detailed comments on why this pattern is used.
             return (value is null || 0u >= (uint)value.Length) ? true : false;

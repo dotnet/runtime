@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
+#nullable enable
 using System.Collections.Generic;
 
 // Windows.Foundation.Collections.IVector`1 and IVectorView`1 cannot be referenced from managed
@@ -66,7 +64,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [WindowsRuntimeImport]
     internal interface IBindableVector : IBindableIterable
     {
-        object GetAt(uint index);
+        object? GetAt(uint index);
         uint Size { get; }
         IBindableVectorView GetView();
         bool IndexOf(object value, out uint index);
@@ -83,7 +81,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [WindowsRuntimeImport]
     internal interface IBindableVectorView : IBindableIterable
     {
-        object GetAt(uint index);
+        object? GetAt(uint index);
         uint Size { get; }
         bool IndexOf(object value, out uint index);
     }

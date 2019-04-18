@@ -24,7 +24,7 @@ namespace System
             // We use the no throw version since we could be deserializing a pre-V4
             // exception object that may not have this entry. In such a case, we would
             // get null.
-            _watsonBuckets = (object)info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
+            _watsonBuckets = info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
 
             // If we are constructing a new exception after a cross-appdomain call...
             if (context.State == StreamingContextStates.CrossAppDomain)
@@ -206,8 +206,8 @@ namespace System
             StackTrace st = new StackTrace(this, fNeedFileInfo: false);
             if (st.FrameCount > 0)
             {
-                StackFrame sf = st.GetFrame(0);
-                MethodBase method = sf.GetMethod();
+                StackFrame sf = st.GetFrame(0)!;
+                MethodBase method = sf.GetMethod()!;
 
                 Module module = method.Module;
 
@@ -465,7 +465,7 @@ namespace System
         {
             string? retMesg = null;
             GetMessageFromNativeResources(kind, JitHelpers.GetStringHandleOnStack(ref retMesg));
-            return retMesg;
+            return retMesg!;
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

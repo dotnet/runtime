@@ -17,6 +17,7 @@
 **
 ============================================================*/
 
+#nullable enable
 using System.Collections;
 using System.Globalization;
 
@@ -148,7 +149,7 @@ namespace System
 
         private static DaylightTime CreateDaylightChanges(int year)
         {
-            DaylightTime currentDaylightChanges = null;
+            DaylightTime? currentDaylightChanges = null;
 
             if (TimeZoneInfo.Local.SupportsDaylightSavingTime)
             {

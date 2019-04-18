@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Globalization
 {
     internal sealed partial class GlobalizationMode
@@ -18,7 +19,7 @@ namespace System.Globalization
             if (!exist)
             {
                 // Linux doesn't support environment variable names include dots
-                string switchValue = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+                string? switchValue = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
                 if (switchValue != null)
                 {
                     ret = bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -58,7 +59,7 @@ namespace System
         /// </summary>
         [Obsolete("Equals() on ReadOnlySpan will always throw an exception. Use == instead.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             throw new NotSupportedException(SR.NotSupported_CannotCallEqualsOnSpan);
         }
@@ -79,7 +80,7 @@ namespace System
         /// <summary>
         /// Defines an implicit conversion of an array to a <see cref="ReadOnlySpan{T}"/>
         /// </summary>
-        public static implicit operator ReadOnlySpan<T>(T[] array) => new ReadOnlySpan<T>(array);
+        public static implicit operator ReadOnlySpan<T>(T[]? array) => new ReadOnlySpan<T>(array);
 
         /// <summary>
         /// Defines an implicit conversion of a <see cref="ArraySegment{T}"/> to a <see cref="ReadOnlySpan{T}"/>

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Text;
 using System.Diagnostics;
 using System.Buffers;
@@ -25,7 +26,7 @@ namespace System.IO
         private bool _leaveOpen;
 
         // Perf optimization stuff
-        private byte[] _largeByteBuffer;  // temp space for writing chars.
+        private byte[]? _largeByteBuffer;  // temp space for writing chars.
         private int _maxChars;   // max # of chars we can put in _largeByteBuffer
         // Size should be around the max number of chars/string * Encoding's max bytes/char
         private const int LargeByteBufferSize = 256;

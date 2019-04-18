@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics.Contracts;
-using System.Runtime.InteropServices;
-
 
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
@@ -100,6 +97,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
             if (!found)
             {
+                Debug.Assert(key != null);
                 Exception e = new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
                 e.HResult = HResults.E_BOUNDS;
                 throw e;
@@ -131,7 +129,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             return new IKeyValuePairEnumerator(items, firstItemIndex, lastItemIndex);
         }
 
-        public void Split(out IMapView<TKey, TValue> firstPartition, out IMapView<TKey, TValue> secondPartition)
+        public void Split(out IMapView<TKey, TValue>? firstPartition, out IMapView<TKey, TValue>? secondPartition)
         {
             if (Count < 2)
             {
@@ -150,12 +148,12 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            KeyValuePair<TKey, TValue> searchKey = new KeyValuePair<TKey, TValue>(key, default);
+            KeyValuePair<TKey, TValue> searchKey = new KeyValuePair<TKey, TValue>(key, default!); // TODO-NULLABLE-GENERIC
             int index = Array.BinarySearch(items, firstItemIndex, Count, searchKey, keyValuePairComparator);
 
             if (index < 0)
             {
-                value = default;
+                value = default!; // TODO-NULLABLE-GENERIC
                 return false;
             }
 
@@ -208,7 +206,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 }
             }
 
-            object IEnumerator.Current
+            object? IEnumerator.Current // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
             {
                 get
                 {

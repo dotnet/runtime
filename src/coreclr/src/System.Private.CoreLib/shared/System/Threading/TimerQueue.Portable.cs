@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -56,7 +57,7 @@ namespace System.Threading
             {
                 if (!_isScheduled)
                 {
-                    List<TimerQueue> timers = s_scheduledTimers;
+                    List<TimerQueue>? timers = s_scheduledTimers;
                     if (timers == null)
                     {
                         timers = InitializeScheduledTimerManager_Locked();
@@ -80,11 +81,11 @@ namespace System.Threading
         private static void TimerThread()
         {
             AutoResetEvent timerEvent = s_timerEvent;
-            List<TimerQueue> timersToFire = s_scheduledTimersToFire;
+            List<TimerQueue> timersToFire = s_scheduledTimersToFire!;
             List<TimerQueue> timers;
             lock (timerEvent)
             {
-                timers = s_scheduledTimers;
+                timers = s_scheduledTimers!;
             }
 
             int shortestWaitDurationMs = Timeout.Infinite;

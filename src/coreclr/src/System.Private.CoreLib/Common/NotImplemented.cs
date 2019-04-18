@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System
 {
     //
@@ -17,18 +18,6 @@ namespace System
     //
     internal static class NotImplemented
     {
-        internal static Exception ByDesign
-        {
-            get
-            {
-                return new NotImplementedException();
-            }
-        }
-
-        internal static Exception ByDesignWithMessage(string message)
-        {
-            return new NotImplementedException(message);
-        }
+        internal static Exception ByDesign => new NotImplementedException();
     }
 }
-

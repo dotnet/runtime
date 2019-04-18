@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Configuration.Assemblies;
 using System.Globalization;
 using System.IO;
@@ -21,19 +22,19 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
             _name = assemblyName;
-            nInit(out RuntimeAssembly dummy, false);
+            nInit(out RuntimeAssembly? dummy, false);
         }
 
-        internal AssemblyName(string name,
-            byte[] publicKey,
-            byte[] publicKeyToken,
-            Version version,
-            CultureInfo cultureInfo,
+        internal AssemblyName(string? name,
+            byte[]? publicKey,
+            byte[]? publicKeyToken,
+            Version? version,
+            CultureInfo? cultureInfo,
             AssemblyHashAlgorithm hashAlgorithm,
             AssemblyVersionCompatibility versionCompatibility,
-            string codeBase,
+            string? codeBase,
             AssemblyNameFlags flags,
-            StrongNameKeyPair keyPair) // Null if ref, matching Assembly if def
+            StrongNameKeyPair? keyPair) // Null if ref, matching Assembly if def
         {
             _name = name;
             _publicKey = publicKey;
@@ -48,7 +49,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern void nInit(out RuntimeAssembly assembly, bool raiseResolveEvent);
+        internal extern void nInit(out RuntimeAssembly? assembly, bool raiseResolveEvent);
         
         // This call opens and closes the file, but does not add the
         // assembly to the domain.
