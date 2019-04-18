@@ -8,6 +8,15 @@
 #include <error_codes.h>
 #include <trace.h>
 
+namespace
+{
+    void log_duplicate_property_error(const pal::char_t *property_key)
+    {
+        trace::error(_X("Duplicate runtime property found: %s"), property_key);
+        trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the the application's .runtimeconfig.json"));
+    }
+}
+
 int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
 {
     application = args.managed_application;
@@ -57,7 +66,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     clr_path = probe_paths.coreclr;
     if (clr_path.empty() || !pal::realpath(&clr_path))
     {
-        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));;
+        trace::error(_X("Could not resolve CoreCLR path. For more details, enable tracing by setting COREHOST_TRACE environment variable to 1"));
         return StatusCode::CoreClrResolveFailure;
     }
 
@@ -146,12 +155,17 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     for (int i = 0; i < hostpolicy_init.cfg_keys.size(); ++i)
     {
         // Provide opt-in compatible behavior by using the switch to set APP_PATHS
-        if (pal::strcasecmp(hostpolicy_init.cfg_keys[i].c_str(), _X("Microsoft.NETCore.DotNetHostPolicy.SetAppPaths")) == 0)
+        const pal::char_t *key = hostpolicy_init.cfg_keys[i].c_str();
+        if (pal::strcasecmp(key, _X("Microsoft.NETCore.DotNetHostPolicy.SetAppPaths")) == 0)
         {
             set_app_paths = (pal::strcasecmp(hostpolicy_init.cfg_values[i].data(), _X("true")) == 0);
         }
 
-        coreclr_properties.add(hostpolicy_init.cfg_keys[i].c_str(), hostpolicy_init.cfg_values[i].c_str());
+        if (!coreclr_properties.add(key, hostpolicy_init.cfg_values[i].c_str()))
+        {
+            log_duplicate_property_error(key);
+            return StatusCode::LibHostDuplicateProperty;
+        }
     }
 
     // App paths and App NI paths.
@@ -159,14 +173,29 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     // and that could indicate the app paths shouldn't be set.
     if (set_app_paths)
     {
-        coreclr_properties.add(common_property::AppPaths, app_base.c_str());
-        coreclr_properties.add(common_property::AppNIPaths, app_base.c_str());
+        if (!coreclr_properties.add(common_property::AppPaths, app_base.c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::AppPaths));
+            return StatusCode::LibHostDuplicateProperty;
+        }
+
+        if (!coreclr_properties.add(common_property::AppNIPaths, app_base.c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::AppNIPaths));
+            return StatusCode::LibHostDuplicateProperty;
+        }
     }
 
     // Startup hooks
     pal::string_t startup_hooks;
     if (pal::getenv(_X("DOTNET_STARTUP_HOOKS"), &startup_hooks))
-        coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str());
+    {
+        if (!coreclr_properties.add(common_property::StartUpHooks, startup_hooks.c_str()))
+        {
+            log_duplicate_property_error(coreclr_property_bag_t::common_property_to_string(common_property::StartUpHooks));
+            return StatusCode::LibHostDuplicateProperty;
+        }
+    }
 
     return StatusCode::Success;
 }

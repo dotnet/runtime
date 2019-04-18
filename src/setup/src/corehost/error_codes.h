@@ -36,8 +36,9 @@ enum StatusCode
     SdkResolverResolveFailure   = 0x8000809b,
     FrameworkCompatFailure      = 0x8000809c,
     FrameworkCompatRetry        = 0x8000809d,
-	AppHostExeNotBundle         = 0x8000809e,
-	BundleExtractionFailure     = 0x8000809f,
-	BundleExtractionIOError     = 0x800080a0
+    AppHostExeNotBundle         = 0x8000809e,
+    BundleExtractionFailure     = 0x8000809f,
+    BundleExtractionIOError     = 0x800080a0,
+    LibHostDuplicateProperty    = 0x800080a1,
 };
 #endif // __ERROR_CODES_H__

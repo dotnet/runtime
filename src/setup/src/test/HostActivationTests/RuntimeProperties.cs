@@ -115,8 +115,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdOut()
                 .Execute()
                 .Should().Fail()
-                // Update for: https://github.com/dotnet/core-setup/issues/5529
-                .And.HaveStdErrContaining("Failed to create CoreCLR");
+                .And.HaveStdErrContaining($"Duplicate runtime property found: {name}");
         }
 
         public class SharedTestState : IDisposable
