@@ -155,7 +155,10 @@ namespace Mono.Linker.Steps {
 
 		WriterParameters SaveSymbols (AssemblyDefinition assembly)
 		{
-			var parameters = new WriterParameters ();
+			var parameters = new WriterParameters {
+				DeterministicMvid = Context.DeterministicOutput
+			};
+
 			if (!Context.LinkSymbols)
 				return parameters;
 
