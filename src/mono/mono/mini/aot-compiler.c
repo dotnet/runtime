@@ -234,6 +234,7 @@ typedef struct MonoAotOptions {
 	gboolean profile_only;
 	gboolean no_opt;
 	char *clangxx;
+	char *depfile;
 } MonoAotOptions;
 
 typedef enum {
@@ -8029,6 +8030,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->no_opt = TRUE;
 		} else if (str_begins_with (arg, "clangxx=")) {
 			opts->clangxx = g_strdup (arg + strlen ("clangxx="));
+		} else if (str_begins_with (arg, "depfile=")) {
+			opts->depfile = g_strdup (arg + strlen ("depfile="));
 		} else if (str_begins_with (arg, "help") || str_begins_with (arg, "?")) {
 			printf ("Supported options for --aot:\n");
 			printf ("    asmonly\n");
@@ -8076,6 +8079,7 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			printf ("    llvmopts=\n");
 			printf ("    llvmllc=\n");
 			printf ("    clangxx=\n");
+			printf ("    depfile=\n");
 			printf ("    help/?\n");
 			exit (0);
 		} else {
@@ -13588,6 +13592,32 @@ print_stats (MonoAotCompile *acfg)
 		mono_dedup_log_stats (acfg);
 }
 
+static void
+create_depfile (MonoAotCompile *acfg)
+{
+	FILE *depfile;
+
+	// FIXME: Support other configurations
+	g_assert (acfg->aot_opts.llvm_only && acfg->aot_opts.asm_only && acfg->aot_opts.llvm_outfile);
+
+	depfile = fopen (acfg->aot_opts.depfile, "w");
+	g_assert (depfile);
+
+	int ntargets = 1;
+	char **targets = g_new0 (char*, ntargets);
+	targets [0] = acfg->aot_opts.llvm_outfile;
+	for (int tindex = 0; tindex < ntargets; ++tindex) {
+		fprintf (depfile, "%s: ", targets [tindex]);
+		for (int i = 0; i < acfg->image_table->len; i++) {
+			MonoImage *image = (MonoImage*)g_ptr_array_index (acfg->image_table, i);
+			fprintf (depfile, " %s", image->filename);
+		}
+		fprintf (depfile, "\n");
+	}
+	g_free (targets);
+	fclose (depfile);
+}
+
 static int
 emit_aot_image (MonoAotCompile *acfg)
 {
@@ -13809,6 +13839,9 @@ emit_aot_image (MonoAotCompile *acfg)
 		print_stats (acfg);
 
 	aot_printf (acfg, "JIT time: %d ms, Generation time: %d ms, Assembly+Link time: %d ms.\n", acfg->stats.jit_time / 1000, acfg->stats.gen_time / 1000, acfg->stats.link_time / 1000);
+
+	if (acfg->aot_opts.depfile)
+		create_depfile (acfg);
 
 	if (acfg->aot_opts.dump_json)
 		aot_dump (acfg);
