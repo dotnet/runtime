@@ -51,6 +51,18 @@ namespace System.Text.Unicode.Tests
             GetIndexOfFirstInvalidUtf16Sequence_Test_Core(unprocessedInput, idxOfFirstInvalidChar, expectedRuneCount, expectedUtf8ByteCount);
         }
 
+        [Theory] // chars below presented as hex since Xunit doesn't like invalid UTF-16 string literals
+        [InlineData("<2BB4><218C><1BC0><613F><F9E9><B740><DE38><E689>", 6, 6, 18)]
+        [InlineData("<1854><C980><012C><4797><DD5A><41D0><A104><5464>", 4, 4, 11)]
+        [InlineData("<F1AF><8BD3><5037><BE29><DEFF><3E3A><DD71><6336>", 4, 4, 12)]
+        [InlineData("<B978><0F25><DC23><D3BB><7352><4025><0B93><4107>", 2, 2, 6)]
+        [InlineData("<2BB4><218C><1BC0><613F><F9E9><B740><DE38><E689>", 6, 6, 18)]
+        [InlineData("<887C><C980><012C><4797><DD5A><41D0><A104><5464>", 4, 4, 11)]
+        public void GetIndexOfFirstInvalidUtf16Sequence_WithEightRandomCharsContainingUnpairedSurrogates(string unprocessedInput, int idxOfFirstInvalidChar, int expectedRuneCount, int expectedUtf8ByteCount)
+        {
+            GetIndexOfFirstInvalidUtf16Sequence_Test_Core(unprocessedInput, idxOfFirstInvalidChar, expectedRuneCount, expectedUtf8ByteCount);
+        }
+
         [Fact]
         public void GetIndexOfFirstInvalidUtf16Sequence_WithInvalidSurrogateSequences()
         {
