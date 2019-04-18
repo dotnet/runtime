@@ -37,6 +37,16 @@ namespace System.Net.Test.Common
             return !(Configuration.Security.HostsFileNamesInstalled == null);
         }
 
+        public static bool Http2ForceUnencryptedLoopback()
+        {
+            string value = Configuration.Http.Http2ForceUnencryptedLoopback;
+            if (value != null && (value.Equals("true", StringComparison.OrdinalIgnoreCase) || value.Equals("1")))
+            {
+                return true;
+            }
+            return false;
+        }
+
         private static bool InitializeTrustedRootCertificateCapability()
         {
             using (var store = new X509Store(StoreName.Root, StoreLocation.CurrentUser))
