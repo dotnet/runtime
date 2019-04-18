@@ -93,7 +93,7 @@ jobs:
               _helixQueues: $(alpineArm64Queues)
               _dockerContainer: alpine_37_arm64_container
               _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
-              _buildExtraArguments: -warnAsError false /p:BuildNativeClang=--clang5.0 /p:RuntimeOS=linux-musl
+              _buildExtraArguments: -warnAsError false /p:BuildNativeCompiler=--clang5.0 /p:RuntimeOS=linux-musl
 
       pool:
         name: Hosted Ubuntu 1604
@@ -142,7 +142,7 @@ jobs:
               _framework: netcoreapp
               _dockerContainer: alpine_37_arm64_container
               _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
-              _buildExtraArguments: -warnAsError false /p:BuildNativeClang=--clang5.0 /p:RuntimeOS=linux-musl
+              _buildExtraArguments: -warnAsError false /p:BuildNativeCompiler=--clang5.0 /p:RuntimeOS=linux-musl
 
         pool:
           name: Hosted Ubuntu 1604
