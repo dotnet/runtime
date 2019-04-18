@@ -1267,8 +1267,14 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
     // Check scenario.
     switch (scenario) {
         case 'crossgen_comparison':
-            if (isFlowJob && ((os == 'Ubuntu' && architecture == 'arm') || (os == 'Ubuntu16.04' && architecture == 'arm64')) && (configuration == 'Checked' || configuration == 'Release')) {
-                addPeriodicTriggerHelper(job, '@daily')
+            if (isFlowJob && (configuration == 'Checked' || configuration == 'Release')) {
+                if (os == 'Ubuntu' && architecture == 'arm') {
+                    // Not enough Linux/arm32 hardware for this.
+                    // addPeriodicTriggerHelper(job, '@daily')
+                }
+                if (os == 'Ubuntu16.04' && architecture == 'arm64') {
+                    addPeriodicTriggerHelper(job, '@daily')
+                }
             }
             break
 
@@ -1316,7 +1322,9 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                         if (isFlowJob) {
                             // Currently no push triggers, with limited arm Linux hardware.
                             // TODO: If we have enough machine capacity, add some arm Linux push triggers.
-                            addPeriodicTriggerHelper(job, '@daily')
+
+                            // Duplicated by AzDO
+                            // addPeriodicTriggerHelper(job, '@daily')
                         }
                     }
                     break
@@ -1353,7 +1361,10 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 // arm r2r jobs should only run weekly.
                 else if (architecture == 'arm') {
                     if (isFlowJob) {
-                        addPeriodicTriggerHelper(job, '@weekly')
+                        // Linux arm32 done in AzDO
+                        if (os == 'Windows_NT') {
+                            addPeriodicTriggerHelper(job, '@weekly')
+                        }
                     }
                 }
                 // arm64 r2r jobs should only run weekly.
@@ -1402,7 +1413,10 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 }
                 else if (architecture == 'arm') {
                     if (isFlowJob) {
-                        addPeriodicTriggerHelper(job, '@weekly')
+                        // Linux arm32 duplicated by AzDO
+                        if (os == 'Windows_NT') {
+                            addPeriodicTriggerHelper(job, '@weekly')
+                        }
                     }
                 }
                 else if (architecture == 'arm64') {
@@ -1512,6 +1526,10 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             if (os in bidailyCrossList) {
                 break
             }
+            if ((os == 'Ubuntu') && (architecture == 'arm') && !isCoreFxScenario(scenario)) {
+                // Linux arm32 duplicated by AzDO
+                break
+            }
             // ARM corefx testing uses non-flow jobs to provide the configuration-specific
             // build for the flow job. We don't need cron jobs for these. Note that the
             // Windows ARM jobs depend on a Windows "build only" job that exits the trigger
@@ -1546,6 +1564,10 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
             if (os in bidailyCrossList) {
                 break
             }
+            if ((os == 'Ubuntu') && (architecture == 'arm')) {
+                // Linux arm32 duplicated by AzDO
+                break
+            }
             addPeriodicTriggerHelper(job, '@weekly')
             break
         case 'gcstress0xc':
@@ -1563,6 +1585,10 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 break
             }
             if (os in bidailyCrossList) {
+                break
+            }
+            if ((os == 'Ubuntu') && (architecture == 'arm')) {
+                // Linux arm32 duplicated by AzDO
                 break
             }
             addPeriodicTriggerHelper(job, '@weekly')
