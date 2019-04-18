@@ -10,7 +10,7 @@ namespace System.Text.Json.Serialization
     {
         private static bool WriteObject(
             JsonSerializerOptions options,
-            ref Utf8JsonWriter writer,
+            Utf8JsonWriter writer,
             ref WriteStack state)
         {
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization
             // Determine if we are done enumerating properties.
             if (state.Current.PropertyIndex != classInfo.PropertyCount)
             {
-                HandleObject(options, ref writer, ref state);
+                HandleObject(options, writer, ref state);
                 return false;
             }
 
@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization
 
         private static bool HandleObject(
                 JsonSerializerOptions options,
-                ref Utf8JsonWriter writer,
+                Utf8JsonWriter writer,
                 ref WriteStack state)
         {
             Debug.Assert(
@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization
 
             if (jsonPropertyInfo.ClassType == ClassType.Value)
             {
-                jsonPropertyInfo.Write(options, ref state.Current, ref writer);
+                jsonPropertyInfo.Write(options, ref state.Current, writer);
                 state.Current.NextProperty();
                 return true;
             }
@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization
             // A property that returns an enumerator keeps the same stack frame.
             if (jsonPropertyInfo.ClassType == ClassType.Enumerable)
             {
-                bool endOfEnumerable = HandleEnumerable(jsonPropertyInfo.ElementClassInfo, options, ref writer, ref state);
+                bool endOfEnumerable = HandleEnumerable(jsonPropertyInfo.ElementClassInfo, options, writer, ref state);
                 if (endOfEnumerable)
                 {
                     state.Current.NextProperty();

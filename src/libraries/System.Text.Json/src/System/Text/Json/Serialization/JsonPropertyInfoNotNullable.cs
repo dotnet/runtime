@@ -82,13 +82,13 @@ namespace System.Text.Json.Serialization
         }
 
         // todo: have the caller check if current.Enumerator != null and call WriteEnumerable of the underlying property directly to avoid an extra virtual call.
-        internal override void Write(JsonSerializerOptions options, ref WriteStackFrame current, ref Utf8JsonWriter writer)
+        internal override void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
         {
             if (current.Enumerator != null)
             {
                 // Forward the setter to the value-based JsonPropertyInfo.
                 JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
-                propertyInfo.WriteEnumerable(options, ref current, ref writer);
+                propertyInfo.WriteEnumerable(options, ref current, writer);
             }
             else if (ShouldSerialize)
             {
@@ -117,17 +117,17 @@ namespace System.Text.Json.Serialization
                 {
                     if (_escapedName != null)
                     {
-                        ValueConverter.Write(_escapedName, value, ref writer);
+                        ValueConverter.Write(_escapedName, value, writer);
                     }
                     else
                     {
-                        ValueConverter.Write(value, ref writer);
+                        ValueConverter.Write(value, writer);
                     }
                 }
             }
         }
 
-        internal override void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, ref Utf8JsonWriter writer)
+        internal override void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
         {
             if (ValueConverter != null)
             {
@@ -150,7 +150,7 @@ namespace System.Text.Json.Serialization
                 }
                 else
                 {
-                    ValueConverter.Write(value, ref writer);
+                    ValueConverter.Write(value, writer);
                 }
             }
         }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using System.Buffers;
 
 namespace System.Text.Json.Tests
 {
@@ -138,7 +139,7 @@ namespace System.Text.Json.Tests
         {
             WriteSimpleValue(indented, "false");
         }
-        
+
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -386,6 +387,26 @@ null,
   ""ectoplasm"": 42
 }",
                 "{\"ectoplasm\":42}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void WriteNumberAsPropertyWithLargeName(bool indented)
+        {
+            var charArray = new char[300];
+            charArray.AsSpan().Fill('a');
+            charArray[0] = (char)0xEA;
+            var propertyName = new string(charArray);
+
+            WritePropertyValueBothForms(
+                indented,
+                propertyName,
+                "42",
+                @"{
+  ""\u00ea" + propertyName.Substring(1) + @""": 42
+}",
+                $"{{\"\\u00ea{propertyName.Substring(1)}\":42}}");
         }
 
         [Theory]
@@ -806,15 +827,14 @@ null,
             closeBrackets.Fill((byte)']');
             jsonIn.AsSpan(SpacesPre + TargetDepth + SpacesSplit + TargetDepth).Fill((byte)' ');
 
-            using (ArrayBufferWriter buffer = new ArrayBufferWriter(jsonIn.Length))
+            var buffer = new ArrayBufferWriter<byte>(jsonIn.Length);
             using (JsonDocument doc = JsonDocument.Parse(jsonIn, optionsCopy))
             {
                 var writer = new Utf8JsonWriter(buffer);
-                doc.RootElement.WriteAsValue(ref writer);
+                doc.RootElement.WriteAsValue(writer);
                 writer.Flush();
 
-                ArraySegment<byte> formattedSegment = buffer.Formatted;
-                ReadOnlySpan<byte> formatted = formattedSegment;
+                ReadOnlySpan<byte> formatted = buffer.WrittenSpan;
 
                 Assert.Equal(TargetDepth + TargetDepth, formatted.Length);
                 Assert.True(formatted.Slice(0, TargetDepth).SequenceEqual(openBrackets), "OpenBrackets match");
@@ -827,26 +847,25 @@ null,
         [InlineData(true)]
         public static void WritePropertyOutsideObject(bool skipValidation)
         {
-            using (ArrayBufferWriter buffer = new ArrayBufferWriter(1024))
+            var buffer = new ArrayBufferWriter<byte>(1024);
             using (var doc = JsonDocument.Parse("[ null, false, true, \"hi\", 5, {}, [] ]", s_readerOptions))
             {
                 JsonElement root = doc.RootElement;
-                JsonWriterState state = new JsonWriterState(
-                    new JsonWriterOptions
-                    {
-                        SkipValidation = skipValidation,
-                    });
+                var options = new JsonWriterOptions
+                {
+                    SkipValidation = skipValidation,
+                };
 
                 const string CharLabel = "char";
                 byte[] byteUtf8 = Encoding.UTF8.GetBytes("byte");
-                Utf8JsonWriter writer = new Utf8JsonWriter(buffer, state);
+                var writer = new Utf8JsonWriter(buffer, options);
 
                 if (skipValidation)
                 {
                     foreach (JsonElement val in root.EnumerateArray())
                     {
-                        val.WriteAsProperty(CharLabel.AsSpan(), ref writer);
-                        val.WriteAsProperty(byteUtf8, ref writer);
+                        val.WriteAsProperty(CharLabel.AsSpan(), writer);
+                        val.WriteAsProperty(byteUtf8, writer);
                     }
 
                     writer.Flush();
@@ -867,18 +886,14 @@ null,
                     {
                         JsonTestHelper.AssertThrows<InvalidOperationException>(
                             ref writer,
-                            (ref Utf8JsonWriter w) => val.WriteAsProperty(CharLabel.AsSpan(), ref w));
+                            (ref Utf8JsonWriter w) => val.WriteAsProperty(CharLabel.AsSpan(), w));
 
                         JsonTestHelper.AssertThrows<InvalidOperationException>(
                             ref writer,
-                            (ref Utf8JsonWriter w) => val.WriteAsProperty(byteUtf8, ref w));
+                            (ref Utf8JsonWriter w) => val.WriteAsProperty(byteUtf8, w));
                     }
 
-                    JsonTestHelper.AssertThrows<InvalidOperationException>(
-                        ref writer,
-                        (ref Utf8JsonWriter w) => w.Flush());
-
-                    writer.Flush(isFinalBlock: false);
+                    writer.Flush();
 
                     AssertContents("", buffer);
                 }
@@ -890,24 +905,23 @@ null,
         [InlineData(true)]
         public static void WriteValueInsideObject(bool skipValidation)
         {
-            using (ArrayBufferWriter buffer = new ArrayBufferWriter(1024))
+            var buffer = new ArrayBufferWriter<byte>(1024);
             using (var doc = JsonDocument.Parse("[ null, false, true, \"hi\", 5, {}, [] ]", s_readerOptions))
             {
                 JsonElement root = doc.RootElement;
-                JsonWriterState state = new JsonWriterState(
-                    new JsonWriterOptions
-                    {
-                        SkipValidation = skipValidation,
-                    });
+                var options = new JsonWriterOptions
+                {
+                    SkipValidation = skipValidation,
+                };
 
-                Utf8JsonWriter writer = new Utf8JsonWriter(buffer, state);
+                var writer = new Utf8JsonWriter(buffer, options);
                 writer.WriteStartObject();
 
                 if (skipValidation)
                 {
                     foreach (JsonElement val in root.EnumerateArray())
                     {
-                        val.WriteAsValue(ref writer);
+                        val.WriteAsValue(writer);
                     }
 
                     writer.WriteEndObject();
@@ -923,7 +937,7 @@ null,
                     {
                         JsonTestHelper.AssertThrows<InvalidOperationException>(
                             ref writer,
-                            (ref Utf8JsonWriter w) => val.WriteAsValue(ref w));
+                            (ref Utf8JsonWriter w) => val.WriteAsValue(w));
                     }
 
                     writer.WriteEndObject();
@@ -936,20 +950,19 @@ null,
 
         private static void WriteSimpleValue(bool indented, string jsonIn, string jsonOut = null)
         {
-            using (ArrayBufferWriter buffer = new ArrayBufferWriter(1024))
+            var buffer = new ArrayBufferWriter<byte>(1024);
             using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_readerOptions))
             {
                 JsonElement target = doc.RootElement[0];
 
-                var state = new JsonWriterState(
-                    new JsonWriterOptions
-                    {
-                        Indented = indented,
-                    });
+                var options = new JsonWriterOptions
+                {
+                    Indented = indented,
+                };
 
-                var writer = new Utf8JsonWriter(buffer, state);
+                var writer = new Utf8JsonWriter(buffer, options);
 
-                target.WriteAsValue(ref writer);
+                target.WriteAsValue(writer);
                 writer.Flush();
 
                 AssertContents(jsonOut ?? jsonIn, buffer);
@@ -962,20 +975,19 @@ null,
             string expectedIndent,
             string expectedMinimal)
         {
-            using (ArrayBufferWriter buffer = new ArrayBufferWriter(1024))
+            var buffer = new ArrayBufferWriter<byte>(1024);
             using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_readerOptions))
             {
                 JsonElement target = doc.RootElement[0];
 
-                var state = new JsonWriterState(
-                    new JsonWriterOptions
-                    {
-                        Indented = indented,
-                    });
+                var options = new JsonWriterOptions
+                {
+                    Indented = indented,
+                };
 
-                var writer = new Utf8JsonWriter(buffer, state);
+                var writer = new Utf8JsonWriter(buffer, options);
 
-                target.WriteAsValue(ref writer);
+                target.WriteAsValue(writer);
                 writer.Flush();
 
                 if (indented && s_replaceNewlines)
@@ -1018,21 +1030,20 @@ null,
             string expectedIndent,
             string expectedMinimal)
         {
-            using (ArrayBufferWriter buffer = new ArrayBufferWriter(1024))
+            var buffer = new ArrayBufferWriter<byte>(1024);
             using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_readerOptions))
             {
                 JsonElement target = doc.RootElement[0];
 
-                var state = new JsonWriterState(
-                    new JsonWriterOptions
-                    {
-                        Indented = indented,
-                    });
+                var options = new JsonWriterOptions
+                {
+                    Indented = indented,
+                };
 
-                var writer = new Utf8JsonWriter(buffer, state);
+                var writer = new Utf8JsonWriter(buffer, options);
 
                 writer.WriteStartObject();
-                target.WriteAsProperty(propertyName, ref writer);
+                target.WriteAsProperty(propertyName, writer);
                 writer.WriteEndObject();
                 writer.Flush();
 
@@ -1054,21 +1065,20 @@ null,
             string expectedIndent,
             string expectedMinimal)
         {
-            using (ArrayBufferWriter buffer = new ArrayBufferWriter(1024))
+            var buffer = new ArrayBufferWriter<byte>(1024);
             using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_readerOptions))
             {
                 JsonElement target = doc.RootElement[0];
 
-                var state = new JsonWriterState(
-                    new JsonWriterOptions
-                    {
-                        Indented = indented,
-                    });
+                var options = new JsonWriterOptions
+                {
+                    Indented = indented,
+                };
 
-                var writer = new Utf8JsonWriter(buffer, state);
+                var writer = new Utf8JsonWriter(buffer, options);
 
                 writer.WriteStartObject();
-                target.WriteAsProperty(propertyName, ref writer);
+                target.WriteAsProperty(propertyName, writer);
                 writer.WriteEndObject();
                 writer.Flush();
 
@@ -1083,14 +1093,14 @@ null,
             }
         }
 
-        private static void AssertContents(string expectedValue, ArrayBufferWriter buffer)
+        private static void AssertContents(string expectedValue, ArrayBufferWriter<byte> buffer)
         {
             Assert.Equal(
                 expectedValue,
                 Encoding.UTF8.GetString(
-                    buffer.Formatted
+                    buffer.WrittenSpan
 #if netstandard
-                        .AsSpan().ToArray()
+                        .ToArray()
 #endif
                     ));
         }

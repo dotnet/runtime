@@ -45,17 +45,9 @@ namespace System.Text.Json
             throw GetArgumentException(SR.SpecialNumberValuesNotSupported);
         }
 
-        public static void ThrowArgumentException(ExceptionResource resource, int minimumSize = 0)
+        public static void ThrowInvalidOperationException_NeedLargerSpan()
         {
-            if (resource == ExceptionResource.FailedToGetLargerSpan)
-            {
-                throw GetArgumentException(SR.FailedToGetLargerSpan);
-            }
-            else
-            {
-                Debug.Assert(resource == ExceptionResource.FailedToGetMinimumSizeSpan);
-                throw GetArgumentException(SR.Format(SR.FailedToGetMinimumSizeSpan, minimumSize));
-            }
+            throw GetInvalidOperationException(SR.FailedToGetLargerSpan);
         }
 
         public static void ThrowArgumentException(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> value)
@@ -352,6 +344,11 @@ namespace System.Text.Json
             throw GetInvalidOperationException(resource, currentDepth, token, tokenType);
         }
 
+        public static void ThrowArgumentException_InvalidCommentValue()
+        {
+            throw new ArgumentException(SR.CannotWriteCommentWithEmbeddedDelimiter);
+        }
+
         public static void ThrowArgumentException_InvalidUTF8(ReadOnlySpan<byte> value)
         {
             var builder = new StringBuilder();
@@ -532,8 +529,6 @@ namespace System.Text.Json
         CannotStartObjectArrayAfterPrimitiveOrClose,
         CannotWriteValueWithinObject,
         CannotWriteValueAfterPrimitive,
-        FailedToGetMinimumSizeSpan,
-        FailedToGetLargerSpan,
         CannotWritePropertyWithinArray,
         ExpectedJsonTokens,
         TrailingCommaNotAllowedBeforeArrayEnd,
