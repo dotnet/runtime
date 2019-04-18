@@ -5,6 +5,7 @@
     <IgnoreCoreCLRTestLibraryDependency>true</IgnoreCoreCLRTestLibraryDependency>
     <CLRTestScriptLocalCoreShim>true</CLRTestScriptLocalCoreShim>
     <RequiresMockHostPolicy>true</RequiresMockHostPolicy>
+    <IlrtTestKind>BuildOnly</IlrtTestKind>
 
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
