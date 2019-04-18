@@ -120,12 +120,6 @@
   <data name="AdvanceToInvalidCursor" xml:space="preserve">
     <value>The PipeReader has already advanced past the provided position.</value>
   </data>
-  <data name="CannotCompleteWhileReading" xml:space="preserve">
-    <value>Can't complete reader while reading.</value>
-  </data>
-  <data name="CannotCompleteWhiteWriting" xml:space="preserve">
-    <value>Can't complete writer while writing.</value>
-  </data>
   <data name="ConcurrentOperationsNotSupported" xml:space="preserve">
     <value>Concurrent reads or writes are not supported.</value>
   </data>
