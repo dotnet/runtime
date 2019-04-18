@@ -281,11 +281,6 @@ void ZapImage::OutputCode(CodeType codeType)
                     if (!pTarget->IsPlaced())
                         m_pImportTable->PlaceIndirectHelperThunk(pTarget);
                     break;
-
-                case ZapNodeType_RVAFieldData:
-                    if (!pTarget->IsPlaced())
-                        m_pReadOnlyDataSection->Place(pTarget);
-                    break;
 #endif
 
                 case ZapNodeType_GenericSignature:
