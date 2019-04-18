@@ -63,8 +63,6 @@ namespace System.Xml.Linq
     {
         private XHashtableState _state;                          // SHARED STATE: Contains all XHashtable state, so it can be atomically swapped when resizes occur
 
-        private const int StartingHash = (5381 << 16) + 5381;   // Starting hash code value for string keys to be hashed
-
         /// <summary>
         /// Prototype of function which is called to extract a string key value from a hashed value.
         /// Returns null if the hashed value is invalid (e.g. value has been released due to a WeakReference TValue being cleaned up).
@@ -397,22 +395,8 @@ namespace System.Xml.Linq
             /// </summary>
             private static int ComputeHashCode(string key, int index, int count)
             {
-                int hashCode = StartingHash;
-                int end = index + count;
                 Debug.Assert(key != null, "key should have been checked previously for null");
-
-                // Hash the key
-                for (int i = index; i < end; i++)
-                    unchecked
-                    {
-                        hashCode += (hashCode << 7) ^ key[i];
-                    }
-
-                // Mix up hash code a bit more and clear the sign bit.  This code was taken from NameTable.cs in System.Xml.
-                hashCode -= hashCode >> 17;
-                hashCode -= hashCode >> 11;
-                hashCode -= hashCode >> 5;
-                return hashCode & 0x7FFFFFFF;
+                return string.GetHashCode(key.AsSpan(index, count));
             }
 
             /// <summary>
