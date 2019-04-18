@@ -55,12 +55,12 @@ namespace System.Diagnostics.Tracing
     }
     public abstract partial class DiagnosticCounter : System.IDisposable
     {
-        public DiagnosticCounter(string name, EventSource eventSource) { }
+        public DiagnosticCounter(string name, System.Diagnostics.Tracing.EventSource eventSource) { }
         public void AddMetadata(string key, string value) { }
         public void Dispose() { }
         public string DisplayName { get { throw null; } set { } }
         public string Name { get { throw null; } }
-        public EventSource EventSource { get { throw null; } }
+        public System.Diagnostics.Tracing.EventSource EventSource { get { throw null; } }
     }
 
     public partial class EventCounter : System.Diagnostics.Tracing.DiagnosticCounter
@@ -81,7 +81,7 @@ namespace System.Diagnostics.Tracing
     }
     public partial class IncrementingPollingCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
-        public IncrementingPollingCounter(string name, EventSource eventSource, Func<double> totalValueProvider) : base(name, eventSource) { }
+        public IncrementingPollingCounter(string name, System.Diagnostics.Tracing.EventSource eventSource, Func<double> totalValueProvider) : base(name, eventSource) { }
         public TimeSpan DisplayRateTimeScale { get { throw null; } set { } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Struct, Inherited=false)]
