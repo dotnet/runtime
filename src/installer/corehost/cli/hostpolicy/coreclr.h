@@ -75,26 +75,30 @@ enum class common_property
 
 class coreclr_property_bag_t
 {
+public: // static
+    static const pal::char_t* common_property_to_string(common_property key);
+
 public:
     coreclr_property_bag_t();
 
-    void add(common_property key, const pal::char_t *value);
-
-    void add(const pal::char_t *key, const pal::char_t *value);
+    // Add a property to the property bag. If the property already exists, it is overwritten.
+    // Returns true if the property was newly added, false if it already existed or could not be added.
+    bool add(common_property key, const pal::char_t *value);
+    bool add(const pal::char_t *key, const pal::char_t *value);
 
     bool try_get(common_property key, const pal::char_t **value);
-
     bool try_get(const pal::char_t *key, const pal::char_t **value);
+
+    void remove(const pal::char_t *key);
 
     void log_properties() const;
 
     int count() const;
 
-    void enumerate(std::function<void(int, const pal::string_t&, const pal::string_t&)> &callback) const;
+    void enumerate(std::function<void(const pal::string_t&, const pal::string_t&)> &callback) const;
 
 private:
-    std::vector<pal::string_t> _keys;
-    std::vector<pal::string_t> _values;
+    std::unordered_map<pal::string_t, pal::string_t> _properties;
 };
 
 #endif // _COREHOST_CLI_CORECLR_H_
