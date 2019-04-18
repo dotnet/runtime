@@ -188,7 +188,7 @@ void FastSerializer::WriteBuffer(BYTE *pBuffer, unsigned int length)
     EX_TRY
     {
         uint32_t outCount;
-        m_pStreamWriter->Write(pBuffer, length, outCount);
+        bool fSuccess = m_pStreamWriter->Write(pBuffer, length, outCount);
 
 #ifdef _DEBUG
         size_t prevPos = m_currentPos;
@@ -198,7 +198,7 @@ void FastSerializer::WriteBuffer(BYTE *pBuffer, unsigned int length)
         // This will cause us to stop writing to the file.
         // The file will still remain open until shutdown so that we don't
         // have to take a lock at this level when we touch the file stream.
-        m_writeErrorEncountered = (length != outCount);
+        m_writeErrorEncountered = (length != outCount) || !fSuccess;
 
 #ifdef _DEBUG
         _ASSERTE(m_writeErrorEncountered || (prevPos < m_currentPos));
