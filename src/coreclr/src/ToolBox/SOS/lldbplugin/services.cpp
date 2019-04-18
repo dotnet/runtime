@@ -10,8 +10,8 @@
 
 #define CONVERT_FROM_SIGN_EXTENDED(offset) ((ULONG_PTR)(offset))
 
-ULONG g_currentThreadIndex = -1;
-ULONG g_currentThreadSystemId = -1;
+ULONG g_currentThreadIndex = (ULONG)-1;
+ULONG g_currentThreadSystemId = (ULONG)-1;
 char *g_coreclrDirectory;
 
 LLDBServices::LLDBServices(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, lldb::SBProcess *process, lldb::SBThread *thread) : 
@@ -587,7 +587,7 @@ LLDBServices::Disassemble(
 
     size = instruction.GetByteSize();
     data = instruction.GetData(target);
-    for (int i = 0; i < size && bufferSize > 0; i++)
+    for (ULONG i = 0; i < size && bufferSize > 0; i++)
     {
         byte = data.GetUnsignedInt8(error, i);
         if (error.Fail())
@@ -689,7 +689,7 @@ LLDBServices::GetContextStackTrace(
     }
 
     frame = thread.GetFrameAtIndex(0);
-    for (int i = 0; i < thread.GetNumFrames(); i++)
+    for (uint32_t i = 0; i < thread.GetNumFrames(); i++)
     {
         if (!frame.IsValid() || (cFrames > framesSize) || ((char *)currentContext > ((char *)frameContexts + frameContextsSize)))
         {
@@ -1367,7 +1367,7 @@ LLDBServices::GetCurrentThreadId(
 
     // This is allow the a valid current TID to be returned to 
     // workaround a bug in lldb on core dumps.
-    if (g_currentThreadIndex != -1)
+    if (g_currentThreadIndex != (ULONG)-1)
     {
         *id = g_currentThreadIndex;
         return S_OK;
@@ -1413,7 +1413,7 @@ LLDBServices::GetCurrentThreadSystemId(
 
     // This is allow the a valid current TID to be returned to 
     // workaround a bug in lldb on core dumps.
-    if (g_currentThreadSystemId != -1)
+    if (g_currentThreadSystemId != (ULONG)-1)
     {
         *sysId = g_currentThreadSystemId;
         return S_OK;
@@ -1447,7 +1447,7 @@ LLDBServices::GetThreadIdBySystemId(
 
     // If we have a "fake" thread OS (system) id and a fake thread index,
     // we need to return fake thread index.
-    if (g_currentThreadSystemId == sysId && g_currentThreadIndex != -1)
+    if (g_currentThreadSystemId == sysId && g_currentThreadIndex != (ULONG)-1)
     {
         id = g_currentThreadIndex;
     }
@@ -1495,7 +1495,7 @@ LLDBServices::GetThreadContextById(
 
     // If we have a "fake" thread OS (system) id and a fake thread index,
     // use the fake thread index to get the context.
-    if (g_currentThreadSystemId == threadID && g_currentThreadIndex != -1)
+    if (g_currentThreadSystemId == threadID && g_currentThreadIndex != (ULONG)-1)
     {
         thread = process.GetThreadByIndexID(g_currentThreadIndex);
     }
