@@ -20,6 +20,25 @@ namespace System.Net.Http
             public sealed override bool CanRead => true;
             public sealed override bool CanWrite => true;
 
+            public override int Read(Span<byte> buffer)
+            {
+                if (_connection == null || buffer.Length == 0)
+                {
+                    // Response body fully consumed or the caller didn't ask for any data
+                    return 0;
+                }
+
+                int bytesRead = _connection.ReadBuffered(buffer);
+                if (bytesRead == 0)
+                {
+                    // We cannot reuse this connection, so close it.
+                    _connection.Dispose();
+                    _connection = null;
+                }
+
+                return bytesRead;
+            }
+
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
@@ -61,7 +80,6 @@ namespace System.Net.Http
                     // We cannot reuse this connection, so close it.
                     _connection.Dispose();
                     _connection = null;
-                    return 0;
                 }
 
                 return bytesRead;
@@ -124,6 +142,25 @@ namespace System.Net.Http
                 _connection = null;
             }
 
+            public override void Write(byte[] buffer, int offset, int count)
+            {
+                ValidateBufferArgs(buffer, offset, count);
+                Write(buffer.AsSpan(offset, count));
+            }
+
+            public override void Write(ReadOnlySpan<byte> buffer)
+            {
+                if (_connection == null)
+                {
+                    throw new IOException(SR.net_http_io_write);
+                }
+
+                if (buffer.Length != 0)
+                {
+                    _connection.WriteWithoutBuffering(buffer);
+                }
+            }
+
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
                 if (cancellationToken.IsCancellationRequested)
@@ -146,6 +183,8 @@ namespace System.Net.Http
                     writeTask :
                     new ValueTask(WaitWithConnectionCancellationAsync(writeTask, cancellationToken));
             }
+
+            public override void Flush() => _connection?.Flush();
 
             public override Task FlushAsync(CancellationToken cancellationToken)
             {

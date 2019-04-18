@@ -27,6 +27,8 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(3)]
         [InlineData(4)]
         [InlineData(5)]
+        [InlineData(6)]
+        [InlineData(7)]
         public async Task GetStreamAsync_ReadToEnd_Success(int readMode)
         {
             using (HttpClient client = CreateHttpClient())
@@ -82,6 +84,22 @@ namespace System.Net.Http.Functional.Tests
                             break;
 
                         case 5:
+                            // ReadByte
+                            int byteValue;
+                            while ((byteValue = stream.ReadByte()) != -1)
+                            {
+                                ms.WriteByte((byte)byteValue);
+                            }
+                            responseBody = Encoding.UTF8.GetString(ms.ToArray());
+                            break;
+
+                        case 6:
+                            // CopyTo
+                            stream.CopyTo(ms);
+                            responseBody = Encoding.UTF8.GetString(ms.ToArray());
+                            break;
+
+                        case 7:
                             // CopyToAsync
                             await stream.CopyToAsync(ms);
                             responseBody = Encoding.UTF8.GetString(ms.ToArray());

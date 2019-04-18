@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -407,6 +406,32 @@ namespace System.Net.Http
                 }
             }
 
+            public int ReadData(Span<byte> buffer)
+            {
+                if (buffer.Length == 0)
+                {
+                    return 0;
+                }
+
+                (bool wait, int bytesRead) = TryReadFromBuffer(buffer);
+                if (wait)
+                {
+                    // Synchronously block waiting for data to be produced.
+                    Debug.Assert(bytesRead == 0);
+                    GetWaiterTask().AsTask().GetAwaiter().GetResult();
+                    (wait, bytesRead) = TryReadFromBuffer(buffer);
+                    Debug.Assert(!wait);
+                }
+
+                if (bytesRead != 0)
+                {
+                    ExtendWindow(bytesRead);
+                    _connection.ExtendWindow(bytesRead);
+                }
+
+                return bytesRead;
+            }
+
             public async ValueTask<int> ReadDataAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
                 if (buffer.Length == 0)
@@ -432,7 +457,7 @@ namespace System.Net.Http
                 return bytesRead;
             }
 
-            private async ValueTask SendDataAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            private async Task SendDataAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
                 ReadOnlyMemory<byte> remaining = buffer;
 
@@ -490,7 +515,7 @@ namespace System.Net.Http
             void IValueTaskSource.OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => _waitSource.OnCompleted(continuation, state, token, flags);
             void IValueTaskSource.GetResult(short token) => _waitSource.GetResult(token);
 
-            private sealed class Http2ReadStream : BaseAsyncStream
+            private sealed class Http2ReadStream : HttpBaseStream
             {
                 private Http2Stream _http2Stream;
 
@@ -519,6 +544,12 @@ namespace System.Net.Http
                 public override bool CanRead => true;
                 public override bool CanWrite => false;
 
+                public override int Read(Span<byte> destination)
+                {
+                    Http2Stream http2Stream = _http2Stream ?? throw new ObjectDisposedException(nameof(Http2ReadStream));
+                    return http2Stream.ReadData(destination);
+                }
+
                 public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
                 {
                     Http2Stream http2Stream = _http2Stream;
@@ -530,13 +561,12 @@ namespace System.Net.Http
                     return http2Stream.ReadDataAsync(destination, cancellationToken);
                 }
 
-                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
+                public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.net_http_content_readonly_stream);
 
-                public override Task FlushAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+                public override ValueTask WriteAsync(ReadOnlyMemory<byte> destination, CancellationToken cancellationToken) => throw new NotSupportedException();
             }
 
-
-            private sealed class Http2WriteStream : BaseAsyncStream
+            private sealed class Http2WriteStream : HttpBaseStream
             {
                 private Http2Stream _http2Stream;
 
@@ -560,6 +590,8 @@ namespace System.Net.Http
                 public override bool CanRead => false;
                 public override bool CanWrite => true;
 
+                public override int Read(Span<byte> buffer) => throw new NotSupportedException();
+
                 public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken) => throw new NotSupportedException();
 
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -570,10 +602,8 @@ namespace System.Net.Http
                         return new ValueTask(Task.FromException(new ObjectDisposedException(nameof(Http2WriteStream))));
                     }
 
-                    return http2Stream.SendDataAsync(buffer, cancellationToken);
+                    return new ValueTask(http2Stream.SendDataAsync(buffer, cancellationToken));
                 }
-
-                public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
             }
         }
     }
