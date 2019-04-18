@@ -17,7 +17,7 @@ namespace System.Diagnostics.SymbolStore
         
         public override int GetHashCode() => _token;
         
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is SymbolToken)
                 return Equals((SymbolToken)obj);
