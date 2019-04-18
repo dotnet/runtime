@@ -69,6 +69,8 @@ namespace Mono.Linker {
 			get { return _annotations; }
 		}
 
+		public bool DeterministicOutput { get; set; }
+
 		public string OutputDirectory {
 			get { return _outputDirectory; }
 			set { _outputDirectory = value; }
