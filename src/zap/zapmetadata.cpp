@@ -162,6 +162,15 @@ void ZapILMetaData::CopyRVAFields()
     // Managed C++ binaries depend on the order of RVA fields
     qsort(&fields[0], fields.GetCount(), sizeof(RVAField), RVAFieldCmp);
 
+#ifdef _DEBUG
+    for (COUNT_T i = 0; i < fields.GetCount(); i++)
+    {
+        // Make sure no RVA field node has been placed during compilation. This would mess up the ordering
+        // and can potentially break the Managed C++ scenarios.
+        _ASSERTE(!GetRVAField(fields[i].pData)->IsPlaced());
+    }
+#endif
+
     for (COUNT_T i = 0; i < fields.GetCount(); i++)
     {
         RVAField field = fields[i];
@@ -172,7 +181,7 @@ void ZapILMetaData::CopyRVAFields()
         pRVADataNode->UpdateSizeAndAlignment(field.cbSize, field.cbAlignment);
 
         if (!pRVADataNode->IsPlaced())
-             m_pImage->m_pReadOnlyDataSection->Place(pRVADataNode);
+            m_pImage->m_pReadOnlyDataSection->Place(pRVADataNode);
     }
 }
 
