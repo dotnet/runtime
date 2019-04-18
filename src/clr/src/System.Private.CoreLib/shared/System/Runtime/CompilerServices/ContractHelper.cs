@@ -4,7 +4,7 @@
 
 #define DEBUG // The behavior of this contract library should be consistent regardless of build type.
 
-using System.Diagnostics;
+#nullable enable
 using System.Diagnostics.Contracts;
 
 namespace System.Runtime.CompilerServices
@@ -31,14 +31,14 @@ namespace System.Runtime.CompilerServices
         ///          Otherwise, returns the localized failure message.
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
-        public static string RaiseContractFailedEvent(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
+        public static string? RaiseContractFailedEvent(ContractFailureKind failureKind, string? userMessage, string? conditionText, Exception? innerException)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
 
-            string returnValue;
+            string? returnValue;
             string displayMessage = "contract failed.";  // Incomplete, but in case of OOM during resource lookup...
-            ContractFailedEventArgs eventArgs = null;  // In case of OOM.
+            ContractFailedEventArgs? eventArgs = null;  // In case of OOM.
 
             try
             {
@@ -78,6 +78,7 @@ namespace System.Runtime.CompilerServices
                     returnValue = displayMessage;
                 }
             }
+
             return returnValue;
         }
 
@@ -85,7 +86,7 @@ namespace System.Runtime.CompilerServices
         /// Rewriter calls this method to get the default failure behavior.
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
-        public static void TriggerFailure(ContractFailureKind kind, string displayMessage, string userMessage, string conditionText, Exception innerException)
+        public static void TriggerFailure(ContractFailureKind kind, string? displayMessage, string? userMessage, string? conditionText, Exception? innerException)
         {
             if (string.IsNullOrEmpty(displayMessage))
             {
@@ -95,7 +96,7 @@ namespace System.Runtime.CompilerServices
             System.Diagnostics.Debug.ContractFailure(displayMessage, string.Empty, GetFailureMessage(kind, null));
         }
 
-        private static string GetFailureMessage(ContractFailureKind failureKind, string conditionText)
+        private static string GetFailureMessage(ContractFailureKind failureKind, string? conditionText)
         {
             bool hasConditionText = !string.IsNullOrEmpty(conditionText);
             switch (failureKind)
@@ -124,7 +125,7 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static string GetDisplayMessage(ContractFailureKind failureKind, string userMessage, string conditionText)
+        private static string GetDisplayMessage(ContractFailureKind failureKind, string? userMessage, string? conditionText)
         {
             string failureMessage;
             // Well-formatted English messages will take one of four forms.  A sentence ending in

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Reflection.Emit
 {  
     /// <summary>
@@ -21,7 +22,7 @@ namespace System.Reflection.Emit
 
         public override int GetHashCode() => Token;
 
-        public override bool Equals(object obj) => obj is ParameterToken pt && Equals(pt);
+        public override bool Equals(object? obj) => obj is ParameterToken pt && Equals(pt);
 
         public bool Equals(ParameterToken obj) => obj.Token == Token;
 

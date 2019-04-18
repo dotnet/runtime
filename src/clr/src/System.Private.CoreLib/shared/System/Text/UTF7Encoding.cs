@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 //
 // Don't override IsAlwaysNormalized because it is just a Unicode Transformation and could be confused.
 //
@@ -32,15 +33,15 @@ namespace System.Text
         internal static readonly UTF7Encoding s_default = new UTF7Encoding();
 
         // The set of base 64 characters.
-        private byte[] _base64Bytes;
+        private byte[] _base64Bytes = null!;
         // The decoded bits for every base64 values. This array has a size of 128 elements.
         // The index is the code point value of the base 64 characters.  The value is -1 if
         // the code point is not a valid base 64 character.  Otherwise, the value is a value
         // from 0 ~ 63.
-        private sbyte[] _base64Values;
+        private sbyte[] _base64Values = null!;
         // The array to decide if a Unicode code point below 0x80 can be directly encoded in UTF7.
         // This array has a size of 128.
-        private bool[] _directEncode;
+        private bool[] _directEncode = null!;
 
         private bool _allowOptionals;
 
@@ -97,7 +98,7 @@ namespace System.Text
             this.decoderFallback = new DecoderUTF7Fallback();
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             if (value is UTF7Encoding that)
             {
@@ -105,7 +106,7 @@ namespace System.Text
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
             }
-            return (false);
+            return false;
         }
 
         // Compared to all the other encodings, variations of UTF7 are unlikely
@@ -157,7 +158,7 @@ namespace System.Text
         public override unsafe int GetByteCount(string s)
         {
             // Validate input
-            if (s==null)
+            if (s == null)
                 throw new ArgumentNullException(nameof(s));
 
             fixed (char* pChars = s)
@@ -394,8 +395,7 @@ namespace System.Text
         //
         // End of standard methods copied from EncodingNLS.cs
         //
-
-        internal sealed override unsafe int GetByteCount(char* chars, int count, EncoderNLS baseEncoder)
+        internal sealed override unsafe int GetByteCount(char* chars, int count, EncoderNLS? baseEncoder)
         {
             Debug.Assert(chars != null, "[UTF7Encoding.GetByteCount]chars!=null");
             Debug.Assert(count >= 0, "[UTF7Encoding.GetByteCount]count >=0");
@@ -405,14 +405,14 @@ namespace System.Text
         }
 
         internal sealed override unsafe int GetBytes(
-            char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS baseEncoder)
+            char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS? baseEncoder)
         {
             Debug.Assert(byteCount >= 0, "[UTF7Encoding.GetBytes]byteCount >=0");
             Debug.Assert(chars != null, "[UTF7Encoding.GetBytes]chars!=null");
             Debug.Assert(charCount >= 0, "[UTF7Encoding.GetBytes]charCount >=0");
 
             // Get encoder info
-            UTF7Encoding.Encoder encoder = (UTF7Encoding.Encoder)baseEncoder;
+            UTF7Encoding.Encoder? encoder = (UTF7Encoding.Encoder?)baseEncoder;
 
             // Default bits & count
             int bits = 0;
@@ -544,7 +544,7 @@ namespace System.Text
             return buffer.Count;
         }
 
-        internal sealed override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS baseDecoder)
+        internal sealed override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS? baseDecoder)
         {
             Debug.Assert(count >= 0, "[UTF7Encoding.GetCharCount]count >=0");
             Debug.Assert(bytes != null, "[UTF7Encoding.GetCharCount]bytes!=null");
@@ -554,14 +554,14 @@ namespace System.Text
         }
 
         internal sealed override unsafe int GetChars(
-            byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS baseDecoder)
+            byte* bytes, int byteCount, char* chars, int charCount, DecoderNLS? baseDecoder)
         {
             Debug.Assert(byteCount >= 0, "[UTF7Encoding.GetChars]byteCount >=0");
             Debug.Assert(bytes != null, "[UTF7Encoding.GetChars]bytes!=null");
             Debug.Assert(charCount >= 0, "[UTF7Encoding.GetChars]charCount >=0");
 
             // Might use a decoder
-            UTF7Encoding.Decoder decoder = (UTF7Encoding.Decoder)baseDecoder;
+            UTF7Encoding.Decoder? decoder = (UTF7Encoding.Decoder?)baseDecoder;
 
             // Get our output buffer info.
             Encoding.EncodingCharBuffer buffer = new Encoding.EncodingCharBuffer(
@@ -843,7 +843,7 @@ namespace System.Text
             {
                 get
                 {
-                    return (this.bits != 0 || this.bitCount != -1);
+                    return this.bits != 0 || this.bitCount != -1;
                 }
             }
         }
@@ -872,14 +872,14 @@ namespace System.Text
                 }
             }
 
-            public override bool Equals(object value)
+            public override bool Equals(object? value)
             {
-                DecoderUTF7Fallback that = value as DecoderUTF7Fallback;
+                DecoderUTF7Fallback? that = value as DecoderUTF7Fallback;
                 if (that != null)
                 {
                     return true;
                 }
-                return (false);
+                return false;
             }
 
             public override int GetHashCode()
@@ -938,7 +938,7 @@ namespace System.Text
                 }
 
                 // return true if we were allowed to do this
-                return (iCount >= 0 && iCount <= iSize);
+                return iCount >= 0 && iCount <= iSize;
             }
 
             // Return # of chars left in this fallback

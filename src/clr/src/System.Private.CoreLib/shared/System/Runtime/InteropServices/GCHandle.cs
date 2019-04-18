@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -34,7 +35,7 @@ namespace System.Runtime.InteropServices
         private IntPtr _handle;
 
         // Allocate a handle storing the object and the type.
-        private GCHandle(object value, GCHandleType type)
+        private GCHandle(object? value, GCHandleType type)
         {
             // Make sure the type parameter is within the valid range for the enum.
             if ((uint)type > (uint)GCHandleType.Pinned) // IMPORTANT: This must be kept in sync with the GCHandleType enum.
@@ -64,13 +65,13 @@ namespace System.Runtime.InteropServices
         /// <summary>Creates a new GC handle for an object.</summary>
         /// <param name="value">The object that the GC handle is created for.</param>
         /// <returns>A new GC handle that protects the object.</returns>
-        public static GCHandle Alloc(object value) => new GCHandle(value, GCHandleType.Normal);
+        public static GCHandle Alloc(object? value) => new GCHandle(value, GCHandleType.Normal);
 
         /// <summary>Creates a new GC handle for an object.</summary>
         /// <param name="value">The object that the GC handle is created for.</param>
         /// <param name="type">The type of GC handle to create.</param>
         /// <returns>A new GC handle that protects the object.</returns>
-        public static GCHandle Alloc(object value, GCHandleType type) => new GCHandle(value, type);
+        public static GCHandle Alloc(object? value, GCHandleType type) => new GCHandle(value, type);
 
         /// <summary>Frees a GC handle.</summary>
         public void Free()
@@ -82,7 +83,7 @@ namespace System.Runtime.InteropServices
         }
 
         // Target property - allows getting / updating of the handle's referent.
-        public object Target
+        public object? Target
         {
             get
             {
@@ -168,7 +169,7 @@ namespace System.Runtime.InteropServices
 
         public override int GetHashCode() => _handle.GetHashCode();
 
-        public override bool Equals(object o) => o is GCHandle && _handle == ((GCHandle)o)._handle;
+        public override bool Equals(object? o) => o is GCHandle && _handle == ((GCHandle)o)._handle;
 
         public static bool operator ==(GCHandle a, GCHandle b) => a._handle == b._handle;
 

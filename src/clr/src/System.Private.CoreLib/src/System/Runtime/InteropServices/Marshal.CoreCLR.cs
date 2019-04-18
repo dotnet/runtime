@@ -2,18 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
+#nullable enable
 using System.Reflection;
-using System.Security;
-using System.Text;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using Microsoft.Win32;
-using System.Diagnostics;
 using System.Runtime.InteropServices.ComTypes;
 using System.StubHelpers;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
 {
@@ -35,13 +29,14 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr OffsetOf(Type t, string fieldName)
         {
-            if (t == null)
+            if (t is null)
             {
                 throw new ArgumentNullException(nameof(t));
             }
 
             FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (f == null)
+
+            if (f is null)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, t.FullName), nameof(fieldName));
             }
@@ -86,7 +81,7 @@ namespace System.Runtime.InteropServices
         private static unsafe T ReadValueSlow<T>(object ptr, int ofs, Func<IntPtr, int, T> readValueHelper)
         {
             // Consumers of this method are documented to throw AccessViolationException on any AV
-            if (ptr == null)
+            if (ptr is null)
             {
                 throw new AccessViolationException();
             }
@@ -140,7 +135,7 @@ namespace System.Runtime.InteropServices
         private static unsafe void WriteValueSlow<T>(object ptr, int ofs, T val, Action<IntPtr, int, T> writeValueHelper)
         {
             // Consumers of this method are documented to throw AccessViolationException on any AV
-            if (ptr == null)
+            if (ptr is null)
             {
                 throw new AccessViolationException();
             }
@@ -223,7 +218,7 @@ namespace System.Runtime.InteropServices
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsPinnable(object obj);
+        internal static extern bool IsPinnable(object? obj);
 
 #if FEATURE_COMINTEROP
         /// <summary>
@@ -232,7 +227,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static IntPtr GetHINSTANCE(Module m)
         {
-            if (m == null)
+            if (m is null)
             {
                 throw new ArgumentNullException(nameof(m));
             }
@@ -306,14 +301,14 @@ namespace System.Runtime.InteropServices
         /// up an IErrorInfo for the exception.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetHRForException(Exception e);
+        public static extern int GetHRForException(Exception? e);
 
         /// <summary>
         /// Given a managed object that wraps an ITypeInfo, return its name.
         /// </summary>
         public static string GetTypeInfoName(ITypeInfo typeInfo)
         {
-            if (typeInfo == null)
+            if (typeInfo is null)
             {
                 throw new ArgumentNullException(nameof(typeInfo));
             }
@@ -354,7 +349,8 @@ namespace System.Runtime.InteropServices
             return GetComInterfaceForObjectNative(o, T, false, true);
         }
 
-        public static IntPtr GetComInterfaceForObject<T, TInterface>(T o) => GetComInterfaceForObject(o, typeof(TInterface));
+        // TODO-NULLABLE-GENERIC: T cannot be null
+        public static IntPtr GetComInterfaceForObject<T, TInterface>(T o) => GetComInterfaceForObject(o!, typeof(TInterface));
 
         /// <summary>
         /// Return the IUnknown* representing the interface for the Object.
@@ -394,7 +390,8 @@ namespace System.Runtime.InteropServices
 
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o)
         {
-            return CreateAggregatedObject(pOuter, (object)o);
+            // TODO-NULLABLE-GENERIC: T cannot be null
+            return CreateAggregatedObject(pOuter, (object)o!);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -459,9 +456,9 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static IntPtr StringToBSTR(string s)
+        public static IntPtr StringToBSTR(string? s)
         {
-            if (s == null)
+            if (s is null)
             {
                 return IntPtr.Zero;
             }
@@ -493,7 +490,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static int ReleaseComObject(object o)
         {
-            if (o == null)
+            if (o is null)
             {
                 // Match .NET Framework behaviour.
                 throw new NullReferenceException();
@@ -515,7 +512,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static int FinalReleaseComObject(object o)
         {
-            if (o == null)
+            if (o is null)
             {
                 throw new ArgumentNullException(nameof(o));
             }
@@ -531,13 +528,13 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void InternalFinalReleaseComObject(object o);
 
-        public static object GetComObjectData(object obj, object key)
+        public static object? GetComObjectData(object obj, object key)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -560,13 +557,13 @@ namespace System.Runtime.InteropServices
         /// false if the data could not be added because there already was data for the
         /// specified key.
         /// </summary>
-        public static bool SetComObjectData(object obj, object key, object data)
+        public static bool SetComObjectData(object obj, object key, object? data)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -587,9 +584,9 @@ namespace System.Runtime.InteropServices
         /// This method takes the given COM object and wraps it in an object
         /// of the specified type. The type must be derived from __ComObject.
         /// </summary>
-        public static object CreateWrapperOfType(object o, Type t)
+        public static object? CreateWrapperOfType(object? o, Type t)
         {
-            if (t == null)
+            if (t is null)
             {
                 throw new ArgumentNullException(nameof(t));
             }
@@ -606,7 +603,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_TypeIsWinRTType, nameof(t));
             }
 
-            if (o == null)
+            if (o is null)
             {
                 return null;
             }
@@ -627,8 +624,8 @@ namespace System.Runtime.InteropServices
             }
 
             // Check to see if we already have a cached wrapper for this type.
-            object Wrapper = GetComObjectData(o, t);
-            if (Wrapper == null)
+            object? Wrapper = GetComObjectData(o, t);
+            if (Wrapper is null)
             {
                 // Create the wrapper for the specified type.
                 Wrapper = InternalCreateWrapperOfType(o, t);
@@ -646,7 +643,8 @@ namespace System.Runtime.InteropServices
 
         public static TWrapper CreateWrapperOfType<T, TWrapper>(T o)
         {
-            return (TWrapper)CreateWrapperOfType(o, typeof(TWrapper));
+            // TODO-NULLABLE-GENERIC: T can be null
+            return (TWrapper)CreateWrapperOfType(o, typeof(TWrapper))!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -668,34 +666,33 @@ namespace System.Runtime.InteropServices
         public static extern int /* ULONG */ Release(IntPtr /* IUnknown */ pUnk);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void GetNativeVariantForObject(object obj, /* VARIANT * */ IntPtr pDstNativeVariant);
+        public static extern void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
         public static void GetNativeVariantForObject<T>(T obj, IntPtr pDstNativeVariant)
         {
-            GetNativeVariantForObject((object)obj, pDstNativeVariant);
+            // TODO-NULLABLE-GENERIC: T can be null
+            GetNativeVariantForObject((object)obj!, pDstNativeVariant);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
+        public static extern object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
         public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
-            return (T)GetObjectForNativeVariant(pSrcNativeVariant);
+            // TODO-NULLABLE-GENERIC: T can be null
+            return (T)GetObjectForNativeVariant(pSrcNativeVariant)!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern object[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
+        public static extern object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
 
+        // TODO-NULLABLE-GENERIC: T[] contents can be null
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
-            object[] objects = GetObjectsForNativeVariants(aSrcNativeVariant, cVars);
-            T[] result = null;
+            object?[] objects = GetObjectsForNativeVariants(aSrcNativeVariant, cVars);
 
-            if (objects != null)
-            {
-                result = new T[objects.Length];
-                Array.Copy(objects, 0, result, 0, objects.Length);
-            }
+            T[]? result = new T[objects.Length];
+            Array.Copy(objects, 0, result, 0, objects.Length);
 
             return result;
         }

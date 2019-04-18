@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
+#nullable enable
 using System.Collections.Generic;
 
 // Windows.Foundation.Collections.IMap`2, IMapView`2, and IKeyValuePair`2 cannot be referenced from
@@ -35,7 +33,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         V Lookup(K key);
         uint Size { get; }
         bool HasKey(K key);
-        void Split(out IMapView<K, V> first, out IMapView<K, V> second);
+        void Split(out IMapView<K, V>? first, out IMapView<K, V>? second);
     }
 
     [ComImport]

@@ -8,6 +8,7 @@
 **
 =============================================================================*/
 
+#nullable enable
 namespace System
 {
     [AttributeUsage(AttributeTargets.Method)]

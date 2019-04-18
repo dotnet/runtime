@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System
 {
     using System;
@@ -128,7 +129,7 @@ namespace System
         }
     
         // Inherited from object
-        public override bool Equals(object o)
+        public override bool Equals(object? o)
         {
             throw new NotSupportedException(SR.NotSupported_NYI);
         }
@@ -149,7 +150,7 @@ namespace System
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }
 
-        public override bool Equals(Object o)
+        public override bool Equals(Object? o)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ArgIterator); // https://github.com/dotnet/coreclr/issues/9204
         }

@@ -43,7 +43,7 @@ namespace System
 
                     string? format = null;
                     GetTypeLoadExceptionMessage(_resourceId, JitHelpers.GetStringHandleOnStack(ref format));
-                    _message = string.Format(format, _className, _assemblyName, _messageArg);
+                    _message = string.Format(format!, _className, _assemblyName, _messageArg);
                 }
             }
         }

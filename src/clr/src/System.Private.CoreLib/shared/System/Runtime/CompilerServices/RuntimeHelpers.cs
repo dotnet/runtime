@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 using Internal.Runtime.CompilerServices;
 
@@ -9,9 +10,9 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class RuntimeHelpers
     {
-        public delegate void TryCode(object userData);
+        public delegate void TryCode(object? userData);
 
-        public delegate void CleanupCode(object userData, bool exceptionThrown);
+        public delegate void CleanupCode(object? userData, bool exceptionThrown);
 
         /// <summary>
         /// Slices the specified array using the specified range.
@@ -23,9 +24,9 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            (int offset, int length) = range.GetOffsetAndLength(array.Length);
+            (int offset, int length) = range.GetOffsetAndLength(array!.Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
 
-            if (default(T) != null || typeof(T[]) == array.GetType())
+            if (default(T)! != null || typeof(T[]) == array.GetType()) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 // We know the type of the array to be exactly T[].
 

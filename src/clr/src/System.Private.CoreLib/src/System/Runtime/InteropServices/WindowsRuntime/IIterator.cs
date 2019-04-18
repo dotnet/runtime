@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
-
+#nullable enable
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
     [ComImport]
@@ -33,7 +30,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     [Guid("6a1d6c07-076d-49f2-8314-f52c9c9a8331")]
     internal interface IBindableIterator
     {
-        object Current
+        object? Current
         {
             get;
         }

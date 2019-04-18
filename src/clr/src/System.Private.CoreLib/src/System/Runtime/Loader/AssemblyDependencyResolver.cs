@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+
+#nullable enable
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -29,9 +31,14 @@ namespace System.Runtime.Loader
 
         public AssemblyDependencyResolver(string componentAssemblyPath)
         {
-            string assemblyPathsList = null;
-            string nativeSearchPathsList = null;
-            string resourceSearchPathsList = null;
+            if (componentAssemblyPath == null)
+            {
+                throw new ArgumentNullException(nameof(componentAssemblyPath));
+            }
+
+            string? assemblyPathsList = null;
+            string? nativeSearchPathsList = null;
+            string? resourceSearchPathsList = null;
             int returnCode = 0;
 
             StringBuilder errorMessage = new StringBuilder();
@@ -93,17 +100,22 @@ namespace System.Runtime.Loader
             _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (string assemblyPath in assemblyPaths)
             {
-                _assemblyPaths.Add(Path.GetFileNameWithoutExtension(assemblyPath), assemblyPath);
+                _assemblyPaths.Add(Path.GetFileNameWithoutExtension(assemblyPath)!, assemblyPath); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             }
 
             _nativeSearchPaths = SplitPathsList(nativeSearchPathsList);
             _resourceSearchPaths = SplitPathsList(resourceSearchPathsList);
 
-            _assemblyDirectorySearchPaths = new string[1] { Path.GetDirectoryName(componentAssemblyPath) };
+            _assemblyDirectorySearchPaths = new string[1] { Path.GetDirectoryName(componentAssemblyPath)! }; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         }
 
-        public string ResolveAssemblyToPath(AssemblyName assemblyName)
+        public string? ResolveAssemblyToPath(AssemblyName assemblyName)
         {
+            if (assemblyName == null)
+            {
+                throw new ArgumentNullException(nameof(assemblyName));
+            }
+
             // Determine if the assembly name is for a satellite assembly or not
             // This is the same logic as in AssemblyBinder::BindByTpaList in CoreCLR
             // - If the culture name is non-empty and it's not 'neutral' 
@@ -130,7 +142,7 @@ namespace System.Runtime.Loader
                     }
                 }
             }
-            else
+            else if (assemblyName.Name != null)
             {
                 // Load code assembly - simply look it up in the dictionary by its simple name.
                 if (_assemblyPaths.TryGetValue(assemblyName.Name, out string assemblyPath))
@@ -148,8 +160,13 @@ namespace System.Runtime.Loader
             return null;
         }
 
-        public string ResolveUnmanagedDllToPath(string unmanagedDllName)
+        public string? ResolveUnmanagedDllToPath(string unmanagedDllName)
         {
+            if (unmanagedDllName == null)
+            {
+                throw new ArgumentNullException(nameof(unmanagedDllName));
+            }
+
             string[] searchPaths;
             if (unmanagedDllName.Contains(Path.DirectorySeparatorChar))
             {
@@ -180,7 +197,7 @@ namespace System.Runtime.Loader
             return null;
         }
 
-        private static string[] SplitPathsList(string pathsList)
+        private static string[] SplitPathsList(string? pathsList)
         {
             if (pathsList == null)
             {

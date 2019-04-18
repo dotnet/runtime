@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
-using System;
+
+#nullable enable
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -21,12 +22,12 @@ namespace System.Runtime.Versioning
                 *                        
                 *     These apis are for internal use only for FX assemblies. It has not been decided if they can be used by OOB components due to EULA restrictions
                 */
-        internal static string GetValueInternal(string compatibilitySwitchName)
+        internal static string? GetValueInternal(string compatibilitySwitchName)
         {
             return GetValueInternalCall(compatibilitySwitchName, false);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern string GetValueInternalCall(string compatibilitySwitchName, bool onlyDB);
+        private static extern string? GetValueInternalCall(string compatibilitySwitchName, bool onlyDB);
     }
 }

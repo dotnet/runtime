@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -28,7 +29,7 @@ namespace System
             // Initialize tracing before any user code can be called.
             System.Diagnostics.Tracing.EventPipeController.Initialize();
 
-            string startupHooksVariable = (string)AppContext.GetData("STARTUP_HOOKS");
+            string? startupHooksVariable = (string?)AppContext.GetData("STARTUP_HOOKS");
             if (startupHooksVariable == null)
             {
                 return;
@@ -121,7 +122,7 @@ namespace System
             catch (Exception assemblyLoadException)
             {
                 throw new ArgumentException(
-                    SR.Format(SR.Argument_StartupHookAssemblyLoadFailed, startupHook.Path ?? startupHook.AssemblyName.ToString()),
+                    SR.Format(SR.Argument_StartupHookAssemblyLoadFailed, startupHook.Path ?? startupHook.AssemblyName!.ToString()),
                     assemblyLoadException);
             }
 

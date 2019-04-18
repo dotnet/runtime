@@ -37,7 +37,7 @@ namespace System.Globalization
             try
             {
                 // Need to access registry
-                using (RegistryKey key = Registry.LocalMachine.OpenSubKey(JapaneseErasHive))
+                using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(JapaneseErasHive))
                 {
                     // Abort if we didn't find anything
                     if (key == null) return null;
@@ -52,7 +52,7 @@ namespace System.Globalization
                         for (int i = 0; i < valueNames.Length; i++)
                         {
                             // See if the era is a valid date
-                            EraInfo? era = GetEraFromValue(valueNames[i], key.GetValue(valueNames[i]).ToString());
+                            EraInfo? era = GetEraFromValue(valueNames[i], key.GetValue(valueNames[i])?.ToString());
 
                             // continue if not valid
                             if (era == null) continue;
@@ -93,10 +93,10 @@ namespace System.Globalization
             Array.Resize(ref registryEraRanges, iFoundEras);
 
             // Sort them
-            Array.Sort(registryEraRanges, CompareEraRanges);
+            Array.Sort(registryEraRanges!, CompareEraRanges); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
 
             // Clean up era information
-            for (int i = 0; i < registryEraRanges.Length; i++)
+            for (int i = 0; i < registryEraRanges!.Length; i++) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             {
                 // eras count backwards from length to 1 (and are 1 based indexes into string arrays)
                 registryEraRanges[i].era = registryEraRanges.Length - i;
