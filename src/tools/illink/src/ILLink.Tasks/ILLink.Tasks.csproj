@@ -72,7 +72,7 @@
     <MSBuild Projects="@(ProjectsToPublish)" Targets="Publish" />
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(PublishDir)/ILLink.*.dll" PackagePath="tools\$(TargetFramework)" />
-      <TfmSpecificPackageFile Include="$(PublishDir)/Mono.Cecil.*.dll" PackagePath="tools\$(TargetFramework)" />
+      <TfmSpecificPackageFile Include="$(PublishDir)/Mono.Cecil*.dll" PackagePath="tools\$(TargetFramework)" />
       <TfmSpecificPackageFile Include="$(PublishDir)/illink.dll" PackagePath="tools\$(TargetFramework)"
                               Condition=" '$(TargetFramework)' == 'netcoreapp2.0' " />
       <TfmSpecificPackageFile Include="$(PublishDir)/*.json" PackagePath="tools\$(TargetFramework)" />
