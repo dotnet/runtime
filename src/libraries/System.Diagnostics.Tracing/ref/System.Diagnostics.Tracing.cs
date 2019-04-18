@@ -68,7 +68,6 @@ namespace System.Diagnostics.Tracing
         public EventCounter(string name, System.Diagnostics.Tracing.EventSource eventSource) : base(name, eventSource) { }
         public void WriteMetric(float value) { }
         public void WriteMetric(double value) { }
-
     }
     public partial class PollingCounter : System.Diagnostics.Tracing.DiagnosticCounter
     {
