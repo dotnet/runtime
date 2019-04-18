@@ -62,7 +62,7 @@ private:
 };
 
 //!
-//! Implements a StreamWriter for writing bytes to an File.
+//! Implements a StreamWriter for writing bytes to a File.
 //!
 class FileStreamWriter final : public StreamWriter
 {
