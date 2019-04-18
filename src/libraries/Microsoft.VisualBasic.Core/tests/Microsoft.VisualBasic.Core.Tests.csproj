@@ -35,6 +35,7 @@
     <Compile Include="UtilsTests.cs" />
     <Compile Include="VBMathTests.cs" />
     <Compile Include="StringsTests.cs" />
+    <Compile Include="StringTypeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
