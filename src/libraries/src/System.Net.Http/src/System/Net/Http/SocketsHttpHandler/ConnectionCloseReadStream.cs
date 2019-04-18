@@ -16,6 +16,25 @@ namespace System.Net.Http
             {
             }
 
+            public override int Read(Span<byte> buffer)
+            {
+                if (_connection == null || buffer.Length == 0)
+                {
+                    // Response body fully consumed or the caller didn't ask for any data
+                    return 0;
+                }
+
+                int bytesRead = _connection.Read(buffer);
+                if (bytesRead == 0)
+                {
+                    // We cannot reuse this connection, so close it.
+                    _connection.Dispose();
+                    _connection = null;
+                }
+
+                return bytesRead;
+            }
+
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
@@ -62,7 +81,6 @@ namespace System.Net.Http
                     // We cannot reuse this connection, so close it.
                     _connection.Dispose();
                     _connection = null;
-                    return 0;
                 }
 
                 return bytesRead;
