@@ -230,7 +230,7 @@ namespace System.Collections.Concurrent
             }
             public void Dispose()
             {
-                IDisposable d = _source as IDisposable;
+                IDisposable? d = _source as IDisposable;
                 if (d != null)
                 {
                     d.Dispose();
@@ -256,7 +256,7 @@ namespace System.Collections.Concurrent
                     return _source.Current.Value;
                 }
             }
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get
                 {
