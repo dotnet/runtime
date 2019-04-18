@@ -4,6 +4,7 @@
     <ProjectGuid>{02304469-722E-4723-92A1-820B9A37D275}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <NullableContextOptions>enable</NullableContextOptions>
     <!-- Disable 1685 (aka multiple type definitions) warning so it doesn't turn into an error -->
     <NoWarn>$(NoWarn);1685</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>

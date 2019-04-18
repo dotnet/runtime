@@ -19,12 +19,12 @@ namespace System.Diagnostics.SymbolStore
         // GetSequencePoints will verify the size of each array and place
         // the sequence point information into each. If any array is NULL,
         // then the data for that array is simply not returned.
-        void GetSequencePoints(int[] offsets,
-                               ISymbolDocument[] documents,
-                               int[] lines,
-                               int[] columns,
-                               int[] endLines,
-                               int[] endColumns);
+        void GetSequencePoints(int[]? offsets,
+                               ISymbolDocument[]? documents,
+                               int[]? lines,
+                               int[]? columns,
+                               int[]? endLines,
+                               int[]? endColumns);
     
         // Get the root lexical scope for this method. This scope encloses
         // the entire method.
@@ -62,8 +62,8 @@ namespace System.Diagnostics.SymbolStore
         // method. The first array position is the start while the second
         // is the end. Returns true if positions were defined, false
         // otherwise.
-        bool GetSourceStartEnd(ISymbolDocument[] docs,
-                               int[] lines,
-                               int[] columns);
+        bool GetSourceStartEnd(ISymbolDocument[]? docs,
+                               int[]? lines,
+                               int[]? columns);
     }
 }
