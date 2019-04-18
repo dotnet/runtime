@@ -204,9 +204,6 @@
   <data name="FailedToGetLargerSpan" xml:space="preserve">
     <value>The 'IBufferWriter' could not provide an output buffer that is large enough to continue writing.</value>
   </data>
-  <data name="FailedToGetMinimumSizeSpan" xml:space="preserve">
-    <value>The 'IBufferWriter' could not provide an output buffer that is large enough to continue writing. Need at least {0} bytes.</value>
-  </data>
   <data name="FoundInvalidCharacter" xml:space="preserve">
     <value>'{0}' is invalid after a value. Expected either ',', '}}', or ']'.</value>
   </data>
@@ -323,6 +320,12 @@
   </data>
   <data name="SerializerOptionsImmutable" xml:space="preserve">
     <value>Serializer options cannot be changed once serialization or deserialization has occurred.</value>
+  </data>
+  <data name="StreamNotWritable" xml:space="preserve">
+    <value>Stream was not writable.</value>
+  </data>
+  <data name="CannotWriteCommentWithEmbeddedDelimiter" xml:space="preserve">
+    <value>Cannot write a comment value which contains the end of comment delimiter.</value>
   </data>
   <data name="SerializerPropertyNameConflict" xml:space="preserve">
     <value>The property '{0}.{1}' has the same name as a previous property based on naming or casing policies.</value>

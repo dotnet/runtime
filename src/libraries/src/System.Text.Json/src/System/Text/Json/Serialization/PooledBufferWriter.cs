@@ -7,21 +7,23 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
 {
-    // Note: this is currently an internal class that will be replaced with a shared version.
-    internal sealed class ArrayBufferWriter<T> : IBufferWriter<T>, IDisposable
+    /// <summary>
+    ///   This is an implementation detail and MUST NOT be called by source-package consumers.
+    /// </summary>
+    internal sealed class PooledBufferWriter<T> : IBufferWriter<T>, IDisposable
     {
         private T[] _rentedBuffer;
         private int _index;
 
         private const int MinimumBufferSize = 256;
 
-        public ArrayBufferWriter()
+        public PooledBufferWriter()
         {
             _rentedBuffer = ArrayPool<T>.Shared.Rent(MinimumBufferSize);
             _index = 0;
         }
 
-        public ArrayBufferWriter(int initialCapacity)
+        public PooledBufferWriter(int initialCapacity)
         {
             if (initialCapacity <= 0)
                 throw new ArgumentException(nameof(initialCapacity));
@@ -101,7 +103,7 @@ namespace System.Text.Json.Serialization
         private void CheckIfDisposed()
         {
             if (_rentedBuffer == null)
-                ThrowHelper.ThrowObjectDisposedException(nameof(ArrayBufferWriter<T>));
+                ThrowHelper.ThrowObjectDisposedException(nameof(PooledBufferWriter<T>));
         }
 
         public void Advance(int count)

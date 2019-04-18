@@ -603,7 +603,7 @@ namespace System.Text.Json
         /// </summary>
         internal void WriteElementTo(
             int index,
-            ref Utf8JsonWriter writer,
+            Utf8JsonWriter writer,
             ReadOnlySpan<char> propertyName)
         {
             CheckNotDisposed();
@@ -614,14 +614,14 @@ namespace System.Text.Json
             {
                 case JsonTokenType.StartObject:
                     writer.WriteStartObject(propertyName);
-                    WriteComplexElement(index, ref writer);
+                    WriteComplexElement(index, writer);
                     return;
                 case JsonTokenType.StartArray:
                     writer.WriteStartArray(propertyName);
-                    WriteComplexElement(index, ref writer);
+                    WriteComplexElement(index, writer);
                     return;
                 case JsonTokenType.String:
-                    WriteString(propertyName, row, ref writer);
+                    WriteString(propertyName, row, writer);
                     return;
                 case JsonTokenType.True:
                     writer.WriteBoolean(propertyName, value: true);
@@ -647,7 +647,7 @@ namespace System.Text.Json
         /// </summary>
         internal void WriteElementTo(
             int index,
-            ref Utf8JsonWriter writer,
+            Utf8JsonWriter writer,
             ReadOnlySpan<byte> propertyName)
         {
             CheckNotDisposed();
@@ -658,14 +658,14 @@ namespace System.Text.Json
             {
                 case JsonTokenType.StartObject:
                     writer.WriteStartObject(propertyName);
-                    WriteComplexElement(index, ref writer);
+                    WriteComplexElement(index, writer);
                     return;
                 case JsonTokenType.StartArray:
                     writer.WriteStartArray(propertyName);
-                    WriteComplexElement(index, ref writer);
+                    WriteComplexElement(index, writer);
                     return;
                 case JsonTokenType.String:
-                    WriteString(propertyName, row, ref writer);
+                    WriteString(propertyName, row, writer);
                     return;
                 case JsonTokenType.True:
                     writer.WriteBoolean(propertyName, value: true);
@@ -691,7 +691,7 @@ namespace System.Text.Json
         /// </summary>
         internal void WriteElementTo(
             int index,
-            ref Utf8JsonWriter writer)
+            Utf8JsonWriter writer)
         {
             CheckNotDisposed();
 
@@ -701,14 +701,14 @@ namespace System.Text.Json
             {
                 case JsonTokenType.StartObject:
                     writer.WriteStartObject();
-                    WriteComplexElement(index, ref writer);
+                    WriteComplexElement(index, writer);
                     return;
                 case JsonTokenType.StartArray:
                     writer.WriteStartArray();
-                    WriteComplexElement(index, ref writer);
+                    WriteComplexElement(index, writer);
                     return;
                 case JsonTokenType.String:
-                    WriteString(row, ref writer);
+                    WriteString(row, writer);
                     return;
                 case JsonTokenType.Number:
                     writer.WriteNumberValue(_utf8Json.Slice(row.Location, row.SizeOrLength).Span);
@@ -727,7 +727,7 @@ namespace System.Text.Json
             Debug.Fail($"Unexpected encounter with JsonTokenType {row.TokenType}");
         }
 
-        private void WriteComplexElement(int index, ref Utf8JsonWriter writer)
+        private void WriteComplexElement(int index, Utf8JsonWriter writer)
         {
             int endIndex = GetEndIndex(index, true);
 
@@ -739,7 +739,7 @@ namespace System.Text.Json
                 switch (row.TokenType)
                 {
                     case JsonTokenType.String:
-                        WriteString(row, ref writer);
+                        WriteString(row, writer);
                         continue;
                     case JsonTokenType.Number:
                         writer.WriteNumberValue(_utf8Json.Slice(row.Location, row.SizeOrLength).Span);
@@ -778,7 +778,7 @@ namespace System.Text.Json
                         switch (propertyValue.TokenType)
                         {
                             case JsonTokenType.String:
-                                WriteString(propertyName, propertyValue, ref writer);
+                                WriteString(propertyName, propertyValue, writer);
                                 continue;
                             case JsonTokenType.Number:
                                 writer.WriteNumber(
@@ -844,7 +844,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteString(ReadOnlySpan<byte> propertyName, in DbRow row, ref Utf8JsonWriter writer)
+        private void WriteString(ReadOnlySpan<byte> propertyName, in DbRow row, Utf8JsonWriter writer)
         {
             ArraySegment<byte> rented = default;
 
@@ -860,7 +860,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteString(ReadOnlySpan<char> propertyName, in DbRow row, ref Utf8JsonWriter writer)
+        private void WriteString(ReadOnlySpan<char> propertyName, in DbRow row, Utf8JsonWriter writer)
         {
             ArraySegment<byte> rented = default;
 
@@ -877,7 +877,7 @@ namespace System.Text.Json
             }
         }
 
-        private void WriteString(in DbRow row, ref Utf8JsonWriter writer)
+        private void WriteString(in DbRow row, Utf8JsonWriter writer)
         {
             ArraySegment<byte> rented = default;
 

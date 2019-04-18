@@ -20268,4 +20268,7 @@ tiline\"another\" String\\"],"str":"\"\""}</value>
   }
 }</value>
   </data>
+  <data name="BufferWriterAdvancedTooFar" xml:space="preserve">
+    <value>Cannot advance past the end of the buffer, which has a size of {0}.</value>
+  </data>
 </root>

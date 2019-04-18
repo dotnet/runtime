@@ -19,12 +19,12 @@ namespace System.Text.Json.Serialization.Converters
             return reader.TryGetInt64(out value);
         }
 
-        public override void Write(long value, ref Utf8JsonWriter writer)
+        public override void Write(long value, Utf8JsonWriter writer)
         {
             writer.WriteNumberValue(value);
         }
 
-        public override void Write(Span<byte> escapedPropertyName, long value, ref Utf8JsonWriter writer)
+        public override void Write(Span<byte> escapedPropertyName, long value, Utf8JsonWriter writer)
         {
             writer.WriteNumber(escapedPropertyName, value);
         }

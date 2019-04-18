@@ -9,6 +9,9 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(IncludePartialFacadeTests)' == 'true'">
     <!-- Tests specific to netcoreapp and uap -->
+    <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Byte.cs" />
+    <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.Char.cs" />
+    <Compile Include="ArrayBufferWriter\ArrayBufferWriterTests.String.cs" />
     <Compile Include="MemoryMarshal\AsRef.cs" />
     <Compile Include="MemoryMarshal\AsReadOnlyRef.cs" />
     <Compile Include="MemoryMarshal\CreateSpan.cs" />

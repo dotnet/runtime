@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Buffers.Text;
+using System.Diagnostics;
 
 namespace System.Text.Json
 {
-    public ref partial struct Utf8JsonWriter
+    public sealed partial class Utf8JsonWriter
     {
         /// <summary>
         /// Writes the <see cref="float"/> value (as a JSON number) as an element of a JSON array.
@@ -23,7 +25,7 @@ namespace System.Text.Json
             JsonWriterHelper.ValidateSingle(value);
 
             ValidateWritingValue();
-            if (_writerOptions.Indented)
+            if (Options.Indented)
             {
                 WriteNumberValueIndented(value);
             }
@@ -38,21 +40,55 @@ namespace System.Text.Json
 
         private void WriteNumberValueMinimized(float value)
         {
-            int idx = 0;
-            WriteListSeparator(ref idx);
+            int maxRequired = JsonConstants.MaximumFormatSingleLength + 1; // Optionally, 1 list separator
 
-            WriteNumberValueFormatLoop(value, ref idx);
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
 
-            Advance(idx);
+            Span<byte> output = _memory.Span;
+
+            if (_currentDepth < 0)
+            {
+                output[BytesPending++] = JsonConstants.ListSeparator;
+            }
+
+            bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
+            Debug.Assert(result);
+            BytesPending += bytesWritten;
         }
 
         private void WriteNumberValueIndented(float value)
         {
-            int idx = WriteCommaAndFormattingPreamble();
+            int indent = Indentation;
+            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
 
-            WriteNumberValueFormatLoop(value, ref idx);
+            int maxRequired = indent + JsonConstants.MaximumFormatSingleLength + 1 + s_newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
 
-            Advance(idx);
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
+
+            Span<byte> output = _memory.Span;
+
+            if (_currentDepth < 0)
+            {
+                output[BytesPending++] = JsonConstants.ListSeparator;
+            }
+
+            if (_tokenType != JsonTokenType.None)
+            {
+                WriteNewLine(output);
+            }
+
+            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            BytesPending += indent;
+
+            bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
+            Debug.Assert(result);
+            BytesPending += bytesWritten;
         }
     }
 }

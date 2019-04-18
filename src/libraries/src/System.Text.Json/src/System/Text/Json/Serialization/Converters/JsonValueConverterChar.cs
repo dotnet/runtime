@@ -21,20 +21,20 @@ namespace System.Text.Json.Serialization.Converters
             return true;
         }
 
-        public override void Write(char value, ref Utf8JsonWriter writer)
+        public override void Write(char value, Utf8JsonWriter writer)
         {
 #if BUILDING_INBOX_LIBRARY
-            Span<char> temp = MemoryMarshal.CreateSpan<char>(ref value, 1);
+            Span<char> temp = MemoryMarshal.CreateSpan(ref value, 1);
             writer.WriteStringValue(temp);
 #else
             writer.WriteStringValue(value.ToString());
 #endif
         }
 
-        public override void Write(Span<byte> escapedPropertyName, char value, ref Utf8JsonWriter writer)
+        public override void Write(Span<byte> escapedPropertyName, char value, Utf8JsonWriter writer)
         {
 #if BUILDING_INBOX_LIBRARY
-            Span<char> temp = MemoryMarshal.CreateSpan<char>(ref value, 1);
+            Span<char> temp = MemoryMarshal.CreateSpan(ref value, 1);
             writer.WriteString(escapedPropertyName, temp);
 #else
             writer.WriteString(escapedPropertyName, value.ToString());

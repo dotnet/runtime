@@ -19,12 +19,12 @@ namespace System.Text.Json.Serialization.Converters
             return reader.TryGetDecimal(out value);
         }
 
-        public override void Write(decimal value, ref Utf8JsonWriter writer)
+        public override void Write(decimal value, Utf8JsonWriter writer)
         {
             writer.WriteNumberValue(value);
         }
 
-        public override void Write(Span<byte> escapedPropertyName, decimal value, ref Utf8JsonWriter writer)
+        public override void Write(Span<byte> escapedPropertyName, decimal value, Utf8JsonWriter writer)
         {
             writer.WriteNumber(escapedPropertyName, value);
         }

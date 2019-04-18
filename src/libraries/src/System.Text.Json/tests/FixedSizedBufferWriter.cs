@@ -26,6 +26,8 @@ namespace System.Text.Json.Tests
 
         public byte[] Formatted => _buffer.AsSpan(0, _count).ToArray();
 
+        public int FormattedCount => _count;
+
         public Memory<byte> GetMemory(int minimumLength = 0) => _buffer.AsMemory(_count);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -34,11 +36,11 @@ namespace System.Text.Json.Tests
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Advance(int bytes)
         {
-            _count += bytes;
-            if (_count > _buffer.Length)
+            if (_count > _buffer.Length - bytes)
             {
                 throw new InvalidOperationException("Cannot advance past the end of the buffer.");
             }
+            _count += bytes;
         }
     }
 }

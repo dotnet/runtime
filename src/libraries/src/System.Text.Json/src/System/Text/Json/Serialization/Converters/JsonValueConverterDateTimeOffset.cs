@@ -13,12 +13,12 @@ namespace System.Text.Json.Serialization.Converters
             return reader.TryGetDateTimeOffset(out value);
         }
 
-        public override void Write(DateTimeOffset value, ref Utf8JsonWriter writer)
+        public override void Write(DateTimeOffset value, Utf8JsonWriter writer)
         {
             writer.WriteStringValue(value);
         }
 
-        public override void Write(Span<byte> escapedPropertyName, DateTimeOffset value, ref Utf8JsonWriter writer)
+        public override void Write(Span<byte> escapedPropertyName, DateTimeOffset value, Utf8JsonWriter writer)
         {
             writer.WriteString(escapedPropertyName, value);
         }
