@@ -123,6 +123,7 @@ CHECK PEImage::CheckILFormat()
         pLayoutToCheck = pLayoutHolder;
     }
 
+#ifdef FEATURE_PREJIT
     if (PEFile::ShouldTreatNIAsMSIL())
     {
         // This PEImage may intentionally be an NI image, being used as if it were an
@@ -132,6 +133,7 @@ CHECK PEImage::CheckILFormat()
         CHECK(pLayoutToCheck->CheckCORFormat());
     }
     else
+#endif
     {
         CHECK(pLayoutToCheck->CheckILFormat());
     }
@@ -450,7 +452,6 @@ IMDInternalImport* PEImage::GetMDImport()
     return m_pMDImport;
 }
 
-#ifdef FEATURE_PREJIT
 IMDInternalImport* PEImage::GetNativeMDImport(BOOL loadAllowed)
 {
     CONTRACTL
@@ -508,7 +509,6 @@ void PEImage::OpenNativeMDImport()
     }
     _ASSERTE(m_pNativeMDImport);
 }
-#endif
 
 void PEImage::OpenMDImport()
 {
@@ -673,6 +673,7 @@ void PEImage::VerifyIsILOrNIAssembly(BOOL fIL)
         ThrowFormat(COR_E_ASSEMBLYEXPECTED);
 
     CHECK checkGoodFormat;
+#ifdef FEATURE_PREJIT
     if (fIL)
     {
         checkGoodFormat = CheckILFormat();
@@ -681,6 +682,9 @@ void PEImage::VerifyIsILOrNIAssembly(BOOL fIL)
     {
         checkGoodFormat = CheckNativeFormat();
     }
+#else
+    checkGoodFormat = CheckILFormat();
+#endif
     if (!checkGoodFormat)
         ThrowFormat(COR_E_BADIMAGEFORMAT);
     
@@ -948,7 +952,6 @@ void PEImage::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 PEImage::PEImage():
     m_refCount(1),
     m_bIsTrustedNativeImage(FALSE),
-    m_bIsNativeImageInstall(FALSE),
     m_bPassiveDomainOnly(FALSE),
     m_bInHashMap(FALSE),
 #ifdef METADATATRACKER_DATA
@@ -1211,7 +1214,7 @@ PTR_PEImage PEImage::LoadImage(HMODULE hMod)
 
     StackSString path;
     GetPathFromDll(hMod, path);
-    PEImageHolder pImage(PEImage::OpenImage(path,(MDInternalImportFlags)(MDInternalImport_CheckLongPath|MDInternalImport_CheckShortPath)));
+    PEImageHolder pImage(PEImage::OpenImage(path,(MDInternalImportFlags)(0)));
     if (pImage->HasLoadedLayout())
         RETURN dac_cast<PTR_PEImage>(pImage.Extract());
 

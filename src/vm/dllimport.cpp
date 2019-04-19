@@ -5508,12 +5508,16 @@ MethodDesc* GetStubMethodDescFromInteropMethodDesc(MethodDesc* pMD, DWORD dwStub
 #ifdef FEATURE_COMINTEROP
     if (SF_IsReverseCOMStub(dwStubFlags))
     {
+#ifdef FEATURE_PREJIT
         if (fGcMdaEnabled)
             return NULL;
 
         // reverse COM stubs live in a hash table
         StubMethodHashTable *pHash = pMD->GetLoaderModule()->GetStubMethodHashTable();
         return (pHash == NULL ? NULL : pHash->FindMethodDesc(pMD));
+#else
+        return NULL;
+#endif
     }
     else
 #endif // FEATURE_COMINTEROP

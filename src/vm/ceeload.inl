@@ -497,8 +497,6 @@ FORCEINLINE PTR_DomainLocalModule Module::GetDomainLocalModule(AppDomain *pDomai
     return pDomain->GetDomainLocalBlock()->GetModuleSlot(GetModuleIndex());
 }
 
-#ifdef FEATURE_PREJIT
-
 #include "nibblestream.h"
 
 FORCEINLINE BOOL Module::FixupDelayList(TADDR pFixupList)
@@ -628,8 +626,6 @@ BOOL Module::FixupDelayListAux(TADDR pFixupList,
 
     return TRUE;
 }
-
-#endif //FEATURE_PREJIT
 
 inline PTR_LoaderAllocator Module::GetLoaderAllocator()
 {

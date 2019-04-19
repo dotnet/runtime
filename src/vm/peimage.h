@@ -189,8 +189,6 @@ public:
     static BOOL PathEquals(const SString &p1, const SString &p2);
     BOOL IsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; return m_bIsTrustedNativeImage;};
     void SetIsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; m_bIsTrustedNativeImage=TRUE;};
-    BOOL IsNativeImageInstall(){LIMITED_METHOD_CONTRACT; return m_bIsNativeImageInstall;}
-    void SetIsNativeImageInstall(){LIMITED_METHOD_CONTRACT; m_bIsNativeImageInstall=TRUE;};
 
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
@@ -208,8 +206,8 @@ public:
     BOOL IsNativeILILOnly();
     BOOL IsNativeILDll();
     void GetNativeILPEKindAndMachine(DWORD* pdwKind, DWORD* pdwMachine);
-    PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL);
 #endif
+    PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL);
     BOOL HasDirectoryEntry(int entry);
     mdToken GetEntryPointToken();
     DWORD GetCorHeaderFlags();
@@ -293,7 +291,6 @@ private:
     SString     m_sModuleFileNameHintUsedByDac; // This is only used by DAC
 private:
     BOOL        m_bIsTrustedNativeImage;
-    BOOL        m_bIsNativeImageInstall;
     BOOL        m_bPassiveDomainOnly;
 #ifdef FEATURE_LAZY_COW_PAGES
     BOOL        m_bAllocatedLazyCOWPages;

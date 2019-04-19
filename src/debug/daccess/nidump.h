@@ -13,9 +13,7 @@
 //some DPTR definitions that aren't elsewhere in the source
 typedef DPTR(const COR_SIGNATURE) PTR_CCOR_SIGNATURE;
 typedef DPTR(IMAGE_SECTION_HEADER) PTR_IMAGE_SECTION_HEADER;
-typedef DPTR(CerNgenRootTable) PTR_CerNgenRootTable;
 typedef DPTR(struct CerRoot) PTR_CerRoot;
-typedef DPTR(MethodContextElement) PTR_MethodContextElement;
 typedef DPTR(DictionaryEntry) PTR_DictionaryEntry;
 typedef DPTR(GuidInfo) PTR_GuidInfo;
 #if defined(FEATURE_COMINTEROP)
@@ -185,9 +183,6 @@ public:
                           TADDR fixupList);
 
     void DumpTypes( PTR_Module module );
-
-    void DumpNgenRootTable( PTR_CerNgenRootTable table, const char * name,
-                            unsigned offset, unsigned fieldSize );
 
     void DumpMethodTable( PTR_MethodTable mt, const char * name,
                           PTR_Module module );
