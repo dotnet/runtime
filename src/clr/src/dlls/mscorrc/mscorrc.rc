@@ -913,8 +913,9 @@ BEGIN
     
     IDS_EE_COM_INVISIBLE_PARENT "Type '%1' has a ComVisible(false) parent '%2' in its hierarchy, therefore QueryInterface calls for IDispatch or class interfaces are disallowed."
 
-    IDS_EE_COMIMPORT_METHOD_NO_INTERFACE    "Method '%1' in ComImport class '%2' must implement an interface method."
     IDS_EE_ATTEMPT_TO_CREATE_GENERIC_CCW    "Generic types cannot be marshaled to COM interface pointers."
+    IDS_EE_ATTEMPT_TO_CREATE_NON_ABSTRACT_CCW "Types with non-abstract methods cannot be marshaled to COM interface pointers."
+    IDS_EE_COMIMPORT_METHOD_NO_INTERFACE    "Method '%1' in ComImport class '%2' must implement an interface method."
 
     IDS_CLASSLOAD_BAD_METHOD_COUNT          "Metadata method count does not match method enumeration length for type '%1' from assembly '%2'."
     IDS_CLASSLOAD_BAD_FIELD_COUNT           "Metadata field count does not match field enumeration length for type '%1' from assembly '%2'."

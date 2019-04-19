@@ -34,7 +34,9 @@ struct ComInit
 
 using ComMTA = ComInit<COINIT_MULTITHREADED>;
 
-void CallDefaultInterface();
+void ActivateClassWithDefaultInterfaces();
+void FailToActivateDefaultInterfaceInstance();
+void FailToQueryInterfaceForDefaultInterface();
 
 int __cdecl main()
 {
@@ -46,7 +48,9 @@ int __cdecl main()
     {
         CoreShimComActivation csact{ W("NetServer.DefaultInterfaces"), W("DefaultInterfaceTesting") };
 
-        CallDefaultInterface();
+        ActivateClassWithDefaultInterfaces();
+        FailToActivateDefaultInterfaceInstance();
+        FailToQueryInterfaceForDefaultInterface();
     }
     catch (HRESULT hr)
     {
@@ -57,27 +61,52 @@ int __cdecl main()
     return 100;
 }
 
-void CallDefaultInterface()
+void ActivateClassWithDefaultInterfaces()
 {
-    ::printf("Call functions on Default Interface...\n");
+    ::printf("Activate class using default interfaces via IUnknown...\n");
+
+    HRESULT hr;
+
+    // Validate a class that has an interface with function definitions can be activated
+    {
+        ComSmartPtr<IUnknown> unknown;
+        THROW_IF_FAILED(::CoCreateInstance(CLSID_DefaultInterfaceTesting, nullptr, CLSCTX_INPROC, IID_IUnknown, (void**)&unknown));
+        THROW_FAIL_IF_FALSE(unknown != nullptr);
+    }
+
+    {
+        ComSmartPtr<IClassFactory> classFactory;
+        THROW_IF_FAILED(::CoGetClassObject(CLSID_DefaultInterfaceTesting, CLSCTX_INPROC, nullptr, IID_IClassFactory, (void**)&classFactory));
+
+        ComSmartPtr<IUnknown> unknown;
+        THROW_IF_FAILED(classFactory->CreateInstance(nullptr, IID_IUnknown, (void**)&unknown));
+        THROW_FAIL_IF_FALSE(unknown != nullptr);
+    }
+}
+
+const int COR_E_INVALIDOPERATION = 0x80131509;
+
+void FailToActivateDefaultInterfaceInstance()
+{
+    ::printf("Fail to activate class via a default interface...\n");
 
     HRESULT hr;
 
     ComSmartPtr<IDefaultInterfaceTesting> defInterface;
-    THROW_IF_FAILED(::CoCreateInstance(CLSID_DefaultInterfaceTesting, nullptr, CLSCTX_INPROC, IID_IDefaultInterfaceTesting, (void**)&defInterface));
+    hr = ::CoCreateInstance(CLSID_DefaultInterfaceTesting, nullptr, CLSCTX_INPROC, IID_IDefaultInterfaceTesting, (void**)&defInterface);
+    THROW_FAIL_IF_FALSE(hr == COR_E_INVALIDOPERATION);
+}
 
-    int i;
+void FailToQueryInterfaceForDefaultInterface()
+{
+    ::printf("Fail to QueryInterface() for default interface...\n");
 
-    THROW_IF_FAILED(defInterface->DefOnInterfaceRet2(&i));
-    THROW_FAIL_IF_FALSE(i == 2);
+    HRESULT hr;
 
-    THROW_IF_FAILED(defInterface->DefOnClassRet3(&i));
-    THROW_FAIL_IF_FALSE(i == 3);
+    ComSmartPtr<IDefaultInterfaceTesting2> defInterface2;
+    THROW_IF_FAILED(::CoCreateInstance(CLSID_DefaultInterfaceTesting, nullptr, CLSCTX_INPROC, IID_IDefaultInterfaceTesting2, (void**)&defInterface2));
 
-    //
-    // Overridden default interface defintions do not work
-    // https://github.com/dotnet/coreclr/issues/15683
-    //
-    //THROW_IF_FAILED(defInterface->DefOnInterface2Ret5(&i));
-    //THROW_FAIL_IF_FALSE(i == 5);
+    ComSmartPtr<IDefaultInterfaceTesting> defInterface;
+    hr = defInterface2->QueryInterface(&defInterface);
+    THROW_FAIL_IF_FALSE(hr == COR_E_INVALIDOPERATION);
 }
