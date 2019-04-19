@@ -3,12 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Security;
 using System.Security.Authentication;
+using System.Security.Principal;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -21,6 +25,9 @@ namespace System.Net.Security.Tests
     {
         public static bool IsServerAndDomainAvailable => 
             Capability.IsDomainAvailable() && Capability.IsNegotiateServerAvailable();
+
+        public static bool IsClientAvailable =>
+            Capability.IsNegotiateClientAvailable();
         
         public static IEnumerable<object[]> GoodCredentialsData
         {
@@ -92,22 +99,22 @@ namespace System.Net.Security.Tests
         [OuterLoop]
         [ConditionalTheory(nameof(IsServerAndDomainAvailable))]
         [MemberData(nameof(GoodCredentialsData))]
-        public async Task NegotiateStream_AuthenticationRemote_Success(object credentialObject)
+        public async Task NegotiateStream_ClientAuthenticationRemote_Success(object credentialObject)
         {
             var credential = (NetworkCredential)credentialObject;
-            await VerifyAuthentication(credential);
+            await VerifyClientAuthentication(credential);
         }
 
         [OuterLoop]
         [ConditionalTheory(nameof(IsServerAndDomainAvailable))]
         [MemberData(nameof(BadCredentialsData))]
-        public async Task NegotiateStream_AuthenticationRemote_Fails(object credentialObject)
+        public async Task NegotiateStream_ClientAuthenticationRemote_Fails(object credentialObject)
         {
             var credential = (NetworkCredential)credentialObject;
-            await Assert.ThrowsAsync<AuthenticationException>(() => VerifyAuthentication(credential));
+            await Assert.ThrowsAsync<AuthenticationException>(() => VerifyClientAuthentication(credential));
         }
 
-        private async Task VerifyAuthentication(NetworkCredential credential)
+        private async Task VerifyClientAuthentication(NetworkCredential credential)
         {
             string serverName = Configuration.Security.NegotiateServer.Host;
             int port = Configuration.Security.NegotiateServer.Port;
@@ -115,7 +122,7 @@ namespace System.Net.Security.Tests
             bool isLocalhost = await IsLocalHost(serverName);
             
             string expectedAuthenticationType = "Kerberos";
-            bool mutualAuthenitcated = true;
+            bool mutuallyAuthenticated = true;
 
             if (credential == CredentialCache.DefaultNetworkCredentials && isLocalhost)
             {
@@ -126,7 +133,7 @@ namespace System.Net.Security.Tests
             {
                 // Anonymous authentication.
                 expectedAuthenticationType = "NTLM";
-                mutualAuthenitcated = false;
+                mutuallyAuthenticated = false;
             }
 
             using (var client = new TcpClient())
@@ -147,12 +154,56 @@ namespace System.Net.Security.Tests
 
                     Assert.Equal(true, auth.IsAuthenticated);
                     Assert.Equal(true, auth.IsEncrypted);
-                    Assert.Equal(mutualAuthenitcated, auth.IsMutuallyAuthenticated);
+                    Assert.Equal(mutuallyAuthenticated, auth.IsMutuallyAuthenticated);
                     Assert.Equal(true, auth.IsSigned);
 
                     // Send a message to the server. Encode the test data into a byte array.
                     byte[] message = Encoding.UTF8.GetBytes("Hello from the client.");
                     await auth.WriteAsync(message, 0, message.Length);
+                }
+            }
+        }
+
+        [OuterLoop]
+        [ConditionalFact(nameof(IsClientAvailable))]
+        public async Task NegotiateStream_ServerAuthenticationRemote_Success()
+        {
+            string expectedUser = Configuration.Security.NegotiateClientUser;
+            
+            string expectedAuthenticationType = "Kerberos";
+            bool mutuallyAuthenticated = true;
+
+            using (var controlClient = new TcpClient())
+            {
+                string clientName = Configuration.Security.NegotiateClient.Host;
+                int clientPort = Configuration.Security.NegotiateClient.Port;
+                await controlClient.ConnectAsync(clientName, clientPort)
+                    .TimeoutAfter(TimeSpan.FromSeconds(15));
+                var serverStream = controlClient.GetStream();
+
+                using (var serverAuth = new NegotiateStream(serverStream, leaveInnerStreamOpen: false))
+                {
+                    await serverAuth.AuthenticateAsServerAsync(
+                        CredentialCache.DefaultNetworkCredentials,
+                        ProtectionLevel.EncryptAndSign,
+                        TokenImpersonationLevel.Identification)
+                        .TimeoutAfter(TimeSpan.FromSeconds(15));
+
+                    Assert.True(serverAuth.IsAuthenticated, "IsAuthenticated");
+                    Assert.True(serverAuth.IsEncrypted, "IsEncrypted");
+                    Assert.True(serverAuth.IsSigned, "IsSigned");
+                    Assert.Equal(mutuallyAuthenticated, serverAuth.IsMutuallyAuthenticated);
+
+                    Assert.Equal(expectedAuthenticationType, serverAuth.RemoteIdentity.AuthenticationType);
+                    Assert.Equal(expectedUser, serverAuth.RemoteIdentity.Name);
+
+                    // Receive a message from the client.
+                    var message = "Hello from the client.";
+                    using (var reader = new StreamReader(serverAuth))
+                    {
+                        var response = await reader.ReadToEndAsync().TimeoutAfter(TimeSpan.FromSeconds(15));
+                        Assert.Equal(message, response);
+                    }
                 }
             }
         }

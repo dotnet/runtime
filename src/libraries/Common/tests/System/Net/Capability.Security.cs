@@ -27,6 +27,12 @@ namespace System.Net.Test.Common
             return !string.IsNullOrWhiteSpace(Configuration.Security.ActiveDirectoryName);
         }
 
+        public static bool IsNegotiateClientAvailable()
+        {
+            return !(Configuration.Security.NegotiateClient == null)
+                && !(Configuration.Security.NegotiateClientUser == null);
+        }
+
         public static bool IsNegotiateServerAvailable()
         {
             return !(Configuration.Security.NegotiateServer == null);
