@@ -299,7 +299,7 @@ def main(args):
     if not Is_windows and arch == 'arm' :
         # We need to force clang5.0; we are building in a docker container that doesn't have
         # clang3.9, which is currently the default used by the native build.
-        common_config_args += ' /p:BuildNativeClang=--clang5.0'
+        common_config_args += ' /p:BuildNativeCompiler=--clang5.0'
 
     if not Is_windows and (arch == 'arm' or arch == 'arm64'):
         # It is needed under docker where LC_ALL is not configured.
