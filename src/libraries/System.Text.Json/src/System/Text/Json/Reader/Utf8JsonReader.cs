@@ -116,7 +116,7 @@ namespace System.Text.Json
         /// </summary>
         /// <remarks>
         /// If <see cref="HasValueSequence"/> is false, <see cref="ValueSequence"/> contains useless data, likely for
-        /// a previous multi-segment token. Therefore, only access <see cref="ValueSpan"/> if <see cref="HasValueSequence"/> is true.
+        /// a previous multi-segment token. Therefore, only access <see cref="ValueSequence"/> if <see cref="HasValueSequence"/> is true.
         /// Otherwise, the token value must be accessed from <see cref="ValueSpan"/>.
         /// </remarks>
         public ReadOnlySequence<byte> ValueSequence { get; private set; }
