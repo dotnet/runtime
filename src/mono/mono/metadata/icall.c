@@ -702,7 +702,7 @@ ves_icall_System_Array_CreateInstanceImpl (MonoReflectionTypeHandle type, MonoAr
 		gint32 length = 0;
 		MONO_HANDLE_ARRAY_GETVAL (length, lengths, gint32, i);
 		if (length < 0) {
-			mono_error_set_argument_out_of_range (error, NULL);
+			mono_error_set_argument_out_of_range (error, NULL, "MonoArgumentException:NULL");
 			return NULL_HANDLE_ARRAY;
 		}
 	}

@@ -64,6 +64,12 @@ MonoExceptionHandle
 mono_exception_new_argument (const char *arg, const char *msg, MonoError *error);
 
 MonoExceptionHandle
+mono_exception_new_argument_null (const char *arg, MonoError *error);
+
+MonoExceptionHandle
+mono_exception_new_argument_out_of_range(const char *arg, const char *msg, MonoError *error);
+
+MonoExceptionHandle
 mono_exception_new_thread_interrupted (MonoError *error);
 
 MonoExceptionHandle
@@ -80,8 +86,5 @@ mono_error_convert_to_exception_handle (MonoError *error);
 
 MonoExceptionHandle
 mono_get_exception_out_of_memory_handle (void);
-
-MonoExceptionHandle
-mono_exception_new_argument_null (const char *arg, MonoError *error);
 
 #endif

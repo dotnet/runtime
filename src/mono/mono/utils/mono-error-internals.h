@@ -164,10 +164,13 @@ void
 mono_error_set_argument_format (MonoError *error, const char *argument, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
 
 void
-mono_error_set_argument (MonoError *error, const char *argument, const char *msg);
+mono_error_set_argument (MonoError *error, const char *argument, const char *msg, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
 
 void
 mono_error_set_argument_null (MonoError *oerror, const char *argument, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
+
+void
+mono_error_set_argument_out_of_range (MonoError *error, const char *name, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
 
 void
 mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
@@ -253,8 +256,6 @@ mono_error_set_cannot_unload_appdomain (MonoError *error, const char *message)
 	mono_error_set_generic_error (error, "System", "CannotUnloadAppDomainException", "%s", message);
 }
 
-void
-mono_error_set_argument_out_of_range (MonoError *error, const char *name);
 
 MonoException*
 mono_error_prepare_exception (MonoError *error, MonoError *error_out);

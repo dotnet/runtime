@@ -528,7 +528,7 @@ mono_error_set_argument_format (MonoError *oerror, const char *argument, const c
 }
 
 void
-mono_error_set_argument (MonoError *oerror, const char *argument, const char *msg)
+mono_error_set_argument (MonoError *oerror, const char *argument, const char *msg, ...)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
@@ -700,6 +700,10 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 
 	case MONO_ERROR_ARGUMENT_NULL:
 		exception = mono_exception_new_argument_null (error->first_argument, error_out);
+		break;
+	
+	case MONO_ERROR_ARGUMENT_OUT_OF_RANGE: 
+		exception = mono_exception_new_argument_out_of_range(error->first_argument, error->full_message, error_out); 
 		break;
 
 	case MONO_ERROR_NOT_VERIFIABLE:
