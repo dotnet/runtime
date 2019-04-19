@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -48,12 +49,14 @@ namespace System.Diagnostics.Tracing
             _eventSource.EventCommandExecuted += OnEventSourceCommand;
         }
 
-        private void OnEventSourceCommand(object sender, EventCommandEventArgs e)
+        private void OnEventSourceCommand(object? sender, EventCommandEventArgs e)
         {
             if (e.Command == EventCommand.Enable || e.Command == EventCommand.Update)
             {
                 string valueStr;
                 float value;
+                Debug.Assert(e.Arguments != null);
+
                 if (e.Arguments.TryGetValue("EventCounterIntervalSec", out valueStr) && float.TryParse(valueStr, out value))
                 {
                     // Recursion through EventSource callbacks possible.  When we enable the timer
@@ -76,7 +79,7 @@ namespace System.Diagnostics.Tracing
         // We need eventCounters to 'attach' themselves to a particular EventSource.   
         // this table provides the mapping from EventSource -> CounterGroup 
         // which represents this 'attached' information.   
-        private static WeakReference<CounterGroup>[] s_counterGroups;
+        private static WeakReference<CounterGroup>[]? s_counterGroups;
         private static readonly object s_counterGroupsLock = new object();
 
         private static void EnsureEventSourceIndexAvailable(int eventSourceIndex)
@@ -100,8 +103,9 @@ namespace System.Diagnostics.Tracing
             {
                 int eventSourceIndex = EventListener.EventSourceIndex(eventSource);
                 EnsureEventSourceIndexAvailable(eventSourceIndex);
+                Debug.Assert(s_counterGroups != null);
                 WeakReference<CounterGroup> weakRef = CounterGroup.s_counterGroups[eventSourceIndex];
-                CounterGroup ret = null;
+                CounterGroup? ret = null;
                 if (weakRef == null || !weakRef.TryGetTarget(out ret))
                 {
                     ret = new CounterGroup(eventSource);
@@ -117,7 +121,7 @@ namespace System.Diagnostics.Tracing
 
         private DateTime _timeStampSinceCollectionStarted;
         private int _pollingIntervalInMilliseconds;
-        private Timer _pollingTimer;
+        private Timer? _pollingTimer;
 
         private void DisposeTimer()
         {
@@ -153,7 +157,7 @@ namespace System.Diagnostics.Tracing
                         restoreFlow = true;
                     }
 
-                    _pollingTimer = new Timer(s => ((CounterGroup)s).OnTimer(null), this, _pollingIntervalInMilliseconds, _pollingIntervalInMilliseconds);
+                    _pollingTimer = new Timer(s => ((CounterGroup)s!).OnTimer(null), this, _pollingIntervalInMilliseconds, _pollingIntervalInMilliseconds);
                 }
                 finally
                 {
@@ -166,7 +170,7 @@ namespace System.Diagnostics.Tracing
             OnTimer(null);
         }
 
-        private void OnTimer(object state)
+        private void OnTimer(object? state)
         {
             Debug.WriteLine("Timer fired at " + DateTime.UtcNow.ToString("mm.ss.ffffff"));
             lock (this) // Lock the CounterGroup

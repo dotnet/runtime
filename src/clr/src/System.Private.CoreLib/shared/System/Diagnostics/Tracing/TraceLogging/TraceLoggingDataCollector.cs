@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Security;
 
@@ -99,7 +100,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="value">
         /// Value to be added. A null value is treated as a zero-length string.
         /// </param>
-        public void AddNullTerminatedString(string value)
+        public void AddNullTerminatedString(string? value)
         {
             DataCollector.ThreadInstance.AddNullTerminatedString(value);
         }
@@ -110,14 +111,14 @@ namespace System.Diagnostics.Tracing
         /// <param name="value">
         /// Value to be added. A null value is treated as a zero-length string.
         /// </param>
-        public void AddBinary(string value)
+        public void AddBinary(string? value)
         {
             DataCollector.ThreadInstance.AddBinary(value, value == null ? 0 : value.Length * 2);
         }
 
         public void AddArray(PropertyValue value, int elementSize)
         {
-            Array array = (Array)value.ReferenceValue;
+            Array? array = (Array?)value.ReferenceValue;
             DataCollector.ThreadInstance.AddArray(array, array == null ? 0 : array.Length, elementSize);
         }
     }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Collections;
@@ -59,7 +60,7 @@ namespace System.Diagnostics.Tracing
             if (_group != null)
             {
                 _group.Remove(this);
-                _group = null;
+                _group = null!; // TODO-NULLABLE: should not be nulled out
             }
         }
 
@@ -75,7 +76,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        public string DisplayName { get; set; }
+        public string? DisplayName { get; set; }
 
         public string Name { get; }
 
@@ -84,7 +85,7 @@ namespace System.Diagnostics.Tracing
         #region private implementation
 
         private CounterGroup _group;
-        private Dictionary<string, string> _metadata;
+        private Dictionary<string, string>? _metadata;
 
         internal abstract void WritePayload(float intervalSec);
 
