@@ -505,7 +505,7 @@ SHARED_API int corehost_resolve_component_dependencies(
     // Call parse_runtime_config since it initializes the defaults for various settings
     // but we don't have any .runtimeconfig.json for the component, so pass in empty paths.
     // Empty paths is a valid case and the method will simply skip parsing anything.
-    app->parse_runtime_config(pal::string_t(), pal::string_t(), fx_reference_t(), fx_reference_t());
+    app->parse_runtime_config(pal::string_t(), pal::string_t(), runtime_config_t::settings_t());
     if (!app->get_runtime_config().is_valid())
     {
         // This should really never happen, but fail gracefully if it does anyway.

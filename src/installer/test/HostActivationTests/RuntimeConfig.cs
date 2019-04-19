@@ -18,6 +18,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public string Name { get; }
             public string Version { get; set;  }
 
+            public string RollForward { get; set; }
             public int? RollForwardOnNoCandidateFx { get; set; }
             public bool? ApplyPatches { get; set; }
 
@@ -25,6 +26,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 Name = name;
                 Version = version;
+            }
+
+            public Framework WithRollForward(string value)
+            {
+                RollForward = value;
+                return this;
             }
 
             public Framework WithRollForwardOnNoCandidateFx(int? value)
@@ -47,6 +54,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                         new JProperty("version", Version)
                         );
 
+                if (RollForward != null)
+                {
+                    frameworkReference.Add(
+                        Constants.RollForwardSetting.RuntimeConfigPropertyName,
+                        RollForward);
+                }
+
                 if (RollForwardOnNoCandidateFx.HasValue)
                 {
                     frameworkReference.Add(
@@ -68,12 +82,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
                 return new Framework((string)jobject["name"], (string)jobject["version"])
                 {
+                    RollForward = (string)jobject[Constants.RollForwardSetting.RuntimeConfigPropertyName],
                     RollForwardOnNoCandidateFx = (int?)jobject[Constants.RollForwardOnNoCandidateFxSetting.RuntimeConfigPropertyName],
                     ApplyPatches = (bool?)jobject[Constants.ApplyPatchesSetting.RuntimeConfigPropertyName]
                 };
             }
         }
 
+        private string _rollForward;
         private int? _rollForwardOnNoCandidateFx;
         private bool? _applyPatches;
         private readonly string _path;
@@ -126,6 +142,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                         }
                     }
 
+                    runtimeConfig._rollForward = (string)runtimeOptions[Constants.RollForwardSetting.RuntimeConfigPropertyName];
                     runtimeConfig._rollForwardOnNoCandidateFx = (int?)runtimeOptions[Constants.RollForwardOnNoCandidateFxSetting.RuntimeConfigPropertyName];
                     runtimeConfig._applyPatches = (bool?)runtimeOptions[Constants.ApplyPatchesSetting.RuntimeConfigPropertyName];
                 }
@@ -155,6 +172,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             return WithFramework(new Framework(name, version));
         }
 
+        public RuntimeConfig WithRollForward(string value)
+        {
+            _rollForward = value;
+            return this;
+        }
+
         public RuntimeConfig WithRollForwardOnNoCandidateFx(int? value)
         {
             _rollForwardOnNoCandidateFx = value;
@@ -179,6 +202,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 {
                     { "frameworks", new JArray(_frameworks.Select(f => f.ToJson()).ToArray()) }
                 };
+
+            if (_rollForward != null)
+            {
+                runtimeOptions.Add(
+                    Constants.RollForwardSetting.RuntimeConfigPropertyName,
+                    _rollForward);
+            }
 
             if (_rollForwardOnNoCandidateFx.HasValue)
             {

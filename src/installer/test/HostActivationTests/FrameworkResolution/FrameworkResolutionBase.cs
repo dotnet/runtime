@@ -5,7 +5,6 @@
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -15,105 +14,49 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
     {
         protected const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
 
-        protected void RunTest(
-            DotNetCli dotnet,
-            TestApp app,
-            Func<RuntimeConfig, RuntimeConfig> runtimeConfig,
-            Action<CommandResult> resultAction,
-            IDictionary<string, string> environment = null,
-            string[] commandLine = null,
-            bool multiLevelLookup = false)
+        public static class ResolvedFramework
         {
-            RunTest(
-                dotnet,
-                app,
-                new TestSettings()
-                {
-                    RuntimeConfigCustomizer = runtimeConfig,
-                    Environment = environment,
-                    CommandLine = commandLine
-                },
-                resultAction,
-                multiLevelLookup);
+            public const string NotFound = "[not found]";
+            public const string FailedToReconcile = "[failed to reconcile]";
         }
 
-        public class TestSettings
-        {
-            public Func<RuntimeConfig, RuntimeConfig> RuntimeConfigCustomizer { get; set; }
-            public IDictionary<string, string> Environment { get; set; }
-            public IEnumerable<string> CommandLine { get; set; }
-            public string WorkingDirectory { get; set; }
-
-            public TestSettings WithRuntimeConfigCustomizer(Func<RuntimeConfig, RuntimeConfig> customizer)
-            {
-                Func<RuntimeConfig, RuntimeConfig> previousCustomizer = RuntimeConfigCustomizer;
-                if (previousCustomizer == null)
-                {
-                    RuntimeConfigCustomizer = customizer;
-                }
-                else
-                {
-                    RuntimeConfigCustomizer = runtimeConfig => customizer(previousCustomizer(runtimeConfig));
-                }
-
-                return this;
-            }
-
-            public TestSettings WithEnvironment(string key, string value)
-            {
-                Environment = Environment == null ? 
-                    new Dictionary<string, string>() { { key, value } } : 
-                    new Dictionary<string, string>(Environment.Append(new KeyValuePair<string, string>(key, value)));
-                return this;
-            }
-
-            public TestSettings WithCommandLine(params string[] args)
-            {
-                CommandLine = CommandLine == null ? args : CommandLine.Concat(args);
-                return this;
-            }
-
-            public TestSettings WithWorkingDirectory(string path)
-            {
-                WorkingDirectory = path;
-                return this;
-            }
-
-            public TestSettings With(Func<TestSettings, TestSettings> modifier)
-            {
-                return modifier(this);
-            }
-        }
-
-        protected void RunTest(
+        protected CommandResult RunTest(
             DotNetCli dotnet,
             TestApp app,
             TestSettings settings,
-            Action<CommandResult> resultAction,
+            Action<CommandResult> resultAction = null,
             bool multiLevelLookup = false)
         {
-            if (settings.RuntimeConfigCustomizer != null)
+            using (DotNetCliExtensions.DotNetCliCustomizer dotnetCustomizer = settings.DotnetCustomizer == null ? null : dotnet.Customize())
             {
-                settings.RuntimeConfigCustomizer(RuntimeConfig.Path(app.RuntimeConfigJson)).Save();
+                settings.DotnetCustomizer?.Invoke(dotnetCustomizer);
+
+                if (settings.RuntimeConfigCustomizer != null)
+                {
+                    settings.RuntimeConfigCustomizer(RuntimeConfig.Path(app.RuntimeConfigJson)).Save();
+                }
+
+                settings.WithCommandLine(app.AppDll);
+
+                Command command = dotnet.Exec(settings.CommandLine.First(), settings.CommandLine.Skip(1).ToArray());
+
+                if (settings.WorkingDirectory != null)
+                {
+                    command = command.WorkingDirectory(settings.WorkingDirectory);
+                }
+
+                CommandResult result = command
+                    .EnvironmentVariable("COREHOST_TRACE", "1")
+                    .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", multiLevelLookup ? "1" : "0")
+                    .Environment(settings.Environment)
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .Execute();
+
+                resultAction?.Invoke(result);
+
+                return result;
             }
-
-            settings.WithCommandLine(app.AppDll);
-
-            Command command = dotnet.Exec(settings.CommandLine.First(), settings.CommandLine.Skip(1).ToArray());
-
-            if (settings.WorkingDirectory != null)
-            {
-                command = command.WorkingDirectory(settings.WorkingDirectory);
-            }
-
-            CommandResult result = command
-                .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", multiLevelLookup ? "1" : "0")
-                .Environment(settings.Environment)
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute();
-            resultAction(result);
         }
 
         public class SharedTestStateBase : IDisposable

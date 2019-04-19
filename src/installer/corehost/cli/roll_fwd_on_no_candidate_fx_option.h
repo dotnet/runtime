@@ -14,4 +14,7 @@ enum class roll_fwd_on_no_candidate_fx_option
     major           // also inludes minor and patch
 };
 
+enum class roll_forward_option;
+roll_forward_option roll_fwd_on_no_candidate_fx_to_roll_forward(roll_fwd_on_no_candidate_fx_option roll_fwd_on_no_candidate_fx);
+
 #endif // __ROLL_FWD_ON_NO_CANDIDATE_FX_OPTION_H_

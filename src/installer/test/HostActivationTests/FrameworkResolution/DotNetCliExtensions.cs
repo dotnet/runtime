@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 {
-    internal static class DotNetCliExtensions
+    public static class DotNetCliExtensions
     {
         public static DotNetCliCustomizer Customize(this DotNetCli dotnet)
         {
@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             void Backup(string path);
         }
 
-        internal class DotNetCliCustomizer : IDisposable, ITestFileBackup
+        public class DotNetCliCustomizer : IDisposable, ITestFileBackup
         {
             private readonly DotNetCli _dotnet;
             private readonly string _basePath;
@@ -116,7 +116,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
         }
 
-        internal class DotNetFramework
+        public class DotNetFramework
         {
             private readonly ITestFileBackup _backup;
             private readonly string _path;
