@@ -1467,7 +1467,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
             }
             return TRUE;
         }
-#endif
 
     case STUB_CODE_BLOCK_EXTERNAL_METHOD_THUNK:
         {
@@ -1481,6 +1480,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
         }
 
         __fallthrough;
+#endif
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
 #ifdef DACCESS_COMPILE
@@ -2528,7 +2528,6 @@ JumpStubStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     EMEM_OUT(("MEM: %p JumpStubStubManager\n", dac_cast<TADDR>(this)));
 }
 
-#ifdef FEATURE_PREJIT
 void
 RangeSectionStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 {
@@ -2537,7 +2536,6 @@ RangeSectionStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p RangeSectionStubManager\n", dac_cast<TADDR>(this)));
 }
-#endif
 
 void
 ILStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)

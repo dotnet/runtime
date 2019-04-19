@@ -83,11 +83,9 @@ void getMethodInfoILMethodHeaderHelper(
     );
 
 
-#ifdef FEATURE_PREJIT
 BOOL LoadDynamicInfoEntry(Module *currentModule,
                           RVA fixupRva,
                           SIZE_T *entry);
-#endif // FEATURE_PREJIT
 
 //
 // The legacy x86 monitor helpers do not need a state argument

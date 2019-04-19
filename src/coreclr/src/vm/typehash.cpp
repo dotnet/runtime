@@ -523,12 +523,16 @@ BOOL EETypeHashTable::CompareInstantiatedType(TypeHandle t, Module *pModule, mdT
     // Now check the instantiations. Some type arguments might be encoded.
     for (DWORD i = 0; i < inst.GetNumArgs(); i++)
     {
+#ifdef FEATURE_PREJIT
         // Fetch the type handle as TADDR. It may be may be encoded fixup - TypeHandle debug-only validation 
         // asserts on encoded fixups.
         DACCOP_IGNORE(CastOfMarshalledType, "Dual mode DAC problem, but since the size is the same, the cast is safe");
         TADDR candidateArg = ((FixupPointer<TADDR> *)candidateInst.GetRawArgs())[i].GetValue();
 
         if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, inst[i]))
+#else
+        if (candidateInst[i] != inst[i])
+#endif
         {
             return FALSE;
         }
@@ -569,8 +573,12 @@ BOOL EETypeHashTable::CompareFnPtrType(TypeHandle t, BYTE callConv, DWORD numArg
     TypeHandle *retAndArgTypes2 = pTD->GetRetAndArgTypesPointer();
     for (DWORD i = 0; i <= numArgs; i++)
     {
+#ifdef FEATURE_PREJIT
         TADDR candidateArg = retAndArgTypes2[i].AsTAddr();
         if (!ZapSig::CompareTaggedPointerToTypeHandle(GetModule(), candidateArg, retAndArgTypes[i]))
+#else
+        if (retAndArgTypes2[i] != retAndArgTypes[i])
+#endif
         {
             return FALSE;
         }

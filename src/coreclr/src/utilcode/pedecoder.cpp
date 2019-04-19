@@ -2559,7 +2559,7 @@ CORCOMPILE_METHOD_PROFILE_LIST *PEDecoder::GetNativeProfileDataList(COUNT_T * pS
     RETURN PTR_CORCOMPILE_METHOD_PROFILE_LIST(GetDirectoryData(pDir));
 }
 
-
+#endif // FEATURE_PREJIT
 
 PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
 {
@@ -2574,7 +2574,13 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
     CONTRACT_END;
     
     IMAGE_DATA_DIRECTORY *pDir;
-    if (HasReadyToRunHeader())
+#ifdef FEATURE_PREJIT
+    if (!HasReadyToRunHeader())
+    {
+        pDir = GetMetaDataHelper(METADATA_SECTION_MANIFEST);
+    }
+    else
+#endif
     {
         READYTORUN_HEADER * pHeader = GetReadyToRunHeader();
 
@@ -2590,16 +2596,14 @@ PTR_CVOID PEDecoder::GetNativeManifestMetadata(COUNT_T *pSize) const
                 pDir = &pSection->Section;
         }
     }
-    else
-    {
-        pDir = GetMetaDataHelper(METADATA_SECTION_MANIFEST);
-    }
 
     if (pSize != NULL)
         *pSize = VAL32(pDir->Size);
 
     RETURN dac_cast<PTR_VOID>(GetDirectoryData(pDir));
 }
+
+#ifdef FEATURE_PREJIT
 
 PTR_CORCOMPILE_IMPORT_SECTION PEDecoder::GetNativeImportSections(COUNT_T *pCount) const
 {

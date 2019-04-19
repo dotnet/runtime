@@ -982,6 +982,7 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
     PEFile* pFile = pModule->GetFile();
     if (pFile)
     {
+#ifdef FEATURE_PREJIT
         // if we have a native imaged loaded for this module then get the version information from that.
         if (pFile->IsNativeLoaded())
         {
@@ -996,6 +997,7 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
                 }
             }
         }
+#endif
 
         // if we failed to get the version info from the native image then fall back to the IL image.
         if (!succeeded)

@@ -387,6 +387,7 @@ void Module::InitializeForProfiling()
 
     m_nativeImageProfiling = FALSE;
 
+#ifdef FEATURE_PREJIT
     if (HasNativeImage())
     {
         PEImageLayout * pNativeImage = GetNativeImage();
@@ -400,6 +401,7 @@ void Module::InitializeForProfiling()
         m_methodProfileList = pNativeImage->GetNativeProfileDataList(&cbProfileList);
     }
     else // ReadyToRun image
+#endif
     {
 #ifdef FEATURE_READYTORUN
         // We already setup the m_methodProfileList in the ReadyToRunInfo constructor
@@ -458,6 +460,13 @@ void Module::InitializeNativeImage(AllocMemTracker* pamTracker)
     }
 #endif // defined(HAVE_GCCOVER)
 }
+#else // FEATURE_PREJIT 
+BOOL Module::IsPersistedObject(void *address)
+{
+    LIMITED_METHOD_CONTRACT;
+    return FALSE;
+}
+#endif // FEATURE_PREJIT 
 
 void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssembly)
 {
@@ -478,26 +487,18 @@ void Module::SetNativeMetadataAssemblyRefInCache(DWORD rid, PTR_Assembly pAssemb
         S_SIZE_T dwAllocSize = S_SIZE_T(sizeof(PTR_Assembly)) * S_SIZE_T(dwMaxRid);
 
         AllocMemTracker amTracker;
-        PTR_Assembly * NativeMetadataAssemblyRefMap = (PTR_Assembly *) amTracker.Track( GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(dwAllocSize) );
+        PTR_Assembly* NativeMetadataAssemblyRefMap = (PTR_Assembly*)amTracker.Track(GetLoaderAllocator()->GetLowFrequencyHeap()->AllocMem(dwAllocSize));
 
         // Note: Memory allocated on loader heap is zero filled
 
-        if (InterlockedCompareExchangeT<PTR_Assembly *>(&m_NativeMetadataAssemblyRefMap, NativeMetadataAssemblyRefMap, NULL) == NULL)
+        if (InterlockedCompareExchangeT<PTR_Assembly*>(&m_NativeMetadataAssemblyRefMap, NativeMetadataAssemblyRefMap, NULL) == NULL)
             amTracker.SuppressRelease();
     }
     _ASSERTE(m_NativeMetadataAssemblyRefMap != NULL);
 
     _ASSERTE(rid <= GetNativeAssemblyImport()->GetCountWithTokenKind(mdtAssemblyRef));
-    m_NativeMetadataAssemblyRefMap[rid-1] = pAssembly;
-} 
-#else // FEATURE_PREJIT 
-BOOL Module::IsPersistedObject(void *address)
-{
-    LIMITED_METHOD_CONTRACT;
-    return FALSE;
+    m_NativeMetadataAssemblyRefMap[rid - 1] = pAssembly;
 }
-
-#endif // FEATURE_PREJIT 
 
 // Module initialization occurs in two phases: the constructor phase and the Initialize phase.
 //
@@ -588,7 +589,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
             }
         }
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) && defined(FEATURE_PREJIT)
         if (IsCompilationProcess() && m_pGuidToTypeHash == NULL)
         {
             // only allocate this during NGEN-ing
@@ -4146,12 +4147,12 @@ PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSections(COUNT_T *pCount)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_READYTORUN
-    if (IsReadyToRun())
-        return GetReadyToRunInfo()->GetImportSections(pCount);
+#ifdef FEATURE_PREJIT
+    if (!IsReadyToRun())
+        return GetNativeImage()->GetNativeImportSections(pCount);
 #endif
 
-    return GetNativeImage()->GetNativeImportSections(pCount);
+    return GetReadyToRunInfo()->GetImportSections(pCount);
 }
 
 PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSectionFromIndex(COUNT_T index)
@@ -4163,12 +4164,12 @@ PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSectionFromIndex(COUNT_T index)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_READYTORUN
-    if (IsReadyToRun())
-        return GetReadyToRunInfo()->GetImportSectionFromIndex(index);
+#ifdef FEATURE_PREJIT
+    if (!IsReadyToRun())
+        return GetNativeImage()->GetNativeImportSectionFromIndex(index);
 #endif
 
-    return GetNativeImage()->GetNativeImportSectionFromIndex(index);
+    return GetReadyToRunInfo()->GetImportSectionFromIndex(index);
 }
 
 PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSectionForRVA(RVA rva)
@@ -4180,12 +4181,12 @@ PTR_CORCOMPILE_IMPORT_SECTION Module::GetImportSectionForRVA(RVA rva)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_READYTORUN
-    if (IsReadyToRun())
-        return GetReadyToRunInfo()->GetImportSectionForRVA(rva);
+#ifdef FEATURE_PREJIT
+    if (!IsReadyToRun())
+        return GetNativeImage()->GetNativeImportSectionForRVA(rva);
 #endif
 
-    return GetNativeImage()->GetNativeImportSectionForRVA(rva);
+    return GetReadyToRunInfo()->GetImportSectionForRVA(rva);
 }
 
 TADDR Module::GetIL(DWORD target)
@@ -9809,6 +9810,7 @@ BOOL Module::IsPersistedObject(void *address)
     return (address >= pLayout->GetBase()
             && address < (BYTE*)pLayout->GetBase() + pLayout->GetVirtualSize());
 }
+#endif // FEATURE_PREJIT
 
 Module *Module::GetModuleFromIndex(DWORD ix)
 {
@@ -9841,11 +9843,8 @@ Module *Module::GetModuleFromIndex(DWORD ix)
         }
     }
 }
-#endif // FEATURE_PREJIT
 
 #endif // !DACCESS_COMPILE
-
-#ifdef FEATURE_PREJIT
 
 Module *Module::GetModuleFromIndexIfLoaded(DWORD ix)
 {
@@ -9869,10 +9868,36 @@ Module *Module::GetModuleFromIndexIfLoaded(DWORD ix)
 }
 
 #ifndef DACCESS_COMPILE 
-
-BYTE *Module::GetNativeFixupBlobData(RVA rva)
+IMDInternalImport* Module::GetNativeAssemblyImport(BOOL loadAllowed)
 {
-    CONTRACT(BYTE *)
+    CONTRACT(IMDInternalImport*)
+    {
+        INSTANCE_CHECK;
+        if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
+        if (loadAllowed) THROWS;                         else NOTHROW;
+        if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
+        MODE_ANY;
+        PRECONDITION(HasNativeOrReadyToRunImage());
+        POSTCONDITION(loadAllowed ?
+            CheckPointer(RETVAL) :
+            CheckPointer(RETVAL, NULL_OK));
+    }
+    CONTRACT_END;
+
+#ifdef FEATURE_PREJIT
+    // Check if image is R2R
+    if (!GetFile()->IsILImageReadyToRun())
+    {
+        RETURN GetFile()->GetPersistentNativeImage()->GetNativeMDImport(loadAllowed);
+    }
+#endif
+
+    RETURN GetFile()->GetOpenedILimage()->GetNativeMDImport(loadAllowed);
+}
+
+BYTE* Module::GetNativeFixupBlobData(RVA rva)
+{
+    CONTRACT(BYTE*)
     {
         INSTANCE_CHECK;
         NOTHROW;
@@ -9882,35 +9907,13 @@ BYTE *Module::GetNativeFixupBlobData(RVA rva)
     }
     CONTRACT_END;
 
-    RETURN (BYTE *) GetNativeOrReadyToRunImage()->GetRvaData(rva);
+    RETURN(BYTE*) GetNativeOrReadyToRunImage()->GetRvaData(rva);
 }
+#endif // DACCESS_COMPILE
 
-IMDInternalImport *Module::GetNativeAssemblyImport(BOOL loadAllowed)
-{
-    CONTRACT(IMDInternalImport *)
-    {
-        INSTANCE_CHECK;
-        if (loadAllowed) GC_TRIGGERS;                    else GC_NOTRIGGER;
-        if (loadAllowed) THROWS;                         else NOTHROW;
-        if (loadAllowed) INJECT_FAULT(COMPlusThrowOM()); else FORBID_FAULT;
-        MODE_ANY;
-        PRECONDITION(HasNativeOrReadyToRunImage());
-        POSTCONDITION(loadAllowed ?
-                      CheckPointer(RETVAL):
-                      CheckPointer(RETVAL, NULL_OK));
-    }
-    CONTRACT_END;
+#ifdef FEATURE_PREJIT
 
-    // Check if image is R2R
-    if (GetFile()->IsILImageReadyToRun())
-    {
-        RETURN GetFile()->GetOpenedILimage()->GetNativeMDImport(loadAllowed);
-    }
-    else
-    {
-        RETURN GetFile()->GetPersistentNativeImage()->GetNativeMDImport(loadAllowed);
-    }
-}
+#ifndef DACCESS_COMPILE 
 
 /*static*/
 void Module::RestoreMethodTablePointerRaw(MethodTable ** ppMT,
@@ -10548,63 +10551,6 @@ ZapHeader.ImportTable        |                    |         |     non-NULL      
 
 //-----------------------------------------------------------------------------
 
-BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION * pSection, SIZE_T fixupIndex, SIZE_T *fixupCell)
-{
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-        PRECONDITION(CheckPointer(fixupCell));
-    }
-    CONTRACTL_END;
-
-    // Ensure that the compiler won't fetch the value twice
-    SIZE_T fixup = VolatileLoadWithoutBarrier(fixupCell);
-
-    if (pSection->Signatures != NULL)
-    {
-        if (fixup == NULL)
-        {
-            PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetNativeOrReadyToRunImage()->GetRvaData(pSection->Signatures));
-
-            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
-                return FALSE;
-
-            _ASSERTE(*fixupCell != NULL);
-        }
-    }
-    else
-    {
-        if (CORCOMPILE_IS_FIXUP_TAGGED(fixup, pSection))
-        {
-            // Fixup has not been fixed up yet
-            if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
-                return FALSE;
-
-            _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
-        }
-        else
-        {
-            //
-            // Handle tables are special. We may need to restore static handle or previous 
-            // attempts to load handle could have been partial.
-            //
-            if (pSection->Type == CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE)
-            {
-                TypeHandle::FromPtr((void *)fixup).CheckRestore();
-            }
-            else
-            if (pSection->Type == CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE)
-            {
-                ((MethodDesc *)(fixup))->CheckRestore();
-            }
-        }
-    }
-
-    return TRUE;
-}
-
-//-----------------------------------------------------------------------------
-
 void Module::RunEagerFixups()
 {
     STANDARD_VM_CONTRACT;
@@ -10821,9 +10767,64 @@ PTR_BYTE Module::GetNativeDebugInfo(MethodDesc * pMD)
 }
 #endif //FEATURE_PREJIT
 
-
-
 #ifndef DACCESS_COMPILE 
+
+//-----------------------------------------------------------------------------
+
+BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupIndex, SIZE_T* fixupCell)
+{
+    CONTRACTL
+    {
+        STANDARD_VM_CHECK;
+        PRECONDITION(CheckPointer(fixupCell));
+    }
+    CONTRACTL_END;
+
+    // Ensure that the compiler won't fetch the value twice
+    SIZE_T fixup = VolatileLoadWithoutBarrier(fixupCell);
+
+    if (pSection->Signatures != NULL)
+    {
+        if (fixup == NULL)
+        {
+            PTR_DWORD pSignatures = dac_cast<PTR_DWORD>(GetNativeOrReadyToRunImage()->GetRvaData(pSection->Signatures));
+
+            if (!LoadDynamicInfoEntry(this, pSignatures[fixupIndex], fixupCell))
+                return FALSE;
+
+            _ASSERTE(*fixupCell != NULL);
+        }
+    }
+    else
+    {
+        if (CORCOMPILE_IS_FIXUP_TAGGED(fixup, pSection))
+        {
+            // Fixup has not been fixed up yet
+            if (!LoadDynamicInfoEntry(this, (RVA)CORCOMPILE_UNTAG_TOKEN(fixup), fixupCell))
+                return FALSE;
+
+            _ASSERTE(!CORCOMPILE_IS_FIXUP_TAGGED(*fixupCell, pSection));
+        }
+        else
+        {
+            //
+            // Handle tables are special. We may need to restore static handle or previous 
+            // attempts to load handle could have been partial.
+            //
+            if (pSection->Type == CORCOMPILE_IMPORT_TYPE_TYPE_HANDLE)
+            {
+                TypeHandle::FromPtr((void*)fixup).CheckRestore();
+            }
+            else
+                if (pSection->Type == CORCOMPILE_IMPORT_TYPE_METHOD_HANDLE)
+                {
+                    ((MethodDesc*)(fixup))->CheckRestore();
+                }
+        }
+    }
+
+    return TRUE;
+}
 
 #ifdef FEATURE_PREJIT 
 //
@@ -13855,7 +13856,9 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
         {
             m_pBinder->EnumMemoryRegions(flags);
         }
+#ifdef FEATURE_PREJIT
         m_ModuleCtorInfo.EnumMemoryRegions(flags);
+#endif
 
         // Save the LookupMap structures.
         m_MethodDefToDescMap.ListEnumMemoryRegions(flags);

@@ -5790,7 +5790,7 @@ ETW_INLINE
 {
     ULONG Result = ERROR_SUCCESS;
 
-
+#ifdef FEATURE_PREJIT
     // do not fire the ETW event when:
     // 1. We did not load the native image
     // 2. We do not have IBC data for the native image
@@ -5842,6 +5842,8 @@ ETW_INLINE
             Result &= FireEtwModuleRangeLoadPrivate(ClrInstanceId, ModuleID, rangeBegin, rangeSize, rangeType, ibcType, virtualSectionType);
         }
     }
+#endif
+
     return Result;
 }
 

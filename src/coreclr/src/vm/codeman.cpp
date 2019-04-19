@@ -1721,9 +1721,6 @@ EXTERN_C void __stdcall jitStartup(ICorJitHost* host);
 EXTERN_C ICorJitCompiler* __stdcall getJit();
 #endif // FEATURE_MERGE_JIT_AND_ENGINE
 
-// Set this to the result of LoadJIT as a courtesy to code:CorCompileGetRuntimeDll
-extern HMODULE s_ngenCompilerDll;
-
 BOOL EEJitManager::LoadJIT()
 {
     STANDARD_VM_CONTRACT;
@@ -1767,9 +1764,6 @@ BOOL EEJitManager::LoadJIT()
 
     g_JitLoadData.jld_id = JIT_LOAD_MAIN;
     LoadAndInitializeJIT(ExecutionManager::GetJitName(), &m_JITCompiler, &newJitCompiler, &g_JitLoadData);
-
-    // Set as a courtesy to code:CorCompileGetRuntimeDll
-    s_ngenCompilerDll = m_JITCompiler;
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
 #ifdef ALLOW_SXS_JIT
@@ -5236,6 +5230,116 @@ DONE:
 }
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
+static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T ofsAdj,
+    PTR_RUNTIME_FUNCTION pFunctionEntry, TADDR moduleBase,
+    DWORD * pnFunclets, DWORD* pStartFuncletOffsets, DWORD dwLength)
+{
+    _ASSERTE(FitsInU4((pCodeStart + size) - moduleBase));
+    DWORD endAddress = (DWORD)((pCodeStart + size) - moduleBase);
+
+    // Entries are sorted and terminated by sentinel value (DWORD)-1
+    for (; RUNTIME_FUNCTION__BeginAddress(pFunctionEntry) < endAddress; pFunctionEntry++)
+    {
+#ifdef _TARGET_AMD64_
+        _ASSERTE((pFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
+#endif
+
+#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS)
+        if (IsFunctionFragment(moduleBase, pFunctionEntry))
+        {
+            // This is a fragment (not the funclet beginning); skip it
+            continue;
+        }
+#endif // EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS
+
+        if (*pnFunclets < dwLength)
+        {
+            TADDR funcletStartAddress = (moduleBase + RUNTIME_FUNCTION__BeginAddress(pFunctionEntry)) + ofsAdj;
+            _ASSERTE(FitsInU4(funcletStartAddress - pCodeStart));
+            pStartFuncletOffsets[*pnFunclets] = (DWORD)(funcletStartAddress - pCodeStart);
+        }
+        (*pnFunclets)++;
+    }
+}
+
+#if defined(WIN64EXCEPTIONS) && defined(DACCESS_COMPILE)
+
+// 
+// To locate an entry in the function entry table (the program exceptions data directory), the debugger
+// performs a binary search over the table.  This function reports the entries that are encountered in the
+// binary search.
+// 
+// Parameters:
+//   pRtf: The target function table entry to be located
+//   pNativeLayout: A pointer to the loaded native layout for the module containing pRtf
+//   
+static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR_PEImageLayout pNativeLayout)
+{
+    pRtf.EnumMem();
+
+    if (pNativeLayout == NULL)
+    {
+        return;
+    }
+
+    IMAGE_DATA_DIRECTORY * pProgramExceptionsDirectory = pNativeLayout->GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXCEPTION);
+    if (!pProgramExceptionsDirectory ||
+        (pProgramExceptionsDirectory->Size == 0) ||
+        (pProgramExceptionsDirectory->Size % sizeof(T_RUNTIME_FUNCTION) != 0))
+    {
+        // Program exceptions directory malformatted
+        return;
+    }
+
+    PTR_BYTE moduleBase(pNativeLayout->GetBase());
+    PTR_RUNTIME_FUNCTION firstFunctionEntry(moduleBase + pProgramExceptionsDirectory->VirtualAddress);
+
+    if (pRtf < firstFunctionEntry ||
+        ((dac_cast<TADDR>(pRtf) - dac_cast<TADDR>(firstFunctionEntry)) % sizeof(T_RUNTIME_FUNCTION) != 0))
+    {
+        // Program exceptions directory malformatted
+        return;
+    }
+
+    // Review conversion of size_t to ULONG.
+#if defined(_MSC_VER)
+#pragma warning(push)
+#pragma warning(disable:4267)
+#endif // defined(_MSC_VER)
+
+    ULONG indexToLocate = pRtf - firstFunctionEntry;
+
+#if defined(_MSC_VER)   
+#pragma warning(pop)
+#endif // defined(_MSC_VER)
+
+    ULONG low = 0; // index in the function entry table of low end of search range
+    ULONG high = (pProgramExceptionsDirectory->Size) / sizeof(T_RUNTIME_FUNCTION) - 1; // index of high end of search range
+    ULONG mid = (low + high) / 2; // index of entry to be compared
+
+    if (indexToLocate > high)
+    {
+        return;
+    }
+
+    while (indexToLocate != mid)
+    {
+        PTR_RUNTIME_FUNCTION functionEntry = firstFunctionEntry + mid;
+        functionEntry.EnumMem();
+        if (indexToLocate > mid)
+        {
+            low = mid + 1;
+        }
+        else
+        {
+            high = mid - 1;
+        }
+        mid = (low + high) / 2;
+        _ASSERTE(low <= mid && mid <= high);
+    }
+}
+#endif // WIN64EXCEPTIONS
+
 #ifdef FEATURE_PREJIT
 //***************************************************************************************
 //***************************************************************************************
@@ -5702,38 +5806,6 @@ TADDR NativeImageJitManager::GetFuncletStartAddress(EECodeInfo * pCodeInfo)
     return IJitManager::GetFuncletStartAddress(pCodeInfo);
 }
 
-static void GetFuncletStartOffsetsHelper(PCODE pCodeStart, SIZE_T size, SIZE_T ofsAdj,
-                                         PTR_RUNTIME_FUNCTION pFunctionEntry, TADDR moduleBase,
-                                         DWORD * pnFunclets, DWORD* pStartFuncletOffsets, DWORD dwLength)
-{
-    _ASSERTE(FitsInU4((pCodeStart + size) - moduleBase));
-    DWORD endAddress = (DWORD)((pCodeStart + size) - moduleBase);
-
-    // Entries are sorted and terminated by sentinel value (DWORD)-1
-    for ( ; RUNTIME_FUNCTION__BeginAddress(pFunctionEntry) < endAddress; pFunctionEntry++)
-    {
-#ifdef _TARGET_AMD64_
-        _ASSERTE((pFunctionEntry->UnwindData & RUNTIME_FUNCTION_INDIRECT) == 0);
-#endif
-
-#if defined(EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS)
-        if (IsFunctionFragment(moduleBase, pFunctionEntry))
-        {
-            // This is a fragment (not the funclet beginning); skip it
-            continue;
-        }
-#endif // EXCEPTION_DATA_SUPPORTS_FUNCTION_FRAGMENTS
-
-        if (*pnFunclets < dwLength)
-        {
-            TADDR funcletStartAddress = (moduleBase + RUNTIME_FUNCTION__BeginAddress(pFunctionEntry)) + ofsAdj;
-            _ASSERTE(FitsInU4(funcletStartAddress - pCodeStart));
-            pStartFuncletOffsets[*pnFunclets] = (DWORD)(funcletStartAddress - pCodeStart);
-        }
-        (*pnFunclets)++;
-    }
-}
-
 DWORD NativeImageJitManager::GetFuncletStartOffsets(const METHODTOKEN& MethodToken, DWORD* pStartFuncletOffsets, DWORD dwLength)
 {
     CONTRACTL
@@ -5988,81 +6060,6 @@ void NativeImageJitManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
 #if defined(WIN64EXCEPTIONS)
 
-// 
-// To locate an entry in the function entry table (the program exceptions data directory), the debugger
-// performs a binary search over the table.  This function reports the entries that are encountered in the
-// binary search.
-// 
-// Parameters:
-//   pRtf: The target function table entry to be located
-//   pNativeLayout: A pointer to the loaded native layout for the module containing pRtf
-//   
-static void EnumRuntimeFunctionEntriesToFindEntry(PTR_RUNTIME_FUNCTION pRtf, PTR_PEImageLayout pNativeLayout)
-{
-    pRtf.EnumMem();
-
-    if (pNativeLayout == NULL)
-    {
-        return;
-    }
-
-    IMAGE_DATA_DIRECTORY * pProgramExceptionsDirectory = pNativeLayout->GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_EXCEPTION);
-    if (!pProgramExceptionsDirectory || 
-        (pProgramExceptionsDirectory->Size == 0) ||
-        (pProgramExceptionsDirectory->Size % sizeof(T_RUNTIME_FUNCTION) != 0))
-    {
-        // Program exceptions directory malformatted
-        return;
-    }
-
-    PTR_BYTE moduleBase(pNativeLayout->GetBase());
-    PTR_RUNTIME_FUNCTION firstFunctionEntry(moduleBase + pProgramExceptionsDirectory->VirtualAddress);
-
-    if (pRtf < firstFunctionEntry ||
-        ((dac_cast<TADDR>(pRtf) - dac_cast<TADDR>(firstFunctionEntry)) % sizeof(T_RUNTIME_FUNCTION) != 0))
-    {
-        // Program exceptions directory malformatted
-        return;
-    }
-    
-// Review conversion of size_t to ULONG.
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif // defined(_MSC_VER)
-
-    ULONG indexToLocate = pRtf - firstFunctionEntry;
-
-#if defined(_MSC_VER)   
-#pragma warning(pop)
-#endif // defined(_MSC_VER)
-
-    ULONG low = 0; // index in the function entry table of low end of search range
-    ULONG high = (pProgramExceptionsDirectory->Size)/sizeof(T_RUNTIME_FUNCTION) - 1; // index of high end of search range
-    ULONG mid = (low + high) /2; // index of entry to be compared
-
-    if (indexToLocate > high)
-    {
-        return;
-    }
-
-    while (indexToLocate != mid)
-    {
-        PTR_RUNTIME_FUNCTION functionEntry = firstFunctionEntry + mid;
-        functionEntry.EnumMem();
-        if (indexToLocate > mid)
-        {
-            low = mid + 1;
-        }
-        else
-        {
-            high = mid - 1;
-        }
-        mid = (low + high) /2;
-        _ASSERTE( low <= mid && mid <= high );
-    }
-}
-
 //
 // EnumMemoryRegionsForMethodUnwindInfo - enumerate the memory necessary to read the unwind info for the
 // specified method.
@@ -6100,6 +6097,10 @@ void NativeImageJitManager::EnumMemoryRegionsForMethodUnwindInfo(CLRDataEnumMemo
 
 #endif //WIN64EXCEPTIONS
 #endif // #ifdef DACCESS_COMPILE
+
+#endif // FEATURE_PREJIT
+
+#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
 
 // Return start of exception info for a method, or 0 if the method has no EH info
 DWORD NativeExceptionInfoLookupTable::LookupExceptionInfoRVAForMethod(PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE pExceptionLookupTable,
@@ -6216,6 +6217,7 @@ int NativeUnwindInfoLookupTable::LookupUnwindInfoForMethod(DWORD RelativePc,
     return -1;
 }
 
+#ifdef FEATURE_PREJIT
 BOOL NativeUnwindInfoLookupTable::HasExceptionInfo(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction)
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -6250,8 +6252,9 @@ DWORD NativeUnwindInfoLookupTable::GetMethodDescRVA(NGenLayoutInfo * pNgenLayout
 
     return rva;
 }
-
 #endif // FEATURE_PREJIT
+
+#endif // FEATURE_PREJIT || FEATURE_READYTORUN
 
 #ifndef DACCESS_COMPILE
 

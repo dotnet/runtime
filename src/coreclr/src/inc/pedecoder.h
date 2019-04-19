@@ -38,14 +38,7 @@
 #include "cor.h"
 #include "corhdr.h"
 
-#ifdef FEATURE_PREJIT
 #include "corcompile.h"
-#else // FEATURE_PREJIT
-typedef DPTR(struct COR_ILMETHOD) PTR_COR_ILMETHOD;
-struct CORCOMPILE_HEADER { int dummy_field; };
-typedef DPTR(struct CORCOMPILE_HEADER) PTR_CORCOMPILE_HEADER;
-#define CORCOMPILE_IS_POINTER_TAGGED(fixup) (false)
-#endif // FEATURE_PREJIT
 
 #include "readytorun.h"
 typedef DPTR(struct READYTORUN_HEADER) PTR_READYTORUN_HEADER;
@@ -305,6 +298,8 @@ class PEDecoder
     // Debug directory access, returns NULL if no such entry
     PTR_IMAGE_DEBUG_DIRECTORY GetDebugDirectoryEntry(UINT index) const;
 
+    PTR_CVOID GetNativeManifestMetadata(COUNT_T* pSize = NULL) const;
+
 #ifdef FEATURE_PREJIT
     CHECK CheckNativeHeaderVersion() const;
 
@@ -322,7 +317,6 @@ class PEDecoder
     PCODE GetNativeColdCode(COUNT_T * pSize = NULL) const;
 
     CORCOMPILE_METHOD_PROFILE_LIST *GetNativeProfileDataList(COUNT_T *pSize = NULL) const;
-    PTR_CVOID GetNativeManifestMetadata(COUNT_T *pSize = NULL) const;
     const void *GetNativePreferredBase() const;
     BOOL GetNativeILHasSecurityDirectory() const;
     BOOL GetNativeILIsIbcOptimized() const;

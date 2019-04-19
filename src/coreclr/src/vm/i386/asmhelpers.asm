@@ -1528,6 +1528,8 @@ public _StubDispatchFixupPatchLabel@0
 
 _StubDispatchFixupStub@0 endp
 
+endif ; FEATURE_PREJIT
+
 ;==========================================================================
 _ExternalMethodFixupStub@0 proc public
 
@@ -1604,6 +1606,8 @@ _DelayLoad_MethodCall@0 proc public
 
 _DelayLoad_MethodCall@0 endp
 endif
+
+ifdef FEATURE_PREJIT
 
 ;=======================================================================================
 ; The call in softbound vtable slots initially points to this function.
