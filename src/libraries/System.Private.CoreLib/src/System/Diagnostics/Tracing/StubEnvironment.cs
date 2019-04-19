@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 
@@ -28,24 +29,18 @@ namespace System.Diagnostics.Tracing.Internal
         public static int TickCount
         { get { return System.Environment.TickCount; } }
 
-        public static string GetResourceString(string key, params object[] args)
+        public static string GetResourceString(string key, params object?[] args)
         {
-            string fmt = rm.GetString(key);
+            string? fmt = rm.GetString(key);
             if (fmt != null)
                 return string.Format(fmt, args);
 
-            string sargs = string.Empty;
-            foreach(var arg in args)
-            {
-                if (sargs != string.Empty)
-                    sargs += ", ";
-                sargs += arg.ToString();
-            }
+            string sargs = string.Join(", ", args);
 
             return key + " (" + sargs + ")";
         }
 
-        public static string GetRuntimeResourceString(string key, params object[] args)
+        public static string GetRuntimeResourceString(string key, params object?[] args)
         {
             return GetResourceString(key, args);
         }
@@ -313,9 +308,9 @@ namespace Microsoft.Reflection
             }
             return fieldInfos.ToArray();
         }
-        public static Type GetNestedType(this Type type, string nestedTypeName)
+        public static Type? GetNestedType(this Type type, string nestedTypeName)
         {
-            TypeInfo ti = null;
+            TypeInfo? ti = null;
             foreach(var nt in type.GetTypeInfo().DeclaredNestedTypes)
             {
                 if (nt.Name == nestedTypeName)
