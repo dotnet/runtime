@@ -1141,6 +1141,51 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [Theory]
+        [InlineData("PooledConnectionLifetime")]
+        [InlineData("PooledConnectionIdleTimeout")]
+        public async Task Http2_SmallConnectionTimeout_SubsequentRequestUsesDifferentConnection(string timeoutPropertyName)
+        {
+
+
+            await Http2LoopbackServerFactory.CreateServerAsync(async (server, url) =>
+            {
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandler : true, useHttp2LoopbackServer : true);
+                SocketsHttpHandler s = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                switch (timeoutPropertyName)
+                {
+                    case "PooledConnectionLifetime": s.PooledConnectionLifetime = TimeSpan.FromMilliseconds(1); break;
+                    case "PooledConnectionIdleTimeout": s.PooledConnectionLifetime = TimeSpan.FromMilliseconds(1); break;
+                    default: throw new ArgumentOutOfRangeException(nameof(timeoutPropertyName));
+                }
+
+                using (HttpClient client = new HttpClient(handler))
+                {
+                    Task<string> request1 = client.GetStringAsync(url);
+
+                    await server.EstablishConnectionAsync();
+                    int streamId = await server.ReadRequestHeaderAsync();
+                    await server.SendDefaultResponseAsync(streamId);
+                    await request1;
+
+                    // Wait a small amount of time before making the second request, to give the first request time to timeout.
+                    await Task.Delay(100);
+                    // Grab reference to underlying socket and stream to make sure they are not disposed and closed.
+                    (Socket socket, Stream stream) = server.ResetNetwork();
+
+                    // Make second request and expect it to be served from a different connection.
+                    Task<string> request2 = client.GetStringAsync(url);
+                    await server.EstablishConnectionAsync();
+                    streamId = await server.ReadRequestHeaderAsync();
+                    await server.SendDefaultResponseAsync(streamId);
+                    await request2;
+
+                    // Close underlying socket from first connection.
+                    socket.Close();
+                }
+            });
+        }
+
         [OuterLoop]
         [Theory]
         [InlineData(false)]
