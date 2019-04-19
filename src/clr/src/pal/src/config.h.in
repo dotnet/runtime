@@ -1,6 +1,8 @@
 #ifndef _PAL_CONFIG_H_INCLUDED
 #define _PAL_CONFIG_H_INCLUDED 1
 
+#cmakedefine01 HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
+#cmakedefine01 HAVE_MAP_HUGETLB
 #cmakedefine01 HAVE_IEEEFP_H
 #cmakedefine01 HAVE_SYS_VMPARAM_H
 #cmakedefine01 HAVE_MACH_VM_TYPES_H
