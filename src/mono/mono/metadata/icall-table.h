@@ -29,12 +29,11 @@ mono_icall_table_init (void);
 // Marshaling a "ptr" does nothing -- just pass it on unchanged.
 // Marshaling a "ref" also does nothing at this layer, but
 // creates a handle in  marshal-ilgen.c.
+// "ref" means "can be an interior pointer".
+// "ptr" means "to a local".
+// It is generally difficult to know, and "ref" is safer.
+// Presently it does not matter.
 typedef gint32  *gint32_ptr;
-typedef gint64  *gint64_ptr;
-typedef guint   *guint_ptr;
-typedef guint32 *guint32_ptr;
-typedef guint64 *guint64_ptr;
-typedef gsize *gsize_ptr;
 typedef guchar *guchar_ptr;
 typedef const guchar *const_guchar_ptr;
 typedef gpointer *gpointer_ptr;
@@ -74,6 +73,7 @@ typedef gsize *gsize_ref;
 typedef guint32 *guint32_ref;
 typedef guint64 *guint64_ref;
 typedef int *int_ref;
+typedef gint32 *gint32_ref;
 typedef MonoAssemblyName *MonoAssemblyName_ref;
 typedef MonoBoolean *MonoBoolean_ref;
 typedef MonoClassField *MonoClassField_ref;
@@ -167,6 +167,7 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_guint32_ref   		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_guint64_ref   		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_int_ref  			ICALL_HANDLES_WRAP_VALUETYPE_REF
+#define MONO_HANDLE_TYPE_WRAP_gint32_ref  			ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_int_ptr_ref  		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_char_ptr_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_guint8_ptr_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
@@ -183,8 +184,6 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoTypedRef_ptr 		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoStackCrawlMark_ptr  	ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_gint32_ptr   		ICALL_HANDLES_WRAP_NONE
-#define MONO_HANDLE_TYPE_WRAP_guint32_ptr   		ICALL_HANDLES_WRAP_NONE
-#define MONO_HANDLE_TYPE_WRAP_guint64_ptr   		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_gpointer_ptr		ICALL_HANDLES_WRAP_NONE
 
 // Please keep this sorted (grep ICALL_HANDLES_WRAP_OBJ$ | sort)

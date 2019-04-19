@@ -1737,7 +1737,6 @@ mono_string_handle_to_utf8 (MonoStringHandle s, MonoError *error);
 char *
 mono_string_to_utf8_image (MonoImage *image, MonoStringHandle s, MonoError *error);
 
-
 MonoArrayHandle
 mono_array_clone_in_domain (MonoDomain *domain, MonoArrayHandle array, MonoError *error);
 
@@ -2236,6 +2235,9 @@ mono_string_length_internal (MonoString *s);
 
 MonoString*
 mono_string_empty_internal (MonoDomain *domain);
+
+char *
+mono_string_to_utf8len (MonoStringHandle s, gsize *utf8len, MonoError *error);
 
 char*
 mono_string_to_utf8_checked_internal (MonoString *string_obj, MonoError *error);

@@ -56,10 +56,13 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # Generate it with uuidgen. For example:
 # perl -pi.bak -e "s/^MONO_CORLIB_VERSION=\S+/MONO_CORLIB_VERSION=`uuidgen`/" configure.ac
 #
+# There is no ordering of corlib versions, no old or new,
+# an exact match is required between corlib and runtime.
+#
 # This line is parsed by tools besides autoconf, such as msvc/mono.winconfig.targets.
 # It should remain in the format they expect.
 #
-MONO_CORLIB_VERSION=48B64EB1-FC8C-4707-A363-84A1FE488DCA
+MONO_CORLIB_VERSION=52e678f0-7e2a-45e4-b396-989c9abe209e
 
 #
 # Put a quoted #define in config.h.
