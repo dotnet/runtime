@@ -22,6 +22,10 @@ namespace System.Net.Test.Common
 
             public static Uri NegotiateServer => GetUriValue("COREFX_NET_SECURITY_NEGOSERVERURI");
 
+            public static Uri NegotiateClient => GetUriValue("COREFX_NET_SECURITY_NEGOCLIENTURI");
+
+            public static string NegotiateClientUser => GetValue("COREFX_NET_SECURITY_NEGOCLIENTUSER");
+
             public static string TlsRenegotiationServer => GetValue("COREFX_NET_SECURITY_TLSREGOTIATIONSERVER", "corefx-net-tls.azurewebsites.net");
 
             // This should be set if hostnames for all certificates within corefx-testdata have been set to point to 127.0.0.1.
