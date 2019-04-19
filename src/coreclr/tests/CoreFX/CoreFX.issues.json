@@ -1063,6 +1063,10 @@
             "classes": null,
             "methods": [
                 {
+                    "name": "System.Runtime.InteropServices.HandleCollectorTests.Ctor_InitialThresholdGreaterThanMaximumThreshold_ThrowsArgumentException ",
+                    "reason": "outdated"
+                },
+                {
                     "name": "System.Runtime.InteropServices.Tests.GCHandleTests.Alloc_InvalidPinnedObject_ThrowsArgumentException",
                     "reason": "outdated"
                 },
