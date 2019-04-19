@@ -153,6 +153,7 @@ jobs:
       - debian.9
       - ubuntu.16.04
       - ubuntu.18.04
+      - ubuntu.19.04
     - image: mcr.microsoft.com/dotnet-buildtools/prereqs:rhel-7-rpmpkg-c982313-20174116044113
       imageRid: rhel.7
       rids:
