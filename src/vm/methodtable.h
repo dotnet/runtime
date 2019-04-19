@@ -2575,6 +2575,9 @@ public:
 
     DWORD HasFixedAddressVTStatics();
 
+    // Indicates if the MethodTable only contains abstract methods
+    BOOL HasOnlyAbstractMethods();
+
     //-------------------------------------------------------------------
     // PER-INSTANTIATION STATICS INFO
     //

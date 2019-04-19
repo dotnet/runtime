@@ -1364,6 +1364,11 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_VMFlags |= (DWORD) VMFLAG_FIXED_ADDRESS_VT_STATICS;
     }
+    void SetHasOnlyAbstractMethods()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= (DWORD) VMFLAG_ONLY_ABSTRACT_METHODS;
+    }
 #ifdef FEATURE_COMINTEROP
     void SetSparseForCOMInterop()
     {
@@ -1445,6 +1450,13 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_VMFlags & VMFLAG_FIXED_ADDRESS_VT_STATICS;
     }
+
+    BOOL HasOnlyAbstractMethods()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_VMFlags & VMFLAG_ONLY_ABSTRACT_METHODS;
+    }
+
 #ifdef FEATURE_COMINTEROP
     BOOL IsSparseForCOMInterop()
     {
@@ -1874,7 +1886,7 @@ public:
         // unused                              = 0x00080000,
         VMFLAG_CONTAINS_STACK_PTR              = 0x00100000,
         VMFLAG_PREFER_ALIGN8                   = 0x00200000, // Would like to have 8-byte alignment
-        // unused                              = 0x00400000,
+        VMFLAG_ONLY_ABSTRACT_METHODS           = 0x00400000, // Type only contains abstract methods
 
 #ifdef FEATURE_COMINTEROP
         VMFLAG_SPARSE_FOR_COMINTEROP           = 0x00800000,

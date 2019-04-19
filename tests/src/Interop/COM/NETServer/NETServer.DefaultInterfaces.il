@@ -62,16 +62,17 @@
         ret
     }
 
-    .method public abstract virtual
-        instance int32 DefOnInterface2Ret5() cil managed
+    .method public virtual
+        instance int32 DefOnInterfaceRet5() cil managed
     {
-        // Simple interface method
+        // Default interface implementation
+        ldc.i4 5
+        ret
     }
 }
 
 // Interface defintion for overriding another interface's implementation
-.class interface private abstract auto ansi Server.Contract.IDefaultInterfaceTesting2
-       implements Server.Contract.IDefaultInterfaceTesting
+.class interface public abstract auto ansi Server.Contract.IDefaultInterfaceTesting2
 {
     .custom instance void [System.Runtime]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) =
             ( 01 00 01 00 00 )
@@ -82,20 +83,13 @@
               39 34 42 46 37 41 30 00 00 )
     .custom instance void [System.Runtime.InteropServices]System.Runtime.InteropServices.InterfaceTypeAttribute::.ctor(valuetype [System.Runtime.InteropServices]System.Runtime.InteropServices.ComInterfaceType) =
             ( 01 00 01 00 00 00 00 00 )
-
-    .method public virtual final
-        instance int32 DefOnInterface2Ret5() cil managed
-    {
-        .override Server.Contract.IDefaultInterfaceTesting::DefOnInterface2Ret5
-        ldc.i4 5
-        ret
-    }
 }
 
 // COM server consuming interfaces with default methods
 .class public auto ansi beforefieldinit DefaultInterfaceTesting
        extends [System.Runtime]System.Object
-       implements Server.Contract.IDefaultInterfaceTesting2
+       implements Server.Contract.IDefaultInterfaceTesting,
+                  Server.Contract.IDefaultInterfaceTesting2
 {  
     .custom instance void [System.Runtime]System.Runtime.InteropServices.ComVisibleAttribute::.ctor(bool) = ( 01 00 01 00 00 )
     // GUID: FAEF42AE-C1A4-419F-A912-B768AC2679EA
