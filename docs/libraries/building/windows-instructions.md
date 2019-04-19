@@ -4,8 +4,11 @@ Building CoreFX on Windows
 ## Required Software
 
 1. **[Visual Studio 2017](https://www.visualstudio.com/downloads/)** or **[Visual Studio 2019](https://visualstudio.microsoft.com/vs/preview/)** (Community, Professional, Enterprise) with the latest update must be installed. The Community version is completely free.
-2. **[.NET Core SDK](https://www.microsoft.com/net/download/windows)** >= v3.0.0-preview3 must be installed which will add the `dotnet` toolchain to your path.
-3. **[CMake](https://cmake.org/)** must be installed from [the CMake download page](https://cmake.org/download/#latest) and added to your path. CMake 3.14 or later is required to build with VS 2019.
+1. **[CMake](https://cmake.org/)** must be installed from [the CMake download page](https://cmake.org/download/#latest) and added to your path. CMake 3.14 or later is required to build with VS 2019.
+
+## Recommended Software
+1. **[Visual Studio 2019 Preview](https://visualstudio.microsoft.com/vs/preview/)** (Community, Professional, Enterprise) with the latest update should be installed. The Community version is completely free.
+1. **[.NET Core SDK](https://www.microsoft.com/net/download/windows)** >= v3.0.0-preview3 should be installed, which will add the `dotnet` toolchain to your path.
 
 ### Visual Studio 2019
 
