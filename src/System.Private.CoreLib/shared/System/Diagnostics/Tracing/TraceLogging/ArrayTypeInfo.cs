@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 
@@ -23,7 +24,7 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteMetadata(
             TraceLoggingMetadataCollector collector,
-            string name,
+            string? name,
             EventFieldFormat format)
         {
             collector.BeginBufferedArray();
@@ -36,7 +37,7 @@ namespace System.Diagnostics.Tracing
             var bookmark = collector.BeginBufferedArray();
 
             var count = 0;
-            Array array = (Array)value.ReferenceValue;
+            Array? array = (Array?)value.ReferenceValue;
             if (array != null)
             {
                 count = array.Length;
@@ -49,10 +50,11 @@ namespace System.Diagnostics.Tracing
             collector.EndBufferedArray(bookmark, count);
         }
 
-        public override object GetData(object value)
+        public override object? GetData(object? value)
         {
+            Debug.Assert(value != null, "null accepted only for some overrides");
             var array = (Array)value;
-            var serializedArray = new object[array.Length];
+            var serializedArray = new object?[array.Length];
             for (int i = 0; i < array.Length; i++)
             {
                 serializedArray[i] = this.elementInfo.GetData(array.GetValue(i));
