@@ -342,6 +342,12 @@ void get_framework_and_sdk_locations(const pal::string_t& dotnet_dir, std::vecto
 {
     bool multilevel_lookup = multilevel_lookup_enabled();
 
+    // Multi-level lookup will look for the most appropriate version in several locations
+    // by following the priority rank below:
+    //  .exe directory
+    //  Global .NET directories
+    // If it is not activated, then only .exe directory will be considered
+
     pal::string_t dotnet_dir_temp;
     if (!dotnet_dir.empty())
     {

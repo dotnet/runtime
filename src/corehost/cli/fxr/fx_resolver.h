@@ -17,25 +17,29 @@ class fx_resolver_t
 public:
     static StatusCode resolve_frameworks_for_app(
         const host_startup_info_t& host_info,
-        const fx_reference_t& override_settings,
+        const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& app_config,
         fx_definition_vector_t& fx_definitions);
 
 private:
     fx_resolver_t();
 
-    StatusCode soft_roll_forward_helper(
-        const fx_reference_t& newer,
-        const fx_reference_t& older,
-        bool older_is_hard_roll_forward);
-    StatusCode soft_roll_forward(
-        const fx_reference_t existing_ref,
-        bool current_is_hard_roll_forward);
+    void update_newest_references(
+        const runtime_config_t& config);
     StatusCode read_framework(
         const host_startup_info_t& host_info,
-        const fx_reference_t& override_settings,
+        const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& config,
         fx_definition_vector_t& fx_definitions);
+
+    static StatusCode reconcile_fx_references_helper(
+        const fx_reference_t& lower_fx_ref,
+        const fx_reference_t& higher_fx_ref,
+        /*out*/ fx_reference_t& effective_fx_ref);
+    static StatusCode reconcile_fx_references(
+        const fx_reference_t& fx_ref_a,
+        const fx_reference_t& fx_ref_b,
+        /*out*/ fx_reference_t& effective_fx_ref);
 
     static void display_missing_framework_error(
         const pal::string_t& fx_name,
@@ -55,16 +59,16 @@ private:
         const fx_definition_vector_t& fx_definitions,
         const fx_name_to_fx_reference_map_t& newest_references);
 
-    // Map of FX Name -> FX Reference of the most up-to-date resolved references so far. This map is keeping the state
+    // Map of FX Name -> FX Reference of the most up-to-date effective references so far. This map is keeping the state
     // of the resolution algorithm. For each framework it holds the highest version referenced and the merged
-    // roll-forward settings. If the reference has been resolved against the frameworks on disk, this map will hold
-    // the version of the actually resolved version on the disk (so called hard-roll-forward).
-    fx_name_to_fx_reference_map_t m_newest_references;
+    // roll-forward settings. If the reference has been resolved against the frameworks on disk, this map will still hold
+    // the effective reference used to resolve the framework, not the actual found version.
+    fx_name_to_fx_reference_map_t m_effective_fx_references;
 
     // Map of FX Name -> FX Reference of the oldest reference found for the framework yet. This map is only used
     // to fill the "oldest reference" for each resolved framework in the end. It does not affect the behavior
     // of the algorithm.
-    fx_name_to_fx_reference_map_t m_oldest_references;
+    fx_name_to_fx_reference_map_t m_oldest_fx_references;
 };
 
 #endif // __FX_RESOLVER_H__

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build.Framework;
 using System;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -23,38 +24,35 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         [Fact]
         public void FrameworkHiveSelection_GlobalHiveWithBetterMatch()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Multiple hives are only supported on Windows.
+                return;
+            }
+
             RunTest(
                 runtimeConfig => runtimeConfig
-                    .WithFramework(MicrosoftNETCoreApp, "5.0.0"),
-                "5.1.2");
+                    .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2");
         }
 
         [Fact]
         public void FrameworkHiveSelection_MainHiveWithBetterMatch()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // Multiple hives are only supported on Windows.
+                return;
+            }
+
             RunTest(
                 runtimeConfig => runtimeConfig
-                    .WithFramework(MicrosoftNETCoreApp, "6.0.0"),
-                "6.1.2");
+                    .WithFramework(MicrosoftNETCoreApp, "6.0.0"))
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "6.1.2");
         }
 
         [Fact]
         public void FrameworkHiveSelection_CurrentDirectoryIsIgnored()
-        {
-            RunTest(
-                SharedState.DotNetMainHive,
-                SharedState.FrameworkReferenceApp,
-                new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
-                    .WithWorkingDirectory(SharedState.DotNetCurrentHive.BinPath),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.2.0"));
-        }
-
-        private void RunTest(
-            Func<RuntimeConfig, RuntimeConfig> runtimeConfig,
-            string resolvedFramework = null)
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -66,21 +64,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 SharedState.DotNetMainHive,
                 SharedState.FrameworkReferenceApp,
                 new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
+                    .WithWorkingDirectory(SharedState.DotNetCurrentHive.BinPath))
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.2.0");
+        }
+
+        private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig)
+        {
+            return RunTest(
+                SharedState.DotNetMainHive,
+                SharedState.FrameworkReferenceApp,
+                new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig)
                     .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath),
-                commandResult =>
-                {
-                    if (resolvedFramework != null)
-                    {
-                        commandResult.Should().Pass()
-                            .And.HaveResolvedFramework(MicrosoftNETCoreApp, resolvedFramework);
-                    }
-                    else
-                    {
-                        commandResult.Should().Fail()
-                            .And.DidNotFindCompatibleFrameworkVersion();
-                    }
-                },
                 // Must enable multi-level lookup otherwise multiple hives are not enabled
                 multiLevelLookup: true);
         }
