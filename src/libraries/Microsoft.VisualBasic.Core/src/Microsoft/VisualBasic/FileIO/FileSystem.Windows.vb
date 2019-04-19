@@ -36,8 +36,8 @@ Namespace Microsoft.VisualBasic.FileIO
             ByVal FullSourcePath As String, ByVal FullTargetPath As String, ByVal ShowUI As UIOptionInternal, ByVal OnUserCancel As UICancelOption)
             Debug.Assert(System.Enum.IsDefined(GetType(CopyOrMove), Operation))
             Debug.Assert(System.Enum.IsDefined(GetType(FileOrDirectory), TargetType))
-            Debug.Assert(FullSourcePath <> "" And IO.Path.IsPathRooted(FullSourcePath), "Invalid FullSourcePath!!!")
-            Debug.Assert(FullTargetPath <> "" And IO.Path.IsPathRooted(FullTargetPath), "Invalid FullTargetPath!!!")
+            Debug.Assert(FullSourcePath <> "" And IO.Path.IsPathRooted(FullSourcePath), "Invalid FullSourcePath")
+            Debug.Assert(FullTargetPath <> "" And IO.Path.IsPathRooted(FullTargetPath), "Invalid FullTargetPath")
             Debug.Assert(ShowUI <> UIOptionInternal.NoUI, "Why call ShellDelete if ShowUI is NoUI???")
 
             ' Set operation type.
@@ -97,7 +97,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Sub ShellDelete(ByVal FullPath As String,
             ByVal ShowUI As UIOptionInternal, ByVal recycle As RecycleOption, ByVal OnUserCancel As UICancelOption, ByVal FileOrDirectory As FileOrDirectory)
 
-            Debug.Assert(FullPath <> "" And IO.Path.IsPathRooted(FullPath), "FullPath must be a full path!!!")
+            Debug.Assert(FullPath <> "" And IO.Path.IsPathRooted(FullPath), "FullPath must be a full path")
             Debug.Assert(ShowUI <> UIOptionInternal.NoUI, "Why call ShellDelete if ShowUI is NoUI???")
 
             ' Set fFlags to control the operation details.
@@ -123,9 +123,9 @@ Namespace Microsoft.VisualBasic.FileIO
             ByVal FullSource As String, ByVal FullTarget As String, ByVal OnUserCancel As UICancelOption, ByVal FileOrDirectory As FileOrDirectory)
 
             Debug.Assert(System.Enum.IsDefined(GetType(SHFileOperationType), OperationType))
-            Debug.Assert(OperationType <> SHFileOperationType.FO_RENAME, "Don't call Shell to rename!!!")
-            Debug.Assert(FullSource <> "" And IO.Path.IsPathRooted(FullSource), "Invalid FullSource path!!!")
-            Debug.Assert(OperationType = SHFileOperationType.FO_DELETE OrElse (FullTarget <> "" And IO.Path.IsPathRooted(FullTarget)), "Invalid FullTarget path!!!")
+            Debug.Assert(OperationType <> SHFileOperationType.FO_RENAME, "Don't call Shell to rename")
+            Debug.Assert(FullSource <> "" And IO.Path.IsPathRooted(FullSource), "Invalid FullSource path")
+            Debug.Assert(OperationType = SHFileOperationType.FO_DELETE OrElse (FullTarget <> "" And IO.Path.IsPathRooted(FullTarget)), "Invalid FullTarget path")
 
 
             ' Get the SHFILEOPSTRUCT
@@ -163,7 +163,7 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Function GetShellOperationInfo(
                             ByVal OperationType As SHFileOperationType, ByVal OperationFlags As ShFileOperationFlags,
                             ByVal SourcePath As String, Optional ByVal TargetPath As String = Nothing) As SHFILEOPSTRUCT
-            Debug.Assert(SourcePath <> "" And IO.Path.IsPathRooted(SourcePath), "Invalid SourcePath!!!")
+            Debug.Assert(SourcePath <> "" And IO.Path.IsPathRooted(SourcePath), "Invalid SourcePath")
 
             Return GetShellOperationInfo(OperationType, OperationFlags, New String() {SourcePath}, TargetPath)
         End Function
@@ -179,9 +179,9 @@ Namespace Microsoft.VisualBasic.FileIO
         Private Shared Function GetShellOperationInfo(
                             ByVal OperationType As SHFileOperationType, ByVal OperationFlags As ShFileOperationFlags,
                             ByVal SourcePaths() As String, Optional ByVal TargetPath As String = Nothing) As SHFILEOPSTRUCT
-            Debug.Assert(System.Enum.IsDefined(GetType(SHFileOperationType), OperationType), "Invalid OperationType!!!")
-            Debug.Assert(TargetPath = "" Or IO.Path.IsPathRooted(TargetPath), "Invalid TargetPath!!!")
-            Debug.Assert(SourcePaths IsNot Nothing AndAlso SourcePaths.Length > 0, "Invalid SourcePaths!!!")
+            Debug.Assert(System.Enum.IsDefined(GetType(SHFileOperationType), OperationType), "Invalid OperationType")
+            Debug.Assert(TargetPath = "" Or IO.Path.IsPathRooted(TargetPath), "Invalid TargetPath")
+            Debug.Assert(SourcePaths IsNot Nothing AndAlso SourcePaths.Length > 0, "Invalid SourcePaths")
 
             Dim OperationInfo As SHFILEOPSTRUCT
 
@@ -237,7 +237,7 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <param name="FullPath">The full path to be converted.</param>
         ''' <returns>A string in the required format.</returns>
         Private Shared Function GetShellPath(ByVal FullPath As String) As String
-            Debug.Assert(FullPath <> "" And IO.Path.IsPathRooted(FullPath), "Must be full path!!!")
+            Debug.Assert(FullPath <> "" And IO.Path.IsPathRooted(FullPath), "Must be full path")
 
             Return GetShellPath(New String() {FullPath})
         End Function
@@ -249,8 +249,8 @@ Namespace Microsoft.VisualBasic.FileIO
         ''' <returns>A string in the required format.</returns>
         Private Shared Function GetShellPath(ByVal FullPaths() As String) As String
 #If DEBUG Then
-            Debug.Assert(FullPaths IsNot Nothing, "FullPaths is NULL!!!")
-            Debug.Assert(FullPaths.Length > 0, "FullPaths() is empty array!!!")
+            Debug.Assert(FullPaths IsNot Nothing, "FullPaths is NULL")
+            Debug.Assert(FullPaths.Length > 0, "FullPaths() is empty array")
             For Each FullPath As String In FullPaths
                 Debug.Assert(FullPath <> "" And IO.Path.IsPathRooted(FullPath), FullPath)
             Next

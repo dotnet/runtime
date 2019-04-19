@@ -72,7 +72,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             If (TimeTicks = Value.Ticks) OrElse
                 (Value.Year = 1899 AndAlso Value.Month = 12 AndAlso Value.Day = 30) Then 'OA Date with no date is 1899-12-30
                 'No date (1/1/1)
-                'UNDONE: REVIEW OA DATE HACK
                 Return Value.ToString("T", Nothing)
             ElseIf TimeTicks = 0 Then
                 'No time, or is midnight
@@ -655,7 +654,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                                 Return SourceEndIndex - Count
                             Else
                                 'Pattern uses only literals, so we can directly search for the pattern in the source
-                                'TODO: Handle cases where pattern could be replicated in the source.
                                 TruncatedPattern = Pattern.Substring(0, PatternIndex)    'Remove the second * and everything trailing  
 
                                 If CompareOption = CompareMethod.Binary Then

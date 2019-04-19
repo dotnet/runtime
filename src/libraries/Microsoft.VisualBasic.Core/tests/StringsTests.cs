@@ -446,6 +446,19 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expected, Strings.Trim(str));
         }
 
+        [Theory]
+        [InlineData("a", "a", 0, 0)]
+        [InlineData("a", "b", -1, -1)]
+        [InlineData("b", "a", 1, 1)]
+        [InlineData("a", "ABC", 1, -1)]
+        [InlineData("ABC", "a", -1, 1)]
+        [InlineData("abc", "ABC", 1, 0)]
+        public void StrComp(string left, string right, int expectedBinaryCompare, int expectedTextCompare)
+        {
+            Assert.Equal(expectedBinaryCompare, Strings.StrComp(left, right, CompareMethod.Binary));
+            Assert.Equal(expectedTextCompare, Strings.StrComp(left, right, CompareMethod.Text));
+        }
+
         public static TheoryData<string, string, int> InStr_TestData_NullsAndEmpties() => new TheoryData<string, string, int>
         {
             {null, null, 0 },

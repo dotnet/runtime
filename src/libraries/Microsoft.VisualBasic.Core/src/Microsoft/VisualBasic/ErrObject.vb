@@ -122,7 +122,6 @@ Namespace Microsoft.VisualBasic
         ''' any On Error statement.
         ''' </summary>
         Public Sub Clear()
-            'CONSIDER:  do we even care about CLEARING the fields if clearing the flags are enough (aside from m_curException)?
             m_curException = Nothing
             m_curNumber = 0
             m_curDescription = ""
