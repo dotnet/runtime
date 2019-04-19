@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -52,7 +52,7 @@ namespace System.Collections.Concurrent
         /// Lock used to protect cross-segment operations, including any updates to <see cref="_tail"/> or <see cref="_head"/>
         /// and any operations that need to get a consistent view of them.
         /// </summary>
-        private object _crossSegmentLock;
+        private readonly object _crossSegmentLock;
         /// <summary>The current tail segment.</summary>
         private volatile ConcurrentQueueSegment<T> _tail;
         /// <summary>The current head segment.</summary>
@@ -68,11 +68,20 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>
-        /// Initializes the contents of the queue from an existing collection.
+        /// Initializes a new instance of the <see cref="ConcurrentQueue{T}"/> class that contains elements copied
+        /// from the specified collection.
         /// </summary>
-        /// <param name="collection">A collection from which to copy elements.</param>
-        private void InitializeFromCollection(IEnumerable<T> collection)
+        /// <param name="collection">
+        /// The collection whose elements are copied to the new <see cref="ConcurrentQueue{T}"/>.
+        /// </param>
+        /// <exception cref="System.ArgumentNullException">The <paramref name="collection"/> argument is null.</exception>
+        public ConcurrentQueue(IEnumerable<T> collection)
         {
+            if (collection == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
+            }
+
             _crossSegmentLock = new object();
 
             // Determine the initial segment size.  We'll use the default,
@@ -91,28 +100,10 @@ namespace System.Collections.Concurrent
 
             // Initialize the segment and add all of the data to it.
             _tail = _head = new ConcurrentQueueSegment<T>(length);
-            foreach (T item in collection)
+            foreach (T item in collection!) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 Enqueue(item);
             }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ConcurrentQueue{T}"/> class that contains elements copied
-        /// from the specified collection.
-        /// </summary>
-        /// <param name="collection">
-        /// The collection whose elements are copied to the new <see cref="ConcurrentQueue{T}"/>.
-        /// </param>
-        /// <exception cref="System.ArgumentNullException">The <paramref name="collection"/> argument is null.</exception>
-        public ConcurrentQueue(IEnumerable<T> collection)
-        {
-            if (collection == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
-            }
-
-            InitializeFromCollection(collection);
         }
 
         /// <summary>
@@ -156,7 +147,7 @@ namespace System.Collections.Concurrent
 
             // Otherwise, fall back to the slower path that first copies the contents
             // to an array, and then uses that array's non-generic CopyTo to do the copy.
-            ToArray().CopyTo(array, index);
+            ToArray().CopyTo(array!, index); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         /// <summary>
@@ -173,7 +164,7 @@ namespace System.Collections.Concurrent
         /// cref="ICollection"/>. This property is not supported.
         /// </summary>
         /// <exception cref="NotSupportedException">The SyncRoot property is not supported.</exception>
-        object ICollection.SyncRoot { get { ThrowHelper.ThrowNotSupportedException(ExceptionResource.ConcurrentCollection_SyncRoot_NotSupported); return default; } }
+        object ICollection.SyncRoot { get { ThrowHelper.ThrowNotSupportedException(ExceptionResource.ConcurrentCollection_SyncRoot_NotSupported); return default!; } } // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
 
         /// <summary>Returns an enumerator that iterates through a collection.</summary>
         /// <returns>An <see cref="IEnumerator"/> that can be used to iterate through the collection.</returns>
@@ -347,7 +338,7 @@ namespace System.Collections.Concurrent
                                     // With the cross-segment lock held, we're guaranteed that all of these internal segments are
                                     // consistent, as the head and tail segment can't be changed while we're holding the lock, and
                                     // dequeueing and enqueueing can only be done from the head and tail segments, which these aren't.
-                                    for (ConcurrentQueueSegment<T> s = head._nextSegment; s != tail; s = s._nextSegment)
+                                    for (ConcurrentQueueSegment<T> s = head._nextSegment!; s != tail; s = s._nextSegment!)
                                     {
                                         Debug.Assert(s._frozenForEnqueues, "Internal segment must be frozen as there's a following segment.");
                                         count += s._headAndTail.Tail - s.FreezeOffset;
@@ -415,7 +406,7 @@ namespace System.Collections.Concurrent
                 // Since there were segments before these, for our purposes we consider them to start at
                 // the 0th element, and since there is at least one segment after each, each was frozen
                 // by the time we snapped it, so we can iterate until each's frozen tail.
-                for (ConcurrentQueueSegment<T> s = head._nextSegment; s != tail; s = s._nextSegment)
+                for (ConcurrentQueueSegment<T> s = head._nextSegment!; s != tail; s = s._nextSegment!)
                 {
                     Debug.Assert(s._preservedForObservation);
                     Debug.Assert(s._frozenForEnqueues);
@@ -471,7 +462,7 @@ namespace System.Collections.Concurrent
 
             // Get the number of items to be enumerated
             long count = GetCount(head, headHead, tail, tailTail);
-            if (index > array.Length - count)
+            if (index > array!.Length - count) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
             }
@@ -523,7 +514,7 @@ namespace System.Collections.Concurrent
 
                 // Mark them and all segments in between as preserving, and ensure no additional items
                 // can be added to the tail.
-                for (ConcurrentQueueSegment<T> s = head; ; s = s._nextSegment)
+                for (ConcurrentQueueSegment<T> s = head; ; s = s._nextSegment!)
                 {
                     s._preservedForObservation = true;
                     if (s == tail) break;
@@ -595,7 +586,7 @@ namespace System.Collections.Concurrent
             {
                 // Each segment between head and tail, not including head and tail.  Since there were
                 // segments before these, for our purposes we consider it to start at the 0th element.
-                for (ConcurrentQueueSegment<T> s = head._nextSegment; s != tail; s = s._nextSegment)
+                for (ConcurrentQueueSegment<T> s = head._nextSegment!; s != tail; s = s._nextSegment!)
                 {
                     Debug.Assert(s._preservedForObservation, "Would have had to been preserved as a segment part of enumeration");
                     Debug.Assert(s._frozenForEnqueues, "Would have had to be frozen for enqueues as it's intermediate");
@@ -688,7 +679,7 @@ namespace System.Collections.Concurrent
         /// true if an element was removed and returned from the beginning of the
         /// <see cref="ConcurrentQueue{T}"/> successfully; otherwise, false.
         /// </returns>
-        public bool TryDequeue(out T result) =>
+        public bool TryDequeue(out T result) => // TODO-GENERIC-NULLABLE
             _head.TryDequeue(out result) || // fast-path that operates just on the head segment
             TryDequeueSlow(out result); // slow path that needs to fix up segments
 
@@ -711,7 +702,7 @@ namespace System.Collections.Concurrent
                 // check and this check, another item could have arrived).
                 if (head._nextSegment == null)
                 {
-                    item = default;
+                    item = default!; // TODO-NULLABLE-GENERIC
                     return false;
                 }
 
@@ -752,7 +743,7 @@ namespace System.Collections.Concurrent
         /// For determining whether the collection contains any items, use of the <see cref="IsEmpty"/>
         /// property is recommended rather than peeking.
         /// </remarks>
-        public bool TryPeek(out T result) => TryPeek(out result, resultUsed: true);
+        public bool TryPeek(out T result) => TryPeek(out result, resultUsed: true); // TODO-GENERIC-NULLABLE
 
         /// <summary>Attempts to retrieve the value for the first element in the queue.</summary>
         /// <param name="result">The value of the first element, if found.</param>
@@ -768,7 +759,7 @@ namespace System.Collections.Concurrent
                 // Grab the next segment from this one, before we peek.
                 // This is to be able to see whether the value has changed
                 // during the peek operation.
-                ConcurrentQueueSegment<T> next = Volatile.Read(ref s._nextSegment);
+                ConcurrentQueueSegment<T>? next = Volatile.Read(ref s._nextSegment);
 
                 // Peek at the segment.  If we find an element, we're done.
                 if (s.TryPeek(out result, resultUsed))
@@ -805,7 +796,7 @@ namespace System.Collections.Concurrent
                 // and we'll traverse to that segment.
             }
 
-            result = default;
+            result = default!; // TODO-NULLABLE-GENERIC
             return false;
         }
 
