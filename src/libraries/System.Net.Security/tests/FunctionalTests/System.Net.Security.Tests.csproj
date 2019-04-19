@@ -108,9 +108,21 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
     <Compile Include="IdentityValidator.Windows.cs" />
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.Windows.cs">
+      <Link>Common\System\Net\Capability.Security.Windows.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="IdentityValidator.Unix.cs" />
+    <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.Unix.cs">
+      <Link>Common\System\Net\Capability.Security.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs">
+      <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
+      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsLinux)' == 'true' ">
     <None Include="..\Scripts\Unix\setup-kdc.sh">
@@ -131,9 +143,6 @@
     <Compile Include="NegotiateStreamTest.Linux.cs" />
     <Compile Include="UnixGssFakeNegotiateStream.cs" />
     <Compile Include="UnixGssFakeStreamFramer.cs" />
-    <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
-      <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs">
       <Link>Common\Interop\Unix\System.Net.Security.Native\Interop.GssApiException.cs</Link>
     </Compile>

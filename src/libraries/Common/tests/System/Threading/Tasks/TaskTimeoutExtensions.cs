@@ -25,33 +25,39 @@ namespace System.Threading.Tasks
             }
         }
 
-        public static async Task TimeoutAfter(this Task task, int millisecondsTimeout)
+        public static Task TimeoutAfter(this Task task, int millisecondsTimeout)
+            => task.TimeoutAfter(TimeSpan.FromMilliseconds(millisecondsTimeout));
+
+        public static async Task TimeoutAfter(this Task task, TimeSpan timeout)
         {
             var cts = new CancellationTokenSource();
 
-            if (task == await Task.WhenAny(task, Task.Delay(millisecondsTimeout, cts.Token)).ConfigureAwait(false))
+            if (task == await Task.WhenAny(task, Task.Delay(timeout, cts.Token)).ConfigureAwait(false))
             {
                 cts.Cancel();
                 await task.ConfigureAwait(false);
             }
             else
             {
-                throw new TimeoutException($"Task timed out after {millisecondsTimeout}ms");
+                throw new TimeoutException($"Task timed out after {timeout}");
             }
         }
 
-        public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, int millisecondsTimeout)
+        public static Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, int millisecondsTimeout)
+            => task.TimeoutAfter(TimeSpan.FromMilliseconds(millisecondsTimeout));
+
+        public static async Task<TResult> TimeoutAfter<TResult>(this Task<TResult> task, TimeSpan timeout)
         {
             var cts = new CancellationTokenSource();
 
-            if (task == await Task<TResult>.WhenAny(task, Task<TResult>.Delay(millisecondsTimeout, cts.Token)).ConfigureAwait(false))
+            if (task == await Task<TResult>.WhenAny(task, Task<TResult>.Delay(timeout, cts.Token)).ConfigureAwait(false))
             {
                 cts.Cancel();
                 return await task.ConfigureAwait(false);
             }
             else
             {
-                throw new TimeoutException($"Task timed out after {millisecondsTimeout}ms");
+                throw new TimeoutException($"Task timed out after {timeout}");
             }
         }
 
