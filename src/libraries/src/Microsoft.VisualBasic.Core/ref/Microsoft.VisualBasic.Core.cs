@@ -188,6 +188,7 @@ namespace Microsoft.VisualBasic
         public static string Mid(string str, int Start, int Length) { throw null; }
         public static string Right(string str, int Length) { throw null; }
         public static string RTrim(string str) { throw null; }
+        public static int StrComp(string String1, string String2, CompareMethod Compare = CompareMethod.Binary) { throw null; }
         public static string Trim(string str) { throw null; }
     }
     public enum VariantType
@@ -268,11 +269,25 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static bool FromString(string Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class ByteType
+    {
+        internal ByteType() { }
+        public static byte FromObject(object Value) { throw null; }
+        public static byte FromString(string Value) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class CharArrayType
     {
         internal CharArrayType() { }
         public static char[] FromObject(object Value) { throw null; }
         public static char[] FromString(string Value) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class CharType
+    {
+        internal CharType() { }
+        public static char FromObject(object Value) { throw null; }
+        public static char FromString(string Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class Conversions
@@ -344,6 +359,14 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static ushort ToUShort(string Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class DateType
+    {
+        internal DateType() { }
+        public static System.DateTime FromObject(object Value) { throw null; }
+        public static System.DateTime FromString(string Value) { throw null; }
+        public static System.DateTime FromString(string Value, System.Globalization.CultureInfo culture) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DecimalType
     {
         internal DecimalType() { }
@@ -375,6 +398,53 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class IncompleteInitialization : System.Exception
     {
         public IncompleteInitialization() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class IntegerType
+    {
+        internal IntegerType() { }
+        public static int FromObject(object Value) { throw null; }
+        public static int FromString(string Value) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class LateBinding
+    {
+        internal LateBinding() { }
+        [System.Diagnostics.DebuggerHiddenAttribute]
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static void LateCall(object o, System.Type objType, string name, object[] args, string[] paramnames, bool[] CopyBack) { throw null; }
+        [System.Diagnostics.DebuggerHiddenAttribute]
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static object LateGet(object o, System.Type objType, string name, object[] args, string[] paramnames, bool[] CopyBack) { throw null; }
+        [System.Diagnostics.DebuggerHiddenAttribute]
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static object LateIndexGet(object o, object[] args, string[] paramnames) { throw null; }
+        [System.Diagnostics.DebuggerHiddenAttribute]
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static void LateIndexSet(object o, object[] args, string[] paramnames) { throw null; }
+        [System.Diagnostics.DebuggerHiddenAttribute]
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static void LateIndexSetComplex(object o, object[] args, string[] paramnames, bool OptimisticSet, bool RValueBase) { throw null; }
+        [System.Diagnostics.DebuggerHiddenAttribute]
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static void LateSet(object o, System.Type objType, string name, object[] args, string[] paramnames) { throw null; }
+        [System.Diagnostics.DebuggerHiddenAttribute]
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static void LateSetComplex(object o, System.Type objType, string name, object[] args, string[] paramnames, bool OptimisticSet, bool RValueBase) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class LikeOperator
+    {
+        internal LikeOperator() { }
+        public static object LikeObject(object Source, object Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
+        public static bool LikeString(string Source, string Pattern, Microsoft.VisualBasic.CompareMethod CompareOption) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class LongType
+    {
+        internal LongType() { }
+        public static long FromObject(object Value) { throw null; }
+        public static long FromString(string Value) { throw null; }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class NewLateBinding
@@ -434,6 +504,31 @@ namespace Microsoft.VisualBasic.CompilerServices
         }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class ObjectType
+    {
+        public ObjectType() { }
+        public static object AddObj(object o1, object o2) { throw null; }
+        public static object BitAndObj(object obj1, object obj2) { throw null; }
+        public static object BitOrObj(object obj1, object obj2) { throw null; }
+        public static object BitXorObj(object obj1, object obj2) { throw null; }
+        public static object DivObj(object o1, object o2) { throw null; }
+        public static object GetObjectValuePrimitive(object o) { throw null; }
+        public static object IDivObj(object o1, object o2) { throw null; }
+        public static bool LikeObj(object vLeft, object vRight, CompareMethod CompareOption) { throw null; }
+        public static object ModObj(object o1, object o2) { throw null; }
+        public static object MulObj(object o1, object o2) { throw null; }
+        public static object NegObj(object obj) { throw null; }
+        public static object NotObj(object obj) { throw null; }
+        public static int ObjTst(object o1, object o2, bool TextCompare) { throw null; }
+        public static object PlusObj(object obj) { throw null; }
+        public static object PowObj(object obj1, object obj2) { throw null; }
+        public static object ShiftLeftObj(object o1, int amount) { throw null; }
+        public static object ShiftRightObj(object o1, int amount) { throw null; }
+        public static object StrCatObj(object vLeft, object vRight) { throw null; }
+        public static object SubObj(object o1, object o2) { throw null; }
+        public static object XorObj(object obj1, object obj2) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class Operators
     {
         internal Operators() { }
@@ -489,6 +584,22 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static System.Exception CreateProjectError(int hr) { throw null; }
         public static void SetProjectError(System.Exception ex) { }
         public static void SetProjectError(System.Exception ex, int lErl) { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class ShortType
+    {
+        internal ShortType() { }
+        public static short FromObject(object Value) { throw null; }
+        public static short FromString(string Value) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public sealed partial class SingleType
+    {
+        internal SingleType() { }
+        public static float FromObject(object Value) { throw null; }
+        public static float FromObject(object Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
+        public static float FromString(string Value) { throw null; }
+        public static float FromString(string Value, System.Globalization.NumberFormatInfo NumberFormat) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]

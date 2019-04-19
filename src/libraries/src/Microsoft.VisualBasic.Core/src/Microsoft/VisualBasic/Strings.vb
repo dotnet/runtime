@@ -600,5 +600,22 @@ EmptyMatchString:
                 Throw ex
             End Try
         End Function
+
+        '============================================================================
+        ' String comparison/conversion functions.
+        '============================================================================
+        Public Function StrComp(ByVal String1 As String, ByVal String2 As String, <Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute()> Optional ByVal [Compare] As CompareMethod = CompareMethod.Binary) As Integer
+            Try
+                If ([Compare] = CompareMethod.Binary) Then
+                    Return Operators.CompareString(String1, String2, False)
+                ElseIf ([Compare] = CompareMethod.Text) Then
+                    Return Operators.CompareString(String1, String2, True)
+                Else
+                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "Compare"))
+                End If
+            Catch ex As Exception
+                Throw ex
+            End Try
+        End Function
     End Module
 End Namespace

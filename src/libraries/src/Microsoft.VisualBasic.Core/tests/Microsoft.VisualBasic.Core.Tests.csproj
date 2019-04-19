@@ -5,37 +5,47 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="ByteTypeTests.cs" />
+    <Compile Include="CharTypeTests.cs" />
     <Compile Include="CollectionsTests.cs" />
     <Compile Include="CompilerServices\BooleanTypeTests.cs" />
     <Compile Include="CompilerServices\DoubleTypeTests.cs" />
     <Compile Include="CompilerServices\DecimalTypeTests.cs" />
     <Compile Include="CompilerServices\VersionedTests.cs" />
-    <Compile Include="Microsoft\VisualBasic\ComClassAttributeTests.cs" />
-    <Compile Include="Microsoft\VisualBasic\HideModuleNameAttributeTests.cs" />
-    <Compile Include="Microsoft\VisualBasic\MyGroupCollectionAttributeTests.cs" />
-    <Compile Include="Microsoft\VisualBasic\VBFixedArrayAttributeTests.cs" />
-    <Compile Include="Microsoft\VisualBasic\VBFixedStringAttributeTests.cs" />
+    <Compile Include="ConversionsTests.cs" />
+    <Compile Include="DateTypeTests.cs" />
+    <Compile Include="DateAndTimeTests.cs" />
+    <Compile Include="ErrObjectTests.cs" />
+    <Compile Include="IConvertibleWrapper.cs" />
+    <Compile Include="InformationTests.cs" />
+    <Compile Include="IntegerTypeTests.cs" />
+    <Compile Include="LateBindingTests.cs" />
+    <Compile Include="LikeOperatorTests.cs" />
+    <Compile Include="LongTypeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupEventArgsTests.cs" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupNextInstanceEventArgsTests.cs" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\UnhandledExceptionEventArgsTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\ComClassAttributeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\DesignerGeneratedAttributeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\OptionCompareAttributeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\OptionTextAttributeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\StandardModuleAttributeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\StructUtilsTests.cs" />
     <Compile Include="Microsoft\VisualBasic\Devices\NetworkAvailableEventArgsTests.cs" />
-    <Compile Include="ConversionsTests.cs" />
-    <Compile Include="ErrObjectTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\HideModuleNameAttributeTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\MyGroupCollectionAttributeTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBFixedArrayAttributeTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\VBFixedStringAttributeTests.cs" />
+    <Compile Include="ObjectTypeTests.cs" />
     <Compile Include="OperatorsTests.cs" />
     <Compile Include="OperatorsTests.Comparison.cs" />
-    <Compile Include="DateAndTimeTests.cs" />
-    <Compile Include="IConvertibleWrapper.cs" />
-    <Compile Include="InformationTests.cs" />
     <Compile Include="ProjectDataTests.cs" />
-    <Compile Include="UtilsTests.cs" />
-    <Compile Include="VBMathTests.cs" />
+    <Compile Include="ShortTypeTests.cs" />
+    <Compile Include="SingleTypeTests.cs" />
     <Compile Include="StringsTests.cs" />
     <Compile Include="StringTypeTests.cs" />
+    <Compile Include="UtilsTests.cs" />
+    <Compile Include="VBMathTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

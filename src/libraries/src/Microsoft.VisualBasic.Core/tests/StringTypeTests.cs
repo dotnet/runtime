@@ -104,13 +104,13 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Equal(expected, StringType.FromObject(value));
         }
 
-        // The following should be supported but are not.
+        // The following conversions are not supported.
         [Theory]
         [MemberData(nameof(FromSByte_TestData))]
         [MemberData(nameof(FromUInt16_TestData))]
         [MemberData(nameof(FromUInt32_TestData))]
         [MemberData(nameof(FromUInt64_TestData))]
-        public void FromObject_Unexpected(object value, string expected)
+        public void FromObject_NotSupported(object value, string expected)
         {
             Assert.Throws<InvalidCastException>(() => StringType.FromObject(value));
         }
