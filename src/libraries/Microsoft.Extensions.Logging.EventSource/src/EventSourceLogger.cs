@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
@@ -213,11 +214,11 @@ namespace Microsoft.Extensions.Logging.EventSource
             writer.WriteStartObject();
             foreach (var keyValue in keyValues)
             {
-                writer.WriteString(keyValue.Key, keyValue.Value, true);
+                writer.WriteString(keyValue.Key, keyValue.Value);
             }
             writer.WriteEndObject();
 
-            writer.Flush(true);
+            writer.Flush();
 
             return Encoding.UTF8.GetString(arrayBufferWriter.WrittenMemory.ToArray());
         }
