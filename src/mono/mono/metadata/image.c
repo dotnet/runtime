@@ -1386,7 +1386,8 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Loading problematic image %s", image->name);
 		} else {
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY, "Denying load of problematic image %s", image->name);
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			if (status)
+				*status = MONO_IMAGE_IMAGE_INVALID;
 			goto invalid_image;
 		}
 	}
@@ -1790,9 +1791,10 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 			g_assert (!image);
 			g_free (absfname);
 			if (status) {
-				if (last_error == ERROR_BAD_EXE_FORMAT || last_error == STATUS_INVALID_IMAGE_FORMAT)
-					*status = MONO_IMAGE_IMAGE_INVALID;
-				else {
+				if (last_error == ERROR_BAD_EXE_FORMAT || last_error == STATUS_INVALID_IMAGE_FORMAT) {
+					if (status)
+						*status = MONO_IMAGE_IMAGE_INVALID;
+				} else {
 					if (last_error == ERROR_FILE_NOT_FOUND || last_error == ERROR_PATH_NOT_FOUND)
 						mono_set_errno (ENOENT);
 					else

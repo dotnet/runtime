@@ -1464,6 +1464,7 @@ load_reference_by_aname_refonly_asmctx (MonoAssemblyName *aname, MonoAssembly *a
 {
 	MonoAssembly *reference = NULL;
 	g_assert (assm != NULL);
+	g_assert (status != NULL);
 	*status = MONO_IMAGE_OK;
 	{
 		/* We use the loaded corlib */
@@ -1494,6 +1495,7 @@ static MonoAssembly*
 load_reference_by_aname_default_asmctx (MonoAssemblyName *aname, MonoAssembly *assm, MonoImageOpenStatus *status)
 {
 	MonoAssembly *reference = NULL;
+	g_assert (status != NULL);
 	*status = MONO_IMAGE_OK;
 	{
 		/* we first try without setting the basedir: this can eventually result in a ResolveAssembly
@@ -1538,6 +1540,8 @@ load_reference_by_aname_individual_asmctx (MonoAssemblyName *aname, MonoAssembly
 	 * else we fire the assembly resolve event - similar to refonly - but
 	 * subject to remaping and binding.
 	 */
+
+	g_assert (status != NULL);
 
 	MonoAssembly *reference = NULL;
 	*status = MONO_IMAGE_OK;
@@ -1739,7 +1743,8 @@ void
 mono_assembly_load_references (MonoImage *image, MonoImageOpenStatus *status)
 {
 	/* This is a no-op now but it is part of the embedding API so we can't remove it */
-	*status = MONO_IMAGE_OK;
+	if (status)
+		*status = MONO_IMAGE_OK;
 }
 
 typedef struct AssemblyLoadHook AssemblyLoadHook;
@@ -2591,6 +2596,8 @@ chain_redirections_loadfrom (MonoImage *image, MonoImageOpenStatus *out_status)
 MonoAssembly*
 mono_assembly_binding_applies_to_image (MonoImage* image, MonoImageOpenStatus *status)
 {
+	g_assert (status != NULL);
+
 	/* This is a "fun" one now.
 	 * For LoadFrom ("/basedir/some.dll") or LoadFile("/basedir/some.dll") or Load(byte[])),
 	 * apparently what we're meant to do is:
@@ -2658,6 +2665,8 @@ mono_assembly_binding_applies_to_image (MonoImage* image, MonoImageOpenStatus *s
 MonoAssembly*
 mono_problematic_image_reprobe (MonoImage *image, MonoImageOpenStatus *status)
 {
+	g_assert (status != NULL);
+
 	if (G_LIKELY (!mono_is_problematic_image (image))) {
 		*status = MONO_IMAGE_OK;
 		return NULL;
@@ -2753,6 +2762,9 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyLoadRequest req;
+	MonoImageOpenStatus def_status;
+	if (!status)
+		status = &def_status;
 	mono_assembly_request_prepare (&req, sizeof (req), refonly ? MONO_ASMCTX_REFONLY : MONO_ASMCTX_DEFAULT);
 	res = mono_assembly_request_load_from (image, fname, &req, status);
 	MONO_EXIT_GC_UNSAFE;
@@ -2770,6 +2782,8 @@ mono_assembly_request_load_from (MonoImage *image, const char *fname,
 
 	MonoAssembly *ass, *ass2;
 	char *base_dir;
+
+	g_assert (status != NULL);
 
 	asmctx = req->asmctx;
 	predicate = req->predicate;
@@ -2941,6 +2955,9 @@ mono_assembly_load_from (MonoImage *image, const char *fname,
 	MonoAssembly *res;
 	MONO_ENTER_GC_UNSAFE;
 	MonoAssemblyLoadRequest req;
+	MonoImageOpenStatus def_status;
+	if (!status)
+		status = &def_status;
 	mono_assembly_request_prepare (&req, sizeof (req), MONO_ASMCTX_DEFAULT);
 	res = mono_assembly_request_load_from (image, fname, &req, status);
 	MONO_EXIT_GC_UNSAFE;
@@ -3595,6 +3612,9 @@ mono_assembly_load_with_partial_name (const char *name, MonoImageOpenStatus *sta
 {
 	MonoAssembly *result;
 	MONO_ENTER_GC_UNSAFE;
+	MonoImageOpenStatus def_status;
+	if (!status)
+		status = &def_status;
 	result = mono_assembly_load_with_partial_name_internal (name, status);
 	MONO_EXIT_GC_UNSAFE;
 	return result;
@@ -3611,6 +3631,8 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoImageOpenSt
 	gchar **paths;
 
 	MONO_REQ_GC_UNSAFE_MODE;
+
+	g_assert (status != NULL);
 
 	memset (&base_name, 0, sizeof (MonoAssemblyName));
 	aname = &base_name;
