@@ -68,12 +68,12 @@ namespace System.Net.Test.Common
             await WriteFrameAsync(emptySettings).ConfigureAwait(false);
 
             // Receive and ACK the client settings frame.
-            Frame clientSettings = await ReadFrameAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+            Frame clientSettings = await ReadFrameAsync(Timeout).ConfigureAwait(false);
             clientSettings.Flags = clientSettings.Flags | FrameFlags.Ack;
             await WriteFrameAsync(clientSettings).ConfigureAwait(false);
 
             // Receive the client ACK of the server settings frame.
-            clientSettings = await ReadFrameAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+            clientSettings = await ReadFrameAsync(Timeout).ConfigureAwait(false);
         }
 
         public async Task WriteFrameAsync(Frame frame)
@@ -160,6 +160,18 @@ namespace System.Net.Test.Common
             }
         }
 
+        // Reset and return underlying networking objects.
+        public (Socket, Stream) ResetNetwork()
+        {
+            Socket oldSocket = _connectionSocket;
+            Stream oldStream = _connectionStream;
+            _connectionSocket = null;
+            _connectionStream = null;
+            _ignoreSettingsAck = false;
+
+            return (oldSocket, oldStream);
+        }
+
         // Returns the first 24 bytes read, which should be the connection preface.
         public async Task<string> AcceptConnectionAsync()
         {
@@ -225,13 +237,13 @@ namespace System.Net.Test.Common
             await AcceptConnectionAsync();
 
             // Receive the initial client settings frame.
-            Frame receivedFrame = await ReadFrameAsync(TimeSpan.FromSeconds(30));
+            Frame receivedFrame = await ReadFrameAsync(Timeout);
             Assert.Equal(FrameType.Settings, receivedFrame.Type);
             Assert.Equal(FrameFlags.None, receivedFrame.Flags);
             Assert.Equal(0, receivedFrame.StreamId);
 
             // Receive the initial client window update frame.
-            receivedFrame = await ReadFrameAsync(TimeSpan.FromSeconds(30));
+            receivedFrame = await ReadFrameAsync(Timeout);
             Assert.Equal(FrameType.WindowUpdate, receivedFrame.Type);
             Assert.Equal(FrameFlags.None, receivedFrame.Flags);
             Assert.Equal(0, receivedFrame.StreamId);
@@ -263,7 +275,7 @@ namespace System.Net.Test.Common
             ShutdownSend();
 
             IgnoreWindowUpdates();
-            Frame frame = await ReadFrameAsync(TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+            Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
             if (frame != null)
             {
                 throw new Exception($"Unexpected frame received while waiting for client shutdown: {frame}");
@@ -281,7 +293,7 @@ namespace System.Net.Test.Common
         public async Task<int> ReadRequestHeaderAsync()
         {
             // Receive HEADERS frame for request.
-            Frame frame = await ReadFrameAsync(TimeSpan.FromSeconds(30));
+            Frame frame = await ReadFrameAsync(Timeout);
             if (frame == null)
             {
                 throw new IOException("Failed to read Headers frame.");
@@ -680,6 +692,14 @@ namespace System.Net.Test.Common
     public sealed class Http2LoopbackServerFactory : LoopbackServerFactory
     {
         public static readonly Http2LoopbackServerFactory Singleton = new Http2LoopbackServerFactory();
+
+        public static async Task CreateServerAsync(Func<Http2LoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 30_000)
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            {
+                await funcAsync(server, server.Address).TimeoutAfter(millisecondsTimeout).ConfigureAwait(false);
+            }
+        }
 
         public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 30_000)
         {
