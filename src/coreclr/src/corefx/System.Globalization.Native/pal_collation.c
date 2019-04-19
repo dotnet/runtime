@@ -439,11 +439,15 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
 
         TCollatorMap* map = (TCollatorMap*)malloc(sizeof(TCollatorMap));
         map->key = options;
-        void* entry = tsearch(map, &pSortHandle->collatorsPerOptionRoot, TreeComparer);
-        if ((*(TCollatorMap**)entry) == map)
+        // tfind on glibc is significantly faster than tsearch and we expect
+        // to hit the cache here often so it's benefitial to prefer lookup time
+        // over addition time
+        void* entry = tfind(map, &pSortHandle->collatorsPerOptionRoot, TreeComparer);
+        if (entry == NULL)
         {
             pCollator = CloneCollatorWithOptions(pSortHandle->regular, options, pErr);
             map->UCollator = pCollator;
+            tsearch(map, &pSortHandle->collatorsPerOptionRoot, TreeComparer);
         }
         else
         {
