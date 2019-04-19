@@ -9106,6 +9106,17 @@ mdTypeRef NativeImageDumper::FindTypeRefForMT( PTR_MethodTable mt )
 }
 #endif
 
+#else //!FEATURE_PREJIT
+//dummy implementation for dac
+HRESULT ClrDataAccess::DumpNativeImage(CLRDATA_ADDRESS loadedBase,
+    LPCWSTR name,
+    IXCLRDataDisplay* display,
+    IXCLRLibrarySupport* support,
+    IXCLRDisassemblySupport* dis)
+{
+    return E_FAIL;
+}
+#endif //FEATURE_PREJIT
 
 /* REVISIT_TODO Mon 10/10/2005
  * Here is where it gets bad.  There is no DAC build of gcdump, so instead
@@ -9151,16 +9162,3 @@ mdTypeRef NativeImageDumper::FindTypeRefForMT( PTR_MethodTable mt )
 #pragma warning(default:4244)
 #pragma warning(default:4189)
 #endif // __MSC_VER
-
-
-#else //!FEATURE_PREJIT
-//dummy implementation for dac
-HRESULT ClrDataAccess::DumpNativeImage(CLRDATA_ADDRESS loadedBase,
-                                       LPCWSTR name,
-                                       IXCLRDataDisplay * display,
-                                       IXCLRLibrarySupport * support,
-                                       IXCLRDisassemblySupport * dis)
-{
-    return E_FAIL;
-}
-#endif //FEATURE_PREJIT

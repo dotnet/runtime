@@ -11,7 +11,6 @@
 
 
 #include "common.h"
-#ifdef FEATURE_PREJIT
 #include "zapsig.h"
 #include "typedesc.h"
 #include "compile.h"
@@ -566,6 +565,7 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     RETURN(TRUE);
 }
 
+#ifdef FEATURE_PREJIT
 /*static*/
 BOOL ZapSig::CompareFixupToTypeHandle(Module * pModule, TADDR fixup, TypeHandle handle)
 {
@@ -588,6 +588,7 @@ BOOL ZapSig::CompareFixupToTypeHandle(Module * pModule, TADDR fixup, TypeHandle 
     ZapSig::Context zapSigContext(pDefiningModule, pModule);
     return ZapSig::CompareSignatureToTypeHandle(pSig, pDefiningModule, handle, &zapSigContext);
 }
+#endif // FEATURE_PREJIT
 
 /*static*/
 BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle typeHnd2)
@@ -607,6 +608,7 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
     // Ensure that the compiler won't fetch the value twice
     SIZE_T fixup = VolatileLoadWithoutBarrier((SIZE_T *)pTypeHnd);
 
+#ifdef FEATURE_PREJIT
     if (CORCOMPILE_IS_POINTER_TAGGED(fixup))
     {
         Module *pContainingModule = ExecutionManager::FindZapModule(dac_cast<TADDR>(pTypeHnd));
@@ -624,6 +626,7 @@ BOOL ZapSig::CompareTypeHandleFieldToTypeHandle(TypeHandle *pTypeHnd, TypeHandle
         }
     }
     else
+#endif // FEATURE_PREJIT
         return TypeHandle::FromTAddr(fixup) == typeHnd2;
 }
 
@@ -1532,5 +1535,3 @@ void ZapSig::EncodeField(
 }
 
 #endif // DACCESS_COMPILE
-
-#endif // FEATURE_PREJIT

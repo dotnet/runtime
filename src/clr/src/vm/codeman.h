@@ -1615,6 +1615,23 @@ public:
 #endif //DACCESS_COMPILE
 };
 
+inline TADDR NativeImageJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToken)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        HOST_NOCALLS;
+        SUPPORTS_DAC;
+    } CONTRACTL_END;
+
+    return JitTokenToModuleBase(MethodToken) +
+        RUNTIME_FUNCTION__BeginAddress(dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader));
+}
+
+#endif // FEATURE_PREJIT
+
+#if defined(FEATURE_PREJIT) || defined(FEATURE_READYTORUN)
+
 class NativeExceptionInfoLookupTable
 {
 public:
@@ -1632,27 +1649,16 @@ public:
                                          int StartIndex, 
                                          int EndIndex);
 
+#ifdef FEATURE_PREJIT
     static BOOL HasExceptionInfo(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction);
     static PTR_MethodDesc GetMethodDesc(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction, TADDR moduleBase);
 
 private:
     static DWORD GetMethodDescRVA(NGenLayoutInfo * pNgenLayout, PTR_RUNTIME_FUNCTION pMainRuntimeFunction);
+#endif
 };
 
-inline TADDR NativeImageJitManager::JitTokenToStartAddress(const METHODTOKEN& MethodToken)
-{ 
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        HOST_NOCALLS;
-        SUPPORTS_DAC;
-    } CONTRACTL_END;
- 
-    return JitTokenToModuleBase(MethodToken) + 
-        RUNTIME_FUNCTION__BeginAddress(dac_cast<PTR_RUNTIME_FUNCTION>(MethodToken.m_pCodeHeader));
-}
-
-#endif // FEATURE_PREJIT
+#endif // FEATURE_PREJIT || FEATURE_READYTORUN
 
 #ifdef FEATURE_READYTORUN
 
