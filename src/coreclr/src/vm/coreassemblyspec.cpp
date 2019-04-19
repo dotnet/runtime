@@ -301,11 +301,13 @@ STDAPI BinderAcquireImport(PEImage                  *pPEImage,
         if (!pLayout->CheckFormat())
             IfFailGo(COR_E_BADIMAGEFORMAT);
 
+#ifdef FEATURE_PREJIT
         if (bNativeImage && pPEImage->IsNativeILILOnly())
         {
             pPEImage->GetNativeILPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
         }
         else
+#endif
         {
             pPEImage->GetPEKindAndMachine(&pdwPAFlags[0], &pdwPAFlags[1]);
         }

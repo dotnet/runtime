@@ -10,8 +10,10 @@ CHAIN_SUCCESS_COUNTER  equ ?g_dispatch_cache_chain_success_counter@@3_KA
         extern  VSD_ResolveWorker:proc
         extern  CHAIN_SUCCESS_COUNTER:dword
 
+ifdef FEATURE_PREJIT
         extern  StubDispatchFixupWorker:proc
         extern  ProcessCLRException:proc
+endif
 
 BACKPATCH_FLAG                  equ    1        ;; Also known as SDF_ResolveBackPatch    in the EE
 PROMOTE_CHAIN_FLAG              equ    2        ;; Also known as SDF_ResolvePromoteChain in the EE
@@ -88,6 +90,7 @@ Fail:
 LEAF_END ResolveWorkerChainLookupAsmStub, _TEXT
 
 
+ifdef FEATURE_PREJIT
 NESTED_ENTRY StubDispatchFixupStub, _TEXT, ProcessCLRException
 
         PROLOG_WITH_TRANSITION_BLOCK
@@ -105,5 +108,6 @@ PATCH_LABEL StubDispatchFixupPatchLabel
         TAILJMP_RAX
 
 NESTED_END StubDispatchFixupStub, _TEXT
+endif
 
         end

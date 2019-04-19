@@ -388,7 +388,6 @@ inline BOOL PEImage::IsIbcOptimized()
 #endif
 }
 
-#ifdef FEATURE_PREJIT 
 inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize) 
 {
     WRAPPER_NO_CONTRACT;
@@ -400,7 +399,6 @@ inline PTR_CVOID PEImage::GetNativeManifestMetadata(COUNT_T *pSize)
         return pLayout->GetNativeManifestMetadata(pSize);
     }
 }
-#endif
 
 inline PTR_CVOID PEImage::GetMetadata(COUNT_T *pSize) 
 {
@@ -532,8 +530,6 @@ inline PTR_PEImage PEImage::OpenImage(LPCWSTR pPath, MDInternalImportFlags flags
 #ifdef FEATURE_PREJIT        
         if (flags &  MDInternalImport_TrustedNativeImage)
             pImage->SetIsTrustedNativeImage();
-        if (flags &  MDInternalImport_NativeImageInstall)
-            pImage->SetIsNativeImageInstall();
 #endif        
         pImage->Init(pPath);
 

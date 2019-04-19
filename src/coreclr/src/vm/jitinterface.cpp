@@ -13177,6 +13177,7 @@ void Module::LoadHelperTable()
     ClrFlushInstructionCache(table, tableSize);
 #endif // CROSSGEN_COMPILE
 }
+#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_READYTORUN
 CorInfoHelpFunc MapReadyToRunHelper(ReadyToRunHelper helperNum)
@@ -13809,7 +13810,6 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
     return TRUE;
 }
-#endif // FEATURE_PREJIT
 
 void* CEEInfo::getTailCallCopyArgsThunk(CORINFO_SIG_INFO       *pSig,
                                         CorInfoHelperTailCallSpecialHandling flags)

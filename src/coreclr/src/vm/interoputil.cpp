@@ -3700,6 +3700,7 @@ BOOL IsTypeVisibleFromCom(TypeHandle hndType)
     return SpecialIsGenericTypeVisibleFromCom(hndType);
 }
 
+#ifdef FEATURE_PREJIT
 //---------------------------------------------------------------------------
 // Determines if a method is likely to be used for forward COM/WinRT interop.
 BOOL MethodNeedsForwardComStub(MethodDesc *pMD, DataImage *pImage)
@@ -3762,7 +3763,6 @@ BOOL MethodNeedsForwardComStub(MethodDesc *pMD, DataImage *pImage)
     return FALSE;
 }
 
-#ifdef FEATURE_PREJIT
 //---------------------------------------------------------------------------
 // Determines if a method is visible from COM in a way that requires a marshaling
 // stub, i.e. it allows early binding.

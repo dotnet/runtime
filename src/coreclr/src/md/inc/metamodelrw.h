@@ -790,7 +790,7 @@ public:
     // They are constant, FieldMarshal, MethodSemantics, ClassLayout, FieldLayout, ImplMap, FieldRVA, NestedClass, and MethodImpl
     CLookUpHash * m_pLookUpHashs[TBL_COUNT];
     
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
+#if !defined(DACCESS_COMPILE)
     MapSHash<UINT32, UINT32> m_StringPoolOffsetHash;
 #endif
 

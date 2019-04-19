@@ -48,6 +48,9 @@ public:
     PEImage* GetNativeImage();
     void SetNativeImage(PEImage * pNativeImage);
     PEImage* GetILImage();
+#else
+    BOOL HasNativeImage() { return FALSE; }
+    PEImage* GetNativeImage() { return NULL; }
 #endif
     void SetHRBindResult(HRESULT hrBindResult);
     HRESULT GetHRBindResult();
