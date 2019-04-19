@@ -14,12 +14,6 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata {
 		{
 			if (string.IsNullOrEmpty (flag))
 				throw new ArgumentNullException (nameof (flag));
-
-			if (flag[0] == '-' && flag.Length == 2) {
-				string errorMessage = "Flag `" + flag + "` is short.";
-				errorMessage += "  Avoid using this attribute with command line flags that are to short to communicate their meaning.  Support a more descriptive flag or create a new attribute for tests to use similar to " + nameof (SetupLinkerCoreActionAttribute);
-				throw new ArgumentException (errorMessage);
-			}
 		}
 	}
 }
