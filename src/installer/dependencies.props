@@ -9,7 +9,7 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <BuildToolsCurrentRef>c6a0e8080e10e8940af6b1d1809e79fdd8de55b7</BuildToolsCurrentRef>
+    <BuildToolsCurrentRef>64982ffd8d28e0bdc90cbb7f582eb8cf4dfe2b82</BuildToolsCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
