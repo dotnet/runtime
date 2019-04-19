@@ -467,13 +467,13 @@ IDefaultInterfaceTesting : IUnknown
 
     virtual HRESULT STDMETHODCALLTYPE DefOnClassRet3(_Out_ int *p) = 0;
 
-    virtual HRESULT STDMETHODCALLTYPE DefOnInterface2Ret5(_Out_ int *p) = 0;
+    virtual HRESULT STDMETHODCALLTYPE DefOnInterfaceRet5(_Out_ int *p) = 0;
 };
 
 struct __declspec(uuid("9B3CE792-F063-427D-B48E-4354094BF7A0"))
-IDefaultInterfaceTesting2 : IDefaultInterfaceTesting
+IDefaultInterfaceTesting2 : IUnknown
 {
-
+    // Empty
 };
 
 #pragma pack(pop)
