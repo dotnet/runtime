@@ -212,7 +212,7 @@ GetSpecialValue:
 
             arraySuffix = GetArraySuffixAndElementType(typ)
 
-            Debug.Assert(typ IsNot Nothing AndAlso Not typ.IsArray, "Error in array type processing!!!")
+            Debug.Assert(typ IsNot Nothing AndAlso Not typ.IsArray, "Error in array type processing")
 
 
             Dim tc As TypeCode
