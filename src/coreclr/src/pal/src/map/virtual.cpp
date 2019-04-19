@@ -70,7 +70,8 @@ Function:
 static LPVOID ReserveVirtualMemory(
                 IN CPalThread *pthrCurrent, /* Currently executing thread */
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
-                IN SIZE_T dwSize);          /* Size of Region */
+                IN SIZE_T dwSize,           /* Size of Region */
+                IN DWORD fAllocationType);  /* Allocation Type */
 
 
 // A memory allocator that allocates memory from a pre-reserved region
@@ -915,7 +916,7 @@ static LPVOID VIRTUALReserveMemory(
     if (pRetVal == NULL)
     {
         // Try to reserve memory from the OS
-        pRetVal = ReserveVirtualMemory(pthrCurrent, (LPVOID)StartBoundary, MemSize);
+        pRetVal = ReserveVirtualMemory(pthrCurrent, (LPVOID)StartBoundary, MemSize, flAllocationType);
     }
 
     if (pRetVal != NULL)
@@ -958,7 +959,8 @@ static LPVOID VIRTUALReserveMemory(
 static LPVOID ReserveVirtualMemory(
                 IN CPalThread *pthrCurrent, /* Currently executing thread */
                 IN LPVOID lpAddress,        /* Region to reserve or commit */
-                IN SIZE_T dwSize)           /* Size of Region */
+                IN SIZE_T dwSize,           /* Size of Region */
+                IN DWORD fAllocationType)   /* Allocation type */
 {
     UINT_PTR StartBoundary = (UINT_PTR)lpAddress;
     SIZE_T MemSize = dwSize;
@@ -985,6 +987,19 @@ static LPVOID ReserveVirtualMemory(
 
     mmapFlags |= MAP_FIXED;
 #endif // HAVE_VM_ALLOCATE
+
+    if ((fAllocationType & MEM_LARGE_PAGES) != 0)
+    {
+#if HAVE_MAP_HUGETLB
+        mmapFlags |= MAP_HUGETLB;
+        TRACE("MAP_HUGETLB flag set\n");
+#elif HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
+        mmapFlags |= VM_FLAGS_SUPERPAGE_SIZE_ANY;
+        TRACE("VM_FLAGS_SUPERPAGE_SIZE_ANY flag set\n");
+#else
+        TRACE("Large Pages requested, but not supported in this PAL configuration\n");
+#endif
+    }
 
     mmapFlags |= MAP_ANON | MAP_PRIVATE;
 
@@ -1338,10 +1353,10 @@ VirtualAlloc(
     }
 
     /* Test for un-supported flags. */
-    if ( ( flAllocationType & ~( MEM_COMMIT | MEM_RESERVE | MEM_RESET | MEM_TOP_DOWN | MEM_RESERVE_EXECUTABLE ) ) != 0 )
+    if ( ( flAllocationType & ~( MEM_COMMIT | MEM_RESERVE | MEM_RESET | MEM_TOP_DOWN | MEM_RESERVE_EXECUTABLE | MEM_LARGE_PAGES ) ) != 0 )
     {
         ASSERT( "flAllocationType can be one, or any combination of MEM_COMMIT, \
-               MEM_RESERVE, MEM_TOP_DOWN, or MEM_RESERVE_EXECUTABLE.\n" );
+               MEM_RESERVE, MEM_TOP_DOWN, MEM_RESERVE_EXECUTABLE, or MEM_LARGE_PAGES.\n" );
         pthrCurrent->SetLastError( ERROR_INVALID_PARAMETER );
         goto done;
     }
@@ -2145,7 +2160,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
     // Do actual memory reservation.
     do
     {
-        m_startAddress = ReserveVirtualMemory(pthrCurrent, (void*)preferredStartAddress, sizeOfAllocation);
+        m_startAddress = ReserveVirtualMemory(pthrCurrent, (void*)preferredStartAddress, sizeOfAllocation, 0 /* fAllocationType */);
         if (m_startAddress != nullptr)
         {
             break;
@@ -2175,7 +2190,7 @@ void ExecutableMemoryAllocator::TryReserveInitialMemory()
         //   - The code heap allocator for the JIT can allocate from this address space. Beyond this reservation, one can use
         //     the COMPlus_CodeHeapReserveForJumpStubs environment variable to reserve space for jump stubs.
         sizeOfAllocation = MaxExecutableMemorySize;
-        m_startAddress = ReserveVirtualMemory(pthrCurrent, nullptr, sizeOfAllocation);
+        m_startAddress = ReserveVirtualMemory(pthrCurrent, nullptr, sizeOfAllocation, 0 /* fAllocationType */);
         if (m_startAddress == nullptr)
         {
             return;

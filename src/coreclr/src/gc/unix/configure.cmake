@@ -29,6 +29,15 @@ check_cxx_source_compiles("
 
     int main()
     {
+        return VM_FLAGS_SUPERPAGE_SIZE_ANY;
+    }
+    " HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY)
+
+check_cxx_source_compiles("
+    #include <sys/mman.h>
+
+    int main()
+    {
         return MAP_HUGETLB;
     }
     " HAVE_MAP_HUGETLB)
