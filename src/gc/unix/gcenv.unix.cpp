@@ -551,6 +551,8 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
 {
 #if HAVE_MAP_HUGETLB
     uint32_t largePagesFlag = MAP_HUGETLB;
+#elif HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY
+    uint32_t largePagesFlag = VM_FLAGS_SUPERPAGE_SIZE_ANY;
 #else
     uint32_t largePagesFlag = 0;
 #endif

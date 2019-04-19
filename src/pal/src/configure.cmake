@@ -45,6 +45,22 @@ endif()
 set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_DL_LIBS})
 
 check_cxx_source_compiles("
+#include <sys/mman.h>
+int main()
+{
+  return VM_FLAGS_SUPERPAGE_SIZE_ANY;
+}
+" HAVE_VM_FLAGS_SUPERPAGE_SIZE_ANY)
+
+check_cxx_source_compiles("
+#include <sys/mman.h>
+int main()
+{
+  return MAP_HUGETLB;
+}
+" HAVE_MAP_HUGETLB)
+
+check_cxx_source_compiles("
 #include <lttng/tracepoint.h>
 int main(int argc, char **argv) {
   return 0;
