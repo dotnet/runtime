@@ -318,10 +318,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ToString_NullFrame_ThrowsNullReferenceException()
         {
             var stackTrace = new StackTrace((StackFrame)null);
-            Assert.Throws<NullReferenceException>(() => stackTrace.ToString());
+            Assert.Equal(Environment.NewLine, stackTrace.ToString());
         }
 
         private static StackTrace NoParameters() => new StackTrace();
