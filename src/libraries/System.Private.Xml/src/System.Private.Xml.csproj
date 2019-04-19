@@ -535,8 +535,7 @@
   </ItemGroup>
   <!-- Embedded DTD files -->
   <ItemGroup>
-    <!-- TODO: check why was this embedded on desktop - no test failures observed after commenting this out -->
-    <!--<EmbeddedResource Include="Utils\DTDs\XHTML10\no_comments\xhtml1-strict.dtd">
+    <EmbeddedResource Include="Utils\DTDs\XHTML10\no_comments\xhtml1-strict.dtd">
       <LogicalName>xhtml1-strict.dtd</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Utils\DTDs\XHTML10\no_comments\xhtml1-transitional.dtd">
@@ -556,7 +555,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Utils\DTDs\RSS091\no_comments\rss-0.91.dtd">
       <LogicalName>rss-0.91.dtd</LogicalName>
-    </EmbeddedResource>-->
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="System\Xml\XmlCharType.bin">
