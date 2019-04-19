@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Collections.Concurrent
@@ -21,12 +22,7 @@ namespace System.Collections.Concurrent
         /// <param name="collection">A collection to browse in the debugger.</param>
         public IProducerConsumerCollectionDebugView(IProducerConsumerCollection<T> collection)
         {
-            if (collection == null)
-            {
-                throw new ArgumentNullException(nameof(collection));
-            }
-
-            _collection = collection;
+            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
         }
 
         /// <summary>
