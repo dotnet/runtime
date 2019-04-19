@@ -8227,6 +8227,14 @@ DWORD MethodTable::HasFixedAddressVTStatics()
 }
 
 //==========================================================================================
+BOOL MethodTable::HasOnlyAbstractMethods()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    return GetClass()->HasOnlyAbstractMethods();
+}
+
+//==========================================================================================
 WORD MethodTable::GetNumHandleRegularStatics()
 {
     LIMITED_METHOD_CONTRACT;

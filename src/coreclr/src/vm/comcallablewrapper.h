@@ -978,24 +978,21 @@ class ComCallWrapper
 {
     friend class MarshalNative;
     friend class ClrDataAccess;
-    
+
 private:
     enum
     {
+        NumVtablePtrs = 5,
 #ifdef _WIN64
-        NumVtablePtrs = 5,
-        enum_ThisMask = ~0x3f,                  // mask on IUnknown ** to get at the OBJECT-REF handle
+        enum_ThisMask = ~0x3f, // mask on IUnknown ** to get at the OBJECT-REF handle
 #else
-
-        NumVtablePtrs = 5,
         enum_ThisMask = ~0x1f, // mask on IUnknown ** to get at the OBJECT-REF handle
 #endif
-        Slot_IClassX  = 1,
-        Slot_Basic    = 0,
-
+        Slot_Basic = 0,
+        Slot_IClassX = 1,
         Slot_FirstInterface = 2,
     };
-    
+
 public:
     BOOL IsHandleWeak();
     VOID MarkHandleWeak();
@@ -1012,7 +1009,7 @@ public:
 
 protected:
 #ifndef DACCESS_COMPILE
-    inline static void SetNext(ComCallWrapper* pWrap, ComCallWrapper* pNextWrapper)
+    static void SetNext(ComCallWrapper* pWrap, ComCallWrapper* pNextWrapper)
     {
         CONTRACTL
         {
@@ -1028,7 +1025,7 @@ protected:
     }
 #endif // !DACCESS_COMPILE
 
-    inline static PTR_ComCallWrapper GetNext(PTR_ComCallWrapper pWrap)
+    static PTR_ComCallWrapper GetNext(PTR_ComCallWrapper pWrap)
     {
         CONTRACT (PTR_ComCallWrapper)
         {
@@ -1040,19 +1037,12 @@ protected:
             POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
         }
         CONTRACT_END;
-        
+
         RETURN (LinkedWrapperTerminator == pWrap->m_pNext ? NULL : pWrap->m_pNext);
     }
 
     // Helper to create a wrapper, pClassCCW must be specified if pTemplate->RepresentsVariantInterface()
     static ComCallWrapper* CreateWrapper(OBJECTREF* pObj, ComCallWrapperTemplate *pTemplate, ComCallWrapper *pClassCCW);
-
-    // helper to get the IUnknown* within a wrapper
-    static SLOT** GetComIPLocInWrapper(ComCallWrapper* pWrap, unsigned iIndex);
-
-    // helper to get index within the interface map for an interface that matches
-    // the interface MT
-    static signed GetIndexForIntfMT(ComCallWrapperTemplate *pTemplate, MethodTable *pIntfMT);
 
     // helper to get wrapper from sync block
     static PTR_ComCallWrapper GetStartWrapper(PTR_ComCallWrapper pWrap);
@@ -1062,36 +1052,10 @@ protected:
                                             ComCallWrapperCache *pWrapperCache,
                                             OBJECTHANDLE oh);
 
-    // helper to find a covariant supertype of pMT with the given IID
-    static MethodTable *FindCovariantSubtype(MethodTable *pMT, REFIID riid);
-
-    // Like GetComIPFromCCW, but will try to find riid/pIntfMT among interfaces implemented by this
-    // object that have variance. Assumes that call GetComIPFromCCW with same arguments has failed.
-    IUnknown *GetComIPFromCCWUsingVariance(REFIID riid, MethodTable *pIntfMT, GetComIPFromCCW::flags flags);
-
-    static IUnknown * GetComIPFromCCW_VariantInterface(
-                            ComCallWrapper * pWrap, REFIID riid, MethodTable * pIntfMT, GetComIPFromCCW::flags flags,
-                            ComCallWrapperTemplate * pTemplate);
-
-    inline static IUnknown * GetComIPFromCCW_VisibilityCheck(
-                            IUnknown * pIntf, MethodTable * pIntfMT, ComMethodTable * pIntfComMT, 
-                            GetComIPFromCCW::flags flags);
-
-    static IUnknown * GetComIPFromCCW_HandleExtendsCOMObject(
-                            ComCallWrapper * pWrap, REFIID riid, MethodTable * pIntfMT,
-                            ComCallWrapperTemplate * pTemplate, signed imapIndex, unsigned intfIndex);
-
-    static IUnknown * GetComIPFromCCW_ForIID_Worker(
-                            ComCallWrapper * pWrap, REFIID riid, MethodTable * pIntfMT, GetComIPFromCCW::flags flags,
-                            ComCallWrapperTemplate * pTemplate);
-
-    static IUnknown * GetComIPFromCCW_ForIntfMT_Worker(
-                            ComCallWrapper * pWrap, MethodTable * pIntfMT, GetComIPFromCCW::flags flags);
-
+    static SLOT** GetComIPLocInWrapper(ComCallWrapper* pWrap, unsigned int iIndex);
 
 public:
-    static bool GetComIPFromCCW_HandleCustomQI(
-                            ComCallWrapper * pWrap, REFIID riid, MethodTable * pIntfMT, IUnknown ** ppUnkOut);
+    SLOT** GetFirstInterfaceSlot();
 
     // walk the list and free all blocks
     void FreeWrapper(ComCallWrapperCache *pWrapperCache);
@@ -1112,7 +1076,6 @@ public:
         
         return m_pNext != NULL;
     }
-
 
     // wrapper is not guaranteed to be present
     // accessor to wrapper object in the sync block

@@ -236,12 +236,12 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
                 _classType = classType;
             }
 
-            public static void ValidateInterfaceRequest(Type classType, ref Guid riid, object? outer)
+            public static Type GetValidatedInterfaceType(Type classType, ref Guid riid, object? outer)
             {
                 Debug.Assert(classType != null);
                 if (riid == Marshal.IID_IUnknown)
                 {
-                    return;
+                    return typeof(object);
                 }
 
                 // Aggregation can only be done when requesting IUnknown.
@@ -251,23 +251,40 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
                     throw new COMException(string.Empty, CLASS_E_NOAGGREGATION);
                 }
 
-                bool found = false;
-
                 // Verify the class implements the desired interface
                 foreach (Type i in classType.GetInterfaces())
                 {
                     if (i.GUID == riid)
                     {
-                        found = true;
-                        break;
+                        return i;
                     }
                 }
 
-                if (!found)
+                // E_NOINTERFACE
+                throw new InvalidCastException();
+            }
+
+            public static void ValidateObjectIsMarshallableAsInterface(object obj, Type interfaceType)
+            {
+                // If the requested "interface type" is type object then return
+                // because type object is always marshallable.
+                if (interfaceType == typeof(object))
                 {
-                    // E_NOINTERFACE
-                    throw new InvalidCastException();
+                    return;
                 }
+
+                Debug.Assert(interfaceType.IsInterface);
+
+                // The intent of this call is to validate the interface can be
+                // marshalled to native code. An exception will be thrown if the
+                // type is unable to be marshalled to native code.
+                // Scenarios where this is relevant:
+                //  - Interfaces that use Generics
+                //  - Interfaces that define implementation
+                IntPtr ptr = Marshal.GetComInterfaceForObject(obj, interfaceType, CustomQueryInterfaceMode.Ignore);
+
+                // Decrement the above 'Marshal.GetComInterfaceForObject()'
+                Marshal.Release(ptr);
             }
 
             public static object CreateAggregatedObject(object pUnkOuter, object comObject)
@@ -283,7 +300,7 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
                 finally
                 {
                     // Decrement the above 'Marshal.GetIUnknownForObject()'
-                    Marshal.ReleaseComObject(pUnkOuter);
+                    Marshal.Release(outerPtr);
                 }
             }
 
@@ -292,13 +309,15 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
                 ref Guid riid,
                 [MarshalAs(UnmanagedType.Interface)] out object? ppvObject)
             {
-                BasicClassFactory.ValidateInterfaceRequest(_classType, ref riid, pUnkOuter);
+                Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
                 ppvObject = Activator.CreateInstance(_classType)!;
                 if (pUnkOuter != null)
                 {
                     ppvObject = BasicClassFactory.CreateAggregatedObject(pUnkOuter, ppvObject);
                 }
+
+                BasicClassFactory.ValidateObjectIsMarshallableAsInterface(ppvObject, interfaceType);
             }
 
             public void LockServer([MarshalAs(UnmanagedType.Bool)] bool fLock)
@@ -369,13 +388,15 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
                 bool isDesignTime,
                 out object ppvObject)
             {
-                BasicClassFactory.ValidateInterfaceRequest(_classType, ref riid, pUnkOuter);
+                Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
                 ppvObject = _licenseProxy.AllocateAndValidateLicense(_classType, key, isDesignTime);
                 if (pUnkOuter != null)
                 {
                     ppvObject = BasicClassFactory.CreateAggregatedObject(pUnkOuter, ppvObject);
                 }
+
+                BasicClassFactory.ValidateObjectIsMarshallableAsInterface(ppvObject, interfaceType);
             }
         }
     }
@@ -567,12 +588,12 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
 
             // Types are as follows:
             // Type, out bool, out string -> LicenseContext
-            var parameters = new object[] { targetRcwTypeMaybe, /* out */ null!, /* out */ null! };
+            var parameters = new object?[] { targetRcwTypeMaybe, /* out */ null, /* out */ null };
             _licContext = _getCurrentContextInfo.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
 
             _targetRcwType = targetRcwTypeMaybe;
-            isDesignTime = (bool)parameters[1];
-            bstrKey = Marshal.StringToBSTR((string?)parameters[2]);
+            isDesignTime = (bool)parameters[1]!;
+            bstrKey = Marshal.StringToBSTR((string)parameters[2]!);
         }
 
         // The CLR invokes this when instantiating a licensed COM

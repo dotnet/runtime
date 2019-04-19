@@ -3230,6 +3230,11 @@ MethodTableBuilder::EnumerateClassMethods()
         }
     }
 
+    if (bmtMethod->dwNumDeclaredNonAbstractMethods == 0)
+    {
+        GetHalfBakedClass()->SetHasOnlyAbstractMethods();
+    }
+
     // Check to see that we have all of the required delegate methods (ECMA 13.6 Delegates)
     if (IsDelegate())
     {
