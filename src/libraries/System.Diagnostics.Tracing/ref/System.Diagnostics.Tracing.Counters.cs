@@ -23,5 +23,11 @@ namespace System.Diagnostics.Tracing
     {
         public IncrementingPollingCounter(string name, System.Diagnostics.Tracing.EventSource eventSource, Func<double> totalValueProvider) : base(name, eventSource) { }
         public TimeSpan DisplayRateTimeScale { get { throw null; } set { } }
+    }    
+    public partial class EventCounter : System.Diagnostics.Tracing.DiagnosticCounter
+    {
+        public EventCounter(string name, System.Diagnostics.Tracing.EventSource eventSource) : base(name, eventSource) { }
+        public void WriteMetric(float value) { }
+        public void WriteMetric(double value) { }
     }
 }

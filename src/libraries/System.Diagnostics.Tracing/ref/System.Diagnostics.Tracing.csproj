@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="System.Diagnostics.Tracing.cs" />
     <Compile Include="System.Diagnostics.Tracing.Counters.cs" Condition="'$(TargetGroup)' != 'uap'" />
+    <Compile Include="System.Diagnostics.Tracing.CountersUap.cs" Condition="'$(TargetGroup)' == 'uap'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
