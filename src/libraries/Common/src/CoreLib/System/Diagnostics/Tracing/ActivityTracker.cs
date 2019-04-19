@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -99,7 +100,7 @@ namespace System.Diagnostics.Tracing
                 // Check for recursion, and force-stop any activities if the activity already started.
                 if ((options & EventActivityOptions.Recursive) == 0)
                 {
-                    ActivityInfo existingActivity = FindActiveActivity(fullActivityName, currentActivity);
+                    ActivityInfo? existingActivity = FindActiveActivity(fullActivityName, currentActivity);
                     if (existingActivity != null)
                     {
                         OnStop(providerName, activityName, task, ref activityId);
@@ -154,13 +155,13 @@ namespace System.Diagnostics.Tracing
 
             for (; ; ) // This is a retry loop.
             {
-                ActivityInfo currentActivity = m_current.Value;
-                ActivityInfo newCurrentActivity = null;               // if we have seen any live activities (orphans), at he first one we have seen.   
+                ActivityInfo? currentActivity = m_current.Value;
+                ActivityInfo? newCurrentActivity = null;               // if we have seen any live activities (orphans), at he first one we have seen.   
 
                 // Search to find the activity to stop in one pass.   This insures that we don't let one mistake
                 // (stopping something that was not started) cause all active starts to be stopped 
                 // By first finding the target start to stop we are more robust.  
-                ActivityInfo activityToStop = FindActiveActivity(fullActivityName, currentActivity);
+                ActivityInfo? activityToStop = FindActiveActivity(fullActivityName, currentActivity);
 
                 // ignore stops where we can't find a start because we may have popped them previously.
                 if (activityToStop == null)
@@ -175,7 +176,7 @@ namespace System.Diagnostics.Tracing
                 activityId = activityToStop.ActivityId;
 
                 // See if there are any orphans that need to be stopped.  
-                ActivityInfo orphan = currentActivity;
+                ActivityInfo? orphan = currentActivity;
                 while (orphan != activityToStop && orphan != null)
                 {
                     if (orphan.m_stopped != 0)      // Skip dead activities.
@@ -229,7 +230,7 @@ namespace System.Diagnostics.Tracing
                 // Catch the not Implemented 
                 try
                 {
-                    m_current = new AsyncLocal<ActivityInfo>(ActivityChanging);
+                    m_current = new AsyncLocal<ActivityInfo?>(ActivityChanging);
                 }
                 catch (NotImplementedException) {
 #if (!ES_BUILD_PCL && ! ES_BUILD_PN)
@@ -251,9 +252,9 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Searched for a active (nonstopped) activity with the given name.  Returns null if not found.  
         /// </summary>
-        private ActivityInfo FindActiveActivity(string name, ActivityInfo startLocation)
+        private ActivityInfo? FindActiveActivity(string name, ActivityInfo? startLocation)
         {
-            var activity = startLocation;
+            ActivityInfo? activity = startLocation;
             while (activity != null)
             {
                 if (name == activity.m_name && activity.m_stopped == 0)
@@ -293,7 +294,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private class ActivityInfo
         {
-            public ActivityInfo(string name, long uniqueId, ActivityInfo creator, Guid activityIDToRestore, EventActivityOptions options)
+            public ActivityInfo(string name, long uniqueId, ActivityInfo? creator, Guid activityIDToRestore, EventActivityOptions options)
             {
                 m_name = name;
                 m_eventOptions = options;
@@ -314,10 +315,10 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            public static string Path(ActivityInfo activityInfo)
+            public static string Path(ActivityInfo? activityInfo)
             {
                 if (activityInfo == null)
-                    return ("");
+                    return "";
                 return Path(activityInfo.m_creator) + "/" + activityInfo.m_uniqueId.ToString();
             }
 
@@ -326,7 +327,7 @@ namespace System.Diagnostics.Tracing
                 return m_name + "(" + Path(this) + (m_stopped != 0 ? ",DEAD)" : ")");
             }
 
-            public static string LiveActivities(ActivityInfo list)
+            public static string LiveActivities(ActivityInfo? list)
             {
                 if (list == null)
                     return "";
@@ -400,7 +401,7 @@ namespace System.Diagnostics.Tracing
             private unsafe void CreateOverflowGuid(Guid* outPtr)
             {
                 // Search backwards for an ancestor that has sufficient space to put the ID.  
-                for (ActivityInfo ancestor = m_creator; ancestor != null; ancestor = ancestor.m_creator)
+                for (ActivityInfo? ancestor = m_creator; ancestor != null; ancestor = ancestor.m_creator)
                 {
                     if (ancestor.m_activityPathGuidOffset <= 10)  // we need at least 2 bytes.  
                     {
@@ -540,7 +541,7 @@ namespace System.Diagnostics.Tracing
             readonly internal EventActivityOptions m_eventOptions;  // Options passed to start. 
             internal long m_lastChildID;                            // used to create a unique ID for my children activities
             internal int m_stopped;                                 // This work item has stopped
-            readonly internal ActivityInfo m_creator;               // My parent (creator).  Forms the Path() for the activity.
+            readonly internal ActivityInfo? m_creator;               // My parent (creator).  Forms the Path() for the activity.
             readonly internal Guid m_activityIdToRestore;           // The Guid to restore after a stop.
             #endregion
         }
@@ -548,10 +549,10 @@ namespace System.Diagnostics.Tracing
         // This callback is used to initialize the m_current AsyncLocal Variable.   
         // Its job is to keep the ETW Activity ID (part of thread local storage) in sync
         // with m_current.ActivityID
-        void ActivityChanging(AsyncLocalValueChangedArgs<ActivityInfo> args)
+        void ActivityChanging(AsyncLocalValueChangedArgs<ActivityInfo?> args)
         {
-            ActivityInfo cur = args.CurrentValue;
-            ActivityInfo prev = args.PreviousValue;
+            ActivityInfo? cur = args.CurrentValue;
+            ActivityInfo? prev = args.PreviousValue;
 
             // Are we popping off a value?   (we have a prev, and it creator is cur) 
             // Then check if we should use the GUID at the time of the start event
@@ -592,7 +593,7 @@ namespace System.Diagnostics.Tracing
         /// 
         /// This variable points to a linked list that represents all Activities that have started but have not stopped.  
         /// </summary>
-        AsyncLocal<ActivityInfo> m_current;
+        AsyncLocal<ActivityInfo?>? m_current;
         bool m_checkedForEnable;
 
         // Singleton
