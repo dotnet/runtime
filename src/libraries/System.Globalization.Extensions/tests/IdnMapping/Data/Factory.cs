@@ -29,11 +29,13 @@ namespace System.Globalization.Tests
             string fileName = null;
             if (PlatformDetection.IsWindows7)
                 fileName = "IdnaTest_Win7.txt";
+            else if (PlatformDetection.IsWindows10Version1903OrGreater)
+                fileName = "IdnaTest_11.txt";
             else if (PlatformDetection.IsWindows10Version1703OrGreater)
                 fileName = "IdnaTest_9.txt";
             else
                 fileName = "IdnaTest_6.txt";
-            
+
             // test file 'IdnaTest.txt' is included as an embedded resource
             var name = typeof(Factory).GetTypeInfo().Assembly.GetManifestResourceNames().First(n => n.EndsWith(fileName, StringComparison.Ordinal));
             return typeof(Factory).GetTypeInfo().Assembly.GetManifestResourceStream(name);
@@ -60,6 +62,8 @@ namespace System.Globalization.Tests
         {
             if (PlatformDetection.IsWindows7)
                 return new Unicode_Win7_IdnaTest(line, lineCount);
+            else if (PlatformDetection.IsWindows10Version1903OrGreater)
+                return new Unicode_11_0_IdnaTest(line, lineCount);
             else if (PlatformDetection.IsWindows10Version1703OrGreater)
                 return new Unicode_9_0_IdnaTest(line, lineCount);
             else
@@ -69,9 +73,9 @@ namespace System.Globalization.Tests
         /// <summary>
         /// Abstracts retrieving the dataset so this can be changed depending on platform support, such as
         /// when the IDNA implementation is updated to a newer version of Unicode.  Windows 10 up to 1607 supports
-        /// and uses 6.0 in IDNA processing. Windows 10 1703 and greater currently uses 9.0 in IDNA processing. 
-        /// 
-        /// This method retrieves the dataset to be used by the test.  Windows implementation uses transitional 
+        /// and uses 6.0 in IDNA processing. Windows 10 1703 and greater currently uses 9.0 in IDNA processing.
+        ///
+        /// This method retrieves the dataset to be used by the test.  Windows implementation uses transitional
         /// mappings, which only affect 4 characters, known as deviations.  See the description at
         /// http://www.unicode.org/reports/tr46/#Deviations for more information.  Windows also throws an error
         /// when an empty string is given, so we want to filter that from the IDNA test set
