@@ -46,9 +46,6 @@ gpointer
 mono_llvm_compile_method (MonoEERef mono_ee, LLVMValueRef method, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame);
 
 void
-mono_llvm_optimize_method (MonoEERef mono_ee, LLVMValueRef method);
-
-void
 mono_llvm_set_unhandled_exception_handler (void);
 
 G_END_DECLS
