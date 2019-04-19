@@ -98,17 +98,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             public SharedTestState()
             {
                 DotNetMainHive = DotNet("MainHive")
-                    .AddMicrosoftNETCoreAppFramework("5.2.0")
-                    .AddMicrosoftNETCoreAppFramework("6.1.2")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.2.0")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.1.2")
                     .Build();
 
                 DotNetGlobalHive = DotNet("GlobalHive")
-                    .AddMicrosoftNETCoreAppFramework("5.1.2")
-                    .AddMicrosoftNETCoreAppFramework("6.2.0")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.1.2")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.2.0")
                     .Build();
 
                 DotNetCurrentHive = DotNet("CurrentHive")
-                    .AddMicrosoftNETCoreAppFramework("5.1.0")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.1.0")
                     .Build();
 
                 FrameworkReferenceApp = CreateFrameworkReferenceApp();

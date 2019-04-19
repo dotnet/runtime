@@ -461,12 +461,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             public SharedTestState()
             {
                 DotNetWithMultipleFrameworks = DotNet("WithOneFramework")
-                    .AddMicrosoftNETCoreAppFramework("5.1.1")
-                    .AddMicrosoftNETCoreAppFramework("5.1.3")
-                    .AddMicrosoftNETCoreAppFramework("5.4.1")
-                    .AddMicrosoftNETCoreAppFramework("5.6.0")
-                    .AddMicrosoftNETCoreAppFramework("6.0.0")
-                    .AddMicrosoftNETCoreAppFramework("6.1.1-preview.1")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.1.1")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.1.3")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.4.1")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("5.6.0")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.0.0")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.1.1-preview.1")
                     .AddFramework(MiddleWare, "2.1.2", runtimeConfig =>
                         runtimeConfig.WithFramework(MicrosoftNETCoreApp, "5.1.3"))
                     .AddFramework(AnotherMiddleWare, "3.0.0", runtimeConfig =>

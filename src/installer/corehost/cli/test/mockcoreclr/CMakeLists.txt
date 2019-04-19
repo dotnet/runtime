@@ -11,6 +11,11 @@ set(SOURCES
     ./mockcoreclr.cpp
 )
 
+if(WIN32)
+    list(APPEND SOURCES
+        mockcoreclr.def)
+endif()
+
 include(../testlib.cmake)
 
 install(TARGETS mockcoreclr DESTINATION corehost_test)
