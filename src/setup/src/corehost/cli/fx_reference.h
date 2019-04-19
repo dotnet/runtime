@@ -8,17 +8,15 @@
 #include <list>
 #include "pal.h"
 #include "fx_ver.h"
-#include "roll_fwd_on_no_candidate_fx_option.h"
+#include "roll_forward_option.h"
 
 class fx_reference_t
 {
 public:
     fx_reference_t()
-        : has_patch_roll_fwd(false)
-        , patch_roll_fwd(false)
-        , has_roll_fwd_on_no_candidate_fx(false)
-        , roll_fwd_on_no_candidate_fx((roll_fwd_on_no_candidate_fx_option)0)
-        , use_exact_version(false)
+        : apply_patches(true)
+        , roll_forward(roll_forward_option::Minor)
+        , prefer_release(false)
         , fx_name(_X(""))
         , fx_version(_X(""))
         , fx_version_number()
@@ -49,52 +47,62 @@ public:
         return fx_version_number;
     }
 
-    const bool* get_patch_roll_fwd() const
+    const bool get_apply_patches() const
     {
-        return (has_patch_roll_fwd ? &patch_roll_fwd : nullptr);
+        return apply_patches;
     }
-    void set_patch_roll_fwd(bool value)
+    void set_apply_patches(bool value)
     {
-        has_patch_roll_fwd = true;
-        patch_roll_fwd = value;
-    }
-
-    const bool get_use_exact_version() const
-    {
-        return use_exact_version;
-    }
-    void set_use_exact_version(bool value)
-    {
-        use_exact_version = value;
+        apply_patches = value;
     }
 
-    const roll_fwd_on_no_candidate_fx_option* get_roll_fwd_on_no_candidate_fx() const
+    const roll_forward_option get_roll_forward() const
     {
-        return (has_roll_fwd_on_no_candidate_fx ? &roll_fwd_on_no_candidate_fx : nullptr);
+        return roll_forward;
     }
-    void set_roll_fwd_on_no_candidate_fx(roll_fwd_on_no_candidate_fx_option value)
+    void set_roll_forward(roll_forward_option value)
     {
-        has_roll_fwd_on_no_candidate_fx = true;
-        roll_fwd_on_no_candidate_fx = value;
+        roll_forward = value;
     }
 
-    // Is the current version compatible with another instance with roll-forward semantics.
-    bool is_roll_forward_compatible(const fx_ver_t& other) const;
+    const bool get_prefer_release() const
+    {
+        return prefer_release;
+    }
+    void set_prefer_release(bool value)
+    {
+        prefer_release = value;
+    }
 
-    // Copy over any non-null values
-    void apply_settings_from(const fx_reference_t& from);
+    // Is the current version compatible with the specified equal or higher version.
+    bool is_compatible_with_higher_version(const fx_ver_t& higher_version) const;
 
-    // Apply the most restrictive settings
+    // Merge roll forward settings for two framework references
     void merge_roll_forward_settings_from(const fx_reference_t& from);
 
+    bool operator==(const fx_reference_t& other)
+    {
+        return
+            fx_name == other.fx_name &&
+            fx_version == other.fx_version &&
+            apply_patches == other.apply_patches &&
+            roll_forward == other.roll_forward &&
+            prefer_release == other.prefer_release;
+    }
+
+    bool operator!=(const fx_reference_t& other)
+    {
+        return !(*this == other);
+    }
+
 private:
-    bool has_patch_roll_fwd;
-    bool patch_roll_fwd;
+    bool apply_patches;
 
-    bool has_roll_fwd_on_no_candidate_fx;
-    roll_fwd_on_no_candidate_fx_option roll_fwd_on_no_candidate_fx;
+    roll_forward_option roll_forward;
 
-    bool use_exact_version;
+    // This indicates that when resolving the framework reference the search should prefer release version
+    // and only resolve to pre-release if there's no matching release version available.
+    bool prefer_release;
 
     pal::string_t fx_name;
 

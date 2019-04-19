@@ -20,6 +20,7 @@ set(SOURCES
     ./hostpolicy.cpp
     ./hostpolicy_context.cpp
     ./hostpolicy_init.cpp
+    ../roll_forward_option.cpp
     ../runtime_config.cpp
     ../json/casablanca/src/json/json.cpp
     ../json/casablanca/src/json/json_parsing.cpp

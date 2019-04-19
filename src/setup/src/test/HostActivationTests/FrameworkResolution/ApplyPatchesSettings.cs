@@ -4,7 +4,6 @@
 
 using Microsoft.DotNet.Cli.Build;
 using Microsoft.DotNet.Cli.Build.Framework;
-using System;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
@@ -22,60 +21,55 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             SharedState = sharedState;
         }
 
+        // Verifies that the default is true
         [Fact]
         public void Default()
         {
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(MicrosoftNETCoreApp, "5.1.2"),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"));
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(MicrosoftNETCoreApp, "5.1.2")))
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
         }
 
-        [Fact]
-        public void RuntimeConfigOnly()
+        // Verifies that it works in all supported locations
+        [Theory]
+        [InlineData(SettingLocation.RuntimeOptions)]
+        [InlineData(SettingLocation.FrameworkReference)]
+        public void AllLocations(SettingLocation location)
         {
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithApplyPatches(false)
-                    .WithFramework(MicrosoftNETCoreApp, "5.1.2"),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2"));
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithFramework(MicrosoftNETCoreApp, "5.1.2"))
+                    .With(ApplyPatchesSetting(location, false)))
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2");
         }
 
-        [Fact]
-        public void FrameworkReferenceOnly()
-        {
-            RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, "5.1.2")
-                        .WithApplyPatches(false)),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2"));
-        }
-
+        // Verifies that framework reference setting wins over runtime options one
         [Fact]
         public void Priority()
         {
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithApplyPatches(true)
-                    .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, "5.1.2")
-                        .WithApplyPatches(false)),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2"));
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithApplyPatches(true)
+                        .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, "5.1.2")
+                            .WithApplyPatches(false))))
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2");
 
             RunTest(
-                runtimeConfig => runtimeConfig
-                    .WithApplyPatches(false)
-                    .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, "5.1.2")
-                        .WithApplyPatches(true)),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"));
+                new TestSettings()
+                    .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                        .WithApplyPatches(false)
+                        .WithFramework(new RuntimeConfig.Framework(MicrosoftNETCoreApp, "5.1.2")
+                            .WithApplyPatches(true))))
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
         }
 
+        // Verifies that it works on inner framework references in runtime options
         [Fact]
-        public void InnerFrameworkReference_RuntimeConfig()
+        public void InnerFrameworkReference_RuntimeOptions()
         {
             using (var dotnetCustomizer = SharedState.DotNetWithFrameworks.Customize())
             {
@@ -83,14 +77,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     runtimeConfig.WithApplyPatches(false));
 
                 RunTest(
-                    runtimeConfig => runtimeConfig
-                        .WithFramework(MiddleWare, "2.1.0"),
-                    result => result.Should().Pass()
-                        .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2")
-                        .And.HaveResolvedFramework(MiddleWare, "2.1.2"));
+                    new TestSettings()
+                        .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                            .WithFramework(MiddleWare, "2.1.0")))
+                    .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2")
+                    .And.HaveResolvedFramework(MiddleWare, "2.1.2");
             }
         }
 
+        // Verifies that it works on inner framework references in framework reference
         [Fact]
         public void InnerFrameworkReference_Framework()
         {
@@ -100,14 +95,15 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     runtimeConfig.GetFramework(MicrosoftNETCoreApp).WithApplyPatches(false));
 
                 RunTest(
-                    runtimeConfig => runtimeConfig
-                        .WithFramework(MiddleWare, "2.1.0"),
-                    result => result.Should().Pass()
-                        .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2")
-                        .And.HaveResolvedFramework(MiddleWare, "2.1.2"));
+                    new TestSettings()
+                        .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
+                            .WithFramework(MiddleWare, "2.1.0")))
+                    .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2")
+                    .And.HaveResolvedFramework(MiddleWare, "2.1.2");
             }
         }
 
+        // Verifies that the setting is not inherited between frameworks
         [Theory]
         [InlineData(SettingLocation.RuntimeOptions)]
         [InlineData(SettingLocation.FrameworkReference)]
@@ -117,32 +113,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
                         .WithFramework(MiddleWare, "2.1.2"))
-                    .With(ApplyPatchesSetting(settingLocation, false, MiddleWare)),
-                result => result.Should().Pass()
-                    .And.HaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3"));
+                    .With(ApplyPatchesSetting(settingLocation, false, MiddleWare)))
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.3");
         }
 
-        private void RunTest(
-            Func<RuntimeConfig, RuntimeConfig> runtimeConfig,
-            Action<CommandResult> resultAction)
-        {
-            RunTest(
-                SharedState.DotNetWithFrameworks,
-                SharedState.FrameworkReferenceApp,
-                runtimeConfig,
-                resultAction);
-        }
-
-        private void RunTest(
-            TestSettings testSettings,
-            Action<CommandResult> resultAction)
-        {
-            RunTest(
-                SharedState.DotNetWithFrameworks,
-                SharedState.FrameworkReferenceApp,
-                testSettings,
-                resultAction);
-        }
+        private CommandResult RunTest(TestSettings testSettings) =>
+            RunTest(SharedState.DotNetWithFrameworks, SharedState.FrameworkReferenceApp, testSettings);
 
         public class SharedTestState : SharedTestStateBase
         {

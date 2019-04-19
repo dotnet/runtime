@@ -23,6 +23,7 @@
 #include "runtime_config.h"
 #include "sdk_info.h"
 #include "sdk_resolver.h"
+#include "roll_fwd_on_no_candidate_fx_option.h"
 
 using corehost_main_fn = int(*) (const int argc, const pal::char_t* argv[]);
 using corehost_get_delegate_fn = int(*)(coreclr_delegate_type type, void** delegate);
@@ -268,6 +269,7 @@ std::vector<host_option> fx_muxer_t::get_known_opts(bool exec_mode, host_mode_t 
     {
         // If mode=host_mode_t::apphost, these are only used when the app is framework-dependent.
         known_opts.push_back({ _X("--fx-version"), _X("<version>"), _X("Version of the installed Shared Framework to use to run the application.")});
+        known_opts.push_back({ _X("--roll-forward"), _X("<value>"), _X("Roll forward to framework version (LatestPatch, Minor, LatestMinor, Major, LatestMajor, Disable)")});
         known_opts.push_back({ _X("--roll-forward-on-no-candidate-fx"), _X("<n>"), _X("Roll forward on no candidate framework (0=off, 1=roll minor, 2=roll major & minor).")});
         known_opts.push_back({ _X("--additional-deps"), _X("<path>"), _X("Path to additional deps.json file.")});
     }
@@ -365,7 +367,7 @@ namespace
         fx_definition_t& app,
         const pal::string_t& app_candidate,
         pal::string_t& runtime_config,
-        const fx_reference_t& override_settings)
+        const runtime_config_t::settings_t& override_settings)
     {
         if (!runtime_config.empty() && !pal::realpath(&runtime_config))
         {
@@ -386,7 +388,7 @@ namespace
             get_runtime_config_paths_from_arg(runtime_config, &config_file, &dev_config_file);
         }
 
-        app.parse_runtime_config(config_file, dev_config_file, fx_reference_t(), override_settings);
+        app.parse_runtime_config(config_file, dev_config_file, override_settings);
         if (!app.get_runtime_config().is_valid())
         {
             trace::error(_X("Invalid runtimeconfig.json [%s] [%s]"), app.get_runtime_config().get_path().c_str(), app.get_runtime_config().get_dev_path().c_str());
@@ -461,6 +463,7 @@ namespace
         std::unique_ptr<corehost_init_t> &init)
     {
         pal::string_t opts_fx_version = _X("--fx-version");
+        pal::string_t opts_roll_forward = _X("--roll-forward");
         pal::string_t opts_roll_fwd_on_no_candidate_fx = _X("--roll-forward-on-no-candidate-fx");
         pal::string_t opts_deps_file = _X("--depsfile");
         pal::string_t opts_probe_path = _X("--additionalprobingpath");
@@ -476,19 +479,45 @@ namespace
             return StatusCode::InvalidArgFailure;
         }
 
-        fx_reference_t override_settings;
+        runtime_config_t::settings_t override_settings;
 
-        // 'Roll forward on no candidate fx' is set to 1 (roll_fwd_on_no_candidate_fx_option::minor) by default. It can be changed through:
-        // 1. Command line argument (--roll-forward-on-no-candidate-fx).
-        // 2. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in "framework" section).
-        // 3. Runtimeconfig json file ('rollForwardOnNoCandidateFx' property in a referencing "frameworks" section).
-        // 4. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var.
-        // The conflicts will be resolved by following the priority rank described above (from 1 to 4).
+        // `Roll forward` is set to Minor (2) (roll_forward_option::Minor) by default. 
+        // For backward compatibility there are two settings:
+        //  - rollForward (the new one) which has more possible values
+        //  - rollForwardOnNoCandidateFx (the old one) with only 0-Off, 1-Minor, 2-Major
+        // It can be changed through:
+        // 1. Command line argument --roll-forward or --roll-forward-on-no-candidate-fx
+        // 2. DOTNET_ROLL_FORWARD env var.
+        // 3. Runtimeconfig json file ('rollForward' or 'rollForwardOnNoCandidateFx' property in "framework" section).
+        // 4. Runtimeconfig json file ('rollForward' or 'rollForwardOnNoCandidateFx' property in a "runtimeOptions" section).
+        // 5. DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX env var.
+        // The conflicts will be resolved by following the priority rank described above (from 1 to 5, lower number wins over higher number).
         // The env var condition is verified in the config file processing
+
+        pal::string_t roll_forward = get_last_known_arg(opts, opts_roll_forward, _X(""));
+        if (roll_forward.length() > 0)
+        {
+            auto val = roll_forward_option_from_string(roll_forward);
+            if (val == roll_forward_option::__Last)
+            {
+                trace::error(_X("Invalid value for command line argument '%s'"), opts_roll_forward.c_str());
+                return StatusCode::InvalidArgFailure;
+            }
+
+            override_settings.set_roll_forward(val);
+        }
+
         pal::string_t roll_fwd_on_no_candidate_fx = get_last_known_arg(opts, opts_roll_fwd_on_no_candidate_fx, _X(""));
         if (roll_fwd_on_no_candidate_fx.length() > 0)
         {
-            override_settings.set_roll_fwd_on_no_candidate_fx(static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str())));
+            if (override_settings.has_roll_forward)
+            {
+                trace::error(_X("It's invalid to use both '%s' and '%s' command line options."), opts_roll_forward.c_str(), opts_roll_fwd_on_no_candidate_fx.c_str());
+                return StatusCode::InvalidArgFailure;
+            }
+
+            auto val = static_cast<roll_fwd_on_no_candidate_fx_option>(pal::xtoi(roll_fwd_on_no_candidate_fx.c_str()));
+            override_settings.set_roll_forward(roll_fwd_on_no_candidate_fx_to_roll_forward(val));
         }
 
         // Read config
@@ -720,7 +749,7 @@ namespace
         auto app = new fx_definition_t();
         fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
 
-        fx_reference_t override_settings;
+        runtime_config_t::settings_t override_settings;
         int rc = read_config(*app, host_info.app_path, runtime_config_path, override_settings);
         if (rc != StatusCode::Success)
             return rc;
