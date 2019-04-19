@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -33,7 +34,7 @@ namespace System.Collections.Concurrent
         internal bool _frozenForEnqueues;
 #pragma warning disable 0649 // some builds don't assign to this field
         /// <summary>The segment following this one in the queue, or null if this segment is the last in the queue.</summary>
-        internal ConcurrentQueueSegment<T> _nextSegment; // SOS's ThreadPool command depends on this name
+        internal ConcurrentQueueSegment<T>? _nextSegment; // SOS's ThreadPool command depends on this name
 #pragma warning restore 0649
 
         /// <summary>Creates the segment.</summary>
@@ -126,7 +127,7 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>Tries to dequeue an element from the queue.</summary>
-        public bool TryDequeue(out T item)
+        public bool TryDequeue(out T item) // TODO-NULLABLE-GENERIC
         {
             Slot[] slots = _slots;
             
@@ -164,7 +165,7 @@ namespace System.Collections.Concurrent
                             // If we're preserving, though, we don't zero out the slot, as we need it for
                             // enumerations, peeking, ToArray, etc.  And we don't update the sequence number,
                             // so that an enqueuer will see it as full and be forced to move to a new segment.
-                            slots[slotsIndex].Item = default(T);
+                            slots[slotsIndex].Item = default!; // TODO-NULLABLE-GENERIC
                             Volatile.Write(ref slots[slotsIndex].SequenceNumber, currentHead + slots.Length);
                         }
                         return true;
@@ -183,7 +184,7 @@ namespace System.Collections.Concurrent
                     int currentTail = Volatile.Read(ref _headAndTail.Tail);
                     if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
                     {
-                        item = default(T);
+                        item = default!; // TODO-NULLABLE-GENERIC
                         return false;
                     }
 
@@ -198,7 +199,7 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>Tries to peek at an element from the queue, without removing it.</summary>
-        public bool TryPeek(out T result, bool resultUsed)
+        public bool TryPeek(out T result, bool resultUsed) // TODO-NULLABLE-GENERIC
         {
             if (resultUsed)
             {
@@ -228,7 +229,7 @@ namespace System.Collections.Concurrent
                 int diff = sequenceNumber - (currentHead + 1);
                 if (diff == 0)
                 {
-                    result = resultUsed ? slots[slotsIndex].Item : default(T);
+                    result = resultUsed ? slots[slotsIndex].Item : default!; // TODO-NULLABLE-GENERIC
                     return true;
                 }
                 else if (diff < 0)
@@ -244,7 +245,7 @@ namespace System.Collections.Concurrent
                     int currentTail = Volatile.Read(ref _headAndTail.Tail);
                     if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
                     {
-                        result = default(T);
+                        result = default!; // TODO-NULLABLE-GENERIC
                         return false;
                     }
 
