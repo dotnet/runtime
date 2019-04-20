@@ -128,10 +128,17 @@ namespace System.Diagnostics
         {
             int pid = procFsStat.pid;
 
+            // Get long process name if possible, otherwise use a fall back method.
+            string procName = Path.GetFileName(Process.GetExePath(pid));
+            if (string.IsNullOrEmpty(procName))
+            {
+                procName = procFsStat.comm;
+            }
+
             var pi = new ProcessInfo()
             {
                 ProcessId = pid,
-                ProcessName = procFsStat.comm,
+                ProcessName = procName,
                 BasePriority = (int)procFsStat.nice,
                 VirtualBytes = (long)procFsStat.vsize,
                 WorkingSet = procFsStat.rss * Environment.SystemPageSize,
