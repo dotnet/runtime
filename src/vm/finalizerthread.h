@@ -68,7 +68,11 @@ public:
 
         // Do not wait for FinalizerThread if the current one is FinalizerThread.
         if (GetThread() != GetFinalizerThread())
-            hEventFinalizerToShutDown->Wait(INFINITE,FALSE);
+        {
+            // This wait must be alertable to handle cases where the current
+            // thread's context is needed (i.e. RCW cleanup)
+            hEventFinalizerToShutDown->Wait(INFINITE, /*alertable*/ TRUE);
+        }
     }
 
     static void FinalizerThreadWait(DWORD timeout = INFINITE);
