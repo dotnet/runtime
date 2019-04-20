@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview5.19219.9">
+    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview5.19219.10">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>c0cd09bb7fb1d40e51e4fdab1822a50a2b322260</Sha>
+      <Sha>4a25e4b03bcb5b9b1b2319b4178d2dfcfe05b3b1</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview5.19219.9">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview5.19219.10">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>c0cd09bb7fb1d40e51e4fdab1822a50a2b322260</Sha>
+      <Sha>4a25e4b03bcb5b9b1b2319b4178d2dfcfe05b3b1</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.Targets" Version="2.0.0" Pinned="true">
       <Uri>https://github.com/dotnet/corefx</Uri>
