@@ -29,8 +29,9 @@ namespace StandaloneAppWithSubDirs
                 Part("Noun", "Adjective") +
                 Part("Noun") +
                 Part("Conjunction") +
-                Part("Noun", "Pronoun", "Another");
-
+                Part("Noun", "Pronoun", "Another") + 
+                Part("This is a really, really, really, really, really, really, really, really, really, really, really, really, really, really long file name for punctuation");
+                      
             // This should print "Wow! We now say hello to the big world and you."
             Console.WriteLine(message);
         }

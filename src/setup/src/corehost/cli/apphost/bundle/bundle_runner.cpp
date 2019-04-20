@@ -39,6 +39,44 @@ void bundle_runner_t::read(void* buf, size_t size, FILE* stream)
     }
 }
 
+// Handle the relatively uncommon scenario where the bundle ID or 
+// the relative-path of a file within the bundle is longer than 127 bytes
+size_t bundle_runner_t::get_path_length(int8_t first_byte, FILE* stream)
+{
+    size_t length = 0;
+
+    // If the high bit is set, it means there are more bytes to read.
+    if ((first_byte & 0x80) == 0)
+    {
+         length = first_byte;
+    }
+    else
+    {
+        int8_t second_byte = 0;
+        read(&second_byte, 1, stream);
+
+        if (second_byte & 0x80)
+        {
+            // There can be no more than two bytes in path_length
+            trace::error(_X("Failure processing application bundle; possible file corruption."));
+            trace::error(_X("Path length encoding read beyond two bytes"));
+
+            throw StatusCode::BundleExtractionFailure;
+        }
+
+        length = (second_byte << 7) | (first_byte & 0x7f);
+    }
+
+    if (length <= 0 || length > PATH_MAX)
+    {
+        trace::error(_X("Failure processing application bundle; possible file corruption."));
+        trace::error(_X("Path length is zero or too long"));
+        throw StatusCode::BundleExtractionFailure;
+    }
+
+    return length;
+}
+
 // Read a non-null terminated fixed length UTF8 string from a byte-stream
 // and transform it to pal::string_t
 void bundle_runner_t::read_string(pal::string_t &str, size_t size, FILE* stream)
@@ -218,12 +256,12 @@ FILE* bundle_runner_t::create_extraction_file(const pal::string_t& relative_path
 // Extract one file from the bundle to disk.
 void bundle_runner_t::extract_file(file_entry_t *entry)
 {
-    FILE* file = create_extraction_file(entry->relative_path);
+    FILE* file = create_extraction_file(entry->relative_path());
     const size_t buffer_size = 8 * 1024; // Copy the file in 8KB chunks
     uint8_t buffer[buffer_size];
-    int64_t file_size = entry->data.size;
+    int64_t file_size = entry->size();
 
-    seek(m_bundle_stream, entry->data.offset, SEEK_SET);
+    seek(m_bundle_stream, entry->offset(), SEEK_SET);
     do {
         int64_t copy_size = (file_size <= buffer_size) ? file_size : buffer_size;
         read(buffer, copy_size, m_bundle_stream);

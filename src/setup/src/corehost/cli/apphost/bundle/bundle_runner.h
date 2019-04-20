@@ -32,6 +32,7 @@ namespace bundle
 
         static void read(void* buf, size_t size, FILE* stream);
         static void write(const void* buf, size_t size, FILE* stream);
+        static size_t get_path_length(int8_t first_byte, FILE* stream);
         static void read_string(pal::string_t& str, size_t size, FILE* stream);
 
     private:
