@@ -17,16 +17,9 @@ namespace System.Text.Json.Serialization
 
         private const int MinimumBufferSize = 256;
 
-        public PooledBufferWriter()
-        {
-            _rentedBuffer = ArrayPool<T>.Shared.Rent(MinimumBufferSize);
-            _index = 0;
-        }
-
         public PooledBufferWriter(int initialCapacity)
         {
-            if (initialCapacity <= 0)
-                throw new ArgumentException(nameof(initialCapacity));
+            Debug.Assert(initialCapacity > 0);
 
             _rentedBuffer = ArrayPool<T>.Shared.Rent(initialCapacity);
             _index = 0;
@@ -36,8 +29,8 @@ namespace System.Text.Json.Serialization
         {
             get
             {
-                CheckIfDisposed();
-
+                Debug.Assert(_rentedBuffer != null);
+                Debug.Assert(_index <= _rentedBuffer.Length);
                 return _rentedBuffer.AsMemory(0, _index);
             }
         }
@@ -46,8 +39,7 @@ namespace System.Text.Json.Serialization
         {
             get
             {
-                CheckIfDisposed();
-
+                Debug.Assert(_rentedBuffer != null);
                 return _index;
             }
         }
@@ -56,8 +48,7 @@ namespace System.Text.Json.Serialization
         {
             get
             {
-                CheckIfDisposed();
-
+                Debug.Assert(_rentedBuffer != null);
                 return _rentedBuffer.Length;
             }
         }
@@ -66,22 +57,20 @@ namespace System.Text.Json.Serialization
         {
             get
             {
-                CheckIfDisposed();
-
+                Debug.Assert(_rentedBuffer != null);
                 return _rentedBuffer.Length - _index;
             }
         }
 
         public void Clear()
         {
-            CheckIfDisposed();
-
             ClearHelper();
         }
 
         private void ClearHelper()
         {
             Debug.Assert(_rentedBuffer != null);
+            Debug.Assert(_index <= _rentedBuffer.Length);
 
             _rentedBuffer.AsSpan(0, _index).Clear();
             _index = 0;
@@ -100,37 +89,23 @@ namespace System.Text.Json.Serialization
             _rentedBuffer = null;
         }
 
-        private void CheckIfDisposed()
-        {
-            if (_rentedBuffer == null)
-                ThrowHelper.ThrowObjectDisposedException(nameof(PooledBufferWriter<T>));
-        }
-
         public void Advance(int count)
         {
-            CheckIfDisposed();
-
-            if (count < 0)
-                throw new ArgumentException(nameof(count));
-
-            if (_index > _rentedBuffer.Length - count)
-                ThrowInvalidOperationException(_rentedBuffer.Length);
+            Debug.Assert(_rentedBuffer != null);
+            Debug.Assert(count >= 0);
+            Debug.Assert(_index <= _rentedBuffer.Length - count);
 
             _index += count;
         }
 
         public Memory<T> GetMemory(int sizeHint = 0)
         {
-            CheckIfDisposed();
-
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsMemory(_index);
         }
 
         public Span<T> GetSpan(int sizeHint = 0)
         {
-            CheckIfDisposed();
-
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsSpan(_index);
         }
@@ -138,9 +113,7 @@ namespace System.Text.Json.Serialization
         private void CheckAndResizeBuffer(int sizeHint)
         {
             Debug.Assert(_rentedBuffer != null);
-
-            if (sizeHint < 0)
-                throw new ArgumentException(nameof(sizeHint));
+            Debug.Assert(sizeHint >= 0);
 
             if (sizeHint == 0)
             {
@@ -170,11 +143,6 @@ namespace System.Text.Json.Serialization
 
             Debug.Assert(_rentedBuffer.Length - _index > 0);
             Debug.Assert(_rentedBuffer.Length - _index >= sizeHint);
-        }
-
-        private static void ThrowInvalidOperationException(int capacity)
-        {
-            throw new InvalidOperationException(SR.Format(SR.BufferWriterAdvancedTooFar, capacity));
         }
     }
 }
