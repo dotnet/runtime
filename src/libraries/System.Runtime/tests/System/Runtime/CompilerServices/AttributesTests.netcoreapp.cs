@@ -29,5 +29,11 @@ namespace System.Runtime.CompilerServices.Tests
         {
             new IsReadOnlyAttribute();
         }
+
+        [Fact]
+        public static void EnumeratorCancellationAttributeTests()
+        {
+            new EnumeratorCancellationAttribute();
+        }
     }
 }
