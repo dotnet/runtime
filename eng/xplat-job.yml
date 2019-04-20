@@ -5,6 +5,7 @@ parameters:
   osIdentifier: ''
   name: ''
   displayName: ''
+  helixType: '(unspecified)'
   condition: ''
   dependsOn: ''
   containerName: ''
@@ -28,9 +29,10 @@ jobs:
     dependsOn: ${{ parameters.dependsOn }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
-    # Send telemetry for official builds
-    enableTelemetry: ${{ and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}
+    # Send telemetry for all builds
+    enableTelemetry: true
     helixRepo: 'dotnet/coreclr'
+    helixType: ${{ parameters.helixType }}
 
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
 
@@ -104,6 +106,9 @@ jobs:
       - name: buildConfigUpper
         value: 'Release'
 
+    - name: _BuildConfig
+      value: $(buildConfigUpper)
+
     - name: archType
       value: ${{ parameters.archType }}
 
@@ -113,6 +118,16 @@ jobs:
     - name: osIdentifier
       value: ${{ parameters.osIdentifier }}
       
+    - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: _HelixSource
+        value: official/dotnet/coreclr/$(Build.SourceBranch)
+    - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: _HelixSource
+        value: pr/dotnet/coreclr/$(Build.SourceBranch)
+    - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - name: _HelixSource
+        value: ci/dotnet/coreclr/$(Build.SourceBranch)
+
     - ${{ if ne(parameters.crossrootfsDir, '') }}:
       - name: crossArg
         value: 'cross'
