@@ -20,7 +20,7 @@ static DWORD WINAPI DiagnosticsServerThread(LPVOID lpThreadParameter)
     {
         NOTHROW;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(lpThreadParameter != nullptr);
     }
     CONTRACTL_END;
