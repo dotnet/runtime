@@ -244,7 +244,7 @@ EventPipeSessionID EventPipe::Enable(
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(circularBufferSizeInMB > 0);
         PRECONDITION(profilerSamplingRateInNanoseconds > 0);
         PRECONDITION(numProviders > 0 && pProviders != nullptr);
@@ -276,7 +276,7 @@ EventPipeSessionID EventPipe::Enable(
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(pSession != nullptr);
         PRECONDITION(GetLock()->OwnedByCurrentThread());
     }
