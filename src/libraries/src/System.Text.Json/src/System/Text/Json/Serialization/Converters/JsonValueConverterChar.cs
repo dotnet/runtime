@@ -23,22 +23,24 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(char value, Utf8JsonWriter writer)
         {
+            writer.WriteStringValue(
 #if BUILDING_INBOX_LIBRARY
-            Span<char> temp = MemoryMarshal.CreateSpan(ref value, 1);
-            writer.WriteStringValue(temp);
+                MemoryMarshal.CreateSpan(ref value, 1)
 #else
-            writer.WriteStringValue(value.ToString());
+                value.ToString()
 #endif
+                );
         }
 
         public override void Write(Span<byte> escapedPropertyName, char value, Utf8JsonWriter writer)
         {
+            writer.WriteString(escapedPropertyName,
 #if BUILDING_INBOX_LIBRARY
-            Span<char> temp = MemoryMarshal.CreateSpan(ref value, 1);
-            writer.WriteString(escapedPropertyName, temp);
+                MemoryMarshal.CreateSpan(ref value, 1)
 #else
-            writer.WriteString(escapedPropertyName, value.ToString());
+                value.ToString()
 #endif
+                );
         }
     }
 }
