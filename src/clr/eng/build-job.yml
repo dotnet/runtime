@@ -15,6 +15,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osIdentifier: ${{ parameters.osIdentifier }}
+    helixType: 'build/product/'
     enableMicrobuild: true
 
     # Compute job name from template parameters
@@ -68,8 +69,6 @@ jobs:
       # Variables used by arcade to gather asset manifests
       - name: _DotNetPublishToBlobFeed
         value: true
-      - name: _BuildConfig
-        value: $(buildConfigUpper)
     - name: officialBuildIdArg
       value: ''
     - name: ibcOptimizeArg

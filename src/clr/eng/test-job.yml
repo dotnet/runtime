@@ -20,6 +20,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osIdentifier: ${{ parameters.osIdentifier }}
+    helixType: 'build/tests/'
 
     # Compute job name from template parameters
     ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.readyToRun, false)) }}:
@@ -113,7 +114,6 @@ jobs:
 
 
     # Build tests
-    # TODO: enable crossgen in build-test.sh
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
       - script: ./build-test.sh $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(crossgenArg) $(clangArg)
         displayName: Build tests
@@ -134,13 +134,7 @@ jobs:
           creator: $(Build.DefinitionName)
 
         helixBuild: $(Build.BuildNumber)
-
-        ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-          helixSource: official/dotnet/coreclr/$(Build.SourceBranch)
-        ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
-          helixSource: pr/dotnet/coreclr/$(Build.SourceBranch)
-        ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
-          helixSource: ci/dotnet/coreclr/$(Build.SourceBranch)
+        helixSource: $(_HelixSource)
 
         ${{ if eq(parameters.readyToRun, false) }}:
           helixType: 'test/functional/cli/'
