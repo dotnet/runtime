@@ -14,6 +14,35 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Sub New()
         End Sub
 
+        Public Shared Function CallByName(ByVal Instance As System.Object, ByVal MethodName As String, ByVal UseCallType As CallType, ByVal ParamArray Arguments() As Object) As Object
+
+            Select Case UseCallType
+
+                Case CallType.Method
+                    'Need to use LateGet, because we are returning a value
+                    Return CompilerServices.NewLateBinding.LateCall(Instance, Nothing, MethodName, Arguments, Nothing, Nothing, Nothing, False)
+
+                Case CallType.Get
+                    Return CompilerServices.NewLateBinding.LateGet(Instance, Nothing, MethodName, Arguments, Nothing, Nothing, Nothing)
+
+                Case CallType.Let,
+                     CallType.Set
+                    Dim idmop As IDynamicMetaObjectProvider = IDOUtils.TryCastToIDMOP(Instance)
+                    If idmop IsNot Nothing Then
+                        ' UseCallType is used in the late binder to affect the binding behavior for COM Object, but COM Objects
+                        ' don't implement IDynamicMetaObjectProvider.  Therefore it is safe not to pass on UseCallType here.
+                        IDOBinder.IDOSet(idmop, MethodName, Nothing, Arguments)
+                    Else
+                        CompilerServices.NewLateBinding.LateSet(Instance, Nothing, MethodName, Arguments, Nothing, Nothing, False, False, UseCallType)
+                    End If
+                    Return Nothing
+
+                Case Else
+                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue1, "CallType"))
+            End Select
+
+        End Function
+
         Public Shared Function IsNumeric(ByVal Expression As Object) As Boolean
 
             Dim valueInterface As IConvertible = TryCast(Expression, IConvertible)
@@ -70,6 +99,20 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
             Return False
 
+        End Function
+
+        Public Shared Function TypeName(ByVal Expression As Object) As String
+
+            Dim Result As String
+            Dim typ As System.Type
+
+            If Expression Is Nothing Then
+                Return "Nothing"
+            End If
+
+            typ = Expression.GetType()
+            Result = VBFriendlyNameOfType(typ)
+            Return Result
         End Function
 
         Public Shared Function SystemTypeName(ByVal VbName As String) As String
