@@ -6655,17 +6655,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 #endif
 
         // We expect 'addr' to be an address at this point.
-        // But there are also cases where we can see a GT_LCL_FLD or a GT_LCL_VAR:
-        //
-        //     [001076] ----G-------              /--*  FIELD     long   m_constArray
-        //     [001072] ----G-------              |  \--*  ADDR      byref
-        //     [001073] ----G-------              |     \--*  FIELD     struct blob
-        //     [001074] ------------              |        \--*  ADDR      byref
-        //     [001075] ------------              |           \--*  LCL_VAR   struct V18 loc11
-        //
-        //
-        assert((addr->TypeGet() == TYP_BYREF) || (addr->TypeGet() == TYP_I_IMPL) || (addr->OperGet() == GT_LCL_FLD) ||
-               (addr->OperGet() == GT_LCL_VAR));
+        assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL);
 
         // Since we don't make a constant zero to attach the field sequence to, associate it with the "addr" node.
         FieldSeqNode* fieldSeq =
@@ -6677,13 +6667,10 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
     GenTree* result = fgMorphSmpOp(tree, mac);
 
 #ifdef DEBUG
-    if (fldOffset == 0)
+    if (verbose)
     {
-        if (verbose)
-        {
-            printf("\nAfter calling fgMorphSmpOp (zero fldOffset case):\n");
-            gtDispTree(result);
-        }
+        printf("\nFinal value of Compiler::fgMorphField after calling fgMorphSmpOp:\n");
+        gtDispTree(result);
     }
 #endif
 
@@ -13517,7 +13504,7 @@ DONE_MORPHING_CHILDREN:
                         }
                         else
                         {
-                            // Append 'fieldSeq' to the exsisting one
+                            // Append 'fieldSeq' to the existing one
                             temp->AsLclFld()->gtFieldSeq =
                                 GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
                         }
@@ -18765,17 +18752,7 @@ private:
 void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZero)
 {
     // We expect 'addr' to be an address at this point.
-    // But there are also cases where we can see a GT_LCL_FLD or a GT_LCL_VAR:
-    //
-    //     [001076] ----G-------              /--*  FIELD     long   m_constArray
-    //     [001072] ----G-------              |  \--*  ADDR      byref
-    //     [001073] ----G-------              |     \--*  FIELD     struct blob
-    //     [001074] ------------              |        \--*  ADDR      byref
-    //     [001075] ------------              |           \--*  LCL_VAR   struct V18 loc11
-    //
-    //
-    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->OperGet() == GT_LCL_FLD ||
-           addr->OperGet() == GT_LCL_VAR);
+    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL);
 
     FieldSeqNode* fieldSeqUpdate   = fieldSeqZero;
     GenTree*      fieldSeqNode     = addr;
