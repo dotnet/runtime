@@ -221,7 +221,7 @@ int g_rgCrstLevelMap[] =
     3,          // CrstDynamicMT
     3,          // CrstDynLinkZapItems
     7,          // CrstEtwTypeLogHash
-    18,         // CrstEventPipe
+    17,         // CrstEventPipe
     0,          // CrstEventStore
     0,          // CrstException
     7,          // CrstExecuteManLock
@@ -243,7 +243,7 @@ int g_rgCrstLevelMap[] =
     3,          // CrstInlineTrackingMap
     16,         // CrstInstMethodHashTable
     0,          // CrstInterfaceVTableMap
-    18,         // CrstInterop
+    17,         // CrstInterop
     4,          // CrstInteropData
     12,         // CrstIOThreadpoolWorker
     0,          // CrstIsJMCMethod
@@ -276,7 +276,7 @@ int g_rgCrstLevelMap[] =
     0,          // CrstPatchEntryPoint
     4,          // CrstPEImage
     0,          // CrstPEImagePDBStream
-    17,         // CrstPendingTypeLoadEntry
+    18,         // CrstPendingTypeLoadEntry
     0,          // CrstPinHandle
     0,          // CrstPinnedByrefValidation
     0,          // CrstProfilerGCRefDataFreeList
@@ -290,7 +290,7 @@ int g_rgCrstLevelMap[] =
     9,          // CrstReflection
     9,          // CrstReJITDomainTable
     14,         // CrstReJITGlobalRequest
-    18,         // CrstRemoting
+    19,         // CrstRemoting
     3,          // CrstRetThunkCache
     0,          // CrstRWLock
     3,          // CrstSavedExceptionInfo

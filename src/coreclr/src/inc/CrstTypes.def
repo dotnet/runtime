@@ -683,6 +683,7 @@ Crst InlineTrackingMap
 End
 
 Crst EventPipe
+    AcquiredAfter PendingTypeLoadEntry
     AcquiredBefore ThreadIdDispenser ThreadStore DomainLocalBlock InstMethodHashTable
 End
 
