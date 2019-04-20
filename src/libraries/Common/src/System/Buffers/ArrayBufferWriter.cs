@@ -9,17 +9,17 @@ namespace System.Buffers
     /// <summary>
     /// Represents a heap-based, array-backed output sink into which <typeparam name="T"/> data can be written.
     /// </summary>
-#if USE_ABW_INTERNALLY
-    internal
-#else
+#if MAKE_ABW_PUBLIC
     public
+#else
+    internal
 #endif
     sealed class ArrayBufferWriter<T> : IBufferWriter<T>
     {
         private T[] _buffer;
         private int _index;
 
-        private const int MinimumBufferSize = 256;
+        private const int DefaultInitialBufferSize = 256;
 
         /// <summary>
         /// Creates an instance of an <see cref="ArrayBufferWriter{T}"/>, in which data can be written to,
@@ -27,7 +27,7 @@ namespace System.Buffers
         /// </summary>
         public ArrayBufferWriter()
         {
-            _buffer = new T[MinimumBufferSize];
+            _buffer = Array.Empty<T>();
             _index = 0;
         }
 
@@ -104,7 +104,7 @@ namespace System.Buffers
                 throw new ArgumentException(nameof(count));
 
             if (_index > _buffer.Length - count)
-                ThrowInvalidOperationException(_buffer.Length);
+                ThrowInvalidOperationException_AdvancedTooFar(_buffer.Length);
 
             _index += count;
         }
@@ -162,12 +162,17 @@ namespace System.Buffers
 
             if (sizeHint == 0)
             {
-                sizeHint = MinimumBufferSize;
+                sizeHint = 1;
             }
 
             if (sizeHint > FreeCapacity)
             {
                 int growBy = Math.Max(sizeHint, _buffer.Length);
+
+                if (_buffer.Length == 0)
+                {
+                    growBy = Math.Max(growBy, DefaultInitialBufferSize);
+                }
 
                 int newSize = checked(_buffer.Length + growBy);
 
@@ -177,7 +182,7 @@ namespace System.Buffers
             Debug.Assert(FreeCapacity > 0 && FreeCapacity >= sizeHint);
         }
 
-        private static void ThrowInvalidOperationException(int capacity)
+        private static void ThrowInvalidOperationException_AdvancedTooFar(int capacity)
         {
             throw new InvalidOperationException(SR.Format(SR.BufferWriterAdvancedTooFar, capacity));
         }

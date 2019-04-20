@@ -322,7 +322,7 @@
     <value>Serializer options cannot be changed once serialization or deserialization has occurred.</value>
   </data>
   <data name="StreamNotWritable" xml:space="preserve">
-    <value>Stream was not writable.</value>
+    <value>Stream is not writable.</value>
   </data>
   <data name="CannotWriteCommentWithEmbeddedDelimiter" xml:space="preserve">
     <value>Cannot write a comment value which contains the end of comment delimiter.</value>
