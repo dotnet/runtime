@@ -73,6 +73,7 @@
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Versioned.vb" />
     <Compile Include="Microsoft\VisualBasic\Constants.vb" />
     <Compile Include="Microsoft\VisualBasic\ControlChars.vb" />
+    <Compile Include="Microsoft\VisualBasic\Conversion.vb" />
     <Compile Include="Microsoft\VisualBasic\DateAndTime.vb" />
     <Compile Include="Microsoft\VisualBasic\Devices\NetworkAvailableEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ErrObject.vb" />

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace Microsoft.VisualBasic.Tests
@@ -172,6 +173,39 @@ namespace Microsoft.VisualBasic.Tests
         public void SystemTypeName(string value, string expected)
         {
             Assert.Equal(expected, Information.SystemTypeName(value));
+        }
+
+        [Theory]
+        [MemberData(nameof(TypeName_TestData))]
+        public void TypeName(object expression, string expected)
+        {
+            Assert.Equal(expected, Information.TypeName(expression));
+        }
+
+        private static IEnumerable<object[]> TypeName_TestData()
+        {
+            yield return new object[] { null, "Nothing" };
+            yield return new object[] { new object(), "Object" };
+            yield return new object[] { default(bool), "Boolean" };
+            yield return new object[] { default(char), "Char" };
+            yield return new object[] { default(sbyte), "SByte" };
+            yield return new object[] { default(byte), "Byte" };
+            yield return new object[] { default(short), "Short" };
+            yield return new object[] { default(ushort), "UInt16" };
+            yield return new object[] { default(int), "Integer" };
+            yield return new object[] { default(uint), "UInt32" };
+            yield return new object[] { default(long), "Long" };
+            yield return new object[] { default(ulong), "UInt64" };
+            yield return new object[] { default(float), "Single" };
+            yield return new object[] { default(double), "Double" };
+            yield return new object[] { default(decimal), "Decimal" };
+            yield return new object[] { default(DateTime), "Date" };
+            yield return new object[] { "", "String" };
+            yield return new object[] { default(object[]), "Nothing" };
+            yield return new object[] { new object[0], "Object()" };
+            yield return new object[] { new char[0, 0], "Char(,)" };
+            yield return new object[] { default(int?), "Nothing" };
+            yield return new object[] { (int?)0, "Integer" };
         }
 
         [Theory]

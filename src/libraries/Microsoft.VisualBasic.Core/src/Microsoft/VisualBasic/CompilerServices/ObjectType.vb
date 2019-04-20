@@ -3541,8 +3541,6 @@ DecimalExit:
 
             fromType = obj.GetType()
 
-            'REVIEW:  - Should we handle ByRef in this manner?
-            ' what happens when it's returned as non-byref?
             If toType.IsByRef Then
                 toType = toType.GetElementType()
                 IsToByRef = True
@@ -3561,7 +3559,6 @@ DecimalExit:
                     Return obj
                 End If
             End If
-            'END REVIEW
 
             Dim toTypeCode As TypeCode = Type.GetTypeCode(toType)
 
