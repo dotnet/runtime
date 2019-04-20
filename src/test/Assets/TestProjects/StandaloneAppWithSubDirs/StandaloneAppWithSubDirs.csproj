@@ -7,7 +7,6 @@
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
   </PropertyGroup>
 
-
   <Target Name="CopyFiles" AfterTargets="Publish">
     <ItemGroup>
       <FilesToCopy Include="$(MSBuildThisFileDirectory)\Sentence\**\*.*" />

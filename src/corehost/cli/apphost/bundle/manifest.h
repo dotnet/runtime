@@ -40,7 +40,7 @@ namespace bundle
             uint32_t major_version;
             uint32_t minor_version;
             int32_t num_embedded_files;
-            int8_t bundle_id_length;
+            int8_t bundle_id_length_byte_1;
         } m_data;
 #pragma pack(pop)
         pal::string_t m_bundle_id;
