@@ -248,12 +248,17 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(22158, TargetFrameworkMonikers.Uap)]
-        [Fact]
+        [ConditionalFact]
         public async Task GetAsync_IPv6LinkLocalAddressUri_Success()
         {
             using (HttpClient client = CreateHttpClient())
             {
                 var options = new LoopbackServer.Options { Address = TestHelper.GetIPv6LinkLocalAddress() };
+                if (options.Address == null)
+                {
+                    throw new SkipTestException("Unable to find valid IPv6 LL address.");
+                }
+
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
                     _output.WriteLine(url.ToString());
