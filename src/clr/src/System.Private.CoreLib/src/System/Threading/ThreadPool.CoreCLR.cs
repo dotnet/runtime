@@ -231,6 +231,36 @@ namespace System.Threading
             GetAvailableThreadsNative(out workerThreads, out completionPortThreads);
         }
 
+        /// <summary>
+        /// Gets the number of thread pool threads that currently exist.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of threads, the count includes all types.
+        /// </remarks>
+        public static extern int ThreadCount
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
+        }
+
+        /// <summary>
+        /// Gets the number of work items that have been processed so far.
+        /// </summary>
+        /// <remarks>
+        /// For a thread pool implementation that may have different types of work items, the count includes all types.
+        /// </remarks>
+        public static extern long CompletedWorkItemCount
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
+        }
+
+        private static extern long PendingUnmanagedWorkItemCount
+        {
+            [MethodImpl(MethodImplOptions.InternalCall)]
+            get;
+        }
+
         private static RegisteredWaitHandle RegisterWaitForSingleObject(  // throws RegisterWaitException
              WaitHandle waitObject,
              WaitOrTimerCallback callBack,

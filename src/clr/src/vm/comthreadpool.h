@@ -28,6 +28,9 @@ public:
     static FCDECL2(FC_BOOL_RET, CorSetMinThreads, DWORD workerThreads, DWORD completionPortThreads);
     static FCDECL2(VOID, CorGetMinThreads, DWORD* workerThreads, DWORD* completionPortThreads);
     static FCDECL2(VOID, CorGetAvailableThreads, DWORD* workerThreads, DWORD* completionPortThreads);
+    static FCDECL0(INT32, GetThreadCount);
+    static FCDECL0(INT64, GetCompletedWorkItemCount);
+    static FCDECL0(INT64, GetPendingUnmanagedWorkItemCount);
 
     static FCDECL0(VOID, NotifyRequestProgress);
     static FCDECL0(FC_BOOL_RET, NotifyRequestComplete);
