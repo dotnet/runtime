@@ -687,18 +687,30 @@ GenTreeStmt* Compiler::impExtractLastStmt()
     return stmt;
 }
 
-/*****************************************************************************
- *
- *  Insert the given GT_STMT "stmt" before GT_STMT "stmtBefore"
- */
-
+//-------------------------------------------------------------------------
+// impInsertStmtBefore: Insert the given GT_STMT "stmt" before GT_STMT "stmtBefore".
+//
+// Arguments:
+//    stmt       - a statement to insert;
+//    stmtBefore - an insertion point to insert "stmt" before.
+//
 inline void Compiler::impInsertStmtBefore(GenTreeStmt* stmt, GenTreeStmt* stmtBefore)
 {
-    GenTreeStmt* stmtPrev = stmtBefore->getPrevStmt();
-    stmt->gtPrev          = stmtPrev;
-    stmt->gtNext          = stmtBefore;
-    stmtPrev->gtNext      = stmt;
-    stmtBefore->gtPrev    = stmt;
+    assert(stmt != nullptr);
+    assert(stmtBefore != nullptr);
+
+    if (stmtBefore == impStmtList)
+    {
+        impStmtList = stmt;
+    }
+    else
+    {
+        GenTreeStmt* stmtPrev = stmtBefore->getPrevStmt();
+        stmt->gtPrev          = stmtPrev;
+        stmtPrev->gtNext      = stmt;
+    }
+    stmt->gtNext       = stmtBefore;
+    stmtBefore->gtPrev = stmt;
 }
 
 /*****************************************************************************
@@ -1476,7 +1488,19 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
             // for Op2, but that would be out of order with op1, so we need to
             // spill op1 onto the statement list after whatever was last
             // before we recursed on Op2 (i.e. before whatever Op2 appended).
-            impInsertTreeBefore(structVal->gtOp.gtOp1, impCurStmtOffs, oldLastStmt->getNextStmt());
+            GenTreeStmt* beforeStmt;
+            if (oldLastStmt == nullptr)
+            {
+                // The op1 stmt should be the first in the list.
+                beforeStmt = impStmtList;
+            }
+            else
+            {
+                // Insert after the oldLastStmt before the first inserted for op2.
+                beforeStmt = oldLastStmt->getNextStmt();
+            }
+
+            impInsertTreeBefore(structVal->gtOp.gtOp1, impCurStmtOffs, beforeStmt);
             structVal->gtOp.gtOp1 = gtNewNothingNode();
         }
 
