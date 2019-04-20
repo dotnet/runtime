@@ -18,6 +18,7 @@
     <Compile Include="System\IO\HandleInheritability.cs" />
     <Compile Include="System\LazyOfTTMetadata.cs" />
     <Compile Include="System\Reflection\RuntimeReflectionExtensions.cs" />
+    <Compile Include="System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs" />
     <Compile Include="System\Runtime\ConstrainedExecution\PrePrepareMethodAttribute.cs" />
     <Compile Include="System\Runtime\NgenServicingAttributes.cs" />
     <Compile Include="System\System.Runtime.Typeforwards.cs" />
