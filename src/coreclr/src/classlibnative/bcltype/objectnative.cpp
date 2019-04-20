@@ -355,3 +355,9 @@ FCIMPL1(FC_BOOL_RET, ObjectNative::IsLockHeld, Object* pThisUNSAFE)
 }
 FCIMPLEND
 
+FCIMPL0(INT64, ObjectNative::GetMonitorLockContentionCount)
+{
+    FCALL_CONTRACT;
+    return (INT64)Thread::GetTotalMonitorLockContentionCount();
+}
+FCIMPLEND
