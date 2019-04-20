@@ -244,6 +244,8 @@ public:
     static BOOL GetAvailableThreads(DWORD* AvailableWorkerThreads, 
                                  DWORD* AvailableIOCompletionThreads);
 
+    static INT32 GetThreadCount();
+
     static BOOL QueueUserWorkItem(LPTHREAD_START_ROUTINE Function, 
                                   PVOID Context,
                                   ULONG Flags,
@@ -841,7 +843,7 @@ public:
     static void NotifyWorkItemCompleted()
     {
         WRAPPER_NO_CONTRACT;
-        Thread::IncrementThreadPoolCompletionCount();
+        Thread::IncrementWorkerThreadPoolCompletionCount(GetThread());
         UpdateLastDequeueTime();
     }
 

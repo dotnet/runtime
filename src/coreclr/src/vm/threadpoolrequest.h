@@ -221,6 +221,12 @@ public:
 	_ASSERT(FALSE); 
     }   
 
+    inline ULONG GetNumRequests()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return VolatileLoad(&m_NumRequests);
+    }
+
 private:
     SpinLock m_lock;
     ULONG m_NumRequests;
