@@ -39,6 +39,40 @@ namespace IntelHardwareIntrinsicTest
                         testResult = Fail;
                     }
                 }
+
+                using (TestTable<long> intTable = new TestTable<long>(new long[2] { 1, -5 }, new long[2]))
+                {
+                    var vf = Unsafe.Read<Vector128<long>>(intTable.inArrayPtr);
+                    Sse2.StoreScalar((long*)(intTable.outArrayPtr), vf);
+
+                    if (!intTable.CheckResult((x, y) => y[0] == x[0] && y[1] == 0))
+                    {
+                        Console.WriteLine("Sse2 StoreScalar failed on long:");
+                        foreach (var item in intTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+                }
+
+                using (TestTable<ulong> intTable = new TestTable<ulong>(new ulong[2] { 1, 5 }, new ulong[2]))
+                {
+                    var vf = Unsafe.Read<Vector128<ulong>>(intTable.inArrayPtr);
+                    Sse2.StoreScalar((ulong*)(intTable.outArrayPtr), vf);
+
+                    if (!intTable.CheckResult((x, y) => y[0] == x[0] && y[1] == 0))
+                    {
+                        Console.WriteLine("Sse2 StoreScalar failed on ulong:");
+                        foreach (var item in intTable.outArray)
+                        {
+                            Console.Write(item + ", ");
+                        }
+                        Console.WriteLine();
+                        testResult = Fail;
+                    }
+                }
             }
 
             return testResult;
