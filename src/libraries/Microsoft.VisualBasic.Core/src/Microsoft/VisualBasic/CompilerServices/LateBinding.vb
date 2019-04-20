@@ -290,7 +290,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                     Dim NewValue As Object
 
                     If fi.IsInitOnly Then
-                        'REVIEW: Should this be MissingMember?
                         Throw New MissingMemberException(GetResourceString(SR.MissingMember_ReadOnlyField2, name, VBFriendlyName(objType, o)))
                     End If
 

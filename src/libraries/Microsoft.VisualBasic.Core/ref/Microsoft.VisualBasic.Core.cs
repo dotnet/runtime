@@ -94,6 +94,59 @@ namespace Microsoft.VisualBasic
         public ControlChars() { }
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
+    public sealed partial class Conversion
+    {
+        internal Conversion() { }
+        public static TargetType CTypeDynamic<TargetType>(object Expression) { throw null; }
+        public static object CTypeDynamic(object Expression, System.Type TargetType) { throw null; }
+        public static string ErrorToString() { throw null; }
+        public static string ErrorToString(int ErrorNumber) { throw null; }
+        public static int Fix(int Number) { throw null; }
+        public static long Fix(long Number) { throw null; }
+        public static double Fix(double Number) { throw null; }
+        public static float Fix(float Number) { throw null; }
+        public static decimal Fix(decimal Number) { throw null; }
+        public static object Fix(object Number) { throw null; }
+        public static short Fix(short Number) { throw null; }
+        public static string Hex(object Number) { throw null; }
+        [System.CLSCompliant(false)]
+        public static string Hex(ulong Number) { throw null; }
+        public static string Hex(long Number) { throw null; }
+        public static string Hex(int Number) { throw null; }
+        public static string Hex(short Number) { throw null; }
+        public static string Hex(byte Number) { throw null; }
+        [System.CLSCompliant(false)]
+        public static string Hex(uint Number) { throw null; }
+        [System.CLSCompliant(false)]
+        public static string Hex(ushort Number) { throw null; }
+        [System.CLSCompliant(false)]
+        public static string Hex(sbyte Number) { throw null; }
+        public static short Int(short Number) { throw null; }
+        public static int Int(int Number) { throw null; }
+        public static object Int(object Number) { throw null; }
+        public static double Int(double Number) { throw null; }
+        public static float Int(float Number) { throw null; }
+        public static long Int(long Number) { throw null; }
+        public static decimal Int(decimal Number) { throw null; }
+        public static string Oct(object Number) { throw null; }
+        [System.CLSCompliant(false)]
+        public static string Oct(ulong Number) { throw null; }
+        [System.CLSCompliant(false)]
+        public static string Oct(uint Number) { throw null; }
+        public static string Oct(long Number) { throw null; }
+        public static string Oct(short Number) { throw null; }
+        public static string Oct(byte Number) { throw null; }
+        [System.CLSCompliant(false)]
+        public static string Oct(sbyte Number) { throw null; }
+        public static string Oct(int Number) { throw null; }
+        [System.CLSCompliant(false)]
+        public static string Oct(ushort Number) { throw null; }
+        public static string Str(object Number) { throw null; }
+        public static double Val(string InputStr) { throw null; }
+        public static int Val(char Expression) { throw null; }
+        public static double Val(object Expression) { throw null; }
+    }
+    [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class DateAndTime
     {
         internal DateAndTime() { }
@@ -133,9 +186,16 @@ namespace Microsoft.VisualBasic
         public static int QBColor(int Color) { throw null; }
         public static int RGB(int Red, int Green, int Blue) { throw null; }
         public static string SystemTypeName(string VbName) { throw null; }
+        public static string TypeName(object VarName) { throw null; }
         public static int UBound(System.Array Array, int Rank = 1) { throw null; }
         public static Microsoft.VisualBasic.VariantType VarType(object VarName) { throw null; }
         public static string VbTypeName(string UrtName) { throw null; }
+    }
+    [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
+    public sealed partial class Interaction
+    {
+        internal Interaction() { }
+        public static object CallByName(object ObjectRef, string ProcName, CallType UseCallType, params object[] Args) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -189,6 +249,7 @@ namespace Microsoft.VisualBasic
         public static string Right(string str, int Length) { throw null; }
         public static string RTrim(string str) { throw null; }
         public static int StrComp(string String1, string String2, CompareMethod Compare = CompareMethod.Binary) { throw null; }
+        public static string StrReverse(string Expression) { throw null; }
         public static string Trim(string str) { throw null; }
     }
     public enum VariantType
@@ -647,8 +708,10 @@ namespace Microsoft.VisualBasic.CompilerServices
     public sealed partial class Versioned
     {
         internal Versioned() { }
+        public static object CallByName(object Instance, string MethodName, CallType UseCallType, params object[] Arguments) { throw null; }
         public static bool IsNumeric(object Expression) { throw null; }
         public static string SystemTypeName(string VbName) { throw null; }
+        public static string TypeName(object Expression) { throw null; }
         public static string VbTypeName(string SystemName) { throw null; }
     }
 }

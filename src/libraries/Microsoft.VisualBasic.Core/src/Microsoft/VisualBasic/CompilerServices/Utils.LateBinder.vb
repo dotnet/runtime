@@ -88,6 +88,111 @@ Namespace Microsoft.VisualBasic.CompilerServices
             Return SR.Format(resourceKey, args)
         End Function
 
+        Friend Shared Function StdFormat(ByVal s As String) As String
+            Dim nfi As NumberFormatInfo
+            Dim iIndex As Integer
+            Dim c0, c1, c2 As Char
+            Dim sb As StringBuilder
+
+            nfi = Threading.Thread.CurrentThread.CurrentCulture.NumberFormat
+            iIndex = s.IndexOf(nfi.NumberDecimalSeparator)
+
+            If iIndex = -1 Then
+                Return s
+            End If
+
+            Try
+                c0 = s.Chars(0)
+                c1 = s.Chars(1)
+                c2 = s.Chars(2)
+            Catch ex As StackOverflowException
+                Throw ex
+            Catch ex As OutOfMemoryException
+                Throw ex
+            Catch ex As System.Threading.ThreadAbortException
+                Throw ex
+            Catch
+                'Ignore, should default to 0 values
+            End Try
+
+            If s.Chars(iIndex) = chPeriod Then
+                'Optimization: no period replacement needed
+                'avoids creating stringbuilder and copying string 
+
+                'If format is "0.xxxx" then replace 0 with space 
+                If c0 = chZero AndAlso c1 = chPeriod Then
+                    Return s.Substring(1)
+
+                    'If format is "-0.xxxx", "+0.xxxx", " 0.xxxx" then shift everything down over the zero
+                ElseIf (c0 = chHyphen OrElse c0 = chPlus OrElse c0 = chSpace) AndAlso c1 = chZero AndAlso c2 = chPeriod Then
+                    'Fall down below and use a stringbuilder
+                Else
+                    'No change
+                    Return s
+                End If
+            End If
+
+            sb = New StringBuilder(s)
+            sb.Chars(iIndex) = chPeriod ' change decimal separator to "."
+
+            'If format is "0.xxxx" then replace 0 with space 
+            If (c0 = chZero AndAlso c1 = chPeriod) Then
+                StdFormat = sb.ToString(1, sb.Length - 1)
+                'If format is "-0.xxxx", "+0.xxxx", " 0.xxxx" then shift everything down over the zero
+            ElseIf (c0 = chHyphen OrElse c0 = chPlus OrElse c0 = chSpace) AndAlso c1 = chZero AndAlso c2 = chPeriod Then
+                sb.Remove(1, 1)
+                StdFormat = sb.ToString()
+            Else
+                StdFormat = sb.ToString()
+            End If
+        End Function
+
+        Friend Shared Function OctFromLong(ByVal Val As Long) As String
+            'System.Radix is being removed from the .NET platform, so compute this locally.
+            Dim Buffer As String = ""
+            Dim ModVal As Integer
+            Dim CharZero As Integer = Convert.ToInt32(chZero)
+            Dim Negative As Boolean
+
+            If Val < 0 Then
+                Val = Int64.MaxValue + Val + 1
+                Negative = True
+            End If
+
+            'Pull apart the number and put the digits (in reverse order) into the buffer.
+            Do
+                ModVal = CInt(Val Mod 8)
+                Val = Val >> 3
+                Buffer = Buffer & ChrW(ModVal + CharZero)
+            Loop While Val > 0
+
+            Buffer = StrReverse(Buffer)
+
+            If Negative Then
+                Buffer = "1" & Buffer
+            End If
+
+            Return Buffer
+        End Function
+
+        Friend Shared Function OctFromULong(ByVal Val As ULong) As String
+            'System.Radix is being removed from the .NET platform, so compute this locally.
+            Dim Buffer As String = ""
+            Dim ModVal As Integer
+            Dim CharZero As Integer = Convert.ToInt32(chZero)
+
+            'Pull apart the number and put the digits (in reverse order) into the buffer.
+            Do
+                ModVal = CInt(Val Mod 8UL)
+                Val = Val >> 3
+                Buffer = Buffer & ChrW(ModVal + CharZero)
+            Loop While Val <> 0UL
+
+            Buffer = StrReverse(Buffer)
+
+            Return Buffer
+        End Function
+
         Friend Shared Function GetCultureInfo() As CultureInfo
             Return CultureInfo.CurrentCulture
         End Function
@@ -187,7 +292,6 @@ GetSpecialValue:
             End If
             Return True
         End Function
-
 
         Friend Shared Function VBFriendlyName(ByVal obj As Object) As String
             If obj Is Nothing Then
@@ -539,6 +643,27 @@ GetSpecialValue:
             resultString &= ") As " & VBFriendlyNameOfType(propertyType, fullName:=True)
 
             Return resultString
+        End Function
+
+        Friend Shared Function AdjustArraySuffix(ByVal sRank As String) As String
+            Dim OneChar As Char
+            Dim RevResult As String = Nothing
+            Dim length As Integer = sRank.Length
+            While length > 0
+                OneChar = sRank.Chars(length - 1)
+                Select Case OneChar
+                    Case ")"c
+                        RevResult = RevResult + "("c
+                    Case "("c
+                        RevResult = RevResult + ")"c
+                    Case ","c
+                        RevResult = RevResult + OneChar
+                    Case Else
+                        RevResult = OneChar + RevResult
+                End Select
+                length = length - 1
+            End While
+            Return RevResult
         End Function
 
         Friend Shared Function MemberToString(ByVal member As MemberInfo) As String

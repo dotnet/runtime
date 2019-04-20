@@ -13,12 +13,14 @@
     <Compile Include="CompilerServices\DecimalTypeTests.cs" />
     <Compile Include="CompilerServices\VersionedTests.cs" />
     <Compile Include="ConversionsTests.cs" />
+    <Compile Include="ConversionTests.cs" />
     <Compile Include="DateTypeTests.cs" />
     <Compile Include="DateAndTimeTests.cs" />
     <Compile Include="ErrObjectTests.cs" />
     <Compile Include="IConvertibleWrapper.cs" />
     <Compile Include="InformationTests.cs" />
     <Compile Include="IntegerTypeTests.cs" />
+    <Compile Include="InteractionTests.cs" />
     <Compile Include="LateBindingTests.cs" />
     <Compile Include="LikeOperatorTests.cs" />
     <Compile Include="LongTypeTests.cs" />

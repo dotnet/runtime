@@ -7,7 +7,7 @@ Imports Microsoft.VisualBasic.CompilerServices.Utils
 
 Namespace Microsoft.VisualBasic
 
-    Friend Module Interaction
+    Public Module Interaction
 
         Friend Function IIf(Of T)(ByVal condition As Boolean, ByVal truePart As T, ByVal falsePart As T) As T
             If condition Then

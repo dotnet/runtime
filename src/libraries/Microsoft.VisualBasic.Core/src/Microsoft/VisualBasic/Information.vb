@@ -333,6 +333,114 @@ Namespace Microsoft.VisualBasic
 
         End Function
 
+        Friend Function OldVBFriendlyNameOfTypeName(ByVal typename As String) As String
+            Dim ArraySuffix As String = Nothing
+            Dim Name As String
+            Dim LastChar As Integer = typename.Length - 1
+
+            If typename.Chars(LastChar) = "]"c Then
+                Dim pos As Integer
+                pos = typename.IndexOf("["c)
+                If pos + 1 = LastChar Then
+                    ArraySuffix = "()"
+                Else
+                    ArraySuffix = typename.Substring(pos, LastChar - pos + 1).Replace("["c, "("c).Replace("]"c, ")"c)
+                End If
+                typename = typename.Substring(0, pos)
+            End If
+
+            Name = OldVbTypeName(typename)
+            If Name Is Nothing Then
+                Name = typename
+            End If
+
+            If ArraySuffix Is Nothing Then
+                Return Name
+            End If
+            Return Name & AdjustArraySuffix(ArraySuffix)
+
+        End Function
+
+        Public Function TypeName(ByVal VarName As Object) As String
+
+            Dim Result As String
+            Dim bIsArray As Boolean
+            Dim typ As System.Type
+            Dim ArrayType As System.Type
+
+            If VarName Is Nothing Then
+                Return "Nothing"
+            End If
+
+            typ = VarName.GetType()
+
+            If typ.IsArray Then
+                bIsArray = True
+                ArrayType = typ
+                typ = ArrayType.GetElementType()
+            End If
+
+            If typ.IsEnum() Then
+
+                Result = typ.Name
+                GoTo UnmangleName
+
+            Else
+                Dim tc As TypeCode
+
+                tc = Type.GetTypeCode(typ)
+
+                Select Case tc
+
+                    Case TypeCode.DBNull : Result = "DBNull"
+                    Case TypeCode.Int16 : Result = "Short"
+                    Case TypeCode.Int32 : Result = "Integer"
+                    Case TypeCode.Single : Result = "Single"
+                    Case TypeCode.Double : Result = "Double"
+                    Case TypeCode.DateTime : Result = "Date"
+                    Case TypeCode.String : Result = "String"
+                    Case TypeCode.Boolean : Result = "Boolean"
+                    Case TypeCode.Decimal : Result = "Decimal"
+                    Case TypeCode.Byte : Result = "Byte"
+                    Case TypeCode.Char : Result = "Char"
+                    Case TypeCode.Int64 : Result = "Long"
+
+                    Case Else
+
+                        Result = typ.Name
+
+                        If (typ.IsCOMObject AndAlso (System.String.CompareOrdinal(Result, COMObjectName) = 0)) Then
+                            Result = LegacyTypeNameOfCOMObject(VarName, True)
+                        End If
+
+UnmangleName:
+                        Dim i As Integer
+                        i = Result.IndexOf("+"c)
+                        If i >= 0 Then
+                            Result = Result.Substring(i + 1)
+                        End If
+
+                End Select
+
+            End If
+
+            If bIsArray Then
+
+                Dim ary As Array
+                ary = CType(VarName, Array)
+                If ary.Rank = 1 Then
+                    Result = Result & "[]"
+                Else
+                    Result = Result & "[" & (New String(","c, ary.Rank - 1)) & "]"
+                End If
+
+                Result = OldVBFriendlyNameOfTypeName(Result)
+
+            End If
+
+            Return Result
+        End Function
+
         Public Function SystemTypeName(ByVal VbName As String) As String
 
             Select Case Trim(VbName).ToUpperInvariant()
@@ -381,6 +489,17 @@ Namespace Microsoft.VisualBasic
                     Return Nothing
             End Select
 
+        End Function
+
+        Friend Function LegacyTypeNameOfCOMObject(ByVal VarName As Object, ByVal bThrowException As Boolean) As String
+
+            Dim Result As String = COMObjectName
+
+            If Result.Chars(0) = "_"c Then
+                Result = Result.Substring(1)
+            End If
+
+            Return Result
         End Function
 
     End Module

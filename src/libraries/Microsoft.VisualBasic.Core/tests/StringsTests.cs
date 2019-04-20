@@ -459,6 +459,18 @@ namespace Microsoft.VisualBasic.Tests
             Assert.Equal(expectedTextCompare, Strings.StrComp(left, right, CompareMethod.Text));
         }
 
+        [Theory]
+        [InlineData(null, "")]
+        [InlineData("", "")]
+        [InlineData("\0", "\0")]
+        [InlineData("ABC", "CBA")]
+        [InlineData("\ud83c\udfc8", "\ud83c\udfc8")]
+        [InlineData("A\ud83c\udfc8", "\ud83c\udfc8A")]
+        public void StrReverse(string str, string expected)
+        {
+            Assert.Equal(expected, Strings.StrReverse(str));
+        }
+
         public static TheoryData<string, string, int> InStr_TestData_NullsAndEmpties() => new TheoryData<string, string, int>
         {
             {null, null, 0 },
