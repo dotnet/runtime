@@ -26,7 +26,7 @@ namespace bundle
 
     class file_entry_t
     {
-    public:
+    private:
 
         // The inner structure represents the fields that can be 
         // read contiguously for every file_entry. 
@@ -36,15 +36,22 @@ namespace bundle
             int64_t offset;
             int64_t size;
             file_type_t type;
-            int8_t path_length;
-        } data;
+            int8_t path_length_byte_1;
+        } m_data;
 #pragma pack(pop)
-        pal::string_t relative_path; // Path of an embedded file, relative to the extraction directory.
 
+        pal::string_t m_relative_path; // Path of an embedded file, relative to the extraction directory.
+
+    public:
         file_entry_t()
-            :data(), relative_path()
+            :m_data(), m_relative_path()
         {
         }
+
+        const pal::string_t& relative_path() { return m_relative_path; }
+        int64_t offset() { return m_data.offset; }
+        int64_t size() { return m_data.size; }
+        file_type_t type() { return m_data.type; }
 
         static file_entry_t* read(FILE* stream);
 
