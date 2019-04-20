@@ -73,7 +73,7 @@ void EventPipeProtocolHelper::StopTracing(IpcStream *pStream)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(pStream != nullptr);
     }
     CONTRACTL_END;
@@ -118,7 +118,7 @@ void EventPipeProtocolHelper::CollectTracing(IpcStream *pStream)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(pStream != nullptr);
     }
     CONTRACTL_END;

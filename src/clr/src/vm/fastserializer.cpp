@@ -18,7 +18,7 @@ IpcStreamWriter::IpcStreamWriter(uint64_t id, IpcStream *pStream) : _pStream(pSt
     {
         NOTHROW;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(_pStream != nullptr);
     }
     CONTRACTL_END;
@@ -73,7 +73,7 @@ FileStreamWriter::FileStreamWriter(const SString &outputFilePath)
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
     m_pFileStream = new CFileStream();
@@ -126,7 +126,7 @@ FastSerializer::FastSerializer(StreamWriter *pStreamWriter) : m_pStreamWriter(pS
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(m_pStreamWriter != NULL);
     }
     CONTRACTL_END;
@@ -268,7 +268,7 @@ void FastSerializer::WriteFileHeader()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
