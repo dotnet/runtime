@@ -97,7 +97,9 @@ namespace Microsoft.Extensions.Hosting
             })
             .UseDefaultServiceProvider((context, options) =>
             {
-                options.ValidateScopes = context.HostingEnvironment.IsDevelopment();
+                var isDevelopment = context.HostingEnvironment.IsDevelopment();
+                options.ValidateScopes = isDevelopment;
+                options.ValidateOnBuild = isDevelopment;
             });
 
             return builder;

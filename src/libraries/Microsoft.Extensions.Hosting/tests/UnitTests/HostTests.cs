@@ -57,7 +57,6 @@ namespace Microsoft.Extensions.Hosting
         [Fact]
         public void CreateDefaultBuilder_EnablesScopeValidation()
         {
-            var listener = new TestEventListener();
             var host = Host.CreateDefaultBuilder()
                 .UseEnvironment(Environments.Development)
                 .ConfigureServices(serices =>
@@ -69,7 +68,30 @@ namespace Microsoft.Extensions.Hosting
             Assert.Throws<InvalidOperationException>(() => { host.Services.GetRequiredService<ServiceA>(); });
         }
 
+        [Fact]
+        public void CreateDefaultBuilder_EnablesValidateOnBuild()
+        {
+            var hostBuilder = Host.CreateDefaultBuilder()
+                .UseEnvironment(Environments.Development)
+                .ConfigureServices(serices =>
+                {
+                    serices.AddSingleton<ServiceB>();
+                });
+
+            Assert.Throws<AggregateException>(() => hostBuilder.Build());
+        }
+
         internal class ServiceA { }
+
+        internal class ServiceB
+        {
+            public ServiceB(ServiceC c)
+            {
+
+            }
+        }
+
+        internal class ServiceC { }
 
         private class TestEventListener : EventListener
         {
