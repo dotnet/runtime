@@ -6645,6 +6645,11 @@ namespace System.Runtime.CompilerServices
     {
         public DiscardableAttribute() { }
     }
+    [System.AttributeUsageAttribute(AttributeTargets.Parameter, Inherited = false)]
+    public sealed class EnumeratorCancellationAttribute : Attribute
+    {
+        public EnumeratorCancellationAttribute() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Method)]
     public sealed partial class ExtensionAttribute : System.Attribute
     {
