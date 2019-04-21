@@ -465,7 +465,7 @@ namespace System.Threading
                     {
                         var multi = new MultiElementAsyncLocalValueMap(MultiElementAsyncLocalValueMap.MaxMultiElements);
                         int index = 0;
-                        foreach (KeyValuePair<IAsyncLocal, object> pair in this)
+                        foreach (KeyValuePair<IAsyncLocal, object?> pair in this)
                         {
                             if (!ReferenceEquals(key, pair.Key))
                             {
