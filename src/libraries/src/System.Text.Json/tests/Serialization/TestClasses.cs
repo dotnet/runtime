@@ -587,6 +587,173 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class TestClassWithStringToPrimitiveDictionary : ITestClass
+    {
+        public Dictionary<string, int> MyInt32Dict { get; set; }
+        public Dictionary<string, bool> MyBooleanDict { get; set; }
+        public Dictionary<string, float> MySingleDict { get; set; }
+        public Dictionary<string, double> MyDoubleDict { get; set; }
+        public Dictionary<string, DateTime> MyDateTimeDict { get; set; }
+        public IDictionary<string, int> MyInt32IDict { get; set; }
+        public IDictionary<string, bool> MyBooleanIDict { get; set; }
+        public IDictionary<string, float> MySingleIDict { get; set; }
+        public IDictionary<string, double> MyDoubleIDict { get; set; }
+        public IDictionary<string, DateTime> MyDateTimeIDict { get; set; }
+        public IReadOnlyDictionary<string, int> MyInt32IReadOnlyDict { get; set; }
+        public IReadOnlyDictionary<string, bool> MyBooleanIReadOnlyDict { get; set; }
+        public IReadOnlyDictionary<string, float> MySingleIReadOnlyDict { get; set; }
+        public IReadOnlyDictionary<string, double> MyDoubleIReadOnlyDict { get; set; }
+        public IReadOnlyDictionary<string, DateTime> MyDateTimeIReadOnlyDict { get; set; }
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
+            @"{" +
+                @"""MyInt32Dict"":{" +
+                    @"""key1"": 1," +
+                    @"""key2"": 2" +
+                @"}," +
+                @"""MyBooleanDict"":{" +
+                    @"""key1"": true," +
+                    @"""key2"": false" +
+                @"}," +
+                @"""MySingleDict"":{" +
+                    @"""key1"": 1.1," +
+                    @"""key2"": 2.2" +
+                @"}," +
+                @"""MyDoubleDict"":{" +
+                    @"""key1"": 3.3," +
+                    @"""key2"": 4.4" +
+                @"}," +
+                @"""MyDateTimeDict"":{" +
+                    @"""key1"": ""2019-01-30T12:01:02.0000000""," +
+                    @"""key2"": ""2019-01-30T12:01:02.0000000Z""" +
+                @"}," +
+                @"""MyInt32IDict"":{" +
+                    @"""key1"": 1," +
+                    @"""key2"": 2" +
+                @"}," +
+                @"""MyBooleanIDict"":{" +
+                    @"""key1"": true," +
+                    @"""key2"": false" +
+                @"}," +
+                @"""MySingleIDict"":{" +
+                    @"""key1"": 1.1," +
+                    @"""key2"": 2.2" +
+                @"}," +
+                @"""MyDoubleIDict"":{" +
+                    @"""key1"": 3.3," +
+                    @"""key2"": 4.4" +
+                @"}," +
+                @"""MyDateTimeIDict"":{" +
+                    @"""key1"": ""2019-01-30T12:01:02.0000000""," +
+                    @"""key2"": ""2019-01-30T12:01:02.0000000Z""" +
+                @"}," +
+                @"""MyInt32IReadOnlyDict"":{" +
+                    @"""key1"": 1," +
+                    @"""key2"": 2" +
+                @"}," +
+                @"""MyBooleanIReadOnlyDict"":{" +
+                    @"""key1"": true," +
+                    @"""key2"": false" +
+                @"}," +
+                @"""MySingleIReadOnlyDict"":{" +
+                    @"""key1"": 1.1," +
+                    @"""key2"": 2.2" +
+                @"}," +
+                @"""MyDoubleIReadOnlyDict"":{" +
+                    @"""key1"": 3.3," +
+                    @"""key2"": 4.4" +
+                @"}," +
+                @"""MyDateTimeIReadOnlyDict"":{" +
+                    @"""key1"": ""2019-01-30T12:01:02.0000000""," +
+                    @"""key2"": ""2019-01-30T12:01:02.0000000Z""" +
+                @"}" +
+            @"}");
+
+        public void Initialize()
+        {
+            MyInt32Dict = new Dictionary<string, int> { { "key1", 1 }, { "key2", 2 } };
+            MyBooleanDict = new Dictionary<string, bool> { { "key1", true }, { "key2", false } };
+            MySingleDict = new Dictionary<string, float> { { "key1", 1.1f }, { "key2", 2.2f } };
+            MyDoubleDict = new Dictionary<string, double> { { "key1", 3.3d }, { "key2", 4.4d } };
+            MyDateTimeDict = new Dictionary<string, DateTime> { { "key1", new DateTime(2019, 1, 30, 12, 1, 2) }, { "key2", new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc) } };
+
+            MyInt32IDict = new Dictionary<string, int> { { "key1", 1 }, { "key2", 2 } };
+            MyBooleanIDict = new Dictionary<string, bool> { { "key1", true }, { "key2", false } };
+            MySingleIDict = new Dictionary<string, float> { { "key1", 1.1f }, { "key2", 2.2f } };
+            MyDoubleIDict = new Dictionary<string, double> { { "key1", 3.3d }, { "key2", 4.4d } };
+            MyDateTimeIDict = new Dictionary<string, DateTime> { { "key1", new DateTime(2019, 1, 30, 12, 1, 2) }, { "key2", new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc) } };
+
+            MyInt32IReadOnlyDict = new Dictionary<string, int> { { "key1", 1 }, { "key2", 2 } };
+            MyBooleanIReadOnlyDict = new Dictionary<string, bool> { { "key1", true }, { "key2", false } };
+            MySingleIReadOnlyDict = new Dictionary<string, float> { { "key1", 1.1f }, { "key2", 2.2f } };
+            MyDoubleIReadOnlyDict = new Dictionary<string, double> { { "key1", 3.3d }, { "key2", 4.4d } };
+            MyDateTimeIReadOnlyDict = new Dictionary<string, DateTime> { { "key1", new DateTime(2019, 1, 30, 12, 1, 2) }, { "key2", new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc) } };
+        }
+
+        public void Verify()
+        {
+            Assert.Equal(1, MyInt32Dict["key1"]);
+            Assert.Equal(2, MyInt32Dict["key2"]);
+            Assert.Equal(2, MyInt32Dict.Count);
+
+            Assert.Equal(true, MyBooleanDict["key1"]);
+            Assert.Equal(false, MyBooleanDict["key2"]);
+            Assert.Equal(2, MyBooleanDict.Count);
+
+            Assert.Equal(1.1f, MySingleDict["key1"]);
+            Assert.Equal(2.2f, MySingleDict["key2"]);
+            Assert.Equal(2, MySingleDict.Count);
+
+            Assert.Equal(3.3d, MyDoubleDict["key1"]);
+            Assert.Equal(4.4d, MyDoubleDict["key2"]);
+            Assert.Equal(2, MyDoubleDict.Count);
+
+            Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2), MyDateTimeDict["key1"]);
+            Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTimeDict["key2"]);
+            Assert.Equal(2, MyDateTimeDict.Count);
+
+            Assert.Equal(1, MyInt32IDict["key1"]);
+            Assert.Equal(2, MyInt32IDict["key2"]);
+            Assert.Equal(2, MyInt32IDict.Count);
+
+            Assert.Equal(true, MyBooleanIDict["key1"]);
+            Assert.Equal(false, MyBooleanIDict["key2"]);
+            Assert.Equal(2, MyBooleanIDict.Count);
+
+            Assert.Equal(1.1f, MySingleIDict["key1"]);
+            Assert.Equal(2.2f, MySingleIDict["key2"]);
+            Assert.Equal(2, MySingleIDict.Count);
+
+            Assert.Equal(3.3d, MyDoubleIDict["key1"]);
+            Assert.Equal(4.4d, MyDoubleIDict["key2"]);
+            Assert.Equal(2, MyDoubleIDict.Count);
+
+            Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2), MyDateTimeIDict["key1"]);
+            Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTimeIDict["key2"]);
+            Assert.Equal(2, MyDateTimeIDict.Count);
+
+            Assert.Equal(1, MyInt32IReadOnlyDict["key1"]);
+            Assert.Equal(2, MyInt32IReadOnlyDict["key2"]);
+            Assert.Equal(2, MyInt32IReadOnlyDict.Count);
+
+            Assert.Equal(true, MyBooleanIReadOnlyDict["key1"]);
+            Assert.Equal(false, MyBooleanIReadOnlyDict["key2"]);
+            Assert.Equal(2, MyBooleanIReadOnlyDict.Count);
+
+            Assert.Equal(1.1f, MySingleIReadOnlyDict["key1"]);
+            Assert.Equal(2.2f, MySingleIReadOnlyDict["key2"]);
+            Assert.Equal(2, MySingleIReadOnlyDict.Count);
+
+            Assert.Equal(3.3d, MyDoubleIReadOnlyDict["key1"]);
+            Assert.Equal(4.4d, MyDoubleIReadOnlyDict["key2"]);
+            Assert.Equal(2, MyDoubleIReadOnlyDict.Count);
+
+            Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2), MyDateTimeIReadOnlyDict["key1"]);
+            Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTimeIReadOnlyDict["key2"]);
+            Assert.Equal(2, MyDateTimeIReadOnlyDict.Count);
+        }
+    }
+
     public class SimpleDerivedTestClass : SimpleTestClass
     {
     }

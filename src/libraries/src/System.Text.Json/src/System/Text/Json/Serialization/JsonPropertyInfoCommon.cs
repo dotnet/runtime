@@ -53,6 +53,11 @@ namespace System.Text.Json.Serialization
                 _isPropertyPolicy = true;
                 HasGetter = true;
                 HasSetter = true;
+
+                if (ClassType == ClassType.Dictionary)
+                {
+                    ValueConverter = DefaultConverters<TRuntimeProperty>.s_converter;
+                }
             }
 
             GetPolicies(options);
@@ -89,6 +94,18 @@ namespace System.Text.Json.Serialization
         internal override IList CreateConverterList()
         {
             return new List<TDeclaredProperty>();
+        }
+
+        // Map interfaces to a well-known implementation.
+        internal override Type GetConcreteType(Type interfaceType)
+        {
+            if (interfaceType.IsAssignableFrom(typeof(IDictionary<string, TRuntimeProperty>)) ||
+                interfaceType.IsAssignableFrom(typeof(IReadOnlyDictionary<string, TRuntimeProperty>)))
+            {
+                return typeof(Dictionary<string, TRuntimeProperty>);
+            }
+
+            return interfaceType;
         }
     }
 }

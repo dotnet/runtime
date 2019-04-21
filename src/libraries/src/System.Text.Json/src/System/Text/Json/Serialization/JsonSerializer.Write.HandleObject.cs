@@ -93,6 +93,18 @@ namespace System.Text.Json.Serialization
                 return endOfEnumerable;
             }
 
+            // A property that returns a dictionary keeps the same stack frame.
+            if (jsonPropertyInfo.ClassType == ClassType.Dictionary)
+            {
+                bool endOfEnumerable = HandleDictionary(jsonPropertyInfo.ElementClassInfo, options, writer, ref state);
+                if (endOfEnumerable)
+                {
+                    state.Current.NextProperty();
+                }
+
+                return endOfEnumerable;
+            }
+
             // A property that returns an object.
             if (!obtainedValue)
             {

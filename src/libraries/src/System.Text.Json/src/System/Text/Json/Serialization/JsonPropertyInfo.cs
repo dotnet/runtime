@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization
             ClassType = JsonClassInfo.GetClassType(runtimePropertyType);
             if (elementType != null)
             {
-                Debug.Assert(ClassType == ClassType.Enumerable);
+                Debug.Assert(ClassType == ClassType.Enumerable || ClassType == ClassType.Dictionary);
                 ElementClassInfo = options.GetOrAddClass(elementType);
             }
 
@@ -251,12 +251,15 @@ namespace System.Text.Json.Serialization
             
         internal abstract IList CreateConverterList();
 
+        internal abstract Type GetConcreteType(Type interfaceType);
+
         internal abstract void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
         internal abstract void ReadEnumerable(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
         internal abstract void SetValueAsObject(object obj, object value, JsonSerializerOptions options);
 
         internal abstract void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer);
 
+        internal abstract void WriteDictionary(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer);
         internal abstract void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer);
     }
 }

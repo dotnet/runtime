@@ -13,6 +13,16 @@ namespace System.Text.Json.Serialization
         {
             JsonPropertyInfo jsonInfo = CreateProperty(propertyType, propertyType, propertyInfo, classType, options);
 
+            // Convert interfaces to concrete types.
+            if (propertyType.IsInterface && jsonInfo.ClassType == ClassType.Dictionary)
+            {
+                Type newPropertyType = jsonInfo.ElementClassInfo.GetPolicyProperty().GetConcreteType(propertyType);
+                if (propertyType != newPropertyType)
+                {
+                    jsonInfo = CreateProperty(propertyType, newPropertyType, propertyInfo, classType, options);
+                }
+            }
+
             if (propertyInfo != null)
             {
                 _propertyRefs.Add(new PropertyRef(GetKey(jsonInfo.CompareName), jsonInfo));
@@ -30,7 +40,7 @@ namespace System.Text.Json.Serialization
         {
             Type collectionElementType = null;
             ClassType propertyClassType = GetClassType(runtimePropertyType);
-            if (propertyClassType == ClassType.Enumerable)
+            if (propertyClassType == ClassType.Enumerable || propertyClassType == ClassType.Dictionary)
             {
                 collectionElementType = GetElementType(runtimePropertyType);
                 // todo: if collectionElementType is object, create loosely-typed collection (JsonArray).
@@ -45,8 +55,6 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                // For now we only support polymorphism with base type == typeof(object).
-                Debug.Assert(declaredPropertyType == runtimePropertyType || declaredPropertyType == typeof(object));
                 propertyInfoClassType = typeof(JsonPropertyInfoNotNullable<,,>).MakeGenericType(parentClassType, declaredPropertyType, runtimePropertyType);
             }
 

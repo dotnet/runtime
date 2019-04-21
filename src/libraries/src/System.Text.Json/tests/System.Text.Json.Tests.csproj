@@ -26,6 +26,7 @@
     <Compile Include="Serialization\CacheTests.cs" />
     <Compile Include="Serialization\CamelCaseUnitTests.cs" />
     <Compile Include="Serialization\CyclicTests.cs" />
+    <Compile Include="Serialization\DictionaryTests.cs" />
     <Compile Include="Serialization\EnumTests.cs" />
     <Compile Include="Serialization\Null.ReadTests.cs" />
     <Compile Include="Serialization\Null.WriteTests.cs" />

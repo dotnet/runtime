@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
@@ -42,13 +43,28 @@ namespace System.Text.Json.Serialization
                         Debug.Assert(state.Current.JsonClassInfo != default);
 
                         ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-                        state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(options, propertyName, ref state.Current);
-                        if (state.Current.JsonPropertyInfo == null)
-                        {
-                            state.Current.JsonPropertyInfo = s_missingProperty;
-                        }
 
-                        state.Current.PropertyIndex++;
+                        if (state.Current.IsDictionary())
+                        {
+                            string keyName = reader.GetString();
+                            if (options.DictionaryKeyPolicy != null)
+                            {
+                                keyName = options.DictionaryKeyPolicy.ConvertName(keyName);
+                            }
+
+                            state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetPolicyProperty();
+                            state.Current.KeyName = keyName;
+                        }
+                        else
+                        {
+                            state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(options, propertyName, ref state.Current);
+                            if (state.Current.JsonPropertyInfo == null)
+                            {
+                                state.Current.JsonPropertyInfo = s_missingProperty;
+                            }
+
+                            state.Current.PropertyIndex++;
+                        }
                     }
                 }
                 else if (tokenType == JsonTokenType.StartObject)

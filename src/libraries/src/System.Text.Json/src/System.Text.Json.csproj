@@ -17,6 +17,7 @@
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.HandleDictionary.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.Serialization.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.cs" />
