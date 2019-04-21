@@ -25,7 +25,9 @@ namespace System.Reflection
         private event ModuleResolveEventHandler _ModuleResolve;
         private string? m_fullname;
         private object? m_syncRoot;   // Used to keep collectible types alive and as the syncroot for reflection.emit
+#pragma warning disable 169
         private IntPtr m_assembly;    // slack for ptr datum on unmanaged side
+#pragma warning restore 169
 
         #endregion
 
