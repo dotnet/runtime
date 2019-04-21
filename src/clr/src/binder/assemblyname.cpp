@@ -486,6 +486,15 @@ Exit:
         {
             dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE;
         }
+        if ((dwIncludeFlags & INCLUDE_PUBLIC_KEY_TOKEN) == 0)
+        {
+            dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY;
+            dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY_TOKEN;
+        }
+        if ((dwIncludeFlags & EXCLUDE_CULTURE) != 0)
+        {
+            dwUseIdentityFlags &= ~AssemblyIdentity::IDENTITY_FLAG_CULTURE;
+        }
 
         dwHash ^= static_cast<DWORD>(HashCaseInsensitive(GetSimpleName()));
         dwHash = _rotl(dwHash, 4);

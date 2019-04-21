@@ -1150,6 +1150,20 @@
         }
     },
     {
+        "name": "System.Runtime.Loader.DefaultContext.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name" : "System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadInDefaultContext",
+                    "reason" : "Waiting for https://github.com/dotnet/corefx/pull/37071"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.Runtime.Loader.Tests",
         "enabled": true,
         "exclusions": {
