@@ -248,6 +248,8 @@ namespace System.Runtime.Loader.Tests
             var asmTargetAsm = olc.LoadFromAssemblyPath(_assemblyPath);
             var loadedContext = AssemblyLoadContext.GetLoadContext(asmTargetAsm);
 
+            olc.LoadedFromContext = false;
+
             // LoadContext of the assembly should be the custom context and not DefaultContext
             Assert.NotEqual(lcDefault, olc);
             Assert.Equal(olc, loadedContext);
@@ -260,7 +262,6 @@ namespace System.Runtime.Loader.Tests
             // Load System.Runtime - since this is on TPA, it should get resolved from our custom load context
             // since the Load method has been implemented to override TPA assemblies.
             var assemblyName = "System.Runtime, Version=4.0.0.0";
-            olc.LoadedFromContext = false;
             Assembly asmLoaded = (Assembly)method.Invoke(null, new object[] {assemblyName});
             loadedContext = AssemblyLoadContext.GetLoadContext(asmLoaded);
 
