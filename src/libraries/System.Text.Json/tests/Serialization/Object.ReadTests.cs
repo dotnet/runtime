@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -47,6 +48,13 @@ namespace System.Text.Json.Serialization.Tests
             // Not supported until we are able to deserialize into JsonElement.
             Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<SimpleTestClass>("[]"));
             Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<object>("[]"));
+        }
+
+        [Fact]
+        public static void ReadClassWithStringToPrimitiveDictionary()
+        {
+            TestClassWithStringToPrimitiveDictionary obj = JsonSerializer.Parse<TestClassWithStringToPrimitiveDictionary>(TestClassWithStringToPrimitiveDictionary.s_data);
+            obj.Verify();
         }
     }
 }
