@@ -247,7 +247,7 @@ namespace System.Buffers
                 // Under high pressure, release all thread locals
                 if (log.IsEnabled())
                 {
-                    foreach (KeyValuePair<T[]?[], object> tlsBuckets in s_allTlsBuckets)
+                    foreach (KeyValuePair<T[]?[], object?> tlsBuckets in s_allTlsBuckets)
                     {
                         T[]?[] buckets = tlsBuckets.Key;
                         for (int i = 0; i < buckets.Length; i++)
