@@ -30,13 +30,13 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowJsonReaderException_DeserializeCannotBeNull(reader, state);
             }
 
-            if (state.Current.IsEnumerable())
+            if (state.Current.IsEnumerable() || state.Current.IsDictionary())
             {
                 ApplyObjectToEnumerable(null, options, ref state.Current);
                 return false;
             }
 
-            if (state.Current.IsPropertyEnumerable())
+            if (state.Current.IsPropertyEnumerable() || state.Current.IsPropertyADictionary())
             {
                 state.Current.JsonPropertyInfo.ApplyNullValue(options, ref state);
                 return false;

@@ -111,13 +111,17 @@ namespace System.Text.Json.Serialization
                     }
                 }
             }
-            else if (ClassType == ClassType.Enumerable)
+            else if (ClassType == ClassType.Enumerable || ClassType == ClassType.Dictionary)
             {
                 // Add a single property that maps to the class type so we can have policies applied.
-                AddProperty(type, propertyInfo : null, type, options);
+                JsonPropertyInfo jsonPropertyInfo = AddProperty(type, propertyInfo: null, type, options);
+
+                // Use the type from the property policy to get any late-bound concrete types (from an interface like IDictionary).
+                CreateObject = options.ClassMaterializerStrategy.CreateConstructor(jsonPropertyInfo.RuntimePropertyType);
 
                 // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
                 Type elementType = GetElementType(type);
+
                 ElementClassInfo = options.GetOrAddClass(elementType);
             }
             else if (ClassType == ClassType.Value)
@@ -311,9 +315,18 @@ namespace System.Text.Json.Serialization
                 elementType = propertyType.GetElementType();
                 if (elementType == null)
                 {
+                    Type[] args = propertyType.GetGenericArguments();
+
                     if (propertyType.IsGenericType)
                     {
-                        elementType = propertyType.GetGenericArguments()[0];
+                        if (GetClassType(propertyType) == ClassType.Dictionary)
+                        {
+                            elementType = args[1];
+                        }
+                        else
+                        {
+                            elementType = args[0];
+                        }
                     }
                     else
                     {
@@ -335,10 +348,17 @@ namespace System.Text.Json.Serialization
                 type = Nullable.GetUnderlyingType(type);
             }
 
-            // A Type is considered a value if it implements IConvertible.
+            // A Type is considered a value if it implements IConvertible or is a DateTimeOffset.
             if (typeof(IConvertible).IsAssignableFrom(type) || type == typeof(DateTimeOffset))
             {
                 return ClassType.Value;
+            }
+
+            if (typeof(IDictionary).IsAssignableFrom(type) || 
+                (type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IDictionary<,>) 
+                || type.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))))
+            {
+                return ClassType.Dictionary;
             }
 
             if (typeof(IEnumerable).IsAssignableFrom(type))

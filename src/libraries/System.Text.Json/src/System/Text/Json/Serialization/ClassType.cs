@@ -13,5 +13,6 @@ namespace System.Text.Json.Serialization
         Object = 1,         // POCO or rich data type
         Value = 2,          // Data type with single value
         Enumerable = 3,     // IEnumerable
+        Dictionary = 4,     // IDictionary
     }
 }

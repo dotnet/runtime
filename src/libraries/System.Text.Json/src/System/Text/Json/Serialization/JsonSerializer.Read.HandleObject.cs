@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
-
 namespace System.Text.Json.Serialization
 {
     public static partial class JsonSerializer
@@ -17,7 +15,11 @@ namespace System.Text.Json.Serialization
                 return;
             }
 
-            if (state.Current.IsEnumerable() || state.Current.IsPropertyEnumerable())
+            if (state.Current.IsDictionary())
+            {
+                // Fall through and treat as a return value.
+            }
+            else if (state.Current.IsEnumerable() || state.Current.IsPropertyEnumerable() || state.Current.IsPropertyADictionary())
             {
                 // An array of objects either on the current property or on a list
                 Type objType = state.Current.GetElementType();

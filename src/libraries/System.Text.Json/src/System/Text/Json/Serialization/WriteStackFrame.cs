@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization
         internal void Initialize(Type type, JsonSerializerOptions options)
         {
             JsonClassInfo = options.GetOrAddClass(type);
-            if (JsonClassInfo.ClassType == ClassType.Value || JsonClassInfo.ClassType == ClassType.Enumerable)
+            if (JsonClassInfo.ClassType == ClassType.Value || JsonClassInfo.ClassType == ClassType.Enumerable || JsonClassInfo.ClassType == ClassType.Dictionary)
             {
                 JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
             }
@@ -48,6 +48,12 @@ namespace System.Text.Json.Serialization
         {
             PropertyIndex = 0;
             PopStackOnEndObject = false;
+            EndProperty();
+        }
+
+        internal void EndDictionary()
+        {
+            Enumerator = null;
             EndProperty();
         }
 

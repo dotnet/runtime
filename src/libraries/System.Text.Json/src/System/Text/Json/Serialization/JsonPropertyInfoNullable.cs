@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -123,6 +124,11 @@ namespace System.Text.Json.Serialization
                     }
                 }
             }
+        }
+
+        internal override void WriteDictionary(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
+        {
+            JsonSerializer.WriteDictionary(ValueConverter, options, ref current, writer);
         }
 
         internal override void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)

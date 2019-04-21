@@ -19,7 +19,8 @@ namespace System.Text.Json.Serialization
                 jsonPropertyInfo = state.Current.JsonClassInfo.CreatePolymorphicProperty(jsonPropertyInfo, typeof(object), options);
             }
 
-            bool lastCall = (!state.Current.IsEnumerable() && !state.Current.IsPropertyEnumerable() && state.Current.ReturnValue == null);
+            bool lastCall = (!state.Current.IsProcessingEnumerableOrDictionary() && state.Current.ReturnValue == null);
+
             jsonPropertyInfo.Read(tokenType, options, ref state, ref reader);
             return lastCall;
         }
