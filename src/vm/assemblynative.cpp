@@ -78,18 +78,18 @@ FCIMPL6(Object*, AssemblyNative::Load, AssemblyNameBaseObject* assemblyNameUNSAF
     else
     {
         // Compute parent assembly
-        if (gc.requestingAssembly == NULL)
-        {
-            pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
-        }
-        else
+        if (gc.requestingAssembly != NULL)
         {
             pRefAssembly = gc.requestingAssembly->GetAssembly();
+        }
+        else if (ptrLoadContextBinder == NULL)
+        {
+            pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
         }
         
         if (pRefAssembly)
         {
-            pParentAssembly= pRefAssembly->GetDomainAssembly();
+            pParentAssembly = pRefAssembly->GetDomainAssembly();
         }
     }
 

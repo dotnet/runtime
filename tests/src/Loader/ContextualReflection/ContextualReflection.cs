@@ -321,6 +321,9 @@ namespace ContextualReflectionTest
         {
             TestAssemblyLoad(isolated, (string assemblyName) => Assembly.Load(assemblyName));
             TestAssemblyLoad(isolated, (string assemblyName) => Assembly.Load(new AssemblyName(assemblyName)));
+#pragma warning disable 618
+            TestAssemblyLoad(isolated, (string assemblyName) => Assembly.LoadWithPartialName(assemblyName));
+#pragma warning restore 618
         }
 
         void TestAssemblyLoad(bool isolated, Func<string, Assembly> assemblyLoad)
@@ -748,7 +751,6 @@ namespace ContextualReflectionTest
             TestMockAssemblyThrows();
         }
 
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public void RunTestsIsolated()
         {
             VerifyIsolationAlc();

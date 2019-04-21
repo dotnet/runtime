@@ -16,7 +16,6 @@ namespace ContextualReflectionTest
         Assembly alcAssembly { get; }
         Type alcProgramType { get; }
         IProgram alcProgramInstance { get; }
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
         void RunTestsIsolated();
     }
 
