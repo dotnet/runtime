@@ -4,10 +4,12 @@
     <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyLoadContextTest.cs" />
     <Compile Include="CollectibleAssemblyLoadContextTest.cs" />
+    <Compile Include="ContextualReflection.cs" />
     <Compile Include="CustomTPALoadContext.cs" />
     <Compile Include="ResourceAssemblyLoadContext.cs" />
   </ItemGroup>
@@ -30,5 +32,6 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>EmbeddedResource</OutputItemType>
     </ProjectReference>
+    <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
   </ItemGroup>
 </Project>

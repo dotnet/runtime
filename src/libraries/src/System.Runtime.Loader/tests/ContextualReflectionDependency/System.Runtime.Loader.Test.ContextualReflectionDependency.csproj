@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{95DBE3B0-AA86-4366-BB8A-E04B534365F3}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ContextualReflectionDependency.cs" />
+  </ItemGroup>
+</Project>
