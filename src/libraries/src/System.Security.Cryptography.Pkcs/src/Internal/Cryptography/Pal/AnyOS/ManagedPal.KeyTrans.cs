@@ -15,8 +15,6 @@ namespace Internal.Cryptography.Pal.AnyOS
 {
     internal sealed partial class ManagedPkcsPal : PkcsPal
     {
-        private static readonly byte[] s_rsaPkcsParameters = { 0x05, 0x00 };
-        private static readonly byte[] s_rsaOaepSha1Parameters = { 0x30, 0x00 };
         private static readonly byte[] s_pSpecifiedDefaultParameters = { 0x04, 0x00 };
 
         internal sealed class ManagedKeyTransPal : KeyTransRecipientInfoPal
@@ -142,20 +140,48 @@ namespace Internal.Cryptography.Pal.AnyOS
                     recipient.RecipientIdentifierType.ToString());
             }
 
-            RSAEncryptionPadding padding;
+            RSAEncryptionPadding padding = recipient.RSAEncryptionPadding;
 
-            switch (recipient.Certificate.GetKeyAlgorithm())
+            if (padding is null)
             {
-                case Oids.RsaOaep:
+                if (recipient.Certificate.GetKeyAlgorithm() == Oids.RsaOaep)
+                {
                     padding = RSAEncryptionPadding.OaepSHA1;
-                    ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.RsaOaep, Oids.RsaOaep);
-                    ktri.KeyEncryptionAlgorithm.Parameters = s_rsaOaepSha1Parameters;
-                    break;
-                default:
+                }
+                else
+                {
                     padding = RSAEncryptionPadding.Pkcs1;
-                    ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.Rsa, Oids.Rsa);
-                    ktri.KeyEncryptionAlgorithm.Parameters = s_rsaPkcsParameters;
-                    break;
+                }
+            }
+
+            if (padding == RSAEncryptionPadding.Pkcs1)
+            {
+                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.Rsa, Oids.Rsa);
+                ktri.KeyEncryptionAlgorithm.Parameters = s_rsaPkcsParameters;
+            }
+            else if (padding == RSAEncryptionPadding.OaepSHA1)
+            {
+                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.RsaOaep, Oids.RsaOaep);
+                ktri.KeyEncryptionAlgorithm.Parameters = s_rsaOaepSha1Parameters;
+            }
+            else if (padding == RSAEncryptionPadding.OaepSHA256)
+            {
+                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.RsaOaep, Oids.RsaOaep);
+                ktri.KeyEncryptionAlgorithm.Parameters = s_rsaOaepSha256Parameters;
+            }
+            else if (padding == RSAEncryptionPadding.OaepSHA384)
+            {
+                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.RsaOaep, Oids.RsaOaep);
+                ktri.KeyEncryptionAlgorithm.Parameters = s_rsaOaepSha384Parameters;
+            }
+            else if (padding == RSAEncryptionPadding.OaepSHA512)
+            {
+                ktri.KeyEncryptionAlgorithm.Algorithm = new Oid(Oids.RsaOaep, Oids.RsaOaep);
+                ktri.KeyEncryptionAlgorithm.Parameters = s_rsaOaepSha512Parameters;
+            }
+            else
+            {
+                throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm);
             }
 
             using (RSA rsa = recipient.Certificate.GetRSAPublicKey())
