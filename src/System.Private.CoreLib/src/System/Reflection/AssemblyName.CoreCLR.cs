@@ -22,7 +22,7 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
             _name = assemblyName;
-            nInit(out RuntimeAssembly? dummy, false);
+            nInit();
         }
 
         internal AssemblyName(string? name,
@@ -49,7 +49,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal extern void nInit(out RuntimeAssembly? assembly, bool raiseResolveEvent);
+        internal extern void nInit();
         
         // This call opens and closes the file, but does not add the
         // assembly to the domain.

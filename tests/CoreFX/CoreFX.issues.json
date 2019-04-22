@@ -1403,6 +1403,10 @@
                     "name": "System.Tests.VersionTests.Comparisons_NullArgument_ThrowsArgumentNullException",
                     "reason":  "Version was improved to no longer throw from comparison operators"
                 },
+                {
+                    "name" : "System.Tests.ActivatorNetcoreTests.CreateInstanceAssemblyResolve",
+                    "reason" : "Waiting for https://github.com/dotnet/corefx/pull/37080"
+                }
             ]
         }
     },
