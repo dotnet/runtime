@@ -34,11 +34,11 @@ namespace Microsoft.Extensions.FileProviders.Physical
     [System.FlagsAttribute]
     public enum ExclusionFilters
     {
+        None = 0,
         DotPrefixed = 1,
         Hidden = 2,
-        None = 0,
-        Sensitive = 7,
         System = 4,
+        Sensitive = 7,
     }
     public partial class PhysicalDirectoryInfo : Microsoft.Extensions.FileProviders.IFileInfo
     {
