@@ -35,7 +35,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="AlgorithmIdentifierTest.cs" />
+    <Compile Include="EnvelopedCms\DecryptTestsRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
     <Compile Include="Pkcs12\CertBagTests.cs" />
     <Compile Include="Pkcs12\CustomBagTypeTests.cs" />

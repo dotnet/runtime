@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
@@ -13,6 +14,30 @@ namespace System.Security.Cryptography.Pkcs
         public CmsRecipient(X509Certificate2 certificate)
             : this(SubjectIdentifierType.IssuerAndSerialNumber, certificate)
         {
+        }
+
+#if netstandard
+internal
+#else
+public
+#endif
+        CmsRecipient(X509Certificate2 certificate, RSAEncryptionPadding rsaEncryptionPadding)
+            : this(certificate)
+        {
+            ValidateRSACertificate(certificate);
+            RSAEncryptionPadding = rsaEncryptionPadding ?? throw new ArgumentNullException(nameof(rsaEncryptionPadding));
+        }
+
+#if netstandard
+internal
+#else
+public
+#endif
+        CmsRecipient(SubjectIdentifierType recipientIdentifierType, X509Certificate2 certificate, RSAEncryptionPadding rsaEncryptionPadding)
+            : this(recipientIdentifierType, certificate)
+        {
+            ValidateRSACertificate(certificate);
+            RSAEncryptionPadding = rsaEncryptionPadding ?? throw new ArgumentNullException(nameof(rsaEncryptionPadding));
         }
 
         public CmsRecipient(SubjectIdentifierType recipientIdentifierType, X509Certificate2 certificate)
@@ -37,7 +62,25 @@ namespace System.Security.Cryptography.Pkcs
             Certificate = certificate;
         }
 
+#if netstandard
+internal
+#else
+public
+#endif
+        RSAEncryptionPadding? RSAEncryptionPadding { get; }
         public SubjectIdentifierType RecipientIdentifierType { get; }
         public X509Certificate2 Certificate { get; }
+
+        private static void ValidateRSACertificate(X509Certificate2 certificate)
+        {
+            switch (certificate.GetKeyAlgorithm())
+            {
+                case Oids.Rsa:
+                case Oids.RsaOaep:
+                    break;
+                default:
+                    throw new CryptographicException(SR.Cryptography_Cms_Recipient_RSARequired_RSAPaddingModeSupplied);
+            }
+        }
     }
 }

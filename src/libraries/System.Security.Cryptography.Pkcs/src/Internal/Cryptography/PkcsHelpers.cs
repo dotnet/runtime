@@ -170,7 +170,17 @@ namespace Internal.Cryptography
             {
                 X509Certificate2 originalCert = recipient.Certificate;
                 X509Certificate2 certCopy = new X509Certificate2(originalCert.Handle);
-                CmsRecipient recipientCopy = new CmsRecipient(recipient.RecipientIdentifierType, certCopy);
+                CmsRecipient recipientCopy;
+
+                if (recipient.RSAEncryptionPadding is null)
+                {
+                    recipientCopy = new CmsRecipient(recipient.RecipientIdentifierType, certCopy);
+                }
+                else
+                {
+                    recipientCopy = new CmsRecipient(recipient.RecipientIdentifierType, certCopy, recipient.RSAEncryptionPadding);
+                }
+
                 recipientsCopy.Add(recipientCopy);
                 GC.KeepAlive(originalCert);
             }
