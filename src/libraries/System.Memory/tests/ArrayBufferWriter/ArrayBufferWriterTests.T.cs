@@ -229,7 +229,7 @@ namespace System.Buffers.Tests
             }
         }
 
-        public bool IsX64 { get; } = IntPtr.Size == 8;
+        public static bool IsX64 { get; } = IntPtr.Size == 8;
 
         [ConditionalFact(nameof(IsX64))]
         [OuterLoop]
