@@ -38,7 +38,7 @@ mono_icall_get_file_path_prefix (const gchar *path)
 gpointer
 mono_icall_module_get_hinstance (MonoImage *image)
 {
-	if (image && image->is_module_handle)
+	if (image && m_image_is_module_handle (image))
 		return image->raw_data;
 
 	return (gpointer) (-1);

@@ -19,6 +19,7 @@
 #include "mono/utils/mono-value-hash.h"
 #include <mono/utils/mono-error.h>
 #include "mono/utils/mono-conc-hashtable.h"
+#include "mono/utils/refcount.h"
 
 struct _MonoType {
 	union {
@@ -306,16 +307,24 @@ typedef struct {
 	gboolean (*load_tables) (MonoImage*);
 } MonoImageLoader;
 
-struct _MonoImage {
-	/*
-	 * This count is incremented during these situations:
-	 *   - An assembly references this MonoImage though its 'image' field
-	 *   - This MonoImage is present in the 'files' field of an image
-	 *   - This MonoImage is present in the 'modules' field of an image
-	 *   - A thread is holding a temporary reference to this MonoImage between
-	 *     calls to mono_image_open and mono_image_close ()
-	 */
-	int   ref_count;
+/* Represents the physical bytes for an image (usually in the file system, but
+ * could be in memory).
+ *
+ * The MonoImageStorage owns the raw data for an image and is responsible for
+ * cleanup.
+ *
+ * May be shared by multiple MonoImage objects if they opened the same
+ * underlying file or byte blob in memory.
+ *
+ * There is an abstract string key (usually a file path, but could be formed in
+ * other ways) that is used to share MonoImageStorage objects among images.
+ *
+ */
+typedef struct {
+	MonoRefCount ref;
+
+	/* key used for lookups.  owned by this image storage. */
+	char *key;
 
 	/* If the raw data was allocated from a source such as mmap, the allocator may store resource tracking information here. */
 	void *raw_data_handle;
@@ -332,6 +341,24 @@ struct _MonoImage {
 	/* Module entry point is _CorDllMain. */
 	guint8 has_entry_point : 1;
 #endif
+} MonoImageStorage;
+
+struct _MonoImage {
+	/*
+	 * This count is incremented during these situations:
+	 *   - An assembly references this MonoImage through its 'image' field
+	 *   - This MonoImage is present in the 'files' field of an image
+	 *   - This MonoImage is present in the 'modules' field of an image
+	 *   - A thread is holding a temporary reference to this MonoImage between
+	 *     calls to mono_image_open and mono_image_close ()
+	 */
+	int   ref_count;
+
+	MonoImageStorage *storage;
+
+	/* Aliases storage->raw_data when storage is non-NULL. Otherwise NULL. */
+	char *raw_data;
+	guint32 raw_data_len;
 
 	/* Whenever this is a dynamically emitted module */
 	guint8 dynamic : 1;
@@ -1121,5 +1148,32 @@ MonoAssemblyContextKind
 mono_asmctx_get_kind (const MonoAssemblyContext *ctx);
 
 #define MONO_CLASS_IS_INTERFACE_INTERNAL(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_INTERFACE) || mono_type_is_generic_parameter (m_class_get_byval_arg (c)))
+
+static inline gboolean
+m_image_is_raw_data_allocated (MonoImage *image)
+{
+	return image->storage ? image->storage->raw_data_allocated : FALSE;
+}
+
+static inline gboolean
+m_image_is_fileio_used (MonoImage *image)
+{
+	return image->storage ? image->storage->fileio_used : FALSE;
+}
+
+#ifdef HOST_WIN32
+static inline gboolean
+m_image_is_module_handle (MonoImage *image)
+{
+	return image->storage ? image->storage->is_module_handle : FALSE;
+}
+
+static inline gboolean
+m_image_has_entry_point (MonoImage *image)
+{
+	return image->storage ? image->storage->has_entry_point : FALSE;
+}
+
+#endif
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */

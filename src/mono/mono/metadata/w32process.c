@@ -461,7 +461,7 @@ get_domain_assemblies (MonoDomain *domain)
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
-		if (ass->image->fileio_used)
+		if (m_image_is_fileio_used (ass->image))
 			continue;
 		g_ptr_array_add (assemblies, ass);
 	}
