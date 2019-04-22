@@ -7,6 +7,12 @@
 
 namespace System.Security.Cryptography.Pkcs
 {
+    public sealed partial class CmsRecipient
+    {
+        public CmsRecipient(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.RSAEncryptionPadding rsaEncryptionPadding) { }
+        public CmsRecipient(System.Security.Cryptography.Pkcs.SubjectIdentifierType recipientIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.RSAEncryptionPadding rsaEncryptionPadding) { }
+        public System.Security.Cryptography.RSAEncryptionPadding RSAEncryptionPadding { get { throw null; } }
+    }
     public sealed partial class CmsSigner
     {
         public CmsSigner(System.Security.Cryptography.Pkcs.SubjectIdentifierType signerIdentifierType, System.Security.Cryptography.X509Certificates.X509Certificate2 certificate, System.Security.Cryptography.AsymmetricAlgorithm privateKey) { }
