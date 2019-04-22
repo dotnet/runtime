@@ -19,7 +19,7 @@ It does this by looking at two environment variables.
 
  * `CORE_ROOT` - The directory where to find the runtime DLLs itself (e.g. CoreCLR.dll).   
  Defaults to be next to the corerun.exe host itself.  
- * `CORE_LIBRARIES` - A Semicolon separated list of directories to look for DLLS to resolve any assembly references. 
+ * `CORE_LIBRARIES` - A directory to look for DLLS to resolve any assembly references. 
  It defaults CORE_ROOT if it is not specified.  
 
 These simple rules can be used in a number of ways 
