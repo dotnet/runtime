@@ -34,6 +34,22 @@ namespace System.ComponentModel.TypeConverterTests
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void ImageWithOleHeader()
+        {
+            string path = Path.Combine("bitmaps", "TestImageWithOleHeader.bmp");
+            using (FileStream fileStream = File.Open(path, FileMode.Open))
+            {              
+                using (var ms = new MemoryStream())
+                {
+                    fileStream.CopyTo(ms);
+                    var converter = new ImageConverter();
+                    object image = converter.ConvertFrom(ms.ToArray());
+                    Assert.NotNull(image);
+                }
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TestCanConvertFrom()
         {
             Assert.True(_imgConv.CanConvertFrom(typeof(byte[])), "byte[] (no context)");

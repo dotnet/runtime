@@ -2,7 +2,8 @@
   <PropertyGroup>
     <ProjectGuid>{AC1A1515-70D8-42E4-9B19-A72F739E974C}</ProjectGuid>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
-    <TestDataPackageVersion>1.0.1</TestDataPackageVersion>
+    <SystemComponentmodelTypeconverterTestdataVersion>1.0.1</SystemComponentmodelTypeconverterTestdataVersion>
+    <SystemWindowsExtensionsTestdataVersion>1.0.2</SystemWindowsExtensionsTestdataVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="X509Certificate2UITests.cs" />
@@ -24,10 +25,10 @@
     <Compile Include="System\Media\SystemSoundsTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.componentmodel.typeconverter.testdata\$(TestDataPackageVersion)\content\**\*.*">
+    <SupplementalTestData Include="$(PackagesDir)system.componentmodel.typeconverter.testdata\$(SystemComponentmodelTypeconverterTestdataVersion)\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
-    <SupplementalTestData Include="$(PackagesDir)system.windows.extensions.testdata\$(TestDataPackageVersion)\content\**\*.*">
+    <SupplementalTestData Include="$(PackagesDir)system.windows.extensions.testdata\$(SystemWindowsExtensionsTestdataVersion)\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
   </ItemGroup>
