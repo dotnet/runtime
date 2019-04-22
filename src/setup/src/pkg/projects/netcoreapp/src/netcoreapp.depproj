@@ -63,7 +63,7 @@
         <TargetPath>tools/%(RecursiveDir)</TargetPath>
         <IsNative>true</IsNative>
       </FilesToPackage>
-      <FilesToPackage Condition="'$(_crossDir)' != ''" Include="$(_jitPackagePath)/runtimes$(_crossDir)/native/*.*">
+      <FilesToPackage Condition="'$(_crossDir)' != ''" Include="$(_jitPackageDir)runtimes$(_crossDir)/native/*.*">
         <TargetPath>runtimes$(_crossDir)/native</TargetPath>
         <IsNative>true</IsNative>
       </FilesToPackage>
