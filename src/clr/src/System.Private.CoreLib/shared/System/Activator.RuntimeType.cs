@@ -112,14 +112,9 @@ namespace System
             }
             else
             {
-                RuntimeAssembly? assemblyFromResolveEvent;
-                AssemblyName assemblyName = RuntimeAssembly.CreateAssemblyName(assemblyString, out assemblyFromResolveEvent);
-                if (assemblyFromResolveEvent != null)
-                {
-                    // Assembly was resolved via AssemblyResolve event
-                    assembly = assemblyFromResolveEvent;
-                }
-                else if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
+                AssemblyName assemblyName = new AssemblyName(assemblyString);
+
+                if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
                 {
                     // WinRT type - we have to use Type.GetType
                     type = Type.GetType(typeName + ", " + assemblyString, true /*throwOnError*/, ignoreCase);

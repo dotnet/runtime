@@ -306,36 +306,9 @@ namespace System.Reflection
 
         internal static RuntimeAssembly InternalLoad(string assemblyString, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
         {
-            RuntimeAssembly? assembly;
-            AssemblyName an = CreateAssemblyName(assemblyString, out assembly);
-
-            if (assembly != null)
-            {
-                // The assembly was returned from ResolveAssemblyEvent
-                return assembly;
-            }
+            AssemblyName an = new AssemblyName(assemblyString);
 
             return InternalLoadAssemblyName(an, ref stackMark, assemblyLoadContext);
-        }
-
-        // Creates AssemblyName. Fills assembly if AssemblyResolve event has been raised.
-        internal static AssemblyName CreateAssemblyName(
-            string assemblyString,
-            out RuntimeAssembly? assemblyFromResolveEvent)
-        {
-            if (assemblyString == null)
-                throw new ArgumentNullException(nameof(assemblyString));
-
-            if ((assemblyString.Length == 0) ||
-                (assemblyString[0] == '\0'))
-                throw new ArgumentException(SR.Format_StringZeroLength);
-
-            AssemblyName an = new AssemblyName();
-
-            an.Name = assemblyString;
-            an.nInit(out assemblyFromResolveEvent, true);
-
-            return an;
         }
 
         internal static RuntimeAssembly InternalLoadAssemblyName(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
