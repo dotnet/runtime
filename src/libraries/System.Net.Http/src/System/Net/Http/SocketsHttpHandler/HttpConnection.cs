@@ -434,6 +434,13 @@ namespace System.Net.Http
                     }
                 }
 
+                // Write special additional headers.  If a host isn't in the headers list, then a Host header
+                // wasn't sent, so as it's required by HTTP 1.1 spec, send one based on the Request Uri.
+                if (!request.HasHeaders || request.Headers.Host == null)
+                {
+                    await WriteHostHeaderAsync(request.RequestUri).ConfigureAwait(false);
+                }
+
                 // Write request headers
                 if (request.HasHeaders || cookiesFromContainer != null)
                 {
@@ -453,13 +460,6 @@ namespace System.Net.Http
                 {
                     // Write content headers
                     await WriteHeadersAsync(request.Content.Headers, cookiesFromContainer: null).ConfigureAwait(false);
-                }
-
-                // Write special additional headers.  If a host isn't in the headers list, then a Host header
-                // wasn't sent, so as it's required by HTTP 1.1 spec, send one based on the Request Uri.
-                if (!request.HasHeaders || request.Headers.Host == null)
-                {
-                    await WriteHostHeaderAsync(request.RequestUri).ConfigureAwait(false);
                 }
 
                 // CRLF for end of headers.
