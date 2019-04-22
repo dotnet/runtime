@@ -1206,9 +1206,9 @@ void CodeGen::genNumberOperandUse(GenTree* const operand, int& useNum) const
     }
     else
     {
-        for (GenTree* operand : operand->Operands())
+        for (GenTree* op : operand->Operands())
         {
-            genNumberOperandUse(operand, useNum);
+            genNumberOperandUse(op, useNum);
         }
     }
 }
