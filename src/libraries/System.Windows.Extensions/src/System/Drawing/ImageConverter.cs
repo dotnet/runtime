@@ -3,14 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Drawing
 {
     public class ImageConverter : TypeConverter
     {
+        private static ReadOnlySpan<byte> PBrush => new byte[] { (byte)'P', (byte)'B', (byte)'r', (byte)'u', (byte)'s', (byte)'h' };
+
+        private static ReadOnlySpan<byte> BMBytes => new byte[] { (byte)'B', (byte)'M' };
+
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
             return sourceType == typeof(byte[]);
@@ -23,7 +30,17 @@ namespace System.Drawing
 
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            return value is byte[] bytes ? Image.FromStream(new MemoryStream(bytes)) : base.ConvertFrom(context, culture, value);
+            if (value is byte[] bytes)
+            {
+                Debug.Assert(value != null, "value is null.");
+                // Try to get memory stream for images with ole header.
+                Stream memStream = GetBitmapStream(bytes) ?? new MemoryStream(bytes);
+                return Image.FromStream(memStream);
+            }
+            else
+            {
+                return base.ConvertFrom(context, culture, value);
+            }
         }
 
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
@@ -86,5 +103,56 @@ namespace System.Drawing
         }
 
         public override bool GetPropertiesSupported(ITypeDescriptorContext context) => true;
+
+        private unsafe Stream GetBitmapStream(ReadOnlySpan<byte> rawData)
+        {
+            try
+            {
+                short signature = MemoryMarshal.Read<short>(rawData);
+
+                if (signature != 0x1c15)
+                {
+                    return null;
+                }
+
+                // The data is in the form of OBJECTHEADER. It's an encoded format that Access uses to push imagesinto the DB.
+                OBJECTHEADER pHeader = MemoryMarshal.Read<OBJECTHEADER>(rawData);
+
+                // pHeader.signature will always be 0x1c15.
+                // "PBrush" should be the 6 chars after position 12 as well.
+                if ( rawData.Length <= pHeader.headersize + 18 ||
+                    !rawData.Slice(pHeader.headersize + 12, 6).SequenceEqual(PBrush))
+                {
+                    return null;
+                }
+
+                // We can safely trust that we've got a bitmap.
+                // The start of our bitmap data in the rawdata is always 78.
+                return new MemoryStream(rawData.Slice(78).ToArray());
+            }
+            catch (OutOfMemoryException) // This exception may be caused by creating a new MemoryStream.
+            {
+            }
+            catch (ArgumentOutOfRangeException) // This exception may get thrown by MemoryMarshal when input array size is less than the size of the output type.
+            {
+            }
+
+            return null;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct OBJECTHEADER
+        {
+            public short signature; // it's always 0x1c15
+            public short headersize;
+            public short objectType;
+            public short nameLen;
+            public short classLen;
+            public short nameOffset;
+            public short classOffset;
+            public short width;
+            public short height;
+            public IntPtr pInfo;
+        }
     }
 }
