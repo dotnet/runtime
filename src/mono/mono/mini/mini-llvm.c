@@ -5876,7 +5876,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildLoad (builder, got_entry_addr, name);
 			g_free (name);
 			/* Can't use this in llvmonly mode since the got slots are initialized by the methods themselves */
-			if (!cfg->llvm_only)
+			if (!cfg->llvm_only || mono_aot_is_shared_got_offset (got_offset))
 				set_invariant_load_flag (values [ins->dreg]);
 			break;
 		}
