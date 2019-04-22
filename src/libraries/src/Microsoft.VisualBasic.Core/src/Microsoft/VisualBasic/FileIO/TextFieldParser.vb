@@ -486,7 +486,7 @@ Namespace Microsoft.VisualBasic.FileIO
         End Sub
 
         ''' <summary>
-        ''' Validates that the value being passed as an AudioPlayMode enum is a legal value
+        ''' Validates that the value being passed as an FieldType is a legal value
         ''' </summary>
         ''' <param name="value"></param>
         ''' <remarks></remarks>

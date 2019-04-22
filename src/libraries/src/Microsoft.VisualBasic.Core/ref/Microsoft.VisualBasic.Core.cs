@@ -301,6 +301,15 @@ namespace Microsoft.VisualBasic
 }
 namespace Microsoft.VisualBasic.ApplicationServices
 {
+    public partial class ApplicationBase
+    {
+        public ApplicationBase() { }
+        public void ChangeCulture(string cultureName) { throw null; }
+        public void ChangeUICulture(string cultureName) { throw null; }
+        public System.Globalization.CultureInfo Culture { get { throw null; } }
+        public System.Globalization.CultureInfo UICulture { get { throw null; } }
+        public string GetEnvironmentVariable(string name) { throw null; }
+    }
     public partial class StartupEventArgs : System.ComponentModel.CancelEventArgs
     {
         public StartupEventArgs(System.Collections.ObjectModel.ReadOnlyCollection<string> args) { }
@@ -318,6 +327,16 @@ namespace Microsoft.VisualBasic.ApplicationServices
     {
         public UnhandledExceptionEventArgs(bool exitApplication, System.Exception exception) : base (default(System.Exception)) { }
         public bool ExitApplication { get { throw null; } set { } }
+    }
+    public partial class User
+    {
+        public User() { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        public System.Security.Principal.IPrincipal CurrentPrincipal { get { throw null; } set { } }
+        protected virtual System.Security.Principal.IPrincipal InternalPrincipal { get { throw null; } set { } }
+        public bool IsAuthenticated { get { throw null; } }
+        public bool IsInRole(string role) { throw null; }
+        public string Name { get { throw null; } }
     }
 }
 namespace Microsoft.VisualBasic.CompilerServices
@@ -643,6 +662,7 @@ namespace Microsoft.VisualBasic.CompilerServices
         internal ProjectData() { }
         public static void ClearProjectError() { }
         public static System.Exception CreateProjectError(int hr) { throw null; }
+        public static void EndApp() { }
         public static void SetProjectError(System.Exception ex) { }
         public static void SetProjectError(System.Exception ex, int lErl) { }
     }
@@ -717,10 +737,63 @@ namespace Microsoft.VisualBasic.CompilerServices
 }
 namespace Microsoft.VisualBasic.Devices
 {
+    public partial class Audio
+    {
+        public Audio() { }
+    }
+    public partial class Clock
+    {
+        public Clock() { }
+        public System.DateTime GmtTime { get { throw null; } }
+        public System.DateTime LocalTime { get { throw null; } }
+        public int TickCount { get { throw null; } }
+    }
+    public partial class Computer : ServerComputer
+    {
+        public Computer() { }
+        public Audio Audio { get { throw null; } }
+        public Microsoft.VisualBasic.MyServices.ClipboardProxy Clipboard { get { throw null; } }
+        public Keyboard Keyboard { get { throw null; } }
+        public Mouse Mouse { get { throw null; } }
+        public Ports Ports { get { throw null; } }
+    }
+    public partial class ComputerInfo
+    {
+        public ComputerInfo() { }
+        public System.Globalization.CultureInfo InstalledUICulture { get { throw null; } }
+        public string OSPlatform { get { throw null; } }
+        public string OSVersion { get { throw null; } }
+    }
+    public partial class Keyboard
+    {
+        public Keyboard() { }
+    }
+    public partial class Mouse
+    {
+        public Mouse() { }
+    }
+    public partial class Network
+    {
+        public Network() { }
+    }
     public partial class NetworkAvailableEventArgs : System.EventArgs
     {
         public NetworkAvailableEventArgs(bool networkAvailable) { }
         public bool IsNetworkAvailable { get { throw null; } }
+    }
+    public partial class Ports
+    {
+        public Ports() { }
+    }
+    public partial class ServerComputer
+    {
+        public ServerComputer() { }
+        public Clock Clock { get { throw null; } }
+        public Microsoft.VisualBasic.MyServices.FileSystemProxy FileSystem { get { throw null; } }
+        public ComputerInfo Info { get { throw null; } }
+        public string Name { get { throw null; } }
+        public Network Network { get { throw null; } }
+        public Microsoft.VisualBasic.MyServices.RegistryProxy Registry { get { throw null; } }
     }
 }
 namespace Microsoft.VisualBasic.FileIO
@@ -877,5 +950,38 @@ namespace Microsoft.VisualBasic.FileIO
     {
         AllDialogs = 3,
         OnlyErrorDialogs = 2,
+    }
+}
+namespace Microsoft.VisualBasic.MyServices
+{
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public partial class ClipboardProxy
+    {
+        internal ClipboardProxy() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public partial class FileSystemProxy
+    {
+        internal FileSystemProxy() { }
+        public SpecialDirectoriesProxy SpecialDirectories { get { throw null; } }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public partial class RegistryProxy
+    {
+        internal RegistryProxy() { }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public partial class SpecialDirectoriesProxy
+    {
+        internal SpecialDirectoriesProxy() { }
+        public string AllUsersApplicationData { get { throw null; } }
+        public string CurrentUserApplicationData { get { throw null; } }
+        public string Desktop { get { throw null; } }
+        public string MyDocuments { get { throw null; } }
+        public string MyMusic { get { throw null; } }
+        public string MyPictures { get { throw null; } }
+        public string Programs { get { throw null; } }
+        public string ProgramFiles { get { throw null; } }
+        public string Temp { get { throw null; } }
     }
 }
