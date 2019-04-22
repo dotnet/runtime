@@ -3,6 +3,7 @@
 ' See the LICENSE file in the project root for more information.
 
 Imports System
+Imports Microsoft.VisualBasic.FileIO
 
 Namespace Global.Microsoft.VisualBasic.CompilerServices
     <Global.System.Diagnostics.DebuggerNonUserCode()>
@@ -86,6 +87,11 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
 
         Public Shared Sub ClearProjectError()
             Err.Clear()
+        End Sub
+
+        Public Shared Sub EndApp()
+            FileSystem.CloseAllFiles(System.Reflection.Assembly.GetCallingAssembly())
+            System.Environment.Exit(0) 'System.Environment.Exit will cause finalizers to be run at shutdown
         End Sub
     End Class
 End Namespace

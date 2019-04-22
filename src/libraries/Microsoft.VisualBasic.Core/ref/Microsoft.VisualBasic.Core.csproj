@@ -15,6 +15,7 @@
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.Extensions\ref\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
+    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
     <ProjectReference Include="..\..\System.Threading.Thread\ref\System.Threading.Thread.csproj" />
   </ItemGroup>
 </Project>
