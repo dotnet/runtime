@@ -4911,9 +4911,8 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
 //    When a 16-byte SIMD value is live across a call, the register allocator will use this intrinsic
 //    to cause the upper half to be saved.  It will first attempt to find another, unused, callee-save
 //    register.  If such a register cannot be found, it will save it to an available caller-save register.
-//    In that case, this node will be marked GTF_SPILL, which will cause genProduceReg to save the 8 byte
-//    value to the stack.  (Note that if there are no caller-save registers available, the entire 16 byte
-//    value will be spilled to the stack.)
+//    In that case, this node will be marked GTF_SPILL, which will cause this method to save
+//    the upper half to the lclVar's home location.
 //
 void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 {
@@ -4928,7 +4927,23 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
     assert(targetReg != REG_NA);
     getEmitter()->emitIns_R_R_I_I(INS_mov, EA_8BYTE, targetReg, op1Reg, 0, 1);
 
-    genProduceReg(simdNode);
+    if ((simdNode->gtFlags & GTF_SPILL) != 0)
+    {
+        // This is not a normal spill; we'll spill it to the lclVar location.
+        // The localVar must have a stack home.
+        unsigned   varNum = op1->AsLclVarCommon()->gtLclNum;
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        assert(varDsc->lvOnFrame);
+        // We want to store this to the upper 8 bytes of this localVar's home.
+        int offset = 8;
+
+        emitAttr attr = emitTypeSize(TYP_SIMD8);
+        getEmitter()->emitIns_S_R(INS_str, attr, targetReg, varNum, offset);
+    }
+    else
+    {
+        genProduceReg(simdNode);
+    }
 }
 
 //-----------------------------------------------------------------------------
@@ -4946,11 +4961,7 @@ void CodeGen::genSIMDIntrinsicUpperSave(GenTreeSIMD* simdNode)
 //    have their home register, this node has its targetReg on the lclVar child, and its source
 //    on the simdNode.
 //    Regarding spill, please see the note above on genSIMDIntrinsicUpperSave.  If we have spilled
-//    an upper-half to a caller save register, this node will be marked GTF_SPILLED.  However, unlike
-//    most spill scenarios, the saved tree will be different from the restored tree, but the spill
-//    restore logic, which is triggered by the call to genConsumeReg, requires us to provide the
-//    spilled tree (saveNode) in order to perform the reload.  We can easily find that tree,
-//    as it is in the spill descriptor for the register from which it was saved.
+//    an upper-half to the lclVar's home location, this node will be marked GTF_SPILLED.
 //
 void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
 {
@@ -4966,9 +4977,14 @@ void CodeGen::genSIMDIntrinsicUpperRestore(GenTreeSIMD* simdNode)
     assert(srcReg != REG_NA);
     if (simdNode->gtFlags & GTF_SPILLED)
     {
-        GenTree* saveNode = regSet.rsSpillDesc[srcReg]->spillTree;
-        noway_assert(saveNode != nullptr && (saveNode->gtRegNum == srcReg));
-        genConsumeReg(saveNode);
+        // The localVar must have a stack home.
+        LclVarDsc* varDsc = compiler->lvaGetDesc(varNum);
+        assert(varDsc->lvOnFrame);
+        // We will load this from the upper 8 bytes of this localVar's home.
+        int offset = 8;
+
+        emitAttr attr = emitTypeSize(TYP_SIMD8);
+        getEmitter()->emitIns_R_S(INS_ldr, attr, srcReg, varNum, offset);
     }
     getEmitter()->emitIns_R_R_I_I(INS_mov, EA_8BYTE, lclVarReg, srcReg, 1, 0);
 }
