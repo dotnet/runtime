@@ -47,14 +47,17 @@ namespace Microsoft.VisualBasic.Tests
         [Fact]
         public void FilterDefaultMessage()
         {
-            ProjectData.SetProjectError(new System.IO.FileNotFoundException("Description"));
-            Assert.Equal("Description", Information.Err().Description);
+            string message = "Description";
+            ProjectData.SetProjectError(new System.IO.FileNotFoundException(message));
+            Assert.Equal(message, Information.Err().Description);
 
-            ProjectData.SetProjectError(new System.IO.FileNotFoundException(""));
-            Assert.Equal("ID53", Information.Err().Description);
+            message = "";
+            ProjectData.SetProjectError(new System.IO.FileNotFoundException(message));
+            Assert.NotEqual(message, Information.Err().Description);
 
-            ProjectData.SetProjectError(new System.IO.FileNotFoundException("Exception from HRESULT: 0x80"));
-            Assert.Equal("ID53", Information.Err().Description);
+            message = "Exception from HRESULT: 0x80";
+            ProjectData.SetProjectError(new System.IO.FileNotFoundException(message));
+            Assert.NotEqual(message, Information.Err().Description);
         }
     }
 }

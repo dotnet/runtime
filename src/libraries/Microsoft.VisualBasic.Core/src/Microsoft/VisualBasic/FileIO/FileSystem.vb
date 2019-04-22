@@ -30,7 +30,6 @@ Namespace Microsoft.VisualBasic.FileIO
             Get
                 ' NOTE: Don't cache the collection since it may change without us knowing.
                 ' The performance hit will be small since it's a small collection.
-                ' CONSIDER: : Create a read-only collection from an array?
                 Dim DriveInfoCollection As New ObjectModel.Collection(Of System.IO.DriveInfo)
                 For Each DriveInfo As System.IO.DriveInfo In IO.DriveInfo.GetDrives()
                     DriveInfoCollection.Add(DriveInfo)
