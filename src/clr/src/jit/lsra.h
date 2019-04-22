@@ -656,10 +656,17 @@ public:
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void makeUpperVectorInterval(unsigned varIndex);
     Interval* getUpperVectorInterval(unsigned varIndex);
+
     // Save the upper half of a vector that lives in a callee-save register at the point of a call.
-    void insertUpperVectorSave(GenTree* tree, RefPosition* refPosition, Interval* lclVarInterval, BasicBlock* block);
+    void insertUpperVectorSave(GenTree*     tree,
+                               RefPosition* refPosition,
+                               Interval*    upperVectorInterval,
+                               BasicBlock*  block);
     // Restore the upper half of a vector that's been partially spilled prior to a use in 'tree'.
-    void insertUpperVectorRestore(GenTree* tree, Interval* interval, BasicBlock* block);
+    void insertUpperVectorRestore(GenTree*     tree,
+                                  RefPosition* refPosition,
+                                  Interval*    upperVectorInterval,
+                                  BasicBlock*  block);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
     // resolve along one block-block edge
@@ -992,6 +999,7 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
+    void buildUpperVectorRestoreRefPosition(Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 #if defined(UNIX_AMD64_ABI)
@@ -2055,12 +2063,27 @@ public:
     // Returns true if it is a reference on a gentree node.
     bool IsActualRef()
     {
-        return (refType == RefTypeDef || refType == RefTypeUse);
-    }
+        switch (refType)
+        {
+            case RefTypeDef:
+            case RefTypeUse:
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+            case RefTypeUpperVectorSave:
+            case RefTypeUpperVectorRestore:
+#endif
+                return true;
 
-    bool RequiresRegister()
-    {
-        return IsActualRef() && !RegOptional();
+            // These must always be marked RegOptional.
+            case RefTypeExpUse:
+            case RefTypeParamDef:
+            case RefTypeDummyDef:
+            case RefTypeZeroInit:
+                assert(RegOptional());
+                return false;
+
+            default:
+                return false;
+        }
     }
 
     void setRegOptional(bool val)
