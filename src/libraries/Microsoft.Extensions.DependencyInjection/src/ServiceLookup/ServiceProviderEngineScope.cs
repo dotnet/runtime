@@ -91,13 +91,48 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         }
 
 #if DISPOSE_ASYNC
-        public async ValueTask DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             var toDispose = BeginDispose();
 
             if (toDispose != null)
             {
-                for (var i = toDispose.Count - 1; i >= 0; i--)
+                try
+                {
+                    for (var i = toDispose.Count - 1; i >= 0; i--)
+                    {
+                        var disposable = toDispose[i];
+                        if (disposable is IAsyncDisposable asyncDisposable)
+                        {
+                            var vt = asyncDisposable.DisposeAsync();
+                            if (!vt.IsCompletedSuccessfully)
+                            {
+                                return Await(i, vt);
+                            }
+
+                            // If its a IValueTaskSource backed ValueTask,
+                            // inform it its result has been read so it can reset
+                            vt.GetAwaiter().GetResult();
+                        }
+                        else
+                        {
+                            ((IDisposable)disposable).Dispose();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return new ValueTask(Task.FromException(ex));
+                }
+            }
+
+            return default;
+
+            async ValueTask Await(int i, ValueTask vt)
+            {
+                await vt;
+
+                for (; i >= 0; i--)
                 {
                     var disposable = toDispose[i];
                     if (disposable is IAsyncDisposable asyncDisposable)
