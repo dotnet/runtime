@@ -101,16 +101,6 @@ namespace System.Diagnostics.Tests
         /// <returns></returns>
         protected static bool IsProgramInstalled(string program)
         {
-            return GetProgramPath(program) != null;
-        }
-
-        /// <summary>
-        /// Return program path
-        /// </summary>
-        /// <param name="program"></param>
-        /// <returns></returns>
-        protected static string GetProgramPath(string program)
-        {
             string path;
             string pathEnvVar = Environment.GetEnvironmentVariable("PATH");
             char separator = PlatformDetection.IsWindows ? ';' : ':';
@@ -123,11 +113,11 @@ namespace System.Diagnostics.Tests
                     path = Path.Combine(subPath, program);
                     if (File.Exists(path))
                     {
-                        return path;
+                        return true;
                     }
                 }
             }
-            return null;
+            return false;
         }
     }
 }
