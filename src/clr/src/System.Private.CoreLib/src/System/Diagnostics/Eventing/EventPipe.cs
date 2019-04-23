@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
+#nullable enable
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Security;
-using Microsoft.Win32;
 
 #if FEATURE_PERFTRACING
 
@@ -41,13 +40,13 @@ namespace System.Diagnostics.Tracing
         private uint m_loggingLevel;
 
         [MarshalAs(UnmanagedType.LPWStr)]
-        private readonly string m_filterData;
+        private readonly string? m_filterData;
 
         internal EventPipeProviderConfiguration(
             string providerName,
             ulong keywords,
             uint loggingLevel,
-            string filterData)
+            string? filterData)
         {
             if(string.IsNullOrEmpty(providerName))
             {
@@ -78,7 +77,7 @@ namespace System.Diagnostics.Tracing
             get { return m_loggingLevel; }
         }
 
-        internal string FilterData => m_filterData;
+        internal string? FilterData => m_filterData;
     }
 
     internal sealed class EventPipeConfiguration
@@ -131,7 +130,7 @@ namespace System.Diagnostics.Tracing
             EnableProviderWithFilter(providerName, keywords, loggingLevel, null);
         }
 
-        internal void EnableProviderWithFilter(string providerName, ulong keywords, uint loggingLevel, string filterData)
+        internal void EnableProviderWithFilter(string providerName, ulong keywords, uint loggingLevel, string? filterData)
         {
             m_providers.Add(new EventPipeProviderConfiguration(
                 providerName,
@@ -203,7 +202,7 @@ namespace System.Diagnostics.Tracing
         //
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern UInt64 Enable(
-            string outputFile,
+            string? outputFile,
             uint circularBufferSizeInMB,
             ulong profilerSamplingRateInNanoseconds,
             EventPipeProviderConfiguration[] providers,
