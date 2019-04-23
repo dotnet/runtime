@@ -327,9 +327,9 @@ run_test()
 
     echo
     echo "Running tests in $dirName"
-    echo "${TimeoutTool}./RunTests.sh --runtime-path $Runtime"
+    echo "${TimeoutTool}./RunTests.sh --runtime-path $Runtime --rsp-file $ExclusionRspFile"
     echo
-    ${TimeoutTool}./RunTests.sh --runtime-path "$Runtime"
+    ${TimeoutTool}./RunTests.sh --runtime-path "$Runtime" --rsp-file "$ExclusionRspFile"
     exitCode=$?
 
     if [ $exitCode -ne 0 ] ; then
@@ -457,6 +457,10 @@ do
 
         --test-exclude-file)
             TestExcludeFile=$2
+            ;;
+
+        --exclusion-rsp-file)
+            ExclusionRspFile=$2
             ;;
 
         --timeout)
