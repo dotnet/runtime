@@ -9,14 +9,14 @@ namespace System.IO.Compression
 {
     public enum CompressionLevel
     {
+        Optimal = 0,
         Fastest = 1,
         NoCompression = 2,
-        Optimal = 0,
     }
     public enum CompressionMode
     {
-        Compress = 1,
         Decompress = 0,
+        Compress = 1,
     }
     public partial class DeflateStream : System.IO.Stream
     {
@@ -118,8 +118,8 @@ namespace System.IO.Compression
     }
     public enum ZipArchiveMode
     {
-        Create = 1,
         Read = 0,
+        Create = 1,
         Update = 2,
     }
 }

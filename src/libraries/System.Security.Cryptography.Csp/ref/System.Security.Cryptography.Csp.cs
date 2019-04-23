@@ -62,15 +62,15 @@ namespace System.Security.Cryptography
     [System.FlagsAttribute]
     public enum CspProviderFlags
     {
-        CreateEphemeralKey = 128,
         NoFlags = 0,
-        NoPrompt = 64,
-        UseArchivableKey = 16,
-        UseDefaultKeyContainer = 2,
-        UseExistingKey = 8,
         UseMachineKeyStore = 1,
+        UseDefaultKeyContainer = 2,
         UseNonExportableKey = 4,
+        UseExistingKey = 8,
+        UseArchivableKey = 16,
         UseUserProtectedKey = 32,
+        NoPrompt = 64,
+        CreateEphemeralKey = 128,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class DESCryptoServiceProvider : System.Security.Cryptography.DES

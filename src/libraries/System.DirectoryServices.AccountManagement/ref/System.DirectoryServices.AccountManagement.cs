@@ -78,17 +78,17 @@ namespace System.DirectoryServices.AccountManagement
     public enum ContextOptions
     {
         Negotiate = 1,
-        Sealing = 16,
-        SecureSocketLayer = 4,
-        ServerBind = 32,
-        Signing = 8,
         SimpleBind = 2,
+        SecureSocketLayer = 4,
+        Signing = 8,
+        Sealing = 16,
+        ServerBind = 32,
     }
     public enum ContextType
     {
-        ApplicationDirectory = 2,
-        Domain = 1,
         Machine = 0,
+        Domain = 1,
+        ApplicationDirectory = 2,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
     public sealed partial class DirectoryObjectClassAttribute : System.Attribute
@@ -127,27 +127,27 @@ namespace System.DirectoryServices.AccountManagement
     }
     public enum GroupScope
     {
-        Global = 1,
         Local = 0,
+        Global = 1,
         Universal = 2,
     }
     public enum IdentityType
     {
-        DistinguishedName = 3,
-        Guid = 5,
-        Name = 1,
         SamAccountName = 0,
-        Sid = 4,
+        Name = 1,
         UserPrincipalName = 2,
+        DistinguishedName = 3,
+        Sid = 4,
+        Guid = 5,
     }
     public enum MatchType
     {
         Equals = 0,
+        NotEquals = 1,
         GreaterThan = 2,
         GreaterThanOrEquals = 3,
         LessThan = 4,
         LessThanOrEquals = 5,
-        NotEquals = 1,
     }
     public partial class MultipleMatchesException : System.DirectoryServices.AccountManagement.PrincipalException
     {

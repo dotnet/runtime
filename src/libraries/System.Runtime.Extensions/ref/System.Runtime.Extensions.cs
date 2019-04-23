@@ -122,8 +122,8 @@ namespace System
     [System.FlagsAttribute]
     public enum Base64FormattingOptions
     {
-        InsertLineBreaks = 1,
         None = 0,
+        InsertLineBreaks = 1,
     }
     public static partial class BitConverter
     {
@@ -691,77 +691,77 @@ namespace System
         public static void SetEnvironmentVariable(string variable, string value, System.EnvironmentVariableTarget target) { }
         public enum SpecialFolder
         {
-            AdminTools = 48,
-            ApplicationData = 26,
-            CDBurning = 59,
-            CommonAdminTools = 47,
-            CommonApplicationData = 35,
-            CommonDesktopDirectory = 25,
-            CommonDocuments = 46,
-            CommonMusic = 53,
-            CommonOemLinks = 58,
-            CommonPictures = 54,
-            CommonProgramFiles = 43,
-            CommonProgramFilesX86 = 44,
-            CommonPrograms = 23,
-            CommonStartMenu = 22,
-            CommonStartup = 24,
-            CommonTemplates = 45,
-            CommonVideos = 55,
-            Cookies = 33,
             Desktop = 0,
-            DesktopDirectory = 16,
-            Favorites = 6,
-            Fonts = 20,
-            History = 34,
-            InternetCache = 32,
-            LocalApplicationData = 28,
-            LocalizedResources = 57,
-            MyComputer = 17,
-            MyDocuments = 5,
-            MyMusic = 13,
-            MyPictures = 39,
-            MyVideos = 14,
-            NetworkShortcuts = 19,
-            Personal = 5,
-            PrinterShortcuts = 27,
-            ProgramFiles = 38,
-            ProgramFilesX86 = 42,
             Programs = 2,
+            MyDocuments = 5,
+            Personal = 5,
+            Favorites = 6,
+            Startup = 7,
             Recent = 8,
-            Resources = 56,
             SendTo = 9,
             StartMenu = 11,
-            Startup = 7,
-            System = 37,
-            SystemX86 = 41,
+            MyMusic = 13,
+            MyVideos = 14,
+            DesktopDirectory = 16,
+            MyComputer = 17,
+            NetworkShortcuts = 19,
+            Fonts = 20,
             Templates = 21,
-            UserProfile = 40,
+            CommonStartMenu = 22,
+            CommonPrograms = 23,
+            CommonStartup = 24,
+            CommonDesktopDirectory = 25,
+            ApplicationData = 26,
+            PrinterShortcuts = 27,
+            LocalApplicationData = 28,
+            InternetCache = 32,
+            Cookies = 33,
+            History = 34,
+            CommonApplicationData = 35,
             Windows = 36,
+            System = 37,
+            ProgramFiles = 38,
+            MyPictures = 39,
+            UserProfile = 40,
+            SystemX86 = 41,
+            ProgramFilesX86 = 42,
+            CommonProgramFiles = 43,
+            CommonProgramFilesX86 = 44,
+            CommonTemplates = 45,
+            CommonDocuments = 46,
+            CommonAdminTools = 47,
+            AdminTools = 48,
+            CommonMusic = 53,
+            CommonPictures = 54,
+            CommonVideos = 55,
+            Resources = 56,
+            LocalizedResources = 57,
+            CommonOemLinks = 58,
+            CDBurning = 59,
         }
         public enum SpecialFolderOption
         {
-            Create = 32768,
-            DoNotVerify = 16384,
             None = 0,
+            DoNotVerify = 16384,
+            Create = 32768,
         }
     }
     public enum EnvironmentVariableTarget
     {
-        Machine = 2,
         Process = 0,
         User = 1,
+        Machine = 2,
     }
     public enum LoaderOptimization
     {
-        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        DisallowBindings = 4,
-        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        DomainMask = 3,
-        MultiDomain = 2,
-        MultiDomainHost = 3,
         NotSpecified = 0,
         SingleDomain = 1,
+        MultiDomain = 2,
+        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        DomainMask = 3,
+        MultiDomainHost = 3,
+        [System.ObsoleteAttribute("This method has been deprecated. Please use Assembly.Load() instead. https://go.microsoft.com/fwlink/?linkid=14202")]
+        DisallowBindings = 4,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
     public sealed partial class LoaderOptimizationAttribute : System.Attribute
@@ -943,17 +943,17 @@ namespace System
     public enum PlatformID
     {
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        MacOSX = 6,
-        Unix = 4,
-        Win32NT = 2,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         Win32S = 0,
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         Win32Windows = 1,
+        Win32NT = 2,
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         WinCE = 3,
+        Unix = 4,
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         Xbox = 5,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        MacOSX = 6,
     }
     public partial class Progress<T> : System.IProgress<T>
     {
@@ -1728,10 +1728,10 @@ namespace System.Runtime.Versioning
     [System.FlagsAttribute]
     public enum ComponentGuaranteesOptions
     {
-        Exchange = 1,
         None = 0,
-        SideBySide = 4,
+        Exchange = 1,
         Stable = 2,
+        SideBySide = 4,
     }
     public sealed partial class FrameworkName : System.IEquatable<System.Runtime.Versioning.FrameworkName>
     {
@@ -1768,13 +1768,13 @@ namespace System.Runtime.Versioning
     [System.FlagsAttribute]
     public enum ResourceScope
     {
-        AppDomain = 4,
-        Assembly = 32,
-        Library = 8,
-        Machine = 1,
         None = 0,
-        Private = 16,
+        Machine = 1,
         Process = 2,
+        AppDomain = 4,
+        Library = 8,
+        Private = 16,
+        Assembly = 32,
     }
     public static partial class VersioningHelper
     {
@@ -1883,13 +1883,13 @@ namespace System.Security.Permissions
     }
     public enum SecurityAction
     {
-        Assert = 3,
         Demand = 2,
+        Assert = 3,
         [System.ObsoleteAttribute("Deny is obsolete and will be removed in a future release of the .NET Framework. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         Deny = 4,
-        InheritanceDemand = 7,
-        LinkDemand = 6,
         PermitOnly = 5,
+        LinkDemand = 6,
+        InheritanceDemand = 7,
         [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
         RequestMinimum = 8,
         [System.ObsoleteAttribute("Assembly level declarative security is obsolete and is no longer enforced by the CLR by default. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
@@ -1929,21 +1929,21 @@ namespace System.Security.Permissions
     [System.FlagsAttribute]
     public enum SecurityPermissionFlag
     {
-        AllFlags = 16383,
+        NoFlags = 0,
         Assertion = 1,
-        BindingRedirects = 8192,
-        ControlAppDomain = 1024,
-        ControlDomainPolicy = 256,
+        UnmanagedCode = 2,
+        SkipVerification = 4,
+        Execution = 8,
+        ControlThread = 16,
         ControlEvidence = 32,
         ControlPolicy = 64,
-        ControlPrincipal = 512,
-        ControlThread = 16,
-        Execution = 8,
-        Infrastructure = 4096,
-        NoFlags = 0,
-        RemotingConfiguration = 2048,
         SerializationFormatter = 128,
-        SkipVerification = 4,
-        UnmanagedCode = 2,
+        ControlDomainPolicy = 256,
+        ControlPrincipal = 512,
+        ControlAppDomain = 1024,
+        RemotingConfiguration = 2048,
+        Infrastructure = 4096,
+        BindingRedirects = 8192,
+        AllFlags = 16383,
     }
 }

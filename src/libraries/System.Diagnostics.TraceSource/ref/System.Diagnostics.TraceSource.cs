@@ -49,15 +49,15 @@ namespace System.Diagnostics
     [System.FlagsAttribute]
     public enum SourceLevels
     {
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
-        ActivityTracing = 65280,
         All = -1,
+        Off = 0,
         Critical = 1,
         Error = 3,
-        Information = 15,
-        Off = 0,
-        Verbose = 31,
         Warning = 7,
+        Information = 15,
+        Verbose = 31,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        ActivityTracing = 65280,
     }
     public partial class SourceSwitch : System.Diagnostics.Switch
     {
@@ -182,14 +182,14 @@ namespace System.Diagnostics
     {
         Critical = 1,
         Error = 2,
+        Warning = 4,
         Information = 8,
-        Resume = 2048,
+        Verbose = 16,
         Start = 256,
         Stop = 512,
         Suspend = 1024,
+        Resume = 2048,
         Transfer = 4096,
-        Verbose = 16,
-        Warning = 4,
     }
     public abstract partial class TraceFilter
     {
@@ -198,11 +198,11 @@ namespace System.Diagnostics
     }
     public enum TraceLevel
     {
-        Error = 1,
-        Info = 3,
         Off = 0,
-        Verbose = 4,
+        Error = 1,
         Warning = 2,
+        Info = 3,
+        Verbose = 4,
     }
     public abstract partial class TraceListener : System.MarshalByRefObject, System.IDisposable
     {
@@ -272,13 +272,13 @@ namespace System.Diagnostics
     [System.FlagsAttribute]
     public enum TraceOptions
     {
-        Callstack = 32,
-        DateTime = 2,
-        LogicalOperationStack = 1,
         None = 0,
+        LogicalOperationStack = 1,
+        DateTime = 2,
+        Timestamp = 4,
         ProcessId = 8,
         ThreadId = 16,
-        Timestamp = 4,
+        Callstack = 32,
     }
     public partial class TraceSource
     {

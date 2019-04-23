@@ -9,25 +9,25 @@ namespace System.Data
 {
     public enum AcceptRejectRule
     {
-        Cascade = 1,
         None = 0,
+        Cascade = 1,
     }
     [System.FlagsAttribute]
     public enum CommandBehavior
     {
-        CloseConnection = 32,
         Default = 0,
-        KeyInfo = 4,
-        SchemaOnly = 2,
-        SequentialAccess = 16,
         SingleResult = 1,
+        SchemaOnly = 2,
+        KeyInfo = 4,
         SingleRow = 8,
+        SequentialAccess = 16,
+        CloseConnection = 32,
     }
     public enum CommandType
     {
+        Text = 1,
         StoredProcedure = 4,
         TableDirect = 512,
-        Text = 1,
     }
     public enum ConflictOption
     {
@@ -38,12 +38,12 @@ namespace System.Data
     [System.FlagsAttribute]
     public enum ConnectionState
     {
-        Broken = 16,
         Closed = 0,
+        Open = 1,
         Connecting = 2,
         Executing = 4,
         Fetching = 8,
-        Open = 1,
+        Broken = 16,
     }
     [System.ComponentModel.DefaultPropertyAttribute("ConstraintName")]
     public abstract partial class Constraint
@@ -343,14 +343,14 @@ namespace System.Data
     [System.FlagsAttribute]
     public enum DataRowAction
     {
-        Add = 16,
-        Change = 2,
-        ChangeCurrentAndOriginal = 64,
-        ChangeOriginal = 32,
-        Commit = 8,
-        Delete = 1,
         Nothing = 0,
+        Delete = 1,
+        Change = 2,
         Rollback = 4,
+        Commit = 8,
+        Add = 16,
+        ChangeOriginal = 32,
+        ChangeCurrentAndOriginal = 64,
     }
     public sealed partial class DataRowBuilder
     {
@@ -409,18 +409,18 @@ namespace System.Data
     [System.FlagsAttribute]
     public enum DataRowState
     {
+        Detached = 1,
+        Unchanged = 2,
         Added = 4,
         Deleted = 8,
-        Detached = 1,
         Modified = 16,
-        Unchanged = 2,
     }
     public enum DataRowVersion
     {
-        Current = 512,
-        Default = 1536,
         Original = 256,
+        Current = 512,
         Proposed = 1024,
+        Default = 1536,
     }
     public partial class DataRowView : System.ComponentModel.ICustomTypeDescriptor, System.ComponentModel.IDataErrorInfo, System.ComponentModel.IEditableObject, System.ComponentModel.INotifyPropertyChanged
     {
@@ -983,14 +983,14 @@ namespace System.Data
     [System.FlagsAttribute]
     public enum DataViewRowState
     {
+        None = 0,
+        Unchanged = 2,
         Added = 4,
-        CurrentRows = 22,
         Deleted = 8,
         ModifiedCurrent = 16,
+        CurrentRows = 22,
         ModifiedOriginal = 32,
-        None = 0,
         OriginalRows = 42,
-        Unchanged = 2,
     }
     [System.ComponentModel.TypeConverterAttribute(typeof(System.ComponentModel.ExpandableObjectConverter))]
     public partial class DataViewSetting
@@ -1038,15 +1038,12 @@ namespace System.Data
     public enum DbType
     {
         AnsiString = 0,
-        AnsiStringFixedLength = 22,
         Binary = 1,
-        Boolean = 3,
         Byte = 2,
+        Boolean = 3,
         Currency = 4,
         Date = 5,
         DateTime = 6,
-        DateTime2 = 26,
-        DateTimeOffset = 27,
         Decimal = 7,
         Double = 8,
         Guid = 9,
@@ -1057,13 +1054,16 @@ namespace System.Data
         SByte = 14,
         Single = 15,
         String = 16,
-        StringFixedLength = 23,
         Time = 17,
         UInt16 = 18,
         UInt32 = 19,
         UInt64 = 20,
         VarNumeric = 21,
+        AnsiStringFixedLength = 22,
+        StringFixedLength = 23,
         Xml = 25,
+        DateTime2 = 26,
+        DateTimeOffset = 27,
     }
     public partial class DeletedRowInaccessibleException : System.Data.DataException
     {
@@ -1315,13 +1315,13 @@ namespace System.Data
     }
     public enum IsolationLevel
     {
+        Unspecified = -1,
         Chaos = 16,
-        ReadCommitted = 4096,
         ReadUncommitted = 256,
+        ReadCommitted = 4096,
         RepeatableRead = 65536,
         Serializable = 1048576,
         Snapshot = 16777216,
-        Unspecified = -1,
     }
     public partial interface ITableMapping
     {
@@ -1351,10 +1351,10 @@ namespace System.Data
     }
     public enum MappingType
     {
-        Attribute = 2,
         Element = 1,
-        Hidden = 4,
+        Attribute = 2,
         SimpleContent = 3,
+        Hidden = 4,
     }
     public partial class MergeFailedEventArgs : System.EventArgs
     {
@@ -1365,9 +1365,9 @@ namespace System.Data
     public delegate void MergeFailedEventHandler(object sender, System.Data.MergeFailedEventArgs e);
     public enum MissingMappingAction
     {
-        Error = 3,
-        Ignore = 2,
         Passthrough = 1,
+        Ignore = 2,
+        Error = 3,
     }
     public partial class MissingPrimaryKeyException : System.Data.DataException
     {
@@ -1379,9 +1379,9 @@ namespace System.Data
     public enum MissingSchemaAction
     {
         Add = 1,
-        AddWithKey = 4,
-        Error = 3,
         Ignore = 2,
+        Error = 3,
+        AddWithKey = 4,
     }
     public partial class NoNullAllowedException : System.Data.DataException
     {
@@ -1397,8 +1397,8 @@ namespace System.Data
     public enum ParameterDirection
     {
         Input = 1,
-        InputOutput = 3,
         Output = 2,
+        InputOutput = 3,
         ReturnValue = 6,
     }
     public partial class PropertyCollection : System.Collections.Hashtable, System.ICloneable
@@ -1423,25 +1423,25 @@ namespace System.Data
     }
     public enum Rule
     {
-        Cascade = 1,
         None = 0,
-        SetDefault = 3,
+        Cascade = 1,
         SetNull = 2,
+        SetDefault = 3,
     }
     public enum SchemaSerializationMode
     {
-        ExcludeSchema = 2,
         IncludeSchema = 1,
+        ExcludeSchema = 2,
     }
     public enum SchemaType
     {
-        Mapped = 2,
         Source = 1,
+        Mapped = 2,
     }
     public enum SerializationFormat
     {
-        Binary = 1,
         Xml = 0,
+        Binary = 1,
     }
     public enum SqlDbType
     {
@@ -1449,10 +1449,7 @@ namespace System.Data
         Binary = 1,
         Bit = 2,
         Char = 3,
-        Date = 31,
         DateTime = 4,
-        DateTime2 = 33,
-        DateTimeOffset = 34,
         Decimal = 5,
         Float = 6,
         Image = 7,
@@ -1462,20 +1459,23 @@ namespace System.Data
         NText = 11,
         NVarChar = 12,
         Real = 13,
+        UniqueIdentifier = 14,
         SmallDateTime = 15,
         SmallInt = 16,
         SmallMoney = 17,
-        Structured = 30,
         Text = 18,
-        Time = 32,
         Timestamp = 19,
         TinyInt = 20,
-        Udt = 29,
-        UniqueIdentifier = 14,
         VarBinary = 21,
         VarChar = 22,
         Variant = 23,
         Xml = 25,
+        Udt = 29,
+        Structured = 30,
+        Date = 31,
+        Time = 32,
+        DateTime2 = 33,
+        DateTimeOffset = 34,
     }
     public sealed partial class StateChangeEventArgs : System.EventArgs
     {
@@ -1492,11 +1492,11 @@ namespace System.Data
     public delegate void StatementCompletedEventHandler(object sender, System.Data.StatementCompletedEventArgs e);
     public enum StatementType
     {
-        Batch = 4,
-        Delete = 3,
-        Insert = 1,
         Select = 0,
+        Insert = 1,
         Update = 2,
+        Delete = 3,
+        Batch = 4,
     }
     public partial class StrongTypingException : System.Data.DataException
     {
@@ -1554,17 +1554,17 @@ namespace System.Data
     }
     public enum UpdateRowSource
     {
-        Both = 3,
-        FirstReturnedRecord = 2,
         None = 0,
         OutputParameters = 1,
+        FirstReturnedRecord = 2,
+        Both = 3,
     }
     public enum UpdateStatus
     {
         Continue = 0,
         ErrorsOccurred = 1,
-        SkipAllRemainingRows = 3,
         SkipCurrentRow = 2,
+        SkipAllRemainingRows = 3,
     }
     public partial class VersionNotFoundException : System.Data.DataException
     {
@@ -1576,26 +1576,26 @@ namespace System.Data
     public enum XmlReadMode
     {
         Auto = 0,
-        DiffGram = 4,
-        Fragment = 5,
+        ReadSchema = 1,
         IgnoreSchema = 2,
         InferSchema = 3,
+        DiffGram = 4,
+        Fragment = 5,
         InferTypedSchema = 6,
-        ReadSchema = 1,
     }
     public enum XmlWriteMode
     {
-        DiffGram = 2,
-        IgnoreSchema = 1,
         WriteSchema = 0,
+        IgnoreSchema = 1,
+        DiffGram = 2,
     }
 }
 namespace System.Data.Common
 {
     public enum CatalogLocation
     {
-        End = 2,
         Start = 1,
+        End = 2,
     }
     public partial class DataAdapter : System.ComponentModel.Component, System.Data.IDataAdapter
     {
@@ -2355,11 +2355,11 @@ namespace System.Data.Common
     }
     public enum GroupByBehavior
     {
-        ExactMatch = 4,
-        MustContainAll = 3,
-        NotSupported = 1,
         Unknown = 0,
+        NotSupported = 1,
         Unrelated = 2,
+        MustContainAll = 3,
+        ExactMatch = 4,
     }
     public partial interface IDbColumnSchemaGenerator
     {
@@ -2367,9 +2367,9 @@ namespace System.Data.Common
     }
     public enum IdentifierCase
     {
+        Unknown = 0,
         Insensitive = 1,
         Sensitive = 2,
-        Unknown = 0,
     }
     public partial class RowUpdatedEventArgs : System.EventArgs
     {
@@ -2436,11 +2436,11 @@ namespace System.Data.Common
     [System.FlagsAttribute]
     public enum SupportedJoinOperators
     {
-        FullOuter = 8,
+        None = 0,
         Inner = 1,
         LeftOuter = 2,
-        None = 0,
         RightOuter = 4,
+        FullOuter = 8,
     }
 }
 namespace System.Data.SqlTypes
@@ -2696,13 +2696,13 @@ namespace System.Data.SqlTypes
     [System.FlagsAttribute]
     public enum SqlCompareOptions
     {
-        BinarySort = 32768,
-        BinarySort2 = 16384,
-        IgnoreCase = 1,
-        IgnoreKanaType = 8,
-        IgnoreNonSpace = 2,
-        IgnoreWidth = 16,
         None = 0,
+        IgnoreCase = 1,
+        IgnoreNonSpace = 2,
+        IgnoreKanaType = 8,
+        IgnoreWidth = 16,
+        BinarySort2 = 16384,
+        BinarySort = 32768,
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
     public partial struct SqlDateTime : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable

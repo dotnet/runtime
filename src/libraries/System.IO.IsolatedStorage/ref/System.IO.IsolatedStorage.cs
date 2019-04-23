@@ -139,12 +139,12 @@ namespace System.IO.IsolatedStorage
     [System.FlagsAttribute]
     public enum IsolatedStorageScope
     {
-        Application = 32,
-        Assembly = 4,
-        Domain = 2,
-        Machine = 16,
         None = 0,
-        Roaming = 8,
         User = 1,
+        Domain = 2,
+        Assembly = 4,
+        Roaming = 8,
+        Machine = 16,
+        Application = 32,
     }
 }

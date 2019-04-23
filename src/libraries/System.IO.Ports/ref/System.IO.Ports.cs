@@ -10,16 +10,16 @@ namespace System.IO.Ports
     public enum Handshake
     {
         None = 0,
+        XOnXOff = 1,
         RequestToSend = 2,
         RequestToSendXOnXOff = 3,
-        XOnXOff = 1,
     }
     public enum Parity
     {
-        Even = 2,
-        Mark = 3,
         None = 0,
         Odd = 1,
+        Even = 2,
+        Mark = 3,
         Space = 4,
     }
     public enum SerialData
@@ -35,10 +35,10 @@ namespace System.IO.Ports
     public delegate void SerialDataReceivedEventHandler(object sender, System.IO.Ports.SerialDataReceivedEventArgs e);
     public enum SerialError
     {
-        Frame = 8,
-        Overrun = 2,
         RXOver = 1,
+        Overrun = 2,
         RXParity = 4,
+        Frame = 8,
         TXFull = 256,
     }
     public partial class SerialErrorReceivedEventArgs : System.EventArgs
@@ -49,10 +49,10 @@ namespace System.IO.Ports
     public delegate void SerialErrorReceivedEventHandler(object sender, System.IO.Ports.SerialErrorReceivedEventArgs e);
     public enum SerialPinChange
     {
-        Break = 64,
-        CDChanged = 32,
         CtsChanged = 8,
         DsrChanged = 16,
+        CDChanged = 32,
+        Break = 64,
         Ring = 256,
     }
     public partial class SerialPinChangedEventArgs : System.EventArgs
@@ -121,7 +121,7 @@ namespace System.IO.Ports
     {
         None = 0,
         One = 1,
-        OnePointFive = 3,
         Two = 2,
+        OnePointFive = 3,
     }
 }

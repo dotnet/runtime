@@ -35,14 +35,14 @@ namespace System.DirectoryServices.Protocols
     {
         Anonymous = 0,
         Basic = 1,
-        Digest = 4,
-        Dpa = 6,
-        External = 8,
-        Kerberos = 9,
-        Msn = 7,
         Negotiate = 2,
         Ntlm = 3,
+        Digest = 4,
         Sicily = 5,
+        Dpa = 6,
+        Msn = 7,
+        External = 8,
+        Kerberos = 9,
     }
     public partial class BerConversionException : System.DirectoryServices.Protocols.DirectoryException
     {
@@ -89,10 +89,10 @@ namespace System.DirectoryServices.Protocols
     }
     public enum DereferenceAlias
     {
-        Always = 3,
-        FindingBaseObject = 2,
-        InSearching = 1,
         Never = 0,
+        InSearching = 1,
+        FindingBaseObject = 2,
+        Always = 3,
     }
     public delegate void DereferenceConnectionCallback(System.DirectoryServices.Protocols.LdapConnection primaryConnection, System.DirectoryServices.Protocols.LdapConnection connectionToDereference);
     public partial class DirectoryAttribute : System.Collections.CollectionBase
@@ -238,11 +238,11 @@ namespace System.DirectoryServices.Protocols
     [System.FlagsAttribute]
     public enum DirectorySynchronizationOptions : long
     {
-        IncrementalValues = (long)2147483648,
         None = (long)0,
         ObjectSecurity = (long)1,
         ParentsFirst = (long)2048,
         PublicDataOnly = (long)8192,
+        IncrementalValues = (long)2147483648,
     }
     public partial class DirSyncRequestControl : System.DirectoryServices.Protocols.DirectoryControl
     {
@@ -388,23 +388,23 @@ namespace System.DirectoryServices.Protocols
     [System.FlagsAttribute]
     public enum LocatorFlags : long
     {
-        AvoidSelf = (long)16384,
-        DirectoryServicesPreferred = (long)32,
-        DirectoryServicesRequired = (long)16,
-        ForceRediscovery = (long)1,
-        GCRequired = (long)64,
-        GoodTimeServerPreferred = (long)8192,
-        IPRequired = (long)512,
-        IsDnsName = (long)131072,
-        IsFlatName = (long)65536,
-        KdcRequired = (long)1024,
         None = (long)0,
-        OnlyLdapNeeded = (long)32768,
+        ForceRediscovery = (long)1,
+        DirectoryServicesRequired = (long)16,
+        DirectoryServicesPreferred = (long)32,
+        GCRequired = (long)64,
         PdcRequired = (long)128,
-        ReturnDnsName = (long)1073741824,
-        ReturnFlatName = (long)2147483648,
+        IPRequired = (long)512,
+        KdcRequired = (long)1024,
         TimeServerRequired = (long)2048,
         WriteableRequired = (long)4096,
+        GoodTimeServerPreferred = (long)8192,
+        AvoidSelf = (long)16384,
+        OnlyLdapNeeded = (long)32768,
+        IsFlatName = (long)65536,
+        IsDnsName = (long)131072,
+        ReturnDnsName = (long)1073741824,
+        ReturnFlatName = (long)2147483648,
     }
     public partial class ModifyDNRequest : System.DirectoryServices.Protocols.DirectoryRequest
     {
@@ -484,56 +484,56 @@ namespace System.DirectoryServices.Protocols
     [System.FlagsAttribute]
     public enum ReferralChasingOptions
     {
-        All = 96,
-        External = 64,
         None = 0,
         Subordinate = 32,
+        External = 64,
+        All = 96,
     }
     public enum ResultCode
     {
-        AdminLimitExceeded = 11,
-        AffectsMultipleDsas = 71,
-        AliasDereferencingProblem = 36,
-        AliasProblem = 33,
-        AttributeOrValueExists = 20,
-        AuthMethodNotSupported = 7,
-        Busy = 51,
+        Success = 0,
+        OperationsError = 1,
+        ProtocolError = 2,
+        TimeLimitExceeded = 3,
+        SizeLimitExceeded = 4,
         CompareFalse = 5,
         CompareTrue = 6,
+        AuthMethodNotSupported = 7,
+        StrongAuthRequired = 8,
+        ReferralV2 = 9,
+        Referral = 10,
+        AdminLimitExceeded = 11,
+        UnavailableCriticalExtension = 12,
         ConfidentialityRequired = 13,
-        ConstraintViolation = 19,
-        EntryAlreadyExists = 68,
-        InappropriateAuthentication = 48,
-        InappropriateMatching = 18,
-        InsufficientAccessRights = 50,
-        InvalidAttributeSyntax = 21,
-        InvalidDNSyntax = 34,
-        LoopDetect = 54,
-        NamingViolation = 64,
+        SaslBindInProgress = 14,
         NoSuchAttribute = 16,
+        UndefinedAttributeType = 17,
+        InappropriateMatching = 18,
+        ConstraintViolation = 19,
+        AttributeOrValueExists = 20,
+        InvalidAttributeSyntax = 21,
         NoSuchObject = 32,
+        AliasProblem = 33,
+        InvalidDNSyntax = 34,
+        AliasDereferencingProblem = 36,
+        InappropriateAuthentication = 48,
+        InsufficientAccessRights = 50,
+        Busy = 51,
+        Unavailable = 52,
+        UnwillingToPerform = 53,
+        LoopDetect = 54,
+        SortControlMissing = 60,
+        OffsetRangeError = 61,
+        NamingViolation = 64,
+        ObjectClassViolation = 65,
         NotAllowedOnNonLeaf = 66,
         NotAllowedOnRdn = 67,
+        EntryAlreadyExists = 68,
         ObjectClassModificationsProhibited = 69,
-        ObjectClassViolation = 65,
-        OffsetRangeError = 61,
-        OperationsError = 1,
-        Other = 80,
-        ProtocolError = 2,
-        Referral = 10,
-        ReferralV2 = 9,
         ResultsTooLarge = 70,
-        SaslBindInProgress = 14,
-        SizeLimitExceeded = 4,
-        SortControlMissing = 60,
-        StrongAuthRequired = 8,
-        Success = 0,
-        TimeLimitExceeded = 3,
-        Unavailable = 52,
-        UnavailableCriticalExtension = 12,
-        UndefinedAttributeType = 17,
-        UnwillingToPerform = 53,
+        AffectsMultipleDsas = 71,
         VirtualListViewError = 76,
+        Other = 80,
     }
     public enum SearchOption
     {
@@ -625,10 +625,10 @@ namespace System.DirectoryServices.Protocols
     [System.FlagsAttribute]
     public enum SecurityMasks
     {
-        Dacl = 4,
-        Group = 2,
         None = 0,
         Owner = 1,
+        Group = 2,
+        Dacl = 4,
         Sacl = 8,
     }
     public partial class SecurityPackageContextConnectionInformation
@@ -644,14 +644,14 @@ namespace System.DirectoryServices.Protocols
     }
     public enum SecurityProtocol
     {
-        Pct1Client = 2,
         Pct1Server = 1,
-        Ssl2Client = 8,
+        Pct1Client = 2,
         Ssl2Server = 4,
-        Ssl3Client = 32,
+        Ssl2Client = 8,
         Ssl3Server = 16,
-        Tls1Client = 128,
+        Ssl3Client = 32,
         Tls1Server = 64,
+        Tls1Client = 128,
     }
     public partial class ShowDeletedControl : System.DirectoryServices.Protocols.DirectoryControl
     {

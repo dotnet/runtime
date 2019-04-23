@@ -39,12 +39,12 @@ namespace System.Security.Cryptography
     public enum CipherMode
     {
         CBC = 1,
-        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-        CFB = 4,
-        CTS = 5,
         ECB = 2,
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         OFB = 3,
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        CFB = 4,
+        CTS = 5,
     }
     public static partial class CryptographicOperations
     {
@@ -181,19 +181,19 @@ namespace System.Security.Cryptography
     }
     public enum PaddingMode
     {
-        ANSIX923 = 4,
-        ISO10126 = 5,
         None = 1,
         PKCS7 = 2,
         Zeros = 3,
+        ANSIX923 = 4,
+        ISO10126 = 5,
     }
     public enum PbeEncryptionAlgorithm
     {
+        Unknown = 0,
         Aes128Cbc = 1,
         Aes192Cbc = 2,
         Aes256Cbc = 3,
         TripleDes3KeyPkcs12 = 4,
-        Unknown = 0,
     }
     public sealed partial class PbeParameters
     {

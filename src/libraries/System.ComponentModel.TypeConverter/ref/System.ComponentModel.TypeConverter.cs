@@ -108,9 +108,9 @@ namespace System.ComponentModel
     }
     public enum BindableSupport
     {
-        Default = 2,
         No = 0,
         Yes = 1,
+        Default = 2,
     }
     public enum BindingDirection
     {
@@ -189,8 +189,8 @@ namespace System.ComponentModel
     public enum CollectionChangeAction
     {
         Add = 1,
-        Refresh = 3,
         Remove = 2,
+        Refresh = 3,
     }
     public partial class CollectionChangeEventArgs : System.EventArgs
     {
@@ -326,11 +326,11 @@ namespace System.ComponentModel
     }
     public enum DataObjectMethodType
     {
-        Delete = 4,
         Fill = 0,
-        Insert = 3,
         Select = 1,
         Update = 2,
+        Insert = 3,
+        Delete = 4,
     }
     public partial class DateTimeConverter : System.ComponentModel.TypeConverter
     {
@@ -743,8 +743,8 @@ namespace System.ComponentModel
     }
     public enum LicenseUsageMode
     {
-        Designtime = 1,
         Runtime = 0,
+        Designtime = 1,
     }
     public partial class LicFileLicenseProvider : System.ComponentModel.LicenseProvider
     {
@@ -780,14 +780,14 @@ namespace System.ComponentModel
     public delegate void ListChangedEventHandler(object sender, System.ComponentModel.ListChangedEventArgs e);
     public enum ListChangedType
     {
+        Reset = 0,
         ItemAdded = 1,
-        ItemChanged = 4,
         ItemDeleted = 2,
         ItemMoved = 3,
+        ItemChanged = 4,
         PropertyDescriptorAdded = 5,
-        PropertyDescriptorChanged = 7,
         PropertyDescriptorDeleted = 6,
-        Reset = 0,
+        PropertyDescriptorChanged = 7,
     }
     public partial class ListSortDescription
     {
@@ -941,21 +941,21 @@ namespace System.ComponentModel
     }
     public enum MaskedTextResultHint
     {
+        PositionOutOfRange = -55,
+        NonEditPosition = -54,
+        UnavailableEditPosition = -53,
+        PromptCharNotAllowed = -52,
+        InvalidInput = -51,
+        SignedDigitExpected = -5,
+        LetterExpected = -4,
+        DigitExpected = -3,
         AlphanumericCharacterExpected = -2,
         AsciiCharacterExpected = -1,
-        CharacterEscaped = 1,
-        DigitExpected = -3,
-        InvalidInput = -51,
-        LetterExpected = -4,
-        NoEffect = 2,
-        NonEditPosition = -54,
-        PositionOutOfRange = -55,
-        PromptCharNotAllowed = -52,
-        SideEffect = 3,
-        SignedDigitExpected = -5,
-        Success = 4,
-        UnavailableEditPosition = -53,
         Unknown = 0,
+        CharacterEscaped = 1,
+        NoEffect = 2,
+        SideEffect = 3,
+        Success = 4,
     }
     public abstract partial class MemberDescriptor
     {
@@ -1132,10 +1132,10 @@ namespace System.ComponentModel
     }
     public enum PropertyTabScope
     {
-        Component = 3,
-        Document = 2,
-        Global = 1,
         Static = 0,
+        Global = 1,
+        Document = 2,
+        Component = 3,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=true)]
     public sealed partial class ProvidePropertyAttribute : System.Attribute
@@ -1670,9 +1670,9 @@ namespace System.ComponentModel.Design
     public enum HelpContextType
     {
         Ambient = 0,
+        Window = 1,
         Selection = 2,
         ToolWindowSelection = 3,
-        Window = 1,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All, AllowMultiple=false, Inherited=false)]
     public sealed partial class HelpKeywordAttribute : System.Attribute
@@ -1689,8 +1689,8 @@ namespace System.ComponentModel.Design
     public enum HelpKeywordType
     {
         F1Keyword = 0,
-        FilterKeyword = 2,
         GeneralKeyword = 1,
+        FilterKeyword = 2,
     }
     public partial interface IComponentChangeService
     {
@@ -1905,22 +1905,22 @@ namespace System.ComponentModel.Design
     [System.FlagsAttribute]
     public enum SelectionTypes
     {
-        Add = 64,
         Auto = 1,
-        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Primary instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        Click = 16,
+        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Auto instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        Normal = 1,
+        Replace = 2,
         [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         MouseDown = 4,
         [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         MouseUp = 8,
-        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Auto instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
-        Normal = 1,
+        [System.ObsoleteAttribute("This value has been deprecated. Use SelectionTypes.Primary instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
+        Click = 16,
         Primary = 16,
-        Remove = 128,
-        Replace = 2,
-        Toggle = 32,
         [System.ObsoleteAttribute("This value has been deprecated. Use Enum class methods to determine valid values, or use a type converter. https://go.microsoft.com/fwlink/?linkid=14202")]
         Valid = 31,
+        Toggle = 32,
+        Add = 64,
+        Remove = 128,
     }
     public partial class ServiceContainer : System.ComponentModel.Design.IServiceContainer, System.IDisposable, System.IServiceProvider
     {
@@ -2017,11 +2017,11 @@ namespace System.ComponentModel.Design
     }
     public enum ViewTechnology
     {
-        Default = 2,
         [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         Passthrough = 0,
         [System.ObsoleteAttribute("This value has been deprecated. Use ViewTechnology.Default instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         WindowsForms = 1,
+        Default = 2,
     }
 }
 namespace System.ComponentModel.Design.Serialization

@@ -226,9 +226,9 @@ namespace System.Security.Cryptography.Pkcs
     }
     public enum RecipientInfoType
     {
-        KeyAgreement = 2,
-        KeyTransport = 1,
         Unknown = 0,
+        KeyTransport = 1,
+        KeyAgreement = 2,
     }
     public sealed partial class SignedCms
     {
@@ -308,17 +308,17 @@ namespace System.Security.Cryptography.Pkcs
     }
     public enum SubjectIdentifierOrKeyType
     {
-        IssuerAndSerialNumber = 1,
-        PublicKeyInfo = 3,
-        SubjectKeyIdentifier = 2,
         Unknown = 0,
+        IssuerAndSerialNumber = 1,
+        SubjectKeyIdentifier = 2,
+        PublicKeyInfo = 3,
     }
     public enum SubjectIdentifierType
     {
-        IssuerAndSerialNumber = 1,
-        NoSignature = 3,
-        SubjectKeyIdentifier = 2,
         Unknown = 0,
+        IssuerAndSerialNumber = 1,
+        SubjectKeyIdentifier = 2,
+        NoSignature = 3,
     }
 }
 namespace System.Security.Cryptography.Xml

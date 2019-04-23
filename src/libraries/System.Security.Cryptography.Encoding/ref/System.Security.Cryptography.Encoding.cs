@@ -59,8 +59,8 @@ namespace System.Security.Cryptography
     }
     public enum FromBase64TransformMode
     {
-        DoNotIgnoreWhiteSpaces = 1,
         IgnoreWhiteSpaces = 0,
+        DoNotIgnoreWhiteSpaces = 1,
     }
     public sealed partial class Oid
     {
@@ -98,16 +98,16 @@ namespace System.Security.Cryptography
     public enum OidGroup
     {
         All = 0,
-        Attribute = 5,
-        EncryptionAlgorithm = 2,
-        EnhancedKeyUsage = 7,
-        ExtensionOrAttribute = 6,
         HashAlgorithm = 1,
-        KeyDerivationFunction = 10,
-        Policy = 8,
+        EncryptionAlgorithm = 2,
         PublicKeyAlgorithm = 3,
         SignatureAlgorithm = 4,
+        Attribute = 5,
+        ExtensionOrAttribute = 6,
+        EnhancedKeyUsage = 7,
+        Policy = 8,
         Template = 9,
+        KeyDerivationFunction = 10,
     }
     public partial class ToBase64Transform : System.IDisposable, System.Security.Cryptography.ICryptoTransform
     {

@@ -9,9 +9,9 @@ namespace Microsoft.VisualBasic
 {
     public enum CallType
     {
+        Method = 1,
         Get = 2,
         Let = 4,
-        Method = 1,
         Set = 8,
     }
     public sealed partial class Collection : System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList
@@ -254,26 +254,26 @@ namespace Microsoft.VisualBasic
     }
     public enum VariantType
     {
-        Array = 8192,
+        Empty = 0,
+        Null = 1,
+        Short = 2,
+        Integer = 3,
+        Single = 4,
+        Double = 5,
+        Currency = 6,
+        Date = 7,
+        String = 8,
+        Object = 9,
+        Error = 10,
         Boolean = 11,
+        Variant = 12,
+        DataObject = 13,
+        Decimal = 14,
         Byte = 17,
         Char = 18,
-        Currency = 6,
-        DataObject = 13,
-        Date = 7,
-        Decimal = 14,
-        Double = 5,
-        Empty = 0,
-        Error = 10,
-        Integer = 3,
         Long = 20,
-        Null = 1,
-        Object = 9,
-        Short = 2,
-        Single = 4,
-        String = 8,
         UserDefinedType = 36,
-        Variant = 12,
+        Array = 8192,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field, Inherited=false, AllowMultiple=false)]
     public sealed partial class VBFixedArrayAttribute : System.Attribute
@@ -800,8 +800,8 @@ namespace Microsoft.VisualBasic.FileIO
 {
     public enum DeleteDirectoryOption
     {
-        DeleteAllContents = 5,
         ThrowIfDirectoryNonEmpty = 4,
+        DeleteAllContents = 5,
     }
     public enum FieldType
     {
@@ -889,8 +889,8 @@ namespace Microsoft.VisualBasic.FileIO
     }
     public enum SearchOption
     {
-        SearchAllSubDirectories = 3,
         SearchTopLevelOnly = 2,
+        SearchAllSubDirectories = 3,
     }
     public partial class SpecialDirectories
     {
@@ -948,8 +948,8 @@ namespace Microsoft.VisualBasic.FileIO
     }
     public enum UIOption
     {
-        AllDialogs = 3,
         OnlyErrorDialogs = 2,
+        AllDialogs = 3,
     }
 }
 namespace Microsoft.VisualBasic.MyServices

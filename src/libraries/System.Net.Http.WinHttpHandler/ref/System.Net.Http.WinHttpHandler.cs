@@ -16,9 +16,9 @@ namespace System.Net.Http
     public enum WindowsProxyUsePolicy
     {
         DoNotUseProxy = 0,
-        UseCustomProxy = 3,
         UseWinHttpProxy = 1,
         UseWinInetProxy = 2,
+        UseCustomProxy = 3,
     }
     public partial class WinHttpHandler : System.Net.Http.HttpMessageHandler
     {

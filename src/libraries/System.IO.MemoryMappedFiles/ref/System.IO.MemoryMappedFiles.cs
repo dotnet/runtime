@@ -51,35 +51,35 @@ namespace System.IO.MemoryMappedFiles
     }
     public enum MemoryMappedFileAccess
     {
-        CopyOnWrite = 3,
-        Read = 1,
-        ReadExecute = 4,
         ReadWrite = 0,
-        ReadWriteExecute = 5,
+        Read = 1,
         Write = 2,
+        CopyOnWrite = 3,
+        ReadExecute = 4,
+        ReadWriteExecute = 5,
     }
     [System.FlagsAttribute]
     public enum MemoryMappedFileOptions
     {
-        DelayAllocatePages = 67108864,
         None = 0,
+        DelayAllocatePages = 67108864,
     }
     [System.FlagsAttribute]
     public enum MemoryMappedFileRights
     {
-        AccessSystemSecurity = 16777216,
-        ChangePermissions = 262144,
         CopyOnWrite = 1,
-        Delete = 65536,
-        Execute = 8,
-        FullControl = 983055,
-        Read = 4,
-        ReadExecute = 12,
-        ReadPermissions = 131072,
-        ReadWrite = 6,
-        ReadWriteExecute = 14,
-        TakeOwnership = 524288,
         Write = 2,
+        Read = 4,
+        ReadWrite = 6,
+        Execute = 8,
+        ReadExecute = 12,
+        ReadWriteExecute = 14,
+        Delete = 65536,
+        ReadPermissions = 131072,
+        ChangePermissions = 262144,
+        TakeOwnership = 524288,
+        FullControl = 983055,
+        AccessSystemSecurity = 16777216,
     }
     public sealed partial class MemoryMappedViewAccessor : System.IO.UnmanagedMemoryAccessor
     {

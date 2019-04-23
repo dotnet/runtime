@@ -582,8 +582,8 @@ namespace System.ServiceModel.Syndication
     }
     public enum TextSyndicationContentKind
     {
-        Html = 1,
         Plaintext = 0,
+        Html = 1,
         XHtml = 2,
     }
     public partial class UrlSyndicationContent : System.ServiceModel.Syndication.SyndicationContent

@@ -171,8 +171,8 @@ namespace System.Collections.Concurrent
     [System.FlagsAttribute]
     public enum EnumerablePartitionerOptions
     {
-        NoBuffering = 1,
         None = 0,
+        NoBuffering = 1,
     }
     public partial interface IProducerConsumerCollection<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.ICollection, System.Collections.IEnumerable
     {

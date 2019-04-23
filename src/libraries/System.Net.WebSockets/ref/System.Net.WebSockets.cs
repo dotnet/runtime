@@ -46,16 +46,16 @@ namespace System.Net.WebSockets
     }
     public enum WebSocketCloseStatus
     {
-        Empty = 1005,
-        EndpointUnavailable = 1001,
-        InternalServerError = 1011,
-        InvalidMessageType = 1003,
-        InvalidPayloadData = 1007,
-        MandatoryExtension = 1010,
-        MessageTooBig = 1009,
         NormalClosure = 1000,
-        PolicyViolation = 1008,
+        EndpointUnavailable = 1001,
         ProtocolError = 1002,
+        InvalidMessageType = 1003,
+        Empty = 1005,
+        InvalidPayloadData = 1007,
+        PolicyViolation = 1008,
+        MessageTooBig = 1009,
+        MandatoryExtension = 1010,
+        InternalServerError = 1011,
     }
     public abstract partial class WebSocketContext
     {
@@ -75,16 +75,16 @@ namespace System.Net.WebSockets
     }
     public enum WebSocketError
     {
-        ConnectionClosedPrematurely = 8,
-        Faulted = 2,
-        HeaderError = 7,
+        Success = 0,
         InvalidMessageType = 1,
-        InvalidState = 9,
+        Faulted = 2,
         NativeError = 3,
         NotAWebSocket = 4,
-        Success = 0,
-        UnsupportedProtocol = 6,
         UnsupportedVersion = 5,
+        UnsupportedProtocol = 6,
+        HeaderError = 7,
+        ConnectionClosedPrematurely = 8,
+        InvalidState = 9,
     }
     public sealed partial class WebSocketException : System.ComponentModel.Win32Exception
     {
@@ -108,9 +108,9 @@ namespace System.Net.WebSockets
     }
     public enum WebSocketMessageType
     {
+        Text = 0,
         Binary = 1,
         Close = 2,
-        Text = 0,
     }
     public partial class WebSocketReceiveResult
     {
@@ -124,12 +124,12 @@ namespace System.Net.WebSockets
     }
     public enum WebSocketState
     {
-        Aborted = 6,
-        Closed = 5,
-        CloseReceived = 4,
-        CloseSent = 3,
-        Connecting = 1,
         None = 0,
+        Connecting = 1,
         Open = 2,
+        CloseSent = 3,
+        CloseReceived = 4,
+        Closed = 5,
+        Aborted = 6,
     }
 }
