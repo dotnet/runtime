@@ -13478,35 +13478,38 @@ DONE_MORPHING_CHILDREN:
                 // lclVar and must not extend beyond the end of the lclVar.
                 if ((ival1 >= 0) && ((ival1 + genTypeSize(typ)) <= varSize))
                 {
+                    GenTreeLclFld* lclFld;
+
                     // We will turn a GT_LCL_VAR into a GT_LCL_FLD with an gtLclOffs of 'ival'
                     // or if we already have a GT_LCL_FLD we will adjust the gtLclOffs by adding 'ival'
                     // Then we change the type of the GT_LCL_FLD to match the orginal GT_IND type.
                     //
                     if (temp->OperGet() == GT_LCL_FLD)
                     {
-                        temp->AsLclFld()->gtLclOffs += (unsigned short)ival1;
-                        temp->AsLclFld()->gtFieldSeq =
-                            GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
+                        lclFld = temp->AsLclFld();
+                        lclFld->gtLclOffs += (unsigned short)ival1;
+                        lclFld->gtFieldSeq = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeq);
                     }
                     else // we have a GT_LCL_VAR
                     {
                         assert(temp->OperGet() == GT_LCL_VAR);
-                        temp->ChangeOper(GT_LCL_FLD); // Note that this typically makes the gtFieldSeq "NotAField"...
-                        temp->AsLclFld()->gtLclOffs = (unsigned short)ival1;
+                        temp->ChangeOper(GT_LCL_FLD); // Note that this typically makes the gtFieldSeq "NotAField",
+                        // unless there is a zero filed offset associated with 'temp'.
+                        lclFld            = temp->AsLclFld();
+                        lclFld->gtLclOffs = (unsigned short)ival1;
 
-                        if (temp->AsLclFld()->gtFieldSeq == FieldSeqStore::NotAField())
+                        if (lclFld->gtFieldSeq == FieldSeqStore::NotAField())
                         {
                             if (fieldSeq != nullptr)
                             {
                                 // If it does represent a field, note that.
-                                temp->AsLclFld()->gtFieldSeq = fieldSeq;
+                                lclFld->gtFieldSeq = fieldSeq;
                             }
                         }
                         else
                         {
                             // Append 'fieldSeq' to the existing one
-                            temp->AsLclFld()->gtFieldSeq =
-                                GetFieldSeqStore()->Append(temp->AsLclFld()->gtFieldSeq, fieldSeq);
+                            lclFld->gtFieldSeq = GetFieldSeqStore()->Append(lclFld->gtFieldSeq, fieldSeq);
                         }
                     }
                     temp->gtType      = tree->gtType;
