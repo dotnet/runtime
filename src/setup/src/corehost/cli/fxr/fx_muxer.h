@@ -75,7 +75,7 @@ private:
     static std::vector<host_option> get_known_opts(
         bool exec_mode,
         host_mode_t mode,
-        bool get_all_options = false);
+        bool for_cli_usage = false);
     static int read_config_and_execute(
         const pal::string_t& host_command,
         const host_startup_info_t& host_info,

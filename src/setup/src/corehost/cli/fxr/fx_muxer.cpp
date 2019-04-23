@@ -183,7 +183,7 @@ void muxer_info(pal::string_t dotnet_root)
 
 void fx_muxer_t::muxer_usage(bool is_sdk_present)
 {
-    std::vector<host_option> known_opts = fx_muxer_t::get_known_opts(true, host_mode_t::invalid, true);
+    std::vector<host_option> known_opts = fx_muxer_t::get_known_opts(true, host_mode_t::invalid, /*for_cli_usage*/ true);
 
     if (!is_sdk_present)
     {
@@ -198,10 +198,10 @@ void fx_muxer_t::muxer_usage(bool is_sdk_present)
 
     for (const auto& arg : known_opts)
     {
-        trace::println(_X("  %-37s  %s"), (arg.option + _X(" ") + arg.argument).c_str(), arg.description.c_str());
+        trace::println(_X("  %-30s  %s"), (arg.option + _X(" ") + arg.argument).c_str(), arg.description.c_str());
     }
-    trace::println(_X("  --list-runtimes                        Display the installed runtimes"));
-    trace::println(_X("  --list-sdks                            Display the installed SDKs"));
+    trace::println(_X("  --list-runtimes                 Display the installed runtimes"));
+    trace::println(_X("  --list-sdks                     Display the installed SDKs"));
 
     if (!is_sdk_present)
     {
@@ -256,22 +256,27 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
     }
 }
 
-std::vector<host_option> fx_muxer_t::get_known_opts(bool exec_mode, host_mode_t mode, bool get_all_options)
+std::vector<host_option> fx_muxer_t::get_known_opts(bool exec_mode, host_mode_t mode, bool for_cli_usage)
 {
     std::vector<host_option> known_opts = { { _X("--additionalprobingpath"), _X("<path>"), _X("Path containing probing policy and assemblies to probe for.") } };
-    if (get_all_options || exec_mode || mode == host_mode_t::split_fx || mode == host_mode_t::apphost)
+    if (for_cli_usage || exec_mode || mode == host_mode_t::split_fx || mode == host_mode_t::apphost)
     {
         known_opts.push_back({ _X("--depsfile"), _X("<path>"), _X("Path to <application>.deps.json file.")});
         known_opts.push_back({ _X("--runtimeconfig"), _X("<path>"), _X("Path to <application>.runtimeconfig.json file.")});
     }
 
-    if (get_all_options || mode == host_mode_t::muxer || mode == host_mode_t::apphost)
+    if (for_cli_usage || mode == host_mode_t::muxer || mode == host_mode_t::apphost)
     {
         // If mode=host_mode_t::apphost, these are only used when the app is framework-dependent.
-        known_opts.push_back({ _X("--fx-version"), _X("<version>"), _X("Version of the installed Shared Framework to use to run the application.")});
-        known_opts.push_back({ _X("--roll-forward"), _X("<value>"), _X("Roll forward to framework version (LatestPatch, Minor, LatestMinor, Major, LatestMajor, Disable)")});
-        known_opts.push_back({ _X("--roll-forward-on-no-candidate-fx"), _X("<n>"), _X("Roll forward on no candidate framework (0=off, 1=roll minor, 2=roll major & minor).")});
-        known_opts.push_back({ _X("--additional-deps"), _X("<path>"), _X("Path to additional deps.json file.")});
+        known_opts.push_back({ _X("--fx-version"), _X("<version>"), _X("Version of the installed Shared Framework to use to run the application.") });
+        known_opts.push_back({ _X("--roll-forward"), _X("<value>"), _X("Roll forward to framework version (LatestPatch, Minor, LatestMinor, Major, LatestMajor, Disable)") });
+        known_opts.push_back({ _X("--additional-deps"), _X("<path>"), _X("Path to additional deps.json file.") });
+
+        if (!for_cli_usage)
+        {
+            // Intentionally leave this one out of for_cli_usage since we don't want to show it in command line help (it's deprecated).
+            known_opts.push_back({ _X("--roll-forward-on-no-candidate-fx"), _X("<n>"), _X("<obsolete>") });
+        }
     }
 
     return known_opts;
