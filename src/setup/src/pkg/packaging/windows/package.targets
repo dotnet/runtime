@@ -26,30 +26,17 @@
             <InstallerName>$(HostFxrInstallerFile)</InstallerName>
             <UpgradeCode>$(HostFxrUpgradeCode)</UpgradeCode>
         </WixOutputs>
-        <!-- shared framework has extra arguments so it needs to be in a separate group -->
-        <WixOutputs2 Include="$(WixObjRoot)sharedframework">
-            <InputDir>$(SharedFrameworkPublishRoot)</InputDir>
-            <BrandName>$(SharedFrameworkBrandName)</BrandName>
-            <InstallerName>$(SharedFrameworkInstallerFile)</InstallerName>
-        </WixOutputs2>
       </ItemGroup>
 
       <RemoveDir Directories="$(WixObjRoot)" />
       <MakeDir Directories="$(WixObjRoot);@(WixOutputs);@(WixOutputs2)" />
 
-      <GenerateGuidFromName Name="$(SharedFrameworkInstallerFile)">
-        <Output TaskParameter="GeneratedGuid" PropertyName="SharedFxUpgradeCode" />
-      </GenerateGuidFromName>
-
       <PropertyGroup>
         <ArchParams>"$(MsiArch)" "$(TargetArchitecture)"</ArchParams>
         <CommonParams>$(MsiVersionString) $(SharedFrameworkNugetVersion) $(ArchParams)</CommonParams>
-        <SharedFxParams>$(MsiVersionString) $(SharedFrameworkName) $(SharedFrameworkNugetVersion) $(SharedFxUpgradeCode) $(ArchParams)</SharedFxParams>
       </PropertyGroup>
 
       <Exec Command="powershell -NoProfile -NoLogo $(WindowsScriptRoot)%(WixOutputs.Filename)\generatemsi.ps1 %(WixOutputs.InputDir) %(WixOutputs.InstallerName) $(WixToolsDir) '%(WixOutputs.BrandName)' $(CommonParams) %(WixOutputs.Identity) %(WixOutputs.UpgradeCode)" />
-      <!-- shared framework -->
-      <Exec Command="powershell -NoProfile -NoLogo $(WindowsScriptRoot)%(WixOutputs2.Filename)\generatemsi.ps1 %(WixOutputs2.InputDir) %(WixOutputs2.InstallerName) $(WixToolsDir) '%(WixOutputs2.BrandName)' $(SharedFxParams) %(WixOutputs2.Identity)" />
   </Target>
 
   <Target Name="GenerateBundles"
