@@ -7510,17 +7510,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                             ValueNum      arrVN  = funcApp.m_args[1];
                             ValueNum      inxVN  = funcApp.m_args[2];
                             FieldSeqNode* fldSeq = vnStore->FieldSeqVNToFieldSeq(funcApp.m_args[3]);
-
-                            if (arg->gtOper != GT_LCL_VAR)
-                            {
-                                // Does the child of the GT_IND 'arg' have an associated zero-offset field sequence?
-                                FieldSeqNode* addrFieldSeq = nullptr;
-                                if (GetZeroOffsetFieldMap()->Lookup(arg, &addrFieldSeq))
-                                {
-                                    fldSeq = GetFieldSeqStore()->Append(addrFieldSeq, fldSeq);
-                                }
-                            }
-
 #ifdef DEBUG
                             if (verbose)
                             {
