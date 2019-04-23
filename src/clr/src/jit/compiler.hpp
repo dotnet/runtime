@@ -1451,9 +1451,24 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
     switch (oper)
     {
         case GT_LCL_FLD:
+        {
+            // The original GT_LCL_VAR might be annotated with a zeroOffset field.
+            FieldSeqNode* zeroFieldSeq = nullptr;
+            Compiler*     compiler     = JitTls::GetCompiler();
+            bool          isZeroOffset = compiler->GetZeroOffsetFieldMap()->Lookup(this, &zeroFieldSeq);
+
             gtLclFld.gtLclOffs  = 0;
             gtLclFld.gtFieldSeq = FieldSeqStore::NotAField();
+
+            if (zeroFieldSeq != nullptr)
+            {
+                // Set the zeroFieldSeq in the GT_LCL_FLD node
+                gtLclFld.gtFieldSeq = zeroFieldSeq;
+                // and remove the annotation from the ZeroOffsetFieldMap
+                compiler->GetZeroOffsetFieldMap()->Remove(this);
+            }
             break;
+        }
         default:
             break;
     }
