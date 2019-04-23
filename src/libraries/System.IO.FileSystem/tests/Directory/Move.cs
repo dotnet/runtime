@@ -315,8 +315,8 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Moving to existing directory causes IOException
-        public void WindowsExistingDirectory()
+        // Moving to existing directory causes IOException
+        public void ExistingDirectory()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string testDirSource = Path.Combine(testDir.FullName, GetTestFileName());
