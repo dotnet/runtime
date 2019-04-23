@@ -95,20 +95,24 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CanDoMultipleAsyncWritesToStream()
         {
-            var pipe = new Pipe(new PipeOptions(readerScheduler: PipeScheduler.Inline));
+            var pipe = new Pipe();
             PipeWriter writer = PipeWriter.Create(pipe.Writer.AsStream());
+            // This needs to run inline to synchronize the reader and writer
+            TaskCompletionSource<object> waitForRead = null;
 
-            static async Task DoWritesAsync(PipeWriter writer, byte[][] writes)
+            async Task DoWritesAsync(PipeWriter writer, byte[][] writes)
             {
                 for (int i = 0; i < writes.Length; i++)
                 {
+                    waitForRead = new TaskCompletionSource<object>();
                     await writer.WriteAsync(writes[i]);
+                    await waitForRead.Task;
                 }
 
                 writer.Complete();
             }
 
-            static async Task DoReadsAsync(PipeReader reader, byte[][] reads)
+            async Task DoReadsAsync(PipeReader reader, byte[][] reads)
             {
                 int index = 0;
                 while (true)
@@ -122,6 +126,7 @@ namespace System.IO.Pipelines.Tests
                     Assert.Equal(reads[index], buffer.ToArray());
                     reader.AdvanceTo(buffer.End);
                     index++;
+                    waitForRead.TrySetResult(null);
                 }
 
                 reader.Complete();
