@@ -69,6 +69,7 @@ parser.add_argument('-fx_root', dest='fx_root', default=None)
 parser.add_argument('-fx_branch', dest='fx_branch', default='master')
 parser.add_argument('-fx_commit', dest='fx_commit', default=None)
 parser.add_argument('-env_script', dest='env_script', default=None)
+parser.add_argument('-exclusion_rsp_file', dest='exclusion_rsp_file', default=None)
 parser.add_argument('-no_run_tests', dest='no_run_tests', action="store_true", default=False)
 
 
@@ -81,7 +82,7 @@ def validate_args(args):
     Args:
         args (argparser.ArgumentParser): Args parsed by the argument parser.
     Returns:
-        (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests)
+        (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, exclusion_rsp_file, no_run_tests)
             (str, str, str, str, str, str, str, str, str)
     Notes:
     If the arguments are valid then return them all in a tuple. If not, raise
@@ -96,6 +97,7 @@ def validate_args(args):
     fx_branch = args.fx_branch
     fx_commit = args.fx_commit
     env_script = args.env_script
+    exclusion_rsp_file = args.exclusion_rsp_file
     no_run_tests = args.no_run_tests
 
     def validate_arg(arg, check):
@@ -142,7 +144,11 @@ def validate_args(args):
         validate_arg(env_script, lambda item: os.path.isfile(env_script))
         env_script = os.path.abspath(env_script)
 
-    args = (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests)
+    if exclusion_rsp_file is not None:
+        validate_arg(exclusion_rsp_file, lambda item: os.path.isfile(exclusion_rsp_file))
+        exclusion_rsp_file = os.path.abspath(exclusion_rsp_file)
+
+    args = (arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, exclusion_rsp_file, no_run_tests)
 
     log('Configuration:')
     log(' arch: %s' % arch)
@@ -153,6 +159,7 @@ def validate_args(args):
     log(' fx_branch: %s' % fx_branch)
     log(' fx_commit: %s' % fx_commit)
     log(' env_script: %s' % env_script)
+    log(' exclusion_rsp_file: %s' % exclusion_rsp_file)
     log(' no_run_tests: %s' % no_run_tests)
 
     return args
@@ -215,7 +222,7 @@ def main(args):
     global Unix_name_map
     global testing
 
-    arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, no_run_tests = validate_args(
+    arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, exclusion_rsp_file, no_run_tests = validate_args(
         args)
 
     clr_os = 'Windows_NT' if Is_windows else Unix_name_map[os.uname()[0]]
@@ -379,6 +386,9 @@ def main(args):
     if not Is_windows and (arch == 'arm' or arch == 'arm64'):
         # It is needed under docker where LC_ALL is not configured.
         command += ' --warnAsError false'
+
+    if exclusion_rsp_file is not None:
+        command += (' /p:TestRspFile=%s' % exclusion_rsp_file)
 
     # Run the corefx test build and run the tests themselves.
 
