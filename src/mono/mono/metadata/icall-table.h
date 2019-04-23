@@ -73,7 +73,6 @@ typedef gsize *gsize_ref;
 typedef guint32 *guint32_ref;
 typedef guint64 *guint64_ref;
 typedef int *int_ref;
-typedef gint32 *gint32_ref;
 typedef MonoAssemblyName *MonoAssemblyName_ref;
 typedef MonoBoolean *MonoBoolean_ref;
 typedef MonoClassField *MonoClassField_ref;
