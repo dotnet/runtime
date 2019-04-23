@@ -1206,17 +1206,24 @@ guint
 mono_patch_info_hash (gconstpointer data)
 {
 	const MonoJumpInfo *ji = (MonoJumpInfo*)data;
+	const MonoJumpInfoType type = ji->type;
+	guint hash = type << 8;
 
-	switch (ji->type) {
+	switch (type) {
 	case MONO_PATCH_INFO_RVA:
 	case MONO_PATCH_INFO_LDSTR:
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_DECLSEC:
-		return (ji->type << 8) | ji->data.token->token;
+		return hash | ji->data.token->token;
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
-		return (ji->type << 8) | ji->data.token->token | (ji->data.token->has_context ? (gsize)ji->data.token->context.class_inst : 0);
+		return hash | ji->data.token->token | (ji->data.token->has_context ? (gsize)ji->data.token->context.class_inst : 0);
+	case MONO_PATCH_INFO_OBJC_SELECTOR_REF: // Hash on the selector name
+	case MONO_PATCH_INFO_LDSTR_LIT:
+		return g_str_hash (ji->data.name);
 	case MONO_PATCH_INFO_JIT_ICALL:
-		return (ji->type << 8) | g_str_hash (ji->data.name);
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
+		return hash | g_str_hash (ji->data.name);
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
@@ -1237,17 +1244,17 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_GET_TLS_TRAMP:
 	case MONO_PATCH_INFO_SET_TLS_TRAMP:
-		return (ji->type << 8) | (gssize)ji->data.target;
+		return hash | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
-		return (ji->type << 8) | (gssize)ji->data.gsharedvt->method;
+		return hash | (gssize)ji->data.gsharedvt->method;
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
 		MonoJumpInfoRgctxEntry *e = ji->data.rgctx_entry;
-
+		hash |= e->in_mrgctx | e->info_type | mono_patch_info_hash (e->data);
 		if (e->in_mrgctx)
-			return (ji->type << 8) | (gssize)e->d.method | (e->in_mrgctx) | e->info_type | mono_patch_info_hash (e->data);
+			return hash | (gssize)e->d.method;
 		else
-			return (ji->type << 8) | (gssize)e->d.klass | (e->in_mrgctx) | e->info_type | mono_patch_info_hash (e->data);
+			return hash | (gssize)e->d.klass;
 	}
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 	case MONO_PATCH_INFO_MSCORLIB_GOT_ADDR:
@@ -1259,33 +1266,25 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_AOT_MODULE:
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT:
 	case MONO_PATCH_INFO_PROFILER_CLAUSE_COUNT:
-		return (ji->type << 8);
+		return hash;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
-		return (ji->type << 8) | (ji->data.uindex);
+		return hash | ji->data.uindex;
 	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
-		return (ji->type << 8) | (ji->data.index);
+		return hash | ji->data.index;
 	case MONO_PATCH_INFO_SWITCH:
-		return (ji->type << 8) | ji->data.table->table_size;
+		return hash | ji->data.table->table_size;
 	case MONO_PATCH_INFO_GSHAREDVT_METHOD:
-		return (ji->type << 8) | (gssize)ji->data.gsharedvt_method->method;
-	case MONO_PATCH_INFO_OBJC_SELECTOR_REF:
-		/* Hash on the selector name */
-		return g_str_hash (ji->data.target);
+		return hash | (gssize)ji->data.gsharedvt_method->method;
 	case MONO_PATCH_INFO_DELEGATE_TRAMPOLINE:
-		return (ji->type << 8) | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual;
-	case MONO_PATCH_INFO_LDSTR_LIT:
-		return g_str_hash (ji->data.target);
+		return hash | (gsize)ji->data.del_tramp->klass | (gsize)ji->data.del_tramp->method | (gsize)ji->data.del_tramp->is_virtual;
 	case MONO_PATCH_INFO_VIRT_METHOD: {
 		MonoJumpInfoVirtMethod *info = ji->data.virt_method;
 
-		return (ji->type << 8) | (gssize)info->klass | (gssize)info->method;
+		return hash | (gssize)info->klass | (gssize)info->method;
 	}
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
-		return (ji->type << 8) | g_str_hash (ji->data.target);
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
-		return (ji->type << 8) | mono_signature_hash (ji->data.sig);
+		return hash | mono_signature_hash (ji->data.sig);
 	default:
 		printf ("info type: %d\n", ji->type);
 		mono_print_ji (ji); printf ("\n");
@@ -1316,14 +1315,16 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
 	case MONO_PATCH_INFO_LDTOKEN:
 	case MONO_PATCH_INFO_DECLSEC:
-		if ((ji1->data.token->image != ji2->data.token->image) ||
-			(ji1->data.token->token != ji2->data.token->token) ||
-			(ji1->data.token->has_context != ji2->data.token->has_context) ||
-			(ji1->data.token->context.class_inst != ji2->data.token->context.class_inst) ||
-			(ji1->data.token->context.method_inst != ji2->data.token->context.method_inst))
-			return 0;
-		break;
+		return ji1->data.token->image == ji2->data.token->image &&
+		       ji1->data.token->token == ji2->data.token->token &&
+		       ji1->data.token->has_context == ji2->data.token->has_context &&
+		       ji1->data.token->context.class_inst == ji2->data.token->context.class_inst &&
+		       ji1->data.token->context.method_inst == ji2->data.token->context.method_inst;
+	case MONO_PATCH_INFO_OBJC_SELECTOR_REF:
+	case MONO_PATCH_INFO_LDSTR_LIT:
 	case MONO_PATCH_INFO_JIT_ICALL:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		return g_str_equal (ji1->data.name, ji2->data.name);
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
@@ -1349,22 +1350,13 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		return ji1->data.index == ji2->data.index;
 	case MONO_PATCH_INFO_VIRT_METHOD:
 		return ji1->data.virt_method->klass == ji2->data.virt_method->klass && ji1->data.virt_method->method == ji2->data.virt_method->method;
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
-		if (ji1->data.target == ji2->data.target)
-			return 1;
-		return strcmp ((const char*)ji1->data.target, (const char*)ji2->data.target) == 0 ? 1 : 0;
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
-		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig) ? 1 : 0;
+		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig);
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 		return 1;
-	default:
-		if (ji1->data.target != ji2->data.target)
-			return 0;
-		break;
 	}
 
-	return 1;
+	return ji1->data.target == ji2->data.target;
 }
 
 gpointer

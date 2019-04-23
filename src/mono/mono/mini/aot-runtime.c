@@ -3773,6 +3773,7 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		}
 		break;
 	}
+	case MONO_PATCH_INFO_LDSTR_LIT:
 	case MONO_PATCH_INFO_JIT_ICALL:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
@@ -3984,17 +3985,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			}
 		}
 		ji->data.target = info;
-		break;
-	}
-	case MONO_PATCH_INFO_LDSTR_LIT: {
-		int len = decode_value (p, &p);
-		char *s;
-
-		s = (char *)mono_mempool_alloc0 (mp, len + 1);
-		memcpy (s, p, len + 1);
-		p += len + 1;
-
-		ji->data.target = s;
 		break;
 	}
 	case MONO_PATCH_INFO_VIRT_METHOD: {

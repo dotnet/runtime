@@ -658,7 +658,7 @@ g_int_hash (gconstpointer v1)
 gboolean
 g_str_equal (gconstpointer v1, gconstpointer v2)
 {
-	return strcmp ((const char*)v1, (const char*)v2) == 0;
+	return v1 == v2 || strcmp ((const char*)v1, (const char*)v2) == 0;
 }
 
 guint
