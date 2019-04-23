@@ -6127,7 +6127,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 				if (direct_call) {
 					int call_size;
 
-					arch_emit_label_address (acfg, direct_call_target, external_call, FALSE, patch_info, &call_size);
+					arch_emit_direct_call (acfg, direct_call_target, external_call, FALSE, patch_info, &call_size);
 					i += call_size - INST_LEN;
 				} else {
 					int code_size;
