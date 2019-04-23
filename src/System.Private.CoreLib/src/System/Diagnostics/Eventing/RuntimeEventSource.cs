@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Threading;
-
-
+#nullable enable
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
@@ -15,13 +12,13 @@ namespace System.Diagnostics.Tracing
     internal sealed class RuntimeEventSource : EventSource
     {
         private static RuntimeEventSource s_RuntimeEventSource;
-        private PollingCounter _gcHeapSizeCounter;
-        private IncrementingPollingCounter _gen0GCCounter;
-        private IncrementingPollingCounter _gen1GCCounter;
-        private IncrementingPollingCounter _gen2GCCounter;
-        private IncrementingPollingCounter _exceptionCounter;
-        private PollingCounter _cpuTimeCounter;
-        private PollingCounter _workingSetCounter;
+        private PollingCounter? _gcHeapSizeCounter;
+        private IncrementingPollingCounter? _gen0GCCounter;
+        private IncrementingPollingCounter? _gen1GCCounter;
+        private IncrementingPollingCounter? _gen2GCCounter;
+        private IncrementingPollingCounter? _exceptionCounter;
+        private PollingCounter? _cpuTimeCounter;
+        private PollingCounter? _workingSetCounter;
 
         private const int EnabledPollingIntervalMilliseconds = 1000; // 1 second
 
@@ -34,7 +31,7 @@ namespace System.Diagnostics.Tracing
         {
         }
 
-        protected override void OnEventCommand(System.Diagnostics.Tracing.EventCommandEventArgs command)
+        protected override void OnEventCommand(EventCommandEventArgs command)
         {
             if (command.Command == EventCommand.Enable)
             {

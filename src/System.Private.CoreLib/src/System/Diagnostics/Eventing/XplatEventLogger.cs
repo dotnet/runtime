@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+#nullable enable
 using System;
 using System.Runtime.CompilerServices;
 using System.Collections.ObjectModel;
@@ -13,14 +17,14 @@ namespace System.Diagnostics.Tracing
 {
     internal  class XplatEventLogger : EventListener
     {
-        private static Lazy<string> eventSourceNameFilter = new Lazy<string>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
-        private static Lazy<string> eventSourceEventFilter = new Lazy<string>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
+        private static Lazy<string?> eventSourceNameFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventSourceFilter"));
+        private static Lazy<string?> eventSourceEventFilter = new Lazy<string?>(() => CompatibilitySwitch.GetValueInternal("EventNameFilter"));
         
         public XplatEventLogger() {}
 
         private static bool initializedPersistentListener = false;
 
-        public static EventListener InitializePersistentListener()
+        public static EventListener? InitializePersistentListener()
         {
             try{
                 if (!initializedPersistentListener && XplatEventLogger.IsEventSourceLoggingEnabled())
@@ -54,7 +58,7 @@ namespace System.Diagnostics.Tracing
 
         private static void minimalJsonserializer(string payload, StringBuilder sb)
         {
-            foreach( var elem in payload)
+            foreach(var elem in payload)
             {
                 if (escape_seq.Contains(elem))
                 {
@@ -68,9 +72,9 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private static string Serialize(ReadOnlyCollection<string> payloadName, ReadOnlyCollection<object> payload, string eventMessage)
+        private static string Serialize(ReadOnlyCollection<string>? payloadName, ReadOnlyCollection<object> payload, string? eventMessage)
         {
-            if (payloadName == null || payload == null )
+            if (payloadName == null || payload == null)
                 return string.Empty;
 
             if (payloadName.Count == 0 || payload.Count == 0)
@@ -91,7 +95,7 @@ namespace System.Diagnostics.Tracing
             if (!string.IsNullOrEmpty(eventMessage)) 
             {
                 sb.Append("\\\"EventSource_Message\\\":\\\"");
-                minimalJsonserializer(eventMessage,sb);
+                minimalJsonserializer(eventMessage, sb);
                 sb.Append("\\\"");
                 if (eventDataCount != 0)
                     sb.Append(", ");
@@ -162,16 +166,16 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            string eventSourceFilter = eventSourceNameFilter.Value;
+            string? eventSourceFilter = eventSourceNameFilter.Value;
             if (string.IsNullOrEmpty(eventSourceFilter) || (eventSource.Name.IndexOf(eventSourceFilter, StringComparison.OrdinalIgnoreCase) >= 0))
             {   
                 EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All, null);
             }
         }
 
-        internal protected  override void OnEventWritten(EventWrittenEventArgs eventData)
+        internal protected override void OnEventWritten(EventWrittenEventArgs eventData)
         {
-            string eventFilter = eventSourceEventFilter.Value;
+            string? eventFilter = eventSourceEventFilter.Value;
             if (string.IsNullOrEmpty(eventFilter) || (eventData.EventName.IndexOf(eventFilter, StringComparison.OrdinalIgnoreCase) >= 0))
             {
                 LogOnEventWritten(eventData);
@@ -192,7 +196,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            LogEventSource( eventData.EventId, eventData.EventName,eventData.EventSource.Name,payload);
+            LogEventSource(eventData.EventId, eventData.EventName, eventData.EventSource.Name, payload);
         }
     }
 }
