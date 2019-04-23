@@ -97,3 +97,7 @@
 -nomethod System.Reflection.Emit.Tests.TypeBuilderGetMethod.GetMethod_MethodNotGenericTypeDefinition_ThrowsArgumentException
 -nomethod System.Reflection.Emit.Tests.TypeBuilderGetMethod.GetMethod_TypeIsNotGeneric_ThrowsArgumentException
 -nomethod System.Reflection.Emit.Tests.TypeBuilderGUID.Guid_TypeCreated_NotEmpty
+
+# TODO
+-nomethod System.Reflection.Emit.Tests.AssemblyTests.DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess
+-nomethod System.Reflection.Emit.Tests.AssemblyTests.DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess_CustomAttributeBuilder

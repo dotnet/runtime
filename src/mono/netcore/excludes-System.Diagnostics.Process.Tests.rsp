@@ -1,1 +1,3 @@
--nomethod System.Diagnostics.Tests.ProcessTests.*
+-nomethod System.Diagnostics.Tests.ProcessTests.Kill_EntireProcessTree_True_CalledOnTreeContainingCallingProcess_ThrowsInvalidOperationException
+-nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_ExecuteOrder
+-nomethod System.Diagnostics.Tests.ProcessTests.GetProcesses_RemoteMachinePath_ReturnsExpected

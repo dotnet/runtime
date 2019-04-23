@@ -1,0 +1,3 @@
+# TODO
+-nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_*
+-nomethod System.Collections.Generic.Tests.ComparerTests.MostComparisons

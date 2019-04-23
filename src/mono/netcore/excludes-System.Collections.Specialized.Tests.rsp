@@ -1,0 +1,2 @@
+# TODO: Wrong exception
+-nomethod System.Collections.Specialized.Tests.NameValueCollectionCtorTests.Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException

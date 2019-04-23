@@ -1,6 +1,5 @@
 # Not sure why these are not supported by coreclr
 -nomethod *IndexOf_ArrayOfPointers_ThrowsNotSupportedException
--nomethod *LastIndexOf_ArrayOfPointers_ThrowsNotSupportedException
 -nomethod *Reverse_ArrayOfPointers_ThrowsNotSupportedException
 
 -nomethod System.Tests.EnumTests.GetName_Invalid
@@ -15,11 +14,6 @@
 # Works, but leads to a SIGSEGV under lldb even with explicit-null-checks
 -nomethod *Append_CharPointer_Null_ThrowsNullReferenceException
 
--nomethod System.Tests.DelegateTests.DynamicInvoke_MissingTypeForDefaultParameter_Succeeds
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter*
--nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter*
--nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
-
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineSameMethod
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineOtherMethod
 
@@ -28,31 +22,67 @@
 -nomethod System.Tests.ActivatorTests.CreateInstance_DesignatedOptionalParameters_ThrowsMissingMemberException
 -nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
 -nomethod System.Tests.StringTests.NormalizationTest
--nomethod *HideDetectionHappensBeforeBindingFlagChecks
--nomethod *Assembly_IsCollectibleFalse_WhenUsingAssemblyLoad
--nomethod *Assembly_IsCollectibleTrue_WhenUsingAssemblyLoadContext
--nomethod *GenericWithCollectibleTypeParameter_IsCollectibleTrue_WhenUsingAssemblyLoadContext
--nomethod *StaticThrow_UpdatesStackTraceAppropriately
--nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestRefReturnNullable
--nomethod System.Runtime.Serialization.Tests.SerializationExceptionTests.Ctor_SerializationInfo_StreamingContext
--nomethod System.Tests.GCTests.ReRegisterForFinalize
--nomethod System.Tests.WeakReferenceTests.NonGeneric
 
--nomethod *ConditionalWeakTableTests*
+-nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetValue
+-nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.Add
+-nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetOrCreateValue
+
 -nomethod *IsCollectibleTests*
--nomethod *ExitCodeTests*
-
+-nomethod System.Tests.GCTests.GetAllocatedBytesForCurrentThread
+-nomethod System.Tests.GCTests.KeepAlive_Null
 -nomethod System.Tests.GCTests.Collect_CallsFinalizer
 -nomethod System.Tests.GCTests.KeepAlive
--nomethod System.Tests.GCTests.KeepAlive_Null
--nomethod System.Tests.LazyTests.Value_Invalid
--nomethod System.Tests.LazyTests.Value_ThrownException_DoesntCreateValue
 
--noclass System.Tests.TypeTestsExtended
--noclass System.Tests.ArgIteratorTests
--nomethod System.Tests.ActivatorTests.CreateInstance_InvalidType_ThrowsNotSupportedException
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DecimalParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_ReferenceTypeParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_ValueTypeParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_MissingTypeForDefaultParameter_Succeeds
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_NullableIntWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_StringParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DecimalParameterWithAttributeAndMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DateTimeParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithSomeExplicitValues
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithMissingValues
+-nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter_WithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
+
+-nomethod System.Tests.ExitCodeTests.SigTermExitCode
+
+-nomethod System.Tests.ArgIteratorTests.ArgIterator_Throws_PlatformNotSupportedException
+
 -nomethod System.Tests.ArrayTests.CreateInstance_NotSupportedType_ThrowsNotSupportedException
--noclass System.Reflection.Tests.PointerTests
+
+-nomethod System.Reflection.Tests.PointerTests.PointerFieldGetValue
+-nomethod System.Reflection.Tests.PointerTests.IntPtrFieldSetValue
+-nomethod System.Reflection.Tests.PointerTests.PointerFieldSetValue
+-nomethod System.Reflection.Tests.PointerTests.PointerPropertyGetValue
+-nomethod System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter
+-nomethod System.Reflection.Tests.PointerTests.PointerMethodParameter
+-nomethod System.Reflection.Tests.PointerTests.PointerPropertySetValue
 
 # causes 'error: Return type can't be a byref type Parameter name: returnType':
 -nomethod System.Tests.Types.VoidTests.IsByRef_Get_ReturnsExpected
+
+# crashes runtime (Assertion at method-to-ir.c:12303, condition `load_opcode != OP_LOADV_MEMBASE' not met)
+-nomethod System.Text.Unicode.Tests.Utf16UtilityTests.GetIndexOfFirstInvalidUtf16Sequence_WithSmallValidBuffers
+-nomethod System.Text.Unicode.Tests.Utf16UtilityTests.GetIndexOfFirstInvalidUtf16Sequence_WithSmallInvalidBuffers
+-nomethod System.Text.Unicode.Tests.Utf8Tests.ToChars_ValidBuffers
+-nomethod System.Text.Unicode.Tests.Utf8Tests.ToBytes_WithLargeValidBuffers
+
+# TODO: Incorrectly wrapped exceptions
+-nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke
+-nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnOfPointer
+-nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke2
+-nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensBeforeBindingFlagChecks
+
+# TODO: float- and double- backed enums
+-nomethod System.Tests.EnumTests.Parse
+-nomethod System.Tests.EnumTests.Parse_NetCoreApp11
+
+# TODO
+-nomethod System.Tests.ArrayTests.SetValue_Casting_Invalid
+-nomethod System.Tests.ArrayTests.Copy_SZArray
+-nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
+-nomethod System.Tests.ActivatorTests.CreateInstance_PublicOnlyValueTypeWithPrivateDefaultConstructor_ThrowsMissingMethodException
+-nomethod System.Tests.BufferTests.BlockCopy_Invalid

@@ -37,3 +37,18 @@
 #-nomethod System.Reflection.Tests.MemberInfoTests.GenericMethodsInheritTheReflectedTypeOfTheirTemplate
 #-nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypesLoadFailure
 #-nomethod System.Reflection.Tests.GetTypeTests.GetType
+
+# TODO
+-nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_ValidArchitectureName_Succeeds
+-nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs__CornerCase_HasElementTypes
+-nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericTypeParameters
+-nomethod System.Reflection.Tests.MemberInfoTests.GenericMethodsInheritTheReflectedTypeOfTheirTemplate
+-nomethod System.Reflection.Tests.AssemblyNameTests.SetPublicKeyToken_GetPublicKeyToken
+-nomethod System.Reflection.Tests.AssemblyNameTests.FullName
+-nomethod System.Reflection.Tests.AssemblyTests.LoadFile
+-nomethod System.Reflection.Tests.AssemblyTests.GetType_DoesntSearchMscorlib
+-nomethod System.Reflection.Tests.AssemblyTests.LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies
+-nomethod System.Reflection.Tests.GetTypeTests.GetType
+-nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypesLoadFailure
+-nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypes
+-nomethod System.Reflection.Tests.TypeInfoTests.IsAssignableFrom

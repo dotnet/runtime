@@ -24,6 +24,9 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.Data.Odbc" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.Data.SqlClient" Version="$(SystemDataSqlClientVersion)" />
+    <PackageReference Include="System.DirectoryServices" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+    <PackageReference Include="System.DirectoryServices.Protocols" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.Drawing.Common" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.IO.Packaging" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
     <PackageReference Include="System.IO.Pipelines" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
