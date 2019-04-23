@@ -454,16 +454,16 @@ namespace System.Threading
         /// <summary>Gets all of the threads' values in a list.</summary>
         private List<T>? GetValuesAsList()
         {
-            List<T> valueList = new List<T>();
+            LinkedSlot? linkedSlot = _linkedSlot;
             int id = ~_idComplement;
-            if (id == -1)
+            if (id == -1 || linkedSlot == null)
             {
                 return null;
             }
 
             // Walk over the linked list of slots and gather the values associated with this ThreadLocal instance.
-            Debug.Assert(_linkedSlot != null, "Should only be null if the instance was disposed.");
-            for (LinkedSlot? linkedSlot = _linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
+            var valueList = new List<T>();
+            for (linkedSlot = linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
             {
                 // We can safely read linkedSlot.Value. Even if this ThreadLocal has been disposed in the meantime, the LinkedSlot
                 // objects will never be assigned to another ThreadLocal instance.
@@ -471,6 +471,32 @@ namespace System.Threading
             }
 
             return valueList;
+        }
+
+        internal IEnumerable<T> ValuesAsEnumerable
+        {
+            get
+            {
+                if (!_trackAllValues)
+                {
+                    throw new InvalidOperationException(SR.ThreadLocal_ValuesNotAvailable);
+                }
+
+                LinkedSlot? linkedSlot = _linkedSlot;
+                int id = ~_idComplement;
+                if (id == -1 || linkedSlot == null)
+                {
+                    throw new ObjectDisposedException(SR.ThreadLocal_Disposed);
+                }
+
+                // Walk over the linked list of slots and gather the values associated with this ThreadLocal instance.
+                for (linkedSlot = linkedSlot._next; linkedSlot != null; linkedSlot = linkedSlot._next)
+                {
+                    // We can safely read linkedSlot.Value. Even if this ThreadLocal has been disposed in the meantime, the LinkedSlot
+                    // objects will never be assigned to another ThreadLocal instance.
+                    yield return linkedSlot._value;
+                }
+            }
         }
 
         /// <summary>Gets the number of threads that have data in this instance.</summary>
