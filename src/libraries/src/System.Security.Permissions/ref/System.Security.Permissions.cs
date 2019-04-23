@@ -170,12 +170,12 @@ namespace System.Diagnostics
     [System.FlagsAttribute]
     public enum EventLogPermissionAccess
     {
-        Administer = 48,
-        Audit = 10,
+        None = 0,
         Browse = 2,
         Instrument = 6,
-        None = 0,
+        Audit = 10,
         Write = 16,
+        Administer = 48,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public partial class EventLogPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
@@ -219,12 +219,12 @@ namespace System.Diagnostics
     [System.FlagsAttribute]
     public enum PerformanceCounterPermissionAccess
     {
-        Administer = 7,
-        Browse = 1,
-        Instrument = 3,
         None = 0,
+        Browse = 1,
         Read = 1,
         Write = 2,
+        Instrument = 3,
+        Administer = 7,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public partial class PerformanceCounterPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
@@ -284,10 +284,10 @@ namespace System.Drawing.Printing
     }
     public enum PrintingPermissionLevel
     {
-        AllPrinting = 3,
-        DefaultPrinting = 2,
         NoPrinting = 0,
         SafePrinting = 1,
+        DefaultPrinting = 2,
+        AllPrinting = 3,
     }
 }
 namespace System.Net
@@ -321,8 +321,8 @@ namespace System.Net
     [System.FlagsAttribute]
     public enum NetworkAccess
     {
-        Accept = 128,
         Connect = 64,
+        Accept = 128,
     }
     public sealed partial class SocketPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
@@ -352,11 +352,11 @@ namespace System.Net
     }
     public enum TransportType
     {
-        All = 3,
         Connectionless = 1,
+        Udp = 1,
         ConnectionOriented = 2,
         Tcp = 2,
-        Udp = 1,
+        All = 3,
     }
     public sealed partial class WebPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
@@ -391,9 +391,9 @@ namespace System.Net.Mail
 {
     public enum SmtpAccess
     {
+        None = 0,
         Connect = 1,
         ConnectToUnrestrictedPort = 2,
-        None = 0,
     }
     public sealed partial class SmtpPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
@@ -424,8 +424,8 @@ namespace System.Net.NetworkInformation
     public enum NetworkInformationAccess
     {
         None = 0,
-        Ping = 4,
         Read = 1,
+        Ping = 4,
     }
     public sealed partial class NetworkInformationPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
@@ -472,8 +472,8 @@ namespace System.Net.PeerToPeer
     {
         All = 0,
         Global = 1,
-        LinkLocal = 3,
         SiteLocal = 2,
+        LinkLocal = 3,
     }
 }
 namespace System.Net.PeerToPeer.Collaboration
@@ -550,13 +550,13 @@ namespace System.Security
     [System.FlagsAttribute]
     public enum HostSecurityManagerOptions
     {
-        AllFlags = 31,
+        None = 0,
         HostAppDomainEvidence = 1,
+        HostPolicyLevel = 2,
         HostAssemblyEvidence = 4,
         HostDetermineApplicationTrust = 8,
-        HostPolicyLevel = 2,
         HostResolvePolicy = 16,
-        None = 0,
+        AllFlags = 31,
     }
     public partial interface IEvidenceFactory
     {
@@ -636,10 +636,10 @@ namespace System.Security
 #endif
     public enum PolicyLevelType
     {
-        AppDomain = 3,
-        Enterprise = 2,
-        Machine = 1,
         User = 0,
+        Machine = 1,
+        Enterprise = 2,
+        AppDomain = 3,
     }
     public sealed partial class SecurityContext : System.IDisposable
     {
@@ -699,11 +699,11 @@ namespace System.Security
     }
     public enum SecurityZone
     {
-        Internet = 3,
-        Intranet = 1,
-        MyComputer = 0,
         NoZone = -1,
+        MyComputer = 0,
+        Intranet = 1,
         Trusted = 2,
+        Internet = 3,
         Untrusted = 4,
     }
     public sealed partial class XmlSyntaxException : System.SystemException
@@ -744,12 +744,12 @@ namespace System.Security.Permissions
     [System.FlagsAttribute]
     public enum DataProtectionPermissionFlags
     {
-        AllFlags = 15,
         NoFlags = 0,
         ProtectData = 1,
-        ProtectMemory = 4,
         UnprotectData = 2,
+        ProtectMemory = 4,
         UnprotectMemory = 8,
+        AllFlags = 15,
     }
     public sealed partial class EnvironmentPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
@@ -769,10 +769,10 @@ namespace System.Security.Permissions
     [System.FlagsAttribute]
     public enum EnvironmentPermissionAccess
     {
-        AllAccess = 3,
         NoAccess = 0,
         Read = 1,
         Write = 2,
+        AllAccess = 3,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class EnvironmentPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
@@ -801,8 +801,8 @@ namespace System.Security.Permissions
     {
         None = 0,
         Open = 1,
-        OpenSave = 3,
         Save = 2,
+        OpenSave = 3,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class FileDialogPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
@@ -839,12 +839,12 @@ namespace System.Security.Permissions
     [System.FlagsAttribute]
     public enum FileIOPermissionAccess
     {
-        AllAccess = 15,
-        Append = 4,
         NoAccess = 0,
-        PathDiscovery = 8,
         Read = 1,
         Write = 2,
+        Append = 4,
+        PathDiscovery = 8,
+        AllAccess = 15,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class FileIOPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
@@ -900,31 +900,31 @@ namespace System.Security.Permissions
     [System.FlagsAttribute]
     public enum HostProtectionResource
     {
-        All = 511,
-        ExternalProcessMgmt = 4,
-        ExternalThreading = 16,
-        MayLeakOnAbort = 256,
         None = 0,
-        SecurityInfrastructure = 64,
-        SelfAffectingProcessMgmt = 8,
-        SelfAffectingThreading = 32,
-        SharedState = 2,
         Synchronization = 1,
+        SharedState = 2,
+        ExternalProcessMgmt = 4,
+        SelfAffectingProcessMgmt = 8,
+        ExternalThreading = 16,
+        SelfAffectingThreading = 32,
+        SecurityInfrastructure = 64,
         UI = 128,
+        MayLeakOnAbort = 256,
+        All = 511,
     }
     public enum IsolatedStorageContainment
     {
-        AdministerIsolatedStorageByUser = 112,
-        ApplicationIsolationByMachine = 69,
-        ApplicationIsolationByRoamingUser = 101,
+        None = 0,
+        DomainIsolationByUser = 16,
         ApplicationIsolationByUser = 21,
-        AssemblyIsolationByMachine = 64,
-        AssemblyIsolationByRoamingUser = 96,
         AssemblyIsolationByUser = 32,
         DomainIsolationByMachine = 48,
+        AssemblyIsolationByMachine = 64,
+        ApplicationIsolationByMachine = 69,
         DomainIsolationByRoamingUser = 80,
-        DomainIsolationByUser = 16,
-        None = 0,
+        AssemblyIsolationByRoamingUser = 96,
+        ApplicationIsolationByRoamingUser = 101,
+        AdministerIsolatedStorageByUser = 112,
         UnrestrictedIsolatedStorage = 240,
     }
     public sealed partial class IsolatedStorageFilePermission : System.Security.Permissions.IsolatedStoragePermission
@@ -1028,17 +1028,17 @@ namespace System.Security.Permissions
     }
     public enum KeyContainerPermissionFlags
     {
-        AllFlags = 13111,
-        ChangeAcl = 8192,
-        Create = 1,
-        Decrypt = 512,
-        Delete = 4,
-        Export = 32,
-        Import = 16,
         NoFlags = 0,
+        Create = 1,
         Open = 2,
+        Delete = 4,
+        Import = 16,
+        Export = 32,
         Sign = 256,
+        Decrypt = 512,
         ViewAcl = 4096,
+        ChangeAcl = 8192,
+        AllFlags = 13111,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class PermissionSetAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
@@ -1135,15 +1135,15 @@ namespace System.Security.Permissions
     [System.FlagsAttribute]
     public enum ReflectionPermissionFlag
     {
-        [System.ObsoleteAttribute]
-        AllFlags = 7,
-        MemberAccess = 2,
         NoFlags = 0,
         [System.ObsoleteAttribute]
-        ReflectionEmit = 4,
-        RestrictedMemberAccess = 8,
-        [System.ObsoleteAttribute]
         TypeInformation = 1,
+        MemberAccess = 2,
+        [System.ObsoleteAttribute]
+        ReflectionEmit = 4,
+        [System.ObsoleteAttribute]
+        AllFlags = 7,
+        RestrictedMemberAccess = 8,
     }
     public sealed partial class RegistryPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
     {
@@ -1165,11 +1165,11 @@ namespace System.Security.Permissions
     [System.FlagsAttribute]
     public enum RegistryPermissionAccess
     {
-        AllAccess = 7,
-        Create = 4,
         NoAccess = 0,
         Read = 1,
         Write = 2,
+        Create = 4,
+        AllAccess = 7,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class RegistryPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
@@ -1274,15 +1274,15 @@ namespace System.Security.Permissions
     [System.FlagsAttribute]
     public enum StorePermissionFlags
     {
-        AddToStore = 32,
-        AllFlags = 247,
+        NoFlags = 0,
         CreateStore = 1,
         DeleteStore = 2,
-        EnumerateCertificates = 128,
         EnumerateStores = 4,
-        NoFlags = 0,
         OpenStore = 16,
+        AddToStore = 32,
         RemoveFromStore = 64,
+        EnumerateCertificates = 128,
+        AllFlags = 247,
     }
     public sealed partial class StrongNameIdentityPermission : System.Security.CodeAccessPermission
     {
@@ -1367,16 +1367,16 @@ namespace System.Security.Permissions
     }
     public enum UIPermissionClipboard
     {
-        AllClipboard = 2,
         NoClipboard = 0,
         OwnClipboard = 1,
+        AllClipboard = 2,
     }
     public enum UIPermissionWindow
     {
-        AllWindows = 3,
         NoWindows = 0,
         SafeSubWindows = 1,
         SafeTopLevelWindows = 2,
+        AllWindows = 3,
     }
     public sealed partial class UrlIdentityPermission : System.Security.CodeAccessPermission
     {
@@ -1500,8 +1500,8 @@ namespace System.Security.Policy
     }
     public enum ApplicationVersionMatch
     {
-        MatchAllVersions = 1,
         MatchExactVersion = 0,
+        MatchAllVersions = 1,
     }
     public partial class CodeConnectAccess
     {
@@ -1752,10 +1752,10 @@ namespace System.Security.Policy
     [System.FlagsAttribute]
     public enum PolicyStatementAttribute
     {
-        All = 3,
+        Nothing = 0,
         Exclusive = 1,
         LevelFinal = 2,
-        Nothing = 0,
+        All = 3,
     }
     public sealed partial class Publisher : System.Security.Policy.EvidenceBase, System.Security.Policy.IIdentityPermissionFactory
     {
@@ -1848,8 +1848,8 @@ namespace System.Security.Policy
     public enum TrustManagerUIContext
     {
         Install = 0,
-        Run = 2,
         Upgrade = 1,
+        Run = 2,
     }
     [System.ObsoleteAttribute("This type is obsolete. See https://go.microsoft.com/fwlink/?LinkID=155570 for more information.")]
     public sealed partial class UnionCodeGroup : System.Security.Policy.CodeGroup
@@ -1923,9 +1923,9 @@ namespace System.ServiceProcess
     [System.FlagsAttribute]
     public enum ServiceControllerPermissionAccess
     {
+        None = 0,
         Browse = 2,
         Control = 6,
-        None = 0,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public partial class ServiceControllerPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
@@ -2007,11 +2007,11 @@ namespace System.Web
     }
     public enum AspNetHostingPermissionLevel
     {
-        High = 500,
+        None = 100,
+        Minimal = 200,
         Low = 300,
         Medium = 400,
-        Minimal = 200,
-        None = 100,
+        High = 500,
         Unrestricted = 600,
     }
 }

@@ -89,8 +89,8 @@ namespace System.Diagnostics
     }
     public enum DebuggerBrowsableState
     {
-        Collapsed = 2,
         Never = 0,
+        Collapsed = 2,
         RootHidden = 3,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Delegate | System.AttributeTargets.Enum | System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=true)]

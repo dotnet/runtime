@@ -228,9 +228,9 @@ namespace System.IO
     }
     public enum MatchCasing
     {
-        CaseInsensitive = 2,
-        CaseSensitive = 1,
         PlatformDefault = 0,
+        CaseSensitive = 1,
+        CaseInsensitive = 2,
     }
     public enum MatchType
     {
@@ -239,8 +239,8 @@ namespace System.IO
     }
     public enum SearchOption
     {
-        AllDirectories = 1,
         TopDirectoryOnly = 0,
+        AllDirectories = 1,
     }
 }
 namespace System.IO.Enumeration

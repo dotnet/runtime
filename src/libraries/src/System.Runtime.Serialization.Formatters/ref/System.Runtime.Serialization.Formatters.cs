@@ -148,13 +148,13 @@ namespace System.Runtime.Serialization.Formatters
 {
     public enum FormatterAssemblyStyle
     {
-        Full = 1,
         Simple = 0,
+        Full = 1,
     }
     public enum FormatterTypeStyle
     {
-        TypesAlways = 1,
         TypesWhenNeeded = 0,
+        TypesAlways = 1,
         XsdString = 2,
     }
     public partial interface IFieldInfo
@@ -164,8 +164,8 @@ namespace System.Runtime.Serialization.Formatters
     }
     public enum TypeFilterLevel
     {
-        Full = 3,
         Low = 2,
+        Full = 3,
     }
 }
 namespace System.Runtime.Serialization.Formatters.Binary

@@ -11,9 +11,9 @@ namespace System.Net
     [System.FlagsAttribute]
     public enum SecurityProtocolType
     {
+        SystemDefault = 0,
         [System.ObsoleteAttribute("This value has been deprecated.  It is no longer supported. https://go.microsoft.com/fwlink/?linkid=14202")]
         Ssl3 = 48,
-        SystemDefault = 0,
         Tls = 192,
         Tls11 = 768,
         Tls12 = 3072,

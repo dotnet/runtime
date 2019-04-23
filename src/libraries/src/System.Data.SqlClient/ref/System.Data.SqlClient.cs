@@ -14,8 +14,8 @@ namespace Microsoft.SqlServer.Server
     }
     public enum Format
     {
-        Native = 1,
         Unknown = 0,
+        Native = 1,
         UserDefined = 2,
     }
     public partial interface IBinarySerialize
@@ -255,15 +255,15 @@ namespace System.Data.SqlClient
 {
     public enum ApplicationIntent
     {
-        ReadOnly = 1,
         ReadWrite = 0,
+        ReadOnly = 1,
     }
     public delegate void OnChangeEventHandler(object sender, System.Data.SqlClient.SqlNotificationEventArgs e);
     public enum SortOrder
     {
+        Unspecified = -1,
         Ascending = 0,
         Descending = 1,
-        Unspecified = -1,
     }
     public sealed partial class SqlBulkCopy : System.IDisposable
     {
@@ -328,12 +328,12 @@ namespace System.Data.SqlClient
     [System.FlagsAttribute]
     public enum SqlBulkCopyOptions
     {
-        CheckConstraints = 2,
         Default = 0,
-        FireTriggers = 16,
         KeepIdentity = 1,
-        KeepNulls = 8,
+        CheckConstraints = 2,
         TableLock = 4,
+        KeepNulls = 8,
+        FireTriggers = 16,
         UseInternalTransaction = 32,
     }
     public sealed partial class SqlClientFactory : System.Data.Common.DbProviderFactory
@@ -695,44 +695,44 @@ namespace System.Data.SqlClient
     public enum SqlNotificationInfo
     {
         AlreadyChanged = -2,
-        Alter = 5,
+        Unknown = -1,
+        Truncate = 0,
+        Insert = 1,
+        Update = 2,
         Delete = 3,
         Drop = 4,
-        Error = 7,
-        Expired = 12,
-        Insert = 1,
-        Invalid = 9,
-        Isolation = 11,
-        Merge = 16,
-        Options = 10,
-        PreviousFire = 14,
-        Query = 8,
-        Resource = 13,
+        Alter = 5,
         Restart = 6,
+        Error = 7,
+        Query = 8,
+        Invalid = 9,
+        Options = 10,
+        Isolation = 11,
+        Expired = 12,
+        Resource = 13,
+        PreviousFire = 14,
         TemplateLimit = 15,
-        Truncate = 0,
-        Unknown = -1,
-        Update = 2,
+        Merge = 16,
     }
     public enum SqlNotificationSource
     {
         Client = -2,
+        Unknown = -1,
         Data = 0,
+        Timeout = 1,
+        Object = 2,
         Database = 3,
+        System = 4,
+        Statement = 5,
         Environment = 6,
         Execution = 7,
-        Object = 2,
         Owner = 8,
-        Statement = 5,
-        System = 4,
-        Timeout = 1,
-        Unknown = -1,
     }
     public enum SqlNotificationType
     {
+        Unknown = -1,
         Change = 0,
         Subscribe = 1,
-        Unknown = -1,
     }
     public sealed partial class SqlParameter : System.Data.Common.DbParameter, System.ICloneable
     {

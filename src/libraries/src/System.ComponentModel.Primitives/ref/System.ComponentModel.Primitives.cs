@@ -104,9 +104,9 @@ namespace System.ComponentModel
     }
     public enum DesignerSerializationVisibility
     {
-        Content = 2,
         Hidden = 0,
         Visible = 1,
+        Content = 2,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Event | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property)]
     public sealed partial class DesignerSerializationVisibilityAttribute : System.Attribute
@@ -279,8 +279,8 @@ namespace System.ComponentModel
     }
     public enum RefreshProperties
     {
-        All = 1,
         None = 0,
+        All = 1,
         Repaint = 2,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.All)]

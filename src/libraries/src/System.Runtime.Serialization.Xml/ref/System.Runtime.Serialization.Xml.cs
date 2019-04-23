@@ -351,11 +351,11 @@ namespace System.Xml
     [System.FlagsAttribute]
     public enum XmlDictionaryReaderQuotaTypes
     {
+        MaxDepth = 1,
+        MaxStringContentLength = 2,
         MaxArrayLength = 4,
         MaxBytesPerRead = 8,
-        MaxDepth = 1,
         MaxNameTableCharCount = 16,
-        MaxStringContentLength = 2,
     }
     public partial class XmlDictionaryString
     {

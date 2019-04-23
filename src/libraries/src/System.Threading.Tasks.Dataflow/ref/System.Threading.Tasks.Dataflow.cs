@@ -174,9 +174,9 @@ namespace System.Threading.Tasks.Dataflow
     {
         Accepted = 0,
         Declined = 1,
-        DecliningPermanently = 4,
-        NotAvailable = 3,
         Postponed = 2,
+        NotAvailable = 3,
+        DecliningPermanently = 4,
     }
     public partial class ExecutionDataflowBlockOptions : System.Threading.Tasks.Dataflow.DataflowBlockOptions
     {

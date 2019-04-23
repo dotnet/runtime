@@ -9,8 +9,8 @@ namespace System.Text.Json
 {
     public enum JsonCommentHandling : byte
     {
-        Allow = (byte)1,
         Disallow = (byte)0,
+        Allow = (byte)1,
         Skip = (byte)2,
     }
     public sealed partial class JsonDocument : System.IDisposable
@@ -133,29 +133,29 @@ namespace System.Text.Json
     }
     public enum JsonTokenType : byte
     {
-        Comment = (byte)11,
-        EndArray = (byte)4,
-        EndObject = (byte)2,
-        False = (byte)9,
         None = (byte)0,
-        Null = (byte)10,
-        Number = (byte)7,
-        PropertyName = (byte)5,
-        StartArray = (byte)3,
         StartObject = (byte)1,
+        EndObject = (byte)2,
+        StartArray = (byte)3,
+        EndArray = (byte)4,
+        PropertyName = (byte)5,
         String = (byte)6,
+        Number = (byte)7,
         True = (byte)8,
+        False = (byte)9,
+        Null = (byte)10,
+        Comment = (byte)11,
     }
     public enum JsonValueType : byte
     {
+        Undefined = (byte)0,
+        Object = (byte)1,
         Array = (byte)2,
+        String = (byte)3,
+        Number = (byte)4,
+        True = (byte)5,
         False = (byte)6,
         Null = (byte)7,
-        Number = (byte)4,
-        Object = (byte)1,
-        String = (byte)3,
-        True = (byte)5,
-        Undefined = (byte)0,
     }
     public partial struct JsonWriterOptions
     {

@@ -61,14 +61,14 @@ namespace System.IO
     [System.FlagsAttribute]
     public enum NotifyFilters
     {
-        Attributes = 4,
-        CreationTime = 64,
-        DirectoryName = 2,
         FileName = 1,
-        LastAccess = 32,
-        LastWrite = 16,
-        Security = 256,
+        DirectoryName = 2,
+        Attributes = 4,
         Size = 8,
+        LastWrite = 16,
+        LastAccess = 32,
+        CreationTime = 64,
+        Security = 256,
     }
     public partial class RenamedEventArgs : System.IO.FileSystemEventArgs
     {
@@ -88,10 +88,10 @@ namespace System.IO
     [System.FlagsAttribute]
     public enum WatcherChangeTypes
     {
-        All = 15,
-        Changed = 4,
         Created = 1,
         Deleted = 2,
+        Changed = 4,
         Renamed = 8,
+        All = 15,
     }
 }

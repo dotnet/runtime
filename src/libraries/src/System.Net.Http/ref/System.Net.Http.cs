@@ -17,8 +17,8 @@ namespace System.Net.Http
     }
     public enum ClientCertificateOption
     {
-        Automatic = 1,
         Manual = 0,
+        Automatic = 1,
     }
     public abstract partial class DelegatingHandler : System.Net.Http.HttpMessageHandler
     {

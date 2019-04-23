@@ -32,12 +32,12 @@ namespace System.IO
     }
     public enum DriveType
     {
-        CDRom = 5,
+        Unknown = 0,
+        NoRootDirectory = 1,
+        Removable = 2,
         Fixed = 3,
         Network = 4,
-        NoRootDirectory = 1,
+        CDRom = 5,
         Ram = 6,
-        Removable = 2,
-        Unknown = 0,
     }
 }

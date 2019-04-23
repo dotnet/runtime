@@ -10,12 +10,12 @@ namespace System.Xml.Serialization
     [System.FlagsAttribute]
     public enum CodeGenerationOptions
     {
-        EnableDataBinding = 16,
+        None = 0,
+        GenerateProperties = 1,
         GenerateNewAsync = 2,
         GenerateOldAsync = 4,
         GenerateOrder = 8,
-        GenerateProperties = 1,
-        None = 0,
+        EnableDataBinding = 16,
     }
     public partial class CodeIdentifier
     {
