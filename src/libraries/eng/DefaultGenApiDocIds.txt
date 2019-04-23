@@ -29,7 +29,6 @@ T:System.Runtime.InteropServices.ComVisibleAttribute
 T:System.Runtime.InteropServices.GuidAttribute
 T:System.Runtime.InteropServices.InterfaceTypeAttribute
 T:System.Runtime.InteropServices.StructLayoutAttribute
-T:System.Runtime.Serialization.KnownTypeAttribute
 T:System.Security.Permissions.EnvironmentPermissionAttribute
 T:System.Security.Permissions.FileIOPermissionAttribute
 T:System.Security.Permissions.HostProtectionAttribute
@@ -41,10 +40,6 @@ T:System.Security.Permissions.StrongNameIdentityPermissionAttribute
 T:System.Security.SecurityCriticalAttribute
 T:System.Security.SecuritySafeCriticalAttribute
 T:System.Security.SuppressUnmanagedCodeSecurityAttribute
-T:System.Xml.Serialization.XmlAttributeAttribute
-T:System.Xml.Serialization.XmlEnumAttribute
-T:System.Xml.Serialization.XmlIgnoreAttribute
-T:System.Xml.Serialization.XmlRootAttribute
 T:System.Runtime.Versioning.NonVersionableAttribute
 T:System.Runtime.CompilerServices.IntrinsicAttribute
 T:System.Runtime.CompilerServices.ExtensionAttribute
