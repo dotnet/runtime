@@ -9959,29 +9959,6 @@ exception_cb (void *data)
 	g_free (type_info);
 }
 
-static char*
-dlsym_cb (const char *name, void **symbol)
-{
-	MonoDl *current;
-	char *err;
-
-	err = NULL;
-	if (!strcmp (name, "__bzero")) {
-		*symbol = (void*)bzero;
-	} else {
-		current = mono_dl_open (NULL, 0, NULL);
-		g_assert (current);
-
-		err = mono_dl_symbol (current, name, symbol);
-
-		mono_dl_close (current);
-	}
-#ifdef MONO_ARCH_HAVE_CREATE_LLVM_NATIVE_THUNK
-	*symbol = (char*)mono_arch_create_llvm_native_thunk (mono_domain_get (), (guint8*)(*symbol));
-#endif
-	return err;
-}
-
 /*
  * decode_llvm_eh_info:
  *
@@ -10096,7 +10073,7 @@ init_jit_module (MonoDomain *domain)
 	module->context = LLVMGetGlobalContext ();
 	module->intrins_by_id = g_new0 (LLVMValueRef, INTRINS_NUM);
 
-	module->mono_ee = (MonoEERef*)mono_llvm_create_ee (LLVMCreateModuleProviderForExistingModule (module->lmodule), alloc_cb, emitted_cb, exception_cb, dlsym_cb, &module->ee);
+	module->mono_ee = (MonoEERef*)mono_llvm_create_ee (LLVMCreateModuleProviderForExistingModule (module->lmodule), alloc_cb, emitted_cb, exception_cb, &module->ee);
 
 	add_intrinsics (module->lmodule);
 	add_types (module);
