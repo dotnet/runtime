@@ -15,7 +15,7 @@
   </PropertyGroup>
 
   <!-- Redistribute package content from other nuget packages. -->
-  <ItemGroup Condition="'$(FrameworkPackType)' != 'apphost'">
+  <ItemGroup Condition="'$(FrameworkPackType)' != 'apphost' AND '$(ExcludeDepprojReference)' != 'true'">
     <ProjectReference Include="..\src\netcoreapp.depproj">
       <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
     </ProjectReference>

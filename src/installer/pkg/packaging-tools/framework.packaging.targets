@@ -10,6 +10,7 @@
 
   <Target Name="GenerateInstallers"
           DependsOnTargets="
+            GetInstallerProperties;
             GenerateDeb;
             GenerateRpm;
             GenerateMsi;
@@ -158,7 +159,7 @@
   <Target Name="GenerateZip"
           Condition="'$(OSGroup)' == 'Windows_NT'">
     <ZipFileCreateFromDirectory
-      SourceDirectory="$(SharedFrameworkLayoutDir)"
+      SourceDirectory="$(SharedFrameworkArchiveSourceDir)"
       DestinationArchive="$(CompressedArchiveFile)"
       OverwriteDestination="true" />
   </Target>

@@ -34,7 +34,7 @@
 
     <ItemGroup Condition="'$(GenerateSharedFramework)' == 'true'">
       <DirectoryToHarvest
-        Include="$(SharedFrameworkLayoutDir)"
+        Include="$(SharedFrameworkLayoutDir)shared/"
         Name="install-shared-framework"
         SubstituteVar="SharedFrameworkSrc"
         ComponentGroupName="InstallFiles"
@@ -42,6 +42,16 @@
 
       <WixSrcFile Include="$(MSBuildThisFileDirectory)sharedFramework/product.wxs" />
       <WixSrcFile Include="$(MSBuildThisFileDirectory)sharedFramework/registrykeys.wxs" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IncludeWerRelatedKeys)' == 'true'">
+      <WixSrcFile Include="$(MSBuildThisFileDirectory)sharedFramework/werrelatedkeys.wxs" />
+      <CandleVariables Include="WerRelatedKeys" Value="true" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IncludeBreadcrumbStoreFolder)' == 'true'">
+      <WixSrcFile Include="$(MSBuildThisFileDirectory)sharedFramework/breadcrumbstorefolder.wxs" />
+      <CandleVariables Include="BreadcrumbStoreFolder" Value="true" />
     </ItemGroup>
 
     <ItemGroup>
@@ -79,6 +89,10 @@
             GetWixBuildConfiguration;
             GetUpgradeCode;
             GenerateMsiVersionString">
+    <ItemGroup>
+      <CandleVariables Include="%(DirectoryToHarvest.SubstituteVar)" Value="%(DirectoryToHarvest.Identity)" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_wixArgs></_wixArgs>
       <_wixArgs>$(_wixArgs) -nologo</_wixArgs>
@@ -93,7 +107,7 @@
       <_wixArgs>$(_wixArgs) -dTargetArchitecture="$(TargetArchitecture)"</_wixArgs>
       <_wixArgs>$(_wixArgs) -dUpgradeCode="$(UpgradeCode)"</_wixArgs>
       <_wixArgs>$(_wixArgs) -dDependencyKeyName="$(InstallerName.Replace('-', '_'))"</_wixArgs>
-      <_wixArgs>$(_wixArgs) @(DirectoryToHarvest -> '-d%(SubstituteVar)="%(Identity)', ' ')" </_wixArgs>
+      <_wixArgs>$(_wixArgs) @(CandleVariables -> '-d%(Identity)="%(Value)"', ' ')</_wixArgs>
 
       <_wixArgs>$(_wixArgs) @(WixSrcFile -> '"%(Identity)"', ' ')</_wixArgs>
       <_wixArgs>$(_wixArgs) @(DirectoryToHarvest -> '"%(WixSourceFile)"', ' ')</_wixArgs>
