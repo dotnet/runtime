@@ -208,7 +208,10 @@ namespace System.Threading
 
         public static bool SetMaxThreads(int workerThreads, int completionPortThreads)
         {
-            return SetMaxThreadsNative(workerThreads, completionPortThreads);
+            return
+                workerThreads >= 0 &&
+                completionPortThreads >= 0 &&
+                SetMaxThreadsNative(workerThreads, completionPortThreads);
         }
 
         public static void GetMaxThreads(out int workerThreads, out int completionPortThreads)
@@ -218,7 +221,10 @@ namespace System.Threading
 
         public static bool SetMinThreads(int workerThreads, int completionPortThreads)
         {
-            return SetMinThreadsNative(workerThreads, completionPortThreads);
+            return
+                workerThreads >= 0 &&
+                completionPortThreads >= 0 &&
+                SetMinThreadsNative(workerThreads, completionPortThreads);
         }
 
         public static void GetMinThreads(out int workerThreads, out int completionPortThreads)

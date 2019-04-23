@@ -960,6 +960,20 @@
         }
     },
     {
+        "name": "System.Threading.ThreadPool.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest",
+                    "reason": "https://github.com/dotnet/corefx/issues/36885"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.Memory.Tests",
         "enabled": true,
         "exclusions": {
