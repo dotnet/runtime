@@ -91,12 +91,12 @@ namespace System.Diagnostics.Contracts
     }
     public enum ContractFailureKind
     {
-        Assert = 4,
-        Assume = 5,
-        Invariant = 3,
+        Precondition = 0,
         Postcondition = 1,
         PostconditionOnException = 2,
-        Precondition = 0,
+        Invariant = 3,
+        Assert = 4,
+        Assume = 5,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method, AllowMultiple=false, Inherited=false)]
     [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]

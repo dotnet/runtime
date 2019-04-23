@@ -32,25 +32,25 @@ namespace System.DirectoryServices
     [System.FlagsAttribute]
     public enum ActiveDirectoryRights
     {
-        AccessSystemSecurity = 16777216,
         CreateChild = 1,
-        Delete = 65536,
         DeleteChild = 2,
-        DeleteTree = 64,
-        ExtendedRight = 256,
-        GenericAll = 983551,
-        GenericExecute = 131076,
-        GenericRead = 131220,
-        GenericWrite = 131112,
         ListChildren = 4,
-        ListObject = 128,
-        ReadControl = 131072,
-        ReadProperty = 16,
         Self = 8,
-        Synchronize = 1048576,
+        ReadProperty = 16,
+        WriteProperty = 32,
+        DeleteTree = 64,
+        ListObject = 128,
+        ExtendedRight = 256,
+        Delete = 65536,
+        ReadControl = 131072,
+        GenericExecute = 131076,
+        GenericWrite = 131112,
+        GenericRead = 131220,
         WriteDacl = 262144,
         WriteOwner = 524288,
-        WriteProperty = 32,
+        GenericAll = 983551,
+        Synchronize = 1048576,
+        AccessSystemSecurity = 16777216,
     }
     public partial class ActiveDirectorySecurity : System.Security.AccessControl.DirectoryObjectSecurity
     {
@@ -80,26 +80,26 @@ namespace System.DirectoryServices
     }
     public enum ActiveDirectorySecurityInheritance
     {
-        All = 1,
-        Children = 4,
-        Descendents = 2,
         None = 0,
+        All = 1,
+        Descendents = 2,
         SelfAndChildren = 3,
+        Children = 4,
     }
     [System.FlagsAttribute]
     public enum AuthenticationTypes
     {
-        Anonymous = 16,
-        Delegation = 256,
-        Encryption = 2,
-        FastBind = 32,
         None = 0,
-        ReadonlyServer = 4,
-        Sealing = 128,
         Secure = 1,
+        Encryption = 2,
         SecureSocketsLayer = 2,
-        ServerBind = 512,
+        ReadonlyServer = 4,
+        Anonymous = 16,
+        FastBind = 32,
         Signing = 64,
+        Sealing = 128,
+        Delegation = 256,
+        ServerBind = 512,
     }
     public sealed partial class CreateChildAccessRule : System.DirectoryServices.ActiveDirectoryAccessRule
     {
@@ -127,10 +127,10 @@ namespace System.DirectoryServices
     }
     public enum DereferenceAlias
     {
-        Always = 3,
-        FindingBaseObject = 2,
-        InSearching = 1,
         Never = 0,
+        InSearching = 1,
+        FindingBaseObject = 2,
+        Always = 3,
     }
     public partial class DirectoryEntries : System.Collections.IEnumerable
     {
@@ -271,8 +271,8 @@ namespace System.DirectoryServices
     [System.FlagsAttribute]
     public enum DirectoryServicesPermissionAccess
     {
-        Browse = 2,
         None = 0,
+        Browse = 2,
         Write = 6,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Event | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
@@ -323,11 +323,11 @@ namespace System.DirectoryServices
     [System.FlagsAttribute]
     public enum DirectorySynchronizationOptions : long
     {
-        IncrementalValues = (long)2147483648,
         None = (long)0,
         ObjectSecurity = (long)1,
         ParentsFirst = (long)2048,
         PublicDataOnly = (long)8192,
+        IncrementalValues = (long)2147483648,
     }
     public partial class DirectoryVirtualListView
     {
@@ -359,8 +359,8 @@ namespace System.DirectoryServices
     }
     public enum ExtendedDN
     {
-        HexString = 0,
         None = -1,
+        HexString = 0,
         Standard = 1,
     }
     public sealed partial class ExtendedRightAccessRule : System.DirectoryServices.ActiveDirectoryAccessRule
@@ -380,8 +380,8 @@ namespace System.DirectoryServices
     }
     public enum PasswordEncodingMethod
     {
-        PasswordEncodingClear = 1,
         PasswordEncodingSsl = 0,
+        PasswordEncodingClear = 1,
     }
     public enum PropertyAccess
     {
@@ -447,10 +447,10 @@ namespace System.DirectoryServices
     }
     public enum ReferralChasingOption
     {
-        All = 96,
-        External = 64,
         None = 0,
         Subordinate = 32,
+        External = 64,
+        All = 96,
     }
     public partial class ResultPropertyCollection : System.Collections.DictionaryBase
     {
@@ -531,10 +531,10 @@ namespace System.DirectoryServices
     [System.FlagsAttribute]
     public enum SecurityMasks
     {
-        Dacl = 4,
-        Group = 2,
         None = 0,
         Owner = 1,
+        Group = 2,
+        Dacl = 4,
         Sacl = 8,
     }
     public enum SortDirection
@@ -619,11 +619,11 @@ namespace System.DirectoryServices.ActiveDirectory
     }
     public enum ActiveDirectoryRole
     {
-        InfrastructureRole = 4,
+        SchemaRole = 0,
         NamingRole = 1,
         PdcRole = 2,
         RidRole = 3,
-        SchemaRole = 0,
+        InfrastructureRole = 4,
     }
     public partial class ActiveDirectoryRoleCollection : System.Collections.ReadOnlyCollectionBase
     {
@@ -870,18 +870,18 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.FlagsAttribute]
     public enum ActiveDirectorySiteOptions
     {
-        AutoInterSiteTopologyDisabled = 16,
-        AutoMinimumHopDisabled = 4,
-        AutoTopologyDisabled = 1,
-        ForceKccWindows2003Behavior = 64,
-        GroupMembershipCachingEnabled = 32,
         None = 0,
-        RandomBridgeHeaderServerSelectionDisabled = 256,
-        RedundantServerTopologyEnabled = 1024,
-        StaleServerDetectDisabled = 8,
+        AutoTopologyDisabled = 1,
         TopologyCleanupDisabled = 2,
-        UseHashingForReplicationSchedule = 512,
+        AutoMinimumHopDisabled = 4,
+        StaleServerDetectDisabled = 8,
+        AutoInterSiteTopologyDisabled = 16,
+        GroupMembershipCachingEnabled = 32,
+        ForceKccWindows2003Behavior = 64,
         UseWindows2000IstgElection = 128,
+        RandomBridgeHeaderServerSelectionDisabled = 256,
+        UseHashingForReplicationSchedule = 512,
+        RedundantServerTopologyEnabled = 1024,
     }
     public partial class ActiveDirectorySubnet : System.IDisposable
     {
@@ -919,29 +919,29 @@ namespace System.DirectoryServices.ActiveDirectory
     }
     public enum ActiveDirectorySyntax
     {
-        AccessPointDN = 19,
-        Bool = 8,
         CaseExactString = 0,
         CaseIgnoreString = 1,
+        NumericString = 2,
         DirectoryString = 3,
+        OctetString = 4,
+        SecurityDescriptor = 5,
+        Int = 6,
+        Int64 = 7,
+        Bool = 8,
+        Oid = 9,
+        GeneralizedTime = 10,
+        UtcTime = 11,
         DN = 12,
         DNWithBinary = 13,
         DNWithString = 14,
         Enumeration = 15,
-        GeneralizedTime = 10,
         IA5String = 16,
-        Int = 6,
-        Int64 = 7,
-        NumericString = 2,
-        OctetString = 4,
-        Oid = 9,
+        PrintableString = 17,
+        Sid = 18,
+        AccessPointDN = 19,
         ORName = 20,
         PresentationAddress = 21,
-        PrintableString = 17,
         ReplicaLink = 22,
-        SecurityDescriptor = 5,
-        Sid = 18,
-        UtcTime = 11,
     }
     public enum ActiveDirectoryTransportType
     {
@@ -991,8 +991,8 @@ namespace System.DirectoryServices.ActiveDirectory
     }
     public enum AdamRole
     {
-        NamingRole = 1,
         SchemaRole = 0,
+        NamingRole = 1,
     }
     public partial class AdamRoleCollection : System.Collections.ReadOnlyCollectionBase
     {
@@ -1086,11 +1086,11 @@ namespace System.DirectoryServices.ActiveDirectory
     }
     public enum DirectoryContextType
     {
-        ApplicationPartition = 4,
-        ConfigurationSet = 3,
-        DirectoryServer = 2,
         Domain = 0,
         Forest = 1,
+        DirectoryServer = 2,
+        ConfigurationSet = 3,
+        ApplicationPartition = 4,
     }
     public abstract partial class DirectoryServer : System.IDisposable
     {
@@ -1191,11 +1191,11 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.FlagsAttribute]
     public enum DomainCollisionOptions
     {
-        NetBiosNameDisabledByAdmin = 4,
-        NetBiosNameDisabledByConflict = 8,
         None = 0,
         SidDisabledByAdmin = 1,
         SidDisabledByConflict = 2,
+        NetBiosNameDisabledByAdmin = 4,
+        NetBiosNameDisabledByConflict = 8,
     }
     public partial class DomainController : System.DirectoryServices.ActiveDirectory.DirectoryServer
     {
@@ -1249,12 +1249,12 @@ namespace System.DirectoryServices.ActiveDirectory
         Unknown = -1,
         Windows2000MixedDomain = 0,
         Windows2000NativeDomain = 1,
-        Windows2003Domain = 3,
         Windows2003InterimDomain = 2,
+        Windows2003Domain = 3,
         Windows2008Domain = 4,
         Windows2008R2Domain = 5,
-        Windows2012R2Domain = 7,
         Windows8Domain = 6,
+        Windows2012R2Domain = 7,
     }
     public partial class Forest : System.IDisposable
     {
@@ -1306,12 +1306,12 @@ namespace System.DirectoryServices.ActiveDirectory
     {
         Unknown = -1,
         Windows2000Forest = 0,
-        Windows2003Forest = 2,
         Windows2003InterimForest = 1,
+        Windows2003Forest = 2,
         Windows2008Forest = 3,
         Windows2008R2Forest = 4,
-        Windows2012R2Forest = 6,
         Windows8Forest = 5,
+        Windows2012R2Forest = 6,
     }
     public partial class ForestTrustCollisionException : System.DirectoryServices.ActiveDirectory.ActiveDirectoryOperationException, System.Runtime.Serialization.ISerializable
     {
@@ -1325,9 +1325,9 @@ namespace System.DirectoryServices.ActiveDirectory
     }
     public enum ForestTrustCollisionType
     {
+        TopLevelName = 0,
         Domain = 1,
         Other = 2,
-        TopLevelName = 0,
     }
     public partial class ForestTrustDomainInfoCollection : System.Collections.ReadOnlyCollectionBase
     {
@@ -1348,10 +1348,10 @@ namespace System.DirectoryServices.ActiveDirectory
     public enum ForestTrustDomainStatus
     {
         Enabled = 0,
-        NetBiosNameAdminDisabled = 4,
-        NetBiosNameConflictDisabled = 8,
         SidAdminDisabled = 1,
         SidConflictDisabled = 2,
+        NetBiosNameAdminDisabled = 4,
+        NetBiosNameConflictDisabled = 8,
     }
     public partial class ForestTrustRelationshipCollision
     {
@@ -1403,51 +1403,51 @@ namespace System.DirectoryServices.ActiveDirectory
     }
     public enum HourOfDay
     {
-        Eight = 8,
-        Eighteen = 18,
-        Eleven = 11,
-        Fifteen = 15,
-        Five = 5,
-        Four = 4,
-        Fourteen = 14,
-        Nine = 9,
-        Nineteen = 19,
+        Zero = 0,
         One = 1,
-        Seven = 7,
-        Seventeen = 17,
-        Six = 6,
-        Sixteen = 16,
-        Ten = 10,
-        Thirteen = 13,
+        Two = 2,
         Three = 3,
+        Four = 4,
+        Five = 5,
+        Six = 6,
+        Seven = 7,
+        Eight = 8,
+        Nine = 9,
+        Ten = 10,
+        Eleven = 11,
         Twelve = 12,
+        Thirteen = 13,
+        Fourteen = 14,
+        Fifteen = 15,
+        Sixteen = 16,
+        Seventeen = 17,
+        Eighteen = 18,
+        Nineteen = 19,
         Twenty = 20,
         TwentyOne = 21,
-        TwentyThree = 23,
         TwentyTwo = 22,
-        Two = 2,
-        Zero = 0,
+        TwentyThree = 23,
     }
     [System.FlagsAttribute]
     public enum LocatorOptions : long
     {
-        AvoidSelf = (long)16384,
         ForceRediscovery = (long)1,
         KdcRequired = (long)1024,
         TimeServerRequired = (long)2048,
         WriteableRequired = (long)4096,
+        AvoidSelf = (long)16384,
     }
     public enum MinuteOfHour
     {
-        Fifteen = 15,
-        FortyFive = 45,
-        Thirty = 30,
         Zero = 0,
+        Fifteen = 15,
+        Thirty = 30,
+        FortyFive = 45,
     }
     public enum NotificationStatus
     {
-        IntraSiteOnly = 1,
         NoNotification = 0,
+        IntraSiteOnly = 1,
         NotificationAlways = 2,
     }
     [System.FlagsAttribute]
@@ -1599,21 +1599,21 @@ namespace System.DirectoryServices.ActiveDirectory
         [System.FlagsAttribute]
         public enum ReplicationNeighborOptions : long
         {
-            CompressChanges = (long)268435456,
-            DisableScheduledSync = (long)134217728,
+            Writeable = (long)16,
+            SyncOnStartup = (long)32,
+            ScheduledSync = (long)64,
+            UseInterSiteTransport = (long)128,
+            TwoWaySync = (long)512,
+            ReturnObjectParent = (long)2048,
             FullSyncInProgress = (long)65536,
             FullSyncNextPacket = (long)131072,
-            IgnoreChangeNotifications = (long)67108864,
             NeverSynced = (long)2097152,
+            Preempted = (long)16777216,
+            IgnoreChangeNotifications = (long)67108864,
+            DisableScheduledSync = (long)134217728,
+            CompressChanges = (long)268435456,
             NoChangeNotifications = (long)536870912,
             PartialAttributeSet = (long)1073741824,
-            Preempted = (long)16777216,
-            ReturnObjectParent = (long)2048,
-            ScheduledSync = (long)64,
-            SyncOnStartup = (long)32,
-            TwoWaySync = (long)512,
-            UseInterSiteTransport = (long)128,
-            Writeable = (long)16,
         }
     }
     public partial class ReplicationNeighborCollection : System.Collections.ReadOnlyCollectionBase
@@ -1651,29 +1651,29 @@ namespace System.DirectoryServices.ActiveDirectory
     }
     public enum ReplicationOperationType
     {
+        Sync = 0,
         Add = 1,
         Delete = 2,
         Modify = 3,
-        Sync = 0,
         UpdateReference = 4,
     }
     public enum ReplicationSecurityLevel
     {
-        MutualAuthentication = 2,
-        Negotiate = 1,
         NegotiatePassThrough = 0,
+        Negotiate = 1,
+        MutualAuthentication = 2,
     }
     public enum ReplicationSpan
     {
-        InterSite = 1,
         IntraSite = 0,
+        InterSite = 1,
     }
     public enum SchemaClassType
     {
+        Type88 = 0,
+        Structural = 1,
         Abstract = 2,
         Auxiliary = 3,
-        Structural = 1,
-        Type88 = 0,
     }
     public enum SyncFromAllServersErrorCategory
     {
@@ -1693,9 +1693,9 @@ namespace System.DirectoryServices.ActiveDirectory
     public enum SyncFromAllServersEvent
     {
         Error = 0,
-        Finished = 3,
-        SyncCompleted = 2,
         SyncStarted = 1,
+        SyncCompleted = 2,
+        Finished = 3,
     }
     public partial class SyncFromAllServersOperationException : System.DirectoryServices.ActiveDirectory.ActiveDirectoryOperationException, System.Runtime.Serialization.ISerializable
     {
@@ -1710,13 +1710,13 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.FlagsAttribute]
     public enum SyncFromAllServersOptions
     {
-        AbortIfServerUnavailable = 1,
-        CheckServerAlivenessOnly = 8,
-        CrossSite = 64,
         None = 0,
-        PushChangeOutward = 32,
-        SkipInitialCheck = 16,
+        AbortIfServerUnavailable = 1,
         SyncAdjacentServerOnly = 2,
+        CheckServerAlivenessOnly = 8,
+        SkipInitialCheck = 16,
+        PushChangeOutward = 32,
+        CrossSite = 64,
     }
     public delegate bool SyncUpdateCallback(System.DirectoryServices.ActiveDirectory.SyncFromAllServersEvent eventType, string targetServer, string sourceServer, System.DirectoryServices.ActiveDirectory.SyncFromAllServersOperationException exception);
     public partial class TopLevelName
@@ -1736,23 +1736,23 @@ namespace System.DirectoryServices.ActiveDirectory
     [System.FlagsAttribute]
     public enum TopLevelNameCollisionOptions
     {
+        None = 0,
+        NewlyCreated = 1,
         DisabledByAdmin = 2,
         DisabledByConflict = 4,
-        NewlyCreated = 1,
-        None = 0,
     }
     public enum TopLevelNameStatus
     {
-        AdminDisabled = 2,
-        ConflictDisabled = 4,
         Enabled = 0,
         NewlyCreated = 1,
+        AdminDisabled = 2,
+        ConflictDisabled = 4,
     }
     public enum TrustDirection
     {
-        Bidirectional = 3,
         Inbound = 1,
         Outbound = 2,
+        Bidirectional = 3,
     }
     public partial class TrustRelationshipInformation
     {
@@ -1772,12 +1772,12 @@ namespace System.DirectoryServices.ActiveDirectory
     }
     public enum TrustType
     {
+        TreeRoot = 0,
+        ParentChild = 1,
         CrossLink = 2,
         External = 3,
         Forest = 4,
         Kerberos = 5,
-        ParentChild = 1,
-        TreeRoot = 0,
         Unknown = 6,
     }
 }

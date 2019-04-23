@@ -32,28 +32,28 @@ namespace Microsoft.CSharp.RuntimeBinder
     [System.FlagsAttribute]
     public enum CSharpArgumentInfoFlags
     {
-        Constant = 2,
-        IsOut = 16,
-        IsRef = 8,
-        IsStaticType = 32,
-        NamedArgument = 4,
         None = 0,
         UseCompileTimeType = 1,
+        Constant = 2,
+        NamedArgument = 4,
+        IsRef = 8,
+        IsOut = 16,
+        IsStaticType = 32,
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     [System.FlagsAttribute]
     public enum CSharpBinderFlags
     {
-        BinaryOperationLogical = 8,
+        None = 0,
         CheckedContext = 1,
-        ConvertArrayIndex = 32,
-        ConvertExplicit = 16,
         InvokeSimpleName = 2,
         InvokeSpecialName = 4,
-        None = 0,
-        ResultDiscarded = 256,
+        BinaryOperationLogical = 8,
+        ConvertExplicit = 16,
+        ConvertArrayIndex = 32,
         ResultIndexed = 64,
         ValueFromCompoundAssignment = 128,
+        ResultDiscarded = 256,
     }
     public partial class RuntimeBinderException : System.Exception
     {

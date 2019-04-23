@@ -10,28 +10,28 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum AccessControlActions
     {
-        Change = 2,
         None = 0,
         View = 1,
+        Change = 2,
     }
     public enum AccessControlModification
     {
         Add = 0,
+        Set = 1,
+        Reset = 2,
         Remove = 3,
         RemoveAll = 4,
         RemoveSpecific = 5,
-        Reset = 2,
-        Set = 1,
     }
     [System.FlagsAttribute]
     public enum AccessControlSections
     {
-        Access = 2,
-        All = 15,
-        Audit = 1,
-        Group = 8,
         None = 0,
+        Audit = 1,
+        Access = 2,
         Owner = 4,
+        Group = 8,
+        All = 15,
     }
     public enum AccessControlType
     {
@@ -62,51 +62,51 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum AceFlags : byte
     {
-        AuditFlags = (byte)192,
+        None = (byte)0,
+        ObjectInherit = (byte)1,
         ContainerInherit = (byte)2,
-        FailedAccess = (byte)128,
+        NoPropagateInherit = (byte)4,
+        InheritOnly = (byte)8,
         InheritanceFlags = (byte)15,
         Inherited = (byte)16,
-        InheritOnly = (byte)8,
-        None = (byte)0,
-        NoPropagateInherit = (byte)4,
-        ObjectInherit = (byte)1,
         SuccessfulAccess = (byte)64,
+        FailedAccess = (byte)128,
+        AuditFlags = (byte)192,
     }
     public enum AceQualifier
     {
         AccessAllowed = 0,
         AccessDenied = 1,
-        SystemAlarm = 3,
         SystemAudit = 2,
+        SystemAlarm = 3,
     }
     public enum AceType : byte
     {
         AccessAllowed = (byte)0,
-        AccessAllowedCallback = (byte)9,
-        AccessAllowedCallbackObject = (byte)11,
+        AccessDenied = (byte)1,
+        SystemAudit = (byte)2,
+        SystemAlarm = (byte)3,
         AccessAllowedCompound = (byte)4,
         AccessAllowedObject = (byte)5,
-        AccessDenied = (byte)1,
-        AccessDeniedCallback = (byte)10,
-        AccessDeniedCallbackObject = (byte)12,
         AccessDeniedObject = (byte)6,
-        MaxDefinedAceType = (byte)16,
-        SystemAlarm = (byte)3,
-        SystemAlarmCallback = (byte)14,
-        SystemAlarmCallbackObject = (byte)16,
-        SystemAlarmObject = (byte)8,
-        SystemAudit = (byte)2,
-        SystemAuditCallback = (byte)13,
-        SystemAuditCallbackObject = (byte)15,
         SystemAuditObject = (byte)7,
+        SystemAlarmObject = (byte)8,
+        AccessAllowedCallback = (byte)9,
+        AccessDeniedCallback = (byte)10,
+        AccessAllowedCallbackObject = (byte)11,
+        AccessDeniedCallbackObject = (byte)12,
+        SystemAuditCallback = (byte)13,
+        SystemAlarmCallback = (byte)14,
+        SystemAuditCallbackObject = (byte)15,
+        MaxDefinedAceType = (byte)16,
+        SystemAlarmCallbackObject = (byte)16,
     }
     [System.FlagsAttribute]
     public enum AuditFlags
     {
-        Failure = 2,
         None = 0,
         Success = 1,
+        Failure = 2,
     }
     public abstract partial class AuditRule : System.Security.AccessControl.AuthorizationRule
     {
@@ -213,23 +213,23 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum ControlFlags
     {
-        DiscretionaryAclAutoInherited = 1024,
-        DiscretionaryAclAutoInheritRequired = 256,
-        DiscretionaryAclDefaulted = 8,
-        DiscretionaryAclPresent = 4,
-        DiscretionaryAclProtected = 4096,
-        DiscretionaryAclUntrusted = 64,
-        GroupDefaulted = 2,
         None = 0,
         OwnerDefaulted = 1,
+        GroupDefaulted = 2,
+        DiscretionaryAclPresent = 4,
+        DiscretionaryAclDefaulted = 8,
+        SystemAclPresent = 16,
+        SystemAclDefaulted = 32,
+        DiscretionaryAclUntrusted = 64,
+        ServerSecurity = 128,
+        DiscretionaryAclAutoInheritRequired = 256,
+        SystemAclAutoInheritRequired = 512,
+        DiscretionaryAclAutoInherited = 1024,
+        SystemAclAutoInherited = 2048,
+        DiscretionaryAclProtected = 4096,
+        SystemAclProtected = 8192,
         RMControlValid = 16384,
         SelfRelative = 32768,
-        ServerSecurity = 128,
-        SystemAclAutoInherited = 2048,
-        SystemAclAutoInheritRequired = 512,
-        SystemAclDefaulted = 32,
-        SystemAclPresent = 16,
-        SystemAclProtected = 8192,
     }
     public sealed partial class CustomAce : System.Security.AccessControl.GenericAce
     {
@@ -310,8 +310,8 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum InheritanceFlags
     {
-        ContainerInherit = 1,
         None = 0,
+        ContainerInherit = 1,
         ObjectInherit = 2,
     }
     public abstract partial class KnownAce : System.Security.AccessControl.GenericAce
@@ -354,9 +354,9 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum ObjectAceFlags
     {
-        InheritedObjectAceTypePresent = 2,
         None = 0,
         ObjectAceTypePresent = 1,
+        InheritedObjectAceTypePresent = 2,
     }
     public abstract partial class ObjectAuditRule : System.Security.AccessControl.AuditRule
     {
@@ -449,9 +449,9 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum PropagationFlags
     {
-        InheritOnly = 2,
         None = 0,
         NoPropagateInherit = 1,
+        InheritOnly = 2,
     }
     public abstract partial class QualifiedAce : System.Security.AccessControl.KnownAce
     {
@@ -489,26 +489,26 @@ namespace System.Security.AccessControl
     }
     public enum ResourceType
     {
+        Unknown = 0,
+        FileObject = 1,
+        Service = 2,
+        Printer = 3,
+        RegistryKey = 4,
+        LMShare = 5,
+        KernelObject = 6,
+        WindowObject = 7,
         DSObject = 8,
         DSObjectAll = 9,
-        FileObject = 1,
-        KernelObject = 6,
-        LMShare = 5,
-        Printer = 3,
         ProviderDefined = 10,
-        RegistryKey = 4,
-        RegistryWow6432Key = 12,
-        Service = 2,
-        Unknown = 0,
-        WindowObject = 7,
         WmiGuidObject = 11,
+        RegistryWow6432Key = 12,
     }
     [System.FlagsAttribute]
     public enum SecurityInfos
     {
-        DiscretionaryAcl = 4,
-        Group = 2,
         Owner = 1,
+        Group = 2,
+        DiscretionaryAcl = 4,
         SystemAcl = 8,
     }
     public sealed partial class SystemAcl : System.Security.AccessControl.CommonAcl

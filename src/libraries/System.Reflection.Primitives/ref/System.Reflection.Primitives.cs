@@ -303,15 +303,15 @@ namespace System.Reflection.Emit
     }
     public enum PackingSize
     {
-        Size1 = 1,
-        Size128 = 128,
-        Size16 = 16,
-        Size2 = 2,
-        Size32 = 32,
-        Size4 = 4,
-        Size64 = 64,
-        Size8 = 8,
         Unspecified = 0,
+        Size1 = 1,
+        Size2 = 2,
+        Size4 = 4,
+        Size8 = 8,
+        Size16 = 16,
+        Size32 = 32,
+        Size64 = 64,
+        Size128 = 128,
     }
     public enum StackBehaviour
     {
@@ -328,7 +328,6 @@ namespace System.Reflection.Emit
         Popref = 10,
         Popref_pop1 = 11,
         Popref_popi = 12,
-        Popref_popi_pop1 = 28,
         Popref_popi_popi = 13,
         Popref_popi_popi8 = 14,
         Popref_popi_popr4 = 15,
@@ -344,5 +343,6 @@ namespace System.Reflection.Emit
         Pushref = 25,
         Varpop = 26,
         Varpush = 27,
+        Popref_popi_pop1 = 28,
     }
 }

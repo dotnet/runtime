@@ -53,8 +53,8 @@ namespace Windows.UI.Xaml
     public enum DurationType
     {
         Automatic = 0,
-        Forever = 2,
         TimeSpan = 1,
+        Forever = 2,
     }
     public partial struct GridLength
     {

@@ -73,11 +73,11 @@ namespace System.Net.Mail
     [System.FlagsAttribute]
     public enum DeliveryNotificationOptions
     {
+        None = 0,
+        OnSuccess = 1,
+        OnFailure = 2,
         Delay = 4,
         Never = 134217728,
-        None = 0,
-        OnFailure = 2,
-        OnSuccess = 1,
     }
     public partial class LinkedResource : System.Net.Mail.AttachmentBase
     {
@@ -153,9 +153,9 @@ namespace System.Net.Mail
     }
     public enum MailPriority
     {
-        High = 2,
-        Low = 1,
         Normal = 0,
+        Low = 1,
+        High = 2,
     }
     public delegate void SendCompletedEventHandler(object sender, System.ComponentModel.AsyncCompletedEventArgs e);
     public partial class SmtpClient : System.IDisposable
@@ -189,14 +189,14 @@ namespace System.Net.Mail
     }
     public enum SmtpDeliveryFormat
     {
-        International = 1,
         SevenBit = 0,
+        International = 1,
     }
     public enum SmtpDeliveryMethod
     {
         Network = 0,
-        PickupDirectoryFromIis = 2,
         SpecifiedPickupDirectory = 1,
+        PickupDirectoryFromIis = 2,
     }
     public partial class SmtpException : System.Exception, System.Runtime.Serialization.ISerializable
     {
@@ -236,31 +236,31 @@ namespace System.Net.Mail
     }
     public enum SmtpStatusCode
     {
-        BadCommandSequence = 503,
-        CannotVerifyUserWillAttemptDelivery = 252,
-        ClientNotPermitted = 454,
-        CommandNotImplemented = 502,
-        CommandParameterNotImplemented = 504,
-        CommandUnrecognized = 500,
-        ExceededStorageAllocation = 552,
         GeneralFailure = -1,
-        HelpMessage = 214,
-        InsufficientStorage = 452,
-        LocalErrorInProcessing = 451,
-        MailboxBusy = 450,
-        MailboxNameNotAllowed = 553,
-        MailboxUnavailable = 550,
-        MustIssueStartTlsFirst = 530,
-        Ok = 250,
-        ServiceClosingTransmissionChannel = 221,
-        ServiceNotAvailable = 421,
-        ServiceReady = 220,
-        StartMailInput = 354,
-        SyntaxError = 501,
         SystemStatus = 211,
-        TransactionFailed = 554,
-        UserNotLocalTryAlternatePath = 551,
+        HelpMessage = 214,
+        ServiceReady = 220,
+        ServiceClosingTransmissionChannel = 221,
+        Ok = 250,
         UserNotLocalWillForward = 251,
+        CannotVerifyUserWillAttemptDelivery = 252,
+        StartMailInput = 354,
+        ServiceNotAvailable = 421,
+        MailboxBusy = 450,
+        LocalErrorInProcessing = 451,
+        InsufficientStorage = 452,
+        ClientNotPermitted = 454,
+        CommandUnrecognized = 500,
+        SyntaxError = 501,
+        CommandNotImplemented = 502,
+        BadCommandSequence = 503,
+        CommandParameterNotImplemented = 504,
+        MustIssueStartTlsFirst = 530,
+        MailboxUnavailable = 550,
+        UserNotLocalTryAlternatePath = 551,
+        ExceededStorageAllocation = 552,
+        MailboxNameNotAllowed = 553,
+        TransactionFailed = 554,
     }
 }
 namespace System.Net.Mime
@@ -327,10 +327,10 @@ namespace System.Net.Mime
     }
     public enum TransferEncoding
     {
-        Base64 = 1,
-        EightBit = 3,
-        QuotedPrintable = 0,
-        SevenBit = 2,
         Unknown = -1,
+        QuotedPrintable = 0,
+        Base64 = 1,
+        SevenBit = 2,
+        EightBit = 3,
     }
 }

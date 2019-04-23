@@ -21,13 +21,13 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum EventWaitHandleRights
     {
-        ChangePermissions = 262144,
-        Delete = 65536,
-        FullControl = 2031619,
         Modify = 2,
+        Delete = 65536,
         ReadPermissions = 131072,
-        Synchronize = 1048576,
+        ChangePermissions = 262144,
         TakeOwnership = 524288,
+        Synchronize = 1048576,
+        FullControl = 2031619,
     }
     public sealed partial class EventWaitHandleSecurity : System.Security.AccessControl.NativeObjectSecurity
     {
@@ -63,13 +63,13 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum MutexRights
     {
-        ChangePermissions = 262144,
-        Delete = 65536,
-        FullControl = 2031617,
         Modify = 1,
+        Delete = 65536,
         ReadPermissions = 131072,
-        Synchronize = 1048576,
+        ChangePermissions = 262144,
         TakeOwnership = 524288,
+        Synchronize = 1048576,
+        FullControl = 2031617,
     }
     public sealed partial class MutexSecurity : System.Security.AccessControl.NativeObjectSecurity
     {
@@ -106,13 +106,13 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum SemaphoreRights
     {
-        ChangePermissions = 262144,
-        Delete = 65536,
-        FullControl = 2031619,
         Modify = 2,
+        Delete = 65536,
         ReadPermissions = 131072,
-        Synchronize = 1048576,
+        ChangePermissions = 262144,
         TakeOwnership = 524288,
+        Synchronize = 1048576,
+        FullControl = 2031619,
     }
     public sealed partial class SemaphoreSecurity : System.Security.AccessControl.NativeObjectSecurity
     {

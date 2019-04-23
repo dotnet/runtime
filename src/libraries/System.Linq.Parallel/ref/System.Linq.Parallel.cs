@@ -239,10 +239,10 @@ namespace System.Linq
     }
     public enum ParallelMergeOptions
     {
-        AutoBuffered = 2,
         Default = 0,
-        FullyBuffered = 3,
         NotBuffered = 1,
+        AutoBuffered = 2,
+        FullyBuffered = 3,
     }
     public partial class ParallelQuery : System.Collections.IEnumerable
     {

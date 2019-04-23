@@ -20,16 +20,16 @@ namespace System.Security.Principal
     }
     public enum PrincipalPolicy
     {
-        NoPrincipal = 1,
         UnauthenticatedPrincipal = 0,
+        NoPrincipal = 1,
         WindowsPrincipal = 2,
     }
     public enum TokenImpersonationLevel
     {
+        None = 0,
         Anonymous = 1,
-        Delegation = 4,
         Identification = 2,
         Impersonation = 3,
-        None = 0,
+        Delegation = 4,
     }
 }

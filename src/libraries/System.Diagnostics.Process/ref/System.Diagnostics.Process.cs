@@ -150,12 +150,12 @@ namespace System.Diagnostics
     }
     public enum ProcessPriorityClass
     {
-        AboveNormal = 32768,
-        BelowNormal = 16384,
-        High = 128,
-        Idle = 64,
         Normal = 32,
+        Idle = 64,
+        High = 128,
         RealTime = 256,
+        BelowNormal = 16384,
+        AboveNormal = 32768,
     }
     public sealed partial class ProcessStartInfo
     {
@@ -224,19 +224,19 @@ namespace System.Diagnostics
     }
     public enum ProcessWindowStyle
     {
-        Hidden = 1,
-        Maximized = 3,
-        Minimized = 2,
         Normal = 0,
+        Hidden = 1,
+        Minimized = 2,
+        Maximized = 3,
     }
     public enum ThreadPriorityLevel
     {
-        AboveNormal = 1,
-        BelowNormal = -1,
-        Highest = 2,
         Idle = -15,
         Lowest = -2,
+        BelowNormal = -1,
         Normal = 0,
+        AboveNormal = 1,
+        Highest = 2,
         TimeCritical = 15,
     }
     public enum ThreadState
@@ -246,25 +246,25 @@ namespace System.Diagnostics
         Running = 2,
         Standby = 3,
         Terminated = 4,
+        Wait = 5,
         Transition = 6,
         Unknown = 7,
-        Wait = 5,
     }
     public enum ThreadWaitReason
     {
-        EventPairHigh = 7,
-        EventPairLow = 8,
-        ExecutionDelay = 4,
         Executive = 0,
         FreePage = 1,
+        PageIn = 2,
+        SystemAllocation = 3,
+        ExecutionDelay = 4,
+        Suspended = 5,
+        UserRequest = 6,
+        EventPairHigh = 7,
+        EventPairLow = 8,
         LpcReceive = 9,
         LpcReply = 10,
-        PageIn = 2,
-        PageOut = 12,
-        Suspended = 5,
-        SystemAllocation = 3,
-        Unknown = 13,
-        UserRequest = 6,
         VirtualMemory = 11,
+        PageOut = 12,
+        Unknown = 13,
     }
 }

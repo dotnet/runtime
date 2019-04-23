@@ -23,10 +23,10 @@ namespace System.IO.Packaging
 {
     public enum CompressionOption
     {
-        Fast = 2,
-        Maximum = 1,
-        Normal = 0,
         NotCompressed = -1,
+        Normal = 0,
+        Maximum = 1,
+        Fast = 2,
         SuperFast = 3,
     }
     public enum EncryptionOption
@@ -163,8 +163,8 @@ namespace System.IO.Packaging
     }
     public enum TargetMode
     {
-        External = 1,
         Internal = 0,
+        External = 1,
     }
     public sealed partial class ZipPackage : System.IO.Packaging.Package
     {

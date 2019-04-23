@@ -9,11 +9,11 @@ namespace System.Net.NetworkInformation
 {
     public enum DuplicateAddressDetectionState
     {
-        Deprecated = 3,
-        Duplicate = 2,
         Invalid = 0,
-        Preferred = 4,
         Tentative = 1,
+        Duplicate = 2,
+        Deprecated = 3,
+        Preferred = 4,
     }
     public abstract partial class GatewayIPAddressInformation
     {
@@ -264,11 +264,11 @@ namespace System.Net.NetworkInformation
     }
     public enum NetBiosNodeType
     {
-        Broadcast = 1,
-        Hybrid = 8,
-        Mixed = 4,
-        Peer2Peer = 2,
         Unknown = 0,
+        Broadcast = 1,
+        Peer2Peer = 2,
+        Mixed = 4,
+        Hybrid = 8,
     }
     public delegate void NetworkAddressChangedEventHandler(object sender, System.EventArgs e);
     public delegate void NetworkAvailabilityChangedEventHandler(object sender, System.Net.NetworkInformation.NetworkAvailabilityEventArgs e);
@@ -323,44 +323,44 @@ namespace System.Net.NetworkInformation
     }
     public enum NetworkInterfaceType
     {
-        AsymmetricDsl = 94,
-        Atm = 37,
-        BasicIsdn = 20,
-        Ethernet = 6,
-        Ethernet3Megabit = 26,
-        FastEthernetFx = 69,
-        FastEthernetT = 62,
-        Fddi = 15,
-        GenericModem = 48,
-        GigabitEthernet = 117,
-        HighPerformanceSerialBus = 144,
-        IPOverAtm = 114,
-        Isdn = 63,
-        Loopback = 24,
-        MultiRateSymmetricDsl = 143,
-        Ppp = 23,
-        PrimaryIsdn = 21,
-        RateAdaptDsl = 95,
-        Slip = 28,
-        SymmetricDsl = 96,
-        TokenRing = 9,
-        Tunnel = 131,
         Unknown = 1,
-        VeryHighSpeedDsl = 97,
+        Ethernet = 6,
+        TokenRing = 9,
+        Fddi = 15,
+        BasicIsdn = 20,
+        PrimaryIsdn = 21,
+        Ppp = 23,
+        Loopback = 24,
+        Ethernet3Megabit = 26,
+        Slip = 28,
+        Atm = 37,
+        GenericModem = 48,
+        FastEthernetT = 62,
+        Isdn = 63,
+        FastEthernetFx = 69,
         Wireless80211 = 71,
+        AsymmetricDsl = 94,
+        RateAdaptDsl = 95,
+        SymmetricDsl = 96,
+        VeryHighSpeedDsl = 97,
+        IPOverAtm = 114,
+        GigabitEthernet = 117,
+        Tunnel = 131,
+        MultiRateSymmetricDsl = 143,
+        HighPerformanceSerialBus = 144,
         Wman = 237,
         Wwanpp = 243,
         Wwanpp2 = 244,
     }
     public enum OperationalStatus
     {
-        Dormant = 5,
+        Up = 1,
         Down = 2,
-        LowerLayerDown = 7,
-        NotPresent = 6,
         Testing = 3,
         Unknown = 4,
-        Up = 1,
+        Dormant = 5,
+        NotPresent = 6,
+        LowerLayerDown = 7,
     }
     public partial class PhysicalAddress
     {
@@ -374,31 +374,31 @@ namespace System.Net.NetworkInformation
     }
     public enum PrefixOrigin
     {
-        Dhcp = 3,
-        Manual = 1,
         Other = 0,
-        RouterAdvertisement = 4,
+        Manual = 1,
         WellKnown = 2,
+        Dhcp = 3,
+        RouterAdvertisement = 4,
     }
     public enum ScopeLevel
     {
-        Admin = 4,
-        Global = 14,
+        None = 0,
         Interface = 1,
         Link = 2,
-        None = 0,
-        Organization = 8,
-        Site = 5,
         Subnet = 3,
+        Admin = 4,
+        Site = 5,
+        Organization = 8,
+        Global = 14,
     }
     public enum SuffixOrigin
     {
-        LinkLayerAddress = 4,
-        Manual = 1,
-        OriginDhcp = 3,
         Other = 0,
-        Random = 5,
+        Manual = 1,
         WellKnown = 2,
+        OriginDhcp = 3,
+        LinkLayerAddress = 4,
+        Random = 5,
     }
     public abstract partial class TcpConnectionInformation
     {
@@ -409,19 +409,19 @@ namespace System.Net.NetworkInformation
     }
     public enum TcpState
     {
+        Unknown = 0,
         Closed = 1,
-        CloseWait = 8,
-        Closing = 9,
-        DeleteTcb = 12,
+        Listen = 2,
+        SynSent = 3,
+        SynReceived = 4,
         Established = 5,
         FinWait1 = 6,
         FinWait2 = 7,
+        CloseWait = 8,
+        Closing = 9,
         LastAck = 10,
-        Listen = 2,
-        SynReceived = 4,
-        SynSent = 3,
         TimeWait = 11,
-        Unknown = 0,
+        DeleteTcb = 12,
     }
     public abstract partial class TcpStatistics
     {

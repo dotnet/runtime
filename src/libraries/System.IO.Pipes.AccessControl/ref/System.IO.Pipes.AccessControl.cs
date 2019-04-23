@@ -10,23 +10,23 @@ namespace System.IO.Pipes
     [System.FlagsAttribute]
     public enum PipeAccessRights
     {
-        AccessSystemSecurity = 16777216,
-        ChangePermissions = 262144,
-        CreateNewInstance = 4,
-        Delete = 65536,
-        FullControl = 2032031,
-        Read = 131209,
-        ReadAttributes = 128,
         ReadData = 1,
-        ReadExtendedAttributes = 8,
-        ReadPermissions = 131072,
-        ReadWrite = 131483,
-        Synchronize = 1048576,
-        TakeOwnership = 524288,
-        Write = 274,
-        WriteAttributes = 256,
         WriteData = 2,
+        CreateNewInstance = 4,
+        ReadExtendedAttributes = 8,
         WriteExtendedAttributes = 16,
+        ReadAttributes = 128,
+        WriteAttributes = 256,
+        Write = 274,
+        Delete = 65536,
+        ReadPermissions = 131072,
+        Read = 131209,
+        ReadWrite = 131483,
+        ChangePermissions = 262144,
+        TakeOwnership = 524288,
+        Synchronize = 1048576,
+        FullControl = 2032031,
+        AccessSystemSecurity = 16777216,
     }
     public sealed partial class PipeAccessRule : System.Security.AccessControl.AccessRule
     {

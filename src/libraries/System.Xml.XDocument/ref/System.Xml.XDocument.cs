@@ -45,8 +45,8 @@ namespace System.Xml.Linq
     [System.FlagsAttribute]
     public enum SaveOptions
     {
-        DisableFormatting = 1,
         None = 0,
+        DisableFormatting = 1,
         OmitDuplicateNamespaces = 2,
     }
     public partial class XAttribute : System.Xml.Linq.XObject
@@ -433,8 +433,8 @@ namespace System.Xml.Linq
     public enum XObjectChange
     {
         Add = 0,
-        Name = 2,
         Remove = 1,
+        Name = 2,
         Value = 3,
     }
     public partial class XObjectChangeEventArgs : System.EventArgs

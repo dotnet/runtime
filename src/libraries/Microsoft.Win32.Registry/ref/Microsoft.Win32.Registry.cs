@@ -22,11 +22,11 @@ namespace Microsoft.Win32
     public enum RegistryHive
     {
         ClassesRoot = -2147483648,
-        CurrentConfig = -2147483643,
         CurrentUser = -2147483647,
         LocalMachine = -2147483646,
-        PerformanceData = -2147483644,
         Users = -2147483645,
+        PerformanceData = -2147483644,
+        CurrentConfig = -2147483643,
     }
     public sealed partial class RegistryKey : System.MarshalByRefObject, System.IDisposable
     {
@@ -89,26 +89,26 @@ namespace Microsoft.Win32
     }
     public enum RegistryValueKind
     {
+        None = -1,
+        Unknown = 0,
+        String = 1,
+        ExpandString = 2,
         Binary = 3,
         DWord = 4,
-        ExpandString = 2,
         MultiString = 7,
-        None = -1,
         QWord = 11,
-        String = 1,
-        Unknown = 0,
     }
     [System.FlagsAttribute]
     public enum RegistryValueOptions
     {
-        DoNotExpandEnvironmentNames = 1,
         None = 0,
+        DoNotExpandEnvironmentNames = 1,
     }
     public enum RegistryView
     {
         Default = 0,
-        Registry32 = 512,
         Registry64 = 256,
+        Registry32 = 512,
     }
 }
 namespace Microsoft.Win32.SafeHandles
@@ -139,20 +139,20 @@ namespace System.Security.AccessControl
     [System.FlagsAttribute]
     public enum RegistryRights
     {
-        ChangePermissions = 262144,
-        CreateLink = 32,
-        CreateSubKey = 4,
-        Delete = 65536,
-        EnumerateSubKeys = 8,
-        ExecuteKey = 131097,
-        FullControl = 983103,
-        Notify = 16,
         QueryValues = 1,
-        ReadKey = 131097,
-        ReadPermissions = 131072,
         SetValue = 2,
-        TakeOwnership = 524288,
+        CreateSubKey = 4,
+        EnumerateSubKeys = 8,
+        Notify = 16,
+        CreateLink = 32,
+        Delete = 65536,
+        ReadPermissions = 131072,
         WriteKey = 131078,
+        ExecuteKey = 131097,
+        ReadKey = 131097,
+        ChangePermissions = 262144,
+        TakeOwnership = 524288,
+        FullControl = 983103,
     }
     public sealed partial class RegistrySecurity : System.Security.AccessControl.NativeObjectSecurity
     {

@@ -9,9 +9,9 @@ namespace System
 {
     public enum UriIdnScope
     {
-        All = 2,
-        AllExceptIntranet = 1,
         None = 0,
+        AllExceptIntranet = 1,
+        All = 2,
     }
 }
 namespace System.Configuration
@@ -141,17 +141,17 @@ namespace System.Configuration
     }
     public enum ConfigurationAllowDefinition
     {
-        Everywhere = 300,
         MachineOnly = 0,
-        MachineToApplication = 200,
         MachineToWebRoot = 100,
+        MachineToApplication = 200,
+        Everywhere = 300,
     }
     public enum ConfigurationAllowExeDefinition
     {
         MachineOnly = 0,
         MachineToApplication = 100,
-        MachineToLocalUser = 300,
         MachineToRoamingUser = 200,
+        MachineToLocalUser = 300,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Property)]
     public sealed partial class ConfigurationCollectionAttribute : System.Attribute
@@ -256,10 +256,10 @@ namespace System.Configuration
     }
     public enum ConfigurationElementCollectionType
     {
-        AddRemoveClearMap = 1,
-        AddRemoveClearMapAlternate = 3,
         BasicMap = 0,
+        AddRemoveClearMap = 1,
         BasicMapAlternate = 2,
+        AddRemoveClearMapAlternate = 3,
     }
     public sealed partial class ConfigurationElementProperty
     {
@@ -417,19 +417,19 @@ namespace System.Configuration
     [System.FlagsAttribute]
     public enum ConfigurationPropertyOptions
     {
-        IsAssemblyStringTransformationRequired = 16,
-        IsDefaultCollection = 1,
-        IsKey = 4,
-        IsRequired = 2,
-        IsTypeStringTransformationRequired = 8,
-        IsVersionCheckRequired = 32,
         None = 0,
+        IsDefaultCollection = 1,
+        IsRequired = 2,
+        IsKey = 4,
+        IsTypeStringTransformationRequired = 8,
+        IsAssemblyStringTransformationRequired = 16,
+        IsVersionCheckRequired = 32,
     }
     public enum ConfigurationSaveMode
     {
-        Full = 2,
-        Minimal = 1,
         Modified = 0,
+        Minimal = 1,
+        Full = 2,
     }
     public abstract partial class ConfigurationSection : System.Configuration.ConfigurationElement
     {
@@ -826,9 +826,9 @@ namespace System.Configuration
     }
     public enum OverrideMode
     {
+        Inherit = 0,
         Allow = 1,
         Deny = 2,
-        Inherit = 0,
     }
     public partial class PositiveTimeSpanValidator : System.Configuration.ConfigurationValidatorBase
     {
@@ -1213,10 +1213,10 @@ namespace System.Configuration
     public delegate void SettingsSavingEventHandler(object sender, System.ComponentModel.CancelEventArgs e);
     public enum SettingsSerializeAs
     {
-        Binary = 2,
-        ProviderSpecific = 3,
         String = 0,
         Xml = 1,
+        Binary = 2,
+        ProviderSpecific = 3,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Property)]
     public sealed partial class SettingsSerializeAsAttribute : System.Attribute

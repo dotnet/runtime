@@ -84,8 +84,8 @@ namespace System.ComponentModel.Composition
     public enum CreationPolicy
     {
         Any = 0,
-        NonShared = 2,
         Shared = 1,
+        NonShared = 2,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Property, AllowMultiple=true, Inherited=false)]
     public partial class ExportAttribute : System.Attribute
@@ -359,8 +359,8 @@ namespace System.ComponentModel.Composition.Hosting
     {
         Default = 0,
         DisableSilentRejection = 1,
-        ExportCompositionService = 4,
         IsThreadSafe = 2,
+        ExportCompositionService = 4,
     }
     public partial class CompositionScopeDefinition : System.ComponentModel.Composition.Primitives.ComposablePartCatalog, System.ComponentModel.Composition.Hosting.INotifyComposablePartCatalogChanged
     {
@@ -584,9 +584,9 @@ namespace System.ComponentModel.Composition.Primitives
     }
     public enum ImportCardinality
     {
+        ZeroOrOne = 0,
         ExactlyOne = 1,
         ZeroOrMore = 2,
-        ZeroOrOne = 0,
     }
     public partial class ImportDefinition
     {

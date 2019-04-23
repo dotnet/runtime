@@ -17,8 +17,8 @@ namespace System.Threading
 {
     public enum ApartmentState
     {
-        MTA = 1,
         STA = 0,
+        MTA = 1,
         Unknown = 2,
     }
     public sealed partial class CompressedStack : System.Runtime.Serialization.ISerializable
@@ -149,11 +149,11 @@ namespace System.Threading
     }
     public enum ThreadPriority
     {
-        AboveNormal = 3,
-        BelowNormal = 1,
-        Highest = 4,
         Lowest = 0,
+        BelowNormal = 1,
         Normal = 2,
+        AboveNormal = 3,
+        Highest = 4,
     }
     public delegate void ThreadStart();
     public sealed partial class ThreadStartException : System.SystemException
@@ -163,16 +163,16 @@ namespace System.Threading
     [System.FlagsAttribute]
     public enum ThreadState
     {
-        Aborted = 256,
-        AbortRequested = 128,
-        Background = 4,
         Running = 0,
-        Stopped = 16,
         StopRequested = 1,
-        Suspended = 64,
         SuspendRequested = 2,
+        Background = 4,
         Unstarted = 8,
+        Stopped = 16,
         WaitSleepJoin = 32,
+        Suspended = 64,
+        AbortRequested = 128,
+        Aborted = 256,
     }
     public partial class ThreadStateException : System.SystemException
     {

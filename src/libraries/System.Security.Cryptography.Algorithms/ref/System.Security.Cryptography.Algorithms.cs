@@ -196,12 +196,12 @@ namespace System.Security.Cryptography
         public void Validate() { }
         public enum ECCurveType
         {
-            Characteristic2 = 4,
             Implicit = 0,
-            Named = 5,
-            PrimeMontgomery = 3,
             PrimeShortWeierstrass = 1,
             PrimeTwistedEdwards = 2,
+            PrimeMontgomery = 3,
+            Characteristic2 = 4,
+            Named = 5,
         }
         public static partial class NamedCurves
         {
@@ -532,8 +532,8 @@ namespace System.Security.Cryptography
     }
     public enum RSAEncryptionPaddingMode
     {
-        Oaep = 1,
         Pkcs1 = 0,
+        Oaep = 1,
     }
     public partial class RSAOAEPKeyExchangeDeformatter : System.Security.Cryptography.AsymmetricKeyExchangeDeformatter
     {

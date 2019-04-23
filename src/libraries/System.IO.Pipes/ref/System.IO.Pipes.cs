@@ -82,16 +82,16 @@ namespace System.IO.Pipes
     public enum PipeDirection
     {
         In = 1,
-        InOut = 3,
         Out = 2,
+        InOut = 3,
     }
     [System.FlagsAttribute]
     public enum PipeOptions
     {
-        Asynchronous = 1073741824,
-        CurrentUserOnly = 536870912,
-        None = 0,
         WriteThrough = -2147483648,
+        None = 0,
+        CurrentUserOnly = 536870912,
+        Asynchronous = 1073741824,
     }
     public abstract partial class PipeStream : System.IO.Stream
     {

@@ -24,11 +24,11 @@ namespace System.Runtime.Caching
     public delegate void CacheEntryRemovedCallback(System.Runtime.Caching.CacheEntryRemovedArguments arguments);
     public enum CacheEntryRemovedReason
     {
-        CacheSpecificEviction = 4,
-        ChangeMonitorChanged = 3,
-        Evicted = 2,
-        Expired = 1,
         Removed = 0,
+        Expired = 1,
+        Evicted = 2,
+        ChangeMonitorChanged = 3,
+        CacheSpecificEviction = 4,
     }
     public partial class CacheEntryUpdateArguments
     {
@@ -80,15 +80,15 @@ namespace System.Runtime.Caching
     [System.FlagsAttribute]
     public enum DefaultCacheCapabilities
     {
-        AbsoluteExpirations = 8,
-        CacheEntryChangeMonitors = 4,
-        CacheEntryRemovedCallback = 64,
-        CacheEntryUpdateCallback = 32,
-        CacheRegions = 128,
-        InMemoryProvider = 1,
         None = 0,
+        InMemoryProvider = 1,
         OutOfProcessProvider = 2,
+        CacheEntryChangeMonitors = 4,
+        AbsoluteExpirations = 8,
         SlidingExpirations = 16,
+        CacheEntryUpdateCallback = 32,
+        CacheEntryRemovedCallback = 64,
+        CacheRegions = 128,
     }
     public abstract partial class FileChangeMonitor : System.Runtime.Caching.ChangeMonitor
     {

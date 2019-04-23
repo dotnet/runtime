@@ -10,10 +10,10 @@ namespace System.Diagnostics.Tracing
     [System.FlagsAttribute]
     public enum EventActivityOptions
     {
-        Detachable = 8,
-        Disable = 2,
         None = 0,
+        Disable = 2,
         Recursive = 4,
+        Detachable = 8,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Method)]
     public sealed partial class EventAttribute : System.Attribute
@@ -32,11 +32,11 @@ namespace System.Diagnostics.Tracing
     }
     public enum EventChannel : byte
     {
+        None = (byte)0,
         Admin = (byte)16,
+        Operational = (byte)17,
         Analytic = (byte)18,
         Debug = (byte)19,
-        None = (byte)0,
-        Operational = (byte)17,
     }
     public enum EventCommand
     {
@@ -69,13 +69,13 @@ namespace System.Diagnostics.Tracing
     }
     public enum EventFieldFormat
     {
-        Boolean = 3,
         Default = 0,
-        Hexadecimal = 4,
-        HResult = 15,
-        Json = 12,
         String = 2,
+        Boolean = 3,
+        Hexadecimal = 4,
         Xml = 11,
+        Json = 12,
+        HResult = 15,
     }
     [System.FlagsAttribute]
     public enum EventFieldTags
@@ -91,24 +91,24 @@ namespace System.Diagnostics.Tracing
     public enum EventKeywords : long
     {
         All = (long)-1,
-        AuditFailure = (long)4503599627370496,
-        AuditSuccess = (long)9007199254740992,
-        CorrelationHint = (long)4503599627370496,
-        EventLogClassic = (long)36028797018963968,
-        MicrosoftTelemetry = (long)562949953421312,
         None = (long)0,
-        Sqm = (long)2251799813685248,
+        MicrosoftTelemetry = (long)562949953421312,
         WdiContext = (long)562949953421312,
         WdiDiagnostic = (long)1125899906842624,
+        Sqm = (long)2251799813685248,
+        AuditFailure = (long)4503599627370496,
+        CorrelationHint = (long)4503599627370496,
+        AuditSuccess = (long)9007199254740992,
+        EventLogClassic = (long)36028797018963968,
     }
     public enum EventLevel
     {
+        LogAlways = 0,
         Critical = 1,
         Error = 2,
-        Informational = 4,
-        LogAlways = 0,
-        Verbose = 5,
         Warning = 3,
+        Informational = 4,
+        Verbose = 5,
     }
     public abstract partial class EventListener : System.IDisposable
     {
@@ -127,25 +127,25 @@ namespace System.Diagnostics.Tracing
     [System.FlagsAttribute]
     public enum EventManifestOptions
     {
-        AllCultures = 2,
-        AllowEventSourceOverride = 8,
         None = 0,
-        OnlyIfNeededForRegistration = 4,
         Strict = 1,
+        AllCultures = 2,
+        OnlyIfNeededForRegistration = 4,
+        AllowEventSourceOverride = 8,
     }
     public enum EventOpcode
     {
+        Info = 0,
+        Start = 1,
+        Stop = 2,
         DataCollectionStart = 3,
         DataCollectionStop = 4,
         Extension = 5,
-        Info = 0,
-        Receive = 240,
         Reply = 6,
         Resume = 7,
-        Send = 9,
-        Start = 1,
-        Stop = 2,
         Suspend = 8,
+        Send = 9,
+        Receive = 240,
     }
     public partial class EventSource : System.IDisposable
     {
@@ -250,9 +250,9 @@ namespace System.Diagnostics.Tracing
     public enum EventSourceSettings
     {
         Default = 0,
+        ThrowOnEventWriteErrors = 1,
         EtwManifestEventFormat = 4,
         EtwSelfDescribingEventFormat = 8,
-        ThrowOnEventWriteErrors = 1,
     }
     [System.FlagsAttribute]
     public enum EventTags

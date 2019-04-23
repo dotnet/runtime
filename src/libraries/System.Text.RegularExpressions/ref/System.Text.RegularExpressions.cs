@@ -226,16 +226,16 @@ namespace System.Text.RegularExpressions
     [System.FlagsAttribute]
     public enum RegexOptions
     {
-        Compiled = 8,
-        CultureInvariant = 512,
-        ECMAScript = 256,
-        ExplicitCapture = 4,
-        IgnoreCase = 1,
-        IgnorePatternWhitespace = 32,
-        Multiline = 2,
         None = 0,
-        RightToLeft = 64,
+        IgnoreCase = 1,
+        Multiline = 2,
+        ExplicitCapture = 4,
+        Compiled = 8,
         Singleline = 16,
+        IgnorePatternWhitespace = 32,
+        RightToLeft = 64,
+        ECMAScript = 256,
+        CultureInvariant = 512,
     }
     public abstract partial class RegexRunner
     {

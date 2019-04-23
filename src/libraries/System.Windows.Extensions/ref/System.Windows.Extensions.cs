@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.X509Certificates
     }
     public enum X509SelectionFlag
     {
-        MultiSelection = 1,
         SingleSelection = 0,
+        MultiSelection = 1,
     }
 }

@@ -49,11 +49,11 @@ namespace Microsoft.Win32
         ConsoleDisconnect = 2,
         RemoteConnect = 3,
         RemoteDisconnect = 4,
-        SessionLock = 7,
-        SessionLogoff = 6,
         SessionLogon = 5,
-        SessionRemoteControl = 9,
+        SessionLogoff = 6,
+        SessionLock = 7,
         SessionUnlock = 8,
+        SessionRemoteControl = 9,
     }
     public sealed partial class SystemEvents
     {
@@ -93,14 +93,14 @@ namespace Microsoft.Win32
         General = 4,
         Icon = 5,
         Keyboard = 6,
-        Locale = 13,
         Menu = 7,
         Mouse = 8,
         Policy = 9,
         Power = 10,
         Screensaver = 11,
-        VisualStyle = 14,
         Window = 12,
+        Locale = 13,
+        VisualStyle = 14,
     }
     public partial class UserPreferenceChangedEventArgs : System.EventArgs
     {

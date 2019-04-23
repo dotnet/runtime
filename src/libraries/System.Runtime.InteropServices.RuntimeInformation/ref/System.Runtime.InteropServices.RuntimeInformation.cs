@@ -9,10 +9,10 @@ namespace System.Runtime.InteropServices
 {
     public enum Architecture
     {
+        X86 = 0,
+        X64 = 1,
         Arm = 2,
         Arm64 = 3,
-        X64 = 1,
-        X86 = 0,
     }
     public readonly partial struct OSPlatform : System.IEquatable<System.Runtime.InteropServices.OSPlatform>
     {

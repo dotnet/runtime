@@ -57,23 +57,23 @@ namespace System.ComponentModel.DataAnnotations
     }
     public enum DataType
     {
-        CreditCard = 14,
-        Currency = 6,
         Custom = 0,
-        Date = 2,
         DateTime = 1,
-        Duration = 4,
-        EmailAddress = 10,
-        Html = 8,
-        ImageUrl = 13,
-        MultilineText = 9,
-        Password = 11,
-        PhoneNumber = 5,
-        PostalCode = 15,
-        Text = 7,
+        Date = 2,
         Time = 3,
-        Upload = 16,
+        Duration = 4,
+        PhoneNumber = 5,
+        Currency = 6,
+        Text = 7,
+        Html = 8,
+        MultilineText = 9,
+        EmailAddress = 10,
+        Password = 11,
         Url = 12,
+        ImageUrl = 13,
+        CreditCard = 14,
+        PostalCode = 15,
+        Upload = 16,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Method | System.AttributeTargets.Parameter | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class DataTypeAttribute : System.ComponentModel.DataAnnotations.ValidationAttribute
@@ -365,9 +365,9 @@ namespace System.ComponentModel.DataAnnotations.Schema
     }
     public enum DatabaseGeneratedOption
     {
-        Computed = 2,
-        Identity = 1,
         None = 0,
+        Identity = 1,
+        Computed = 2,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Property, AllowMultiple=false)]
     public partial class ForeignKeyAttribute : System.Attribute
