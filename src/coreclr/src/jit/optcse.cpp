@@ -2351,7 +2351,7 @@ public:
                 // If it has a zero-offset field seq, copy annotation to the ref
                 if (hasZeroMapAnnotation)
                 {
-                    m_pCompiler->GetZeroOffsetFieldMap()->Set(ref, fldSeq);
+                    m_pCompiler->fgAddFieldSeqForZeroOffset(ref, fldSeq);
                 }
 
                 /* Create a comma node for the CSE assignment */
@@ -2392,7 +2392,7 @@ public:
             // If it has a zero-offset field seq, copy annotation.
             if (hasZeroMapAnnotation)
             {
-                m_pCompiler->GetZeroOffsetFieldMap()->Set(cse, fldSeq);
+                m_pCompiler->fgAddFieldSeqForZeroOffset(cse, fldSeq);
             }
 
             assert(m_pCompiler->fgRemoveRestOfBlock == false);

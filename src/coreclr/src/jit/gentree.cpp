@@ -7415,7 +7415,7 @@ DONE:
         FieldSeqNode* fldSeq = nullptr;
         if (GetZeroOffsetFieldMap()->Lookup(tree, &fldSeq))
         {
-            GetZeroOffsetFieldMap()->Set(copy, fldSeq);
+            fgAddFieldSeqForZeroOffset(copy, fldSeq);
         }
     }
 
@@ -17628,6 +17628,9 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
     }
     else
     {
+        // We should never add a duplicate FieldSeqNode
+        assert(a != b);
+
         FieldSeqNode* tmp = Append(a->m_next, b);
         FieldSeqNode  fsn(a->m_fieldHnd, tmp);
         FieldSeqNode* res = nullptr;
