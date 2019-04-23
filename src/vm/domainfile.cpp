@@ -2406,6 +2406,12 @@ void DomainAssembly::EnumStaticGCRefs(promote_func* fn, ScanContext* sc)
          GCHeapUtilities::IsServerHeap()   &&
          IsGCSpecialThread());
 
+    if (IsCollectible())
+    {
+        // Collectible assemblies have statics stored in managed arrays, so they don't need special handlings
+        return;
+    }
+
     DomainModuleIterator i = IterateModules(kModIterIncludeLoaded);
     while (i.Next())
     {
