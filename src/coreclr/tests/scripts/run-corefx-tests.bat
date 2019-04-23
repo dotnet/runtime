@@ -18,6 +18,8 @@ echo ^<tests dir^>           -- Path to corefx test tree, e.g., _\fx\bin\tests
 echo ^<test exclusion file^> -- Path to test exclusion file, e.g., C:\coreclr\tests\arm\corefx_test_exclusions.txt
 echo ^<architecture^>        -- Architecture to run, either ARM or ARM64. (We can't depend on PROCESSOR_ARCHITECTURE because
 echo                            the batch script might be invoked with an ARM64 CMD but we need to run ARM.)
+echo ^<exclusion rsp file^>  -- Path to test exclusion response file, passed to RunTests.cmd and then xunit, e.g.,
+echo                            C:\coreclr\tests\scripts\run-corefx-tests-exclusions.txt
 echo.
 echo The ^<test exclusion file^> is a file with a list of assemblies for which the
 echo tests should not be run. This allows excluding failing tests by excluding the
@@ -28,22 +30,26 @@ echo.
 echo     System.Console.Tests
 echo     System.Data.SqlClient.Tests
 echo     System.Diagnostics.Process.Tests
+echo.
+echo The ^<exclusion rsp file^> is in the form expected by xunit.console.dll as a response file.
 goto :eof
 
 :start
-if "%4"=="" goto usage
-if not "%5"=="" goto usage
+if "%5"=="" goto usage
+if not "%6"=="" goto usage
 
 set _runtime_path=%1
 set _tests_dir=%2
 set _exclusion_file=%3
 set _architecture=%4
+set _exclusion_rsp_file=%5
 
 echo Running CoreFX tests
 echo Using runtime: %_runtime_path%
 echo Using tests: %_tests_dir%
 echo Using test exclusion file: %_exclusion_file%
 echo Using architecture: %_architecture%
+echo Using exclusion response file: %_exclusion_rsp_file%
 
 set _pass=0
 set _fail=0
@@ -81,7 +87,7 @@ if %errorlevel% EQU 0 (
     echo COREFX TEST %_t3% EXCLUDED
     set /A _skipped=_skipped + 1
 ) else (
-    call :run %1\RunTests.cmd --runtime-path %_runtime_path%
+    call :run %1\RunTests.cmd --runtime-path %_runtime_path% --rsp-file %_exclusion_rsp_file%
 )
 goto :eof
 
