@@ -1,10 +1,11 @@
-﻿using Mono.Cecil;
+﻿using System;
+using Mono.Cecil;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Mono.Linker
 {
-	static class TypeReferenceExtensions
+	public static class TypeReferenceExtensions
 	{
 		public static TypeReference GetInflatedBaseType (this TypeReference type)
 		{
@@ -213,6 +214,22 @@ namespace Mono.Linker
 			}
 
 			return false;
+		}
+		
+		public static MethodReference GetDefaultInstanceConstructor (this TypeReference type)
+		{
+			foreach (var m in type.GetMethods ()) {
+				if (m.HasParameters)
+					continue;
+
+				var definition = m.Resolve ();
+				if (!definition.IsDefaultConstructor ())
+					continue;
+
+				return m;
+			}
+
+			throw new NotImplementedException ();
 		}
 	}
 }

@@ -3,7 +3,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	static class MethodReferenceExtensions
+	public static class MethodReferenceExtensions
 	{
 		public static TypeReference GetReturnType (this MethodReference method)
 		{

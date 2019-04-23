@@ -52,7 +52,7 @@ namespace Mono.Linker.Steps {
 
 			method.Body = CreateThrowLinkedAwayBody (method);
 
-			ClearDebugInformation (method);
+			method.ClearDebugInformation();
 		}
 
 		protected virtual void RewriteBodyToStub (MethodDefinition method)
@@ -62,7 +62,7 @@ namespace Mono.Linker.Steps {
 
 			method.Body = CreateStubBody (method);
 
-			ClearDebugInformation (method);
+			method.ClearDebugInformation();
 		}
 
 		protected virtual void RewriteBodyToFalse (MethodDefinition method)
@@ -72,7 +72,7 @@ namespace Mono.Linker.Steps {
 
 			method.Body = CreateReturnFalseBody (method);
 
-			ClearDebugInformation (method);
+			method.ClearDebugInformation();
 		}
 
 		MethodBody CreateThrowLinkedAwayBody (MethodDefinition method)
@@ -99,7 +99,7 @@ namespace Mono.Linker.Steps {
 
 			var il = body.GetILProcessor ();
 			if (method.IsInstanceConstructor ()) {
-				var base_ctor = GetDefaultInstanceConstructor (method.DeclaringType.BaseType);
+				var base_ctor = method.DeclaringType.BaseType.GetDefaultInstanceConstructor();
 				base_ctor = assembly.MainModule.ImportReference (base_ctor);
 
 				il.Emit (OpCodes.Ldarg_0);
@@ -130,34 +130,6 @@ namespace Mono.Linker.Steps {
 			il.Emit (OpCodes.Ldc_I4_0);
 			il.Emit (OpCodes.Ret);
 			return body;
-		}
-
-		static MethodReference GetDefaultInstanceConstructor (TypeReference type)
-		{
-			foreach (var m in type.GetMethods ()) {
-				if (m.HasParameters)
-					continue;
-
-				var definition = m.Resolve ();
-				if (!definition.IsDefaultConstructor ())
-					continue;
-
-				return m;
-			}
-
-			throw new NotImplementedException ();
-		}
-
-		static void ClearDebugInformation (MethodDefinition method)
-		{
-			// TODO: This always allocates, update when Cecil catches up
-			var di = method.DebugInformation;
-			di.SequencePoints.Clear ();
-			if (di.Scope != null) {
-				di.Scope.Variables.Clear ();
-				di.Scope.Constants.Clear ();
-				di.Scope = null;
-			}
 		}
 	}
 }
