@@ -4583,7 +4583,7 @@ namespace System
                     foundEscaping = true;
                     res |= Check.ReservedFound;
                 }
-                else if (c > 'z' && c != '~')
+                else if (c > '~')
                 {
                     if (_iriParsing)
                     {
@@ -4671,6 +4671,10 @@ namespace System
                     {
                         res |= Check.NotIriCanonical;
                     }
+                }
+                else if (c >= '{' && c <= '}') // includes '{', '|', '}'
+                {
+                    needsEscaping = true;
                 }
                 else if (c == '%')
                 {
