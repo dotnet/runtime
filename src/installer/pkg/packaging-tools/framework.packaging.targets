@@ -167,7 +167,9 @@
     Create macOS pkg installer.
   -->
   <Target Name="CreatePkg"
-          DependsOnTargets="GetInstallerProperties">
+          DependsOnTargets="
+            GetInstallerProperties;
+            FixLayoutPermissions">
     <PropertyGroup>
       <_pkgArgs></_pkgArgs>
       <_pkgArgs>$(_pkgArgs) --root $(PackLayoutDir)</_pkgArgs>
@@ -184,7 +186,9 @@
     Create installer layout. Used for RPM or Debian package creation.
   -->
   <Target Name="CreateInstallerLayout"
-          DependsOnTargets="CopyFilesToLayout;FixLayoutPermissions" />
+          DependsOnTargets="
+            FixLayoutPermissions;
+            CopyFilesToLayout" />
 
   <Target Name="CopyFilesToLayout">
     <PropertyGroup>
