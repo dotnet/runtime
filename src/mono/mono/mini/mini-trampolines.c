@@ -488,7 +488,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 				if (in_conflict) {
 					char *class_name = mono_class_full_name (vt->klass);
 					char *method_name = mono_method_full_name (decl, TRUE);
-					mono_error_set_not_supported (error, "Interface method '%s' in class '%s' has multiple candidate implementations.", method_name, class_name);
+					mono_error_set_ambiguous_implementation (error, "Could not call method '%s' with type '%s' because there are multiple incompatible interface methods overriding this method.", method_name, class_name);
 					g_free (class_name);
 					g_free (method_name);
 					return NULL;
