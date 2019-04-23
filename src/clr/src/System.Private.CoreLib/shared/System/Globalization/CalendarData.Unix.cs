@@ -39,7 +39,11 @@ namespace System.Globalization
             // TODO-NULLABLE: these can return null but are later replaced with String.Empty or other non-nullable value
             result &= GetCalendarInfo(localeName, calendarId, CalendarDataType.NativeName, out this.sNativeName!);
             result &= GetCalendarInfo(localeName, calendarId, CalendarDataType.MonthDay, out this.sMonthDay!);
-            this.sMonthDay = NormalizeDatePattern(this.sMonthDay);
+
+            if (this.sMonthDay != null)
+            {
+                this.sMonthDay = NormalizeDatePattern(this.sMonthDay);
+            }
 
             result &= EnumDatePatterns(localeName, calendarId, CalendarDataType.ShortDates, out this.saShortDates!);
             result &= EnumDatePatterns(localeName, calendarId, CalendarDataType.LongDates, out this.saLongDates!);
