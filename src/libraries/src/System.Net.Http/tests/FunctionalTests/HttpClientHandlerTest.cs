@@ -2624,7 +2624,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
         {
-            string invalidUri = $"http://{Guid.NewGuid().ToString("N")}";
+            string invalidUri = $"http://_{Guid.NewGuid().ToString("N")}";
+            _output.WriteLine($"{DateTime.Now} connecting to {invalidUri}");
             using (HttpClient client = CreateHttpClient())
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(invalidUri));
