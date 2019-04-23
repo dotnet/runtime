@@ -1270,6 +1270,7 @@ namespace System
         public static int CollectionCount(int generation) { throw null; }
         public static void EndNoGCRegion() { }
         public static long GetAllocatedBytesForCurrentThread() { throw null; }
+        public static GCMemoryInfo GetGCMemoryInfo() { throw null; }
         public static int GetGeneration(object obj) { throw null; }
         public static int GetGeneration(System.WeakReference wo) { throw null; }
         public static long GetTotalMemory(bool forceFullCollection) { throw null; }
@@ -1287,6 +1288,14 @@ namespace System
         public static System.GCNotificationStatus WaitForFullGCComplete() { throw null; }
         public static System.GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout) { throw null; }
         public static void WaitForPendingFinalizers() { }
+    }
+    public readonly struct GCMemoryInfo
+    {
+        public long HighMemoryLoadThresholdBytes { get { throw null; } }
+        public long MemoryLoadBytes { get { throw null; } }
+        public long TotalAvailableMemoryBytes { get { throw null; } }
+        public long HeapSizeBytes { get { throw null; } }
+        public long FragmentedBytes { get { throw null; } }
     }
     public enum GCCollectionMode
     {
