@@ -48,12 +48,21 @@
       Projects="$(SharedFrameworkPkgprojFile)"
       Targets="GetPackageIdentity"
       RemoveProperties="Configuration">
-      <Output TaskParameter="TargetOutputs" ItemName="PackageReference" />
+      <Output TaskParameter="TargetOutputs" ItemName="SfxIdentity" />
     </MSBuild>
 
     <PropertyGroup>
-      <PublishDir>$(SharedFrameworkLayoutDir)%(PackageReference.Identity)/%(PackageReference.Version)/</PublishDir>
+      <SfxIdentity>%(SfxIdentity.Identity)</SfxIdentity>
+      <SfxVersion>%(SfxIdentity.Version)</SfxVersion>
+      <PublishDir>$(SharedFrameworkLayoutDir)shared/$(SfxIdentity)/$(SfxVersion)/</PublishDir>
     </PropertyGroup>
+
+    <MSBuild
+      Projects="$(SharedFrameworkPkgprojFile)"
+      Targets="GetSharedFrameworkPackageReferences"
+      RemoveProperties="Configuration">
+      <Output TaskParameter="TargetOutputs" ItemName="PackageReference" />
+    </MSBuild>
   </Target>
 
   <!--
@@ -113,6 +122,25 @@
       Overwrite="true" />
   </Target>
 
+  <!--
+    NETCoreApp (and only NETCoreApp) carries the host and host resolver in the shared framework,
+    which lives outside the shared/ directory. These were included in publish through package
+    references and the files must be moved.
+  -->
+  <Target Name="MoveSharedFrameworkHost"
+          Condition="'$(SfxIdentity)' == 'Microsoft.NETCore.App'"
+          AfterTargets="Publish">
+    <!-- Use the muxer we intended to consume (either restored a shipped version or the one we built) -->
+    <Move SourceFiles="$(PublishDir)dotnet$(ExeSuffix)" DestinationFolder="$(SharedFrameworkLayoutDir)" />
+
+    <!--  Use the FXR Resolver we intended to consume (either restored a shipped version or the one we built) -->
+    <Move SourceFiles="$(PublishDir)$(LibPrefix)hostfxr$(LibSuffix)" DestinationFolder="$(SharedFrameworkLayoutDir)\host\fxr\$(HostResolverVersion)" />
+
+    <!-- Ensure the host is executable. See https://github.com/NuGet/Home/issues/4424 -->
+    <Exec Command="chmod u+x $(SharedFrameworkLayoutDir)dotnet$(ExeSuffix)"
+          Condition="'$(OSGroup)' != 'Windows_NT'" />
+  </Target>
+
   <!-- Clean up artifacts that dotnet-publish generates which we don't need -->
   <Target Name="DeleteUnnecessaryPublishOutputs" AfterTargets="Publish">
     <ItemGroup>
@@ -120,9 +148,48 @@
       <ToDelete Include="$(PublishDir)$(LibPrefix)comhost$(LibSuffix)" />
       <ToDelete Include="$(PublishDir)$(LibPrefix)hostfxr$(LibSuffix)" />
       <ToDelete Include="$(PublishDir)$(LibPrefix)ijwhost$(LibSuffix)" />
+      <!--
+        On Windows, LibSuffix is .dll (for dynamic libraries), but for this particular file, we also
+        build a .lib (static library). Make sure neither is included.
+
+        We only build this library on Windows, so other static library formats don't need to be
+        handled yet.
+      -->
+      <ToDelete Include="$(PublishDir)$(LibPrefix)ijwhost.lib" />
     </ItemGroup>
 
     <Delete Files="@(ToDelete)" />
+  </Target>
+
+  <!-- Preserve symbol files for compressed symbol archive. -->
+  <Target Name="CopySymbolsToPublishFolder"
+          Condition="'$(SfxIdentity)' == 'Microsoft.NETCore.App'"
+          AfterTargets="Publish">
+    <PropertyGroup>
+      <!--
+        Microsoft.NETCore.App is the name of the shared framework, but the internal package is
+        the one doing the crossgen.
+      -->
+      <CrossgennedPackageId>Microsoft.NETCore.App.Internal</CrossgennedPackageId>
+      <CrossgennedPackageSymbolDir>$(PackageSymbolsBinDir)$(CrossgennedPackageId)/</CrossgennedPackageSymbolDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <SharedFrameworkSymbols Include="$(CrossgennedPackageSymbolDir)**/*.pdb" />
+      <SharedFrameworkSymbols Include="$(CrossgennedPackageSymbolDir)**/*$(SymbolFileExtension)" />
+
+      <SharedFrameworkSymbols
+        Include="$(CrossgennedPackageSymbolDir)**/*$(CrossGenSymbolExtension)"
+        Condition="'$(CrossGenSymbolExtension)' != ''" />
+    </ItemGroup>
+
+    <RemoveDir
+      Directories="$(SharedFrameworkPublishSymbolsDir)"
+      Condition="Exists('$(SharedFrameworkPublishSymbolsDir)')" />
+
+    <MakeDir Directories="$(SharedFrameworkPublishSymbolsDir)" />
+
+    <Copy SourceFiles="@(SharedFrameworkSymbols)" DestinationFolder="$(SharedFrameworkPublishSymbolsDir)" />
   </Target>
 
   <Target Name="GenerateRuntimeGraph"
@@ -137,8 +204,22 @@
       <RuntimeGraphGeneratorRuntime Condition="'$(RuntimeGraphGeneratorRuntime)'==''">linux</RuntimeGraphGeneratorRuntime>
     </PropertyGroup>
 
+    <!--
+      Packages to trim from Microsoft.NETCore.App.deps.json for parity with earlier sfx releases.
+      To be removed once the sfx is constructed from Runtime Packs, which don't have deps.
+    -->
+    <ItemGroup>
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnethost" />
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnetapphost" />
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnethostresolver" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnethost" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnetapphost" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnethostresolver" />
+    </ItemGroup>
+
     <ProcessSharedFrameworkDeps AssetsFilePath="$(SharedFrameworkAssetsFile)"
                                 DepsFilePath="$(SharedFrameworkDepsFile)"
+                                PackagesToRemove="@(TrimPkgsFromDeps)"
                                 Runtime="$(RuntimeGraphGeneratorRuntime)"
                                 BuildToolsTaskDir="$(BuildToolsTaskDir)" />
   </Target>

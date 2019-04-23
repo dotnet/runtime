@@ -16,6 +16,14 @@
     <Feature Id="MainFeature" Title="Main Feature" Level="1">
       <ComponentGroupRef Id="InstallFiles" />
       <ComponentGroupRef Id="AuthoredRegistryKeys"/>
+
+      <?ifdef WerRelatedKeys ?>
+        <ComponentGroupRef Id="WerRelatedKeys"/>
+      <?endif?>
+
+      <?ifdef BreadcrumbStoreFolder ?>
+        <ComponentRef Id="BreadcrumbStoreFolder"/>
+      <?endif?>
     </Feature>
   </Product>
 
