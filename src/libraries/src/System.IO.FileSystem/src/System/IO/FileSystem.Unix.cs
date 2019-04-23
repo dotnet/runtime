@@ -349,6 +349,13 @@ namespace System.IO
                 destFullPath = PathInternal.TrimEndingDirectorySeparator(destFullPath);
             }
 
+            if (FileExists(destFullPath))
+            {
+                // Some Unix distros will overwrite the destination file if it already exists.
+                // Throwing IOException to match Windows behavior.
+                throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
+            }
+
             if (Interop.Sys.Rename(sourceFullPath, destFullPath) < 0)
             {
                 Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
