@@ -299,9 +299,6 @@ public:
     // Get the managed call stack for the specified thread.
     static bool WalkManagedStackForThread(Thread *pThread, StackContents &stackContents);
 
-    // Save the command line for the current process.
-    static void SaveCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
-
     // Get next event.
     static EventPipeEventInstance *GetNextEvent();
 
@@ -350,7 +347,6 @@ private:
     static EventPipeBufferManager *s_pBufferManager;
     static EventPipeFile *s_pFile;
     static EventPipeEventSource *s_pEventSource;
-    static LPCWSTR s_pCommandLine;
     static HANDLE s_fileSwitchTimerHandle;
     static ULONGLONG s_lastFlushSwitchTime;
 };
