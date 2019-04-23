@@ -2,7 +2,7 @@
 
 namespace Mono.Linker
 {
-	static class BCL
+	public static class BCL
 	{
 		public static class EventTracingForWindows
 		{

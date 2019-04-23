@@ -2,7 +2,7 @@
 
 namespace Mono.Linker
 {
-	static class MethodDefinitionExtensions 
+	public static class MethodDefinitionExtensions 
 	{
 		public static bool IsDefaultConstructor (this MethodDefinition method)
 		{
@@ -28,6 +28,18 @@ namespace Mono.Linker
 				return false;
 
 			return true;
+		}
+		
+		public static void ClearDebugInformation (this MethodDefinition method)
+		{
+			// TODO: This always allocates, update when Cecil catches up
+			var di = method.DebugInformation;
+			di.SequencePoints.Clear ();
+			if (di.Scope != null) {
+				di.Scope.Variables.Clear ();
+				di.Scope.Constants.Clear ();
+				di.Scope = null;
+			}
 		}
 	}
 }
