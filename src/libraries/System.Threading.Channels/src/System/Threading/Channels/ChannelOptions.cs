@@ -18,8 +18,8 @@ namespace System.Threading.Channels
         public bool SingleWriter { get; set; }
 
         /// <summary>
-        /// <code>true</code> readers from the channel guarantee that there will only ever be at most one read operation at a time;
-        /// <code>false</code> if no such constraint is guaranteed.
+        /// <code>true</code> if readers from the channel guarantee that there will only ever be at most one read operation
+        /// at a time; <code>false</code> if no such constraint is guaranteed.
         /// </summary>
         /// <remarks>
         /// If true, the channel may be able to optimize certain operations based on knowing about the single-reader guarantee.
