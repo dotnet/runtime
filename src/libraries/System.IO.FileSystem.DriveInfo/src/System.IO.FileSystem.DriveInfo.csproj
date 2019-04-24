@@ -35,14 +35,14 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetDiskFreeSpaceEx.cs">
       <Link>Common\Interop\Windows\Interop.GetDiskFreeSpaceEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MaxLengths.cs">
-      <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.MAX_PATH.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.SetVolumeLabel.cs">
       <Link>Common\Interop\Windows\Interop.SetVolumeLabel.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SetThreadErrorMode.cs">
-      <Link>Common\CoreLibInterop\Windows\Interop.SetThreadErrorMode.cs</Link>
+      <Link>Common\CoreLib\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>

@@ -6,8 +6,6 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        internal const int MAX_PATH = 260;
-
         internal const int CREDUI_MAX_USERNAME_LENGTH = 513;
     }
 }

@@ -145,8 +145,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs">
       <Link>Common\Interop\Windows\Interop.FILE_INFO_BY_HANDLE_CLASS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MaxLengths.cs">
-      <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.MAX_PATH.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.MAX_PATH.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FileAttributes.cs">
       <Link>Common\Interop\Windows\Interop.FileAttributes.cs</Link>
