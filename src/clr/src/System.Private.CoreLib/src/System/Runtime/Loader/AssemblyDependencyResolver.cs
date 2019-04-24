@@ -259,7 +259,7 @@ namespace System.Runtime.Loader
             else
             {
                 bool containsSuffix = false;
-                int indexOfSuffix = libName.IndexOf(LibraryNameSuffix);
+                int indexOfSuffix = libName.IndexOf(LibraryNameSuffix, StringComparison.OrdinalIgnoreCase);
                 if (indexOfSuffix >= 0)
                 {
                     indexOfSuffix += LibraryNameSuffix.Length;
@@ -294,15 +294,6 @@ namespace System.Runtime.Loader
                         yield return new LibraryNameVariation(LibraryNamePrefix, string.Empty);
                     }
                 }
-            }
-
-            yield return new LibraryNameVariation(string.Empty, string.Empty);
-
-            if (isRelativePath &&
-                !libName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
-                !libName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            {
-                yield return new LibraryNameVariation(string.Empty, LibraryNameSuffix);
             }
         }
 #endif
