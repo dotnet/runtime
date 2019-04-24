@@ -4,6 +4,7 @@
 
 #nullable enable
 using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.IO
@@ -33,6 +34,7 @@ namespace System.IO
 
             using (DisableMediaInsertionPrompt.Create())
             {
+                Debug.Assert(_path != null);
                 return ValidateFileHandle(Interop.Kernel32.CreateFile2(
                     lpFileName: _path,
                     dwDesiredAccess: access,
