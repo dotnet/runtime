@@ -1483,7 +1483,7 @@ namespace System.Net.Http
             int totalBytesRead = 0;
             while (totalBytesRead < minReadBytes)
             {
-                int bytesRead = await stream.ReadAsync(buffer).ConfigureAwait(false);
+                int bytesRead = await stream.ReadAsync(buffer.Slice(totalBytesRead)).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
                     throw new IOException(SR.net_http_invalid_response);
