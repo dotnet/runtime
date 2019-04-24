@@ -9,7 +9,7 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "GetCPInfoExW")]
-        private extern static unsafe int GetCPInfoExW(uint CodePage, uint dwFlags, CPINFOEXW* lpCPInfoEx);
+        private extern static unsafe Interop.BOOL GetCPInfoExW(uint CodePage, uint dwFlags, CPINFOEXW* lpCPInfoEx);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         private unsafe struct CPINFOEXW
@@ -19,14 +19,14 @@ internal partial class Interop
             internal fixed byte LeadByte[12];
             internal char UnicodeDefaultChar;
             internal uint CodePage;
-            internal fixed byte CodePageName[260];
+            internal fixed char CodePageName[MAX_PATH];
         }
 
         internal static unsafe int GetLeadByteRanges(int codePage, byte[] leadByteRanges)
         {
             int count = 0;
             CPINFOEXW cpInfo;
-            if (GetCPInfoExW((uint) codePage, 0, &cpInfo) != 0)
+            if (GetCPInfoExW((uint)codePage, 0, &cpInfo) != BOOL.FALSE)
             {
                 // we don't care about the last 2 bytes as those are nulls
                 for (int i=0; i<10 && leadByteRanges[i] != 0; i+=2)
@@ -44,7 +44,7 @@ internal partial class Interop
             // Note: GetACP is not available in the Windows Store Profile, but calling
             // GetCPInfoEx with the value CP_ACP (0) yields the same result.
             CPINFOEXW cpInfo;
-            if (GetCPInfoExW(CP_ACP, 0, &cpInfo) != 0)
+            if (GetCPInfoExW(CP_ACP, 0, &cpInfo) != BOOL.FALSE)
             {
                 codePage = (int)cpInfo.CodePage;
                 return true;
