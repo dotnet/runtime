@@ -1132,8 +1132,10 @@ BOOL ZapSig::EncodeMethod(
 
     // For methods encoded outside of the version bubble, we use pResolvedToken which describes the metadata token from which the method originated
     // For tokens inside the version bubble we are not constrained by the contents of pResolvedToken and as such we skip this codepath
+    // Generic interfaces in canonical form are an exception, we need to get the real type from the pResolvedToken so that the lookup at runtime
+    // can find the type in interface map.
     // FUTURE: This condition should likely be changed or reevaluated once support for smaller version bubbles is implemented.
-    if (IsReadyToRunCompilation() && (!IsLargeVersionBubbleEnabled() || !pMethod->GetModule()->IsInCurrentVersionBubble()))
+    if (IsReadyToRunCompilation() && (!IsLargeVersionBubbleEnabled() || !pMethod->GetModule()->IsInCurrentVersionBubble() || (pMethod->IsSharedByGenericInstantiations() && pMethod->IsInterface())))
     {
         if (pMethod->IsNDirect())
         {
@@ -1199,15 +1201,14 @@ BOOL ZapSig::EncodeMethod(
     }
 
 #ifdef FEATURE_READYTORUN_COMPILER
+    if (IsReadyToRunCompilation() && (pConstrainedResolvedToken != NULL))
+    {
+        methodFlags |= ENCODE_METHOD_SIG_Constrained;
+    }
 
     // FUTURE: This condition should likely be changed or reevaluated once support for smaller version bubbles is implemented.
     if (IsReadyToRunCompilation() && (!IsLargeVersionBubbleEnabled() || !pMethod->GetModule()->IsInCurrentVersionBubble()))
     {
-        if (pConstrainedResolvedToken != NULL)
-        {
-            methodFlags |= ENCODE_METHOD_SIG_Constrained;
-        }
-
         Module * pReferencingModule = pMethod->IsNDirect() ?
             pMethod->GetModule() :
             (Module *)pResolvedToken->tokenScope;
