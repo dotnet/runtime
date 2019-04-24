@@ -5,10 +5,10 @@ include ../mcs/build/config.make
 #
 
 # Extracted MicrosoftPrivateCoreFxNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L12
-NETCORETESTS_VERSION := 4.6.0-preview5.19215.16
+NETCORETESTS_VERSION := 4.6.0-preview5.19217.2
 
 # Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L14
-NETCOREAPP_VERSION := 3.0.0-preview5-27609-17
+NETCOREAPP_VERSION := 3.0.0-preview5-27620-01
 
 ifeq ($(HOST_PLATFORM),win32)
 NETCORESDK_EXT = zip
