@@ -3,8 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.VisualBasic.CompilerServices.Tests;
 using Microsoft.DotNet.RemoteExecutor;
@@ -190,6 +191,187 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
+        [MemberData(nameof(Format_TestData))]
+        public void Format(object expression, string style, string expected)
+        {
+            Assert.Equal(expected, Strings.Format(expression, style));
+        }
+
+        [Theory]
+        [MemberData(nameof(Format_InvalidCastException_TestData))]
+        public void Format_InvalidCastException(object expression, string style)
+        {
+            Assert.Throws<InvalidCastException>(() => Strings.Format(expression, style));
+        }
+
+        private static IEnumerable<object[]> Format_TestData()
+        {
+            yield return new object[] { null, null, "" };
+            yield return new object[] { null, "", "" };
+            yield return new object[] { "", null, "" };
+            yield return new object[] { "", "", "" };
+            yield return new object[] { sbyte.MinValue, "0", "-128" };
+            yield return new object[] { sbyte.MaxValue, "0", "127" };
+            yield return new object[] { ushort.MinValue, "0", "0" };
+            yield return new object[] { ushort.MaxValue, "0", "65535" };
+            yield return new object[] { false, "", "False" };
+            yield return new object[] { false, "0", "0" };
+            if (IsEnUS())
+            {
+                yield return new object[] { 1.234, "", "1.234" };
+                yield return new object[] { 1.234, "0", "1" };
+                yield return new object[] { 1.234, "0.0", "1.2" };
+                yield return new object[] { 1.234, "fixed", "1.23" };
+                yield return new object[] { 1.234, "percent", "123.40%" };
+                yield return new object[] { 1.234, "standard", "1.23" };
+                yield return new object[] { 1.234, "currency", "$1.23" };
+                yield return new object[] { false, "yes/no", "No" };
+                yield return new object[] { true, "yes/no", "Yes" };
+                yield return new object[] { false, "on/off", "Off" };
+                yield return new object[] { true, "on/off", "On" };
+                yield return new object[] { false, "true/false", "False" };
+                yield return new object[] { true, "true/false",  "True" };
+                yield return new object[] { 0, "yes/no", "No" };
+                yield return new object[] { "ABC", "yes/no", "ABC" };
+                yield return new object[] { 123.4, "scientific", "1.23E+02" };
+            }
+            DateTime d = DateTime.Now;
+            yield return new object[] { d, "long time", d.ToString("T") };
+            yield return new object[] { d, "medium time", d.ToString("T") };
+            yield return new object[] { d, "short time", d.ToString("t") };
+            yield return new object[] { d, "long date", d.ToString("D") };
+            yield return new object[] { d, "medium date", d.ToString("D") };
+            yield return new object[] { d, "short date", d.ToString("d") };
+            yield return new object[] { d, "general date", d.ToString("G") };
+            yield return new object[] { 123.4, "general number", 123.4.ToString("G", null) };
+        }
+
+        private static IEnumerable<object[]> Format_InvalidCastException_TestData()
+        {
+            yield return new object[] { new object(), null };
+            yield return new object[] { new object(), "0" };
+        }
+
+        [Theory]
+        [MemberData(nameof(FormatCurrency_TestData))]
+        public void FormatCurrency(object expression, int numDigitsAfterDecimal, TriState includeLeadingDigit, TriState useParensForNegativeNumbers, TriState groupDigits, string expected)
+        {
+            Assert.Equal(expected, Strings.FormatCurrency(expression, numDigitsAfterDecimal, includeLeadingDigit, useParensForNegativeNumbers, groupDigits));
+        }
+
+        private static IEnumerable<object[]> FormatCurrency_TestData()
+        {
+            yield return new object[] { null, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "" };
+            if (IsEnUS())
+            {
+                yield return new object[] { 0.123, 0, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "$0" };
+                yield return new object[] { 0.123, 1, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "$0.1" };
+                yield return new object[] { 0.123, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "$0.12" };
+                yield return new object[] { 0.123, 4, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "$0.1230" };
+                yield return new object[] { 0.123, 2, TriState.False, TriState.UseDefault, TriState.UseDefault, "$.12" };
+                yield return new object[] { 0.123, 2, TriState.True, TriState.UseDefault, TriState.UseDefault, "$0.12" };
+                yield return new object[] { -0.123, 2, TriState.UseDefault, TriState.False, TriState.UseDefault, "-$0.12" };
+                yield return new object[] { -0.123, 2, TriState.UseDefault, TriState.True, TriState.UseDefault, "($0.12)" };
+                yield return new object[] { 1234.5, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "$1,234.50" };
+                yield return new object[] { 1234.5, 2, TriState.UseDefault, TriState.UseDefault, TriState.False, "$1234.50" };
+                yield return new object[] { 1234.5, 2, TriState.UseDefault, TriState.UseDefault, TriState.True, "$1,234.50" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FormatDateTime_TestData))]
+        public void FormatDateTime(DateTime expression, DateFormat format, string expected)
+        {
+            Assert.Equal(expected, Strings.FormatDateTime(expression, format));
+        }
+
+        private static IEnumerable<object[]> FormatDateTime_TestData()
+        {
+            DateTime d = DateTime.Now;
+            yield return new object[] { d, DateFormat.LongTime, d.ToString("T") };
+            yield return new object[] { d, DateFormat.ShortTime, d.ToString("HH:mm") };
+            yield return new object[] { d, DateFormat.LongDate, d.ToString("D") };
+            yield return new object[] { d, DateFormat.ShortDate, d.ToString("d") };
+            yield return new object[] { d, DateFormat.GeneralDate, d.ToString("G") };
+        }
+
+        [Theory]
+        [MemberData(nameof(FormatNumber_TestData))]
+        public void FormatNumber(object expression, int numDigitsAfterDecimal, TriState includeLeadingDigit, TriState useParensForNegativeNumbers, TriState groupDigits, string expected)
+        {
+            Assert.Equal(expected, Strings.FormatNumber(expression, numDigitsAfterDecimal, includeLeadingDigit, useParensForNegativeNumbers, groupDigits));
+        }
+
+        private static IEnumerable<object[]> FormatNumber_TestData()
+        {
+            yield return new object[] { null, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "" };
+            if (IsEnUS())
+            {
+                yield return new object[] { 0.123, 0, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "0" };
+                yield return new object[] { 0.123, 1, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "0.1" };
+                yield return new object[] { 0.123, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "0.12" };
+                yield return new object[] { 0.123, 4, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "0.1230" };
+                yield return new object[] { 0.123, 2, TriState.False, TriState.UseDefault, TriState.UseDefault, ".12" };
+                yield return new object[] { 0.123, 2, TriState.True, TriState.UseDefault, TriState.UseDefault, "0.12" };
+                yield return new object[] { -0.123, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "-0.12" };
+                yield return new object[] { -0.123, 2, TriState.UseDefault, TriState.False, TriState.UseDefault, "-0.12" };
+                yield return new object[] { -0.123, 2, TriState.UseDefault, TriState.True, TriState.UseDefault, "(0.12)" };
+                yield return new object[] { 1234.5, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "1,234.50" };
+                yield return new object[] { 1234.5, 2, TriState.UseDefault, TriState.UseDefault, TriState.False, "1234.50" };
+                yield return new object[] { 1234.5, 2, TriState.UseDefault, TriState.UseDefault, TriState.True, "1,234.50" };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(FormatPercent_TestData))]
+        public void FormatPercent(object expression, int numDigitsAfterDecimal, TriState includeLeadingDigit, TriState useParensForNegativeNumbers, TriState groupDigits, string expected)
+        {
+            Assert.Equal(expected, Strings.FormatPercent(expression, numDigitsAfterDecimal, includeLeadingDigit, useParensForNegativeNumbers, groupDigits));
+        }
+
+        private static IEnumerable<object[]> FormatPercent_TestData()
+        {
+            yield return new object[] { null, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "" };
+            if (IsEnUS())
+            {
+                yield return new object[] { 0.123, 0, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "12%" };
+                yield return new object[] { 0.123, 1, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "12.3%" };
+                yield return new object[] { 0.123, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "12.30%" };
+                yield return new object[] { 0.123, 4, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "12.3000%" };
+                yield return new object[] { 0.00123, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "0.12%" };
+                yield return new object[] { 0.00123, 2, TriState.False, TriState.UseDefault, TriState.UseDefault, ".12%" };
+                yield return new object[] { 0.00123, 2, TriState.True, TriState.UseDefault, TriState.UseDefault, "0.12%" };
+                yield return new object[] { -0.123, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "-12.30%" };
+                yield return new object[] { -0.123, 2, TriState.UseDefault, TriState.False, TriState.UseDefault, "-12.30%" };
+                yield return new object[] { -0.123, 2, TriState.UseDefault, TriState.True, TriState.UseDefault, "(12.30%)" };
+                yield return new object[] { 12.345, 2, TriState.UseDefault, TriState.UseDefault, TriState.UseDefault, "1,234.50%" };
+                yield return new object[] { 12.345, 2, TriState.UseDefault, TriState.UseDefault, TriState.False, "1234.50%" };
+                yield return new object[] { 12.345, 2, TriState.UseDefault, TriState.UseDefault, TriState.True, "1,234.50%" };
+            }
+        }
+
+        [Theory]
+        [InlineData("ABC", 1, 'A')]
+        [InlineData("ABC", 2, 'B')]
+        [InlineData("ABC", 3, 'C')]
+        public void GetChar(string str, int index, char expected)
+        {
+            Assert.Equal(expected, Strings.GetChar(str, index));
+        }
+
+        [Theory]
+        [InlineData(null, 0)]
+        [InlineData(null, 1)]
+        [InlineData("", 0)]
+        [InlineData("", 1)]
+        [InlineData("ABC", 0)]
+        [InlineData("ABC", 4)]
+        public void GetChar_ArgumentException(string str, int index)
+        {
+            Assert.Throws< ArgumentException>(() => Strings.GetChar(str, index));
+        }
+
+        [Theory]
         [MemberData(nameof(InStr_TestData_NullsAndEmpties))]
         [MemberData(nameof(InStr_FromBegin_TestData))]
         public void InStr_FromBegin(string string1, string string2, int expected)
@@ -292,6 +474,89 @@ namespace Microsoft.VisualBasic.Tests
         public void InStrRev_WhenStartZeroOrMinusTwoOrLess_ThrowsArgumentException(int start)
         {
             AssertExtensions.Throws<ArgumentException>("Start", null, () => Strings.InStrRev("a", "a", start));
+        }
+
+        [Theory]
+        [MemberData(nameof(Join_Object_TestData))]
+        [MemberData(nameof(Join_String_TestData))]
+        public void Join(object[] source, string delimiter, string expected)
+        {
+            Assert.Equal(expected, Strings.Join(source, delimiter));
+        }
+
+        private static IEnumerable<object[]> Join_Object_TestData()
+        {
+            yield return new object[] { new object[0], null, null };
+            yield return new object[] { new object[0], ",", null };
+            yield return new object[] { new object[] { 1 }, ",", "1" };
+            yield return new object[] { new object[] { 1, null, 3 }, null, "13" };
+            yield return new object[] { new object[] { true, false }, "", "TrueFalse" };
+            yield return new object[] { new object[] { 1, 2, 3 }, ", ", "1, 2, 3" };
+        }
+
+        [Theory]
+        [MemberData(nameof(Join_String_TestData))]
+        public void Join(string[] source, string delimiter, string expected)
+        {
+            Assert.Equal(expected, Strings.Join(source, delimiter));
+        }
+
+        private static IEnumerable<object[]> Join_String_TestData()
+        {
+            yield return new object[] { new string[0], null, null };
+            yield return new object[] { new string[0], ",", null };
+            yield return new object[] { new string[] { "A" }, ",", "A" };
+            yield return new object[] { new string[] { "", null, "" }, null, "" };
+            yield return new object[] { new string[] { "", "AB", "C" }, "", "ABC" };
+            yield return new object[] { new string[] { "A", "B", "C" }, ", ", "A, B, C" };
+        }
+
+        [Theory]
+        [InlineData('\0', "\0")]
+        [InlineData('\uffff', "\uffff")]
+        [InlineData('a', "a")]
+        [InlineData('A', "a")]
+        [InlineData('1', "1")]
+        public void LCase(char value, char expected)
+        {
+            Assert.Equal(expected, Strings.LCase(value));
+        }
+
+        [Theory]
+        [InlineData(null, null)]
+        [InlineData("", "")]
+        [InlineData("\0", "\0")]
+        [InlineData("\uffff", "\uffff")]
+        [InlineData("abc", "abc")]
+        [InlineData("ABC", "abc")]
+        [InlineData("123", "123")]
+        public void LCase(string value, string expected)
+        {
+            Assert.Equal(expected, Strings.LCase(value));
+        }
+
+        [Theory]
+        [InlineData('\0', "\0")]
+        [InlineData('\uffff', "\uffff")]
+        [InlineData('a', "A")]
+        [InlineData('A', "A")]
+        [InlineData('1', "1")]
+        public void UCase(char value, char expected)
+        {
+            Assert.Equal(expected, Strings.UCase(value));
+        }
+
+        [Theory]
+        [InlineData(null, "")]
+        [InlineData("", "")]
+        [InlineData("\0", "\0")]
+        [InlineData("\uffff", "\uffff")]
+        [InlineData("abc", "ABC")]
+        [InlineData("ABC", "ABC")]
+        [InlineData("123", "123")]
+        public void UCase(string value, string expected)
+        {
+            Assert.Equal(expected, Strings.UCase(value));
         }
 
         [Theory]
@@ -402,6 +667,40 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
+        [InlineData(null, 0, "")]
+        [InlineData(null, 1, " ")]
+        [InlineData("", 0, "")]
+        [InlineData("", 1, " ")]
+        [InlineData("A", 0, "")]
+        [InlineData("A", 1, "A")]
+        [InlineData("A", 2, "A ")]
+        [InlineData("AB", 0, "")]
+        [InlineData("AB", 1, "A")]
+        [InlineData("AB", 2, "AB")]
+        [InlineData("AB", 4, "AB  ")]
+        public void LSet(string source, int length, string expected)
+        {
+            Assert.Equal(expected, Strings.LSet(source, length));
+        }
+
+        [Theory]
+        [InlineData(null, 0, "")]
+        [InlineData(null, 1, " ")]
+        [InlineData("", 0, "")]
+        [InlineData("", 1, " ")]
+        [InlineData("A", 0, "")]
+        [InlineData("A", 1, "A")]
+        [InlineData("A", 2, " A")]
+        [InlineData("AB", 0, "")]
+        [InlineData("AB", 1, "A")]
+        [InlineData("AB", 2, "AB")]
+        [InlineData("AB", 4, "  AB")]
+        public void RSet(string source, int length, string expected)
+        {
+            Assert.Equal(expected, Strings.RSet(source, length));
+        }
+
+        [Theory]
         [InlineData(null, "")]
         [InlineData("", "")]
         [InlineData(" ", "")]
@@ -447,6 +746,68 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
+        [InlineData("", "", null, 1, -1, CompareMethod.Text, null)]
+        [InlineData("", null, "", 1, -1, CompareMethod.Text, null)]
+        [InlineData("", "", "", 1, -1, CompareMethod.Text, null)]
+        [InlineData("ABC", "", "", 1, -1, CompareMethod.Text, "ABC")]
+        [InlineData("ABC", "bc", "23", 1, -1, CompareMethod.Binary, "ABC")]
+        [InlineData("ABC", "BC", "23", 1, -1, CompareMethod.Binary, "A23")]
+        [InlineData("ABC", "bc", "23", 1, -1, CompareMethod.Text, "A23")]
+        [InlineData("abcbc", "bc", "23", 1, -1, CompareMethod.Text, "a2323")]
+        [InlineData("abcbc", "bc", "23", 1, 0, CompareMethod.Text, "abcbc")]
+        [InlineData("abcbc", "bc", "23", 1, 1, CompareMethod.Text, "a23bc")]
+        [InlineData("abc", "bc", "23", 2, -1, CompareMethod.Text, "23")]
+        [InlineData("abc", "bc", "23", 3, -1, CompareMethod.Text, "c")]
+        [InlineData("abc", "bc", "23", 4, -1, CompareMethod.Text, null)]
+        public void Replace(string expression, string find, string replacement, int start, int n, CompareMethod compare, string expected)
+        {
+            Assert.Equal(expected, Strings.Replace(expression, find, replacement, start, n, compare));
+        }
+
+        [Theory]
+        [InlineData(null, null, null, 0, 0, CompareMethod.Text)]
+        [InlineData(null, "", "", 0, 0, CompareMethod.Text)]
+        public void Replace_ArgumentException(string expression, string find, string replacement, int start, int length, CompareMethod compare)
+        {
+            Assert.Throws< ArgumentException>(() => Strings.Replace(expression, find, replacement, start, length, compare));
+        }
+
+        [Theory]
+        [InlineData(0, "")]
+        [InlineData(1, " ")]
+        [InlineData(3, "   ")]
+        public void Space(int number, string expected)
+        {
+            Assert.Equal(expected, Strings.Space(number));
+        }
+
+        [Theory]
+        [InlineData(null, null, -1, CompareMethod.Text, new string[] { "" })]
+        [InlineData(null, "", -1, CompareMethod.Text, new string[] { "" })]
+        [InlineData("", null, -1, CompareMethod.Text, new string[] { "" })]
+        [InlineData("", "", -1, CompareMethod.Text, new string[] { "" })]
+        [InlineData("ABC", ",", -1, CompareMethod.Text, new string[] { "ABC" })]
+        [InlineData("A,,BC", ",", -1, CompareMethod.Text, new string[] { "A", "", "BC" })]
+        [InlineData("A,,BC", ",", -1, CompareMethod.Text, new string[] { "A", "", "BC" })]
+        [InlineData("ABC", "b", -1, CompareMethod.Text, new string[] { "A", "C" })]
+        [InlineData("ABC", "b", -1, CompareMethod.Binary, new string[] { "ABC" })]
+        [InlineData("A, B, C", ", ", -1, CompareMethod.Text, new string[] { "A", "B", "C" })]
+        [InlineData("A, B, C", ", ", 1, CompareMethod.Text, new string[] { "A, B, C" })]
+        [InlineData("A, B, C", ", ", 2, CompareMethod.Text, new string[] { "A", "B, C" })]
+        [InlineData("A, B, C", ", ", int.MaxValue, CompareMethod.Text, new string[] { "A", "B", "C" })]
+        public void Split(string expression, string delimiter, int limit, CompareMethod compare, string[] expected)
+        {
+            Assert.Equal(expected, Strings.Split(expression, delimiter, limit, compare));
+        }
+
+        [Theory]
+        [InlineData("A, B, C", ", ", 0, CompareMethod.Text)]
+        public void Split_IndexOutOfRangeException(string expression, string delimiter, int limit, CompareMethod compare)
+        {
+            Assert.Throws< IndexOutOfRangeException>(() => Strings.Split(expression, delimiter, limit, compare));
+        }
+
+        [Theory]
         [InlineData("a", "a", 0, 0)]
         [InlineData("a", "b", -1, -1)]
         [InlineData("b", "a", 1, 1)]
@@ -457,6 +818,114 @@ namespace Microsoft.VisualBasic.Tests
         {
             Assert.Equal(expectedBinaryCompare, Strings.StrComp(left, right, CompareMethod.Binary));
             Assert.Equal(expectedTextCompare, Strings.StrComp(left, right, CompareMethod.Text));
+        }
+
+        [Theory]
+        [InlineData(null, VbStrConv.None, 0, null)]
+        [InlineData("", VbStrConv.None, 0, "")]
+        [InlineData("ABC123", VbStrConv.None, 0, "ABC123")]
+        [InlineData("", VbStrConv.Lowercase, 0, "")]
+        [InlineData("Abc123", VbStrConv.Lowercase, 0, "abc123")]
+        [InlineData("Abc123", VbStrConv.Uppercase, 0, "ABC123")]
+        public void StrConv(string str, Microsoft.VisualBasic.VbStrConv conversion, int localeID, string expected)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Equal(expected, Strings.StrConv(str, conversion, localeID));
+            }
+            else
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => Strings.StrConv(str, conversion, localeID));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(StrDup_Object_TestData))]
+        [MemberData(nameof(StrDup_Char_TestData))]
+        [MemberData(nameof(StrDup_String_TestData))]
+        public void StrDup(int number, object character, object expected)
+        {
+            Assert.Equal(expected, Strings.StrDup(number, character));
+        }
+
+        [Theory]
+        [MemberData(nameof(StrDup_Object_ArgumentException_TestData))]
+        public void StrDup_ArgumentException(int number, object character)
+        {
+            Assert.Throws< ArgumentException>(() => Strings.StrDup(number, character));
+        }
+
+        [Theory]
+        [MemberData(nameof(StrDup_Char_TestData))]
+        public void StrDup(int number, char character, string expected)
+        {
+            Assert.Equal(expected, Strings.StrDup(number, character));
+        }
+
+        [Theory]
+        [MemberData(nameof(StrDup_Char_ArgumentException_TestData))]
+        public void StrDup_ArgumentException(int number, char character)
+        {
+            Assert.Throws<ArgumentException>(() => Strings.StrDup(number, character));
+        }
+
+        [Theory]
+        [MemberData(nameof(StrDup_String_TestData))]
+        public void StrDup(int number, string character, string expected)
+        {
+            Assert.Equal(expected, Strings.StrDup(number, character));
+        }
+
+        [Theory]
+        [MemberData(nameof(StrDup_String_ArgumentException_TestData))]
+        public void StrDup_ArgumentException(int number, string character)
+        {
+            Assert.Throws<ArgumentException>(() => Strings.StrDup(number, character));
+        }
+
+        private static IEnumerable<object[]> StrDup_Object_TestData()
+        {
+            yield break;
+        }
+
+        private static IEnumerable<object[]> StrDup_Char_TestData()
+        {
+            yield return new object[] { 3, '\0', "\0\0\0" };
+            yield return new object[] { 0, 'A', "" };
+            yield return new object[] { 1, 'A', "A" };
+            yield return new object[] { 3, 'A', "AAA" };
+        }
+
+        private static IEnumerable<object[]> StrDup_String_TestData()
+        {
+            yield return new object[] { 0, "A", "" };
+            yield return new object[] { 1, "A", "A" };
+            yield return new object[] { 3, "A", "AAA" };
+            yield return new object[] { 0, "ABC", "" };
+            yield return new object[] { 1, "ABC", "A" };
+            yield return new object[] { 3, "ABC", "AAA" };
+        }
+
+        private static IEnumerable<object[]> StrDup_Object_ArgumentException_TestData()
+        {
+            yield return new object[] { -1, new object() };
+            yield return new object[] { 1, 0 };
+            yield return new object[] { 1, (int)'A' };
+            yield return new object[] { -1, 'A' };
+            yield return new object[] { -1, "A" };
+            yield return new object[] { 1, "" };
+        }
+
+        private static IEnumerable<object[]> StrDup_Char_ArgumentException_TestData()
+        {
+            yield return new object[] { -1, 'A' };
+        }
+
+        private static IEnumerable<object[]> StrDup_String_ArgumentException_TestData()
+        {
+            yield return new object[] { -1, "A" };
+            yield return new object[] { 1, null };
+            yield return new object[] { 1, "" };
         }
 
         [Theory]
@@ -532,5 +1001,7 @@ namespace Microsoft.VisualBasic.Tests
             { "aa", "ab", 1, 0 },
             { "abab", "ab", 3, 1 },
         };
+
+        private static bool IsEnUS() => System.Threading.Thread.CurrentThread.CurrentUICulture.Name == "en-US";
     }
 }
