@@ -8,7 +8,7 @@ Building CoreFX on Windows
 
 ## Recommended Software
 1. **[Visual Studio 2019 Preview](https://visualstudio.microsoft.com/vs/preview/)** (Community, Professional, Enterprise) with the latest update should be installed. The Community version is completely free.
-1. **[.NET Core SDK](https://www.microsoft.com/net/download/windows)** >= v3.0.0-preview3 should be installed, which will add the `dotnet` toolchain to your path.
+1. **[.NET Core SDK](https://dotnet.microsoft.com/download/dotnet-core/3.0)** >= v3.0.0-preview3 should be installed, which will add the `dotnet` toolchain to your path.
 
 ### Visual Studio 2019
 
