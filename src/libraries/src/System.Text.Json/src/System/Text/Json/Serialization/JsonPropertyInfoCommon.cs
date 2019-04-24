@@ -16,16 +16,16 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class JsonPropertyInfoCommon<TClass, TDeclaredProperty, TRuntimeProperty> : JsonPropertyInfo
     {
-        internal bool _isPropertyPolicy;
-        internal Func<TClass, TDeclaredProperty> Get { get; private set; }
-        internal Action<TClass, TDeclaredProperty> Set { get; private set; }
+        public bool _isPropertyPolicy;
+        public Func<TClass, TDeclaredProperty> Get { get; private set; }
+        public Action<TClass, TDeclaredProperty> Set { get; private set; }
 
         public JsonValueConverter<TRuntimeProperty> ValueConverter { get; internal set; }
 
         // Constructor used for internal identifiers
-        internal JsonPropertyInfoCommon() { }
+        public JsonPropertyInfoCommon() { }
 
-        internal JsonPropertyInfoCommon(
+        public JsonPropertyInfoCommon(
             Type parentClassType,
             Type declaredPropertyType,
             Type runtimePropertyType,
@@ -63,13 +63,13 @@ namespace System.Text.Json.Serialization
             GetPolicies(options);
         }
 
-        internal override void GetPolicies(JsonSerializerOptions options)
+        public override void GetPolicies(JsonSerializerOptions options)
         {
             ValueConverter = DefaultConverters<TRuntimeProperty>.s_converter;
             base.GetPolicies(options);
         }
 
-        internal override object GetValueAsObject(object obj, JsonSerializerOptions options)
+        public override object GetValueAsObject(object obj, JsonSerializerOptions options)
         {
             if (_isPropertyPolicy)
             {
@@ -80,7 +80,7 @@ namespace System.Text.Json.Serialization
             return Get((TClass)obj);
         }
 
-        internal override void SetValueAsObject(object obj, object value, JsonSerializerOptions options)
+        public override void SetValueAsObject(object obj, object value, JsonSerializerOptions options)
         {
             Debug.Assert(Set != null);
             TDeclaredProperty typedValue = (TDeclaredProperty)value;
@@ -91,13 +91,13 @@ namespace System.Text.Json.Serialization
             }
         }
 
-        internal override IList CreateConverterList()
+        public override IList CreateConverterList()
         {
             return new List<TDeclaredProperty>();
         }
 
         // Map interfaces to a well-known implementation.
-        internal override Type GetConcreteType(Type interfaceType)
+        public override Type GetConcreteType(Type interfaceType)
         {
             if (interfaceType.IsAssignableFrom(typeof(IDictionary<string, TRuntimeProperty>)) ||
                 interfaceType.IsAssignableFrom(typeof(IReadOnlyDictionary<string, TRuntimeProperty>)))

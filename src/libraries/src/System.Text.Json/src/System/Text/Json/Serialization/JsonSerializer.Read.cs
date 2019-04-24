@@ -42,8 +42,6 @@ namespace System.Text.Json.Serialization
                         Debug.Assert(state.Current.ReturnValue != default);
                         Debug.Assert(state.Current.JsonClassInfo != default);
 
-                        ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-
                         if (state.Current.IsDictionary())
                         {
                             string keyName = reader.GetString();
@@ -57,6 +55,14 @@ namespace System.Text.Json.Serialization
                         }
                         else
                         {
+                            ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+                            if (reader._stringHasEscaping)
+                            {
+                                int idx = propertyName.IndexOf(JsonConstants.BackSlash);
+                                Debug.Assert(idx != -1);
+                                propertyName = GetUnescapedString(propertyName, idx);
+                            }
+
                             state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(options, propertyName, ref state.Current);
                             if (state.Current.JsonPropertyInfo == null)
                             {
@@ -99,6 +105,29 @@ namespace System.Text.Json.Serialization
             }
 
             return;
+        }
+
+        private static ReadOnlySpan<byte> GetUnescapedString(ReadOnlySpan<byte> utf8Source, int idx)
+        {
+            // The escaped name is always longer than the unescaped, so it is safe to use escaped name for the buffer length.
+            int length = utf8Source.Length;
+            byte[] pooledName = null;
+
+            Span<byte> unescapedName = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (pooledName = ArrayPool<byte>.Shared.Rent(length));
+
+            JsonReaderHelper.Unescape(utf8Source, unescapedName, idx, out int written);
+            ReadOnlySpan<byte> propertyName = unescapedName.Slice(0, written).ToArray();
+
+            if (pooledName != null)
+            {
+                // We clear the array because it is "user data" (although a property name).
+                new Span<byte>(pooledName, 0, written).Clear();
+                ArrayPool<byte>.Shared.Return(pooledName);
+            }
+
+            return propertyName;
         }
     }
 }

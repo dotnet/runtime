@@ -17,9 +17,9 @@ namespace System.Text.Json.Serialization
         where TRuntimeProperty : TDeclaredProperty
     {
         // Constructor used for internal identifiers
-        internal JsonPropertyInfoNotNullable() { }
+        public JsonPropertyInfoNotNullable() { }
 
-        internal JsonPropertyInfoNotNullable(
+        public JsonPropertyInfoNotNullable(
             Type parentClassType,
             Type declaredPropertyType,
             Type runtimePropertyType,
@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
         {
         }
 
-        internal override void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
+        public override void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
         {
             if (ElementClassInfo != null)
             {
@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization
         }
 
         // If this method is changed, also change JsonPropertyInfoNullable.ReadEnumerable and JsonSerializer.ApplyObjectToEnumerable
-        internal override void ReadEnumerable(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
+        public override void ReadEnumerable(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
         {
             if (ValueConverter == null || !ValueConverter.TryRead(RuntimePropertyType, ref reader, out TRuntimeProperty value))
             {
@@ -76,14 +76,14 @@ namespace System.Text.Json.Serialization
             JsonSerializer.ApplyValueToEnumerable(ref value, options, ref state.Current);
         }
 
-        internal override void ApplyNullValue(JsonSerializerOptions options, ref ReadStack state)
+        public override void ApplyNullValue(JsonSerializerOptions options, ref ReadStack state)
         {
             Debug.Assert(state.Current.JsonPropertyInfo != null);
             state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, null, options);
         }
 
         // todo: have the caller check if current.Enumerator != null and call WriteEnumerable of the underlying property directly to avoid an extra virtual call.
-        internal override void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
+        public override void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
         {
             if (current.Enumerator != null)
             {
@@ -128,12 +128,13 @@ namespace System.Text.Json.Serialization
             }
         }
 
-        internal override void WriteDictionary(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
+        public override void WriteDictionary(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
         {
             JsonSerializer.WriteDictionary(ValueConverter, options, ref current, writer);
         }
 
-        internal override void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
+
+        public override void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
         {
             if (ValueConverter != null)
             {
