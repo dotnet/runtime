@@ -153,7 +153,7 @@ mono_threads_platform_exit (gsize exit_code)
 }
 
 gboolean
-mono_threads_platform_in_critical_region (MonoNativeThreadId tid)
+mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 {
 	return FALSE;
 }
