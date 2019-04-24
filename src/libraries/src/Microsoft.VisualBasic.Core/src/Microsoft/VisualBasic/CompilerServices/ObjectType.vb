@@ -411,7 +411,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ElseIf obj2 Is Nothing Then
                 Return type1
             Else
-                ' An ugly hack. If we do x + y and one of them is DBNull and one of them is String,
+                ' If we do x + y and one of them is DBNull and one of them is String,
                 ' then we convert DBNull to "" and do concatenation. We communicate this by passing
                 ' back TypeCode.DBNull
                 If IsAdd AndAlso
