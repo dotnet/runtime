@@ -241,10 +241,133 @@ mono_llvm_set_preserveall_cc (LLVMValueRef func)
 	unwrap<Function>(func)->setCallingConv (CallingConv::PreserveAll);
 }
 
+// Note that in future versions of LLVM, CallInst and InvokeInst
+// share a CallBase parent class that would make the below methods
+// look much better
+
 void
-mono_llvm_set_call_preserveall_cc (LLVMValueRef func)
+mono_llvm_set_call_preserveall_cc (LLVMValueRef wrapped_calli)
 {
-	unwrap<CallInst>(func)->setCallingConv (CallingConv::PreserveAll);
+#if LLVM_API_VERSION > 100
+	Instruction *calli = unwrap<Instruction> (wrapped_calli);
+
+	if (isa<CallInst> (calli))
+		dyn_cast<CallInst>(calli)->setCallingConv (CallingConv::PreserveAll);
+	else
+		dyn_cast<InvokeInst>(calli)->setCallingConv (CallingConv::PreserveAll);
+#else
+	unwrap<CallInst>(wrapped_calli)->setCallingConv (CallingConv::PreserveAll);
+#endif
+}
+
+void
+mono_llvm_set_call_nonnull_arg (LLVMValueRef wrapped_calli, int argNo)
+{
+#if LLVM_API_VERSION > 100
+	Instruction *calli = unwrap<Instruction> (wrapped_calli);
+
+	if (isa<CallInst> (calli))
+		dyn_cast<CallInst>(calli)->addParamAttr (argNo, Attribute::NonNull);
+	else
+		dyn_cast<InvokeInst>(calli)->addParamAttr (argNo, Attribute::NonNull);
+#endif
+}
+
+void
+mono_llvm_set_call_nonnull_ret (LLVMValueRef wrapped_calli)
+{
+#if LLVM_API_VERSION > 100
+	Instruction *calli = unwrap<Instruction> (wrapped_calli);
+
+	if (isa<CallInst> (calli))
+		dyn_cast<CallInst>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NonNull);
+	else
+		dyn_cast<InvokeInst>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NonNull);
+#endif
+}
+
+void
+mono_llvm_set_func_nonnull_arg (LLVMValueRef func, int argNo)
+{
+#if LLVM_API_VERSION > 100
+	unwrap<Function>(func)->addParamAttr (argNo, Attribute::NonNull);
+#endif
+}
+
+gboolean
+mono_llvm_is_nonnull (LLVMValueRef wrapped)
+{
+#if LLVM_API_VERSION > 100
+	// Argument to function
+	Value *val = unwrap (wrapped);
+
+	while (val) {
+		if (Argument *arg = dyn_cast<Argument> (val)) {
+			return arg->hasNonNullAttr ();
+		} else if (CallInst *calli = dyn_cast<CallInst> (val)) {
+			return calli->hasRetAttr (Attribute::NonNull);
+		} else if (InvokeInst *calli = dyn_cast<InvokeInst> (val)) {
+			return calli->hasRetAttr (Attribute::NonNull);
+		} else if (LoadInst *loadi = dyn_cast<LoadInst> (val)) {
+			return loadi->getMetadata("nonnull") != nullptr; // nonnull <index>
+		} else if (Instruction *inst = dyn_cast<Instruction> (val)) {
+			// If not a load or a function argument, the only case for us to
+			// consider is that it's a bitcast. If so, recurse on what was casted.
+			if (inst->getOpcode () == LLVMBitCast) {
+				val = inst->getOperand (0);
+				continue;
+			}
+
+			return FALSE;
+		} else {
+			return FALSE;
+		}
+	}
+
+#endif
+	return FALSE;
+}
+
+GSList *
+mono_llvm_calls_using (LLVMValueRef wrapped_local)
+{
+	GSList *usages = NULL;
+	Value *local = unwrap (wrapped_local);
+
+	for (User *user : local->users ()) {
+		if (isa<CallInst> (user) || isa<InvokeInst> (user)) {
+			usages = g_slist_prepend (usages, wrap (user));
+		}
+	}
+
+	return usages;
+}
+
+LLVMValueRef *
+mono_llvm_call_args (LLVMValueRef wrapped_calli)
+{
+	Value *calli = unwrap(wrapped_calli);
+	CallInst *call = dyn_cast <CallInst> (calli);
+	InvokeInst *invoke = dyn_cast <InvokeInst> (calli);
+	g_assert (call || invoke);
+
+	unsigned int numOperands = 0;
+
+	if (call)
+		numOperands = call->getNumArgOperands ();
+	else
+		numOperands = invoke->getNumArgOperands ();
+
+	LLVMValueRef *ret = g_malloc (sizeof (LLVMValueRef) * numOperands);
+
+	for (int i=0; i < numOperands; i++) {
+		if (call)
+			ret [i] = wrap (call->getArgOperand (i));
+		else
+			ret [i] = wrap (invoke->getArgOperand (i));
+	}
+
+	return ret;
 }
 
 void

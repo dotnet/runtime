@@ -104,6 +104,24 @@ void
 mono_llvm_set_call_preserveall_cc (LLVMValueRef call);
 
 void
+mono_llvm_set_call_nonnull_arg (LLVMValueRef calli, int argNo);
+
+void
+mono_llvm_set_call_nonnull_ret (LLVMValueRef calli);
+
+void
+mono_llvm_set_func_nonnull_arg (LLVMValueRef func, int argNo);
+
+GSList *
+mono_llvm_calls_using (LLVMValueRef wrapped_local);
+
+LLVMValueRef *
+mono_llvm_call_args (LLVMValueRef calli);
+
+gboolean
+mono_llvm_is_nonnull (LLVMValueRef val);
+
+void
 mono_llvm_set_call_notailcall (LLVMValueRef call);
 
 void

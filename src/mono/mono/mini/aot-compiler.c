@@ -4353,6 +4353,79 @@ add_gc_wrappers (MonoAotCompile *acfg)
 	}
 }
 
+static gboolean
+contains_disable_reflection_attribute (MonoCustomAttrInfo *cattr)
+{
+	for (int i = 0; i < cattr->num_attrs; ++i) {
+		MonoCustomAttrEntry *attr = &cattr->attrs [i];
+
+		if (!attr->ctor)
+			return FALSE;
+
+		if (strcmp (m_class_get_name_space (attr->ctor->klass), "System.Runtime.CompilerServices"))
+			return FALSE;
+
+		if (strcmp (m_class_get_name (attr->ctor->klass), "DisablePrivateReflectionAttribute"))
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+gboolean
+mono_aot_can_specialize (MonoMethod *method)
+{
+	if (!method)
+		return FALSE;
+
+	if (method->wrapper_type != MONO_WRAPPER_NONE)
+		return FALSE;
+
+	// If it's not private, we can't specialize
+	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE)
+		return FALSE;
+
+	// If it has the attribute disabling the specialization, we can't specialize
+	//
+	// Set by linker, indicates that the method can be found through reflection
+	// and that call-site specialization shouldn't be done.
+	//
+	// Important that this attribute is used for *nothing else*
+	//
+	// If future authors make use of it (to disable more optimizations),
+	// change this place to use a new attribute.
+	ERROR_DECL (cattr_error);
+	MonoCustomAttrInfo *cattr = mono_custom_attrs_from_class_checked (method->klass, cattr_error);
+
+	if (!is_ok (cattr_error)) {
+		mono_error_cleanup (cattr_error);
+		goto cleanup_false;
+	} else if (cattr && contains_disable_reflection_attribute (cattr)) {
+		goto cleanup_true;
+	}
+
+	cattr = mono_custom_attrs_from_method_checked (method, cattr_error);
+
+	if (!is_ok (cattr_error)) {
+		mono_error_cleanup (cattr_error);
+		goto cleanup_false;
+	} else if (cattr && contains_disable_reflection_attribute (cattr)) {
+		goto cleanup_true;
+	} else {
+		goto cleanup_false;
+	}
+
+cleanup_false:
+	if (cattr)
+		mono_custom_attrs_free (cattr);
+	return FALSE;
+
+cleanup_true:
+	if (cattr)
+		mono_custom_attrs_free (cattr);
+	return TRUE;
+}
+
 static void
 add_wrappers (MonoAotCompile *acfg)
 {
