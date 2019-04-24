@@ -79,6 +79,11 @@ private:
 public:
     propagate_error_writer_t(set_error_writer_fn set_error_writer)
     {
+        // Previous trace messages from the caller module must be printed before calling trace::setup in callee module
+        // The two modules have different trace util instances and thus don't share file IO buffers
+        // Not flushing may lead to traces from before the call being written after the call due to module mismatch.
+        trace::flush();
+
         m_set_error_writer = set_error_writer;
         m_error_writer_set = false;
 
