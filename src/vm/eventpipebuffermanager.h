@@ -14,31 +14,53 @@
 #include "spinlock.h"
 
 class EventPipeBufferList;
+class EventPipeThread;
 
-// This class is a TLS wrapper around a pointer to thread-specific EventPipeBufferList
-// The struct wrapper is present mainly because we need a way to free the EventPipeBufferList
-// when the thread that owns it dies. Placing this class as a TLS variable will call ~ThreadEventBufferList()
-// when the thread dies so we can free EventPipeBufferList in the destructor.
-class ThreadEventBufferList
+void ReleaseEventPipeThreadRef(EventPipeThread* pThread);
+void AcquireEventPipeThreadRef(EventPipeThread* pThread);
+typedef Wrapper<EventPipeThread*, AcquireEventPipeThreadRef, ReleaseEventPipeThreadRef> EventPipeThreadHolder;
+
+class EventPipeThread
 {
 #ifndef __GNUC__
-__declspec(thread) static ThreadEventBufferList gCurrentThreadEventBufferList;
+    __declspec(thread) static EventPipeThreadHolder gCurrentEventPipeThreadHolder;
 #else // !__GNUC__
-thread_local static ThreadEventBufferList gCurrentThreadEventBufferList;
+    thread_local static EventPipeThreadHolder gCurrentEventPipeThreadHolder;
 #endif // !__GNUC__
     EventPipeBufferList * m_pThreadEventBufferList = NULL;
-    ~ThreadEventBufferList();
+    ~EventPipeThread();
+
+    // The EventPipeThreadHolder maintains one count while the thread is alive
+    // and each session's EventPipeBufferList maintains one count while it
+    // exists
+    LONG m_refCount;
+
+    // this is the one and only buffer this thread is allowed to write to
+    // if non-null, it must match the tail of the m_bufferList
+    // this pointer is protected by m_lock
+    EventPipeBuffer *m_pWriteBuffer = NULL;
+
+    // this is a list of buffers that were written to by this thread
+    // it is protected by EventPipeBufferManager::m_lock
+    EventPipeBufferList *m_pBufferList = NULL;
+
+    // This lock is designed to have low contention. Normally it is only taken by this thread,
+    // but occasionally it may also be taken by another thread which is trying to collect and drain
+    // buffers from all threads.
+    SpinLock m_lock;
 
 public:
-    static EventPipeBufferList* Get()
-    {
-        return gCurrentThreadEventBufferList.m_pThreadEventBufferList;
-    }
+    static EventPipeThread* Get();
+    static void Set(EventPipeThread* pThread);
 
-    static void Set(EventPipeBufferList * bl)
-    {
-        gCurrentThreadEventBufferList.m_pThreadEventBufferList = bl;
-    }
+    EventPipeThread();
+    void AddRef();
+    void Release();
+    SpinLock * GetLock();
+    EventPipeBuffer* GetWriteBuffer();
+    void SetWriteBuffer(EventPipeBuffer* pNewBuffer);
+    EventPipeBufferList * GetBufferList();
+    void SetBufferList(EventPipeBufferList * pBufferList); 
 };
 
 class EventPipeBufferManager
@@ -62,7 +84,7 @@ private:
 
     // Lock to protect access to the per-thread buffer list and total allocation size.
     SpinLock m_lock;
-
+    Volatile<BOOL> m_writeEventSuspending;
 
 #ifdef _DEBUG
     // For debugging purposes.
@@ -77,7 +99,7 @@ private:
     // Allocate a new buffer for the specified thread.
     // This function will store the buffer in the thread's buffer list for future use and also return it here.
     // A NULL return value means that a buffer could not be allocated.
-    EventPipeBuffer* AllocateBufferForThread(EventPipeSession &session, unsigned int requestSize);
+    EventPipeBuffer* AllocateBufferForThread(EventPipeSession &session, unsigned int requestSize, BOOL & writeSuspended);
 
     // Add a buffer to the thread buffer list.
     void AddBufferToThreadBufferList(EventPipeBufferList *pThreadBuffers, EventPipeBuffer *pBuffer);
@@ -100,6 +122,24 @@ public:
     // Otherwise, if a stack trace is needed, one will be automatically collected.
     bool WriteEvent(Thread *pThread, EventPipeSession &session, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, Thread *pEventThread = NULL, StackContents *pStack = NULL);
 
+    // Ends the suspension period created by SuspendWriteEvent(). After this call returns WriteEvent()
+    // can again be called succesfully, new BufferLists and Buffers may be allocated.
+    // The caller is required to synchronize all calls to SuspendWriteEvent() and ResumeWriteEvent()
+    void ResumeWriteEvent();
+
+    // From the time this function returns until ResumeWriteEvent() is called a suspended state will 
+    // be in effect that blocks all WriteEvent activity. All existing buffers will be in the 
+    // PENDING_FLUSH state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to 
+    // WriteEvent that start during the suspension period or were in progress but hadn't yet recorded 
+    // their event into a buffer before the start of the suspension period will return false and the 
+    // event will not be recorded. Any events that not recorded as a result of this suspension will be 
+    // treated the same as events that were not recorded due to configuration.
+    // EXPECTED USAGE: First the caller will disable all events via configuration, then call 
+    // SuspendWriteEvents() to force any WriteEvent calls that may still be in progress to either
+    // finish or cancel. After that all BufferLists and Buffers can be safely drained and/or deleted.
+    // The caller is required to synchronize all calls to SuspendWriteEvent() and ResumeWriteEvent()
+    void SuspendWriteEvent();
+
     // Write the contents of the managed buffers to the specified file.
     // The stopTimeStamp is used to determine when tracing was stopped to ensure that we
     // skip any events that might be partially written due to races when tracing is stopped.
@@ -115,6 +155,7 @@ public:
 
 #ifdef _DEBUG
     bool EnsureConsistency();
+    bool IsLockOwnedByCurrentThread();
 #endif // _DEBUG
 };
 
@@ -126,6 +167,9 @@ private:
     // The buffer manager that owns this list.
     EventPipeBufferManager *m_pManager;
 
+    // The thread which writes to the buffers in this list
+    EventPipeThreadHolder m_pThread;
+
     // Buffers are stored in an intrusive linked-list from oldest to newest.
     // Head is the oldest buffer.  Tail is the newest (and currently used) buffer.
     EventPipeBuffer *m_pHeadBuffer;
@@ -134,24 +178,13 @@ private:
     // The number of buffers in the list.
     unsigned int m_bufferCount;
 
-    // The current read buffer (used when processing events on tracing stop).
-    EventPipeBuffer *m_pReadBuffer;
-
-    // True if this thread is owned by a thread.
-    // If it is false, then this buffer can be de-allocated after it is drained.
-    Volatile<bool> m_ownedByThread;
-
-    // True if a thread is writing something to this list
-    Volatile<bool> m_threadEventWriteInProgress;
-
-#ifdef _DEBUG
-    // For diagnostics, keep the thread pointer.
-    Thread *m_pCreatingThread;
-#endif // _DEBUG
+    // Check pNewReadBuffer to see if it has events in the right time-range and convert it to a readable
+    // state if needed
+    EventPipeBuffer* TryGetReadBuffer(LARGE_INTEGER beforeTimeStamp, EventPipeBuffer* pNewReadBuffer);
 
 public:
 
-    EventPipeBufferList(EventPipeBufferManager *pManager);
+    EventPipeBufferList(EventPipeBufferManager *pManager, EventPipeThread* pThread);
 
     // Get the head node of the list.
     EventPipeBuffer* GetHead();
@@ -174,39 +207,11 @@ public:
     // Get the next event as long as it is before the specified timestamp, and also mark it as read.
     EventPipeEventInstance* PopNextEvent(LARGE_INTEGER beforeTimeStamp);
 
-    // True if a thread owns this list.
-    bool OwnedByThread() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_ownedByThread;
-    }
+    // Get the thread associated with this list.
+    EventPipeThread* GetThread();
 
-    // Set whether or not this list is owned by a thread.
-    // If it is not owned by a thread, then it can be de-allocated
-    // after the buffer is drained.
-    // The default value is true.
-    void SetOwnedByThread(bool value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_ownedByThread = value;
-    }
-
-    bool GetThreadEventWriteInProgress() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_threadEventWriteInProgress;
-    }
-
-    void SetThreadEventWriteInProgress(bool value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_threadEventWriteInProgress = value;
-    }
 
 #ifdef _DEBUG
-    // Get the thread associated with this list.
-    Thread* GetThread();
-
     // Validate the consistency of the list.
     // This function will assert if the list is in an inconsistent state.
     bool EnsureConsistency();

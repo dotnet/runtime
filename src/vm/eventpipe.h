@@ -333,6 +333,12 @@ public:
     // Get next event.
     static EventPipeEventInstance *GetNextEvent();
 
+#ifdef DEBUG
+    static bool IsLockOwnedByCurrentThread();
+    static bool IsBufferManagerLockOwnedByCurrentThread();
+#endif
+
+
     template<class T>
     static void RunWithCallbackPostponed(T f)
     {

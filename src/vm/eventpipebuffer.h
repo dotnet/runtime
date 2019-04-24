@@ -12,6 +12,34 @@
 #include "eventpipeeventinstance.h"
 #include "eventpipesession.h"
 
+class EventPipeThread;
+
+
+// Synchronization
+//
+// EventPipeBuffer starts off writable and accumulates events in a buffer, then at some point converts to be readable and a second thread can
+// read back the events which have accumulated. The transition occurs when calling ConvertToReadOnly(). Write methods will assert if the buffer
+// isn't writable and read-related methods will assert if it isn't readable. Methods that have no asserts should have immutable results that
+// can be used at any point during the buffer's lifetime. The buffer has no internal locks so it is the caller's responsibility to synchronize
+// their usage.
+// Writing into the buffer and calling ConvertToReadOnly() is always done with EventPipeThread::m_lock held. The eventual reader thread can do
+// a few different things to ensure it sees a consistent state:
+// 1) Take the writer's EventPipeThread::m_lock at least once after the last time the writer writes events
+// 2) Use a memory barrier that prevents reader loads from being re-ordered earlier, such as the one that will occur implicitly by evaluating
+//    EventPipeBuffer::GetVolatileState()
+
+
+enum EventPipeBufferState
+{
+    // This buffer is currently assigned to a thread and pWriterThread may write events into it
+    // at any time
+    WRITABLE = 0,
+
+    // This buffer has been returned to the EventPipeBufferManager and pWriterThread is guaranteed
+    // to never access it again.
+    READ_ONLY = 1
+};
+
 class EventPipeBuffer
 {
 
@@ -24,6 +52,15 @@ private:
     // It is OK for the data payloads to be unaligned because they are opaque blobs that are copied via memcpy.
     const size_t AlignmentSize = 8;
 
+    // State transition WRITABLE -> READ_ONLY only occurs while holding the m_pWriterThread->m_lock;
+    // It can be read at any time
+    Volatile<EventPipeBufferState> m_state;
+
+    // Thread that is/was allowed to write into this buffer when m_state == WRITABLE
+#ifdef DEBUG
+    EventPipeThread* m_pWriterThread;
+#endif
+    
     // A pointer to the actual buffer.
     BYTE *m_pBuffer;
 
@@ -33,8 +70,10 @@ private:
     // The max write pointer (end of the buffer).
     BYTE *m_pLimit;
 
-    // The timestamp of the most recent event in the buffer.
-    LARGE_INTEGER m_mostRecentTimeStamp;
+    // The timestamp the buffer was created. If our clock source
+    // is monotonic then all events in the buffer should have
+    // timestamp >= this one. If not then all bets are off.
+    LARGE_INTEGER m_creationTimeStamp;
 
     // Used by PopNext as input to GetNext.
     // If NULL, no events have been popped.
@@ -89,7 +128,7 @@ private:
 
 public:
 
-    EventPipeBuffer(unsigned int bufferSize);
+    EventPipeBuffer(unsigned int bufferSize DEBUG_ARG(EventPipeThread* pWriterThread));
     ~EventPipeBuffer();
 
     // Write an event to the buffer.
@@ -100,8 +139,8 @@ public:
     //  - false: The write failed.  In this case, the buffer should be considered full.
     bool WriteEvent(Thread *pThread, EventPipeSession &session, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, StackContents *pStack = NULL);
 
-    // Get the timestamp of the most recent event in the buffer.
-    LARGE_INTEGER GetMostRecentTimeStamp() const;
+    // Get the timestamp the buffer was created.
+    LARGE_INTEGER GetCreationTimeStamp() const;
 
     // Get the next event from the buffer as long as it is before the specified timestamp.
     // Input of NULL gets the first event.
@@ -112,6 +151,12 @@ public:
 
     // Get the next event from the buffer and mark it as read.
     EventPipeEventInstance* PopNext(LARGE_INTEGER beforeTimeStamp);
+
+    // Check the state of the buffer
+    EventPipeBufferState GetVolatileState();
+
+    // Convert the buffer writable to readable
+    void ConvertToReadOnly();
 
 #ifdef _DEBUG
     bool EnsureConsistency();
