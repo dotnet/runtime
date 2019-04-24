@@ -102,7 +102,7 @@ namespace System.Text.Json.Serialization
                         }
 
                         // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
-                        if (!propertyNames.Add(jsonPropertyInfo.CompareNameAsString))
+                        if (!propertyNames.Add(jsonPropertyInfo.NameUsedToCompareAsString))
                         {
                             ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(this, jsonPropertyInfo);
                         }
@@ -242,7 +242,7 @@ namespace System.Text.Json.Serialization
             {
                 if (propertyName.Length <= PropertyNameKeyLength ||
                     // We compare the whole name, although we could skip the first 6 bytes (but it's likely not any faster)
-                    propertyName.SequenceEqual((ReadOnlySpan<byte>)propertyRef.Info.CompareName))
+                    propertyName.SequenceEqual(propertyRef.Info.NameUsedToCompare))
                 {
                     info = propertyRef.Info;
                     return true;

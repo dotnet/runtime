@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization
 
             if (propertyInfo != null)
             {
-                _propertyRefs.Add(new PropertyRef(GetKey(jsonInfo.CompareName), jsonInfo));
+                _propertyRefs.Add(new PropertyRef(GetKey(jsonInfo.NameUsedToCompare), jsonInfo));
             }
             else
             {
@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization
 
             JsonPropertyInfo jsonInfo = (JsonPropertyInfo)Activator.CreateInstance(
                 propertyInfoClassType,
-                BindingFlags.Instance | BindingFlags.NonPublic,
+                BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 new object[] { parentClassType, declaredPropertyType, runtimePropertyType, propertyInfo, collectionElementType, options },
                 culture: null);
