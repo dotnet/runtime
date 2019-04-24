@@ -356,6 +356,8 @@
     <Compile Include="Inheritance.VirtualMethods\UsedTypeWithOverrideOfVirtualMethodHasOverrideKept.cs" />
     <Compile Include="Inheritance.VirtualMethods\VirtualMethodGetsPerservedIfBaseMethodGetsInvoked.cs" />
     <Compile Include="Inheritance.VirtualMethods\VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly.cs" />
+    <Compile Include="UnreachableBody\BodyWithManyVariables.cs" />
+    <Compile Include="UnreachableBody\BodyWithManyVariablesWithSymbols.cs" />
     <Compile Include="UnreachableBody\CanDisableLazyBodyMarking.cs" />
     <Compile Include="UnreachableBody\Dependencies\OtherAssembly.cs" />
     <Compile Include="UnreachableBody\DoesNotApplyToCopiedAssembly.cs" />
