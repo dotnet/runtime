@@ -68,9 +68,6 @@ static int execute_app(
     if (code != StatusCode::Success)
         return code;
 
-    // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
-    trace::flush();
-
     {
         propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
 
@@ -101,9 +98,6 @@ static int execute_host_command(
     int code = load_hostpolicy(impl_dll_dir, &corehost, host_contract, "corehost_main_with_output_buffer", &host_main);
     if (code != StatusCode::Success)
         return code;
-
-    // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
-    trace::flush();
 
     {
         propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
@@ -724,9 +718,6 @@ namespace
             trace::error(_X("This component must target .NET Core 3.0 or a higher version."));
             return code;
         }
-
-        // Previous hostfxr trace messages must be printed before calling trace::setup in hostpolicy
-        trace::flush();
 
         {
             propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
