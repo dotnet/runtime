@@ -671,7 +671,11 @@ if %__BuildCoreLib% EQU 1 (
             set __IbcMergeVersion=%%s
         )
 
-        set IbcMergePath=%__PackagesDir%\microsoft.dotnet.ibcmerge\!__IbcMergeVersion!\lib\net45\ibcmerge.exe
+        echo Restoring IBCMerge version !__IbcMergeVersion!...
+        echo Running: %__ProjectDir%\dotnet.cmd restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages "%__PackagesDir%" --source "%BUILDTOOLS_SOURCE%"
+        call %__ProjectDir%\dotnet.cmd restore src/.nuget/optdata/ibcmerge.csproj --no-cache --packages "%__PackagesDir%" /p:UsingToolIbcOptimization=True
+
+        set IbcMergePath=%__PackagesDir%\microsoft.dotnet.ibcmerge\!__IbcMergeVersion!\tools\netcoreapp2.0\ibcmerge.dll
         if exist !IbcMergePath! (
             echo %__MsgPrefix%Optimizing using IBC training data
             set OptimizationDataDir=%__PackagesDir%\optimization.%__BuildOS%-%__BuildArch%.IBC.CoreCLR\!__IbcOptDataVersion!\data\System.Private.CoreLib.dll\
@@ -679,12 +683,22 @@ if %__BuildCoreLib% EQU 1 (
             set TargetOptimizationDataFile=!OptimizationDataDir!System.Private.CoreLib.pgo
 
             if exist "!InputAssemblyFile!" (
-                set RawOptimizationDataFile=!OptimizationDataDir!System.Private.CoreLib.ibc
+                set RawOptimizationDataFilePattern=!OptimizationDataDir!*.ibc
+                set RawOptimizationDataFile=
+                for %%x in (!RawOptimizationDataFilePattern!) do @(
+                  if [!RawOptimizationDataFile!] == [] (
+                    set RawOptimizationDataFile="%%x"
+                  ) else (
+                    set RawOptimizationDataFile=!RawOptimizationDataFile! "%%x"
+                  )
+                )
+
+                set IBCMergeCommand=%__ProjectDir%\dotnet.cmd --roll-forward-on-no-candidate-fx 2 "!IbcMergePath!"
 
                 REM Merge the optimization data into the source DLL
-                set NEXTCMD="!IbcMergePath!" -q -f -delete -mo "!InputAssemblyFile!" "!RawOptimizationDataFile!"
+                set NEXTCMD=!IBCMergeCommand! -q -f -delete -mo "!InputAssemblyFile!" !RawOptimizationDataFile!
                 echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
-                !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
+                call !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
                 if NOT !errorlevel! == 0 (
                     echo %__MsgPrefix%Error: IbcMerge of System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
                     REM Put it in the same log, helpful for Jenkins
@@ -693,9 +707,9 @@ if %__BuildCoreLib% EQU 1 (
                 )
 
                 REM Verify that the optimization data has been merged
-                set NEXTCMD="!IbcMergePath!" -mi "!InputAssemblyFile!"
+                set NEXTCMD=!IBCMergeCommand! -mi "!InputAssemblyFile!"
                 echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
-                !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
+                call !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
                 if NOT !errorlevel! == 0 (
                     echo %__MsgPrefix%Error: IbcMerge of System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
                     REM Put it in the same log, helpful for Jenkins
@@ -712,9 +726,9 @@ if %__BuildCoreLib% EQU 1 (
                 set IBCMergeArguments=-q -f -delete -mo "%__BinDir%\IL\System.Private.CoreLib.dll" -incremental "!TargetOptimizationDataFile!"
 
                 REM Apply optimization data to the compiled assembly
-                set NEXTCMD="!IbcMergePath!" !IBCMergeArguments!
+                set NEXTCMD=!IBCMergeCommand! !IBCMergeArguments!
                 echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
-                !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
+                call !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
                 if NOT !errorlevel! == 0 (
                     echo %__MsgPrefix%Error: IbcMerge of System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
                     REM Put it in the same log, helpful for Jenkins
@@ -723,9 +737,9 @@ if %__BuildCoreLib% EQU 1 (
                 )
                 
                 REM Verify that the optimization data has been applied
-                set NEXTCMD="!IbcMergePath!" -mi "%__BinDir%\IL\System.Private.CoreLib.dll"
+                set NEXTCMD=!IBCMergeCommand! -mi "%__BinDir%\IL\System.Private.CoreLib.dll"
                 echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
-                !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
+                call !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
                 if NOT !errorlevel! == 0 (
                     echo %__MsgPrefix%Error: IbcMerge of System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
                     REM Put it in the same log, helpful for Jenkins
@@ -739,6 +753,9 @@ if %__BuildCoreLib% EQU 1 (
                 type %__CrossGenCoreLibLog%
                 goto CrossgenFailure
             )
+        ) else (
+          echo Could not find IBCMerge at !IbcMergePath!
+          goto CrossgenFailure
         )
     )
 
