@@ -135,7 +135,8 @@
                     ManifestCommit="$(ManifestCommit)"
                     ManifestBuildData="$(ManifestBuildData)"
                     ManifestRepoUri="$(ManifestRepoUri)"
-                    AssetManifestPath="$(AssetManifestFilePath)" />
+                    AssetManifestPath="$(AssetManifestFilePath)"
+                    Overwrite="true" />
 
     <ItemGroup>
       <_ManifestToPush Remove="@(_ManifestToPush)" />
@@ -155,6 +156,7 @@
                     ManifestCommit="$(ManifestCommit)"
                     ManifestBuildData="$(ManifestBuildData)"
                     ManifestRepoUri="$(ManifestRepoUri)"
-                    AssetManifestPath="$(AssetManifestDir)ManifestUpload.xml" />
+                    AssetManifestPath="$(AssetManifestDir)ManifestUpload.xml"
+                    Overwrite="true" />
   </Target>
 </Project>
