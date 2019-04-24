@@ -2404,7 +2404,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                             def workspaceRelativeFxRoot = "_/fx"
                             def absoluteFxRoot = "\$WORKSPACE/${workspaceRelativeFxRoot}"
                             def fxBranch = getFxBranch(branch)
-                            def exclusionRspPath = "\$WORKSPACE%/tests/scripts/run-corefx-tests-exclusions.txt"
+                            def exclusionRspPath = "\$WORKSPACE/tests/scripts/run-corefx-tests-exclusions.txt"
 
                             buildCommands += "python -u \$WORKSPACE/tests/scripts/run-corefx-tests.py -arch ${architecture} -ci_arch ${architecture} -build_type ${configuration} -fx_root ${absoluteFxRoot} -fx_branch ${fxBranch} -env_script ${scriptFileName} -exclusion_rsp_file ${exclusionRspPath}"
 
