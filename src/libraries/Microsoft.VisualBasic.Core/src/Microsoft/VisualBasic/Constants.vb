@@ -20,5 +20,11 @@ Namespace Global.Microsoft.VisualBasic
         'vbCompareMethod enum values
         Public Const vbBinaryCompare As CompareMethod = CompareMethod.Binary
         Public Const vbTextCompare As CompareMethod = CompareMethod.Text
+
+        'vbTriState
+        Public Const vbUseDefault As TriState = TriState.UseDefault
+        Public Const vbTrue As TriState = TriState.True
+        Public Const vbFalse As TriState = TriState.False
+
     End Module
 End Namespace
