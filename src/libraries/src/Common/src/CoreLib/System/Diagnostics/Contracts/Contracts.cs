@@ -17,6 +17,7 @@
 ===========================================================*/
 #define DEBUG // The behavior of this contract library should be consistent regardless of build type.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -180,7 +181,7 @@ namespace System.Diagnostics.Contracts
         private string _category;
         private string _setting;
         private bool _enabled;
-        private string _value;
+        private string? _value;
 
         public ContractOptionAttribute(string category, string setting, bool enabled)
         {
@@ -211,7 +212,7 @@ namespace System.Diagnostics.Contracts
             get { return _enabled; }
         }
 
-        public string Value
+        public string? Value
         {
             get { return _value; }
         }
@@ -264,7 +265,7 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-        public static void Assume(bool condition, string userMessage)
+        public static void Assume(bool condition, string? userMessage)
         {
             if (!condition)
             {
@@ -297,7 +298,7 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-        public static void Assert(bool condition, string userMessage)
+        public static void Assert(bool condition, string? userMessage)
         {
             if (!condition)
                 ReportFailure(ContractFailureKind.Assert, userMessage, null, null);
@@ -335,7 +336,7 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        public static void Requires(bool condition, string userMessage)
+        public static void Requires(bool condition, string? userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires");
         }
@@ -366,7 +367,7 @@ namespace System.Diagnostics.Contracts
         /// Use this form when you want to throw a particular exception.
         /// </remarks>
         [Pure]
-        public static void Requires<TException>(bool condition, string userMessage) where TException : Exception
+        public static void Requires<TException>(bool condition, string? userMessage) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.Precondition, "Requires<TException>");
         }
@@ -403,7 +404,7 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        public static void Ensures(bool condition, string userMessage)
+        public static void Ensures(bool condition, string? userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Postcondition, "Ensures");
         }
@@ -438,7 +439,7 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        public static void EnsuresOnThrow<TException>(bool condition, string userMessage) where TException : Exception
+        public static void EnsuresOnThrow<TException>(bool condition, string? userMessage) where TException : Exception
         {
             AssertMustUseRewriter(ContractFailureKind.PostconditionOnException, "EnsuresOnThrow");
         }
@@ -454,7 +455,7 @@ namespace System.Diagnostics.Contracts
         /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
         /// </remarks>
         [Pure]
-        public static T Result<T>() { return default; }
+        public static T Result<T>() { return default!; }
 
         /// <summary>
         /// Represents the final (output) value of an out parameter when returning from a method.
@@ -466,7 +467,7 @@ namespace System.Diagnostics.Contracts
         /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
         /// </remarks>
         [Pure]
-        public static T ValueAtReturn<T>(out T value) { value = default; return value; }
+        public static T ValueAtReturn<T>(out T value) { value = default!; return value; }
 
         /// <summary>
         /// Represents the value of <paramref name="value"/> as it was at the start of the method or property.
@@ -478,7 +479,7 @@ namespace System.Diagnostics.Contracts
         /// This method can only be used within the argument to the <seealso cref="Ensures(bool)"/> contract.
         /// </remarks>
         [Pure]
-        public static T OldValue<T>(T value) { return default; }
+        public static T OldValue<T>(T value) { return default!; }
 
         #endregion Old, Result, and Out Parameters
 
@@ -514,7 +515,7 @@ namespace System.Diagnostics.Contracts
         /// </remarks>
         [Pure]
         [Conditional("CONTRACTS_FULL")]
-        public static void Invariant(bool condition, string userMessage)
+        public static void Invariant(bool condition, string? userMessage)
         {
             AssertMustUseRewriter(ContractFailureKind.Invariant, "Invariant");
         }
@@ -651,10 +652,10 @@ namespace System.Diagnostics.Contracts
             // find the first non-mscorlib assembly.
             Assembly thisAssembly = typeof(Contract).Assembly;  // In case we refactor mscorlib, use Contract class instead of Object.
             StackTrace stack = new StackTrace();
-            Assembly probablyNotRewritten = null;
+            Assembly? probablyNotRewritten = null;
             for (int i = 0; i < stack.FrameCount; i++)
             {
-                Assembly caller = stack.GetFrame(i).GetMethod()?.DeclaringType.Assembly;
+                Assembly? caller = stack.GetFrame(i)!.GetMethod()?.DeclaringType.Assembly;
                 if (caller != null && caller != thisAssembly)
                 {
                     probablyNotRewritten = caller;
@@ -664,7 +665,7 @@ namespace System.Diagnostics.Contracts
 
             if (probablyNotRewritten == null)
                 probablyNotRewritten = thisAssembly;
-            string simpleName = probablyNotRewritten.GetName().Name;
+            string? simpleName = probablyNotRewritten.GetName().Name;
             System.Runtime.CompilerServices.ContractHelper.TriggerFailure(kind, SR.Format(SR.MustUseCCRewrite, contractKind, simpleName), null, null, null);
         }
 
@@ -679,7 +680,7 @@ namespace System.Diagnostics.Contracts
         /// System.Runtime.CompilerServices.ContractHelper.TriggerFailure.
         /// </summary>
         [System.Diagnostics.DebuggerNonUserCode]
-        private static void ReportFailure(ContractFailureKind failureKind, string userMessage, string conditionText, Exception innerException)
+        private static void ReportFailure(ContractFailureKind failureKind, string? userMessage, string? conditionText, Exception? innerException)
         {
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
