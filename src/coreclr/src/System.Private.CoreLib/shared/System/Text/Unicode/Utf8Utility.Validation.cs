@@ -390,16 +390,16 @@ namespace System.Text.Unicode
                         // Can't extract this check into its own helper method because JITter produces suboptimal
                         // assembly, even with aggressive inlining.
 
-                        // Code below becomes 5 instructions: test, jz, add, test, jz
+                        // Code below becomes 5 instructions: test, jz, lea, test, jz
 
-                        if (((thisDWord & 0x0000_200Fu) == 0) || (((thisDWord -= 0x0000_200Du) & 0x0000_200Fu) == 0))
+                        if (((thisDWord & 0x0000_200Fu) == 0) || (((thisDWord - 0x0000_200Du) & 0x0000_200Fu) == 0))
                         {
                             goto Error; // overlong or surrogate
                         }
                     }
                     else
                     {
-                        if (((thisDWord & 0x0F20_0000u) == 0) || (((thisDWord -= 0x0D20_0000u) & 0x0F20_0000u) == 0))
+                        if (((thisDWord & 0x0F20_0000u) == 0) || (((thisDWord - 0x0D20_0000u) & 0x0F20_0000u) == 0))
                         {
                             goto Error; // overlong or surrogate
                         }
