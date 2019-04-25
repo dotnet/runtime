@@ -4357,6 +4357,31 @@ BOOL ExecutionManager::IsManagedCodeWorker(PCODE currentPC)
     return FALSE;
 }
 
+//**************************************************************************
+// Assumes that it is safe not to take it the ExecutionManager reader/writer lock
+BOOL ExecutionManager::IsReadyToRunCode(PCODE currentPC)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+
+    // This may get called for arbitrary code addresses. Note that the lock is
+    // taken over the call to JitCodeToMethodInfo too so that nobody pulls out 
+    // the range section from underneath us.
+
+#ifdef FEATURE_READYTORUN
+    RangeSection * pRS = GetRangeSection(currentPC);
+    if (pRS != NULL && (pRS->flags & RangeSection::RANGE_SECTION_READYTORUN))
+    {
+        if (dac_cast<PTR_ReadyToRunJitManager>(pRS->pjit)->JitCodeToMethodInfo(pRS, currentPC, NULL, NULL))
+            return TRUE;
+    }
+#endif
+
+    return FALSE;
+}
+
 #ifndef DACCESS_COMPILE
 
 //**************************************************************************
