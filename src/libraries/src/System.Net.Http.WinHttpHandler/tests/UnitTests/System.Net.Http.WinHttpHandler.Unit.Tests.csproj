@@ -127,6 +127,9 @@
     <Compile Include="..\..\src\System\Net\Http\WinInetProxyHelper.cs">
       <Link>ProductionCode\WinInetProxyHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\..\System.Net.Http\src\System\Net\Http\SocketsHttpHandler\HttpSystemProxy.cs">
+      <Link>ProductionCode\HttpSystemProxy.cs</Link>
+    </Compile>
     <Compile Include="APICallHistory.cs" />
     <Compile Include="ClientCertificateHelper.cs" />
     <Compile Include="ClientCertificateScenarioTest.cs" />
@@ -135,6 +138,7 @@
     <Compile Include="FakeRegistry.cs" />
     <Compile Include="FakeSafeWinHttpHandle.cs" />
     <Compile Include="FakeX509Certificates.cs" />
+    <Compile Include="HttpSystemProxyTest.cs" />
     <Compile Include="SafeWinHttpHandleTest.cs" />
     <Compile Include="SendRequestHelper.cs" />
     <Compile Include="TestServer.cs" />

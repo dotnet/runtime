@@ -1,7 +1,7 @@
-﻿<Project DefaultTargets="Build">
+<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netstandard-Windows_NT;
+      netcoreapp-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
