@@ -176,8 +176,8 @@ namespace System.Runtime.Serialization
             }
 
             _rootType = type;
-            _rootTypeName = type.FullName;
-            _rootTypeAssemblyName = type.Module.Assembly.FullName;
+            _rootTypeName = type.FullName!;
+            _rootTypeAssemblyName = type.Module.Assembly.FullName!;
 
             _names = new string[DefaultSize];
             _values = new object[DefaultSize];
@@ -238,8 +238,8 @@ namespace System.Runtime.Serialization
             if (!ReferenceEquals(_rootType, type))
             {
                 _rootType = type;
-                _rootTypeName = type.FullName;
-                _rootTypeAssemblyName = type.Module.Assembly.FullName;
+                _rootTypeName = type.FullName!;
+                _rootTypeAssemblyName = type.Module.Assembly.FullName!;
                 IsFullTypeNameSetExplicit = false;
                 IsAssemblyNameSetExplicit = false;
             }
