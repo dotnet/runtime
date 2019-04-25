@@ -3901,7 +3901,8 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, GenT
         // locate our parent node and update it so that it points to newTree.
         if (newTree != tree)
         {
-            GenTree** link = gtFindLink(stmt, tree);
+            FindLinkData linkData = gtFindLink(stmt, tree);
+            GenTree**    link     = linkData.result;
             noway_assert(link != nullptr);
 
             // Replace the old operand with the newTree
