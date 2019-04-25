@@ -22,10 +22,10 @@ namespace System.Reflection
         private static extern bool nIsTransientInternal(RuntimeModule module);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetScopeName(RuntimeModule module, StringHandleOnStack? retString);
+        private static extern void GetScopeName(RuntimeModule module, StringHandleOnStack retString);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void GetFullyQualifiedName(RuntimeModule module, StringHandleOnStack? retString);
+        private static extern void GetFullyQualifiedName(RuntimeModule module, StringHandleOnStack retString);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern RuntimeType[] GetTypes(RuntimeModule module);

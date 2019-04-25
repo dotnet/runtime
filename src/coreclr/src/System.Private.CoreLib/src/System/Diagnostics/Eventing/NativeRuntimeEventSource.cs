@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tracing
         internal unsafe void ProcessEvent(uint eventID, uint osThreadID, DateTime timeStamp, Guid activityId, Guid childActivityId, ReadOnlySpan<Byte> payload)
         {
             // Make sure the eventID is valid.
-            if (eventID >= m_eventData.Length)
+            if (eventID >= m_eventData!.Length)
             {
                 return;
             }

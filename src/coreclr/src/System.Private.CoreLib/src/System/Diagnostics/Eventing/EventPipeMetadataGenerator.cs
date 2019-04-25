@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tracing
             EventParameterInfo[] eventParams = new EventParameterInfo[parameters.Length];
             for(int i = 0; i < parameters.Length; i++)
             {
-                eventParams[i].SetInfo(parameters[i].Name, parameters[i].ParameterType);
+                eventParams[i].SetInfo(parameters[i].Name!, parameters[i].ParameterType);
             }
 
             return GenerateMetadata(
