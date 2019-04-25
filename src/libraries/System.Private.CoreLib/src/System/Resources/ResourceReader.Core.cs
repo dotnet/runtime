@@ -20,11 +20,11 @@ namespace System.Resources
         // statics used to dynamically call into BinaryFormatter
         // When successfully located s_binaryFormatterType will point to the BinaryFormatter type
         // and s_deserializeMethod will point to an unbound delegate to the deserialize method.
-        private static Type s_binaryFormatterType;
-        private static Func<object?, Stream, object> s_deserializeMethod;
+        private static Type? s_binaryFormatterType;
+        private static Func<object?, Stream, object>? s_deserializeMethod;
 
         // This is the constructor the RuntimeResourceSet calls,
-        // passing in the stream to read from and the RuntimeResourceSet's 
+        // passing in the stream to read from and the RuntimeResourceSet's
         // internal hash table (hash table of names with file offsets
         // and values, coupled to this ResourceReader).
         internal ResourceReader(Stream stream, Dictionary<string, ResourceLocator> resCache, bool permitDeserialization)
@@ -57,7 +57,7 @@ namespace System.Resources
 
             Type type = FindType(typeIndex);
 
-            object graph = s_deserializeMethod(_binaryFormatter, _store.BaseStream);
+            object graph = s_deserializeMethod!(_binaryFormatter, _store.BaseStream);
 
             // guard against corrupted resources
             if (graph.GetType() != type)
@@ -74,16 +74,16 @@ namespace System.Resources
 
             LazyInitializer.EnsureInitialized(ref s_deserializeMethod, () =>
             {
-                MethodInfo binaryFormatterDeserialize = s_binaryFormatterType.GetMethod("Deserialize", new Type[] { typeof(Stream) });
+                MethodInfo binaryFormatterDeserialize = s_binaryFormatterType!.GetMethod("Deserialize", new Type[] { typeof(Stream) })!;
 
                 // create an unbound delegate that can accept a BinaryFormatter instance as object
                 return (Func<object?, Stream, object>)typeof(ResourceReader)
-                        .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)
-                        .MakeGenericMethod(s_binaryFormatterType)
-                        .Invoke(null, new object[] { binaryFormatterDeserialize });
+                        .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)!
+                        .MakeGenericMethod(s_binaryFormatterType)!
+                        .Invoke(null, new object[] { binaryFormatterDeserialize })!;
             });
 
-            _binaryFormatter = Activator.CreateInstance(s_binaryFormatterType);
+            _binaryFormatter = Activator.CreateInstance(s_binaryFormatterType!)!;
         }
 
         // generic method that we specialize at runtime once we've loaded the BinaryFormatter type
@@ -157,7 +157,7 @@ namespace System.Resources
                 }
                 resourceType = TypeNameFromTypeCode(typeCode);
 
-                // The length must be adjusted to subtract off the number 
+                // The length must be adjusted to subtract off the number
                 // of bytes in the 7 bit encoded type code.
                 len -= (int)(_store.BaseStream.Position - (_dataSectionOffset + dataPos));
                 byte[] bytes = _store.ReadBytes(len);
