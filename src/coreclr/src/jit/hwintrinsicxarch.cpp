@@ -846,8 +846,11 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
         var_types               argType = TYP_UNKNOWN;
 
         assert(numArgs >= 0);
-        assert(HWIntrinsicInfo::lookupIns(intrinsic, baseType) != INS_invalid);
-        assert(simdSize == 32 || simdSize == 16);
+        if ((HWIntrinsicInfo::lookupIns(intrinsic, baseType) == INS_invalid) || ((simdSize != 32) && (simdSize != 16)))
+        {
+            assert(!"Unexpected HW Intrinsic");
+            return nullptr;
+        }
 
         GenTreeHWIntrinsic* retNode = nullptr;
         GenTree*            op1     = nullptr;
