@@ -243,7 +243,7 @@ namespace System.Diagnostics.Tracing
     {
 
 #if FEATURE_EVENTSOURCE_XPLAT
-        private static readonly EventListener persistent_Xplat_Listener = XplatEventLogger.InitializePersistentListener();
+        private static readonly EventListener? persistent_Xplat_Listener = XplatEventLogger.InitializePersistentListener();
 #endif //FEATURE_EVENTSOURCE_XPLAT
 
         /// <summary>
@@ -704,7 +704,7 @@ namespace System.Diagnostics.Tracing
                 if (eventID == 0)
                     continue;
 
-                byte[] metadata = EventPipeMetadataGenerator.Instance.GenerateEventMetadata(m_eventData[i]);
+                byte[]? metadata = EventPipeMetadataGenerator.Instance.GenerateEventMetadata(m_eventData[i]);
                 uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
 
                 string eventName = m_eventData[i].Name;
@@ -3482,8 +3482,8 @@ namespace System.Diagnostics.Tracing
                 exception = e;
             }
 
-            Debug.Assert((flags & EventManifestOptions.Strict) != 0 && manifest != null); // TODO-NULLABLE: possible bug: if error is thrown before manifest is assigned in non-strict mode, this will NRE
-            if ((flags & EventManifestOptions.Strict) != 0 && (manifest.Errors.Count > 0 || exception != null))
+            // TODO-NULLABLE: possible bug: if error is thrown before manifest is assigned in non-strict mode, this will NRE
+            if ((flags & EventManifestOptions.Strict) != 0 && (manifest!.Errors.Count > 0 || exception != null))
             {
                 string msg = string.Empty;
 

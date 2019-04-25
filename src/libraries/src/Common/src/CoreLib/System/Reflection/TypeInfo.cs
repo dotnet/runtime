@@ -19,7 +19,7 @@ namespace System.Reflection
         public virtual EventInfo? GetDeclaredEvent(string name) => GetEvent(name, TypeInfo.DeclaredOnlyLookup);
         public virtual FieldInfo? GetDeclaredField(string name) => GetField(name, TypeInfo.DeclaredOnlyLookup);
         public virtual MethodInfo? GetDeclaredMethod(string name) => GetMethod(name, TypeInfo.DeclaredOnlyLookup);
-        public virtual TypeInfo? GetDeclaredNestedType(string name) => GetNestedType(name, TypeInfo.DeclaredOnlyLookup)!.GetTypeInfo();
+        public virtual TypeInfo? GetDeclaredNestedType(string name) => GetNestedType(name, TypeInfo.DeclaredOnlyLookup)?.GetTypeInfo();
         public virtual PropertyInfo? GetDeclaredProperty(string name) => GetProperty(name, TypeInfo.DeclaredOnlyLookup);
 
         public virtual IEnumerable<MethodInfo> GetDeclaredMethods(string name)
