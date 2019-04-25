@@ -1,6 +1,0 @@
-<Project>
-  <ItemGroup>
-    <!-- issue https://github.com/dotnet/corefx/issues/28551 -->
-    <PackageReference Include="runtime.native.System.IO.Ports" Version="0.0.0" NoWarn="NU1605" />
-  </ItemGroup>
-</Project>
