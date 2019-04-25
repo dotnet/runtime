@@ -35,7 +35,7 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_initialize(
 
     if (hostHandle != nullptr)
     {
-        *hostHandle = (coreclr_t::host_handle_t*) 0xdeadbeef;
+        *hostHandle = (coreclr_t::host_handle_t*)(size_t) 0xdeadbeef;
     }
 
     return StatusCode::Success;
@@ -91,7 +91,12 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_execute_assembly(
 
 struct MockCoreClrDelegate
 {
-    MockCoreClrDelegate() {}
+    MockCoreClrDelegate() :
+    m_hostHandle(nullptr),
+    m_domainId(0),
+    initialized(false)
+    {}
+
     MockCoreClrDelegate(coreclr_t::host_handle_t hostHandle,
                         unsigned int domainId,
                         const char* entryPointAssemblyName,
