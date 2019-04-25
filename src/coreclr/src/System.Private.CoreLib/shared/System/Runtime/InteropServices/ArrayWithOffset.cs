@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.CompilerServices;
-
+#nullable enable
 #if BIT64
 using nuint = System.UInt64;
 #else
@@ -14,14 +13,14 @@ namespace System.Runtime.InteropServices
 {
     public struct ArrayWithOffset
     {
-        private object m_array;
+        private object? m_array;
         private int m_offset;
         private int m_count;
 
         // From MAX_SIZE_FOR_INTEROP in mlinfo.h
         private const int MaxSizeForInterop = 0x7ffffff0;
 
-        public ArrayWithOffset(object array, int offset)
+        public ArrayWithOffset(object? array, int offset)
         {
             int totalSize = 0;
             if (array != null)
@@ -50,13 +49,13 @@ namespace System.Runtime.InteropServices
             m_count = totalSize - offset;
         }
 
-        public object GetArray() => m_array;
+        public object? GetArray() => m_array;
 
         public int GetOffset() => m_offset;
 
         public override int GetHashCode() => m_count + m_offset;
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is ArrayWithOffset && Equals((ArrayWithOffset)obj);
         }
