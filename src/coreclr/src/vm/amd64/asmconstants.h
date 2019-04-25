@@ -254,10 +254,6 @@ ASMCONSTANTS_C_ASSERT(OFFSETOF__InterfaceInfo_t__m_pMethodTable
 ASMCONSTANTS_C_ASSERT(SIZEOF__InterfaceInfo_t
                     == sizeof(InterfaceInfo_t));
 
-#define               OFFSETOF__DomainLocalBlock__m_pModuleSlots   0x8 
-ASMCONSTANTS_C_ASSERT(OFFSETOF__DomainLocalBlock__m_pModuleSlots
-                    == offsetof(DomainLocalBlock, m_pModuleSlots));
-
 #define               OFFSETOF__DomainLocalModule__m_pDataBlob   0x030
 ASMCONSTANTS_C_ASSERT(OFFSETOF__DomainLocalModule__m_pDataBlob  
                     == offsetof(DomainLocalModule, m_pDataBlob));

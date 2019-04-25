@@ -1337,19 +1337,9 @@ HCIMPLEND
 
 #include <optsmallperfcritical.h>
 
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBase_Portable, SIZE_T moduleDomainID, DWORD dwClassDomainID)
+HCIMPL2(void*, JIT_GetSharedNonGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
 {
     FCALL_CONTRACT;
-
-    DomainLocalModule *pLocalModule = NULL;
-
-    if (!Module::IsEncodedModuleIndex(moduleDomainID))
-        pLocalModule = (DomainLocalModule *) moduleDomainID;
-    else
-    {
-        DomainLocalBlock *pLocalBlock = GetAppDomain()->GetDomainLocalBlock();
-        pLocalModule = pLocalBlock->GetModuleSlot(Module::IDToIndex(moduleDomainID));
-    }
 
     // If type doesn't have a class constructor, the contents of this if statement may 
     // still get executed.  JIT_GetSharedNonGCStaticBaseNoCtor should be used in this case.
@@ -1366,37 +1356,17 @@ HCIMPLEND
 
 // No constructor version of JIT_GetSharedNonGCStaticBase.  Does not check if class has 
 // been initialized.
-HCIMPL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, SIZE_T moduleDomainID)
+HCIMPL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule)
 {
     FCALL_CONTRACT;
-
-    DomainLocalModule *pLocalModule = NULL;
-
-    if (!Module::IsEncodedModuleIndex(moduleDomainID))
-        pLocalModule = (DomainLocalModule *) moduleDomainID;
-    else
-    {
-        DomainLocalBlock *pLocalBlock = GetAppDomain()->GetDomainLocalBlock();
-        pLocalModule = pLocalBlock->GetModuleSlot(Module::IDToIndex(moduleDomainID));
-    }
 
     return (void*)pLocalModule->GetPrecomputedNonGCStaticsBasePointer();
 }
 HCIMPLEND
 
-HCIMPL2(void*, JIT_GetSharedGCStaticBase_Portable, SIZE_T moduleDomainID, DWORD dwClassDomainID)
+HCIMPL2(void*, JIT_GetSharedGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwClassDomainID)
 {
     FCALL_CONTRACT;
-
-    DomainLocalModule *pLocalModule = NULL;
-
-    if (!Module::IsEncodedModuleIndex(moduleDomainID))
-        pLocalModule = (DomainLocalModule *) moduleDomainID;
-    else
-    {
-        DomainLocalBlock *pLocalBlock = GetAppDomain()->GetDomainLocalBlock();
-        pLocalModule = pLocalBlock->GetModuleSlot(Module::IDToIndex(moduleDomainID));
-    }
 
     // If type doesn't have a class constructor, the contents of this if statement may 
     // still get executed.  JIT_GetSharedGCStaticBaseNoCtor should be used in this case.
@@ -1413,19 +1383,9 @@ HCIMPLEND
 
 // No constructor version of JIT_GetSharedGCStaticBase.  Does not check if class has been
 // initialized.
-HCIMPL1(void*, JIT_GetSharedGCStaticBaseNoCtor_Portable, SIZE_T moduleDomainID)
+HCIMPL1(void*, JIT_GetSharedGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule)
 {
     FCALL_CONTRACT;
-
-    DomainLocalModule *pLocalModule = NULL;
-
-    if (!Module::IsEncodedModuleIndex(moduleDomainID))
-        pLocalModule = (DomainLocalModule *) moduleDomainID;
-    else
-    {
-        DomainLocalBlock *pLocalBlock = GetAppDomain()->GetDomainLocalBlock();
-        pLocalModule = pLocalBlock->GetModuleSlot(Module::IDToIndex(moduleDomainID));
-    }
 
     return (void*)pLocalModule->GetPrecomputedGCStaticsBasePointer();
 }
@@ -1494,19 +1454,9 @@ HCIMPLEND
 
 /*************************************************************/
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass, SIZE_T moduleDomainID, DWORD dwDynamicClassDomainID)
+HCIMPL2(void*, JIT_GetSharedNonGCStaticBaseDynamicClass, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
 {
     FCALL_CONTRACT;
-
-    DomainLocalModule *pLocalModule;
-
-    if (!Module::IsEncodedModuleIndex(moduleDomainID))
-        pLocalModule = (DomainLocalModule *) moduleDomainID;
-    else
-    {
-        DomainLocalBlock *pLocalBlock = GetAppDomain()->GetDomainLocalBlock();
-        pLocalModule = pLocalBlock->GetModuleSlot(Module::IDToIndex(moduleDomainID));
-    }
 
     DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
     if (pLocalInfo != NULL)
@@ -1546,19 +1496,9 @@ HCIMPL2(void, JIT_ClassInitDynamicClass_Helper, DomainLocalModule *pLocalModule,
 HCIMPLEND
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void, JIT_ClassInitDynamicClass, SIZE_T moduleDomainID, DWORD dwDynamicClassDomainID)
+HCIMPL2(void, JIT_ClassInitDynamicClass, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
 {
     FCALL_CONTRACT;
-
-    DomainLocalModule *pLocalModule;
-
-    if (!Module::IsEncodedModuleIndex(moduleDomainID))
-        pLocalModule = (DomainLocalModule *) moduleDomainID;
-    else
-    {
-        DomainLocalBlock *pLocalBlock = GetAppDomain()->GetDomainLocalBlock();
-        pLocalModule = pLocalBlock->GetModuleSlot(Module::IDToIndex(moduleDomainID));
-    }
 
     DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
     if (pLocalInfo != NULL)
@@ -1597,19 +1537,9 @@ HCIMPLEND
 
 /*************************************************************/
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass, SIZE_T moduleDomainID, DWORD dwDynamicClassDomainID)
+HCIMPL2(void*, JIT_GetSharedGCStaticBaseDynamicClass, DomainLocalModule *pLocalModule, DWORD dwDynamicClassDomainID)
 {
     FCALL_CONTRACT;
-
-    DomainLocalModule *pLocalModule;
-
-    if (!Module::IsEncodedModuleIndex(moduleDomainID))
-        pLocalModule = (DomainLocalModule *) moduleDomainID;
-    else
-    {
-        DomainLocalBlock *pLocalBlock = GetAppDomain()->GetDomainLocalBlock();
-        pLocalModule = pLocalBlock->GetModuleSlot(Module::IDToIndex(moduleDomainID));
-    }
 
     DomainLocalModule::PTR_DynamicClassInfo pLocalInfo = pLocalModule->GetDynamicClassInfoIfInitialized(dwDynamicClassDomainID);
     if (pLocalInfo != NULL)
@@ -1845,15 +1775,12 @@ HCIMPLEND
 //     possible.
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, SIZE_T moduleDomainID, DWORD dwClassDomainID)
+HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
 {
     FCALL_CONTRACT;
 
     // Get the ModuleIndex
-    ModuleIndex index = 
-        (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-            Module::IDToIndex(moduleDomainID) :
-            ((DomainLocalModule *)moduleDomainID)->GetModuleIndex();
+    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
 
     // Get the relevant ThreadLocalModule
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
@@ -1866,12 +1793,6 @@ HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBase, SIZE_T moduleDomainID, DWORD 
     // If the TLM was not allocated or if the class was not marked as initialized
     // then we have to go through the slow path
 
-    // Get the DomainLocalModule
-    DomainLocalModule *pDomainLocalModule =
-        (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-            GetAppDomain()->GetDomainLocalBlock()->GetModuleSlot(Module::IDToIndex(moduleDomainID)) :
-            (DomainLocalModule *) moduleDomainID;
-    
     // Obtain the MethodTable
     MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
@@ -1889,15 +1810,12 @@ HCIMPLEND
 //     possible.
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedGCThreadStaticBase, SIZE_T moduleDomainID, DWORD dwClassDomainID)
+HCIMPL2(void*, JIT_GetSharedGCThreadStaticBase, DomainLocalModule *pDomainLocalModule, DWORD dwClassDomainID)
 {
     FCALL_CONTRACT;
 
     // Get the ModuleIndex
-    ModuleIndex index = 
-        (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-            Module::IDToIndex(moduleDomainID) :
-            ((DomainLocalModule *)moduleDomainID)->GetModuleIndex();
+    ModuleIndex index = pDomainLocalModule->GetModuleIndex();
 
     // Get the relevant ThreadLocalModule
     ThreadLocalModule * pThreadLocalModule = ThreadStatics::GetTLMIfExists(index);
@@ -1910,12 +1828,6 @@ HCIMPL2(void*, JIT_GetSharedGCThreadStaticBase, SIZE_T moduleDomainID, DWORD dwC
     // If the TLM was not allocated or if the class was not marked as initialized
     // then we have to go through the slow path
 
-    // Get the DomainLocalModule
-    DomainLocalModule *pDomainLocalModule =
-        (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-            GetAppDomain()->GetDomainLocalBlock()->GetModuleSlot(Module::IDToIndex(moduleDomainID)) :
-            (DomainLocalModule *) moduleDomainID;
-    
     // Obtain the MethodTable
     MethodTable * pMT = pDomainLocalModule->GetMethodTableFromClassDomainID(dwClassDomainID);
     _ASSERTE(!pMT->HasGenericsStaticsInfo());
@@ -1929,15 +1841,9 @@ HCIMPLEND
 // *** This helper corresponds to CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_DYNAMICCLASS
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, SIZE_T moduleDomainID, DWORD dwDynamicClassDomainID)
+HCIMPL2(void*, JIT_GetSharedNonGCThreadStaticBaseDynamicClass, DomainLocalModule *pDomainLocalModule, DWORD dwDynamicClassDomainID)
 {
     FCALL_CONTRACT;
-
-    // Obtain the DomainLocalModule
-    DomainLocalModule *pDomainLocalModule =
-        (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-        GetAppDomain()->GetDomainLocalBlock()->GetModuleSlot(Module::IDToIndex(moduleDomainID)) :
-        (DomainLocalModule *)moduleDomainID;
 
     // Get the ModuleIndex
     ModuleIndex index = pDomainLocalModule->GetModuleIndex();
@@ -1983,15 +1889,9 @@ HCIMPLEND
 // *** This helper corresponds to CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_DYNAMICCLASS
 
 #include <optsmallperfcritical.h>
-HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, SIZE_T moduleDomainID, DWORD dwDynamicClassDomainID)
+HCIMPL2(void*, JIT_GetSharedGCThreadStaticBaseDynamicClass, DomainLocalModule *pDomainLocalModule, DWORD dwDynamicClassDomainID)
 {
     FCALL_CONTRACT;
-
-    // Obtain the DomainLocalModule
-    DomainLocalModule *pDomainLocalModule =
-        (Module::IsEncodedModuleIndex(moduleDomainID)) ?
-        GetAppDomain()->GetDomainLocalBlock()->GetModuleSlot(Module::IDToIndex(moduleDomainID)) :
-        (DomainLocalModule *)moduleDomainID;
 
     // Get the ModuleIndex
     ModuleIndex index = pDomainLocalModule->GetModuleIndex();

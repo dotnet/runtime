@@ -38,7 +38,6 @@ class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
-class   DomainLocalBlock;
 class   FCallMethodDesc;
 class   EEClass;
 class   LayoutEEClass;

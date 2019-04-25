@@ -1490,20 +1490,11 @@ inline PTR_BYTE MethodTable::GetGCThreadStaticsBasePointer(PTR_Thread pThread)
 }
 
 //==========================================================================================
-inline PTR_DomainLocalModule MethodTable::GetDomainLocalModule(AppDomain * pAppDomain)
-{
-    WRAPPER_NO_CONTRACT;
-    return GetModuleForStatics()->GetDomainLocalModule(pAppDomain);
-}
-
-#ifndef DACCESS_COMPILE
-//==========================================================================================
 inline PTR_DomainLocalModule MethodTable::GetDomainLocalModule()
 {
     WRAPPER_NO_CONTRACT;
     return GetModuleForStatics()->GetDomainLocalModule();
 }
-#endif //!DACCESS_COMPILE
 
 //==========================================================================================
 inline OBJECTREF MethodTable::AllocateNoChecks()

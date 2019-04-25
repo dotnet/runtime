@@ -636,7 +636,7 @@ public:
     void Init(AllocMemTracker *pamTracker);
 
     PTR_Assembly GetAssembly();
-    DomainAssembly* GetDomainAssembly(AppDomain *pDomain = NULL);
+    DomainAssembly* GetDomainAssembly();
 
     void    FreeModules();
 

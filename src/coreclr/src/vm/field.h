@@ -451,7 +451,6 @@ public:
         }
     }
 
-#ifndef DACCESS_COMPILE
     PTR_BYTE GetBase()
     {
         CONTRACTL
@@ -465,28 +464,6 @@ public:
         MethodTable *pMT = GetEnclosingMethodTable();
 
         return GetBaseInDomainLocalModule(pMT->GetDomainLocalModule());
-    }
-
-#endif //!DACCESS_COMPILE
-
-    PTR_BYTE GetBaseInDomain(AppDomain * appDomain)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-        }
-        CONTRACTL_END;
-
-        Module *pModule = GetEnclosingMethodTable()->GetModuleForStatics();
-        if (pModule == NULL)
-            return NULL;
-
-        DomainLocalModule *pLocalModule = pModule->GetDomainLocalModule(appDomain);
-        if (pLocalModule == NULL)
-            return NULL;
-
-        return GetBaseInDomainLocalModule(pLocalModule);
     }
 
     // returns the address of the field
