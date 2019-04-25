@@ -513,7 +513,7 @@ BOOL MethodTable::ValidateWithPossibleAV()
 #ifndef DACCESS_COMPILE
 
 //==========================================================================================
-BOOL  MethodTable::IsClassInited(AppDomain* pAppDomain /* = NULL */)
+BOOL  MethodTable::IsClassInited()
 {
     WRAPPER_NO_CONTRACT;
 
@@ -523,15 +523,7 @@ BOOL  MethodTable::IsClassInited(AppDomain* pAppDomain /* = NULL */)
     if (IsSharedByGenericInstantiations())
         return FALSE;
 
-    DomainLocalModule *pLocalModule;
-    if (pAppDomain == NULL)
-    {
-        pLocalModule = GetDomainLocalModule();
-    }
-    else
-    {
-        pLocalModule = GetDomainLocalModule(pAppDomain);
-    }
+    DomainLocalModule *pLocalModule = GetDomainLocalModule();
 
     _ASSERTE(pLocalModule != NULL);
 

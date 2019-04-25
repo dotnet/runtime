@@ -5335,7 +5335,7 @@ DebuggerModule* Debugger::LookupOrCreateModule(Module* pModule, AppDomain *pAppD
         HRESULT hr = S_OK;
         EX_TRY
         {
-            DomainFile * pDomainFile = pModule->FindDomainFile(pAppDomain);
+            DomainFile * pDomainFile = pModule->GetDomainFile();
             SIMPLIFYING_ASSUMPTION(pDomainFile != NULL);
             dmod = AddDebuggerModule(pDomainFile); // throws
         }
@@ -9592,7 +9592,7 @@ void Debugger::LoadModule(Module* pRuntimeModule,
             _ASSERTE(pManifestModule->IsManifest());
             _ASSERTE(pManifestModule->GetAssembly() == pRuntimeModule->GetAssembly());
 
-            DomainFile * pManifestDomainFile = pManifestModule->GetDomainFile(pAppDomain);
+            DomainFile * pManifestDomainFile = pManifestModule->GetDomainFile();
 
             DebuggerLockHolder dbgLockHolder(this);
 
@@ -9741,7 +9741,7 @@ void Debugger::LoadModuleFinished(Module * pRuntimeModule, AppDomain * pAppDomai
 #ifdef _DEBUG
     {
         // This notification is called once the module is loaded
-        DomainFile * pDomainFile = pRuntimeModule->FindDomainFile(pAppDomain);
+        DomainFile * pDomainFile = pRuntimeModule->GetDomainFile();
         _ASSERTE((pDomainFile != NULL) && (pDomainFile->GetLoadLevel() >= FILE_LOADED));
     }
 #endif // _DEBUG
@@ -10202,7 +10202,7 @@ BOOL Debugger::SendSystemClassLoadUnloadEvent(mdTypeDef classMetadataToken,
         // triggers too early in the loading process. FindDomainFile will not become
         // non-NULL until the module is fully loaded into the domain which is what we
         // want.
-        if (classModule->FindDomainFile(pAppDomain) != NULL )
+        if (classModule->GetDomainFile() != NULL )
         {
             // Find the Left Side module that this class belongs in.
             DebuggerModule* pModule = LookupOrCreateModule(classModule, pAppDomain);

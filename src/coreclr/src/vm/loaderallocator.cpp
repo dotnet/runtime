@@ -686,15 +686,7 @@ BOOL QCALLTYPE LoaderAllocator::Destroy(QCall::LoaderAllocatorHandle pLoaderAllo
         if (pDomainAssembly != NULL)
         {
             Assembly *pAssembly = pDomainAssembly->GetCurrentAssembly();
-
-            //if not fully loaded, it is still domain specific, so just get one from DomainAssembly
-            BaseDomain *pDomain = pAssembly ? pAssembly->Parent() : pDomainAssembly->GetAppDomain();
-
-            // This will probably change for shared code unloading
-            _ASSERTE(pDomain->IsAppDomain());
-
-            AppDomain *pAppDomain = pDomain->AsAppDomain();
-            pLoaderAllocator->m_pFirstDomainAssemblyFromSameALCToDelete = pAssembly->GetDomainAssembly(pAppDomain);
+            pLoaderAllocator->m_pFirstDomainAssemblyFromSameALCToDelete = pAssembly->GetDomainAssembly();
         }
 
         // Iterate through all references to other loader allocators and decrement their reference

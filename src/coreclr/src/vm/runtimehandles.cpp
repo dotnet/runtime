@@ -169,7 +169,7 @@ NOINLINE ReflectModuleBaseObject* GetRuntimeModuleHelper(LPVOID __me, Module *pM
     if (pModule == NULL)
         return NULL;
     
-    DomainFile * pDomainFile = pModule->FindDomainFile(GetAppDomain());
+    DomainFile * pDomainFile = pModule->GetDomainFile();
 
     OBJECTREF refModule = (pDomainFile != NULL) ? pDomainFile->GetExposedModuleObjectIfExists() : NULL;
 
@@ -500,13 +500,10 @@ FCIMPL1(AssemblyBaseObject*, RuntimeTypeHandle::GetAssembly, ReflectClassBaseObj
     if (refType == NULL)
         FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
 
-    DomainFile *pDomainFile = NULL;
-    
-        Module *pModule = refType->GetType().GetAssembly()->GetManifestModule();
+    Module *pModule = refType->GetType().GetAssembly()->GetManifestModule();
+    DomainAssembly *pDomainAssembly = pModule->GetDomainAssembly();
 
-            pDomainFile = pModule->FindDomainFile(GetAppDomain());
-
-    FC_RETURN_ASSEMBLY_OBJECT((DomainAssembly *)pDomainFile, refType);
+    FC_RETURN_ASSEMBLY_OBJECT(pDomainAssembly, refType);
 }
 FCIMPLEND
 
@@ -2761,7 +2758,7 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
         return NULL;
 
     Module *pModule = currentAssembly->GetManifestModule();
-    DomainFile * pDomainFile = pModule->FindDomainFile(GetAppDomain());
+    DomainFile * pDomainFile = pModule->GetDomainFile();
 
 #ifdef _DEBUG
     OBJECTREF orModule;

@@ -652,7 +652,7 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
     {
         if (index < fromModule->GetAssemblyRefMax())
         {
-            pAssembly = fromModule->LoadAssembly(GetAppDomain(), RidToToken(index, mdtAssemblyRef))->GetAssembly();
+            pAssembly = fromModule->LoadAssembly(RidToToken(index, mdtAssemblyRef))->GetAssembly();
         }
         else
         {

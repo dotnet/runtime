@@ -1437,7 +1437,7 @@ ClrDataValue::NewFromFieldDesc(ClrDataAccess* dac,
     {
         baseAddr = TO_CDADDR
             (PTR_TO_TADDR(fieldDesc->GetStaticAddressHandle
-             (fieldDesc->GetBaseInDomain(appDomain))));
+             (fieldDesc->GetBase())));
     }
     else
     {

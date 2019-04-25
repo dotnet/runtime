@@ -165,26 +165,26 @@ EXTERN_C FCDECL_MONHELPER(JIT_MonExitStatic_Portable, AwareLock *lock);
 #ifndef JIT_GetSharedGCStaticBase
 #define JIT_GetSharedGCStaticBase JIT_GetSharedGCStaticBase_Portable
 #endif
-EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase, SIZE_T moduleDomainID, DWORD dwModuleClassID);
-EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase_Portable, SIZE_T moduleDomainID, DWORD dwModuleClassID);
+EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase, DomainLocalModule *pLocalModule, DWORD dwModuleClassID);
+EXTERN_C FCDECL2(void*, JIT_GetSharedGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwModuleClassID);
 
 #ifndef JIT_GetSharedNonGCStaticBase
 #define JIT_GetSharedNonGCStaticBase JIT_GetSharedNonGCStaticBase_Portable
 #endif
-EXTERN_C FCDECL2(void*, JIT_GetSharedNonGCStaticBase, SIZE_T moduleDomainID, DWORD dwModuleClassID);
-EXTERN_C FCDECL2(void*, JIT_GetSharedNonGCStaticBase_Portable, SIZE_T moduleDomainID, DWORD dwModuleClassID);
+EXTERN_C FCDECL2(void*, JIT_GetSharedNonGCStaticBase, DomainLocalModule *pLocalModule, DWORD dwModuleClassID);
+EXTERN_C FCDECL2(void*, JIT_GetSharedNonGCStaticBase_Portable, DomainLocalModule *pLocalModule, DWORD dwModuleClassID);
 
 #ifndef JIT_GetSharedGCStaticBaseNoCtor
 #define JIT_GetSharedGCStaticBaseNoCtor JIT_GetSharedGCStaticBaseNoCtor_Portable
 #endif
-EXTERN_C FCDECL1(void*, JIT_GetSharedGCStaticBaseNoCtor, SIZE_T moduleDomainID);
-EXTERN_C FCDECL1(void*, JIT_GetSharedGCStaticBaseNoCtor_Portable, SIZE_T moduleDomainID);
+EXTERN_C FCDECL1(void*, JIT_GetSharedGCStaticBaseNoCtor, DomainLocalModule *pLocalModule);
+EXTERN_C FCDECL1(void*, JIT_GetSharedGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule);
 
 #ifndef JIT_GetSharedNonGCStaticBaseNoCtor
 #define JIT_GetSharedNonGCStaticBaseNoCtor JIT_GetSharedNonGCStaticBaseNoCtor_Portable
 #endif
-EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor, SIZE_T moduleDomainID);
-EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, SIZE_T moduleDomainID);
+EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor, DomainLocalModule *pLocalModule);
+EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, DomainLocalModule *pLocalModule);
 
 #ifndef JIT_ChkCastClass
 #define JIT_ChkCastClass JIT_ChkCastClass_Portable
