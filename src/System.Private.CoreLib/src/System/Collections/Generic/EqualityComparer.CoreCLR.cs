@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
@@ -138,7 +139,7 @@ namespace System.Collections.Generic
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    if (array[i] != null && array[i].Equals(value)) return i;
+                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                 }
             }
             return -1;
@@ -158,7 +159,7 @@ namespace System.Collections.Generic
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    if (array[i] != null && array[i].Equals(value)) return i;
+                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                 }
             }
             return -1;
