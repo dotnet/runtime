@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(t));
             }
 
-            FieldInfo f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            FieldInfo? f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             if (f is null)
             {

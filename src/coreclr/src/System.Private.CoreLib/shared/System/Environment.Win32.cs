@@ -411,7 +411,7 @@ namespace System
             {
                 if (s_winRTFolderPathsGetFolderPath == null)
                 {
-                    Type winRtFolderPathsType = Type.GetType("System.WinRTFolderPaths, System.Runtime.WindowsRuntime, Version=4.0.14.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", throwOnError: false);
+                    Type? winRtFolderPathsType = Type.GetType("System.WinRTFolderPaths, System.Runtime.WindowsRuntime, Version=4.0.14.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", throwOnError: false);
                     MethodInfo? getFolderPathsMethod = winRtFolderPathsType?.GetMethod("GetFolderPath", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, null, new Type[] { typeof(SpecialFolder), typeof(SpecialFolderOption) }, null);
                     var d = (Func<SpecialFolder, SpecialFolderOption, string>?)getFolderPathsMethod?.CreateDelegate(typeof(Func<SpecialFolder, SpecialFolderOption, string>));
                     s_winRTFolderPathsGetFolderPath = d ?? delegate { return string.Empty; };

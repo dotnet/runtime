@@ -919,7 +919,7 @@ namespace System.StubHelpers
 
         private unsafe IntPtr ConvertArrayToNative(object pManagedHome, int dwFlags)
         {
-            Type elementType = pManagedHome.GetType().GetElementType();
+            Type elementType = pManagedHome.GetType().GetElementType()!;
             VarEnum vt = VarEnum.VT_EMPTY;
 
             switch (Type.GetTypeCode(elementType))
@@ -1319,7 +1319,7 @@ namespace System.StubHelpers
                 else
                 {
                     // Custom .NET type
-                    typeName = managedType.AssemblyQualifiedName;
+                    typeName = managedType.AssemblyQualifiedName!;
                     pNativeType->typeKind = TypeKind.Projection;
                 }
             }

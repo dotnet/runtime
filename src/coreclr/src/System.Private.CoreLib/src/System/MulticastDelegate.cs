@@ -557,7 +557,7 @@ namespace System
                         RuntimeType reflectedType = (RuntimeType)GetType();
                         declaringType = reflectedType;
                     }
-                    _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method);
+                    _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
                 }
                 return (MethodInfo)_methodBase;
             }

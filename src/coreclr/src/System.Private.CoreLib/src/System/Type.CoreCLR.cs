@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using StackCrawlMark = System.Threading.StackCrawlMark;
@@ -14,29 +15,28 @@ namespace System
         {
             get
             {
-                RuntimeType rt = this as RuntimeType;
-                if (rt != null)
+                if (this is RuntimeType rt)
                     return RuntimeTypeHandle.IsInterface(rt);
                 return ((GetAttributeFlagsImpl() & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface);
             }
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public static Type GetType(string typeName, bool throwOnError, bool ignoreCase)
+        public static Type? GetType(string typeName, bool throwOnError, bool ignoreCase)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeType.GetType(typeName, throwOnError, ignoreCase, ref stackMark);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public static Type GetType(string typeName, bool throwOnError)
+        public static Type? GetType(string typeName, bool throwOnError)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeType.GetType(typeName, throwOnError, false, ref stackMark);
         }
 
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
-        public static Type GetType(string typeName)
+        public static Type? GetType(string typeName)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return RuntimeType.GetType(typeName, false, false, ref stackMark);
@@ -45,8 +45,8 @@ namespace System
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(
             string typeName,
-            Func<AssemblyName, Assembly> assemblyResolver,
-            Func<Assembly, string, bool, Type> typeResolver)
+            Func<AssemblyName, Assembly>? assemblyResolver,
+            Func<Assembly, string, bool, Type>? typeResolver)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return TypeNameParser.GetType(typeName, assemblyResolver, typeResolver, false, false, ref stackMark);
@@ -55,8 +55,8 @@ namespace System
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(
             string typeName,
-            Func<AssemblyName, Assembly> assemblyResolver,
-            Func<Assembly, string, bool, Type> typeResolver,
+            Func<AssemblyName, Assembly>? assemblyResolver,
+            Func<Assembly, string, bool, Type>? typeResolver,
             bool throwOnError)
         {
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -66,8 +66,8 @@ namespace System
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Type GetType(
             string typeName,
-            Func<AssemblyName, Assembly> assemblyResolver,
-            Func<Assembly, string, bool, Type> typeResolver,
+            Func<AssemblyName, Assembly>? assemblyResolver,
+            Func<Assembly, string, bool, Type>? typeResolver,
             bool throwOnError,
             bool ignoreCase)
         {
@@ -84,7 +84,7 @@ namespace System
         //   param progID:     the progID of the class to retrieve
         //   returns:          the class object associated to the progID
         ////
-        public static Type GetTypeFromProgID(string progID, string server, bool throwOnError)
+        public static Type GetTypeFromProgID(string progID, string? server, bool throwOnError)
         {
             return RuntimeType.GetTypeFromProgIDImpl(progID, server, throwOnError);
         }
@@ -96,7 +96,7 @@ namespace System
         //   param CLSID:      the CLSID of the class to retrieve
         //   returns:          the class object associated to the CLSID
         ////
-        public static Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError)
+        public static Type GetTypeFromCLSID(Guid clsid, string? server, bool throwOnError)
         {
             return RuntimeType.GetTypeFromCLSIDImpl(clsid, server, throwOnError);
         }
@@ -148,10 +148,10 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern bool operator ==(Type left, Type right);
+        public static extern bool operator ==(Type? left, Type? right);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        public static extern bool operator !=(Type left, Type right);
+        public static extern bool operator !=(Type? left, Type? right);
 
         // Exists to faciliate code sharing between CoreCLR and CoreRT.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

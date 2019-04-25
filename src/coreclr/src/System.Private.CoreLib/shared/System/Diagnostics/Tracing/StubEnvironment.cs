@@ -221,7 +221,7 @@ namespace Microsoft.Reflection
         public static bool IsSealed(this Type type) { return type.IsSealed; }
         public static bool IsValueType(this Type type) { return type.IsValueType; }
         public static bool IsGenericType(this Type type) { return type.IsGenericType; }
-        public static Type BaseType(this Type type) { return type.BaseType; }
+        public static Type? BaseType(this Type type) { return type.BaseType; }
         public static Assembly Assembly(this Type type) { return type.Assembly; }
         public static TypeCode GetTypeCode(this Type type) { return Type.GetTypeCode(type); }
 

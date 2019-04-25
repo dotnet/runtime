@@ -409,8 +409,8 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
     // license context and instantiate the object.
     internal sealed class LicenseInteropProxy
     {
-        private static readonly Type s_licenseAttrType;
-        private static readonly Type s_licenseExceptionType;
+        private static readonly Type? s_licenseAttrType;
+        private static readonly Type? s_licenseExceptionType;
 
         // LicenseManager
         private MethodInfo _createWithContext;
@@ -441,22 +441,22 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
 
         public LicenseInteropProxy()
         {
-            Type licManager = Type.GetType("System.ComponentModel.LicenseManager, System.ComponentModel.TypeConverter", throwOnError: true);
+            Type licManager = Type.GetType("System.ComponentModel.LicenseManager, System.ComponentModel.TypeConverter", throwOnError: true)!;
 
-            Type licContext = Type.GetType("System.ComponentModel.LicenseContext, System.ComponentModel.TypeConverter", throwOnError: true);
-            _setSavedLicenseKey = licContext.GetMethod("SetSavedLicenseKey", BindingFlags.Instance | BindingFlags.Public);
-            _createWithContext = licManager.GetMethod("CreateWithContext", new[] { typeof(Type), licContext });
+            Type licContext = Type.GetType("System.ComponentModel.LicenseContext, System.ComponentModel.TypeConverter", throwOnError: true)!;
+            _setSavedLicenseKey = licContext.GetMethod("SetSavedLicenseKey", BindingFlags.Instance | BindingFlags.Public)!;
+            _createWithContext = licManager.GetMethod("CreateWithContext", new[] { typeof(Type), licContext })!;
 
-            Type interopHelper = licManager.GetNestedType("LicenseInteropHelper", BindingFlags.NonPublic);
-            _validateTypeAndReturnDetails = interopHelper.GetMethod("ValidateAndRetrieveLicenseDetails", BindingFlags.Static | BindingFlags.Public);
-            _getCurrentContextInfo = interopHelper.GetMethod("GetCurrentContextInfo", BindingFlags.Static | BindingFlags.Public);
+            Type interopHelper = licManager.GetNestedType("LicenseInteropHelper", BindingFlags.NonPublic)!;
+            _validateTypeAndReturnDetails = interopHelper.GetMethod("ValidateAndRetrieveLicenseDetails", BindingFlags.Static | BindingFlags.Public)!;
+            _getCurrentContextInfo = interopHelper.GetMethod("GetCurrentContextInfo", BindingFlags.Static | BindingFlags.Public)!;
 
-            Type clrLicContext = licManager.GetNestedType("CLRLicenseContext", BindingFlags.NonPublic);
-            _createDesignContext = clrLicContext.GetMethod("CreateDesignContext", BindingFlags.Static | BindingFlags.Public);
-            _createRuntimeContext = clrLicContext.GetMethod("CreateRuntimeContext", BindingFlags.Static | BindingFlags.Public);
+            Type clrLicContext = licManager.GetNestedType("CLRLicenseContext", BindingFlags.NonPublic)!;
+            _createDesignContext = clrLicContext.GetMethod("CreateDesignContext", BindingFlags.Static | BindingFlags.Public)!;
+            _createRuntimeContext = clrLicContext.GetMethod("CreateRuntimeContext", BindingFlags.Static | BindingFlags.Public)!;
 
-            _licInfoHelper = licManager.GetNestedType("LicInfoHelperLicenseContext", BindingFlags.NonPublic);
-            _licInfoHelperContains = _licInfoHelper.GetMethod("Contains", BindingFlags.Instance | BindingFlags.Public);
+            _licInfoHelper = licManager.GetNestedType("LicInfoHelperLicenseContext", BindingFlags.NonPublic)!;
+            _licInfoHelperContains = _licInfoHelper.GetMethod("Contains", BindingFlags.Instance | BindingFlags.Public)!;
         }
 
         // Helper function to create an object from the native side
@@ -492,7 +492,7 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
             // LicenseContext, Type, out License, out string
             object licContext = Activator.CreateInstance(_licInfoHelper)!;
             var parameters = new object?[] { licContext, type, /* out */ null, /* out */ null };
-            bool isValid = (bool)_validateTypeAndReturnDetails.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+            bool isValid = (bool)_validateTypeAndReturnDetails.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null)!;
             if (!isValid)
             {
                 return;
@@ -505,8 +505,8 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
                 licVerified = true;
             }
 
-            parameters = new object[] { type.AssemblyQualifiedName };
-            runtimeKeyAvail = (bool)_licInfoHelperContains.Invoke(licContext, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+            parameters = new object?[] { type.AssemblyQualifiedName };
+            runtimeKeyAvail = (bool)_licInfoHelperContains.Invoke(licContext, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null)!;
         }
 
         // The CLR invokes this whenever a COM client invokes
@@ -523,7 +523,7 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
             // Types are as follows:
             // LicenseContext, Type, out License, out string
             var parameters = new object?[] { /* use global LicenseContext */ null, type, /* out */ null, /* out */ null };
-            bool isValid = (bool)_validateTypeAndReturnDetails.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+            bool isValid = (bool)_validateTypeAndReturnDetails.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null)!;
             if (!isValid)
             {
                 throw new COMException(); //E_FAIL
@@ -557,7 +557,7 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
         public object AllocateAndValidateLicense(Type type, string? key, bool isDesignTime)
         {
             object?[] parameters;
-            object licContext;
+            object? licContext;
             if (isDesignTime)
             {
                 parameters = new object[] { type };
@@ -571,8 +571,8 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
 
             try
             {
-                parameters = new object[] { type, licContext };
-                return _createWithContext.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null);
+                parameters = new object?[] { type, licContext };
+                return _createWithContext.Invoke(null, BindingFlags.DoNotWrapExceptions, binder: null, parameters: parameters, culture: null)!;
             }
             catch (Exception exception) when (exception.GetType() == s_licenseExceptionType)
             {
