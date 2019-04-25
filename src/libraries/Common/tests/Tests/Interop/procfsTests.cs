@@ -49,7 +49,6 @@ namespace Common.Tests
                 Assert.True(Interop.procfs.TryParseStatFile(path, out result, new ReusableTextReader()));
 
                 Assert.Equal(expectedPid, result.pid);
-                Assert.Equal(expectedComm, result.comm);
                 Assert.Equal(expectedState, result.state);
                 Assert.Equal(expectedSession, result.session);
                 Assert.Equal(expectedUtime, result.utime);

@@ -1875,6 +1875,37 @@ namespace System.Diagnostics.Tests
             Assert.True(p.HasExited);
         }
 
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [ActiveIssue(37054, TestPlatforms.OSX)]
+        [Fact]
+        public void LongProcessNamesAreSupported()
+        {
+            string programPath = GetProgramPath("sleep");
+
+            if (programPath == null)
+            {
+                return;
+            }
+
+            const string LongProcessName = "123456789012345678901234567890";
+            string sleepCommandPathFileName = Path.Combine(TestDirectory, LongProcessName);
+            File.Copy(programPath, sleepCommandPathFileName);
+
+            using (Process px = Process.Start(sleepCommandPathFileName, "600"))
+            {
+                Process[] runningProcesses = Process.GetProcesses();
+                try
+                {
+                    Assert.Contains(runningProcesses, p => p.ProcessName == LongProcessName);
+                }
+                finally
+                {
+                    px.Kill();
+                    px.WaitForExit();
+                }
+            }
+        }
+
         private string GetCurrentProcessName()
         {
             return $"{Process.GetCurrentProcess().ProcessName}.exe";
