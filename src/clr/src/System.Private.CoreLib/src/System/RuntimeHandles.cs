@@ -624,15 +624,15 @@ namespace System
 #endif // FEATURE_TYPEEQUIVALENCE
     }
 
-    // This type is used to remove the expense of having a managed reference object that is dynamically 
+    // This type is used to remove the expense of having a managed reference object that is dynamically
     // created when we can prove that we don't need that object. Use of this type requires code to ensure
-    // that the underlying native resource is not freed. 
+    // that the underlying native resource is not freed.
     // Cases in which this may be used:
     //  1. When native code calls managed code passing one of these as a parameter
     //  2. When managed code acquires one of these from an IRuntimeMethodInfo, and ensure that the IRuntimeMethodInfo is preserved
     //     across the lifetime of the RuntimeMethodHandleInternal instance
     //  3. When another object is used to keep the RuntimeMethodHandleInternal alive. See delegates, CreateInstance cache, Signature structure
-    // When in doubt, do not use. 
+    // When in doubt, do not use.
     internal struct RuntimeMethodHandleInternal
     {
         internal static RuntimeMethodHandleInternal EmptyHandle
@@ -991,15 +991,15 @@ namespace System
         internal static extern LoaderAllocator GetLoaderAllocator(RuntimeMethodHandleInternal method);
     }
 
-    // This type is used to remove the expense of having a managed reference object that is dynamically 
+    // This type is used to remove the expense of having a managed reference object that is dynamically
     // created when we can prove that we don't need that object. Use of this type requires code to ensure
-    // that the underlying native resource is not freed. 
+    // that the underlying native resource is not freed.
     // Cases in which this may be used:
     //  1. When native code calls managed code passing one of these as a parameter
     //  2. When managed code acquires one of these from an RtFieldInfo, and ensure that the RtFieldInfo is preserved
     //     across the lifetime of the RuntimeFieldHandleInternal instance
     //  3. When another object is used to keep the RuntimeFieldHandleInternal alive.
-    // When in doubt, do not use. 
+    // When in doubt, do not use.
     internal struct RuntimeFieldHandleInternal
     {
         internal bool IsNullHandle()
@@ -1443,7 +1443,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void GetSignature(
             void* pCorSig, int cCorSig,
-            RuntimeFieldHandleInternal? fieldHandle, IRuntimeMethodInfo? methodHandle, RuntimeType? declaringType);
+            RuntimeFieldHandleInternal fieldHandle, IRuntimeMethodInfo? methodHandle, RuntimeType? declaringType);
 
         #endregion
 
@@ -1531,7 +1531,7 @@ namespace System
         internal abstract string GetStringLiteral(int token);
         internal abstract void ResolveToken(int token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle);
         internal abstract byte[] ResolveSignature(int token, int fromMethod);
-        // 
+        //
         internal abstract MethodInfo GetDynamicMethod();
     }
 }
