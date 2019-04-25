@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,17 +16,17 @@ namespace System.Reflection
         #region Private Data Members
         private volatile RuntimeType m_declaringType;
         private RuntimeTypeCache m_reflectedTypeCache;
-        private string m_toString;
-        private ParameterInfo[] m_parameters = null; // Created lazily when GetParameters() is called.
-#pragma warning disable 169
-        private object _empty1; // These empties are used to ensure that RuntimeConstructorInfo and RuntimeMethodInfo are have a layout which is sufficiently similar
-        private object _empty2;
-        private object _empty3;
-#pragma warning restore 169
+        private string? m_toString;
+        private ParameterInfo[]? m_parameters; // Created lazily when GetParameters() is called.
+#pragma warning disable 414
+        private object _empty1 = null!; // These empties are used to ensure that RuntimeConstructorInfo and RuntimeMethodInfo are have a layout which is sufficiently similar
+        private object _empty2 = null!;
+        private object _empty3 = null!;
+#pragma warning restore 414
         private IntPtr m_handle;
         private MethodAttributes m_methodAttributes;
         private BindingFlags m_bindingFlags;
-        private volatile Signature m_signature;
+        private volatile Signature? m_signature;
         private INVOCATION_FLAGS m_invocationFlags;
 
         internal INVOCATION_FLAGS InvocationFlags
@@ -36,7 +37,7 @@ namespace System.Reflection
                 {
                     INVOCATION_FLAGS invocationFlags = INVOCATION_FLAGS.INVOCATION_FLAGS_IS_CTOR; // this is a given
 
-                    Type declaringType = DeclaringType;
+                    Type? declaringType = DeclaringType;
 
                     //
                     // first take care of all the NO_INVOKE cases. 
@@ -92,11 +93,11 @@ namespace System.Reflection
             }
         }
 
-        internal override bool CacheEquals(object o)
+        internal override bool CacheEquals(object? o)
         {
-            RuntimeConstructorInfo m = o as RuntimeConstructorInfo;
+            RuntimeConstructorInfo? m = o as RuntimeConstructorInfo;
 
-            if ((object)m == null)
+            if (m is null)
                 return false;
 
             return m.m_handle == m_handle;
@@ -121,7 +122,7 @@ namespace System.Reflection
             }
         }
 
-        private void CheckConsistency(object target)
+        private void CheckConsistency(object? target)
         {
             if (target == null && IsStatic)
                 return;
@@ -164,7 +165,7 @@ namespace System.Reflection
         #region ICustomAttributeProvider
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType);
+            return CustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -172,7 +173,7 @@ namespace System.Reflection
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
 
-            RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
+            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -185,7 +186,7 @@ namespace System.Reflection
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
 
-            RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
+            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -207,7 +208,7 @@ namespace System.Reflection
         }
         public override MemberTypes MemberType { get { return MemberTypes.Constructor; } }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get
             {
@@ -217,7 +218,7 @@ namespace System.Reflection
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeConstructorInfo>(other);
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get
             {
@@ -330,7 +331,7 @@ namespace System.Reflection
 
         internal void ThrowNoInvokeException()
         {
-            CheckCanCreateInstance(DeclaringType, (CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs);
+            CheckCanCreateInstance(DeclaringType!, (CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs);
 
             // ctor is .cctor
             if ((Attributes & MethodAttributes.Static) == MethodAttributes.Static)
@@ -341,8 +342,8 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override object Invoke(
-            object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object? Invoke(
+            object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             INVOCATION_FLAGS invocationFlags = InvocationFlags;
 
@@ -364,19 +365,19 @@ namespace System.Reflection
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (actualCount > 0)
             {
-                object[] arguments = CheckArguments(parameters, binder, invokeAttr, culture, sig);
+                object[] arguments = CheckArguments(parameters!, binder, invokeAttr, culture, sig);
                 object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, sig, false, wrapExceptions);
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)
-                    parameters[index] = arguments[index];
+                    parameters![index] = arguments[index];
                 return retValue;
             }
             return RuntimeMethodHandle.InvokeMethod(obj, null, sig, false, wrapExceptions);
         }
 
-        public override MethodBody GetMethodBody()
+        public override MethodBody? GetMethodBody()
         {
-            RuntimeMethodBody mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
+            RuntimeMethodBody? mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
             if (mb != null)
                 mb._methodBase = this;
             return mb;
@@ -409,7 +410,7 @@ namespace System.Reflection
         #region ConstructorInfo Overrides
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             INVOCATION_FLAGS invocationFlags = InvocationFlags;
 
@@ -434,11 +435,11 @@ namespace System.Reflection
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (actualCount > 0)
             {
-                object[] arguments = CheckArguments(parameters, binder, invokeAttr, culture, sig);
+                object[] arguments = CheckArguments(parameters!, binder!, invokeAttr, culture, sig);
                 object retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, true, wrapExceptions);
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)
-                    parameters[index] = arguments[index];
+                    parameters![index] = arguments[index];
                 return retValue;
             }
             return RuntimeMethodHandle.InvokeMethod(null, null, sig, true, wrapExceptions);

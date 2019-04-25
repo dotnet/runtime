@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-using System;
-using System.Reflection;
-using System.Collections;
-using System.Collections.Generic;
+#nullable enable
 using System.Globalization;
 using System.Diagnostics;
 
@@ -45,8 +40,8 @@ namespace System.Reflection.Emit
         #region MemberInfo Overrides
         public override MemberTypes MemberType { get { return m_method.MemberType; } }
         public override string Name { get { return m_method.Name; } }
-        public override Type DeclaringType { get { return m_type; } }
-        public override Type ReflectedType { get { return m_type; } }
+        public override Type? DeclaringType { get { return m_type; } }
+        public override Type? ReflectedType { get { return m_type; } }
         public override object[] GetCustomAttributes(bool inherit) { return m_method.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_method.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_method.IsDefined(attributeType, inherit); }
@@ -58,7 +53,7 @@ namespace System.Reflection.Emit
         public override MethodImplAttributes GetMethodImplementationFlags() { return m_method.GetMethodImplementationFlags(); }
         public override RuntimeMethodHandle MethodHandle { get { return m_method.MethodHandle; } }
         public override MethodAttributes Attributes { get { return m_method.Attributes; } }
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }
@@ -80,9 +75,9 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Abstract\Virtual Members
-        public override Type ReturnType { get { return m_method.ReturnType; } }
-        public override ParameterInfo ReturnParameter { get { throw new NotSupportedException(); } }
-        public override ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
+        public override Type? ReturnType { get { return m_method.ReturnType; } }
+        public override ParameterInfo? ReturnParameter { get { throw new NotSupportedException(); } }
+        public override ICustomAttributeProvider? ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
         public override MethodInfo GetBaseDefinition() { throw new NotSupportedException(); }
         #endregion    
     }
@@ -116,7 +111,7 @@ namespace System.Reflection.Emit
             return m_ctor.GetParameterTypes();
         }
 
-        internal override Type GetReturnType()
+        internal override Type? GetReturnType()
         {
             return DeclaringType;
         }
@@ -124,8 +119,8 @@ namespace System.Reflection.Emit
         #region MemberInfo Overrides
         public override MemberTypes MemberType { get { return m_ctor.MemberType; } }
         public override string Name { get { return m_ctor.Name; } }
-        public override Type DeclaringType { get { return m_type; } }
-        public override Type ReflectedType { get { return m_type; } }
+        public override Type? DeclaringType { get { return m_type; } }
+        public override Type? ReflectedType { get { return m_type; } }
         public override object[] GetCustomAttributes(bool inherit) { return m_ctor.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_ctor.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_ctor.IsDefined(attributeType, inherit); }
@@ -133,7 +128,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                ConstructorBuilder cb = m_ctor as ConstructorBuilder;
+                ConstructorBuilder? cb = m_ctor as ConstructorBuilder;
 
                 if (cb != null)
                     return cb.MetadataTokenInternal;
@@ -152,7 +147,7 @@ namespace System.Reflection.Emit
         public override MethodImplAttributes GetMethodImplementationFlags() { return m_ctor.GetMethodImplementationFlags(); }
         public override RuntimeMethodHandle MethodHandle { get { return m_ctor.MethodHandle; } }
         public override MethodAttributes Attributes { get { return m_ctor.Attributes; } }
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }
@@ -165,7 +160,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region ConstructorInfo Members
-        public override object Invoke(BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new InvalidOperationException();
         }
@@ -177,7 +172,7 @@ namespace System.Reflection.Emit
         #region Private Static Members
         internal static FieldInfo GetField(FieldInfo Field, TypeBuilderInstantiation type)
         {
-            FieldInfo m = null;
+            FieldInfo? m = null;
 
             // This ifdef was introduced when non-generic collections were pulled from
             // silverlight. See code:Dictionary#DictionaryVersusHashtableThreadSafety
@@ -193,7 +188,7 @@ namespace System.Reflection.Emit
             // method isn't expected to be on any critical paths for performance.
             if (type.m_hashtable.Contains(Field))
             {
-                m = type.m_hashtable[Field] as FieldInfo;
+                m = (type.m_hashtable[Field] as FieldInfo)!;
             }
             else
             {
@@ -225,8 +220,8 @@ namespace System.Reflection.Emit
         #region MemberInfo Overrides
         public override MemberTypes MemberType { get { return System.Reflection.MemberTypes.Field; } }
         public override string Name { get { return m_field.Name; } }
-        public override Type DeclaringType { get { return m_type; } }
-        public override Type ReflectedType { get { return m_type; } }
+        public override Type? DeclaringType { get { return m_type; } }
+        public override Type? ReflectedType { get { return m_type; } }
         public override object[] GetCustomAttributes(bool inherit) { return m_field.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_field.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_field.IsDefined(attributeType, inherit); }
@@ -234,7 +229,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                FieldBuilder fb = m_field as FieldBuilder;
+                FieldBuilder? fb = m_field as FieldBuilder;
 
                 if (fb != null)
                     return fb.MetadataTokenInternal;
@@ -264,8 +259,8 @@ namespace System.Reflection.Emit
             get { throw new NotImplementedException(); }
         }
         public override Type FieldType { get { throw new NotImplementedException(); } }
-        public override object GetValue(object obj) { throw new InvalidOperationException(); }
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture) { throw new InvalidOperationException(); }
+        public override object GetValue(object? obj) { throw new InvalidOperationException(); }
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture) { throw new InvalidOperationException(); }
         public override FieldAttributes Attributes { get { return m_field.Attributes; } }
         #endregion
     }

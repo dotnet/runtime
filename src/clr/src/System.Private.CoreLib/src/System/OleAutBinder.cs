@@ -6,20 +6,19 @@
 
 // #define DISPLAY_DEBUG_INFO
 
+#nullable enable
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
+using CultureInfo = System.Globalization.CultureInfo;
+
 namespace System
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Reflection;
-    using Microsoft.Win32;
-    using CultureInfo = System.Globalization.CultureInfo;
-
     // Made serializable in anticipation of this class eventually having state.
     internal class OleAutBinder : DefaultBinder
     {
         // ChangeType
         // This binder uses OLEAUT to change the type of the variant.
-        public override object ChangeType(object value, Type type, CultureInfo cultureInfo)
+        public override object ChangeType(object value, Type type, CultureInfo? cultureInfo)
         {
             Variant myValue = new Variant(value);
             if (cultureInfo == null)
@@ -34,7 +33,7 @@ namespace System
 #if DISPLAY_DEBUG_INFO
                 Console.WriteLine("Stripping byref from the type to convert to.");
 #endif
-                type = type.GetElementType();
+                type = type.GetElementType()!;
             }
 
             // If we are trying to convert from an object to another type then we don't
@@ -55,7 +54,7 @@ namespace System
 #if DISPLAY_DEBUG_INFO
                 Console.WriteLine("Converting primitive to enum");
 #endif
-                return Enum.Parse(type, value.ToString());
+                return Enum.Parse(type, value.ToString()!);
             }
 
             // Use the OA variant lib to convert primitive types.
@@ -66,7 +65,7 @@ namespace System
 #endif      
                 // Specify the LocalBool flag to have BOOL values converted to local language rather
                 // than 0 or -1.
-                object RetObj = OAVariantLib.ChangeType(myValue, type, OAVariantLib.LocalBool, cultureInfo).ToObject();
+                object RetObj = OAVariantLib.ChangeType(myValue, type, OAVariantLib.LocalBool, cultureInfo).ToObject()!;
 
 #if DISPLAY_DEBUG_INFO      
                 Console.WriteLine("Object returned from ChangeType is of type: " + RetObj.GetType().Name);

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 
 namespace System.Reflection
@@ -9,56 +10,56 @@ namespace System.Reflection
     public static class CustomAttributeExtensions
     {
         #region APIs that return a single attribute
-        public static Attribute GetCustomAttribute(this Assembly element, Type attributeType)
+        public static Attribute? GetCustomAttribute(this Assembly element, Type attributeType)
         {
             return Attribute.GetCustomAttribute(element, attributeType);
         }
-        public static Attribute GetCustomAttribute(this Module element, Type attributeType)
+        public static Attribute? GetCustomAttribute(this Module element, Type attributeType)
         {
             return Attribute.GetCustomAttribute(element, attributeType);
         }
-        public static Attribute GetCustomAttribute(this MemberInfo element, Type attributeType)
+        public static Attribute? GetCustomAttribute(this MemberInfo element, Type attributeType)
         {
             return Attribute.GetCustomAttribute(element, attributeType);
         }
-        public static Attribute GetCustomAttribute(this ParameterInfo element, Type attributeType)
+        public static Attribute? GetCustomAttribute(this ParameterInfo element, Type attributeType)
         {
             return Attribute.GetCustomAttribute(element, attributeType);
         }
 
-        public static T GetCustomAttribute<T>(this Assembly element) where T : Attribute
+        public static T? GetCustomAttribute<T>(this Assembly element) where T : Attribute
         {
-            return (T)GetCustomAttribute(element, typeof(T));
+            return (T?)GetCustomAttribute(element, typeof(T));
         }
-        public static T GetCustomAttribute<T>(this Module element) where T : Attribute
+        public static T? GetCustomAttribute<T>(this Module element) where T : Attribute
         {
-            return (T)GetCustomAttribute(element, typeof(T));
+            return (T?)GetCustomAttribute(element, typeof(T));
         }
-        public static T GetCustomAttribute<T>(this MemberInfo element) where T : Attribute
+        public static T? GetCustomAttribute<T>(this MemberInfo element) where T : Attribute
         {
-            return (T)GetCustomAttribute(element, typeof(T));
+            return (T?)GetCustomAttribute(element, typeof(T));
         }
-        public static T GetCustomAttribute<T>(this ParameterInfo element) where T : Attribute
+        public static T? GetCustomAttribute<T>(this ParameterInfo element) where T : Attribute
         {
-            return (T)GetCustomAttribute(element, typeof(T));
+            return (T?)GetCustomAttribute(element, typeof(T));
         }
 
-        public static Attribute GetCustomAttribute(this MemberInfo element, Type attributeType, bool inherit)
+        public static Attribute? GetCustomAttribute(this MemberInfo element, Type attributeType, bool inherit)
         {
             return Attribute.GetCustomAttribute(element, attributeType, inherit);
         }
-        public static Attribute GetCustomAttribute(this ParameterInfo element, Type attributeType, bool inherit)
+        public static Attribute? GetCustomAttribute(this ParameterInfo element, Type attributeType, bool inherit)
         {
             return Attribute.GetCustomAttribute(element, attributeType, inherit);
         }
 
-        public static T GetCustomAttribute<T>(this MemberInfo element, bool inherit) where T : Attribute
+        public static T? GetCustomAttribute<T>(this MemberInfo element, bool inherit) where T : Attribute
         {
-            return (T)GetCustomAttribute(element, typeof(T), inherit);
+            return (T?)GetCustomAttribute(element, typeof(T), inherit);
         }
-        public static T GetCustomAttribute<T>(this ParameterInfo element, bool inherit) where T : Attribute
+        public static T? GetCustomAttribute<T>(this ParameterInfo element, bool inherit) where T : Attribute
         {
-            return (T)GetCustomAttribute(element, typeof(T), inherit);
+            return (T?)GetCustomAttribute(element, typeof(T), inherit);
         }
         #endregion
 

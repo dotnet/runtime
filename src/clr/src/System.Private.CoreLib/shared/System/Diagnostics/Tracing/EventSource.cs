@@ -3078,7 +3078,7 @@ namespace System.Diagnostics.Tracing
 
 #if (!ES_BUILD_PCL && !ES_BUILD_PN)
             // In the reflection only context, we have to do things by hand.
-            string fullTypeNameToFind = attributeType.FullName;
+            string fullTypeNameToFind = attributeType.FullName!;
 
 #if EVENT_SOURCE_LEGACY_NAMESPACE_SUPPORT
             fullTypeNameToFind = fullTypeNameToFind.Replace("System.Diagnostics.Eventing", "System.Diagnostics.Tracing");
@@ -3086,7 +3086,7 @@ namespace System.Diagnostics.Tracing
 
             foreach (CustomAttributeData data in CustomAttributeData.GetCustomAttributes(member))
             {
-                if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType))
+                if (AttributeTypeNamesMatch(attributeType, data.Constructor.ReflectedType!))
                 {
                     Attribute? attr = null;
 
@@ -3094,7 +3094,7 @@ namespace System.Diagnostics.Tracing
 
                     if (data.ConstructorArguments.Count == 1)
                     {
-                        attr = (Attribute?)Activator.CreateInstance(attributeType, new object[] { data.ConstructorArguments[0].Value });
+                        attr = (Attribute?)Activator.CreateInstance(attributeType, new object?[] { data.ConstructorArguments[0].Value });
                     }
                     else if (data.ConstructorArguments.Count == 0)
                     {
@@ -3107,8 +3107,8 @@ namespace System.Diagnostics.Tracing
 
                         foreach (CustomAttributeNamedArgument namedArgument in data.NamedArguments)
                         {
-                            PropertyInfo p = t.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance);
-                            object value = namedArgument.TypedValue.Value;
+                            PropertyInfo p = t.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                            object value = namedArgument.TypedValue.Value!;
 
                             if (p.PropertyType.IsEnum)
                             {
@@ -3150,8 +3150,8 @@ namespace System.Diagnostics.Tracing
                     // are the typenames equal and the namespaces under "Diagnostics.Tracing" (typically
                     // either Microsoft.Diagnostics.Tracing or System.Diagnostics.Tracing)?
                     string.Equals(attributeType.Name, reflectedAttributeType.Name, StringComparison.Ordinal) &&
-                    attributeType.Namespace.EndsWith("Diagnostics.Tracing", StringComparison.Ordinal) &&
-                    (reflectedAttributeType.Namespace.EndsWith("Diagnostics.Tracing", StringComparison.Ordinal)
+                    attributeType.Namespace!.EndsWith("Diagnostics.Tracing", StringComparison.Ordinal) &&
+                    (reflectedAttributeType.Namespace!.EndsWith("Diagnostics.Tracing", StringComparison.Ordinal)
 #if EVENT_SOURCE_LEGACY_NAMESPACE_SUPPORT
                      || reflectedAttributeType.Namespace.EndsWith("Diagnostics.Eventing", StringComparison.Ordinal)
 #endif
@@ -3261,7 +3261,7 @@ namespace System.Diagnostics.Tracing
                 foreach (var providerEnumKind in new string[] { "Keywords", "Tasks", "Opcodes" })
 #endif
                 {
-                    Type nestedType = eventSourceType.GetNestedType(providerEnumKind);
+                    Type? nestedType = eventSourceType.GetNestedType(providerEnumKind);
                     if (nestedType != null)
                     {
                         if (eventSourceType.IsAbstract())
@@ -3412,7 +3412,7 @@ namespace System.Diagnostics.Tracing
                             manifest.StartEvent(eventName, eventAttribute);
                             for (int fieldIdx = 0; fieldIdx < args.Length; fieldIdx++)
                             {
-                                manifest.AddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name);
+                                manifest.AddEventParameter(args[fieldIdx].ParameterType, args[fieldIdx].Name!);
                             }
                             manifest.EndEvent();
                         }
@@ -3739,7 +3739,7 @@ namespace System.Diagnostics.Tracing
 #if ES_BUILD_STANDALONE
             (new ReflectionPermission(ReflectionPermissionFlag.MemberAccess)).Assert();
 #endif
-            byte[] instrs = method.GetMethodBody().GetILAsByteArray();
+            byte[] instrs = method.GetMethodBody().GetILAsByteArray()!;
             int retVal = -1;
             for (int idx = 0; idx < instrs.Length;)
             {
@@ -4799,7 +4799,7 @@ namespace System.Diagnostics.Tracing
                     Debug.Assert(m_eventSource.m_eventData != null);
                     foreach (var parameter in m_eventSource.m_eventData[EventId].Parameters)
                     {
-                        names.Add(parameter.Name);
+                        names.Add(parameter.Name!);
                     }
 
                     m_payloadNames = new ReadOnlyCollection<string>(names);

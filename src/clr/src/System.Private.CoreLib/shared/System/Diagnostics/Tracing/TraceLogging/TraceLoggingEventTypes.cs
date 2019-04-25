@@ -115,7 +115,7 @@ namespace System.Diagnostics.Tracing
                 this.opcode = Statics.Combine((int)typeInfo.Opcode, this.opcode);
                 this.keywords |= typeInfo.Keywords;
                 var paramName = paramInfos[i].Name;
-                if (Statics.ShouldOverrideFieldName(paramName))
+                if (Statics.ShouldOverrideFieldName(paramName!))
                 {
                     paramName = typeInfo.Name;
                 }
@@ -261,7 +261,7 @@ namespace System.Diagnostics.Tracing
             string[] paramNames = new string[paramInfos.Length];
             for (int i = 0; i < paramNames.Length; i++)
             {
-                paramNames[i] = paramInfos[i].Name;
+                paramNames[i] = paramInfos[i].Name!;
             }
 
             return paramNames;

@@ -20,11 +20,11 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             get;
         }
 
-        object GetValue(object target);
+        object? GetValue(object target);
 
         void SetValue(object target, object value);
 
-        object GetValue(object target, object indexValue);
+        object? GetValue(object target, object indexValue);
 
         void SetValue(object target, object value, object indexValue);
 

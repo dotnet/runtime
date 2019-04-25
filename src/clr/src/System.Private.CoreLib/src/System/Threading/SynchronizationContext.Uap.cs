@@ -59,10 +59,10 @@ namespace System.Threading
             Func<object, SynchronizationContext>? createSynchronizationContextDelegate = s_createSynchronizationContextDelegate;
             if (createSynchronizationContextDelegate == null)
             {
-                Type factoryType = Type.GetType("System.Threading.WinRTSynchronizationContextFactory, System.Runtime.WindowsRuntime", throwOnError: true);
+                Type factoryType = Type.GetType("System.Threading.WinRTSynchronizationContextFactory, System.Runtime.WindowsRuntime", throwOnError: true)!;
                 
                 // Create an instance delegate for the Create static method
-                MethodInfo createMethodInfo = factoryType.GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                MethodInfo createMethodInfo = factoryType.GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!;
                 createSynchronizationContextDelegate = (Func<object, SynchronizationContext>)Delegate.CreateDelegate(typeof(Func<object, SynchronizationContext>), createMethodInfo);
 
                 s_createSynchronizationContextDelegate = createSynchronizationContextDelegate;
