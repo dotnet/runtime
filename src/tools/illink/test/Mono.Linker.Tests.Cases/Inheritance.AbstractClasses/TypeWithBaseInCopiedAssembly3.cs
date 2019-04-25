@@ -3,9 +3,9 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses {
-	[SetupLinkerAction ("copy", "base")]
-	[SetupCompileBefore ("base.dll", new [] {typeof (TypeWithBaseInCopiedAssembly3_Base)})]
-	[KeptMemberInAssembly ("base.dll", typeof (TypeWithBaseInCopiedAssembly3_Base.Base), "Method()")]
+	[SetupLinkerAction ("copy", "base3")]
+	[SetupCompileBefore ("base3.dll", new [] {typeof (TypeWithBaseInCopiedAssembly3_Base)})]
+	[KeptMemberInAssembly ("base3.dll", typeof (TypeWithBaseInCopiedAssembly3_Base.Base), "Method()")]
 	public class TypeWithBaseInCopiedAssembly3 {
 		public static void Main ()
 		{

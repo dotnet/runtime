@@ -17,10 +17,10 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 [assembly: KeptAttributeAttribute (typeof (AssemblyAttributeKeptInComplexCase_Lib.OtherAssemblyAttribute))]
 
 namespace Mono.Linker.Tests.Cases.Attributes {
-	[SetupCompileBefore ("library.dll", new [] { "Dependencies/AssemblyAttributeKeptInComplexCase_Lib.cs" })]
-	[KeptAssembly ("library.dll")]
-	[KeptMemberInAssembly ("library.dll", typeof (AssemblyAttributeKeptInComplexCase_Lib.OtherAssemblyAttribute), ".ctor()")]
-	[KeptMemberInAssembly ("library.dll", typeof (AssemblyAttributeKeptInComplexCase_Lib), "MethodThatWillBeUsed()")]
+	[SetupCompileBefore ("library2.dll", new [] { "Dependencies/AssemblyAttributeKeptInComplexCase_Lib.cs" })]
+	[KeptAssembly ("library2.dll")]
+	[KeptMemberInAssembly ("library2.dll", typeof (AssemblyAttributeKeptInComplexCase_Lib.OtherAssemblyAttribute), ".ctor()")]
+	[KeptMemberInAssembly ("library2.dll", typeof (AssemblyAttributeKeptInComplexCase_Lib), "MethodThatWillBeUsed()")]
 	public class AssemblyAttributeKeptInComplexCase {
 		static void Main ()
 		{

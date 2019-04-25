@@ -3,10 +3,10 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Inheritance.AbstractClasses.NotKeptCtor {
-	[SetupLinkerAction ("copy", "base")]
-	[SetupCompileBefore ("base.dll", new [] { typeof (TypeWithBaseInCopiedAssembly2_Base)})]
-	[KeptMemberInAssembly ("base.dll", typeof (TypeWithBaseInCopiedAssembly2_Base.Base), "Method()")]
-	[KeptMemberInAssembly ("base.dll", typeof (TypeWithBaseInCopiedAssembly2_Base.IBase), "Method()")]
+	[SetupLinkerAction ("copy", "base2")]
+	[SetupCompileBefore ("base2.dll", new [] { typeof (TypeWithBaseInCopiedAssembly2_Base)})]
+	[KeptMemberInAssembly ("base2.dll", typeof (TypeWithBaseInCopiedAssembly2_Base.Base), "Method()")]
+	[KeptMemberInAssembly ("base2.dll", typeof (TypeWithBaseInCopiedAssembly2_Base.IBase), "Method()")]
 	public class NeverInstantiatedTypeWithBaseInCopiedAssembly2 {
 		public static void Main ()
 		{
