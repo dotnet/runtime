@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Globalization;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -49,40 +50,48 @@ namespace System.Reflection
         public sealed override Type MakeGenericType(params Type[] typeArguments) => throw new NotSupportedException(SR.NotSupported_SignatureType); // There is no SignatureType for type definition types so it would never be legal to call this.
 
         // Dissectors
-        public sealed override Type GetElementType() => ElementType;
+        public sealed override Type? GetElementType() => ElementType;
         public abstract override int GetArrayRank();
         public abstract override Type GetGenericTypeDefinition();
         public abstract override Type[] GenericTypeArguments { get; }
         public abstract override Type[] GetGenericArguments();
         public abstract override int GenericParameterPosition { get; }
-        internal abstract SignatureType ElementType { get; }
+        internal abstract SignatureType? ElementType { get; }
 
         // Identity
 #if DEBUG
-        public sealed override bool Equals(object o) => base.Equals(o);
-        public sealed override bool Equals(Type o) => base.Equals(o);
+        public sealed override bool Equals(object? o) => base.Equals(o);
+        public sealed override bool Equals(Type? o) => base.Equals(o);
         public sealed override int GetHashCode() => base.GetHashCode();
 #endif
         public sealed override Type UnderlyingSystemType => this;  // Equals(Type) depends on this.
     
         // Naming and diagnostics
         public abstract override string Name { get; }
-        public abstract override string Namespace { get; }
-        public sealed override string FullName => null;
-        public sealed override string AssemblyQualifiedName => null;
+        public abstract override string? Namespace { get; }
+        public sealed override string? FullName => null;
+        public sealed override string? AssemblyQualifiedName => null;
         public abstract override string ToString();
 
         // Not supported on Signature Types
         public sealed override Assembly Assembly => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Module Module => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public sealed override Type ReflectedType => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type BaseType => throw new NotSupportedException(SR.NotSupported_SignatureType);
+#pragma warning restore CS8608
+
         public sealed override Type[] GetInterfaces() => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override bool IsAssignableFrom(Type c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override bool IsAssignableFrom(Type? c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override int MetadataToken => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public sealed override Type DeclaringType => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override MethodBase DeclaringMethod => throw new NotSupportedException(SR.NotSupported_SignatureType);
+#pragma warning restore CS8608
+
         public sealed override Type[] GetGenericParameterConstraints() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override GenericParameterAttributes GenericParameterAttributes => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsEnumDefined(object value) => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -103,11 +112,11 @@ namespace System.Reflection
         public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        protected sealed override MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        protected sealed override MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter? filter, object filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override MemberInfo[] GetDefaultMembers() => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -117,7 +126,7 @@ namespace System.Reflection
         public sealed override bool IsDefined(Type attributeType, bool inherit) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override IList<CustomAttributeData> GetCustomAttributesData() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type GetInterface(string name, bool ignoreCase) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        protected sealed override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        protected sealed override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsCOMObjectImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsPrimitiveImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -125,8 +134,8 @@ namespace System.Reflection
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsContextfulImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsEnum => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override bool IsEquivalentTo(Type other) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override bool IsInstanceOfType(object o) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override bool IsEquivalentTo(Type? other) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override bool IsInstanceOfType(object? o) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsMarshalByRefImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSecurityCritical => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSecuritySafeCritical => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -134,7 +143,11 @@ namespace System.Reflection
         public sealed override bool IsSerializable => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSubclassOf(Type c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsValueTypeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
+
+#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public sealed override StructLayoutAttribute StructLayoutAttribute => throw new NotSupportedException(SR.NotSupported_SignatureType);
+#pragma warning restore CS8608
+
         public sealed override RuntimeTypeHandle TypeHandle => throw new NotSupportedException(SR.NotSupported_SignatureType);
     }
 }

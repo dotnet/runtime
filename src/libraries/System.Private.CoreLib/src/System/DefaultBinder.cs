@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Reflection;
 using System.Diagnostics;
 using CultureInfo = System.Globalization.CultureInfo;
@@ -29,13 +30,13 @@ namespace System
         // The most specific match will be selected.  
         // 
         public sealed override MethodBase BindToMethod(
-            BindingFlags bindingAttr, MethodBase[] match, ref object[] args,
-            ParameterModifier[] modifiers, CultureInfo cultureInfo, string[] names, out object state)
+            BindingFlags bindingAttr, MethodBase[] match, ref object?[] args,
+            ParameterModifier[]? modifiers, CultureInfo? cultureInfo, string[]? names, out object? state)
         {
             if (match == null || match.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(match));
 
-            MethodBase[] candidates = (MethodBase[])match.Clone();
+            MethodBase?[] candidates = (MethodBase[])match.Clone();
 
             int i;
             int j;
@@ -52,7 +53,7 @@ namespace System
 
             for (i = 0; i < candidates.Length; i++)
             {
-                ParameterInfo[] par = candidates[i].GetParametersNoCopy();
+                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy();
 
                 // args.Length + 1 takes into account the possibility of a last paramArray that can be omitted
                 paramOrder[i] = new int[(par.Length > args.Length) ? par.Length : args.Length];
@@ -84,7 +85,7 @@ namespace System
             {
                 if (args[i] != null)
                 {
-                    argTypes[i] = args[i].GetType();
+                    argTypes[i] = args[i]!.GetType(); //TODO-NULLABLE https://github.com/dotnet/csharplang/issues/2388
                 }
             }
 #endregion
@@ -94,7 +95,7 @@ namespace System
             int CurIdx = 0;
             bool defaultValueBinding = ((bindingAttr & BindingFlags.OptionalParamBinding) != 0);
 
-            Type paramArrayType = null;
+            Type? paramArrayType;
 
 #region Filter methods by parameter count and type
             for (i = 0; i < candidates.Length; i++)
@@ -106,7 +107,7 @@ namespace System
                     continue;
 
                 // Validate the parameters.
-                ParameterInfo[] par = candidates[i].GetParametersNoCopy();
+                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
 
 #region Match method by parameter count
                 if (par.Length == 0)
@@ -114,7 +115,7 @@ namespace System
 #region No formal parameters
                     if (args.Length != 0)
                     {
-                        if ((candidates[i].CallingConvention & CallingConventions.VarArgs) == 0)
+                        if ((candidates[i]!.CallingConvention & CallingConventions.VarArgs) == 0) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                             continue;
                     }
 
@@ -185,7 +186,7 @@ namespace System
                 }
 #endregion
 
-                Type pCls = null;
+                Type pCls;
                 int argsToCheck = (paramArrayType != null) ? par.Length - 1 : args.Length;
 
 #region Match method by parameter type
@@ -196,7 +197,7 @@ namespace System
                     pCls = par[j].ParameterType;
 
                     if (pCls.IsByRef)
-                        pCls = pCls.GetElementType();
+                        pCls = pCls.GetElementType()!;
 
                     // the type is the same
                     if (pCls == argTypes[paramOrder[i][j]])
@@ -217,7 +218,7 @@ namespace System
                     // now do a "classic" type check
                     if (pCls.IsPrimitive)
                     {
-                        if (argTypes[paramOrder[i][j]] == null || !CanChangePrimitiveObjectToType(args[paramOrder[i][j]], pCls))
+                        if (argTypes[paramOrder[i][j]] == null || !CanChangePrimitiveObjectToType(args[paramOrder[i][j]]!, pCls)) //TODO-NULLABLE https://github.com/dotnet/csharplang/issues/2388
                         {
                             break;
                         }
@@ -247,7 +248,7 @@ namespace System
                     {
                         if (paramArrayType.IsPrimitive)
                         {
-                            if (argTypes[j] == null || !CanChangePrimitiveObjectToType(args[j], paramArrayType))
+                            if (argTypes[j] == null || !CanChangePrimitiveObjectToType(args[j]!, paramArrayType)) //TODO-NULLABLE https://github.com/dotnet/csharplang/issues/2388
                                 break;
                         }
                         else
@@ -275,7 +276,7 @@ namespace System
                 {
 #region This is a valid routine so we move it up the candidates list
                     paramOrder[CurIdx] = paramOrder[i];
-                    paramArrayTypes[CurIdx] = paramArrayType;
+                    paramArrayTypes[CurIdx] = paramArrayType!;
                     candidates[CurIdx++] = candidates[i];
 #endregion
                 }
@@ -297,7 +298,7 @@ namespace System
 
                 // If the parameters and the args are not the same length or there is a paramArray
                 //  then we need to create a argument array.
-                ParameterInfo[] parms = candidates[0].GetParametersNoCopy();
+                ParameterInfo[] parms = candidates[0]!.GetParametersNoCopy();
 
                 if (parms.Length == args.Length)
                 {
@@ -313,7 +314,7 @@ namespace System
                 }
                 else if (parms.Length > args.Length)
                 {
-                    object[] objs = new object[parms.Length];
+                    object?[] objs = new object[parms.Length];
 
                     for (i = 0; i < args.Length; i++)
                         objs[i] = args[i];
@@ -331,7 +332,7 @@ namespace System
                 }
                 else
                 {
-                    if ((candidates[0].CallingConvention & CallingConventions.VarArgs) == 0)
+                    if ((candidates[0]!.CallingConvention & CallingConventions.VarArgs) == 0)
                     {
                         object[] objs = new object[parms.Length];
                         int paramArrayPos = parms.Length - 1;
@@ -343,7 +344,7 @@ namespace System
                 }
 #endregion
 
-                return candidates[0];
+                return candidates[0]!;
             }
 
             int currentMin = 0;
@@ -351,8 +352,8 @@ namespace System
             for (i = 1; i < CurIdx; i++)
             {
 #region Walk all of the methods looking the most specific method to invoke
-                int newMin = FindMostSpecificMethod(candidates[currentMin], paramOrder[currentMin], paramArrayTypes[currentMin],
-                                                    candidates[i], paramOrder[i], paramArrayTypes[i], argTypes, args);
+                int newMin = FindMostSpecificMethod(candidates[currentMin]!, paramOrder[currentMin], paramArrayTypes[currentMin],
+                                                    candidates[i]!, paramOrder[i], paramArrayTypes[i], argTypes, args);
 
                 if (newMin == 0)
                 {
@@ -378,7 +379,7 @@ namespace System
 
             // If the parameters and the args are not the same length or there is a paramArray
             //  then we need to create a argument array.
-            ParameterInfo[] parameters = candidates[currentMin].GetParametersNoCopy();
+            ParameterInfo[] parameters = candidates[currentMin]!.GetParametersNoCopy();
             if (parameters.Length == args.Length)
             {
                 if (paramArrayTypes[currentMin] != null)
@@ -393,7 +394,7 @@ namespace System
             }
             else if (parameters.Length > args.Length)
             {
-                object[] objs = new object[parameters.Length];
+                object?[] objs = new object[parameters.Length];
 
                 for (i = 0; i < args.Length; i++)
                     objs[i] = args[i];
@@ -414,7 +415,7 @@ namespace System
             }
             else
             {
-                if ((candidates[currentMin].CallingConvention & CallingConventions.VarArgs) == 0)
+                if ((candidates[currentMin]!.CallingConvention & CallingConventions.VarArgs) == 0)
                 {
                     object[] objs = new object[parameters.Length];
                     int paramArrayPos = parameters.Length - 1;
@@ -425,13 +426,13 @@ namespace System
                 }
             }
 
-            return candidates[currentMin];
+            return candidates[currentMin]!;
         }
 
 
         // Given a set of fields that match the base criteria, select a field.
         // if value is null then we have no way to select a field
-        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo cultureInfo)
+        public sealed override FieldInfo BindToField(BindingFlags bindingAttr, FieldInfo[] match, object value, CultureInfo? cultureInfo)
         {
             if (match == null)
             {
@@ -442,7 +443,7 @@ namespace System
             // Find the method that match...
             int CurIdx = 0;
 
-            Type valueType = null;
+            Type valueType;
 
             FieldInfo[] candidates = (FieldInfo[])match.Clone();
 
@@ -521,7 +522,7 @@ namespace System
         // Given a set of methods that match the base criteria, select a method based
         // upon an array of types.  This method should return null if no method matchs
         // the criteria.
-        public sealed override MethodBase SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[] modifiers)
+        public sealed override MethodBase? SelectMethod(BindingFlags bindingAttr, MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
         {
             int i;
             int j;
@@ -557,7 +558,7 @@ namespace System
                     if (pCls == typeof(object))
                         continue;
 
-                    Type type = types[j];
+                    Type? type = types[j];
                     if (type is SignatureType signatureType)
                     {
                         if (!(candidates[i] is MethodInfo methodInfo))
@@ -614,8 +615,8 @@ namespace System
         }
 
         // Given a set of properties that match the base criteria, select one.
-        public sealed override PropertyInfo SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type returnType,
-                    Type[] indexes, ParameterModifier[] modifiers)
+        public sealed override PropertyInfo? SelectProperty(BindingFlags bindingAttr, PropertyInfo[] match, Type? returnType,
+                    Type[]? indexes, ParameterModifier[]? modifiers)
         {
             // Allow a null indexes array. But if it is not null, every element must be non-null as well.
             if (indexes != null)
@@ -732,7 +733,7 @@ namespace System
         // ChangeType
         // The default binder doesn't support any change type functionality.
         // This is because the default is built into the low level invoke code.
-        public override object ChangeType(object value, Type type, CultureInfo cultureInfo)
+        public override object ChangeType(object value, Type type, CultureInfo? cultureInfo)
         {
             throw new NotSupportedException(SR.NotSupported_ChangeType);
         }
@@ -771,7 +772,7 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static MethodBase ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[] modifiers)
+        public static MethodBase? ExactBinding(MethodBase[] match, Type[] types, ParameterModifier[]? modifiers)
         {
             if (match == null)
                 throw new ArgumentNullException(nameof(match));
@@ -814,12 +815,12 @@ namespace System
 
         // Return any exact bindings that may exist. (This method is not defined on the
         //  Binder and is used by RuntimeType.)
-        public static PropertyInfo ExactPropertyBinding(PropertyInfo[] match, Type returnType, Type[] types, ParameterModifier[] modifiers)
+        public static PropertyInfo? ExactPropertyBinding(PropertyInfo[] match, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             if (match == null)
                 throw new ArgumentNullException(nameof(match));
 
-            PropertyInfo bestMatch = null;
+            PropertyInfo? bestMatch = null;
             int typesLength = (types != null) ? types.Length : 0;
             for (int i = 0; i < match.Length; i++)
             {
@@ -830,7 +831,7 @@ namespace System
                     Type pCls = par[j].ParameterType;
 
                     // If the classes  exactly match continue
-                    if (pCls != types[j])
+                    if (pCls != types![j])
                         break;
                 }
                 if (j < typesLength)
@@ -846,9 +847,9 @@ namespace System
             return bestMatch;
         }
 
-        private static int FindMostSpecific(ParameterInfo[] p1, int[] paramOrder1, Type paramArrayType1,
-                                            ParameterInfo[] p2, int[] paramOrder2, Type paramArrayType2,
-                                            Type[] types, object[] args)
+        private static int FindMostSpecific(ParameterInfo[] p1, int[] paramOrder1, Type? paramArrayType1,
+                                            ParameterInfo[] p2, int[] paramOrder2, Type? paramArrayType2,
+                                            Type[] types, object?[]? args)
         {
             // A method using params is always less specific than one not using params
             if (paramArrayType1 != null && paramArrayType2 == null) return 2;
@@ -923,7 +924,7 @@ namespace System
             }
         }
 
-        private static int FindMostSpecificType(Type c1, Type c2, Type t)
+        private static int FindMostSpecificType(Type c1, Type c2, Type? t)
         {
             // If the two types are exact move on...
             if (c1 == c2)
@@ -953,22 +954,22 @@ namespace System
             {
                 if (c1.IsByRef && c2.IsByRef)
                 {
-                    c1 = c1.GetElementType();
-                    c2 = c2.GetElementType();
+                    c1 = c1.GetElementType()!;
+                    c2 = c2.GetElementType()!;
                 }
                 else if (c1.IsByRef)
                 {
                     if (c1.GetElementType() == c2)
                         return 2;
 
-                    c1 = c1.GetElementType();
+                    c1 = c1.GetElementType()!;
                 }
-                else
+                else // if (c2.IsByRef)
                 {
                     if (c2.GetElementType() == c1)
                         return 1;
 
-                    c2 = c2.GetElementType();
+                    c2 = c2.GetElementType()!;
                 }
             }
 
@@ -997,9 +998,9 @@ namespace System
             }
         }
 
-        private static int FindMostSpecificMethod(MethodBase m1, int[] paramOrder1, Type paramArrayType1,
-                                                  MethodBase m2, int[] paramOrder2, Type paramArrayType2,
-                                                  Type[] types, object[] args)
+        private static int FindMostSpecificMethod(MethodBase m1, int[] paramOrder1, Type? paramArrayType1,
+                                                  MethodBase m2, int[] paramOrder2, Type? paramArrayType2,
+                                                  Type[] types, object?[]? args)
         {
             // Find the most specific method based on the parameters.
             int res = FindMostSpecific(m1.GetParametersNoCopy(), paramOrder1, paramArrayType1,
@@ -1013,8 +1014,8 @@ namespace System
             if (CompareMethodSig(m1, m2))
             {
                 // Determine the depth of the declaring types for both methods.
-                int hierarchyDepth1 = GetHierarchyDepth(m1.DeclaringType);
-                int hierarchyDepth2 = GetHierarchyDepth(m2.DeclaringType);
+                int hierarchyDepth1 = GetHierarchyDepth(m1.DeclaringType!);
+                int hierarchyDepth2 = GetHierarchyDepth(m2.DeclaringType!);
 
                 // The most derived method is the most specific one.
                 if (hierarchyDepth1 == hierarchyDepth2)
@@ -1040,8 +1041,8 @@ namespace System
             // Check to see if the fields have the same name.
             if (cur1.Name == cur2.Name)
             {
-                int hierarchyDepth1 = GetHierarchyDepth(cur1.DeclaringType);
-                int hierarchyDepth2 = GetHierarchyDepth(cur2.DeclaringType);
+                int hierarchyDepth1 = GetHierarchyDepth(cur1.DeclaringType!);
+                int hierarchyDepth2 = GetHierarchyDepth(cur2.DeclaringType!);
 
                 if (hierarchyDepth1 == hierarchyDepth2)
                 {
@@ -1063,8 +1064,8 @@ namespace System
             // Check to see if the fields have the same name.
             if (cur1.Name == cur2.Name)
             {
-                int hierarchyDepth1 = GetHierarchyDepth(cur1.DeclaringType);
-                int hierarchyDepth2 = GetHierarchyDepth(cur2.DeclaringType);
+                int hierarchyDepth1 = GetHierarchyDepth(cur1.DeclaringType!);
+                int hierarchyDepth2 = GetHierarchyDepth(cur2.DeclaringType!);
 
                 if (hierarchyDepth1 == hierarchyDepth2)
                 {
@@ -1102,7 +1103,7 @@ namespace System
         {
             int depth = 0;
 
-            Type currentType = t;
+            Type? currentType = t;
             do
             {
                 depth++;
@@ -1112,16 +1113,16 @@ namespace System
             return depth;
         }
 
-        internal static MethodBase FindMostDerivedNewSlotMeth(MethodBase[] match, int cMatches)
+        internal static MethodBase? FindMostDerivedNewSlotMeth(MethodBase[] match, int cMatches)
         {
             int deepestHierarchy = 0;
-            MethodBase methWithDeepestHierarchy = null;
+            MethodBase? methWithDeepestHierarchy = null;
 
             for (int i = 0; i < cMatches; i++)
             {
                 // Calculate the depth of the hierarchy of the declaring type of the
                 // current method.
-                int currentHierarchyDepth = GetHierarchyDepth(match[i].DeclaringType);
+                int currentHierarchyDepth = GetHierarchyDepth(match[i].DeclaringType!);
 
                 // The two methods have the same name, signature, and hierarchy depth.
                 // This can only happen if at least one is vararg or generic.
@@ -1143,9 +1144,9 @@ namespace System
 
         // This method will sort the vars array into the mapping order stored
         //  in the paramOrder array.
-        private static void ReorderParams(int[] paramOrder, object[] vars)
+        private static void ReorderParams(int[] paramOrder, object?[] vars)
         {
-            object[] varsCopy = new object[vars.Length];
+            object?[] varsCopy = new object[vars.Length];
             for (int i = 0; i < vars.Length; i++)
                 varsCopy[i] = vars[i];
 

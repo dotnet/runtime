@@ -2,11 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-using System;
-using System.Reflection;
-using System.Collections;
+#nullable enable
 using System.Globalization;
 
 namespace System.Reflection.Emit
@@ -45,8 +41,8 @@ namespace System.Reflection.Emit
         #region MemberBase
         public override MemberTypes MemberType { get { return m_method.MemberType; } }
         public override string Name { get { return m_method.Name; } }
-        public override Type DeclaringType { get { return m_method.DeclaringType; } }
-        public override Type ReflectedType { get { return m_method.ReflectedType; } }
+        public override Type? DeclaringType { get { return m_method.DeclaringType; } }
+        public override Type? ReflectedType { get { return m_method.ReflectedType; } }
         public override object[] GetCustomAttributes(bool inherit) { return m_method.GetCustomAttributes(inherit); }
         public override object[] GetCustomAttributes(Type attributeType, bool inherit) { return m_method.GetCustomAttributes(attributeType, inherit); }
         public override bool IsDefined(Type attributeType, bool inherit) { return m_method.IsDefined(attributeType, inherit); }
@@ -58,7 +54,7 @@ namespace System.Reflection.Emit
         public override MethodImplAttributes GetMethodImplementationFlags() { return m_method.GetMethodImplementationFlags(); }
         public override RuntimeMethodHandle MethodHandle { get { throw new NotSupportedException(SR.NotSupported_DynamicModule); } }
         public override MethodAttributes Attributes { get { return m_method.Attributes; } }
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, CultureInfo culture)
+        public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             throw new NotSupportedException();
         }
@@ -93,7 +89,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Abstract\Virtual Members
-        public override Type ReturnType
+        public override Type? ReturnType
         {
             get
             {
@@ -101,8 +97,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override ParameterInfo ReturnParameter { get { throw new NotSupportedException(); } }
-        public override ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
+        public override ParameterInfo? ReturnParameter { get { throw new NotSupportedException(); } }
+        public override ICustomAttributeProvider? ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
         public override MethodInfo GetBaseDefinition() { throw new NotSupportedException(); }
         #endregion
     }

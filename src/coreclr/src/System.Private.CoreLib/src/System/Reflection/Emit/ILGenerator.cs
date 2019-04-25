@@ -2,8 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
+#nullable enable
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.SymbolStore;
@@ -93,16 +92,16 @@ namespace System.Reflection.Emit
 
             m_labelCount = 0;
             m_fixupCount = 0;
-            m_labelList = null;
+            m_labelList = null!;
 
-            m_fixupData = null;
+            m_fixupData = null!;
 
-            m_exceptions = null;
+            m_exceptions = null!;
             m_exceptionCount = 0;
-            m_currExcStack = null;
+            m_currExcStack = null!;
             m_currExcStackCount = 0;
 
-            m_RelocFixupList = null;
+            m_RelocFixupList = null!;
             m_RelocFixupCount = 0;
 
             // initialize the scope tree
@@ -112,7 +111,7 @@ namespace System.Reflection.Emit
 
             // initialize local signature
             m_localCount = 0;
-            MethodBuilder mb = m_methodBuilder as MethodBuilder;
+            MethodBuilder? mb = m_methodBuilder as MethodBuilder;
             m_localSignature = SignatureHelper.GetLocalVarSigHelper(mb?.GetTypeBuilder().Module);
         }
 
@@ -176,24 +175,24 @@ namespace System.Reflection.Emit
             }
         }
 
-        private int GetMethodToken(MethodBase method, Type[] optionalParameterTypes, bool useMethodDef)
+        private int GetMethodToken(MethodBase method, Type[]? optionalParameterTypes, bool useMethodDef)
         {
             return ((ModuleBuilder)m_methodBuilder.Module).GetMethodTokenInternal(method, optionalParameterTypes, useMethodDef);
         }
 
-        internal virtual SignatureHelper GetMemberRefSignature(CallingConventions call, Type returnType,
-            Type[] parameterTypes, Type[] optionalParameterTypes)
+        internal virtual SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
+            Type[]? parameterTypes, Type[]? optionalParameterTypes)
         {
             return GetMemberRefSignature(call, returnType, parameterTypes, optionalParameterTypes, 0);
         }
 
-        private SignatureHelper GetMemberRefSignature(CallingConventions call, Type returnType,
-            Type[] parameterTypes, Type[] optionalParameterTypes, int cGenericParameters)
+        private SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
+            Type[]? parameterTypes, Type[]? optionalParameterTypes, int cGenericParameters)
         {
             return ((ModuleBuilder)m_methodBuilder.Module).GetMemberRefSignature(call, returnType, parameterTypes, optionalParameterTypes, cGenericParameters);
         }
 
-        internal byte[] BakeByteArray()
+        internal byte[]? BakeByteArray()
         {
             // BakeByteArray is an internal function designed to be called by MethodBuilder to do
             // all of the fixups and return a new byte array representing the byte stream with labels resolved, etc.
@@ -242,7 +241,7 @@ namespace System.Reflection.Emit
             return newBytes;
         }
 
-        internal __ExceptionInfo[] GetExceptions()
+        internal __ExceptionInfo[]? GetExceptions()
         {
             if (m_currExcStackCount != 0)
             {
@@ -348,7 +347,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        internal int[] GetTokenFixups()
+        internal int[]? GetTokenFixups()
         {
             if (m_RelocFixupCount == 0)
             {
@@ -432,7 +431,7 @@ namespace System.Reflection.Emit
         }
 
         public virtual void EmitCalli(OpCode opcode, CallingConventions callingConvention,
-            Type returnType, Type[] parameterTypes, Type[] optionalParameterTypes)
+            Type? returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes)
         {
             int stackchange = 0;
             if (optionalParameterTypes != null)
@@ -473,7 +472,7 @@ namespace System.Reflection.Emit
             PutInteger4(modBuilder.GetSignatureToken(sig).Token);
         }
 
-        public virtual void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type returnType, Type[] parameterTypes)
+        public virtual void EmitCalli(OpCode opcode, CallingConvention unmanagedCallConv, Type? returnType, Type[]? parameterTypes)
         {
             int stackchange = 0;
             int cParams = 0;
@@ -516,7 +515,7 @@ namespace System.Reflection.Emit
             PutInteger4(modBuilder.GetSignatureToken(sig).Token);
         }
 
-        public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[] optionalParameterTypes)
+        public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
             if (methodInfo == null)
                 throw new ArgumentNullException(nameof(methodInfo));
@@ -644,7 +643,7 @@ namespace System.Reflection.Emit
             {
                 // This gets the token for the generic type instantiated on the formal parameters
                 // if cls is a generic type definition.
-                tempVal = modBuilder.GetTypeTokenInternal(cls).Token;
+                tempVal = modBuilder.GetTypeTokenInternal(cls!).Token;
             }
 
             EnsureCapacity(7);
@@ -893,7 +892,7 @@ namespace System.Reflection.Emit
 
             // Pop the current exception block
             __ExceptionInfo current = m_currExcStack[m_currExcStackCount - 1];
-            m_currExcStack[--m_currExcStackCount] = null;
+            m_currExcStack[--m_currExcStackCount] = null!;
 
             Label endLabel = current.GetEndLabel();
             int state = current.GetCurrentState();
@@ -1076,7 +1075,7 @@ namespace System.Reflection.Emit
             {
                 throw new ArgumentException(SR.Argument_NotExceptionType);
             }
-            ConstructorInfo con = excType.GetConstructor(Type.EmptyTypes);
+            ConstructorInfo? con = excType.GetConstructor(Type.EmptyTypes);
             if (con == null)
             {
                 throw new ArgumentException(SR.Argument_MissingDefaultConstructor);
@@ -1087,7 +1086,7 @@ namespace System.Reflection.Emit
 
         private static Type GetConsoleType()
         {
-            return Type.GetType("System.Console, System.Console", throwOnError: true);
+            return Type.GetType("System.Console, System.Console", throwOnError: true)!;
         }
 
         public virtual void EmitWriteLine(string value)
@@ -1097,7 +1096,7 @@ namespace System.Reflection.Emit
             Emit(OpCodes.Ldstr, value);
             Type[] parameterTypes = new Type[1];
             parameterTypes[0] = typeof(string);
-            MethodInfo mi = GetConsoleType().GetMethod("WriteLine", parameterTypes);
+            MethodInfo mi = GetConsoleType().GetMethod("WriteLine", parameterTypes)!;
             Emit(OpCodes.Call, mi);
         }
 
@@ -1113,7 +1112,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.InvalidOperation_BadILGeneratorUsage);
             }
 
-            MethodInfo prop = GetConsoleType().GetMethod("get_Out");
+            MethodInfo prop = GetConsoleType().GetMethod("get_Out")!;
             Emit(OpCodes.Call, prop);
             Emit(OpCodes.Ldloc, localBuilder);
             Type[] parameterTypes = new Type[1];
@@ -1123,7 +1122,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = (Type)cls;
-            MethodInfo mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = prop.ReturnType!.GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(localBuilder));
@@ -1144,7 +1143,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(fld));
             }
 
-            MethodInfo prop = GetConsoleType().GetMethod("get_Out");
+            MethodInfo prop = GetConsoleType().GetMethod("get_Out")!;
             Emit(OpCodes.Call, prop);
 
             if ((fld.Attributes & FieldAttributes.Static) != 0)
@@ -1163,7 +1162,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = (Type)cls;
-            MethodInfo mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = prop.ReturnType!.GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));
@@ -1184,7 +1183,7 @@ namespace System.Reflection.Emit
             // Declare a local of type "local". The current active lexical scope
             // will be the scope that local will live.
 
-            MethodBuilder methodBuilder = m_methodBuilder as MethodBuilder;
+            MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
             if (methodBuilder == null)
                 throw new NotSupportedException();
 
@@ -1221,14 +1220,14 @@ namespace System.Reflection.Emit
             if (usingNamespace.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(usingNamespace));
 
-            MethodBuilder methodBuilder = m_methodBuilder as MethodBuilder;
+            MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
             if (methodBuilder == null)
                 throw new NotSupportedException();
 
             int index = methodBuilder.GetILGenerator().m_ScopeTree.GetCurrentActiveScopeIndex();
             if (index == -1)
             {
-                methodBuilder.m_localSymInfo.AddUsingNamespace(usingNamespace);
+                methodBuilder.m_localSymInfo!.AddUsingNamespace(usingNamespace);
             }
             else
             {
@@ -1322,7 +1321,7 @@ namespace System.Reflection.Emit
         private void MarkHelper(
             int catchorfilterAddr,      // the starting address of a clause
             int catchEndAddr,           // the end address of a previous catch clause. Only use when finally is following a catch
-            Type catchClass,             // catch exception type
+            Type? catchClass,             // catch exception type
             int type)                   // kind of clause
         {
             int currentCatch = m_currentCatch;
@@ -1348,8 +1347,8 @@ namespace System.Reflection.Emit
             else
             {
                 // catch or Fault clause
-                m_catchClass[currentCatch ] = catchClass;
-                if (m_type[currentCatch ] != Filter)
+                m_catchClass[currentCatch] = catchClass!;
+                if (m_type[currentCatch] != Filter)
                 {
                     m_type[currentCatch ] = type;
                 }
@@ -1384,7 +1383,7 @@ namespace System.Reflection.Emit
             MarkHelper(faultAddr, faultAddr, null, Fault);
         }
 
-        internal void MarkCatchAddr(int catchAddr, Type catchException)
+        internal void MarkCatchAddr(int catchAddr, Type? catchException)
         {
             m_currentState = State_Catch;
             MarkHelper(catchAddr, catchAddr, catchException, None);
@@ -1566,7 +1565,7 @@ namespace System.Reflection.Emit
             {
                 m_localSymInfos[i] = new LocalSymInfo();
             }
-            m_localSymInfos[i].AddLocalSymInfo(strName, signature, slot, startOffset, endOffset);
+            m_localSymInfos[i]!.AddLocalSymInfo(strName, signature, slot, startOffset, endOffset); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34644
         }
 
         internal void AddUsingNamespaceToCurrentScope(
@@ -1577,7 +1576,7 @@ namespace System.Reflection.Emit
             {
                 m_localSymInfos[i] = new LocalSymInfo();
             }
-            m_localSymInfos[i].AddUsingNamespace(strNamespace);
+            m_localSymInfos[i]!.AddUsingNamespace(strNamespace); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34644
         }
 
         internal void AddScopeInfo(ScopeAction sa, int iOffset)
@@ -1644,17 +1643,17 @@ namespace System.Reflection.Emit
                 }
                 if (m_localSymInfos[i] != null)
                 {
-                    m_localSymInfos[i].EmitLocalSymInfo(symWriter);
+                    m_localSymInfos[i]!.EmitLocalSymInfo(symWriter); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34644
                 }
             }
         }
 
-        internal int[] m_iOffsets;                 // array of offsets
-        internal ScopeAction[] m_ScopeActions;             // array of scope actions
+        internal int[] m_iOffsets = null!;                 // array of offsets
+        internal ScopeAction[] m_ScopeActions = null!;             // array of scope actions
         internal int m_iCount;                   // how many entries in the arrays are occupied
         internal int m_iOpenScopeCount;          // keep track how many scopes are open
         internal const int InitialSize = 16;
-        internal LocalSymInfo[] m_localSymInfos;            // keep track debugging local information
+        internal LocalSymInfo?[] m_localSymInfos = null!;            // keep track debugging local information
     }
 
 
@@ -1737,7 +1736,7 @@ namespace System.Reflection.Emit
         }
 
         private int m_DocumentCount;         // how many documents that we have right now
-        private REDocument[] m_Documents;             // array of documents
+        private REDocument[] m_Documents = null!;             // array of documents
         private const int InitialSize = 16;
         private int m_iLastFound;
     }
@@ -1756,7 +1755,7 @@ namespace System.Reflection.Emit
         }
 
         internal void AddLineNumberInfo(
-            ISymbolDocumentWriter document,
+            ISymbolDocumentWriter? document,
             int iOffset,
             int iStartLine,
             int iStartColumn,
@@ -1840,11 +1839,11 @@ namespace System.Reflection.Emit
             symWriter.DefineSequencePoints(m_document, iOffsetsTemp, iLinesTemp, iColumnsTemp, iEndLinesTemp, iEndColumnsTemp);
         }
 
-        private int[] m_iOffsets;                 // array of offsets
-        private int[] m_iLines;                   // array of offsets
-        private int[] m_iColumns;                 // array of offsets
-        private int[] m_iEndLines;                // array of offsets
-        private int[] m_iEndColumns;              // array of offsets
+        private int[] m_iOffsets = null!;                 // array of offsets
+        private int[] m_iLines = null!;                   // array of offsets
+        private int[] m_iColumns = null!;                 // array of offsets
+        private int[] m_iEndLines = null!;                // array of offsets
+        private int[] m_iEndColumns = null!;              // array of offsets
         internal ISymbolDocumentWriter m_document;       // The ISymbolDocumentWriter that this REDocument is tracking.
         private int m_iLineNumberCount;         // how many entries in the arrays are occupied
         private const int InitialSize = 16;

@@ -145,7 +145,7 @@ namespace System.Reflection
                 if (methodHandle == null)
                     return null;
 
-                return (MethodInfo)RuntimeType.GetMethodBase(methodHandle);
+                return (MethodInfo?)RuntimeType.GetMethodBase(methodHandle);
             }
         }
 
@@ -270,7 +270,7 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType);
+            return CustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -427,7 +427,7 @@ namespace System.Reflection
             if (location == -1)
                 return null;
 
-            return new ManifestResourceInfo(retAssembly, fileName,
+            return new ManifestResourceInfo(retAssembly!, fileName!,
                                                 (ResourceLocation)location);
         }
 

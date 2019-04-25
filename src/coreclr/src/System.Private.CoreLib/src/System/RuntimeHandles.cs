@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -35,9 +36,9 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern bool IsInstanceOfType(RuntimeType type, object o);
+        internal static extern bool IsInstanceOfType(RuntimeType type, object? o);
 
-        internal static Type GetTypeHelper(Type typeStart, Type[] genericArgs, IntPtr pModifiers, int cModifiers)
+        internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, IntPtr pModifiers, int cModifiers)
         {
             Type type = typeStart;
 
@@ -85,7 +86,7 @@ namespace System
             return m_type != null ? m_type.GetHashCode() : 0;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is RuntimeTypeHandle))
                 return false;
@@ -174,7 +175,7 @@ namespace System
                    || (corElemType == CorElementType.ELEMENT_TYPE_BYREF));                                      // IsByRef
         }
 
-        internal static IntPtr[] CopyRuntimeTypeHandles(RuntimeTypeHandle[] inHandles, out int length)
+        internal static IntPtr[]? CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)
             {
@@ -191,7 +192,7 @@ namespace System
             return outHandles;
         }
 
-        internal static IntPtr[] CopyRuntimeTypeHandles(Type[] inHandles, out int length)
+        internal static IntPtr[]? CopyRuntimeTypeHandles(Type[]? inHandles, out int length)
         {
             if (inHandles == null || inHandles.Length == 0)
             {
@@ -212,7 +213,7 @@ namespace System
         internal static extern object CreateInstance(RuntimeType type, bool publicOnly, bool wrapExceptions, ref bool canBeCached, ref RuntimeMethodHandleInternal ctor, ref bool hasNoDefaultCtor);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object CreateCaInstance(RuntimeType type, IRuntimeMethodInfo ctor);
+        internal static extern object CreateCaInstance(RuntimeType type, IRuntimeMethodInfo? ctor);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern object Allocate(RuntimeType type);
@@ -315,17 +316,17 @@ namespace System
         internal static extern bool GetFields(RuntimeType type, IntPtr* result, int* count);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Type[] GetInterfaces(RuntimeType type);
+        internal static extern Type[]? GetInterfaces(RuntimeType type);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetConstraints(RuntimeTypeHandle handle, ObjectHandleOnStack types);
 
         internal Type[] GetConstraints()
         {
-            Type[] types = null;
+            Type[]? types = null;
             GetConstraints(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref types));
 
-            return types;
+            return types!;
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -381,9 +382,9 @@ namespace System
 
         internal string ConstructName(TypeNameFormatFlags formatFlags)
         {
-            string name = null;
+            string? name = null;
             ConstructName(GetNativeHandle(), formatFlags, JitHelpers.GetStringHandleOnStack(ref name));
-            return name;
+            return name!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -406,9 +407,9 @@ namespace System
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetDefaultConstructor(RuntimeTypeHandle handle, ObjectHandleOnStack method);
 
-        internal IRuntimeMethodInfo GetDefaultConstructor()
+        internal IRuntimeMethodInfo? GetDefaultConstructor()
         {
-            IRuntimeMethodInfo ctor = null;
+            IRuntimeMethodInfo? ctor = null;
             GetDefaultConstructor(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref ctor));
             return ctor;
         }
@@ -419,12 +420,12 @@ namespace System
             bool loadTypeFromPartialName, ObjectHandleOnStack type, ObjectHandleOnStack keepalive);
 
         // Wrapper function to reduce the need for ifdefs.
-        internal static RuntimeType GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark, bool loadTypeFromPartialName)
+        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark, bool loadTypeFromPartialName)
         {
-            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext, loadTypeFromPartialName);
+            return GetTypeByName(name, throwOnError, ignoreCase, ref stackMark, AssemblyLoadContext.CurrentContextualReflectionContext!, loadTypeFromPartialName);
         }
 
-        internal static RuntimeType GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
+        internal static RuntimeType? GetTypeByName(string name, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark,
                                                   AssemblyLoadContext assemblyLoadContext,
                                                   bool loadTypeFromPartialName)
         {
@@ -436,9 +437,8 @@ namespace System
                 return null;
             }
 
-            RuntimeType type = null;
-
-            object keepAlive = null;
+            RuntimeType? type = null;
+            object? keepAlive = null;
             AssemblyLoadContext assemblyLoadContextStack = assemblyLoadContext;
             GetTypeByName(name, throwOnError, ignoreCase,
                 JitHelpers.GetStackCrawlMarkHandle(ref stackMark),
@@ -457,7 +457,7 @@ namespace System
             if (name == null || name.Length == 0)
                 throw new ArgumentException(null, nameof(name));
 
-            RuntimeType type = null;
+            RuntimeType type = null!;
             GetTypeByNameUsingCARules(name, scope.GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref type));
 
             return type;
@@ -468,14 +468,14 @@ namespace System
 
         internal RuntimeType[] GetInstantiationInternal()
         {
-            RuntimeType[] types = null;
+            RuntimeType[] types = null!;
             GetInstantiation(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref types), true);
             return types;
         }
 
         internal Type[] GetInstantiationPublic()
         {
-            Type[] types = null;
+            Type[] types = null!;
             GetInstantiation(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref types), false);
             return types;
         }
@@ -483,15 +483,15 @@ namespace System
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void Instantiate(RuntimeTypeHandle handle, IntPtr* pInst, int numGenericArgs, ObjectHandleOnStack type);
 
-        internal RuntimeType Instantiate(Type[] inst)
+        internal RuntimeType Instantiate(Type[]? inst)
         {
             // defensive copy to be sure array is not mutated from the outside during processing
             int instCount;
-            IntPtr[] instHandles = CopyRuntimeTypeHandles(inst, out instCount);
+            IntPtr[]? instHandles = CopyRuntimeTypeHandles(inst, out instCount);
 
             fixed (IntPtr* pInst = instHandles)
             {
-                RuntimeType type = null;
+                RuntimeType type = null!;
                 Instantiate(GetNativeHandle(), pInst, instCount, JitHelpers.GetObjectHandleOnStack(ref type));
                 GC.KeepAlive(inst);
                 return type;
@@ -503,7 +503,7 @@ namespace System
 
         internal RuntimeType MakeArray(int rank)
         {
-            RuntimeType type = null;
+            RuntimeType type = null!;
             MakeArray(GetNativeHandle(), rank, JitHelpers.GetObjectHandleOnStack(ref type));
             return type;
         }
@@ -513,7 +513,7 @@ namespace System
 
         internal RuntimeType MakeSZArray()
         {
-            RuntimeType type = null;
+            RuntimeType type = null!;
             MakeSZArray(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref type));
             return type;
         }
@@ -523,7 +523,7 @@ namespace System
 
         internal RuntimeType MakeByRef()
         {
-            RuntimeType type = null;
+            RuntimeType type = null!;
             MakeByRef(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref type));
             return type;
         }
@@ -533,7 +533,7 @@ namespace System
 
         internal RuntimeType MakePointer()
         {
-            RuntimeType type = null;
+            RuntimeType type = null!;
             MakePointer(GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref type));
             return type;
         }
@@ -587,12 +587,12 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool SatisfiesConstraints(RuntimeType paramType, IntPtr* pTypeContext, int typeContextLength, IntPtr* pMethodContext, int methodContextLength, RuntimeType toType);
 
-        internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType[] typeContext, RuntimeType[] methodContext, RuntimeType toType)
+        internal static bool SatisfiesConstraints(RuntimeType paramType, RuntimeType[]? typeContext, RuntimeType[]? methodContext, RuntimeType toType)
         {
             int typeContextLength;
             int methodContextLength;
-            IntPtr[] typeContextHandles = CopyRuntimeTypeHandles(typeContext, out typeContextLength);
-            IntPtr[] methodContextHandles = CopyRuntimeTypeHandles(methodContext, out methodContextLength);
+            IntPtr[]? typeContextHandles = CopyRuntimeTypeHandles(typeContext, out typeContextLength);
+            IntPtr[]? methodContextHandles = CopyRuntimeTypeHandles(methodContext, out methodContextLength);
 
             fixed (IntPtr* pTypeContextHandles = typeContextHandles, pMethodContextHandles = methodContextHandles)
             {
@@ -681,15 +681,15 @@ namespace System
         private object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeMethodInfo
-#pragma warning disable 169
-        private object m_a;
-        private object m_b;
-        private object m_c;
-        private object m_d;
-        private object m_e;
-        private object m_f;
-        private object m_g;
-#pragma warning restore 169
+#pragma warning disable 414
+        private object m_a = null!;
+        private object m_b = null!;
+        private object m_c = null!;
+        private object m_d = null!;
+        private object m_e = null!;
+        private object m_f = null!;
+        private object m_g = null!;
+#pragma warning restore 414
 
         public RuntimeMethodHandleInternal m_value;
 
@@ -757,7 +757,7 @@ namespace System
             return ValueType.GetHashCodeOfPtr(Value);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is RuntimeMethodHandle))
                 return false;
@@ -792,7 +792,7 @@ namespace System
 
         public IntPtr GetFunctionPointer()
         {
-            IntPtr ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value).Value);
+            IntPtr ptr = GetFunctionPointer(EnsureNonNullMethodInfo(m_value!).Value);
             GC.KeepAlive(m_value);
             return ptr;
         }
@@ -809,8 +809,8 @@ namespace System
             RuntimeModule sourceModule);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern IRuntimeMethodInfo _GetCurrentMethod(ref StackCrawlMark stackMark);
-        internal static IRuntimeMethodInfo GetCurrentMethod(ref StackCrawlMark stackMark)
+        private static extern IRuntimeMethodInfo? _GetCurrentMethod(ref StackCrawlMark stackMark);
+        internal static IRuntimeMethodInfo? GetCurrentMethod(ref StackCrawlMark stackMark)
         {
             return _GetCurrentMethod(ref stackMark);
         }
@@ -833,9 +833,9 @@ namespace System
 
         internal static string ConstructInstantiation(IRuntimeMethodInfo method, TypeNameFormatFlags format)
         {
-            string name = null;
+            string? name = null;
             ConstructInstantiation(EnsureNonNullMethodInfo(method), format, JitHelpers.GetStringHandleOnStack(ref name));
-            return name;
+            return name!;
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -887,14 +887,14 @@ namespace System
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object InvokeMethod(object target, object[] arguments, Signature sig, bool constructor, bool wrapExceptions);
+        internal static extern object InvokeMethod(object? target, object[]? arguments, Signature sig, bool constructor, bool wrapExceptions);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, bool fAsRuntimeTypeArray);
 
         internal static RuntimeType[] GetMethodInstantiationInternal(IRuntimeMethodInfo method)
         {
-            RuntimeType[] types = null;
+            RuntimeType[] types = null!;
             GetMethodInstantiation(EnsureNonNullMethodInfo(method).Value, JitHelpers.GetObjectHandleOnStack(ref types), true);
             GC.KeepAlive(method);
             return types;
@@ -902,14 +902,14 @@ namespace System
 
         internal static RuntimeType[] GetMethodInstantiationInternal(RuntimeMethodHandleInternal method)
         {
-            RuntimeType[] types = null;
+            RuntimeType[] types = null!;
             GetMethodInstantiation(method, JitHelpers.GetObjectHandleOnStack(ref types), true);
             return types;
         }
 
         internal static Type[] GetMethodInstantiationPublic(IRuntimeMethodInfo method)
         {
-            RuntimeType[] types = null;
+            RuntimeType[] types = null!;
             GetMethodInstantiation(EnsureNonNullMethodInfo(method).Value, JitHelpers.GetObjectHandleOnStack(ref types), false);
             GC.KeepAlive(method);
             return types;
@@ -926,7 +926,7 @@ namespace System
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeMethodHandleInternal GetStubIfNeeded(RuntimeMethodHandleInternal method, RuntimeType declaringType, RuntimeType[] methodInstantiation);
+        internal static extern RuntimeMethodHandleInternal GetStubIfNeeded(RuntimeMethodHandleInternal method, RuntimeType declaringType, RuntimeType[]? methodInstantiation);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern RuntimeMethodHandleInternal GetMethodFromCanonical(RuntimeMethodHandleInternal method, RuntimeType declaringType);
@@ -982,7 +982,7 @@ namespace System
         internal static extern Resolver GetResolver(RuntimeMethodHandleInternal method);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern RuntimeMethodBody GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType);
+        internal static extern RuntimeMethodBody? GetMethodBody(IRuntimeMethodInfo method, RuntimeType declaringType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool IsConstructor(RuntimeMethodHandleInternal method);
@@ -1035,14 +1035,14 @@ namespace System
     internal class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
-#pragma warning disable 169
-        private object m_keepalive;
-        private object m_c;
-        private object m_d;
+#pragma warning disable 414
+        private object m_keepalive = null!;
+        private object m_c = null!;
+        private object m_d = null!;
         private int m_b;
-        private object m_e;
+        private object m_e = null!;
         private RuntimeFieldHandleInternal m_fieldHandle;
-#pragma warning restore 169
+#pragma warning restore 414
 
         RuntimeFieldHandleInternal IRuntimeFieldInfo.Value
         {
@@ -1095,7 +1095,7 @@ namespace System
             return ValueType.GetHashCodeOfPtr(Value);
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is RuntimeFieldHandle))
                 return false;
@@ -1148,16 +1148,16 @@ namespace System
         internal static extern int GetToken(RtFieldInfo field);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetValue(RtFieldInfo field, object instance, RuntimeType fieldType, RuntimeType declaringType, ref bool domainInitialized);
+        internal static extern object? GetValue(RtFieldInfo field, object? instance, RuntimeType fieldType, RuntimeType? declaringType, ref bool domainInitialized);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType contextType);
+        internal static extern object? GetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, RuntimeType? contextType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetValue(RtFieldInfo field, object obj, object value, RuntimeType fieldType, FieldAttributes fieldAttr, RuntimeType declaringType, ref bool domainInitialized);
+        internal static extern void SetValue(RtFieldInfo field, object? obj, object? value, RuntimeType fieldType, FieldAttributes fieldAttr, RuntimeType? declaringType, ref bool domainInitialized);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object value, RuntimeType contextType);
+        internal static extern void SetValueDirect(RtFieldInfo field, RuntimeType fieldType, void* pTypedRef, object? value, RuntimeType? contextType);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern RuntimeFieldHandleInternal GetStaticFieldForGenericType(RuntimeFieldHandleInternal field, RuntimeType declaringType);
@@ -1207,7 +1207,7 @@ namespace System
             return m_ptr != null ? m_ptr.GetHashCode() : 0;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is ModuleHandle))
                 return false;
@@ -1251,12 +1251,12 @@ namespace System
         {
             return new RuntimeTypeHandle(ResolveTypeHandleInternal(GetRuntimeModule(), typeToken, null, null));
         }
-        public RuntimeTypeHandle ResolveTypeHandle(int typeToken, RuntimeTypeHandle[] typeInstantiationContext, RuntimeTypeHandle[] methodInstantiationContext)
+        public RuntimeTypeHandle ResolveTypeHandle(int typeToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             return new RuntimeTypeHandle(ModuleHandle.ResolveTypeHandleInternal(GetRuntimeModule(), typeToken, typeInstantiationContext, methodInstantiationContext));
         }
 
-        internal static RuntimeType ResolveTypeHandleInternal(RuntimeModule module, int typeToken, RuntimeTypeHandle[] typeInstantiationContext, RuntimeTypeHandle[] methodInstantiationContext)
+        internal static RuntimeType ResolveTypeHandleInternal(RuntimeModule module, int typeToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module).IsValidToken(typeToken))
@@ -1264,12 +1264,12 @@ namespace System
                     SR.Format(SR.Argument_InvalidToken, typeToken, new ModuleHandle(module)));
 
             int typeInstCount, methodInstCount;
-            IntPtr[] typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
-            IntPtr[] methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
+            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {
-                RuntimeType type = null;
+                RuntimeType type = null!;
                 ResolveType(module, typeToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, JitHelpers.GetObjectHandleOnStack(ref type));
                 GC.KeepAlive(typeInstantiationContext);
                 GC.KeepAlive(methodInstantiationContext);
@@ -1290,17 +1290,17 @@ namespace System
         public RuntimeMethodHandle GetRuntimeMethodHandleFromMetadataToken(int methodToken) { return ResolveMethodHandle(methodToken); }
         public RuntimeMethodHandle ResolveMethodHandle(int methodToken) { return ResolveMethodHandle(methodToken, null, null); }
         internal static IRuntimeMethodInfo ResolveMethodHandleInternal(RuntimeModule module, int methodToken) { return ModuleHandle.ResolveMethodHandleInternal(module, methodToken, null, null); }
-        public RuntimeMethodHandle ResolveMethodHandle(int methodToken, RuntimeTypeHandle[] typeInstantiationContext, RuntimeTypeHandle[] methodInstantiationContext)
+        public RuntimeMethodHandle ResolveMethodHandle(int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             return new RuntimeMethodHandle(ResolveMethodHandleInternal(GetRuntimeModule(), methodToken, typeInstantiationContext, methodInstantiationContext));
         }
 
-        internal static IRuntimeMethodInfo ResolveMethodHandleInternal(RuntimeModule module, int methodToken, RuntimeTypeHandle[] typeInstantiationContext, RuntimeTypeHandle[] methodInstantiationContext)
+        internal static IRuntimeMethodInfo ResolveMethodHandleInternal(RuntimeModule module, int methodToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             int typeInstCount, methodInstCount;
 
-            IntPtr[] typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
-            IntPtr[] methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
+            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
 
             RuntimeMethodHandleInternal handle = ResolveMethodHandleInternalCore(module, methodToken, typeInstantiationContextHandles, typeInstCount, methodInstantiationContextHandles, methodInstCount);
             IRuntimeMethodInfo retVal = new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
@@ -1309,7 +1309,7 @@ namespace System
             return retVal;
         }
 
-        internal static RuntimeMethodHandleInternal ResolveMethodHandleInternalCore(RuntimeModule module, int methodToken, IntPtr[] typeInstantiationContext, int typeInstCount, IntPtr[] methodInstantiationContext, int methodInstCount)
+        internal static RuntimeMethodHandleInternal ResolveMethodHandleInternalCore(RuntimeModule module, int methodToken, IntPtr[]? typeInstantiationContext, int typeInstCount, IntPtr[]? methodInstantiationContext, int methodInstCount)
         {
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(methodToken))
@@ -1333,10 +1333,10 @@ namespace System
         // SQL-CLR LKG9 Compiler dependency
         public RuntimeFieldHandle GetRuntimeFieldHandleFromMetadataToken(int fieldToken) { return ResolveFieldHandle(fieldToken); }
         public RuntimeFieldHandle ResolveFieldHandle(int fieldToken) { return new RuntimeFieldHandle(ResolveFieldHandleInternal(GetRuntimeModule(), fieldToken, null, null)); }
-        public RuntimeFieldHandle ResolveFieldHandle(int fieldToken, RuntimeTypeHandle[] typeInstantiationContext, RuntimeTypeHandle[] methodInstantiationContext)
+        public RuntimeFieldHandle ResolveFieldHandle(int fieldToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         { return new RuntimeFieldHandle(ResolveFieldHandleInternal(GetRuntimeModule(), fieldToken, typeInstantiationContext, methodInstantiationContext)); }
 
-        internal static IRuntimeFieldInfo ResolveFieldHandleInternal(RuntimeModule module, int fieldToken, RuntimeTypeHandle[] typeInstantiationContext, RuntimeTypeHandle[] methodInstantiationContext)
+        internal static IRuntimeFieldInfo ResolveFieldHandleInternal(RuntimeModule module, int fieldToken, RuntimeTypeHandle[]? typeInstantiationContext, RuntimeTypeHandle[]? methodInstantiationContext)
         {
             ValidateModulePointer(module);
             if (!ModuleHandle.GetMetadataImport(module.GetNativeHandle()).IsValidToken(fieldToken))
@@ -1345,12 +1345,12 @@ namespace System
 
             // defensive copy to be sure array is not mutated from the outside during processing
             int typeInstCount, methodInstCount;
-            IntPtr[] typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
-            IntPtr[] methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
+            IntPtr[]? typeInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(typeInstantiationContext, out typeInstCount);
+            IntPtr[]? methodInstantiationContextHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(methodInstantiationContext, out methodInstCount);
 
             fixed (IntPtr* typeInstArgs = typeInstantiationContextHandles, methodInstArgs = methodInstantiationContextHandles)
             {
-                IRuntimeFieldInfo field = null;
+                IRuntimeFieldInfo field = null!;
                 ResolveField(module.GetNativeHandle(), fieldToken, typeInstArgs, typeInstCount, methodInstArgs, methodInstCount, JitHelpers.GetObjectHandleOnStack(ref field));
                 GC.KeepAlive(typeInstantiationContext);
                 GC.KeepAlive(methodInstantiationContext);
@@ -1380,7 +1380,7 @@ namespace System
 
         internal static RuntimeType GetModuleType(RuntimeModule module)
         {
-            RuntimeType type = null;
+            RuntimeType type = null!;
             GetModuleType(module.GetNativeHandle(), JitHelpers.GetObjectHandleOnStack(ref type));
             return type;
         }
@@ -1443,7 +1443,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void GetSignature(
             void* pCorSig, int cCorSig,
-            RuntimeFieldHandleInternal fieldHandle, IRuntimeMethodInfo methodHandle, RuntimeType declaringType);
+            RuntimeFieldHandleInternal? fieldHandle, IRuntimeMethodInfo? methodHandle, RuntimeType? declaringType);
 
         #endregion
 
@@ -1451,10 +1451,10 @@ namespace System
         //
         // Keep the layout in sync with SignatureNative in the VM
         //
-        internal RuntimeType[] m_arguments;
-        internal RuntimeType m_declaringType;
-        internal RuntimeType m_returnTypeORfieldType;
-        internal object m_keepalive;
+        internal RuntimeType[] m_arguments = null!;
+        internal RuntimeType m_declaringType = null!; // seems not used
+        internal RuntimeType m_returnTypeORfieldType = null!;
+        internal object? m_keepalive;
         internal void* m_sig;
         internal int m_managedCallingConventionAndArgIteratorFlags; // lowest byte is CallingConvention, upper 3 bytes are ArgIterator flags
         internal int m_nSizeOfArgStack;

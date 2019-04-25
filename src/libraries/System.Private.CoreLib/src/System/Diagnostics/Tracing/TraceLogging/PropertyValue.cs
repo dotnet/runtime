@@ -176,7 +176,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public static Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property)
         {
-            if (property.DeclaringType.GetTypeInfo().IsValueType)
+            if (property.DeclaringType!.GetTypeInfo().IsValueType)
                 return GetBoxedValueTypePropertyGetter(property);
             else
                 return GetReferenceTypePropertyGetter(property);
@@ -209,7 +209,7 @@ namespace System.Diagnostics.Tracing
         /// <returns></returns>
         private static Func<PropertyValue, PropertyValue> GetReferenceTypePropertyGetter(PropertyInfo property)
         {
-            var helper = (TypeHelper)Activator.CreateInstance(typeof(ReferenceTypeHelper<>).MakeGenericType(property.DeclaringType))!;
+            var helper = (TypeHelper)Activator.CreateInstance(typeof(ReferenceTypeHelper<>).MakeGenericType(property.DeclaringType!))!;
             return helper.GetPropertyGetter(property);
         }
 
@@ -224,7 +224,7 @@ namespace System.Diagnostics.Tracing
 
             protected Delegate GetGetMethod(PropertyInfo property, Type propertyType)
             {
-                return property.GetMethod.CreateDelegate(typeof(Func<,>).MakeGenericType(property.DeclaringType, propertyType));
+                return property.GetMethod!.CreateDelegate(typeof(Func<,>).MakeGenericType(property.DeclaringType!, propertyType));
             }
         }
 

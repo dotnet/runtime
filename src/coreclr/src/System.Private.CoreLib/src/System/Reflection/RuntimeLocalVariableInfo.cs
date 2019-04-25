@@ -2,13 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 
 namespace System.Reflection
 {
     internal sealed class RuntimeLocalVariableInfo : LocalVariableInfo
     {
-        private RuntimeType _type;
+        private RuntimeType? _type;
         private int _localIndex;
         private bool _isPinned;
 

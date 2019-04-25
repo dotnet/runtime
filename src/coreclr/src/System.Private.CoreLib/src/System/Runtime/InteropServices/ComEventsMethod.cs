@@ -80,7 +80,7 @@ namespace System.Runtime.InteropServices
                     // both enum type and the underlying type.
                     if (pi.ParameterType.IsByRef
                         && pi.ParameterType.HasElementType
-                        && pi.ParameterType.GetElementType().IsEnum)
+                        && pi.ParameterType.GetElementType()!.IsEnum)
                     {
                         needToHandleCoercion = true;
                         targetType = pi.ParameterType.GetElementType();

@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 using System.Text;
-using System.Diagnostics;
 
 namespace System.Reflection
 {
@@ -14,16 +13,16 @@ namespace System.Reflection
         // intended user of this constructor.
         internal SignatureConstructedGenericType(Type genericTypeDefinition, Type[] typeArguments)
         {
-            if (genericTypeDefinition == null)
+            if (genericTypeDefinition is null)
                 throw new ArgumentNullException(nameof(genericTypeDefinition));
 
-            if (typeArguments == null)
+            if (typeArguments is null)
                 throw new ArgumentNullException(nameof(typeArguments));
 
             typeArguments = (Type[])(typeArguments.Clone());
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                if (typeArguments[i] == null)
+                if (typeArguments[i] is null)
                     throw new ArgumentNullException(nameof(typeArguments));
             }
 
@@ -57,15 +56,14 @@ namespace System.Reflection
             }
         }
     
-        internal sealed override SignatureType ElementType => null;
+        internal sealed override SignatureType? ElementType => null;
         public sealed override int GetArrayRank() => throw new ArgumentException(SR.Argument_HasToBeArrayClass);
         public sealed override Type GetGenericTypeDefinition() => _genericTypeDefinition;
         public sealed override Type[] GetGenericArguments() => GenericTypeArguments;
         public sealed override Type[] GenericTypeArguments => (Type[])(_genericTypeArguments.Clone());
         public sealed override int GenericParameterPosition => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
-    
         public sealed override string Name => _genericTypeDefinition.Name;
-        public sealed override string Namespace => _genericTypeDefinition.Namespace;
+        public sealed override string? Namespace => _genericTypeDefinition.Namespace;
     
         public sealed override string ToString()
         {

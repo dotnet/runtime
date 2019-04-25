@@ -387,15 +387,15 @@ namespace System.Diagnostics.Tracing
             return result;
         }
 
-        public static MethodInfo GetGetMethod(PropertyInfo propInfo)
+        public static MethodInfo? GetGetMethod(PropertyInfo propInfo)
         {
-            MethodInfo result = propInfo.GetGetMethod();
+            MethodInfo? result = propInfo.GetGetMethod();
             return result;
         }
 
-        public static MethodInfo GetDeclaredStaticMethod(Type declaringType, string name)
+        public static MethodInfo? GetDeclaredStaticMethod(Type declaringType, string name)
         {
-            MethodInfo result;
+            MethodInfo? result;
 #if (ES_BUILD_PCL || ES_BUILD_PN)
             result = declaringType.GetTypeInfo().GetDeclaredMethod(name);
 #else
@@ -506,9 +506,9 @@ namespace System.Diagnostics.Tracing
             return elementType;
         }
 
-        public static bool IsGenericMatch(Type type, object openType)
+        public static bool IsGenericMatch(Type type, object? openType)
         {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == (Type)openType;
+            return type.IsGenericType() && type.GetGenericTypeDefinition() == (Type?)openType;
         }
 
         public static Delegate CreateDelegate(Type delegateType, MethodInfo methodInfo)
@@ -548,7 +548,7 @@ namespace System.Diagnostics.Tracing
             }
             else if (dataType.IsArray)
             {
-                var elementType = dataType.GetElementType();
+                Type elementType = dataType.GetElementType()!;
                 if (elementType == typeof(bool))
                 {
                     result = ScalarArrayTypeInfo.Boolean();

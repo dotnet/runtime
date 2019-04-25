@@ -60,7 +60,7 @@ namespace System.Reflection
         // weak. The assembly is loaded into the domain of the caller.
         internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
         {
-            AssemblyName? modifiedAssemblyRef = null;
+            AssemblyName modifiedAssemblyRef;
             if (assemblyRef.CodeBase != null)
             {
                 modifiedAssemblyRef = (AssemblyName)assemblyRef.Clone();

@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-using System;
-using System.Reflection;
+#nullable enable
 using System.Collections;
 using System.Globalization;
 using System.Diagnostics;
@@ -14,7 +11,7 @@ namespace System.Reflection.Emit
 {
     internal sealed class TypeBuilderInstantiation : TypeInfo
     {
-        public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo)
+        public override bool IsAssignableFrom(System.Reflection.TypeInfo? typeInfo)
         {
             if (typeInfo == null) return false;
             return IsAssignableFrom(typeInfo.AsType());
@@ -45,7 +42,7 @@ namespace System.Reflection.Emit
         #region Private Data Members
         private Type m_type;
         private Type[] m_inst;
-        private string m_strFullQualName;
+        private string? m_strFullQualName;
         internal Hashtable m_hashtable = new Hashtable();
 
         #endregion
@@ -62,14 +59,14 @@ namespace System.Reflection.Emit
         #region Object Overrides
         public override string ToString()
         {
-            return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.ToString);
+            return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.ToString)!;
         }
         #endregion
 
         #region MemberInfo Overrides
-        public override Type DeclaringType { get { return m_type.DeclaringType; } }
+        public override Type? DeclaringType { get { return m_type.DeclaringType; } }
 
-        public override Type ReflectedType { get { return m_type.ReflectedType; } }
+        public override Type? ReflectedType { get { return m_type.ReflectedType; } }
 
         public override string Name { get { return m_type.Name; } }
 
@@ -79,15 +76,15 @@ namespace System.Reflection.Emit
         #region Type Overrides
         public override Type MakePointerType()
         {
-            return SymbolType.FormCompoundType("*", this, 0);
+            return SymbolType.FormCompoundType("*", this, 0)!;
         }
         public override Type MakeByRefType()
         {
-            return SymbolType.FormCompoundType("&", this, 0);
+            return SymbolType.FormCompoundType("&", this, 0)!;
         }
         public override Type MakeArrayType()
         {
-            return SymbolType.FormCompoundType("[]", this, 0);
+            return SymbolType.FormCompoundType("[]", this, 0)!;
         }
         public override Type MakeArrayType(int rank)
         {
@@ -99,13 +96,13 @@ namespace System.Reflection.Emit
                 comma += ",";
 
             string s = string.Format(CultureInfo.InvariantCulture, "[{0}]", comma);
-            return SymbolType.FormCompoundType(s, this, 0);
+            return SymbolType.FormCompoundType(s, this, 0)!;
         }
         public override Guid GUID { get { throw new NotSupportedException(); } }
-        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target, object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters) { throw new NotSupportedException(); }
+        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) { throw new NotSupportedException(); }
         public override Assembly Assembly { get { return m_type.Assembly; } }
         public override RuntimeTypeHandle TypeHandle { get { throw new NotSupportedException(); } }
-        public override string FullName
+        public override string? FullName
         {
             get
             {
@@ -114,8 +111,8 @@ namespace System.Reflection.Emit
                 return m_strFullQualName;
             }
         }
-        public override string Namespace { get { return m_type.Namespace; } }
-        public override string AssemblyQualifiedName { get { return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName); } }
+        public override string? Namespace { get { return m_type.Namespace; } }
+        public override string? AssemblyQualifiedName { get { return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.AssemblyQualifiedName); } }
         private Type Substitute(Type[] substitutes)
         {
             Type[] inst = GetGenericArguments();
@@ -125,9 +122,9 @@ namespace System.Reflection.Emit
             {
                 Type t = inst[i];
 
-                if (t is TypeBuilderInstantiation)
+                if (t is TypeBuilderInstantiation tbi)
                 {
-                    instSubstituted[i] = (t as TypeBuilderInstantiation).Substitute(substitutes);
+                    instSubstituted[i] = tbi.Substitute(substitutes);
                 }
                 else if (t is GenericTypeParameterBuilder)
                 {
@@ -142,7 +139,7 @@ namespace System.Reflection.Emit
 
             return GetGenericTypeDefinition().MakeGenericType(instSubstituted);
         }
-        public override Type BaseType
+        public override Type? BaseType
         {
             // B<A,B,C>
             // D<T,S> : B<S,List<T>,char>
@@ -152,12 +149,12 @@ namespace System.Reflection.Emit
             // D<S,string> : B<string,List<S>,char>        
             get
             {
-                Type typeBldrBase = m_type.BaseType;
+                Type? typeBldrBase = m_type.BaseType;
 
                 if (typeBldrBase == null)
                     return null;
 
-                TypeBuilderInstantiation typeBldrBaseAs = typeBldrBase as TypeBuilderInstantiation;
+                TypeBuilderInstantiation? typeBldrBaseAs = typeBldrBase as TypeBuilderInstantiation;
 
                 if (typeBldrBaseAs == null)
                     return typeBldrBase;
@@ -165,10 +162,10 @@ namespace System.Reflection.Emit
                 return typeBldrBaseAs.Substitute(GetGenericArguments());
             }
         }
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
+        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers) { throw new NotSupportedException(); }
 
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) { throw new NotSupportedException(); }
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
+        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException(); }
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr) { throw new NotSupportedException(); }
         public override FieldInfo GetField(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
         public override FieldInfo[] GetFields(BindingFlags bindingAttr) { throw new NotSupportedException(); }
@@ -176,7 +173,7 @@ namespace System.Reflection.Emit
         public override Type[] GetInterfaces() { throw new NotSupportedException(); }
         public override EventInfo GetEvent(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
         public override EventInfo[] GetEvents() { throw new NotSupportedException(); }
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder, Type returnType, Type[] types, ParameterModifier[] modifiers) { throw new NotSupportedException(); }
+        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) { throw new NotSupportedException(); }
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) { throw new NotSupportedException(); }
         public override Type[] GetNestedTypes(BindingFlags bindingAttr) { throw new NotSupportedException(); }
         public override Type GetNestedType(string name, BindingFlags bindingAttr) { throw new NotSupportedException(); }
@@ -218,10 +215,10 @@ namespace System.Reflection.Emit
                 return false;
             }
         }
-        public override MethodBase DeclaringMethod { get { return null; } }
+        public override MethodBase? DeclaringMethod { get { return null; } }
         public override Type GetGenericTypeDefinition() { return m_type; }
         public override Type MakeGenericType(params Type[] inst) { throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this)); }
-        public override bool IsAssignableFrom(Type c) { throw new NotSupportedException(); }
+        public override bool IsAssignableFrom(Type? c) { throw new NotSupportedException(); }
 
         public override bool IsSubclassOf(Type c)
         {

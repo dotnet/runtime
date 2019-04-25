@@ -130,7 +130,7 @@ namespace System
             Type type = assembly.GetType(StartupHookTypeName, throwOnError: true);
 
             // Look for a static method without any parameters
-            MethodInfo initializeMethod = type.GetMethod(InitializeMethodName,
+            MethodInfo? initializeMethod = type.GetMethod(InitializeMethodName,
                                                          BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
                                                          null, // use default binder
                                                          Type.EmptyTypes, // parameters
