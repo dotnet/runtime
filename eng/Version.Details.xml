@@ -21,9 +21,9 @@
       <Uri>https://github.com/dotnet/coreclr</Uri>
       <Sha>8808f4eab10d1760182590cad4964f566b9c88ca</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Private.WindowsDesktop.App" Version="3.0.0-preview6-27625-15">
+    <Dependency Name="Microsoft.Private.WindowsDesktop.App" Version="3.0.0-preview6-27625-17">
       <Uri>https://dev.azure.com/devdiv/DevDiv/_git/DotNet-Trusted</Uri>
-      <Sha>70ba75231426b4f52bbb00a41eebe738d21602e1</Sha>
+      <Sha>44625fa969bddb96a382f81f08f8b8320de418ee</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
