@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Runtime.InteropServices
 {
     // Wrapper that is converted to a variant with VT_DISPATCH
     public sealed class DispatchWrapper
     {
-        public DispatchWrapper(Object obj)
+        public DispatchWrapper(object? obj)
         {
             if (obj != null)
             {
@@ -21,6 +22,6 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public object WrappedObject { get; }
+        public object? WrappedObject { get; }
     }
 }
