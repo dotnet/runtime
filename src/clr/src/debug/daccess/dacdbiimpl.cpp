@@ -1589,7 +1589,7 @@ void DacDbiInterfaceImpl::GetStaticsBases(TypeHandle thExact,
     Module * pModuleForStatics = pMT->GetModuleForStatics();
     if (pModuleForStatics != NULL)
     {
-        PTR_DomainLocalModule pLocalModule = pModuleForStatics->GetDomainLocalModule(pAppDomain);
+        PTR_DomainLocalModule pLocalModule = pModuleForStatics->GetDomainLocalModule();
         if (pLocalModule != NULL)
         {
             *ppGCStaticsBase = pLocalModule->GetGCStaticsBasePointer(pMT);
@@ -2532,7 +2532,7 @@ void DacDbiInterfaceImpl::GetClassTypeInfo(TypeHandle                      typeH
     pTypeInfo->ClassTypeData.vmModule.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule));
     if (pAppDomain)
     {
-        pTypeInfo->ClassTypeData.vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetDomainFile(pAppDomain)));
+        pTypeInfo->ClassTypeData.vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetDomainFile()));
     }
     else
     {
@@ -2619,7 +2619,7 @@ void DacDbiInterfaceImpl::TypeHandleToBasicTypeInfo(TypeHandle                  
             pTypeInfo->vmModule.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule)); 
             if (pAppDomain)
             {
-                pTypeInfo->vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetDomainFile(pAppDomain)));
+                pTypeInfo->vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pModule->GetDomainFile()));
             }
             else
             {
@@ -3281,7 +3281,7 @@ CORDB_ADDRESS DacDbiInterfaceImpl::GetCollectibleTypeStaticAddress(VMPTR_FieldDe
     //
     // Get the address
     //
-    PTR_VOID base = pFieldDesc->GetBaseInDomain(pAppDomain);
+    PTR_VOID base = pFieldDesc->GetBase();
     if (base == PTR_NULL)
     {
         return PTR_HOST_TO_TADDR(NULL);
@@ -3368,7 +3368,7 @@ void DacDbiInterfaceImpl::GetSimpleType(VMPTR_AppDomain    vmAppDomain,
  
         if (pAppDomain)
         {
-            pVmDomainFile->SetHostPtr(pModule->GetDomainFile(pAppDomain));
+            pVmDomainFile->SetHostPtr(pModule->GetDomainFile());
             if (pVmDomainFile->IsNull())
                 ThrowHR(CORDBG_E_TARGET_INCONSISTENT);
         }
@@ -3449,7 +3449,7 @@ void DacDbiInterfaceImpl::GetStackFramesFromException(VMPTR_Object vmObject, Dac
 
             _ASSERTE(pDomain != NULL);
 
-            pDomainFile = pModule->FindDomainFile(pDomain);
+            pDomainFile = pModule->GetDomainFile();
             _ASSERTE(pDomainFile != NULL);
 
             currentFrame.vmAppDomain.SetHostPtr(pDomain);
@@ -3963,7 +3963,7 @@ void DacDbiInterfaceImpl::ResolveTypeReference(const TypeRefData * pTypeRefInfo,
 
         AppDomain * pAppDomain = pDomainFile->GetAppDomain();
 
-        pTargetRefInfo->vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pTargetModule->GetDomainFile(pAppDomain)));
+        pTargetRefInfo->vmDomainFile.SetDacTargetPtr(PTR_HOST_TO_TADDR(pTargetModule->GetDomainFile()));
         pTargetRefInfo->typeToken = targetTypeDef;
     }
     else
@@ -4386,7 +4386,7 @@ VMPTR_DomainAssembly DacDbiInterfaceImpl::ResolveAssembly(
     Assembly * pAssembly = pModule->LookupAssemblyRef(tkAssemblyRef);
     if (pAssembly != NULL)
     {
-        DomainAssembly * pDomainAssembly = pAssembly->FindDomainAssembly(pAppDomain);
+        DomainAssembly * pDomainAssembly = pAssembly->GetDomainAssembly();
         vmDomainAssembly.SetHostPtr(pDomainAssembly);
     }
     return vmDomainAssembly;
@@ -6806,7 +6806,7 @@ bool DacDbiInterfaceImpl::GetAppDomainForObject(CORDB_ADDRESS addr, OUT VMPTR_Ap
     {
         pAppDomain->SetDacTargetPtr(PTR_HOST_TO_TADDR(baseDomain->AsAppDomain()));
         pModule->SetDacTargetPtr(PTR_HOST_TO_TADDR(module));
-        pDomainFile->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetDomainFile(baseDomain->AsAppDomain())));
+        pDomainFile->SetDacTargetPtr(PTR_HOST_TO_TADDR(module->GetDomainFile()));
     }
     else
     {

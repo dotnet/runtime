@@ -1513,7 +1513,7 @@ void BulkStaticsLogger::LogAllStatics()
                 if (module == NULL)
                     continue;
 
-                DomainFile *domainFile = module->FindDomainFile(domain);
+                DomainFile *domainFile = module->GetDomainFile();
                 if (domainFile == NULL)
                     continue;
 
@@ -1521,7 +1521,7 @@ void BulkStaticsLogger::LogAllStatics()
                 if (!domainFile->IsActive())
                     continue;
 
-                DomainLocalModule *domainModule = module->GetDomainLocalModule(domain);
+                DomainLocalModule *domainModule = module->GetDomainLocalModule();
                 if (domainModule == NULL)
                     continue;
 
@@ -6092,7 +6092,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     {
         if(pModule->GetDomain()->IsSharedDomain()) // for shared domains, we do not fire domainmodule event
             return;
-        ullAppDomainId = (ULONGLONG)pModule->FindDomainAssembly(pModule->GetDomain()->AsAppDomain())->GetAppDomain();
+        ullAppDomainId = (ULONGLONG)pModule->GetDomainAssembly()->GetAppDomain();
     }
 
     LPCWSTR pEmptyString = W("");
@@ -7193,7 +7193,7 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         {
             if(pAssembly->GetDomain()->IsAppDomain())
             {
-                DomainModuleIterator dmIterator = pAssembly->FindDomainAssembly(pAssembly->GetDomain()->AsAppDomain())->IterateModules(kModIterIncludeLoaded);
+                DomainModuleIterator dmIterator = pAssembly->GetDomainAssembly()->IterateModules(kModIterIncludeLoaded);
                 while (dmIterator.Next()) 
                 {
                     ETW::LoaderLog::SendModuleEvent(dmIterator.GetModule(), enumerationOptions, TRUE);

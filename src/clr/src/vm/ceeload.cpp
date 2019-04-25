@@ -1856,130 +1856,18 @@ BOOL Module::IsManifest()
            dac_cast<TADDR>(this);
 }
 
-DomainAssembly* Module::GetDomainAssembly(AppDomain *pDomain)
+DomainAssembly* Module::GetDomainAssembly()
 {
-    CONTRACT(DomainAssembly *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pDomain, NULL_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACT_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
-    if (IsManifest())
-        RETURN (DomainAssembly *) GetDomainFile(pDomain);
-    else
-        RETURN (DomainAssembly *) m_pAssembly->GetDomainAssembly(pDomain);
+    return dac_cast<PTR_DomainAssembly>(m_ModuleID->GetDomainFile());
 }
 
-DomainFile *Module::GetDomainFile(AppDomain *pDomain)
+DomainFile *Module::GetDomainFile()
 {
-    CONTRACT(DomainFile *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pDomain));
-        POSTCONDITION(CheckPointer(RETVAL));
-        GC_TRIGGERS;
-        THROWS;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
+    LIMITED_METHOD_DAC_CONTRACT;
 
-    if (Module::IsEncodedModuleIndex(GetModuleID()))
-    {
-        DomainLocalBlock *pLocalBlock = pDomain->GetDomainLocalBlock();
-        DomainFile *pDomainFile =  pLocalBlock->TryGetDomainFile(GetModuleIndex());
-
-        RETURN (PTR_DomainFile) pDomainFile;
-    }
-    else
-    {
-        RETURN dac_cast<PTR_DomainFile>(m_ModuleID->GetDomainFile());
-    }
-}
-
-DomainAssembly* Module::FindDomainAssembly(AppDomain *pDomain)
-{
-    CONTRACT(DomainAssembly *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pDomain));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    if (IsManifest())
-        RETURN dac_cast<PTR_DomainAssembly>(FindDomainFile(pDomain));
-    else
-        RETURN m_pAssembly->FindDomainAssembly(pDomain);
-}
-
-DomainModule *Module::GetDomainModule(AppDomain *pDomain)
-{
-    CONTRACT(DomainModule *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pDomain));
-        PRECONDITION(!IsManifest());
-        POSTCONDITION(CheckPointer(RETVAL));
-
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    RETURN (DomainModule *) GetDomainFile(pDomain);
-}
-
-DomainFile *Module::FindDomainFile(AppDomain *pDomain)
-{
-    CONTRACT(DomainFile *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pDomain));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    if (Module::IsEncodedModuleIndex(GetModuleID()))
-    {
-        DomainLocalBlock *pLocalBlock = pDomain->GetDomainLocalBlock();
-        RETURN pLocalBlock->TryGetDomainFile(GetModuleIndex());
-    }
-    else
-    {
-        RETURN m_ModuleID->GetDomainFile();
-    }
-}
-
-DomainModule *Module::FindDomainModule(AppDomain *pDomain)
-{
-    CONTRACT(DomainModule *)
-    {
-        INSTANCE_CHECK;
-        PRECONDITION(CheckPointer(pDomain));
-        PRECONDITION(!IsManifest());
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        GC_NOTRIGGER;
-        NOTHROW;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    RETURN (DomainModule *) FindDomainFile(pDomain);
+    return dac_cast<PTR_DomainFile>(m_ModuleID->GetDomainFile());
 }
 
 #ifndef DACCESS_COMPILE 
@@ -2815,9 +2703,6 @@ void Module::FreeModuleIndex()
     CONTRACTL_END;
     if (m_ModuleID != NULL)
     {
-        // Module's m_ModuleID should not contain the ID, it should 
-        // contain a pointer to the DLM
-        _ASSERTE(!Module::IsEncodedModuleIndex((SIZE_T)m_ModuleID));
         _ASSERTE(m_ModuleIndex == m_ModuleID->GetModuleIndex());
 
 #ifndef CROSSGEN_COMPILE
@@ -2888,31 +2773,13 @@ void Module::AllocateRegularStaticHandles(AppDomain* pDomain)
     // allocate if pModuleData->GetGCStaticsBasePointerAddress(pMT) != 0, avoiding creating
     // handles more than once for a given MT or module
 
-    DomainLocalModule *pModuleData = GetDomainLocalModule(pDomain);
+    DomainLocalModule *pModuleData = GetDomainLocalModule();
 
     _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointerAddress() != NULL);
     if (this->m_dwMaxGCRegularStaticHandles > 0)
     {
-        // If we're setting up a non-default domain, we want the allocation to look like it's
-        // coming from the created domain.
-
-        // REVISIT_TODO: The comparison "pDomain != GetDomain()" will always be true for domain-neutral
-        // modules, since GetDomain() will return the SharedDomain, which is NOT an AppDomain.
-        // Was this intended? If so, there should be a clarifying comment. If not, then we should
-        // probably do "pDomain != GetAppDomain()" instead.
-
-        if (pDomain != GetDomain() &&
-            pDomain != SystemDomain::System()->DefaultDomain() &&
-            IsSystem())
-        {
-            pDomain->AllocateStaticFieldObjRefPtrsCrossDomain(this->m_dwMaxGCRegularStaticHandles,
+        pDomain->AllocateStaticFieldObjRefPtrs(this->m_dwMaxGCRegularStaticHandles,
                                                pModuleData->GetPrecomputedGCStaticsBasePointerAddress());
-        }
-        else
-        {
-            pDomain->AllocateStaticFieldObjRefPtrs(this->m_dwMaxGCRegularStaticHandles,
-                                               pModuleData->GetPrecomputedGCStaticsBasePointerAddress());
-        }
 
         // We should throw if we fail to allocate and never hit this assert
         _ASSERTE(pModuleData->GetPrecomputedGCStaticsBasePointer() != NULL);
@@ -2983,7 +2850,7 @@ void Module::AllocateStatics(AllocMemTracker *pamTracker)
 // statics is through the handle table. Module::AllocateRegularStaticHandles() allocates a GC handle
 // from the handle table, and the GC will trace this handle and find the statics.
 
-void Module::EnumRegularStaticGCRefs(AppDomain* pAppDomain, promote_func* fn, ScanContext* sc)
+void Module::EnumRegularStaticGCRefs(promote_func* fn, ScanContext* sc)
 {
     CONTRACT_VOID
     {
@@ -2997,7 +2864,7 @@ void Module::EnumRegularStaticGCRefs(AppDomain* pAppDomain, promote_func* fn, Sc
          IsGCSpecialThread());
 
 
-    DomainLocalModule *pModuleData = GetDomainLocalModule(pAppDomain);
+    DomainLocalModule *pModuleData = GetDomainLocalModule();
     DWORD dwHandles                = m_dwMaxGCRegularStaticHandles;
 
     if (IsResource())
@@ -4624,30 +4491,6 @@ void Module::AddActiveDependency(Module *pModule, BOOL unconditional)
     RETURN;
 }
 
-void Module::EnableModuleFailureTriggers(Module *pModuleTo, AppDomain *pDomain)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    // At this point we need to enable failure triggers we have placed in the code for this module.  However,
-    // the failure trigger codegen logic is NYI.  To keep correctness, we just allow the exception to propagate
-    // here.  Note that in general this will enforce the failure invariants, but will also result in some rude
-    // behavior as these failures will be propagated too widely rather than constrained to the appropriate
-    // assemblies/app domains.
-    //
-    // This should throw.
-    STRESS_LOG1(LF_CLASSLOADER, LL_INFO100,"EnableModuleFailureTriggers for module %p\n",pModuleTo);
-    DomainFile *pDomainFileTo = pModuleTo->GetDomainFile(pDomain);
-    pDomainFileTo->EnsureActive();
-
-    // @NYI: shouldn't get here yet since we propagate failures
-    UNREACHABLE_MSG("Module failure triggers NYI");
-}
-
 #endif //!DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_PREJIT)
@@ -4792,7 +4635,7 @@ Module::GetAssemblyIfLoaded(
     if ((pAssembly != NULL) && !IsGCThread() && !IsStackWalkerThread())
     {
         _ASSERTE(::GetAppDomain() != NULL);
-        DomainAssembly * pDomainAssembly = pAssembly->FindDomainAssembly(::GetAppDomain());
+        DomainAssembly * pDomainAssembly = pAssembly->GetDomainAssembly();
         if ((pDomainAssembly == NULL) || !pDomainAssembly->IsLoaded())
             pAssembly = NULL;
     }   
@@ -4804,7 +4647,7 @@ Module::GetAssemblyIfLoaded(
         {
             AppDomain * pAppDomainExamine = AppDomain::GetCurrentDomain();
             
-            DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->FindDomainAssembly(pAppDomainExamine);
+            DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->GetDomainAssembly();
             if (pCurAssemblyInExamineDomain == NULL)
             {
                 continue;
@@ -4937,7 +4780,7 @@ Module::GetAssemblyIfLoaded(
             {
                 AppDomain * pAppDomainExamine = ::GetAppDomain(); // There is only 1 AppDomain on CoreCLR
             
-                DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->FindDomainAssembly(pAppDomainExamine);
+                DomainAssembly * pCurAssemblyInExamineDomain = GetAssembly()->GetDomainAssembly();
                 if (pCurAssemblyInExamineDomain == NULL)
                 {
                     continue;
@@ -5065,7 +4908,6 @@ Module::GetAssemblyRefFlags(
 //   szWinRtTypeNamespace ... Namespace of WinRT type.
 //   szWinRtTypeClassName ... Name of WinRT type, NULL for non-WinRT (classic) types.
 DomainAssembly * Module::LoadAssembly(
-    AppDomain *   pDomain, 
     mdAssemblyRef kAssemblyRef, 
     LPCUTF8       szWinRtTypeNamespace, 
     LPCUTF8       szWinRtTypeClassName)
@@ -5077,7 +4919,6 @@ DomainAssembly * Module::LoadAssembly(
         if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM();); }
         MODE_ANY;
-        PRECONDITION(CheckPointer(pDomain));
         POSTCONDITION(CheckPointer(RETVAL, NULL_NOT_OK));
         //POSTCONDITION((CheckPointer(GetAssemblyIfLoaded(kAssemblyRef, szWinRtTypeNamespace, szWinRtTypeClassName)), NULL_NOT_OK));
     }
@@ -5095,11 +4936,8 @@ DomainAssembly * Module::LoadAssembly(
     {
         _ASSERTE(HasBindableIdentity(kAssemblyRef));
 
-        pDomainAssembly = pAssembly->FindDomainAssembly(pDomain);
-
-        if (pDomainAssembly == NULL)
-            pDomainAssembly = pAssembly->GetDomainAssembly(pDomain);
-        pDomain->LoadDomainFile(pDomainAssembly, FILE_LOADED);
+        pDomainAssembly = pAssembly->GetDomainAssembly();
+        ::GetAppDomain()->LoadDomainFile(pDomainAssembly, FILE_LOADED);
 
         RETURN pDomainAssembly;
     }
@@ -5107,13 +4945,13 @@ DomainAssembly * Module::LoadAssembly(
     bool fHasBindableIdentity = HasBindableIdentity(kAssemblyRef);
     
     {
-        PEAssemblyHolder pFile = GetDomainFile(GetAppDomain())->GetFile()->LoadAssembly(
+        PEAssemblyHolder pFile = GetDomainAssembly()->GetFile()->LoadAssembly(
                 kAssemblyRef, 
                 NULL, 
                 szWinRtTypeNamespace, 
                 szWinRtTypeClassName);
         AssemblySpec spec;
-        spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainFile(GetAppDomain())->GetDomainAssembly());
+        spec.InitializeSpec(kAssemblyRef, GetMDImport(), GetDomainAssembly());
         // Set the binding context in the AssemblySpec if one is available. This can happen if the LoadAssembly ended up
         // invoking the custom AssemblyLoadContext implementation that returned a reference to an assembly bound to a different
         // AssemblyLoadContext implementation.
@@ -13756,7 +13594,7 @@ CHECK Module::CheckActivated()
     CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE 
-    DomainFile *pDomainFile = FindDomainFile(GetAppDomain());
+    DomainFile *pDomainFile = GetDomainFile();
     CHECK(pDomainFile != NULL);
     PREFIX_ASSUME(pDomainFile != NULL);
     CHECK(pDomainFile->CheckActivated());
@@ -13806,16 +13644,11 @@ void Module::EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
     }
 
     //Save module id data only if it a real pointer, not a tagged sugestion to use ModuleIndex.
-    if (!Module::IsEncodedModuleIndex(GetModuleID()))
+    if (m_ModuleID.IsValid())
     {
-        if (m_ModuleID.IsValid())
-        {
-            m_ModuleID->EnumMemoryRegions(flags);
-        }
+        m_ModuleID->EnumMemoryRegions(flags);
     }
 
-    // TODO: Enumerate DomainLocalModules?  It's not clear if we need all AppDomains 
-    // in the multi-domain case (where m_ModuleID has it's low-bit set).
     if (m_file.IsValid())
     {
         m_file->EnumMemoryRegions(flags);

@@ -3113,7 +3113,7 @@ HRESULT ProfToEEInterfaceImpl::GetRVAStaticAddress(ClassID classId,
     //
     // Check that the data is available
     //
-    if (!IsClassOfMethodTableInited(pMethodTable, GetAppDomain()))
+    if (!IsClassOfMethodTableInited(pMethodTable))
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -3170,7 +3170,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
         // Yay!
         EE_THREAD_NOT_REQUIRED;
 
-        // FieldDesc::GetStaticAddress & FieldDesc::GetBaseInDomain take locks
+        // FieldDesc::GetStaticAddress & FieldDesc::GetBase take locks
         CAN_TAKE_LOCK;
 
     }
@@ -3251,7 +3251,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
     //
     // Check that the data is available
     //
-    if (!IsClassOfMethodTableInited(pMethodTable, pAppDomain))
+    if (!IsClassOfMethodTableInited(pMethodTable))
     {
         return CORPROF_E_DATAINCOMPLETE;
     }
@@ -3259,7 +3259,7 @@ HRESULT ProfToEEInterfaceImpl::GetAppDomainStaticAddress(ClassID classId,
     //
     // Get the address
     //
-    void *base = (void*)pFieldDesc->GetBaseInDomain(pAppDomain);
+    void *base = (void*)pFieldDesc->GetBase();
 
     if (base == NULL)
     {
@@ -3466,12 +3466,11 @@ HRESULT ProfToEEInterfaceImpl::GetThreadStaticAddress2(ClassID classId,
     // It may seem redundant to try to retrieve the same method table from GetEnclosingMethodTable, but classId 
     // leads to the instantiated method table while GetEnclosingMethodTable returns the uninstantiated one.
     MethodTable *pMethodTable = pFieldDesc->GetEnclosingMethodTable();
-    AppDomain * pAppDomain = (AppDomain *)appDomainId;
 
     //
     // Check that the data is available
     //
-    if (!IsClassOfMethodTableInited(pMethodTable, pAppDomain))
+    if (!IsClassOfMethodTableInited(pMethodTable))
     {
         return CORPROF_E_DATAINCOMPLETE;
     }

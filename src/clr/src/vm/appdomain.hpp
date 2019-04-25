@@ -483,97 +483,6 @@ public:
 #define OFFSETOF__DomainLocalModule__NormalDynamicEntry__m_pDataBlob TARGET_POINTER_SIZE /* m_pGCStatics */
 #endif
 
-typedef DPTR(class DomainLocalBlock) PTR_DomainLocalBlock;
-class DomainLocalBlock
-{
-    friend class ClrDataAccess;
-    friend class CheckAsmOffsets;
-
-private:
-    PTR_AppDomain          m_pDomain;
-    DPTR(PTR_DomainLocalModule) m_pModuleSlots;
-    SIZE_T                 m_aModuleIndices;               // Module entries the shared block has allocated
-
-public: // used by code generators
-    static SIZE_T GetOffsetOfModuleSlotsPointer() { return offsetof(DomainLocalBlock, m_pModuleSlots);}
-
-public:
-
-#ifndef DACCESS_COMPILE
-    DomainLocalBlock()
-      : m_pDomain(NULL),  m_pModuleSlots(NULL), m_aModuleIndices(0) {}
-
-    void    EnsureModuleIndex(ModuleIndex index);
-
-    void Init(AppDomain *pDomain) { LIMITED_METHOD_CONTRACT; m_pDomain = pDomain; }
-#endif
-
-    void SetModuleSlot(ModuleIndex index, PTR_DomainLocalModule pLocalModule);
-
-    FORCEINLINE PTR_DomainLocalModule GetModuleSlot(ModuleIndex index)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-        _ASSERTE(index.m_dwIndex < m_aModuleIndices);
-        return m_pModuleSlots[index.m_dwIndex];
-    }
-
-    inline PTR_DomainLocalModule GetModuleSlot(MethodTable* pMT)
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetModuleSlot(pMT->GetModuleForStatics()->GetModuleIndex());
-    }
-
-    DomainFile* TryGetDomainFile(ModuleIndex index)
-    {
-        WRAPPER_NO_CONTRACT;
-        SUPPORTS_DAC;
-
-        // the publishing of m_aModuleIndices and m_pModuleSlots is dependent
-        // on the order of accesses; we must ensure that we read from m_aModuleIndices
-        // before m_pModuleSlots.
-        if (index.m_dwIndex < m_aModuleIndices)
-        {
-            MemoryBarrier();
-            if (m_pModuleSlots[index.m_dwIndex])
-            {
-                return m_pModuleSlots[index.m_dwIndex]->GetDomainFile();
-            }
-        }
-
-        return NULL;
-    }
-
-    DomainFile* GetDomainFile(SIZE_T ModuleID)
-    {
-        WRAPPER_NO_CONTRACT;
-        ModuleIndex index = Module::IDToIndex(ModuleID);
-        _ASSERTE(index.m_dwIndex < m_aModuleIndices);
-        return m_pModuleSlots[index.m_dwIndex]->GetDomainFile();
-    }
-
-#ifndef DACCESS_COMPILE
-    void SetDomainFile(ModuleIndex index, DomainFile* pDomainFile)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(index.m_dwIndex < m_aModuleIndices);
-        m_pModuleSlots[index.m_dwIndex]->SetDomainFile(pDomainFile);
-    }
-#endif
-
-#ifdef DACCESS_COMPILE
-    void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-#endif
-
-
-private:
-
-    //
-    // Low level routines to get & set class entries
-    //
-
-};
-
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -585,7 +494,7 @@ class LargeHeapHandleBucket
 {
 public:
     // Constructor and desctructor.
-    LargeHeapHandleBucket(LargeHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain, BOOL bCrossAD = FALSE);
+    LargeHeapHandleBucket(LargeHeapHandleBucket *pNext, DWORD Size, BaseDomain *pDomain);
     ~LargeHeapHandleBucket();
 
     // This returns the next bucket.
@@ -642,7 +551,7 @@ public:
     ~LargeHeapHandleTable();
 
     // Allocate handles from the large heap handle table.
-    OBJECTREF* AllocateHandles(DWORD nRequested, BOOL bCrossAD = FALSE);
+    OBJECTREF* AllocateHandles(DWORD nRequested);
 
     // Release object handles allocated using AllocateHandles().
     void ReleaseHandles(OBJECTREF *pObjRef, DWORD nReleased);    
@@ -1028,9 +937,6 @@ class BaseDomain
     VPTR_BASE_VTABLE_CLASS(BaseDomain)
     VPTR_UNIQUE(VPTR_UNIQUE_BaseDomain)
 
-protected:
-    DomainLocalBlock    m_sDomainLocalBlock;
-
 public:
 
     class AssemblyIterator;
@@ -1091,7 +997,6 @@ public:
         return m_pWinRtBinder;
     }
 #endif // FEATURE_COMINTEROP
-    
 #ifdef _DEBUG
     BOOL OwnDomainLocalBlockLock()
     {
@@ -1100,7 +1005,7 @@ public:
         return m_DomainLocalBlockCrst.OwnedByCurrentThread();
     }
 #endif
-
+   
     //****************************************************************************************
     // Get the class init lock. The method is limited to friends because inappropriate use
     // will cause deadlocks in the system
@@ -1130,7 +1035,7 @@ public:
     // Statics and reflection info (Types, MemberInfo,..) are stored this way
     // If ppLazyAllocate != 0, allocation will only take place if *ppLazyAllocate != 0 (and the allocation
     // will be properly serialized)
-    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate = NULL, BOOL bCrossAD = FALSE);
+    OBJECTREF *AllocateObjRefPtrsInLargeTable(int nRequested, OBJECTREF** ppLazyAllocate = NULL);
 
 #ifdef FEATURE_PREJIT
     // Ensures that the file for logging profile data is open (we only open it once)
@@ -1767,8 +1672,6 @@ public:
     static void Create();
 #endif
 
-    DomainAssembly* FindDomainAssembly(Assembly*);
-
     //-----------------------------------------------------------------------------------------------------------------
     // Convenience wrapper for ::GetAppDomain to provide better encapsulation.
     static PTR_AppDomain GetCurrentDomain()
@@ -2280,30 +2183,9 @@ public:
 
         return AllocateObjRefPtrsInLargeTable(nRequested, ppLazyAllocate);
     }
-
-    OBJECTREF* AllocateStaticFieldObjRefPtrsCrossDomain(int nRequested, OBJECTREF** ppLazyAllocate = NULL)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return AllocateObjRefPtrsInLargeTable(nRequested, ppLazyAllocate, TRUE);
-    }
 #endif // DACCESS_COMPILE
 
     void              EnumStaticGCRefs(promote_func* fn, ScanContext* sc);
-
-    DomainLocalBlock *GetDomainLocalBlock()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return &m_sDomainLocalBlock;
-    }
-
-    static SIZE_T GetOffsetOfModuleSlotsPointer()
-    {
-        WRAPPER_NO_CONTRACT;
-
-        return offsetof(AppDomain,m_sDomainLocalBlock) + DomainLocalBlock::GetOffsetOfModuleSlotsPointer();
-    }
 
     void SetupSharedStatics();
 

@@ -2236,10 +2236,10 @@ TypeHandle ClassLoader::LookupTypeDefOrRefInModule(Module *pModule, mdToken cl, 
     RETURN(typeHandle);
 }
 
-DomainAssembly *ClassLoader::GetDomainAssembly(AppDomain *pDomain/*=NULL*/)
+DomainAssembly *ClassLoader::GetDomainAssembly()
 {
     WRAPPER_NO_CONTRACT;
-    return GetAssembly()->GetDomainAssembly(pDomain);
+    return GetAssembly()->GetDomainAssembly();
 }
 
 #ifndef DACCESS_COMPILE

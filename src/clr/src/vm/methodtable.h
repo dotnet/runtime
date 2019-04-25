@@ -36,7 +36,6 @@ class    ArrayClass;
 class    ArrayMethodDesc;
 struct   ClassCtorInfoEntry;
 class ClassLoader;
-class    DomainLocalBlock;
 class FCallMethodDesc;
 class    EEClass;
 class    EnCFieldDesc;
@@ -693,12 +692,7 @@ public:
     void SetLoaderAllocator(LoaderAllocator* pAllocator);
 
     // Get the domain local module - useful for static init checks
-    PTR_DomainLocalModule GetDomainLocalModule(AppDomain * pAppDomain);
-
-#ifndef DACCESS_COMPILE
-    // Version of GetDomainLocalModule which relies on the current AppDomain
     PTR_DomainLocalModule   GetDomainLocalModule();
-#endif
 
     MethodTable *LoadEnclosingMethodTable(ClassLoadLevel targetLevel = CLASS_DEPENDENCIES_LOADED);
 
@@ -877,7 +871,7 @@ public:
 
     //-------------------------------------------------------------------
     // THE CLASS INITIALIZATION CONDITION 
-    //  (and related DomainLocalBlock/DomainLocalModule storage)
+    //  (and related DomainLocalModule storage)
     //
     // - populate the DomainLocalModule if needed
     // - run the cctor 
@@ -914,7 +908,7 @@ public:
     // mark the class as having its cctor run.  
 #ifndef DACCESS_COMPILE
     void SetClassInited();
-    BOOL  IsClassInited(AppDomain* pAppDomain = NULL);   
+    BOOL  IsClassInited();
 
     BOOL IsInitError();
     void SetClassInitError();

@@ -1763,24 +1763,11 @@ protected:
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
-    // Only for non-manifest modules
-    DomainModule *GetDomainModule(AppDomain *pDomain);
-    DomainModule *FindDomainModule(AppDomain *pDomain);
-
     // This works for manifest modules too
-    DomainFile *GetDomainFile(AppDomain *pDomain);
-    DomainFile *FindDomainFile(AppDomain *pDomain);
+    DomainFile *GetDomainFile();
 
     // Operates on assembly of module
-    DomainAssembly *GetDomainAssembly(AppDomain *pDomain);
-    DomainAssembly *FindDomainAssembly(AppDomain *pDomain);
-
-    // Versions which rely on the current AppDomain (N/A for DAC builds)
-#ifndef DACCESS_COMPILE
-    DomainModule * GetDomainModule()         { WRAPPER_NO_CONTRACT; return GetDomainModule(GetAppDomain()); }
-    DomainFile * GetDomainFile()             { WRAPPER_NO_CONTRACT; return GetDomainFile(GetAppDomain()); }
-    DomainAssembly * GetDomainAssembly()     { WRAPPER_NO_CONTRACT; return GetDomainAssembly(GetAppDomain()); }
-#endif
+    DomainAssembly *GetDomainAssembly();
 
     void SetDomainFile(DomainFile *pDomainFile);
 
@@ -2179,7 +2166,6 @@ private:
 public:
 
     DomainAssembly * LoadAssembly(
-            AppDomain *   pDomain, 
             mdAssemblyRef kAssemblyRef, 
             LPCUTF8       szWinRtTypeNamespace = NULL,
             LPCUTF8       szWinRtTypeClassName = NULL);
@@ -2684,9 +2670,6 @@ public:
 
     void AddActiveDependency(Module *pModule, BOOL unconditional);
 
-    // Turn triggers from this module into runtime checks
-    void EnableModuleFailureTriggers(Module *pModule, AppDomain *pDomain);
-
 #ifdef FEATURE_PREJIT
     BOOL IsZappedCode(PCODE code);
     BOOL IsZappedPrecode(PCODE code);
@@ -3010,33 +2993,6 @@ public:
     // We need this for the jitted shared case,
     inline MethodTable* GetDynamicClassMT(DWORD dynamicClassID);
 
-    static BOOL IsEncodedModuleIndex(SIZE_T ModuleID)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        
-        // We should never see encoded module index in CoreCLR
-        _ASSERTE((ModuleID&1)==0);
-        return FALSE;
-    }
-
-    static SIZE_T IndexToID(ModuleIndex index)
-    {
-        LIMITED_METHOD_CONTRACT
-            
-        return (index.m_dwIndex << 1) | 1;
-    }
-
-    static ModuleIndex IDToIndex(SIZE_T ModuleID)
-    {
-        LIMITED_METHOD_CONTRACT
-        SUPPORTS_DAC;
-            
-        _ASSERTE(IsEncodedModuleIndex(ModuleID));
-        ModuleIndex index(ModuleID >> 1);
-
-        return index;
-    }
-
     static ModuleIndex AllocateModuleIndex();
     static void FreeModuleIndex(ModuleIndex index);
 
@@ -3064,11 +3020,7 @@ public:
         return offsetof(Module, m_ModuleID);
     }
 
-    PTR_DomainLocalModule   GetDomainLocalModule(AppDomain *pDomain);
-
-#ifndef DACCESS_COMPILE
-    PTR_DomainLocalModule   GetDomainLocalModule()  { WRAPPER_NO_CONTRACT; return GetDomainLocalModule(NULL); };
-#endif
+    PTR_DomainLocalModule   GetDomainLocalModule();
 
 #ifdef FEATURE_PREJIT
     NgenStats *GetNgenStats()
@@ -3086,7 +3038,7 @@ public:
     // Self-initializing accessor for domain-independent IJW thunk heap
     LoaderHeap              *GetDllThunkHeap();
 
-    void            EnumRegularStaticGCRefs        (AppDomain* pAppDomain, promote_func* fn, ScanContext* sc);
+    void            EnumRegularStaticGCRefs        (promote_func* fn, ScanContext* sc);
 
 protected:    
 
