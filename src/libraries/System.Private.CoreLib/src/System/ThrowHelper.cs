@@ -397,7 +397,7 @@ namespace System
         // Aggressively inline so the jit evaluates the if in place and either drops the call altogether
         // Or just leaves null test and call to the Non-returning ThrowHelper.ThrowArgumentNullException
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void IfNullAndNullsAreIllegalThenThrow<T>(object value, ExceptionArgument argName)
+        internal static void IfNullAndNullsAreIllegalThenThrow<T>(object? value, ExceptionArgument argName)
         {
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
             if (!(default(T)! == null) && value == null) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
