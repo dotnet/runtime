@@ -120,6 +120,14 @@
     <BuildRID Include="@(_buildingOnRID)"/>
   </ItemGroup>
 
+  <PropertyGroup>
+    <!--
+      By default, lineup and runtime packages are built by the same project. Allow overriding so
+      a project can depend on another to produce runtime packages with a different base ID.
+    -->
+    <RuntimeProjectFile Condition="'$(RuntimeProjectFile)' == ''">$(MSBuildProjectFullPath)</RuntimeProjectFile>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(HasRuntimePackages)' != 'false'">
     <_project Include="@(BuildRID)">
       <Platform Condition="'%(Platform)' == ''">x64</Platform>
@@ -128,7 +136,7 @@
       <AdditionalProperties>PackageTargetRuntime=%(BuildRID);NuGetRuntimeIdentifier=%(BuildRID);Platform=%(Platform)</AdditionalProperties>
     </_project>
 
-    <RuntimeProject Include="@(_project->'$(MSBuildProjectFullPath)')" />
+    <RuntimeProject Include="@(_project->'$(RuntimeProjectFile)')" />
 
     <!--
       Pack projects need package IDs like "Microsoft.NETCore.App.Host.Runtime.<rid>". The package
@@ -140,7 +148,7 @@
       undesired 'runtime.<rid>.' prefix to the package ID.
     -->
     <RidSpecificPackProject
-      Include="@(_project->'$(MSBuildProjectFullPath)')"
+      Include="@(_project->'$(RuntimeProjectFile)')"
       BaseId="$(MSBuildProjectName).%(BuildRID)"
       AdditionalProperties="%(AdditionalProperties);BaseId=%(BaseId);IdPrefix=" />
   </ItemGroup>
