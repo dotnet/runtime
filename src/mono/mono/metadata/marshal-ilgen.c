@@ -6340,9 +6340,6 @@ emit_native_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mono
 
 	(void) mono_lookup_internal_call_full (method, FALSE, &uses_handles, &foreign_icall);
 
-	/* If it uses handles and MonoError, it had better check exceptions */
-	g_assert (!uses_handles || check_exceptions);
-
 	if (G_UNLIKELY (foreign_icall)) {
 		/* FIXME: we only want the transitions for hybrid suspend.  Q: What to do about AOT? */
 		need_gc_safe = gc_safe_transition_builder_init (&gc_safe_transition_builder, mb, FALSE);

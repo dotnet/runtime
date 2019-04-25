@@ -495,7 +495,7 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 	}
 
 	if (virtual_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) {
-		virtual_method = mono_marshal_get_native_wrapper (virtual_method, TRUE, FALSE);
+		virtual_method = mono_marshal_get_native_wrapper (virtual_method, FALSE, FALSE);
 	}
 
 	if (virtual_method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) {

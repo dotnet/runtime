@@ -1309,7 +1309,7 @@ interp_transform_internal_calls (MonoMethod *method, MonoMethod *target_method, 
 			target_method = mono_marshal_get_synchronized_wrapper (target_method);
 
 		if (target_method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && !is_virtual && !mono_class_is_marshalbyref (target_method->klass) && m_class_get_rank (target_method->klass) == 0)
-			target_method = mono_marshal_get_native_wrapper (target_method, TRUE, FALSE);
+			target_method = mono_marshal_get_native_wrapper (target_method, FALSE, FALSE);
 	}
 	return target_method;
 }
@@ -5857,7 +5857,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 		/* assumes all internal calls with an array this are built in... */
 		if (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL && (! mono_method_signature_internal (method)->hasthis || m_class_get_rank (method->klass) == 0)) {
-			nm = mono_marshal_get_native_wrapper (method, TRUE, FALSE);
+			nm = mono_marshal_get_native_wrapper (method, FALSE, FALSE);
 			signature = mono_method_signature_internal (nm);
 		} else {
 			const char *name = method->name;
