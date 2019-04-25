@@ -305,6 +305,8 @@ static int32_t EnumSymbols(const char* locale,
 
     char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
     strncpy(localeWithCalendarName, locale, ULOC_FULLNAME_CAPACITY);
+    localeWithCalendarName[ULOC_FULLNAME_CAPACITY - 1] = 0;
+
     uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
 
     UCalendar* pCalendar = ucal_open(NULL, 0, localeWithCalendarName, UCAL_DEFAULT, &err);
@@ -412,6 +414,7 @@ static int32_t EnumAbbrevEraNames(const char* locale,
     char* parentNamePtr = parentNameBuf;
 
     strncpy(localeNamePtr, locale, ULOC_FULLNAME_CAPACITY);
+    localeNamePtr[ULOC_FULLNAME_CAPACITY - 1] = 0;
 
     while (TRUE)
     {
