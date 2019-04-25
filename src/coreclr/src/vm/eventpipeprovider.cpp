@@ -13,42 +13,24 @@
 
 EventPipeProviderCallbackDataQueue::EventPipeProviderCallbackDataQueue()
 {
-    this->front = this->back = NULL;
 }
 
 void EventPipeProviderCallbackDataQueue::Enqueue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData)
 {
-    EventPipeProviderCallbackDataNode* newNode = new EventPipeProviderCallbackDataNode(); // throws
-    newNode->prev = NULL;
-    newNode->value = new EventPipeProviderCallbackData(); // throws
-    *(newNode->value) = *pEventPipeProviderCallbackData;
-    if (this->back == NULL)
-    {
-        this->front = this->back = newNode;
-    }
-    else
-    {
-        this->back->prev = newNode;
-        this->back = newNode;
-    }
+    SListElem<EventPipeProviderCallbackData>* listnode = new SListElem<EventPipeProviderCallbackData>(); // throws
+    listnode->m_Value = *pEventPipeProviderCallbackData;
+    this->list.InsertTail(listnode);
 }
 
 bool EventPipeProviderCallbackDataQueue::TryDequeue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData)
 {
-    if (this->front == nullptr)
+    if (this->list.IsEmpty())
     {
         return false;
     }
-
-    EventPipeProviderCallbackDataNode* oldNode = this->front;
-    this->front = this->front->prev;
-    if (this->front == nullptr)
-    {
-        this->back = nullptr;
-    }
-    
-    *pEventPipeProviderCallbackData = *(oldNode->value);
-    delete oldNode;
+    SListElem<EventPipeProviderCallbackData>* listnode = this->list.RemoveHead();
+    *pEventPipeProviderCallbackData = listnode->m_Value;
+    delete listnode;
     return true;
 }
 
