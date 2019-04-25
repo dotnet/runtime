@@ -6410,7 +6410,9 @@ AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 
 # Update all submodules recursively to ensure everything is checked out
-(cd $srcdir && scripts/update_submodules.sh)
+if test "x$with_core" != "xonly"; then
+	(cd $srcdir && scripts/update_submodules.sh)
+fi
 
 AC_OUTPUT([
 Makefile

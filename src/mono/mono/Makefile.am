@@ -12,6 +12,10 @@ if MONO_NATIVE
 native_dirs = native
 endif
 
+if ENABLE_NETCORE
+btls_dirs = 
+endif
+
 if CROSS_COMPILING
 SUBDIRS = $(btls_dirs) eglib arch utils cil $(sgen_dirs) metadata mini dis profiler $(native_dirs)
 else
