@@ -296,7 +296,7 @@ public:
     // gives the diagnostics code a chance to run. This includes LOH if we are 
     // compacting LOH.
     virtual
-    void DiagWalkSurvivors(void* gcContext) = 0;
+    void DiagWalkSurvivors(void* gcContext, bool fCompacting) = 0;
 
     // During a full GC after we discover what objects to survive on LOH,
     // gives the diagnostics code a chance to run.

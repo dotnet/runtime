@@ -155,10 +155,10 @@ inline void GCToEEInterface::DiagWalkFReachableObjects(void* gcContext)
     g_theGCToCLR->DiagWalkFReachableObjects(gcContext);
 }
 
-inline void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+inline void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->DiagWalkSurvivors(gcContext);
+    g_theGCToCLR->DiagWalkSurvivors(gcContext, fCompacting);
 }
 
 inline void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
