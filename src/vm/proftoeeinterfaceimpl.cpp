@@ -590,6 +590,10 @@ COM_METHOD ProfToEEInterfaceImpl::QueryInterface(REFIID id, void ** pInterface)
     {
         *pInterface = static_cast<ICorProfilerInfo9 *>(this);
     }
+    else if (id == IID_ICorProfilerInfo10)
+    {
+        *pInterface = static_cast<ICorProfilerInfo10 *>(this);
+    }
     else if (id == IID_IUnknown)
     {
         *pInterface = static_cast<IUnknown *>(static_cast<ICorProfilerInfo *>(this));
@@ -1073,6 +1077,43 @@ bool SaveContainedObjectRef(Object * pBO, void * context)
     // array.  So "blindly" incrementing (*context) here and using it next time around
     // for the next reference, over and over again, should be safe.
     (*((Object ***)context))++;
+
+    return TRUE;
+}
+
+typedef struct _ObjectRefOffsetTuple
+{
+    Object* pCurObjRef;
+    SIZE_T* pCurObjOffset;
+} ObjectRefOffsetTuple;
+
+//---------------------------------------------------------------------------------------
+//
+// Callback of type walk_fn used by IGCHeap::DiagWalkObject.  Stores each object reference
+// encountered into an array.
+//
+// Arguments:
+//      o - original object
+//      pBO - Object reference encountered in walk
+//      context - Array of locations within the walked object that point to other
+//                objects.  On entry, (*context) points to the next unfilled array
+//                entry.  On exit, that location is filled, and (*context) is incremented
+//                to point to the next entry.
+//
+// Return Value:
+//      Always returns TRUE to object walker so it walks the entire object
+//
+
+bool SaveContainedObjectRef2(Object* o, uint8_t** pBO, void* context)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    auto x = (ObjectRefOffsetTuple*)context;
+    *((Object **)(x->pCurObjRef)) = (Object *)*pBO;
+    *((SIZE_T **)(x->pCurObjOffset)) = (SIZE_T*)((uint8_t*)pBO - (uint8_t*)o);
+
+    x->pCurObjRef++;
+    x->pCurObjOffset++;
 
     return TRUE;
 }
@@ -6747,6 +6788,71 @@ HRESULT ProfToEEInterfaceImpl::GetCodeInfo4(UINT_PTR pNativeCodeStartAddress,
                                     cCodeInfos,
                                     pcCodeInfos,
                                     codeInfos);
+}
+
+/*
+ * GetObjectReferences
+ * 
+ * Gets the object references (if any) from the ObjectID.
+ * 
+ * Parameters:
+ *      objectId        - object id of interest
+ *      cNumReferences  - count of references for which the profiler has allocated buffer space
+ *      pcNumReferences - actual count of references
+ *      references      - filled array of object references
+ *
+ * Returns:
+ *   S_OK if successful
+ *
+ */
+HRESULT ProfToEEInterfaceImpl::GetObjectReferences(ObjectID objectId, ULONG32 cNumReferences, ULONG32 *pcNumReferences, ObjectID references[], SIZE_T offsets[])
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+        kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: GetObjectReferences 0x%p.\n",
+        objectId));
+
+    if (cNumReferences > 0 && (pcNumReferences == nullptr || references == nullptr || offsets == nullptr))
+    {
+        return E_INVALIDARG;
+    }
+
+    Object* pBO = (Object*)objectId;
+    MethodTable *pMT = pBO->GetMethodTable();
+
+    if (pMT->ContainsPointersOrCollectible())
+    {
+        if (cNumReferences == 0)
+        {
+            GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &CountContainedObjectRef, (void*)pcNumReferences);
+        }
+        else
+        {
+            ObjectRefOffsetTuple t;
+            t.pCurObjRef = (Object*)references;
+            t.pCurObjOffset = offsets;
+
+            GCHeapUtilities::GetGCHeap()->DiagWalkObject2(pBO, &SaveContainedObjectRef2, (void*)&t);
+        }
+    }
+    else
+    {
+        *pcNumReferences = 0;
+    }
+
+    return S_OK;
 }
 
 /*

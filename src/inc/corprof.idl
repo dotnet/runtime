@@ -629,11 +629,15 @@ typedef enum
 
     COR_PRF_HIGH_BASIC_GC                           = 0x00000010,
 
+    // Enables the MovedReferences/MovedReferences2 callback for compacting GCs only.
+    COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS           = 0x00000020,
+
     COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE              = 0,
 
     COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | 
                                                       COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS | 
-                                                      COR_PRF_HIGH_BASIC_GC,
+                                                      COR_PRF_HIGH_BASIC_GC |
+                                                      COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS,
 
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
     // Trying to change any of these flags elsewhere will result in a
@@ -3913,6 +3917,18 @@ interface ICorProfilerInfo9 : ICorProfilerInfo8
 
     //Given the native code start address, return the the blocks of virtual memory that store this code (method code is not necessarily stored in a single contiguous memory region)
     HRESULT GetCodeInfo4(UINT_PTR pNativeCodeStartAddress, ULONG32 cCodeInfos, ULONG32* pcCodeInfos, COR_PRF_CODE_INFO codeInfos[]);
+}
+
+[
+    object,
+    uuid(2F1B5152-C869-40C9-AA5F-3ABE026BD720),
+    pointer_default(unique),
+    local
+]
+interface ICorProfilerInfo10 : ICorProfilerInfo9
+{
+    // Given an ObjectID, fetches all its object references and offsets (if any).
+    HRESULT GetObjectReferences(ObjectID objectId, ULONG32 cNumReferences, ULONG32 *pcNumReferences, ObjectID references[], SIZE_T offsets[]);
 }
 
 /*
