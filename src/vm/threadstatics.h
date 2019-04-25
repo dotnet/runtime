@@ -13,8 +13,7 @@
 // sets and gets values for that field. 
 //
 // This implementation of thread statics closely parallels the implementation for regular statics. Regular
-// statics use the DomainLocalBlock and DomainLocalModule structures to allocate space for statics each time
-// a module is loaded in an AppDomain.
+// statics use the DomainLocalModule structure to allocate space for statics.
 //
 
 // 

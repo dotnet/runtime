@@ -473,28 +473,12 @@ inline BOOL Module::IsEditAndContinueCapable()
     return isEnCCapable;
 }
 
-FORCEINLINE PTR_DomainLocalModule Module::GetDomainLocalModule(AppDomain *pDomain)
+FORCEINLINE PTR_DomainLocalModule Module::GetDomainLocalModule()
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    if (!Module::IsEncodedModuleIndex(GetModuleID()))
-    {
-        return m_ModuleID;
-    }
-
-#if !defined(DACCESS_COMPILE)
-    if (pDomain == NULL)
-    {
-        pDomain = GetAppDomain();
-    }
-#endif // DACCESS_COMPILE
-
-    // If the module is domain neutral, then you must supply an AppDomain argument.
-    // Use GetDomainLocalModule() if you want to rely on the current AppDomain
-    _ASSERTE(pDomain != NULL);
-
-    return pDomain->GetDomainLocalBlock()->GetModuleSlot(GetModuleIndex());
+    return m_ModuleID;
 }
 
 #include "nibblestream.h"

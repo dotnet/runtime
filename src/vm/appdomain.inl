@@ -19,18 +19,6 @@
 
 #include "appdomain.hpp"
 
-inline DomainAssembly* AppDomain::FindDomainAssembly(Assembly* assembly)
-{
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(assembly));
-    }
-    CONTRACTL_END;
-    return assembly->FindDomainAssembly(this);    
-};
-
 inline void AppDomain::AddMemoryPressure()
 {
     STANDARD_VM_CONTRACT;

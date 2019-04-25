@@ -726,35 +726,10 @@ void Assembly::SetDomainAssembly(DomainAssembly *pDomainAssembly)
 
 #endif // #ifndef DACCESS_COMPILE
 
-DomainAssembly *Assembly::GetDomainAssembly(AppDomain *pDomain)
+DomainAssembly *Assembly::GetDomainAssembly()
 {
-    CONTRACT(DomainAssembly *)
-    {
-        PRECONDITION(CheckPointer(pDomain, NULL_NOT_OK));
-        POSTCONDITION(CheckPointer(RETVAL));
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACT_END;
-
-    RETURN GetManifestModule()->GetDomainAssembly(pDomain);
-}
-
-DomainAssembly *Assembly::FindDomainAssembly(AppDomain *pDomain)
-{
-    CONTRACT(DomainAssembly *)
-    {
-        PRECONDITION(CheckPointer(pDomain));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-        SUPPORTS_DAC;
-    }
-    CONTRACT_END;
-
-    PREFIX_ASSUME (GetManifestModule() !=NULL); 
-    RETURN GetManifestModule()->FindDomainAssembly(pDomain);
+    LIMITED_METHOD_DAC_CONTRACT;
+    return GetManifestModule()->GetDomainAssembly();
 }
 
 PTR_LoaderHeap Assembly::GetLowFrequencyHeap()
@@ -883,7 +858,7 @@ Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
 #ifndef DACCESS_COMPILE
                     // LoadAssembly never returns NULL
                     DomainAssembly * pDomainAssembly =
-                        GetManifestModule()->LoadAssembly(::GetAppDomain(), mdLinkRef);
+                        GetManifestModule()->LoadAssembly(mdLinkRef);
                     PREFIX_ASSUME(pDomainAssembly != NULL);
 
                     RETURN pDomainAssembly->GetCurrentModule();
@@ -1137,7 +1112,6 @@ Module * Assembly::FindModuleByTypeRef(
 
             
             DomainAssembly * pDomainAssembly = pModule->LoadAssembly(
-                    ::GetAppDomain(), 
                     tkType, 
                     szNamespace, 
                     szClassName);

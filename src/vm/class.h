@@ -72,7 +72,6 @@ class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
 class   DictionaryLayout;
-class   DomainLocalBlock;
 class   FCallMethodDesc;
 class   EEClass;
 class   EnCFieldDesc;

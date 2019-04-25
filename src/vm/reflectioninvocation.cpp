@@ -1926,7 +1926,7 @@ FCIMPL1(void, ReflectionInvocation::RunModuleConstructor, ReflectModuleBaseObjec
 
     Assembly *pAssem = pModule->GetAssembly();
 
-    DomainFile *pDomainFile = pModule->FindDomainFile(GetAppDomain());
+    DomainFile *pDomainFile = pModule->GetDomainFile();
     if (pDomainFile==NULL || !pDomainFile->IsActive())
     {
         HELPER_METHOD_FRAME_BEGIN_1(refModule);
