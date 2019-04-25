@@ -1357,6 +1357,33 @@ public class BuiltinTests {
 		return 0;
 	}
 
+	static int test_0_much_casting ()
+	{
+		var notOof = (int)(float)1;
+		if (notOof != 1)
+			return 1;
+
+		var notOof2 = (nint)(float)(nfloat)1;
+		if (notOof2 != 1)
+			return 2;
+
+		var notOof3 = (nint)(int)(nfloat)1;
+		if (notOof3 != 1)
+			return 3;
+
+		var oof = (nint)(nfloat)1;
+		var oof2 = (int) oof - 1;
+		if (oof2 != 0)
+			return 4;
+
+		var noof = (nfloat)(nint)1;
+		var noof2 = (float) noof - 1;
+		if (noof2 > 0.1)
+			return 5;
+
+		return 0;
+	}
+
 #if !__MOBILE__
 	public static int Main (String[] args) {
 		return TestDriver.RunTests (typeof (BuiltinTests), args);
