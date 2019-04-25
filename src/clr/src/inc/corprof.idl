@@ -3929,6 +3929,9 @@ interface ICorProfilerInfo10 : ICorProfilerInfo9
 {
     // Given an ObjectID, fetches all its object references and offsets (if any).
     HRESULT GetObjectReferences(ObjectID objectId, ULONG32 cNumReferences, ULONG32 *pcNumReferences, ObjectID references[], SIZE_T offsets[]);
+
+    // Given an ObjectID, determines whether it is in a read only segment.
+    HRESULT IsFrozenObject(ObjectID objectId, BOOL *pbFrozen);
 }
 
 /*
