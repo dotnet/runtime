@@ -52,8 +52,7 @@ public:
     bool TryDequeue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData);
 
 private:
-    EventPipeProviderCallbackDataNode* front;
-    EventPipeProviderCallbackDataNode* back;
+    SList<SListElem<EventPipeProviderCallbackData>> list;
 };
 
 class EventPipeConfiguration
