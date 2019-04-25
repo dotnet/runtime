@@ -3,13 +3,9 @@
 // See the LICENSE file in the project root for more information.
 #nullable enable
 #if FEATURE_PERFTRACING
-using Internal.IO;
-using Microsoft.Win32;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Versioning;
-using System.Text;
-using System.Threading;
 
 namespace System.Diagnostics.Tracing
 {
@@ -17,36 +13,19 @@ namespace System.Diagnostics.Tracing
     /// Simple out-of-process listener for controlling EventPipe.
     /// The following environment variables are used to configure EventPipe:
     ///  - COMPlus_EnableEventPipe=1 : Enable EventPipe immediately for the life of the process.
-    ///  - COMPlus_EnableEventPipe=4 : Enables this controller and creates a thread to listen for enable/disable events.
     ///  - COMPlus_EventPipeConfig : Provides the configuration in xperf string form for which providers/keywords/levels to be enabled.
     ///                              If not specified, the default configuration is used.
     ///  - COMPlus_EventPipeOutputFile : The full path to the netperf file to be written.
     ///  - COMPlus_EventPipeCircularMB : The size in megabytes of the circular buffer.
-    /// Once the configuration is set and this controller is enabled, tracing is enabled by creating a marker file that this controller listens for.
-    /// Tracing is disabled by deleting the marker file.  The marker file is the target trace file path with ".ctl" appended to it.  For example,
-    /// if the trace file is /path/to/trace.netperf then the marker file is /path/to/trace.netperf.ctl.
-    /// This listener does not poll very often, and thus takes time to enable and disable tracing.  This is by design to ensure that the listener does
-    /// not starve other threads on the system.
-    /// NOTE: If COMPlus_EnableEventPipe != 4 then this listener is not created and does not add any overhead to the process.
     /// </summary>
-    internal sealed class EventPipeController
+    internal static class EventPipeController
     {
         // Miscellaneous constants.
         private const string DefaultAppName = "app";
         private const string NetPerfFileExtension = ".netperf";
-        private const string ConfigFileSuffix = ".eventpipeconfig";
-        private const int EnabledPollingIntervalMilliseconds = 1000; // 1 second
-        private const int DisabledPollingIntervalMilliseconds = 20000; // 20 seconds
-        private const uint DefaultCircularBufferMB = 1024; // 1 GB
-        private const char ConfigEntryDelimiter = '=';
+        private const uint DefaultCircularBufferMB = 256; // MB (PerfView and dotnet-trace default)
         private const char ProviderConfigDelimiter = ',';
         private const char ConfigComponentDelimiter = ':';
-
-        // Config file keys.
-        private const string ConfigKey_Providers = "Providers";
-        private const string ConfigKey_CircularMB = "CircularMB";
-        private const string ConfigKey_OutputPath = "OutputPath";
-        private const string ConfigKey_ProcessID = "ProcessID";
 
         // The default set of providers/keywords/levels.  Used if an alternative configuration is not specified.
         private static EventPipeProviderConfiguration[] DefaultProviderConfiguration => new EventPipeProviderConfiguration[]
@@ -56,196 +35,28 @@ namespace System.Diagnostics.Tracing
             new EventPipeProviderConfiguration("Microsoft-DotNETCore-SampleProfiler", 0x0, 5, null),
         };
 
-        // Singleton controller instance.
-        private static EventPipeController? s_controllerInstance;
-
-        // Controller object state.
-        private Timer m_timer;
-        private string m_configFilePath;
-        private bool m_configFileExists;
-
-        // Initialization flag used to avoid initializing FrameworkEventSource on the startup path.
-        internal static bool Initializing { get; private set; }
+        private static bool IsControllerInitialized { get; set; } = false;
 
         internal static void Initialize()
         {
             // Don't allow failures to propagate upstream.  Ensure program correctness without tracing.
             try
             {
-                Initializing = true;
-
-                if (s_controllerInstance == null)
+                if (!IsControllerInitialized)
                 {
-                    int enabled = Config_EnableEventPipe;
-                    if (enabled > 0)
+                    if (Config_EnableEventPipe > 0)
                     {
                         // Enable tracing immediately.
                         // It will be disabled automatically on shutdown.
                         EventPipe.Enable(BuildConfigFromEnvironment());
                     }
-                    // If not set at all, we listen for changes in the control file.
-                    else if (enabled != 0)
-                    {
-                        // Create a new controller to listen for commands.
-                        s_controllerInstance = new EventPipeController();
-                    }
-                    // If enable is explicitly set to 0, then don't start the controller (to avoid overhead).
+
                     RuntimeEventSource.Initialize();
+
+                    IsControllerInitialized = true;
                 }
             }
             catch { }
-            finally
-            {
-                Initializing = false;
-            }
-        }
-
-        private EventPipeController()
-        {
-            // Set the config file path.
-            // BaseDirectory could be null, in which case this could throw, but it will be caught and ignored: https://github.com/dotnet/coreclr/issues/24053
-            m_configFilePath = Path.Combine(AppContext.BaseDirectory!, BuildConfigFileName());
-
-            // Initialize the timer, but don't set it to run.
-            // The timer will be set to run each time PollForTracingCommand is called.
-            m_timer = new Timer(
-                callback: new TimerCallback(PollForTracingCommand),
-                state: null,
-                dueTime: Timeout.Infinite,
-                period: Timeout.Infinite,
-                flowExecutionContext: false);
-
-            // Trigger the first poll operation on the start-up path.
-            PollForTracingCommand(null);
-        }
-
-        private void PollForTracingCommand(object? state)
-        {
-            // Make sure that any transient errors don't cause the listener thread to exit.
-            try
-            {
-                // Check for existence of the config file.
-                // If the existence of the file has changed since the last time we checked or the update time has changed
-                // this means that we need to act on that change.
-                bool fileExists = File.Exists(m_configFilePath);
-                if (m_configFileExists != fileExists)
-                {
-                    // Save the result.
-                    m_configFileExists = fileExists;
-
-                    // Take the appropriate action.
-                    if (fileExists)
-                    {
-                        // Enable tracing.
-                        // Check for null here because it's possible that the configuration contains a process filter
-                        // that doesn't match the current process.  IF this occurs, we should't enable tracing.
-                        EventPipeConfiguration? config = BuildConfigFromFile(m_configFilePath);
-                        if (config != null)
-                        {
-                            EventPipe.Enable(config);
-                        }
-                    }
-                    else
-                    {
-                        // Disable tracing.
-                        EventPipe.Disable();
-                    }
-                }
-
-                // Schedule the timer to run again.
-                m_timer.Change(fileExists ? EnabledPollingIntervalMilliseconds : DisabledPollingIntervalMilliseconds, Timeout.Infinite);
-            }
-            catch { }
-        }
-
-        private static EventPipeConfiguration? BuildConfigFromFile(string configFilePath)
-        {
-            // Read the config file in once call.
-            byte[] configContents = File.ReadAllBytes(configFilePath);
-
-            // Convert the contents to a string.
-            string strConfigContents = Encoding.UTF8.GetString(configContents);
-
-            // Read all of the config options.
-            string? outputPath = null;
-            string? strProviderConfig = null;
-            string? strCircularMB = null;
-            string? strProcessID = null;
-
-            // Split the configuration entries by line.
-            string[] configEntries = strConfigContents.Split(new string[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (string configEntry in configEntries)
-            {
-                //`Split the key and value by '='.
-                string[] entryComponents = configEntry.Split(
-                    ConfigEntryDelimiter,
-                    2,  // Stop split on first occurrence of the separator.
-                    StringSplitOptions.RemoveEmptyEntries);
-                if (entryComponents.Length == 2)
-                {
-                    string key = entryComponents[0];
-                    if (key.Equals(ConfigKey_Providers))
-                    {
-                        strProviderConfig = entryComponents[1];
-                    }
-                    else if (key.Equals(ConfigKey_OutputPath))
-                    {
-                        outputPath = entryComponents[1];
-                    }
-                    else if (key.Equals(ConfigKey_CircularMB))
-                    {
-                        strCircularMB = entryComponents[1];
-                    }
-                    else if (key.Equals(ConfigKey_ProcessID))
-                    {
-                        strProcessID = entryComponents[1];
-                    }
-                }
-            }
-
-            // Check the process ID filter if it is set.
-            if (!string.IsNullOrEmpty(strProcessID))
-            {
-                // If set, bail out early if the specified process does not match the current process.
-                int processID = Convert.ToInt32(strProcessID);
-                if (processID != (int)Interop.GetCurrentProcessId())
-                {
-                    return null;
-                }
-            }
-
-            // Ensure that the output path is set.
-            if (string.IsNullOrEmpty(outputPath))
-            {
-                throw new ArgumentNullException(nameof(outputPath));
-            }
-
-            // Build the full path to the trace file.
-            string traceFileName = BuildTraceFileName();
-            string outputFile = Path.Combine(outputPath, traceFileName);
-
-            // Get the circular buffer size.
-            uint circularMB = DefaultCircularBufferMB;
-            if (!string.IsNullOrEmpty(strCircularMB))
-            {
-                circularMB = Convert.ToUInt32(strCircularMB);
-            }
-
-            // Initialize a new configuration object.
-            EventPipeConfiguration config = new EventPipeConfiguration(outputFile, circularMB);
-
-            // Set the provider configuration if specified.
-            if (!string.IsNullOrEmpty(strProviderConfig))
-            {
-                SetProviderConfiguration(strProviderConfig, config);
-            }
-            else
-            {
-                // If the provider configuration isn't specified, use the default.
-                config.EnableProviderRange(DefaultProviderConfiguration);
-            }
-
-            return config;
         }
 
         private static EventPipeConfiguration BuildConfigFromEnvironment()
@@ -273,11 +84,6 @@ namespace System.Diagnostics.Tracing
             }
 
             return config;
-        }
-
-        private static string BuildConfigFileName()
-        {
-            return GetAppName() + ConfigFileSuffix;
         }
 
         private static string BuildTraceFileName()
@@ -381,7 +187,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                string? stringValue = CompatibilitySwitch.GetValueInternal("EnableEventPipe");
+                string? stringValue = CompatibilitySwitch.GetValueInternal("EventPipeCircularMB");
                 if ((stringValue == null) || (!uint.TryParse(stringValue, out uint value)))
                 {
                     value = DefaultCircularBufferMB;
