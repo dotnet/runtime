@@ -3423,5 +3423,7 @@ struct VASigCookieEx : public VASigCookie
 LPCWSTR GetManagedCommandLine();
 // Save the command line for the current process.
 void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
+// Release any memory that we allocated for the managed command line
+void ReleaseManagedCommandLine();
 
 #endif // !CEELOAD_H_
