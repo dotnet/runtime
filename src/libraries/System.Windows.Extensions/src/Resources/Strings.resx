@@ -128,8 +128,8 @@
   <data name="none" xml:space="preserve">
     <value>(none)</value>
   </data>
-  <data name="PlatformNotSupported_X509Certificate2UI" xml:space="preserve">
-    <value>X509Certificate2UI is not supported on this platform.</value>
+  <data name="PlatformNotSupported_System_Windows_Extensions" xml:space="preserve">
+    <value>System.Windows.Extensions types are not supported on this platform.</value>
   </data>
   <data name="SoundAPIBadSoundLocation" xml:space="preserve">
     <value>Could not determine a universal resource identifier for the sound location.</value>
