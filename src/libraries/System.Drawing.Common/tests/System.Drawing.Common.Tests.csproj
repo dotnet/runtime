@@ -101,6 +101,9 @@
     <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\invalid.ico">
       <LogicalName>System.Drawing.Tests.invalid.ico</LogicalName>
     </EmbeddedResource>
+	<EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\256x256_one_entry_32bit.ico">
+      <LogicalName>System.Drawing.Tests.Icon_toolboxBitmapAttributeTest</LogicalName>
+    </EmbeddedResource>
     <Compile Include="Printing\MarginsTests.cs" />
     <Compile Include="Printing\PrinterResolutionTests.cs" />
     <Compile Include="Printing\PageSettingsTests.cs" />
