@@ -94,9 +94,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>e3919d0c158716ef4685c8e057cc58640af1af83</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190424.1">
+    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190425.1">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>4ad3b057442a99004749552ef2cadf7f7b38d6b9</Sha>
+      <Sha>25802b2fd96e89bacf720353ed66aa3c7b107bfb</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
