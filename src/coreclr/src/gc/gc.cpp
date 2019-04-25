@@ -23060,7 +23060,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         assert (generation_allocation_segment (consing_gen) ==
                 ephemeral_heap_segment);
 
-        GCToEEInterface::DiagWalkSurvivors(__this);
+        GCToEEInterface::DiagWalkSurvivors(__this, true);
 
         relocate_phase (condemned_gen_number, first_condemned_address);
         compact_phase (condemned_gen_number, first_condemned_address,
@@ -23270,7 +23270,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
             fix_older_allocation_area (older_gen);
         }
 
-        GCToEEInterface::DiagWalkSurvivors(__this);
+        GCToEEInterface::DiagWalkSurvivors(__this, false);
 
         gen0_big_free_spaces = 0;
         make_free_lists (condemned_gen_number);
@@ -37205,6 +37205,23 @@ void GCHeap::DiagWalkObject (Object* obj, walk_fn fn, void* context)
                                         {
                                             Object *oh = (Object*)*oo;
                                             if (!fn (oh, context))
+                                                return;
+                                        }
+                                    }
+            );
+    }
+}
+
+void GCHeap::DiagWalkObject2 (Object* obj, walk_fn2 fn, void* context)
+{
+    uint8_t* o = (uint8_t*)obj;
+    if (o)
+    {
+        go_through_object_cl (method_table (o), o, size(o), oo,
+                                    {
+                                        if (*oo)
+                                        {
+                                            if (!fn (obj, oo, context))
                                                 return;
                                         }
                                     }

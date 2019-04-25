@@ -741,6 +741,20 @@ inline BOOL CORProfilerTrackBasicGC()
          ((&g_profControlBlock)->dwEventMaskHigh & COR_PRF_HIGH_BASIC_GC));
 }
 
+inline BOOL CORProfilerTrackGCMovedObjects()
+{
+    CONTRACTL 
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    return (CORProfilerPresent() &&
+         ((&g_profControlBlock)->dwEventMaskHigh & COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS));
+}
+
 #if defined(PROFILING_SUPPORTED) && !defined(CROSSGEN_COMPILE)
 
 #if defined(FEATURE_PROFAPI_ATTACH_DETACH)

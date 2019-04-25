@@ -55,7 +55,7 @@ public:
     void DiagUpdateGenerationBounds();
     void DiagGCEnd(size_t index, int gen, int reason, bool fConcurrent);
     void DiagWalkFReachableObjects(void* gcContext);
-    void DiagWalkSurvivors(void* gcContext);
+    void DiagWalkSurvivors(void* gcContext, bool fCompacting);
     void DiagWalkLOHSurvivors(void* gcContext);
     void DiagWalkBGCSurvivors(void* gcContext);
     void StompWriteBarrier(WriteBarrierParameters* args);
