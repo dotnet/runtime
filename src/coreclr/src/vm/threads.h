@@ -275,7 +275,8 @@ public:
     BOOL IsAddressInStack (PTR_VOID addr) const { return TRUE; }
     static BOOL IsAddressInCurrentStack (PTR_VOID addr) { return TRUE; }
 
-    StackingAllocator    m_MarshalAlloc;
+    StackingAllocator*    m_stackLocalAllocator = NULL;
+    bool CheckCanUseStackAlloc() { return true; }
 
  private:
     LoadLevelLimiter *m_pLoadLimiter;
@@ -438,15 +439,6 @@ public:
 
     DWORD       m_dwLastError;
 };
-
-inline void DoReleaseCheckpoint(void *checkPointMarker)
-{
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_MarshalAlloc.Collapse(checkPointMarker);
-}
-
-// CheckPointHolder : Back out to a checkpoint on the thread allocator.
-typedef Holder<void*, DoNothing,DoReleaseCheckpoint> CheckPointHolder;
 
 class AVInRuntimeImplOkayHolder
 {
@@ -1691,7 +1683,7 @@ public:
     // is started using a CheckPointHolder and GetCheckpoint, and this region can then be used for allocations
     // from that point onwards, and then all memory is reclaimed when the static scope for the
     // checkpoint is exited by the running thread.
-    StackingAllocator    m_MarshalAlloc;
+    StackingAllocator*    m_stackLocalAllocator = NULL;
 
     // Flags used to indicate tasks the thread has to do.
     ThreadTasks          m_ThreadTasks;
@@ -3290,6 +3282,16 @@ public:
     // and GetCachedStackBase for the cached values on this Thread.
     static void * GetStackLowerBound();
     static void * GetStackUpperBound();
+
+    bool CheckCanUseStackAlloc()
+    {
+        int local;
+        UINT_PTR current = reinterpret_cast<UINT_PTR>(&local);
+        UINT_PTR limit = GetCachedStackStackAllocNonRiskyExecutionLimit();
+        return (current > limit);
+    }
+#else // DACCESS_COMPILE
+    bool CheckCanUseStackAlloc() { return true; }
 #endif
 
     enum SetStackLimitScope { fAll, fAllowableOnly };
@@ -3303,6 +3305,7 @@ public:
     PTR_VOID GetCachedStackBase() {LIMITED_METHOD_DAC_CONTRACT;  return m_CacheStackBase; }
     PTR_VOID GetCachedStackLimit() {LIMITED_METHOD_DAC_CONTRACT;  return m_CacheStackLimit;}
     UINT_PTR GetCachedStackSufficientExecutionLimit() {LIMITED_METHOD_DAC_CONTRACT; return m_CacheStackSufficientExecutionLimit;}
+    UINT_PTR GetCachedStackStackAllocNonRiskyExecutionLimit() {LIMITED_METHOD_DAC_CONTRACT; return m_CacheStackStackAllocNonRiskyExecutionLimit;}
 
 private:
     // Access the base and limit of the stack. (I.e. the memory ranges that the thread has reserved for its stack).
@@ -3313,6 +3316,7 @@ private:
     PTR_VOID    m_CacheStackBase;
     PTR_VOID    m_CacheStackLimit;
     UINT_PTR    m_CacheStackSufficientExecutionLimit;
+    UINT_PTR    m_CacheStackStackAllocNonRiskyExecutionLimit;
 
 #define HARD_GUARD_REGION_SIZE GetOsPageSize()
 
@@ -6427,20 +6431,6 @@ if (g_pConfig->GetGCStressLevel() && g_pConfig->FastGCStressLevel() > 1) {   \
 #define CLEANSTACKFORFASTGCSTRESS()
 
 #endif  // _DEBUG
-
-
-
-
-inline void DoReleaseCheckpoint(void *checkPointMarker)
-{
-    WRAPPER_NO_CONTRACT;
-    GetThread()->m_MarshalAlloc.Collapse(checkPointMarker);
-}
-
-
-// CheckPointHolder : Back out to a checkpoint on the thread allocator.
-typedef Holder<void*, DoNothing, DoReleaseCheckpoint> CheckPointHolder;
-
 
 #ifdef _DEBUG_IMPL
 // Holder for incrementing the ForbidGCLoaderUse counter.
