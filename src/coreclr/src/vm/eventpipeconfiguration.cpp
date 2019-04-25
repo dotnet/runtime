@@ -92,18 +92,13 @@ void EventPipeConfiguration::Initialize()
     }
     CONTRACTL_END;
     
-    EventPipeProviderCallbackDataQueue eventPipeProviderCallbackDataQueue;
-    EventPipeProviderCallbackData eventPipeProviderCallbackData;
-    {
-        CrstHolder _crst(EventPipe::GetLock());
-
-        // Create the configuration provider.
-        m_pConfigProvider = CreateProvider(SL(s_configurationProviderName), NULL, NULL, &eventPipeProviderCallbackDataQueue);
-    }
-    while (eventPipeProviderCallbackDataQueue.TryDequeue(&eventPipeProviderCallbackData))
-    {
-        EventPipeProvider::InvokeCallback(eventPipeProviderCallbackData);
-    }
+    EventPipe::RunWithCallbackPostponed(
+        [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
+        {
+            // Create the configuration provider.
+            m_pConfigProvider = CreateProvider(SL(s_configurationProviderName), NULL, NULL, pEventPipeProviderCallbackDataQueue);
+        }
+    );
 
     // Create the metadata event.
     m_pMetadataEvent = m_pConfigProvider->AddEvent(

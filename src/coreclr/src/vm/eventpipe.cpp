@@ -246,28 +246,21 @@ EventPipeSessionID EventPipe::Enable(
     CONTRACTL_END;
 
     EventPipeSessionID sessionId;
-    EventPipeProviderCallbackDataQueue eventPipeProviderCallbackDataQueue;
-    EventPipeProviderCallbackData eventPipeProviderCallbackData;
-    {
-        // Take the lock before enabling tracing.
-        CrstHolder _crst(GetLock());
+    EventPipe::RunWithCallbackPostponed(
+        [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
+        {
+            // Create a new session.
+            SampleProfiler::SetSamplingRate((unsigned long)profilerSamplingRateInNanoseconds);
+            EventPipeSession *pSession = s_pConfig->CreateSession(
+                (strOutputPath != NULL) ? EventPipeSessionType::File : EventPipeSessionType::Streaming,
+                circularBufferSizeInMB,
+                pProviders,
+                numProviders);
 
-        // Create a new session.
-        SampleProfiler::SetSamplingRate((unsigned long)profilerSamplingRateInNanoseconds);
-        EventPipeSession *pSession = s_pConfig->CreateSession(
-            (strOutputPath != NULL) ? EventPipeSessionType::File : EventPipeSessionType::Streaming,
-            circularBufferSizeInMB,
-            pProviders,
-            numProviders);
-
-        // Enable the session.
-        sessionId = Enable(strOutputPath, pSession, sessionType, pStream, &eventPipeProviderCallbackDataQueue);
-    }
-
-    while (eventPipeProviderCallbackDataQueue.TryDequeue(&eventPipeProviderCallbackData))
-    {
-        EventPipeProvider::InvokeCallback(eventPipeProviderCallbackData);
-    }
+            // Enable the session.
+            sessionId = Enable(strOutputPath, pSession, sessionType, pStream, pEventPipeProviderCallbackDataQueue);
+        }
+    );
 
     return sessionId;
 }
@@ -356,18 +349,12 @@ void EventPipe::Disable(EventPipeSessionID id)
     // Don't block GC during clean-up.
     GCX_PREEMP();
 
-    EventPipeProviderCallbackDataQueue eventPipeProviderCallbackDataQueue;
-    EventPipeProviderCallbackData eventPipeProviderCallbackData;
-    {
-        // Take the lock before disabling tracing.
-        CrstHolder _crst(GetLock());
-        DisableInternal(reinterpret_cast<EventPipeSessionID>(s_pSession), &eventPipeProviderCallbackDataQueue);
-    }
-
-    while (eventPipeProviderCallbackDataQueue.TryDequeue(&eventPipeProviderCallbackData))
-    {
-        EventPipeProvider::InvokeCallback(eventPipeProviderCallbackData);
-    }
+    EventPipe::RunWithCallbackPostponed(
+        [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
+        {
+            DisableInternal(reinterpret_cast<EventPipeSessionID>(s_pSession), pEventPipeProviderCallbackDataQueue);
+        }
+    );
 }
 
 void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
@@ -534,46 +521,39 @@ void WINAPI EventPipe::FlushTimer(PVOID parameter, BOOLEAN timerFired)
 
     GCX_PREEMP();
 
-    EventPipeProviderCallbackDataQueue eventPipeProviderCallbackDataQueue;
-    EventPipeProviderCallbackData eventPipeProviderCallbackData;
-    {
-        // Take the lock control lock to make sure that tracing isn't disabled during this operation.
-        CrstHolder _crst(GetLock());
-
-        if (s_pSession == nullptr || s_pFile == nullptr)
-            return;
-
-        // Make sure that we should actually switch files.
-        if (!Enabled() || s_pSession->GetSessionType() != EventPipeSessionType::IpcStream)
-            return;
-
-        if (CLRGetTickCount64() > (s_lastFlushSwitchTime + 100))
+    EventPipe::RunWithCallbackPostponed(
+        [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
         {
-            // Get the current time stamp.
-            // WriteAllBuffersToFile will use this to ensure that no events after
-            // the current timestamp are written into the file.
-            LARGE_INTEGER stopTimeStamp;
-            QueryPerformanceCounter(&stopTimeStamp);
-            s_pBufferManager->WriteAllBuffersToFile(s_pFile, stopTimeStamp);
+            if (s_pSession == nullptr || s_pFile == nullptr)
+                return;
 
-            s_lastFlushSwitchTime = CLRGetTickCount64();
-        }
+            // Make sure that we should actually switch files.
+            if (!Enabled() || s_pSession->GetSessionType() != EventPipeSessionType::IpcStream)
+                return;
 
-        if (s_pFile->HasErrors())
-        {
-            EX_TRY
+            if (CLRGetTickCount64() > (s_lastFlushSwitchTime + 100))
             {
-                DisableInternal(reinterpret_cast<EventPipeSessionID>(s_pSession), &eventPipeProviderCallbackDataQueue);
-            }
-            EX_CATCH {}
-            EX_END_CATCH(SwallowAllExceptions);
-        }
-    }
+                // Get the current time stamp.
+                // WriteAllBuffersToFile will use this to ensure that no events after
+                // the current timestamp are written into the file.
+                LARGE_INTEGER stopTimeStamp;
+                QueryPerformanceCounter(&stopTimeStamp);
+                s_pBufferManager->WriteAllBuffersToFile(s_pFile, stopTimeStamp);
 
-    while (eventPipeProviderCallbackDataQueue.TryDequeue(&eventPipeProviderCallbackData))
-    {
-        EventPipeProvider::InvokeCallback(eventPipeProviderCallbackData);
-    }
+                s_lastFlushSwitchTime = CLRGetTickCount64();
+            }
+
+            if (s_pFile->HasErrors())
+            {
+                EX_TRY
+                {
+                    DisableInternal(reinterpret_cast<EventPipeSessionID>(s_pSession), pEventPipeProviderCallbackDataQueue);
+                }
+                EX_CATCH {}
+                EX_END_CATCH(SwallowAllExceptions);
+            }
+        }
+    );
 }
 
 EventPipeSession *EventPipe::GetSession(EventPipeSessionID id)
@@ -613,16 +593,12 @@ EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventP
     CONTRACTL_END;
     
     EventPipeProvider *pProvider = NULL;
-    EventPipeProviderCallbackDataQueue eventPipeProviderCallbackDataQueue;
-    EventPipeProviderCallbackData eventPipeProviderCallbackData;
-    {
-        CrstHolder _crst(GetLock());
-        pProvider = EventPipe::CreateProvider(providerName, pCallbackFunction, pCallbackData, &eventPipeProviderCallbackDataQueue);
-    }
-    while (eventPipeProviderCallbackDataQueue.TryDequeue(&eventPipeProviderCallbackData))
-    {
-        EventPipeProvider::InvokeCallback(eventPipeProviderCallbackData);
-    }
+    EventPipe::RunWithCallbackPostponed(
+        [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
+        {
+            pProvider = EventPipe::CreateProvider(providerName, pCallbackFunction, pCallbackData, pEventPipeProviderCallbackDataQueue);
+        }
+    );
 
     return pProvider;
 }
@@ -928,6 +904,11 @@ EventPipeEventInstance *EventPipe::GetNextEvent()
     }
 
     return pInstance;
+}
+
+/* static */ void EventPipe::InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData)
+{
+    EventPipeProvider::InvokeCallback(eventPipeProviderCallbackData);
 }
 
 #endif // FEATURE_PERFTRACING
