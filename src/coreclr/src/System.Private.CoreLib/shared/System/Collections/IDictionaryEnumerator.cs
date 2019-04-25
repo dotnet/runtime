@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Collections
 {
     // This interface represents an enumerator that allows sequential access to the
@@ -50,7 +51,7 @@ namespace System.Collections
         // to GetValue with no intervening calls to GetNext will
         // return the same object.
         // 
-        object Value
+        object? Value
         {
             get;
         }
