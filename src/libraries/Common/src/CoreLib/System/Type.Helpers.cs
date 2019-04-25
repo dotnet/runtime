@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Reflection;
 
 namespace System
@@ -16,7 +17,7 @@ namespace System
                 if ((GetAttributeFlagsImpl() & TypeAttributes.Serializable) != 0)
                     return true;
 
-                Type underlyingType = UnderlyingSystemType;
+                Type? underlyingType = UnderlyingSystemType;
                 if (underlyingType.IsRuntimeImplemented())
                 {
                     do
@@ -66,7 +67,7 @@ namespace System
             Type rootElementType = this;
 
             while (rootElementType.HasElementType)
-                rootElementType = rootElementType.GetElementType();
+                rootElementType = rootElementType.GetElementType()!;
 
             return rootElementType;
         }
@@ -76,8 +77,7 @@ namespace System
             get
             {
 #if CORECLR
-                RuntimeType rt = this as RuntimeType;
-                if (rt != null)
+                if (this is RuntimeType rt)
                     return RuntimeTypeHandle.IsVisible(rt);
 #endif //CORECLR
 
@@ -85,7 +85,7 @@ namespace System
                     return true;
 
                 if (HasElementType)
-                    return GetElementType().IsVisible;
+                    return GetElementType()!.IsVisible;
 
                 Type type = this;
                 while (type.IsNested)
@@ -94,7 +94,7 @@ namespace System
                         return false;
 
                     // this should be null for non-nested types.
-                    type = type.DeclaringType;
+                    type = type.DeclaringType!;
                 }
 
                 // Now "type" should be a top level type
@@ -119,37 +119,37 @@ namespace System
             if (filter == null)
                 throw new ArgumentNullException(nameof(filter));
 
-            Type[] c = GetInterfaces();
+            Type?[] c = GetInterfaces();
             int cnt = 0;
             for (int i = 0; i < c.Length; i++)
             {
-                if (!filter(c[i], filterCriteria))
+                if (!filter(c[i]!, filterCriteria))
                     c[i] = null;
                 else
                     cnt++;
             }
             if (cnt == c.Length)
-                return c;
+                return c!;
 
             Type[] ret = new Type[cnt];
             cnt = 0;
             for (int i = 0; i < c.Length; i++)
             {
                 if (c[i] != null)
-                    ret[cnt++] = c[i];
+                    ret[cnt++] = c[i]!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
             }
             return ret;
         }
 
-        public virtual MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter filter, object filterCriteria)
+        public virtual MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter? filter, object filterCriteria)
         {
             // Define the work arrays
-            MethodInfo[] m = null;
-            ConstructorInfo[] c = null;
-            FieldInfo[] f = null;
-            PropertyInfo[] p = null;
-            EventInfo[] e = null;
-            Type[] t = null;
+            MethodInfo?[]? m = null;
+            ConstructorInfo?[]? c = null;
+            FieldInfo?[]? f = null;
+            PropertyInfo?[]? p = null;
+            EventInfo?[]? e = null;
+            Type?[]? t = null;
 
             int i = 0;
             int cnt = 0;            // Total Matchs
@@ -161,7 +161,7 @@ namespace System
                 if (filter != null)
                 {
                     for (i = 0; i < m.Length; i++)
-                        if (!filter(m[i], filterCriteria))
+                        if (!filter(m[i]!, filterCriteria))
                             m[i] = null;
                         else
                             cnt++;
@@ -179,7 +179,7 @@ namespace System
                 if (filter != null)
                 {
                     for (i = 0; i < c.Length; i++)
-                        if (!filter(c[i], filterCriteria))
+                        if (!filter(c[i]!, filterCriteria))
                             c[i] = null;
                         else
                             cnt++;
@@ -197,7 +197,7 @@ namespace System
                 if (filter != null)
                 {
                     for (i = 0; i < f.Length; i++)
-                        if (!filter(f[i], filterCriteria))
+                        if (!filter(f[i]!, filterCriteria))
                             f[i] = null;
                         else
                             cnt++;
@@ -215,7 +215,7 @@ namespace System
                 if (filter != null)
                 {
                     for (i = 0; i < p.Length; i++)
-                        if (!filter(p[i], filterCriteria))
+                        if (!filter(p[i]!, filterCriteria))
                             p[i] = null;
                         else
                             cnt++;
@@ -233,7 +233,7 @@ namespace System
                 if (filter != null)
                 {
                     for (i = 0; i < e.Length; i++)
-                        if (!filter(e[i], filterCriteria))
+                        if (!filter(e[i]!, filterCriteria))
                             e[i] = null;
                         else
                             cnt++;
@@ -251,7 +251,7 @@ namespace System
                 if (filter != null)
                 {
                     for (i = 0; i < t.Length; i++)
-                        if (!filter(t[i], filterCriteria))
+                        if (!filter(t[i]!, filterCriteria))
                             t[i] = null;
                         else
                             cnt++;
@@ -271,7 +271,7 @@ namespace System
             {
                 for (i = 0; i < m.Length; i++)
                     if (m[i] != null)
-                        ret[cnt++] = m[i];
+                        ret[cnt++] = m[i]!;  // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
             }
 
             // Copy the Constructors
@@ -279,7 +279,7 @@ namespace System
             {
                 for (i = 0; i < c.Length; i++)
                     if (c[i] != null)
-                        ret[cnt++] = c[i];
+                        ret[cnt++] = c[i]!;  // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
             }
 
             // Copy the Fields
@@ -287,7 +287,7 @@ namespace System
             {
                 for (i = 0; i < f.Length; i++)
                     if (f[i] != null)
-                        ret[cnt++] = f[i];
+                        ret[cnt++] = f[i]!;  // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
             }
 
             // Copy the Properties
@@ -295,7 +295,7 @@ namespace System
             {
                 for (i = 0; i < p.Length; i++)
                     if (p[i] != null)
-                        ret[cnt++] = p[i];
+                        ret[cnt++] = p[i]!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
             }
 
             // Copy the Events
@@ -303,7 +303,7 @@ namespace System
             {
                 for (i = 0; i < e.Length; i++)
                     if (e[i] != null)
-                        ret[cnt++] = e[i];
+                        ret[cnt++] = e[i]!;  // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
             }
 
             // Copy the Types
@@ -311,7 +311,7 @@ namespace System
             {
                 for (i = 0; i < t.Length; i++)
                     if (t[i] != null)
-                        ret[cnt++] = t[i];
+                        ret[cnt++] = t[i]!;  // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
             }
 
             return ret;
@@ -319,7 +319,7 @@ namespace System
 
         public virtual bool IsSubclassOf(Type c)
         {
-            Type p = this;
+            Type? p = this;
             if (p == c)
                 return false;
             while (p != null)
@@ -331,7 +331,7 @@ namespace System
             return false;
         }
 
-        public virtual bool IsAssignableFrom(Type c)
+        public virtual bool IsAssignableFrom(Type? c)
         {
             if (c == null)
                 return false;
@@ -368,7 +368,7 @@ namespace System
 
         internal bool ImplementInterface(Type ifaceType)
         {
-            Type t = this;
+            Type? t = this;
             while (t != null)
             {
                 Type[] interfaces = t.GetInterfaces();

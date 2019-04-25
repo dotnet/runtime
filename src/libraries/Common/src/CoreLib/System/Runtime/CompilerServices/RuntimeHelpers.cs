@@ -45,7 +45,7 @@ namespace System.Runtime.CompilerServices
             else
             {
                 // The array is actually a U[] where U:T.
-                T[] dest = (T[])Array.CreateInstance(array.GetType().GetElementType(), length);
+                T[] dest = (T[])Array.CreateInstance(array.GetType().GetElementType()!, length);
                 Array.Copy(array, offset, dest, 0, length);
                 return dest;
             }
