@@ -1839,6 +1839,12 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
             //
             //    Thus, ICF::ExceptionUnwind should not do anything significant. If any of these assumptions
             //    break, then the next best thing will be to make the JIT link/unlink the frame dynamically.
+            //
+            // If the current method executing is from precompiled ReadyToRun code, then the above is no longer
+            // applicable because each PInvoke is wrapped by calls to the JIT_PInvokeBegin and JIT_PInvokeEnd
+            // helpers, which push and pop the ICF to the current thread. Unlike jitted code, the ICF is not
+            // linked during the method prolog, and unlinked at the epilog (it looks more like the X64 case).
+            // In that case, we need to unlink the ICF during unwinding here.
 
             if (fTargetUnwind && (pFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()))
             {
@@ -1851,9 +1857,21 @@ CLRUnwindStatus ExceptionTracker::ProcessOSExceptionNotification(
                     ((UINT_PTR)pICF < uCallerSP)) 
                 {
                     pICFForUnwindTarget = pFrame;
+
+                    // When unwinding an exception in ReadyToRun, the JIT_PInvokeEnd helper which unlinks the ICF from 
+                    // the thread will be skipped. This is because unlike jitted code, each pinvoke is wrapped by calls
+                    // to the JIT_PInvokeBegin and JIT_PInvokeEnd helpers, which push and pop the ICF on the thread. The
+                    // ICF is not linked at the method prolog and unlined at the epilog when running R2R code. Since the
+                    // JIT_PInvokeEnd helper will be skipped, we need to unlink the ICF here. If the executing method
+                    // has another pinovoke, it will re-link the ICF again when the JIT_PInvokeBegin helper is called
+
+                    if (ExecutionManager::IsReadyToRunCode(((InlinedCallFrame*)pFrame)->m_pCallerReturnAddress))
+                    {
+                        pICFForUnwindTarget = pICFForUnwindTarget->Next();
+                    }
                 }
             }
-#endif // defined(_TARGET_ARM_)
+#endif // USE_PER_FRAME_PINVOKE_INIT
 
             cfThisFrame.CheckGSCookies();
 
