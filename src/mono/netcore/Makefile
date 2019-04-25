@@ -210,3 +210,5 @@ run-%: check-env
 build-base: $(addprefix build-, $(TEST_SUITES))
 
 check: $(addprefix run-, $(TEST_SUITES))
+
+distdir:
