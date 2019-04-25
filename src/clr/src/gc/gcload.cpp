@@ -99,16 +99,12 @@ GC_Initialize(
         SVR::PopulateDacVars(gcDacVars);
     }
     else
+#endif
     {
         g_gc_heap_type = GC_HEAP_WKS;
         heap = WKS::CreateGCHeap();
         WKS::PopulateDacVars(gcDacVars);
     }
-#else
-    g_gc_heap_type = GC_HEAP_WKS;
-    heap = WKS::CreateGCHeap();
-    WKS::PopulateDacVars(gcDacVars);
-#endif
 
     PopulateHandleTableDacVars(gcDacVars);
     if (heap == nullptr)
