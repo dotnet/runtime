@@ -57,29 +57,19 @@ namespace System.Net.Http
             }
         }
 
-        public string AutoConfigUrl { get; set; }
+        public string AutoConfigUrl { get; private set; }
 
-        public bool AutoDetect { get; set; }
+        public bool AutoDetect { get; private set; }
 
-        public bool AutoSettingsUsed
-        {
-            get
-            {
-                return AutoDetect || !string.IsNullOrEmpty(AutoConfigUrl);
-            }
-        }
+        public bool AutoSettingsUsed => AutoDetect || !string.IsNullOrEmpty(AutoConfigUrl);
 
-        public bool ManualSettingsOnly
-        {
-            get
-            {
-                return !AutoDetect && string.IsNullOrEmpty(AutoConfigUrl) && !string.IsNullOrEmpty(Proxy);
-            }
-        }
+        public bool ManualSettingsUsed => !string.IsNullOrEmpty(Proxy);
 
-        public string Proxy { get; set; }
+        public bool ManualSettingsOnly => !AutoSettingsUsed && ManualSettingsUsed;
 
-        public string ProxyBypass { get; set; }
+        public string Proxy { get; private set; }
+
+        public string ProxyBypass { get; private set; }
 
         public bool RecentAutoDetectionFailure =>
             _autoDetectionFailed &&
