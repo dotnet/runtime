@@ -145,7 +145,7 @@ namespace System.Security
                     while (enumerator.MoveNext())
                     {
                         string attrName = (string)enumerator.Key;
-                        string attrValue = (string)enumerator.Value;
+                        string? attrValue = (string?)enumerator.Value;
 
                         if (!IsValidAttributeName(attrName))
                             throw new ArgumentException(SR.Format(SR.Argument_InvalidElementName, attrName));
