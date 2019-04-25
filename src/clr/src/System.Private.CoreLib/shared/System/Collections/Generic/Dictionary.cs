@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -33,7 +34,7 @@ namespace System.Collections.Generic
     [DebuggerDisplay("Count = {Count}")]
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback
+    public class Dictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue>, ISerializable, IDeserializationCallback where TKey : object
     {
         private struct Entry
         {
@@ -46,15 +47,15 @@ namespace System.Collections.Generic
             public TValue value;         // Value of entry
         }
 
-        private int[] _buckets;
-        private Entry[] _entries;
+        private int[]? _buckets;
+        private Entry[]? _entries;
         private int _count;
         private int _freeList;
         private int _freeCount;
         private int _version;
-        private IEqualityComparer<TKey> _comparer;
-        private KeyCollection _keys;
-        private ValueCollection _values;
+        private IEqualityComparer<TKey>? _comparer;
+        private KeyCollection? _keys;
+        private ValueCollection? _values;
         private const int StartOfFreeList = -3;
 
         // constants for serialization
@@ -67,9 +68,9 @@ namespace System.Collections.Generic
 
         public Dictionary(int capacity) : this(capacity, null) { }
 
-        public Dictionary(IEqualityComparer<TKey> comparer) : this(0, comparer) { }
+        public Dictionary(IEqualityComparer<TKey>? comparer) : this(0, comparer) { }
 
-        public Dictionary(int capacity, IEqualityComparer<TKey> comparer)
+        public Dictionary(int capacity, IEqualityComparer<TKey>? comparer)
         {
             if (capacity < 0) ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             if (capacity > 0) Initialize(capacity);
@@ -87,7 +88,7 @@ namespace System.Collections.Generic
 
         public Dictionary(IDictionary<TKey, TValue> dictionary) : this(dictionary, null) { }
 
-        public Dictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey> comparer) :
+        public Dictionary(IDictionary<TKey, TValue> dictionary, IEqualityComparer<TKey>? comparer) :
             this(dictionary != null ? dictionary.Count : 0, comparer)
         {
             if (dictionary == null)
@@ -99,14 +100,14 @@ namespace System.Collections.Generic
             // avoid the enumerator allocation and overhead by looping through the entries array directly.
             // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
             // back-compat with subclasses that may have overridden the enumerator behavior.
-            if (dictionary.GetType() == typeof(Dictionary<TKey, TValue>))
+            if (dictionary!.GetType() == typeof(Dictionary<TKey, TValue>)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 Dictionary<TKey, TValue> d = (Dictionary<TKey, TValue>)dictionary;
                 int count = d._count;
-                Entry[] entries = d._entries;
+                Entry[]? entries = d._entries;
                 for (int i = 0; i < count; i++)
                 {
-                    if (entries[i].next >= -1)
+                    if (entries![i].next >= -1)
                     {
                         Add(entries[i].key, entries[i].value);
                     }
@@ -122,7 +123,7 @@ namespace System.Collections.Generic
 
         public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection) : this(collection, null) { }
 
-        public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey> comparer) :
+        public Dictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer) :
             this((collection as ICollection<KeyValuePair<TKey, TValue>>)?.Count ?? 0, comparer)
         {
             if (collection == null)
@@ -130,7 +131,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
-            foreach (KeyValuePair<TKey, TValue> pair in collection)
+            foreach (KeyValuePair<TKey, TValue> pair in collection!) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 Add(pair.Key, pair.Value);
             }
@@ -216,9 +217,9 @@ namespace System.Collections.Generic
             get
             {
                 int i = FindEntry(key);
-                if (i >= 0) return _entries[i].value;
+                if (i >= 0) return _entries![i].value;
                 ThrowHelper.ThrowKeyNotFoundException(key);
-                return default;
+                return default!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538 (annotating ThrowHelper removes this return statement).
             }
             set
             {
@@ -239,7 +240,7 @@ namespace System.Collections.Generic
         bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> keyValuePair)
         {
             int i = FindEntry(keyValuePair.Key);
-            if (i >= 0 && EqualityComparer<TValue>.Default.Equals(_entries[i].value, keyValuePair.Value))
+            if (i >= 0 && EqualityComparer<TValue>.Default.Equals(_entries![i].value, keyValuePair.Value))
             {
                 return true;
             }
@@ -249,7 +250,7 @@ namespace System.Collections.Generic
         bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair)
         {
             int i = FindEntry(keyValuePair.Key);
-            if (i >= 0 && EqualityComparer<TValue>.Default.Equals(_entries[i].value, keyValuePair.Value))
+            if (i >= 0 && EqualityComparer<TValue>.Default.Equals(_entries![i].value, keyValuePair.Value))
             {
                 Remove(keyValuePair.Key);
                 return true;
@@ -262,6 +263,9 @@ namespace System.Collections.Generic
             int count = _count;
             if (count > 0)
             {
+                Debug.Assert(_buckets != null, "_buckets should be non-null");
+                Debug.Assert(_entries != null, "_entries should be non-null");
+
                 Array.Clear(_buckets, 0, _buckets.Length);
 
                 _count = 0;
@@ -276,22 +280,22 @@ namespace System.Collections.Generic
 
         public bool ContainsValue(TValue value)
         {
-            Entry[] entries = _entries;
+            Entry[]? entries = _entries;
             if (value == null)
             {
                 for (int i = 0; i < _count; i++)
                 {
-                    if (entries[i].next >= -1 && entries[i].value == null) return true;
+                    if (entries![i].next >= -1 && entries[i].value == null) return true;
                 }
             }
             else
             {
-                if (default(TValue) != null)
+                if (default(TValue)! != null) // TODO-NULLABLE-GENERIC: https://github.com/dotnet/roslyn/issues/34757
                 {
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     for (int i = 0; i < _count; i++)
                     {
-                        if (entries[i].next >= -1 && EqualityComparer<TValue>.Default.Equals(entries[i].value, value)) return true;
+                        if (entries![i].next >= -1 && EqualityComparer<TValue>.Default.Equals(entries[i].value, value)) return true;
                     }
                 }
                 else
@@ -302,7 +306,7 @@ namespace System.Collections.Generic
                     EqualityComparer<TValue> defaultComparer = EqualityComparer<TValue>.Default;
                     for (int i = 0; i < _count; i++)
                     {
-                        if (entries[i].next >= -1 && defaultComparer.Equals(entries[i].value, value)) return true;
+                        if (entries![i].next >= -1 && defaultComparer.Equals(entries[i].value, value)) return true;
                     }
                 }
             }
@@ -316,7 +320,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if ((uint)index > (uint)array.Length)
+            if ((uint)index > (uint)array!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             {
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
@@ -327,10 +331,10 @@ namespace System.Collections.Generic
             }
 
             int count = _count;
-            Entry[] entries = _entries;
+            Entry[]? entries = _entries;
             for (int i = 0; i < count; i++)
             {
-                if (entries[i].next >= -1)
+                if (entries![i].next >= -1)
                 {
                     array[index++] = new KeyValuePair<TKey, TValue>(entries[i].key, entries[i].value);
                 }
@@ -350,7 +354,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
             }
 
-            info.AddValue(VersionName, _version);
+            info!.AddValue(VersionName, _version); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             info.AddValue(ComparerName, _comparer ?? EqualityComparer<TKey>.Default, typeof(IEqualityComparer<TKey>));
             info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
 
@@ -370,18 +374,19 @@ namespace System.Collections.Generic
             }
 
             int i = -1;
-            int[] buckets = _buckets;
-            Entry[] entries = _entries;
+            int[]? buckets = _buckets;
+            Entry[]? entries = _entries;
             int collisionCount = 0;
             if (buckets != null)
             {
-                IEqualityComparer<TKey> comparer = _comparer;
+                Debug.Assert(entries != null, "expected entries to be != null");
+                IEqualityComparer<TKey>? comparer = _comparer;
                 if (comparer == null)
                 {
-                    uint hashCode = (uint)key.GetHashCode();
+                    uint hashCode = (uint)key!.GetHashCode(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     // Value in _buckets is 1-based
                     i = buckets[hashCode % (uint)buckets.Length] - 1;
-                    if (default(TKey) != null)
+                    if (default(TKey)! != null) // TODO-NULLABLE-GENERIC: https://github.com/dotnet/roslyn/issues/34757
                     {
                         // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                         do
@@ -482,19 +487,20 @@ namespace System.Collections.Generic
                 Initialize(0);
             }
 
-            Entry[] entries = _entries;
-            IEqualityComparer<TKey> comparer = _comparer;
+            Entry[]? entries = _entries;
+            Debug.Assert(entries != null, "expected entries to be non-null");
 
-            uint hashCode = (uint)((comparer == null) ? key.GetHashCode() : comparer.GetHashCode(key));
+            IEqualityComparer<TKey>? comparer = _comparer;
+            uint hashCode = (uint)((comparer == null) ? key!.GetHashCode() : comparer.GetHashCode(key)); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
 
             int collisionCount = 0;
-            ref int bucket = ref _buckets[hashCode % (uint)_buckets.Length];
+            ref int bucket = ref _buckets![hashCode % (uint)_buckets.Length]; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761 (Initialize inits sets _buckets to non null)
             // Value in _buckets is 1-based
             int i = bucket - 1;
 
             if (comparer == null)
             {
-                if (default(TKey) != null)
+                if (default(TKey)! != null) // TODO-NULLABLE-GENERIC: https://github.com/dotnet/roslyn/issues/34757
                 {
                     // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
                     do
@@ -637,7 +643,7 @@ namespace System.Collections.Generic
                 entries = _entries;
             }
 
-            ref Entry entry = ref entries[index];
+            ref Entry entry = ref entries![index];
 
             if (updateFreeList)
             {
@@ -655,7 +661,7 @@ namespace System.Collections.Generic
             _version++;
 
             // Value types never rehash
-            if (default(TKey) == null && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer)
+            if (default(TKey)! == null && collisionCount > HashHelpers.HashCollisionThreshold && comparer is NonRandomizedStringEqualityComparer) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 // If we hit the collision threshold we'll need to switch to the comparer which is using randomized string hashing
                 // i.e. EqualityComparer<string>.Default.
@@ -679,13 +685,13 @@ namespace System.Collections.Generic
 
             int realVersion = siInfo.GetInt32(VersionName);
             int hashsize = siInfo.GetInt32(HashSizeName);
-            _comparer = (IEqualityComparer<TKey>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<TKey>));
+            _comparer = (IEqualityComparer<TKey>)siInfo.GetValue(ComparerName, typeof(IEqualityComparer<TKey>))!; // When serialized if comparer is null, we use the default.
 
             if (hashsize != 0)
             {
                 Initialize(hashsize);
 
-                KeyValuePair<TKey, TValue>[] array = (KeyValuePair<TKey, TValue>[])
+                KeyValuePair<TKey, TValue>[]? array = (KeyValuePair<TKey, TValue>[]?)
                     siInfo.GetValue(KeyValuePairsName, typeof(KeyValuePair<TKey, TValue>[]));
 
                 if (array == null)
@@ -693,7 +699,7 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
                 }
 
-                for (int i = 0; i < array.Length; i++)
+                for (int i = 0; i < array!.Length; i++) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     if (array[i].Key == null)
                     {
@@ -717,7 +723,8 @@ namespace System.Collections.Generic
         private void Resize(int newSize, bool forceNewHashCodes)
         {
             // Value types never rehash
-            Debug.Assert(!forceNewHashCodes || default(TKey) == null);
+            Debug.Assert(!forceNewHashCodes || default(TKey)! == null); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
+            Debug.Assert(_entries != null, "_entries should be non-null");
             Debug.Assert(newSize >= _entries.Length);
 
             int[] buckets = new int[newSize];
@@ -726,7 +733,7 @@ namespace System.Collections.Generic
             int count = _count;
             Array.Copy(_entries, 0, entries, 0, count);
 
-            if (default(TKey) == null && forceNewHashCodes)
+            if (default(TKey)! == null && forceNewHashCodes) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
             {
                 for (int i = 0; i < count; i++)
                 {
@@ -764,12 +771,13 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            int[] buckets = _buckets;
-            Entry[] entries = _entries;
+            int[]? buckets = _buckets;
+            Entry[]? entries = _entries;
             int collisionCount = 0;
             if (buckets != null)
             {
-                uint hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
+                Debug.Assert(entries != null, "entries should be non-null");
+                uint hashCode = (uint)(_comparer?.GetHashCode(key) ?? key!.GetHashCode()); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 uint bucket = hashCode % (uint)buckets.Length;
                 int last = -1;
                 // Value in buckets is 1-based
@@ -796,11 +804,11 @@ namespace System.Collections.Generic
 
                         if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
                         {
-                            entry.key = default;
+                            entry.key = default!; // TODO-NULLABLE-GENERIC
                         }
                         if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
                         {
-                            entry.value = default;
+                            entry.value = default!; // TODO-NULLABLE-GENERIC
                         }
                         _freeList = i;
                         _freeCount++;
@@ -824,19 +832,20 @@ namespace System.Collections.Generic
         // This overload is a copy of the overload Remove(TKey key) with one additional
         // statement to copy the value for entry being removed into the output parameter.
         // Code has been intentionally duplicated for performance reasons.
-        public bool Remove(TKey key, out TValue value)
+        public bool Remove(TKey key, out TValue value) // TODO-NULLABLE-GENERIC: https://github.com/dotnet/roslyn/issues/26761
         {
             if (key == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            int[] buckets = _buckets;
-            Entry[] entries = _entries;
+            int[]? buckets = _buckets;
+            Entry[]? entries = _entries;
             int collisionCount = 0;
             if (buckets != null)
             {
-                uint hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
+                Debug.Assert(entries != null, "entries should be non-null");
+                uint hashCode = (uint)(_comparer?.GetHashCode(key) ?? key!.GetHashCode()); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 uint bucket = hashCode % (uint)buckets.Length;
                 int last = -1;
                 // Value in buckets is 1-based
@@ -865,11 +874,11 @@ namespace System.Collections.Generic
 
                         if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
                         {
-                            entry.key = default;
+                            entry.key = default!; // TODO-NULLABLE-GENERIC
                         }
                         if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
                         {
-                            entry.value = default;
+                            entry.value = default!; // TODO-NULLABLE-GENERIC
                         }
                         _freeList = i;
                         _freeCount++;
@@ -887,19 +896,19 @@ namespace System.Collections.Generic
                     collisionCount++;
                 }
             }
-            value = default;
+            value = default!; // TODO-NULLABLE-GENERIC
             return false;
         }
 
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, out TValue value) // TODO-NULLABLE-GENERIC: https://github.com/dotnet/roslyn/issues/26761
         {
             int i = FindEntry(key);
             if (i >= 0)
             {
-                value = _entries[i].value;
+                value = _entries![i].value;
                 return true;
             }
-            value = default;
+            value = default!; // TODO-NULLABLE-GENERIC
             return false;
         }
 
@@ -915,7 +924,7 @@ namespace System.Collections.Generic
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if (array.Rank != 1)
+            if (array!.Rank != 1) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             if (array.GetLowerBound(0) != 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
@@ -930,10 +939,10 @@ namespace System.Collections.Generic
             }
             else if (array is DictionaryEntry[] dictEntryArray)
             {
-                Entry[] entries = _entries;
+                Entry[]? entries = _entries;
                 for (int i = 0; i < _count; i++)
                 {
-                    if (entries[i].next >= -1)
+                    if (entries![i].next >= -1)
                     {
                         dictEntryArray[index++] = new DictionaryEntry(entries[i].key, entries[i].value);
                     }
@@ -941,7 +950,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                object[] objects = array as object[];
+                object[]? objects = array as object[];
                 if (objects == null)
                 {
                     ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
@@ -950,12 +959,12 @@ namespace System.Collections.Generic
                 try
                 {
                     int count = _count;
-                    Entry[] entries = _entries;
+                    Entry[]? entries = _entries;
                     for (int i = 0; i < count; i++)
                     {
-                        if (entries[i].next >= -1)
+                        if (entries![i].next >= -1)
                         {
-                            objects[index++] = new KeyValuePair<TKey, TValue>(entries[i].key, entries[i].value);
+                            objects![index++] = new KeyValuePair<TKey, TValue>(entries[i].key, entries[i].value); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                         }
                     }
                 }
@@ -1013,7 +1022,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             int newSize = HashHelpers.GetPrime(capacity);
 
-            Entry[] oldEntries = _entries;
+            Entry[]? oldEntries = _entries;
             int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
             if (newSize >= currentCapacity)
                 return;
@@ -1021,19 +1030,19 @@ namespace System.Collections.Generic
             int oldCount = _count;
             _version++;
             Initialize(newSize);
-            Entry[] entries = _entries;
-            int[] buckets = _buckets;
+            Entry[]? entries = _entries;
+            int[]? buckets = _buckets;
             int count = 0;
             for (int i = 0; i < oldCount; i++)
             {
-                uint hashCode = oldEntries[i].hashCode;
+                uint hashCode = oldEntries![i].hashCode; // At this point, we know we have entries.
                 if (oldEntries[i].next >= -1)
                 {
-                    ref Entry entry = ref entries[count];
+                    ref Entry entry = ref entries![count];
                     entry = oldEntries[i];
                     uint bucket = hashCode % (uint)newSize;
                     // Value in _buckets is 1-based
-                    entry.next = buckets[bucket] - 1;
+                    entry.next = buckets![bucket] - 1; // If we get here, we have entries, therefore buckets is not null.
                     // Value in _buckets is 1-based
                     buckets[bucket] = count + 1;
                     count++;
@@ -1055,7 +1064,7 @@ namespace System.Collections.Generic
 
         ICollection IDictionary.Values => (ICollection)Values;
 
-        object IDictionary.this[object key]
+        object? IDictionary.this[object key] // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
         {
             get
             {
@@ -1064,7 +1073,7 @@ namespace System.Collections.Generic
                     int i = FindEntry((TKey)key);
                     if (i >= 0)
                     {
-                        return _entries[i].value;
+                        return _entries![i].value;
                     }
                 }
                 return null;
@@ -1079,10 +1088,10 @@ namespace System.Collections.Generic
 
                 try
                 {
-                    TKey tempKey = (TKey)key;
+                    TKey tempKey = (TKey)key!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                     try
                     {
-                        this[tempKey] = (TValue)value;
+                        this[tempKey] = (TValue)value!;
                     }
                     catch (InvalidCastException)
                     {
@@ -1105,7 +1114,7 @@ namespace System.Collections.Generic
             return (key is TKey);
         }
 
-        void IDictionary.Add(object key, object value)
+        void IDictionary.Add(object key, object? value)
         {
             if (key == null)
             {
@@ -1115,11 +1124,11 @@ namespace System.Collections.Generic
 
             try
             {
-                TKey tempKey = (TKey)key;
+                TKey tempKey = (TKey)key!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
 
                 try
                 {
-                    Add(tempKey, (TValue)value);
+                    Add(tempKey, (TValue)value!);
                 }
                 catch (InvalidCastException)
                 {
@@ -1185,7 +1194,7 @@ namespace System.Collections.Generic
                 // dictionary.count+1 could be negative if dictionary.count is int.MaxValue
                 while ((uint)_index < (uint)_dictionary._count)
                 {
-                    ref Entry entry = ref _dictionary._entries[_index++];
+                    ref Entry entry = ref _dictionary._entries![_index++];
 
                     if (entry.next >= -1)
                     {
@@ -1205,7 +1214,7 @@ namespace System.Collections.Generic
             {
             }
 
-            object IEnumerator.Current
+            object? IEnumerator.Current // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
             {
                 get
                 {
@@ -1262,7 +1271,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            object IDictionaryEnumerator.Value
+            object? IDictionaryEnumerator.Value
             {
                 get
                 {
@@ -1288,7 +1297,7 @@ namespace System.Collections.Generic
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dictionary);
                 }
-                _dictionary = dictionary;
+                _dictionary = dictionary!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             }
 
             public Enumerator GetEnumerator()
@@ -1301,21 +1310,21 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
                 }
 
-                if (index < 0 || index > array.Length)
+                if (index < 0 || index > array!.Length) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 {
                     ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
                 }
 
-                if (array.Length - index < _dictionary.Count)
+                if (array!.Length - index < _dictionary.Count) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 {
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
                 }
 
                 int count = _dictionary._count;
-                Entry[] entries = _dictionary._entries;
+                Entry[]? entries = _dictionary._entries;
                 for (int i = 0; i < count; i++)
                 {
-                    if (entries[i].next >= -1) array[index++] = entries[i].key;
+                    if (entries![i].next >= -1) array[index++] = entries[i].key;
                 }
             }
 
@@ -1348,7 +1357,7 @@ namespace System.Collections.Generic
             {
                 if (array == null)
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-                if (array.Rank != 1)
+                if (array!.Rank != 1) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
                 if (array.GetLowerBound(0) != 0)
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
@@ -1363,19 +1372,19 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    object[] objects = array as object[];
+                    object[]? objects = array as object[];
                     if (objects == null)
                     {
                         ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                     }
 
                     int count = _dictionary._count;
-                    Entry[] entries = _dictionary._entries;
+                    Entry[]? entries = _dictionary._entries;
                     try
                     {
                         for (int i = 0; i < count; i++)
                         {
-                            if (entries[i].next >= -1) objects[index++] = entries[i].key;
+                            if (entries![i].next >= -1) objects![index++] = entries[i].key; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538 (objects)
                         }
                     }
                     catch (ArrayTypeMismatchException)
@@ -1401,7 +1410,7 @@ namespace System.Collections.Generic
                     _dictionary = dictionary;
                     _version = dictionary._version;
                     _index = 0;
-                    _currentKey = default;
+                    _currentKey = default!; // TODO-NULLABLE-GENERIC
                 }
 
                 public void Dispose()
@@ -1417,7 +1426,7 @@ namespace System.Collections.Generic
 
                     while ((uint)_index < (uint)_dictionary._count)
                     {
-                        ref Entry entry = ref _dictionary._entries[_index++];
+                        ref Entry entry = ref _dictionary._entries![_index++];
 
                         if (entry.next >= -1)
                         {
@@ -1427,13 +1436,13 @@ namespace System.Collections.Generic
                     }
 
                     _index = _dictionary._count + 1;
-                    _currentKey = default;
+                    _currentKey = default!; // TODO-NULLABLE-GENERIC
                     return false;
                 }
 
                 public TKey Current => _currentKey;
 
-                object IEnumerator.Current
+                object? IEnumerator.Current // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
                 {
                     get
                     {
@@ -1454,7 +1463,7 @@ namespace System.Collections.Generic
                     }
 
                     _index = 0;
-                    _currentKey = default;
+                    _currentKey = default!; // TODO-NULLABLE-GENERIC
                 }
             }
         }
@@ -1471,7 +1480,7 @@ namespace System.Collections.Generic
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dictionary);
                 }
-                _dictionary = dictionary;
+                _dictionary = dictionary!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
 
             public Enumerator GetEnumerator()
@@ -1484,7 +1493,7 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
                 }
 
-                if (index < 0 || index > array.Length)
+                if ((uint)index > array!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
                 }
@@ -1495,10 +1504,10 @@ namespace System.Collections.Generic
                 }
 
                 int count = _dictionary._count;
-                Entry[] entries = _dictionary._entries;
+                Entry[]? entries = _dictionary._entries;
                 for (int i = 0; i < count; i++)
                 {
-                    if (entries[i].next >= -1) array[index++] = entries[i].value;
+                    if (entries![i].next >= -1) array[index++] = entries[i].value;
                 }
             }
 
@@ -1531,7 +1540,7 @@ namespace System.Collections.Generic
             {
                 if (array == null)
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-                if (array.Rank != 1)
+                if (array!.Rank != 1) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
                 if (array.GetLowerBound(0) != 0)
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
@@ -1546,19 +1555,19 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    object[] objects = array as object[];
+                    object[]? objects = array as object[];
                     if (objects == null)
                     {
                         ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                     }
 
                     int count = _dictionary._count;
-                    Entry[] entries = _dictionary._entries;
+                    Entry[]? entries = _dictionary._entries;
                     try
                     {
                         for (int i = 0; i < count; i++)
                         {
-                            if (entries[i].next >= -1) objects[index++] = entries[i].value;
+                            if (entries![i].next >= -1) objects![index++] = entries[i].value!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                         }
                     }
                     catch (ArrayTypeMismatchException)
@@ -1584,7 +1593,7 @@ namespace System.Collections.Generic
                     _dictionary = dictionary;
                     _version = dictionary._version;
                     _index = 0;
-                    _currentValue = default;
+                    _currentValue = default!; // TODO-NULLABLE-GENERIC
                 }
 
                 public void Dispose()
@@ -1600,7 +1609,7 @@ namespace System.Collections.Generic
 
                     while ((uint)_index < (uint)_dictionary._count)
                     {
-                        ref Entry entry = ref _dictionary._entries[_index++];
+                        ref Entry entry = ref _dictionary._entries![_index++];
 
                         if (entry.next >= -1)
                         {
@@ -1609,13 +1618,13 @@ namespace System.Collections.Generic
                         }
                     }
                     _index = _dictionary._count + 1;
-                    _currentValue = default;
+                    _currentValue = default!; // TODO-NULLABLE-GENERIC
                     return false;
                 }
 
                 public TValue Current => _currentValue;
 
-                object IEnumerator.Current
+                object? IEnumerator.Current
                 {
                     get
                     {
@@ -1635,7 +1644,7 @@ namespace System.Collections.Generic
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                     }
                     _index = 0;
-                    _currentValue = default;
+                    _currentValue = default!; // TODO-NULLABLE-GENERIC
                 }
             }
         }
