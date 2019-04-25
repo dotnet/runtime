@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using Windows.Foundation.Metadata;
 using Windows.Storage;
 using System.IO;
@@ -124,13 +125,13 @@ namespace System
             switch (folder)
             {
                 case SpecialFolder.ApplicationData:
-                    return ApplicationData.Current.RoamingFolder?.Path;
+                    return ApplicationData.Current.RoamingFolder?.Path ?? string.Empty;
                 case SpecialFolder.LocalApplicationData:
-                    return ApplicationData.Current.LocalFolder?.Path;
+                    return ApplicationData.Current.LocalFolder?.Path ?? string.Empty;
                 case SpecialFolder.System:
                     return SystemDirectory;
                 case SpecialFolder.Windows:
-                    return Path.GetDirectoryName(SystemDirectory);
+                    return Path.GetDirectoryName(SystemDirectory)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 default:
                     return string.Empty;
             }
