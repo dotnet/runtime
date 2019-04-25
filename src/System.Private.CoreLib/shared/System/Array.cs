@@ -36,7 +36,7 @@ namespace System
             }
 
             // T[] implements IList<T>.
-            return new ReadOnlyCollection<T>(array);
+            return new ReadOnlyCollection<T>(array!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static void Resize<T>(ref T[]? array, int newSize) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761

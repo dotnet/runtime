@@ -12,7 +12,7 @@
 **
 ** 
 ===========================================================*/
-
+#nullable enable
 
 namespace System.Collections
 {
@@ -78,7 +78,7 @@ namespace System.Collections
 
         // IDictionary members
 
-        public object this[object key]
+        public object? this[object key]
         {
             get
             {
@@ -126,7 +126,7 @@ namespace System.Collections
             return false;
         }
 
-        public void Add(object key, object value)
+        public void Add(object key, object? value)
         {
             if (key == null)
             {
@@ -186,7 +186,7 @@ namespace System.Collections
                 return false;
             }
 
-            public object Current
+            public object? Current
             {
                 get
                 {
