@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
@@ -29,11 +30,9 @@ namespace System.Diagnostics
             var processes = new List<Process>();
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
-                Interop.procfs.ParsedStat parsedStat;
-                if (Interop.procfs.TryReadStatFile(pid, out parsedStat, reusableReader) &&
-                    string.Equals(processName, parsedStat.comm, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(processName, Process.GetProcessName(pid), StringComparison.OrdinalIgnoreCase))
                 {
-                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(parsedStat, reusableReader);
+                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(pid, reusableReader, processName);
                     processes.Add(new Process(machineName, false, processInfo.ProcessId, processInfo));
                 }
             }
@@ -254,6 +253,74 @@ namespace System.Diagnostics
                 Interop.procfs.GetExeFilePathForProcess(processId);
 
             return Interop.Sys.ReadLink(exeFilePath);
+        }
+
+        /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>
+        /// <param name="processId">The pid for the target process, or -1 for the current process.</param>
+        internal static string GetProcessName(int processId = -1)
+        {
+            string cmdLineFilePath = processId == -1 ?
+                Interop.procfs.SelfCmdLineFilePath :
+                Interop.procfs.GetCmdLinePathForProcess(processId);
+
+            byte[] rentedArray = null;
+            try
+            {
+                // bufferSize == 1 used to avoid unnecessary buffer in FileStream
+                using (var fs = new FileStream(cmdLineFilePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, useAsync: false))
+                {
+                    Span<byte> buffer = stackalloc byte[512];
+                    int bytesRead = 0;
+                    while (true)
+                    {
+                        // Resize buffer if it was too small.
+                        if (bytesRead == buffer.Length)
+                        {
+                            uint newLength = (uint)buffer.Length * 2;
+
+                            byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
+                            buffer.CopyTo(tmp);
+                            byte[] toReturn = rentedArray;
+                            buffer = rentedArray = tmp;
+                            if (rentedArray != null)
+                            {
+                                ArrayPool<byte>.Shared.Return(toReturn);
+                            }
+                        }
+
+                        Debug.Assert(bytesRead < buffer.Length);
+                        int n = fs.Read(buffer.Slice(bytesRead));
+                        bytesRead += n;
+
+                        // cmdline contains the argv array separated by '\0' bytes.
+                        // we determine the process name using argv[0].
+                        int argv0End = buffer.Slice(0, bytesRead).IndexOf((byte)'\0');
+                        if (argv0End != -1)
+                        {
+                            // Strip directory names from argv[0].
+                            int nameStart = buffer.Slice(0, argv0End).LastIndexOf((byte)'/') + 1;
+
+                            return Encoding.UTF8.GetString(buffer.Slice(nameStart, argv0End - nameStart));
+                        }
+
+                        if (n == 0)
+                        {
+                            return null;
+                        }
+                    }
+                }
+            }
+            catch (IOException)
+            {
+                return null;
+            }
+            finally
+            {
+                if (rentedArray != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedArray);
+                }
+            }
         }
 
         // ----------------------------------
