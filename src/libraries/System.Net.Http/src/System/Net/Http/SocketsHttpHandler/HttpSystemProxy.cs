@@ -64,7 +64,7 @@ namespace System.Net.Http
             _proxyHelper = proxyHelper;
             _sessionHandle = sessionHandle;
 
-            if (proxyHelper.ManualSettingsOnly)
+            if (proxyHelper.ManualSettingsUsed)
             {
                 if (NetEventSource.IsEnabled) NetEventSource.Info(proxyHelper, $"ManualSettingsUsed, {proxyHelper.Proxy}");
                 ParseProxyConfig(proxyHelper.Proxy, out _insecureProxyUri, out _secureProxyUri);
@@ -275,7 +275,48 @@ namespace System.Net.Http
         /// </summary>
         public Uri GetProxy(Uri uri)
         {
-            if (_proxyHelper.ManualSettingsOnly)
+            // We need WinHTTP to detect and/or process a PAC (JavaScript) file. This maps to
+            // "Automatically detect settings" and/or "Use automatic configuration script" from IE
+            // settings. But, calling into WinHTTP can be slow especially when it has to call into
+            // the out-of-process service to discover, load, and run the PAC file. So, we skip
+            // calling into WinHTTP if there was a recent failure to detect a PAC file on the network.
+            // This is a common error. The default IE settings on a Windows machine consist of the
+            // single checkbox for "Automatically detect settings" turned on and most networks
+            // won't actually discover a PAC file on the network since WPAD protocol isn't configured.
+            if (_proxyHelper.AutoSettingsUsed && !_proxyHelper.RecentAutoDetectionFailure)
+            {
+                var proxyInfo = new Interop.WinHttp.WINHTTP_PROXY_INFO();
+                try
+                {
+                    if (_proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo))
+                    {
+                        // If WinHTTP just specified a Proxy with no ProxyBypass list, then
+                        // we can return the Proxy uri directly.
+                        if (proxyInfo.ProxyBypass == IntPtr.Zero)
+                        {
+                            return GetUriFromString(Marshal.PtrToStringUni(proxyInfo.Proxy));
+                        }
+
+                        // A bypass list was also specified. This means that WinHTTP has fallen back to
+                        // using the manual IE settings specified and there is a ProxyBypass list also.
+                        // Since we're not really using the full WinHTTP stack, we need to use HttpSystemProxy
+                        // to do the computation of the final proxy uri merging the information from the Proxy
+                        // and ProxyBypass strings.
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(proxyInfo.Proxy);
+                    Marshal.FreeHGlobal(proxyInfo.ProxyBypass);
+                }
+            }
+
+            // Fallback to manual settings if present.
+            if (_proxyHelper.ManualSettingsUsed)
             {
                 if (_bypassLocal)
                 {
@@ -332,25 +373,6 @@ namespace System.Net.Http
                 return (uri.Scheme == UriScheme.Https || uri.Scheme == UriScheme.Wss) ? _secureProxyUri : _insecureProxyUri;
             }
 
-            // For anything else ask WinHTTP. To improve performance, we don't call into
-            // WinHTTP if there was a recent failure to detect a PAC file on the network.
-            if (!_proxyHelper.RecentAutoDetectionFailure)
-            {
-                var proxyInfo = new Interop.WinHttp.WINHTTP_PROXY_INFO();
-                try
-                {
-                    if (_proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo))
-                    {
-                        return GetUriFromString(Marshal.PtrToStringUni(proxyInfo.Proxy));
-                    }
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(proxyInfo.Proxy);
-                    Marshal.FreeHGlobal(proxyInfo.ProxyBypass);
-                }
-            }
-
             return null;
         }
 
@@ -359,21 +381,13 @@ namespace System.Net.Http
         /// </summary>
         public bool IsBypassed(Uri uri)
         {
-            if (_proxyHelper.ManualSettingsOnly)
-            {
-                if (_bypassLocal)
-                {
-                    // TODO #23150: implement bypass match.
-                }
-                return false;
-            }
-            else if (_proxyHelper.AutoSettingsUsed)
-            {
-                // Always return false for now to avoid query to WinHtttp.
-                // If URI should be bypassed GetProxy() will return null;
-                return false;
-            }
-            return true;
+            // This HttpSystemProxy class is only consumed by SocketsHttpHandler and is not exposed outside of
+            // SocketsHttpHandler. The current pattern for consumption of IWebProxy is to call IsBypassed first.
+            // If it returns false, then the caller will call GetProxy. For this proxy implementation, computing
+            // the return value for IsBypassed is as costly as calling GetProxy. We want to avoid doing extra
+            // work. So, this proxy implementation for the IsBypassed method can always return false. Then the
+            // GetProxy method will return non-null for a proxy, or null if no proxy should be used.
+            return false;
         }
 
         public ICredentials Credentials
