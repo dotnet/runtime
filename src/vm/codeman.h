@@ -1245,6 +1245,9 @@ public:
     // Special version with profiler hook
     static BOOL IsManagedCode(PCODE currentPC, HostCallPreference hostCallPreference, BOOL *pfFailedReaderLock);
 
+    // Returns true if currentPC is ready to run codegen
+    static BOOL IsReadyToRunCode(PCODE currentPC);
+
     // Returns method's start address for a given PC
     static PCODE GetCodeStartAddress(PCODE currentPC);
 
