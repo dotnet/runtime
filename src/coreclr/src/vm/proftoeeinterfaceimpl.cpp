@@ -6856,6 +6856,42 @@ HRESULT ProfToEEInterfaceImpl::GetObjectReferences(ObjectID objectId, ULONG32 cN
 }
 
 /*
+ * IsFrozenObject
+ * 
+ * Determines whether the object is in a read-only segment
+ * 
+ * Parameters:
+ *      objectId        - object id of interest
+ *
+ * Returns:
+ *   S_OK if successful
+ *
+ */
+HRESULT ProfToEEInterfaceImpl::IsFrozenObject(ObjectID objectId, BOOL *pbFrozen)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+        kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: IsFrozenObject 0x%p.\n",
+        objectId));
+
+    *pbFrozen = GCHeapUtilities::GetGCHeap()->IsInFrozenSegment((Object*)objectId) ? TRUE : FALSE;
+
+    return S_OK;
+}
+
+/*
  * GetStringLayout
  *
  * This function describes to a profiler the internal layout of a string.

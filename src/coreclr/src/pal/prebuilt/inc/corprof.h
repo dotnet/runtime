@@ -15191,6 +15191,10 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             ObjectID references[  ],
             SIZE_T offsets[  ]) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE IsFrozenObject( 
+            ObjectID objectId,
+            BOOL *pbFrozen) = 0;
+        
     };
     
     
@@ -15784,6 +15788,11 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             ObjectID references[  ],
             SIZE_T offsets[  ]);
         
+        HRESULT ( STDMETHODCALLTYPE *IsFrozenObject )( 
+            ICorProfilerInfo10 * This,
+            ObjectID objectId,
+            BOOL *pbFrozen);
+        
         END_INTERFACE
     } ICorProfilerInfo10Vtbl;
 
@@ -16088,6 +16097,9 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
 
 #define ICorProfilerInfo10_GetObjectReferences(This,objectId,cNumReferences,pcNumReferences,references,offsets)	\
     ( (This)->lpVtbl -> GetObjectReferences(This,objectId,cNumReferences,pcNumReferences,references,offsets) ) 
+
+#define ICorProfilerInfo10_IsFrozenObject(This,objectId,pbFrozen)	\
+    ( (This)->lpVtbl -> IsFrozenObject(This,objectId,pbFrozen) ) 
 
 #endif /* COBJMACROS */
 
