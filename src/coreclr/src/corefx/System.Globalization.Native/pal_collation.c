@@ -22,6 +22,7 @@ const int32_t CompareOptionsIgnoreNonSpace = 0x2;
 const int32_t CompareOptionsIgnoreSymbols = 0x4;
 const int32_t CompareOptionsIgnoreKanaType = 0x8;
 const int32_t CompareOptionsIgnoreWidth = 0x10;
+const int32_t CompareOptionsMask = 0x1f;
 // const int32_t CompareOptionsStringSort = 0x20000000;
 // ICU's default is to use "StringSort", i.e. nonalphanumeric symbols come before alphanumeric.
 // When StringSort is not specified (.NET's default), the sort order will be different between
@@ -41,21 +42,11 @@ typedef struct { int32_t key; UCollator* UCollator; } TCollatorMap;
  */
 struct SortHandle
 {
-    UCollator* regular;
     pthread_mutex_t collatorsLockObject;
-    void* collatorsPerOptionRoot;
+    UCollator* collatorsPerOption[CompareOptionsMask + 1];
 };
 
-typedef struct { UChar* items; size_t capacity; size_t size; } UCharList;
-
-static int TreeComparer(const void* left, const void* right)
-{
-    const TCollatorMap* leftMap = left;
-    const TCollatorMap* rightMap = right;
-    if (leftMap->key < rightMap->key) return -1;
-    if (leftMap->key > rightMap->key) return 1;
-    return 0;
-}
+typedef struct { UChar* items; size_t size; } UCharList;
 
 // Hiragana character range
 const UChar hiraganaStart = 0x3041;
@@ -137,24 +128,6 @@ static int IsHalfFullHigherSymbol(UChar character)
         || (0xff61 <= character && character <= 0xff65);
 }
 
-static int AddItem(UCharList* list, const UChar item)
-{
-    size_t size = list->size++;
-    if (size >= list->capacity)
-    {
-        list->capacity *= 2;
-        UChar* ptr = (UChar*)realloc(list->items, list->capacity * sizeof(UChar*));
-        if (ptr == NULL)
-        {
-            return FALSE;
-        }
-        list->items = ptr;
-    }
-
-    list->items[size] = item;
-    return TRUE;
-}
-
 /*
 Gets a string of custom collation rules, if necessary.
 
@@ -184,18 +157,18 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
     }
 
     // If we need to create customRules, the KanaType custom rule will be 88 kana characters * 4 = 352 chars long
-    // and the Width custom rule will be at least 215 halfwidth characters * 4 = 860 chars long.
-    // Use 512 as the starting size, so the customRules won't have to grow if we are just
-    // doing the KanaType custom rule.
-    customRules->capacity = 512;
-    customRules->items = calloc(customRules->capacity, sizeof(UChar));
+    // and the Width custom rule will be at most 212 halfwidth characters * 5 = 1060 chars long.
+    int capacity = 
+        ((needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule) ? 4 * (hiraganaEnd - hiraganaStart + 1) : 0) +
+        ((needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule) ? 5 * g_HalfFullCharsLength : 0);
+
+    UChar* items;
+    customRules->items = items = malloc(capacity * sizeof(UChar));
     if (customRules->items == NULL)
     {
         free(customRules);
         return NULL;
     }
-
-    customRules->size = 0;
 
     if (needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule)
     {
@@ -206,15 +179,11 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
             // Hiragana is the range 3041 to 3096 & 309D & 309E
             if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
             {
-                if(!(AddItem(customRules, '&')              &&
-                     AddItem(customRules, hiraganaChar)     &&
-                     AddItem(customRules, compareChar)      &&
-                     AddItem(customRules, hiraganaChar + hiraganaToKatakanaOffset)))
-                {
-                    free(customRules->items);
-                    free(customRules);
-                    return NULL;
-                }
+                assert(items - customRules->items <= capacity - 4);
+                *(items++) = '&';
+                *(items++) = hiraganaChar;
+                *(items++) = compareChar;
+                *(items++) = hiraganaChar + hiraganaToKatakanaOffset;
             }
         }
     }
@@ -237,19 +206,20 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
             // this character is a symbol, and if so skip it
             if (!(isIgnoreSymbols && needsNotIgnoreWidthCustomRule && (needsEscape || IsHalfFullHigherSymbol(higherChar))))
             {
-                if(!(AddItem(customRules, '&')                    &&
-                   (!needsEscape || AddItem(customRules, '\\'))   &&
-                   AddItem(customRules, lowerChar)                &&
-                   AddItem(customRules, compareChar)              &&
-                   AddItem(customRules, higherChar)))
+                assert(items - customRules->items <= capacity - 5);
+                *(items++) = '&';
+                if (needsEscape)
                 {
-                    free(customRules->items);
-                    free(customRules);
-                    return NULL;
+                    *(items++) = '\\';
                 }
+                *(items++) = lowerChar;
+                *(items++) = compareChar;
+                *(items++) = higherChar;
             }
         }
     }
+
+    customRules->size = items - customRules->items;
 
     return customRules;
 }
@@ -280,7 +250,7 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
 
     UCollator* pClonedCollator;
     UCharList* customRules = GetCustomRules(options, strength, isIgnoreSymbols);
-    if (customRules == NULL)
+    if (customRules == NULL || customRules->size == 0)
     {
         pClonedCollator = ucol_safeClone(pCollator, NULL, NULL, pErr);
     }
@@ -305,8 +275,8 @@ UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t options,
 
         pClonedCollator = ucol_openRules(completeRules, completeRulesLength, UCOL_DEFAULT, strength, NULL, pErr);
         free(completeRules);
-        free(customRules);
     }
+    free(customRules);
 
     if (isIgnoreSymbols)
     {
@@ -371,9 +341,9 @@ void CreateSortHandle(SortHandle** ppSortHandle)
         return;
     }
 
-    (*ppSortHandle)->collatorsPerOptionRoot = NULL;
-    int result = pthread_mutex_init(&(*ppSortHandle)->collatorsLockObject, NULL);
+    memset(*ppSortHandle, 0, sizeof(SortHandle));
 
+    int result = pthread_mutex_init(&(*ppSortHandle)->collatorsLockObject, NULL);
     if (result != 0)
     {
         assert(FALSE && "Unexpected pthread_mutex_init return value.");
@@ -392,7 +362,7 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
 
     UErrorCode err = U_ZERO_ERROR;
 
-    (*ppSortHandle)->regular = ucol_open(lpLocaleName, &err);
+    (*ppSortHandle)->collatorsPerOption[0] = ucol_open(lpLocaleName, &err);
 
     if (U_FAILURE(err))
     {
@@ -406,15 +376,13 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
 
 void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
 {
-    ucol_close(pSortHandle->regular);
-    pSortHandle->regular = NULL;
-
-    while (pSortHandle->collatorsPerOptionRoot != NULL)
+    for (int i = 0; i <= CompareOptionsMask; i++)
     {
-        TCollatorMap* data = *(TCollatorMap **)pSortHandle->collatorsPerOptionRoot;
-        tdelete(data, &pSortHandle->collatorsPerOptionRoot, TreeComparer);
-        ucol_close(data->UCollator);
-        free(data);
+        if (pSortHandle->collatorsPerOption[i] != NULL)
+        {
+            ucol_close(pSortHandle->collatorsPerOption[i]);
+            pSortHandle->collatorsPerOption[i] = NULL;
+        }
     }
 
     pthread_mutex_destroy(&pSortHandle->collatorsLockObject);
@@ -427,7 +395,7 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
     UCollator* pCollator;
     if (options == 0)
     {
-        pCollator = pSortHandle->regular;
+        pCollator = pSortHandle->collatorsPerOption[0];
     }
     else
     {
@@ -437,22 +405,12 @@ const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t opti
             assert(FALSE && "Unexpected pthread_mutex_lock return value.");
         }
 
-        TCollatorMap* map = (TCollatorMap*)malloc(sizeof(TCollatorMap));
-        map->key = options;
-        // tfind on glibc is significantly faster than tsearch and we expect
-        // to hit the cache here often so it's benefitial to prefer lookup time
-        // over addition time
-        void* entry = tfind(map, &pSortHandle->collatorsPerOptionRoot, TreeComparer);
-        if (entry == NULL)
+        options &= CompareOptionsMask;
+        pCollator = pSortHandle->collatorsPerOption[options];
+        if (pCollator == NULL)
         {
-            pCollator = CloneCollatorWithOptions(pSortHandle->regular, options, pErr);
-            map->UCollator = pCollator;
-            tsearch(map, &pSortHandle->collatorsPerOptionRoot, TreeComparer);
-        }
-        else
-        {
-            free(map);
-            pCollator = (*(TCollatorMap**)entry)->UCollator;
+            pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
+            pSortHandle->collatorsPerOption[options] = pCollator;
         }
 
         pthread_mutex_unlock(&pSortHandle->collatorsLockObject);
