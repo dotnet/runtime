@@ -37,8 +37,8 @@
     <MicrosoftDotNetUapTestToolsPackageVersion>1.0.31</MicrosoftDotNetUapTestToolsPackageVersion>
 
     <!-- Code coverage package version -->
-    <CoverletConsolePackageVersion>1.4.0</CoverletConsolePackageVersion>
-    <DotNetReportGeneratorGlobalToolPackageVersion>4.0.5</DotNetReportGeneratorGlobalToolPackageVersion>
+    <CoverletConsolePackageVersion>1.5.0</CoverletConsolePackageVersion>
+    <DotNetReportGeneratorGlobalToolPackageVersion>4.1.4</DotNetReportGeneratorGlobalToolPackageVersion>
 
     <MicrosoftDotNetIBCMergePackageVersion>4.6.0-alpha-00001</MicrosoftDotNetIBCMergePackageVersion>
     <TestILCAmd64retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCAmd64retPackageVersion>

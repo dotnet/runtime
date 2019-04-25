@@ -28,8 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Use IL version of System.Private.CoreLib and link to the testhost folder to probe additional assemblies. -->
-    <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9\il" />
+    <!-- Link to the testhost folder to probe additional assemblies. -->
     <CoverageProbePath Include="shared\Microsoft.NETCore.App\9.9.9" />
   </ItemGroup>
 
