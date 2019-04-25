@@ -199,25 +199,6 @@ namespace System.Reflection
 
         public static Assembly Load(byte[] rawAssembly) => Load(rawAssembly, rawSymbolStore: null);
 
-        [Obsolete("This method has been deprecated. Please use Assembly.Load() instead. https://go.microsoft.com/fwlink/?linkid=14202")]
-        public static Assembly LoadWithPartialName(string partialName)
-        {
-            if (partialName == null)
-                throw new ArgumentNullException(nameof(partialName));
-
-            if ((partialName.Length == 0) || (partialName[0] == '\0'))
-                throw new ArgumentException(SR.Format_StringZeroLength, nameof(partialName));
-
-            try
-            {
-                return Load(partialName);
-            }
-            catch (FileNotFoundException)
-            {
-                return null;
-            }
-        }
-
         // Loads the assembly with a COFF based IMAGE containing
         // an emitted assembly. The assembly is loaded into a fully isolated ALC with resolution fully deferred to the AssemblyLoadContext.Default.
         // The second parameter is the raw bytes representing the symbol store that matches the assembly.

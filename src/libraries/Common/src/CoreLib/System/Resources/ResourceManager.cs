@@ -304,7 +304,9 @@ namespace System.Resources
 
             lock (localResourceSets)
             {
+#pragma warning disable CS8619 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/35131
                 foreach ((_, ResourceSet resourceSet) in localResourceSets)
+#pragma warning restore CS8619
                 {
                     resourceSet.Close();
                 }

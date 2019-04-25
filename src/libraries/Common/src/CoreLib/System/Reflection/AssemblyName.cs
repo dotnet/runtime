@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Configuration.Assemblies;
 using System.IO;
 using System.Runtime.Serialization;
@@ -14,14 +15,14 @@ namespace System.Reflection
     {
         // If you modify any of these fields, you must also update the 
         // AssemblyBaseObject structure in object.h
-        private string _name;
-        private byte[] _publicKey;
-        private byte[] _publicKeyToken;
-        private CultureInfo _cultureInfo;
-        private string _codeBase;
-        private Version _version;
+        private string? _name;
+        private byte[]? _publicKey;
+        private byte[]? _publicKeyToken;
+        private CultureInfo? _cultureInfo;
+        private string? _codeBase;
+        private Version? _version;
 
-        private StrongNameKeyPair _strongNameKeyPair;
+        private StrongNameKeyPair? _strongNameKeyPair;
 
         private AssemblyHashAlgorithm _hashAlgorithm;
 
@@ -36,26 +37,26 @@ namespace System.Reflection
         // Set and get the name of the assembly. If this is a weak Name
         // then it optionally contains a site. For strong assembly names, 
         // the name partitions up the strong name's namespace
-        public string Name
+        public string? Name
         {
             get { return _name; }
             set { _name = value; }
         }
 
-        public Version Version
+        public Version? Version
         {
             get { return _version; }
             set { _version = value; }
         }
 
         // Locales, internally the LCID is used for the match.
-        public CultureInfo CultureInfo
+        public CultureInfo? CultureInfo
         {
             get { return _cultureInfo; }
             set { _cultureInfo = value; }
         }
 
-        public string CultureName
+        public string? CultureName
         {
             get
             {
@@ -67,13 +68,13 @@ namespace System.Reflection
             }
         }
 
-        public string CodeBase
+        public string? CodeBase
         {
             get { return _codeBase; }
             set { _codeBase = value; }
         }
 
-        public string EscapedCodeBase
+        public string? EscapedCodeBase
         {
             get
             {
@@ -155,12 +156,12 @@ namespace System.Reflection
             return GetFileInformationCore(assemblyFile);
         }
 
-        public byte[] GetPublicKey()
+        public byte[]? GetPublicKey()
         {
             return _publicKey;
         }
 
-        public void SetPublicKey(byte[] publicKey)
+        public void SetPublicKey(byte[]? publicKey)
         {
             _publicKey = publicKey;
 
@@ -179,7 +180,7 @@ namespace System.Reflection
             return _publicKeyToken;
         }
 
-        public void SetPublicKeyToken(byte[] publicKeyToken)
+        public void SetPublicKeyToken(byte[]? publicKeyToken)
         {
             _publicKeyToken = publicKeyToken;
         }
@@ -213,7 +214,7 @@ namespace System.Reflection
             set { _versionCompatibility = value; }
         }
 
-        public StrongNameKeyPair KeyPair
+        public StrongNameKeyPair? KeyPair
         {
             get { return _strongNameKeyPair; }
             set { _strongNameKeyPair = value; }
@@ -235,7 +236,7 @@ namespace System.Reflection
         {
             string s = FullName;
             if (s == null)
-                return base.ToString();
+                return base.ToString()!;
             else
                 return s;
         }
@@ -255,7 +256,7 @@ namespace System.Reflection
         /// match the intent of this api, this api has been broken this way since its debut and we cannot
         /// change its behavior now.
         /// </summary>
-        public static bool ReferenceMatchesDefinition(AssemblyName reference, AssemblyName definition)
+        public static bool ReferenceMatchesDefinition(AssemblyName? reference, AssemblyName? definition)
         {
             if (object.ReferenceEquals(reference, definition))
                 return true;
@@ -271,13 +272,13 @@ namespace System.Reflection
             return refName.Equals(defName, StringComparison.OrdinalIgnoreCase);
         }
 
-        internal static string EscapeCodeBase(string codebase)
+        internal static string EscapeCodeBase(string? codebase)
         {
             if (codebase == null)
                 return string.Empty;
 
             int position = 0;
-            char[] dest = EscapeString(codebase, 0, codebase.Length, null, ref position, true, c_DummyChar, c_DummyChar, c_DummyChar);
+            char[]? dest = EscapeString(codebase, 0, codebase.Length, null, ref position, true, c_DummyChar, c_DummyChar, c_DummyChar);
             if (dest == null)
                 return codebase;
 
@@ -296,7 +297,7 @@ namespace System.Reflection
         //
         // Returns null if nothing has to be escaped AND passed dest was null, otherwise the resulting array with the updated destPos
         //
-        internal static unsafe char[] EscapeString(string input, int start, int end, char[] dest, ref int destPos,
+        internal static unsafe char[]? EscapeString(string input, int start, int end, char[]? dest, ref int destPos,
             bool isUriString, char force1, char force2, char rsvd)
         {
             int i = start;
@@ -397,15 +398,15 @@ namespace System.Reflection
         //
         // ensure destination array has enough space and contains all the needed input stuff
         //
-        private static unsafe char[] EnsureDestinationSize(char* pStr, char[] dest, int currentInputPos,
+        private static unsafe char[] EnsureDestinationSize(char* pStr, char[]? dest, int currentInputPos,
             short charsToAdd, short minReallocateChars, ref int destPos, int prevInputPos)
         {
-            if ((object)dest == null || dest.Length < destPos + (currentInputPos - prevInputPos) + charsToAdd)
+            if (dest is null || dest.Length < destPos + (currentInputPos - prevInputPos) + charsToAdd)
             {
                 // allocating or reallocating array by ensuring enough space based on maxCharsToAdd.
                 char[] newresult = new char[destPos + (currentInputPos - prevInputPos) + minReallocateChars];
 
-                if ((object)dest != null && destPos != 0)
+                if (!(dest is null) && destPos != 0)
                     Buffer.BlockCopy(dest, 0, newresult, 0, destPos << 1);
                 dest = newresult;
             }
