@@ -7931,23 +7931,29 @@ bool Compiler::gtCompareTree(GenTree* op1, GenTree* op2)
 
 GenTree* Compiler::gtGetThisArg(GenTreeCall* call)
 {
-    if (call->gtCallObjp != nullptr)
+    GenTree* thisArg = call->gtCallObjp;
+    if (thisArg != nullptr)
     {
-        if (call->gtCallObjp->gtOper != GT_NOP && call->gtCallObjp->gtOper != GT_ASG)
+        if (thisArg->OperIs(GT_NOP, GT_ASG) == false)
         {
-            if (!(call->gtCallObjp->gtFlags & GTF_LATE_ARG))
+            if ((thisArg->gtFlags & GTF_LATE_ARG) == 0)
             {
                 return call->gtCallObjp;
             }
         }
 
-        if (call->gtCallLateArgs)
+        if (call->gtCallLateArgs != nullptr)
         {
             unsigned       argNum          = 0;
             fgArgTabEntry* thisArgTabEntry = gtArgEntryByArgNum(call, argNum);
             GenTree*       result          = thisArgTabEntry->node;
 
 #if !FEATURE_FIXED_OUT_ARGS && defined(DEBUG)
+            // Check that call->fgArgInfo used in gtArgEntryByArgNum was not
+            // left outdated by assertion propogation updates.
+            // There is no information about registers of late args for platforms
+            // with FEATURE_FIXED_OUT_ARGS that is why this debug check is under
+            // !FEATURE_FIXED_OUT_ARGS.
             regNumber thisReg  = REG_ARG_0;
             GenTree*  lateArgs = call->gtCallLateArgs;
             regList   list     = call->regArgList;
