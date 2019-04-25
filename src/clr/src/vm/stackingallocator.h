@@ -41,7 +41,7 @@
         DWORD_PTR   m_Length;       // Length of block excluding header  (needs to be pointer-sized for alignment on IA64)
         INDEBUG(Sentinal*   m_Sentinal;)    // insure that we don't fall of the end of the buffer
         INDEBUG(void**      m_Pad;)    		// keep the size a multiple of 8
-        char        m_Data[];       // Start of user allocation space
+        char *GetData() { return (char *)(this + 1);}
     };
 
     // Whenever a checkpoint is requested, a checkpoint structure is allocated
@@ -80,10 +80,19 @@ public:
 
     enum
     {
-        MinBlockSize    = 128,
-        MaxBlockSize    = 4096,
-        InitBlockSize   = 512      
+        MinBlockSize    = 0x2000,
+        MaxBlockSize    = 0x8000,
     };
+
+private:
+    struct InitialStackBlock
+    {
+        InitialStackBlock();
+        StackBlock m_initialBlockHeader;
+        char m_dataSpace[0x2000];
+    };
+
+public:
 
 #ifndef DACCESS_COMPILE
     StackingAllocator();
@@ -92,20 +101,7 @@ public:
     StackingAllocator() { LIMITED_METHOD_CONTRACT; }
 #endif
 
-    void StoreCheckpoint(Checkpoint *c)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-#ifdef _DEBUG
-        m_CheckpointDepth++;
-        m_Checkpoints++;
-#endif
-
-        // Record previous allocator state in it.
-        c->m_OldBlock = m_FirstBlock;
-        c->m_OldBytesLeft = m_BytesLeft;
-    }
-
+    void StoreCheckpoint(Checkpoint *c);
     void* GetCheckpoint();
 
     // @todo move this into a .inl file as many class users of this class don't need to include this body
@@ -196,15 +192,16 @@ public:
 
     void* UnsafeAllocSafeThrow(UINT32 size);
     void* UnsafeAlloc(UINT32 size);
+    
 private:
 
     bool AllocNewBlockForBytes(unsigned n);
     
-    StackBlock      *m_FirstBlock;       // Pointer to head of allocation block list
-    char       *m_FirstFree;        // Pointer to first free byte in head block
-    unsigned    m_BytesLeft;        // Number of free bytes left in head block
-    StackBlock      *m_InitialBlock;     // The first block is special, we never free it
-    StackBlock      *m_DeferredFreeBlock; // Avoid going to the OS too often by deferring one free
+    StackBlock       *m_FirstBlock;       // Pointer to head of allocation block list
+    char             *m_FirstFree;        // Pointer to first free byte in head block
+    unsigned          m_BytesLeft;        // Number of free bytes left in head block
+    InitialStackBlock m_InitialBlock;     // The first block is special, we never free it
+    StackBlock       *m_DeferredFreeBlock; // Avoid going to the OS too often by deferring one free
 
 #ifdef _DEBUG
     unsigned    m_CheckpointDepth;
@@ -215,86 +212,56 @@ private:
     unsigned    m_MaxAlloc;
 #endif
 
-    void Init(bool bResetInitBlock)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (bResetInitBlock || (m_InitialBlock == NULL))
-        {
-            Clear(NULL);
-            m_FirstBlock = NULL;
-            m_FirstFree = NULL;
-            m_BytesLeft = 0;
-            m_InitialBlock = NULL;
-        }
-        else
-        {
-            m_FirstBlock = m_InitialBlock;
-            m_FirstFree = m_InitialBlock->m_Data;
-            _ASSERTE(FitsIn<unsigned>(m_InitialBlock->m_Length));
-            m_BytesLeft = static_cast<unsigned>(m_InitialBlock->m_Length);
-        }
-    }
+    void Init();
 
 #ifdef _DEBUG
-    void Validate(StackBlock *block, void* spot)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        if (!block) 
-            return;
-        Sentinal* ptr = block->m_Sentinal;
-        _ASSERTE(spot);
-        while(ptr >= spot)
-        {
-                // If this assert goes off then someone overwrote their buffer!
-                // A common candidate is PINVOKE buffer run.  To confirm look
-                // up on the stack for NDirect.* Look for the MethodDesc
-                // associated with it.  Be very suspicious if it is one that
-                // has a return string buffer!.  This usually means the end
-                // programmer did not allocate a big enough buffer before passing
-                // it to the PINVOKE method.
-            if (ptr->m_Marker1 != Sentinal::marker1Val)
-                _ASSERTE(!"Memory overrun!! May be bad buffer passed to PINVOKE. turn on logging LF_STUBS level 6 to find method");
-            ptr = ptr->m_Next;
-        }
-        block->m_Sentinal = ptr;
-    }
+    void Validate(StackBlock *block, void* spot);
 #endif
 
-    void Clear(StackBlock *ToBlock)
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        StackBlock *p = m_FirstBlock;
-        StackBlock *q;
-
-        while (p != ToBlock)
-        {
-            PREFAST_ASSUME(p != NULL);
-            
-            q = p;
-            p = p->m_Next;
-
-            INDEBUG(Validate(q, q));
-
-            // we don't give the tail block back to the OS
-            // because we can get into situations where we're growing
-            // back and forth over a single seam for a tiny alloc
-            // and the perf is a disaster -- VSWhidbey #100462
-            if (m_DeferredFreeBlock != NULL)
-            {
-                delete [] (char *)m_DeferredFreeBlock;
-            }
-
-            m_DeferredFreeBlock = q;
-            m_DeferredFreeBlock->m_Next = NULL;
-        }
-    }
+    void Clear(StackBlock *ToBlock);
 
 private :
     static Checkpoint s_initialCheckpoint;
 };
+
+#define ACQUIRE_STACKING_ALLOCATOR(stackingAllocatorName)  \
+  Thread *pThread__ACQUIRE_STACKING_ALLOCATOR = GetThread(); \
+  StackingAllocator *stackingAllocatorName = pThread__ACQUIRE_STACKING_ALLOCATOR->m_stackLocalAllocator; \
+  bool allocatorOwner__ACQUIRE_STACKING_ALLOCATOR = false; \
+  NewHolder<StackingAllocator> heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR; \
+\
+  if (stackingAllocatorName == NULL) \
+  { \
+      if (pThread__ACQUIRE_STACKING_ALLOCATOR->CheckCanUseStackAlloc()) \
+      { \
+          stackingAllocatorName = new (_alloca(sizeof(StackingAllocator))) StackingAllocator; \
+      } \
+      else \
+      {\
+          stackingAllocatorName = new (nothrow) StackingAllocator; \
+          if (stackingAllocatorName == NULL) \
+              ThrowOutOfMemory(); \
+          heapAllocatedStackingBuffer__ACQUIRE_STACKING_ALLOCATOR = stackingAllocatorName; \
+      }\
+      allocatorOwner__ACQUIRE_STACKING_ALLOCATOR = true; \
+  } \
+  StackingAllocatorHolder sah_ACQUIRE_STACKING_ALLOCATOR(stackingAllocatorName, pThread__ACQUIRE_STACKING_ALLOCATOR, allocatorOwner__ACQUIRE_STACKING_ALLOCATOR)
+
+class Thread;
+class StackingAllocatorHolder
+{
+    StackingAllocator *m_pStackingAllocator;
+    void* m_checkpointMarker;
+    Thread* m_thread;
+    bool m_owner;
+
+    public:
+    ~StackingAllocatorHolder();
+    StackingAllocatorHolder(StackingAllocator *pStackingAllocator, Thread *pThread, bool owner);
+    StackingAllocator *GetStackingAllocator() { return m_pStackingAllocator; }
+    StackingAllocator &operator->() { return *m_pStackingAllocator; }
+};
+
 
 void * __cdecl operator new(size_t n, StackingAllocator *alloc);
 void * __cdecl operator new[](size_t n, StackingAllocator *alloc);

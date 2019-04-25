@@ -510,6 +510,32 @@ FORCEINLINE BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GetValueS
 }
 
 template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>
+FORCEINLINE BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::GetValueSpeculative(KeyType pKey, HashDatum *pData, DWORD hashValue)
+{
+    CONTRACTL
+    {
+        WRAPPER(THROWS);
+        WRAPPER(GC_NOTRIGGER);
+#ifdef MODE_COOPERATIVE     // This header file sees contract.h, not eecontract.h - what a kludge!
+        MODE_COOPERATIVE;
+#endif
+    }
+    CONTRACTL_END
+
+    EEHashEntry_t *pItem = FindItemSpeculative(pKey, hashValue);
+
+    if (pItem != NULL)
+    {
+        *pData = pItem->Data;
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
+template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>
 EEHashEntry_t *EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::FindItem(KeyType pKey)
 {
     CONTRACTL

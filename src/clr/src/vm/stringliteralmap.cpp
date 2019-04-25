@@ -159,61 +159,50 @@ STRINGREF *StringLiteralMap::GetStringLiteral(EEStringData *pStringData, BOOL bA
     HashDatum Data;
 
     DWORD dwHash = m_StringToEntryHashTable->GetHash(pStringData);
-    if (m_StringToEntryHashTable->GetValue(pStringData, &Data, dwHash))
-    {
-        STRINGREF *pStrObj = NULL;
-        pStrObj = ((StringLiteralEntry*)Data)->GetStringObject();
-        _ASSERTE(!bAddIfNotFound || pStrObj);
-        return pStrObj;
+    // Retrieve the string literal from the global string literal map.
+    CrstHolder gch(&(SystemDomain::GetGlobalStringLiteralMap()->m_HashTableCrstGlobal));
 
-    }
-    else
-    {
-        // Retrieve the string literal from the global string literal map.
-        CrstHolder gch(&(SystemDomain::GetGlobalStringLiteralMap()->m_HashTableCrstGlobal));
+    // TODO: We can be more efficient by checking our local hash table now to see if
+    // someone beat us to inserting it. (m_StringToEntryHashTable->GetValue(pStringData, &Data))
+    // (Rather than waiting until after we look the string up in the global map) 
+    
+    StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound));
 
-        // TODO: We can be more efficient by checking our local hash table now to see if
-        // someone beat us to inserting it. (m_StringToEntryHashTable->GetValue(pStringData, &Data))
-        // (Rather than waiting until after we look the string up in the global map) 
+    _ASSERTE(pEntry || !bAddIfNotFound);
+
+    // If pEntry is non-null then the entry exists in the Global map. (either we retrieved it or added it just now)
+    if (pEntry)
+    {
+        // If the entry exists in the Global map and the appdomain wont ever unload then we really don't need to add a
+        // hashentry in the appdomain specific map.
+        // TODO: except that by not inserting into our local table we always take the global map lock
+        // and come into this path, when we could succeed at a lock free lookup above.
         
-        StringLiteralEntryHolder pEntry(SystemDomain::GetGlobalStringLiteralMap()->GetStringLiteral(pStringData, dwHash, bAddIfNotFound));
-
-        _ASSERTE(pEntry || !bAddIfNotFound);
-
-        // If pEntry is non-null then the entry exists in the Global map. (either we retrieved it or added it just now)
-        if (pEntry)
-        {
-            // If the entry exists in the Global map and the appdomain wont ever unload then we really don't need to add a
-            // hashentry in the appdomain specific map.
-            // TODO: except that by not inserting into our local table we always take the global map lock
-            // and come into this path, when we could succeed at a lock free lookup above.
-            
-            if (!bAppDomainWontUnload)
-            {                
-                // Make sure some other thread has not already added it.
-                if (!m_StringToEntryHashTable->GetValue(pStringData, &Data))
-                {
-                    // Insert the handle to the string into the hash table.
-                    m_StringToEntryHashTable->InsertValue(pStringData, (LPVOID)pEntry, FALSE);
-                }
-                else
-                {
-                    pEntry.Release(); //while we're still under lock
-                }
+        if (!bAppDomainWontUnload)
+        {                
+            // Make sure some other thread has not already added it.
+            if (!m_StringToEntryHashTable->GetValue(pStringData, &Data))
+            {
+                // Insert the handle to the string into the hash table.
+                m_StringToEntryHashTable->InsertValue(pStringData, (LPVOID)pEntry, FALSE);
             }
-#ifdef _DEBUG
             else
             {
-                LOG((LF_APPDOMAIN, LL_INFO10000, "Avoided adding String literal to appdomain map: size: %d bytes\n", pStringData->GetCharCount()));
+                pEntry.Release(); //while we're still under lock
             }
-#endif
-            pEntry.SuppressRelease();
-            STRINGREF *pStrObj = NULL;
-            // Retrieve the string objectref from the string literal entry.
-            pStrObj = pEntry->GetStringObject();
-            _ASSERTE(!bAddIfNotFound || pStrObj);
-            return pStrObj;
         }
+#ifdef _DEBUG
+        else
+        {
+            LOG((LF_APPDOMAIN, LL_INFO10000, "Avoided adding String literal to appdomain map: size: %d bytes\n", pStringData->GetCharCount()));
+        }
+#endif
+        pEntry.SuppressRelease();
+        STRINGREF *pStrObj = NULL;
+        // Retrieve the string objectref from the string literal entry.
+        pStrObj = pEntry->GetStringObject();
+        _ASSERTE(!bAddIfNotFound || pStrObj);
+        return pStrObj;
     }
     // If the bAddIfNotFound flag is set then we better have a string
     // string object at this point.
@@ -389,7 +378,7 @@ StringLiteralEntry *GlobalStringLiteralMap::GetStringLiteral(EEStringData *pStri
     HashDatum Data;
     StringLiteralEntry *pEntry = NULL;
 
-    if (m_StringToEntryHashTable->GetValue(pStringData, &Data, dwHash))
+    if (m_StringToEntryHashTable->GetValueSpeculative(pStringData, &Data, dwHash)) // Since we hold the critical section here, we can safely use the speculative variant of GetValue
     {
         pEntry = (StringLiteralEntry*)Data;
         // If the entry is already in the table then addref it before we return it.

@@ -6378,9 +6378,7 @@ void Module::FixupVTables()
             cVtableThunks += pFixupTable[iFixup].Count;
     }
 
-    Thread *pThread = GetThread();
-    StackingAllocator *pAlloc = &pThread->m_MarshalAlloc;
-    CheckPointHolder cph(pAlloc->GetCheckpoint());
+    ACQUIRE_STACKING_ALLOCATOR(pAlloc);
 
     // Allocate the working array of tokens.
     cMethodsToLoad = cVtableThunks;

@@ -199,11 +199,12 @@ public:
 class MethodTableBuilder
 {
 public:
-    MethodTableBuilder(MethodTable * pMT) 
+    MethodTableBuilder(MethodTable * pMT, StackingAllocator *pStackingAllocator) 
     {
         LIMITED_METHOD_CONTRACT;
         m_pHalfBakedMT = pMT;
         m_pHalfBakedClass = pMT->GetClass();
+        m_pStackingAllocator = pStackingAllocator;
         NullBMTData();
     }
 public:
@@ -240,6 +241,9 @@ private:
     // <NICE> Get rid of this.</NICE>
     EEClass *m_pHalfBakedClass;
     MethodTable * m_pHalfBakedMT;
+    StackingAllocator *m_pStackingAllocator;
+
+    StackingAllocator* GetStackingAllocator() { return m_pStackingAllocator; }
 
     // GetHalfBakedClass: The EEClass you get back from this function may not have all its fields filled in yet.
     // Thus you have to make sure that the relevant item which you are accessing has

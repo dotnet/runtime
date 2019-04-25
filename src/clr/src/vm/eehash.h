@@ -104,6 +104,7 @@ public:
     // should fall back to the slow GetValue if GetValueSpeculative returns false.
     // Assumes that we are in cooperative mode already. For performance-sensitive codepaths.
     BOOL            GetValueSpeculative(KeyType pKey, HashDatum *pData);
+    BOOL            GetValueSpeculative(KeyType pKey, HashDatum *pData, DWORD hashValue);
 
     DWORD           GetHash(KeyType Key);
     DWORD           GetCount();
