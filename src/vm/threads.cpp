@@ -1402,6 +1402,7 @@ Thread::Thread()
     m_CacheStackBase = 0;
     m_CacheStackLimit = 0;
     m_CacheStackSufficientExecutionLimit = 0;
+    m_CacheStackStackAllocNonRiskyExecutionLimit = 0;
 
     m_LastAllowableStackAddress= 0;
     m_ProbeLimit = 0;
@@ -6445,6 +6446,20 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
         {
             m_CacheStackSufficientExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackBase);
         }
+
+        // Compute the limit used by CheckCanUseStackAllocand cache it on the thread. This minimum stack size should
+        // be sufficient to avoid all significant risk of a moderate size stack alloc interfering with application behavior
+        const UINT_PTR StackAllocNonRiskyExecutionStackSize = 512 * 1024;
+        _ASSERTE(m_CacheStackBase >= m_CacheStackLimit);
+        if ((reinterpret_cast<UINT_PTR>(m_CacheStackBase) - reinterpret_cast<UINT_PTR>(m_CacheStackLimit)) >
+            StackAllocNonRiskyExecutionStackSize)
+        {
+            m_CacheStackStackAllocNonRiskyExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackLimit) + StackAllocNonRiskyExecutionStackSize;
+        }
+        else
+        {
+            m_CacheStackStackAllocNonRiskyExecutionLimit = reinterpret_cast<UINT_PTR>(m_CacheStackBase);
+        }
     }
 
     // Ensure that we've setup the stack guarantee properly before we cache the stack limits
@@ -8155,8 +8170,6 @@ void Thread::InternalReset(BOOL fNotFinalizerThread, BOOL fThreadObjectResetNeed
     {
         nPriority = ResetManagedThreadObject(nPriority);
     }
-
-    //m_MarshalAlloc.Collapse(NULL);
 
     if (fResetAbort && IsAbortRequested()) {
         UnmarkThreadForAbort(TAR_ALL);
