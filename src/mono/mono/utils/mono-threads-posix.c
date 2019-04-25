@@ -127,7 +127,7 @@ mono_threads_platform_init (void)
 }
 
 gboolean
-mono_threads_platform_in_critical_region (MonoNativeThreadId tid)
+mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 {
 	return FALSE;
 }

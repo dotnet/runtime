@@ -35,8 +35,9 @@
 #endif
 
 #ifdef _MSC_VER
-// TODO: Find MSVC replacement for __builtin_unwind_init
-#define SAVE_REGS_ON_STACK g_assert_not_reached ();
+// __builtin_unwind_init not available under MSVC but equivalent implementation is done using
+// copy_stack_data_internal_win32_wrapper.
+#define SAVE_REGS_ON_STACK do {} while (0)
 #elif defined (HOST_WASM)
 //TODO: figure out wasm stack scanning
 #define SAVE_REGS_ON_STACK do {} while (0)
@@ -167,7 +168,7 @@ return_stack_ptr (gpointer *i)
 }
 
 static void
-copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
+copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, gconstpointer wrapper_data1, gconstpointer wrapper_data2)
 {
 	MonoThreadUnwindState *state;
 	int stackdata_size;
@@ -196,6 +197,57 @@ copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
 
 	state->gc_stackdata_size = stackdata_size;
 }
+
+#ifdef _MSC_VER
+typedef void (*CopyStackDataFunc)(MonoThreadInfo *, MonoStackData *, gconstpointer, gconstpointer);
+
+#ifdef TARGET_AMD64
+// Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
+typedef struct {
+	__m128d fregs [10];
+	host_mgreg_t gregs [8];
+} MonoBuiltinUnwindInfo;
+
+// Defined in win64.asm
+G_EXTERN_C void
+copy_stack_data_internal_win32_wrapper (MonoThreadInfo *, MonoStackData *, MonoBuiltinUnwindInfo *, CopyStackDataFunc);
+#else
+// Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
+typedef struct {
+	host_mgreg_t gregs [4];
+} MonoBuiltinUnwindInfo;
+
+// Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo *.
+__declspec(naked) void __cdecl
+copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *stackdata_begin, MonoBuiltinUnwindInfo *unwind_info_data, CopyStackDataFunc func)
+{
+	__asm {
+		mov edx, dword ptr [esp + 0Ch]
+		mov dword ptr [edx + 00h], ebx
+		mov dword ptr [edx + 04h], esi
+		mov dword ptr [edx + 08h], edi
+		mov dword ptr [edx + 0Ch], ebp
+
+		// tailcall, all parameters passed through to CopyStackDataFunc.
+		mov edx, dword ptr [esp + 10h]
+		jmp edx
+	};
+}
+#endif
+
+static void
+copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
+{
+	MonoBuiltinUnwindInfo unwind_info_data;
+	copy_stack_data_internal_win32_wrapper (info, stackdata_begin, &unwind_info_data, copy_stack_data_internal);
+}
+#else
+static void
+copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
+{
+	copy_stack_data_internal (info, stackdata_begin, NULL, NULL);
+}
+#endif
 
 static gpointer
 mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, MonoStackData *stackdata);
@@ -282,8 +334,10 @@ mono_threads_exit_gc_safe_region_internal (gpointer cookie, MonoStackData *stack
 		return;
 
 #ifdef ENABLE_CHECKED_BUILD_GC
+	W32_DEFINE_LAST_ERROR_RESTORE_POINT;
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
 		coop_tls_pop (cookie);
+	W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 #endif
 
 	mono_threads_exit_gc_safe_region_unbalanced_internal (cookie, stackdata);
@@ -304,6 +358,11 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 
 	if (!mono_threads_is_blocking_transition_enabled ())
 		return;
+
+	/* Common to use enter/exit gc safe around OS API's affecting last error. */
+	/* This method can call OS API's that will reset last error on some platforms. */
+	/* To reduce errors, we need to restore last error before exit gc safe. */
+	W32_DEFINE_LAST_ERROR_RESTORE_POINT;
 
 	info = (MonoThreadInfo *)cookie;
 
@@ -335,6 +394,8 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 		info->async_target = NULL;
 		info->user_data = NULL;
 	}
+
+	W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 }
 
 void

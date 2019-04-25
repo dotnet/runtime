@@ -20,7 +20,7 @@ mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
 
-	result = MoveFileEx (path, dest, MOVEFILE_COPY_ALLOWED);
+	result = MoveFileExW (path, dest, MOVEFILE_COPY_ALLOWED);
 	if (result == FALSE) {
 		*error=GetLastError ();
 	}

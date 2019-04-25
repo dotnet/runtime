@@ -488,14 +488,28 @@ mono_threads_platform_init (void)
  * We check CONTEXT_EXCEPTION_ACTIVE for this, which is highly undocumented.
  */
 gboolean
-mono_threads_platform_in_critical_region (MonoNativeThreadId tid)
+mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 {
 	gboolean ret = FALSE;
 #if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_OPEN_THREAD
 /* FIXME On cygwin these are not defined */
 #if defined(CONTEXT_EXCEPTION_REQUEST) && defined(CONTEXT_EXCEPTION_REPORTING) && defined(CONTEXT_EXCEPTION_ACTIVE)
+	if (is_wow64 && mono_threads_is_cooperative_suspension_enabled ()) {
+		/* Cooperative suspended threads will block at well-defined locations. */
+		return FALSE;
+	} else if (is_wow64 && mono_threads_is_hybrid_suspension_enabled ()) {
+		/* If thread is cooperative suspended, we shouldn't validate context */
+		/* since thread could still be running towards it's wait state. Calling */
+		/* GetThreadContext on a running thread (before calling SuspendThread) */
+		/* could return incorrect results and since cooperative suspended threads */
+		/* will block at well defined-locations, no need to do so. */
+		int thread_state = mono_thread_info_current_state (info);
+		if (thread_state == STATE_SELF_SUSPENDED || thread_state == STATE_BLOCKING_SELF_SUSPENDED)
+			return FALSE;
+	}
+
 	if (is_wow64) {
-		HANDLE handle = OpenThread (THREAD_ALL_ACCESS, FALSE, tid);
+		HANDLE handle = OpenThread (THREAD_ALL_ACCESS, FALSE, mono_thread_info_get_tid (info));
 		if (handle) {
 			CONTEXT context;
 			ZeroMemory (&context, sizeof (CONTEXT));
