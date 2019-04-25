@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 namespace System.Reflection
 {
     internal sealed class SignatureGenericMethodParameterType : SignatureGenericParameterType
@@ -13,7 +14,7 @@ namespace System.Reflection
 
         public sealed override bool IsGenericTypeParameter => false;
         public sealed override bool IsGenericMethodParameter => true;
-    
+
         public sealed override string Name => "!!" + GenericParameterPosition;
     }
 }

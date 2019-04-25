@@ -21,10 +21,10 @@ namespace System.Resources
     // Provides the default implementation of IResourceReader, reading
     // .resources file from the system default binary format.  This class
     // can be treated as an enumerator once.
-    // 
-    // See the RuntimeResourceSet overview for details on the system 
+    //
+    // See the RuntimeResourceSet overview for details on the system
     // default file format.
-    // 
+    //
 
     internal struct ResourceLocator
     {
@@ -73,14 +73,14 @@ namespace System.Resources
 
         private BinaryReader _store;    // backing store we're reading from.
         // Used by RuntimeResourceSet and this class's enumerator.  Maps
-        // resource name to a value, a ResourceLocator, or a 
+        // resource name to a value, a ResourceLocator, or a
         // LooselyLinkedManifestResource.
         internal Dictionary<string, ResourceLocator>? _resCache;
         private long _nameSectionOffset;  // Offset to name section of file.
         private long _dataSectionOffset;  // Offset to Data section of file.
 
         // Note this class is tightly coupled with UnmanagedMemoryStream.
-        // At runtime when getting an embedded resource from an assembly, 
+        // At runtime when getting an embedded resource from an assembly,
         // we're given an UnmanagedMemoryStream referring to the mmap'ed portion
         // of the assembly.  The pointers here are pointers into that block of
         // memory controlled by the OS's loader.
@@ -158,7 +158,7 @@ namespace System.Resources
                 _resCache = null;
                 if (disposing)
                 {
-                    // Close the stream in a thread-safe way.  This fix means 
+                    // Close the stream in a thread-safe way.  This fix means
                     // that we may call Close n times, but that's safe.
                     BinaryReader copyOfStore = _store;
                     _store = null!; // TODO-NULLABLE: dispose should not null this out
@@ -256,7 +256,7 @@ namespace System.Resources
             Debug.Assert(_store != null, "ResourceReader is closed!");
             int hash = FastResourceComparer.HashFunction(name);
 
-            // Binary search over the hashes.  Use the _namePositions array to 
+            // Binary search over the hashes.  Use the _namePositions array to
             // determine where they exist in the underlying stream.
             int lo = 0;
             int hi = _numResources - 1;
@@ -266,7 +266,7 @@ namespace System.Resources
             {
                 index = (lo + hi) >> 1;
                 // Do NOT use subtraction here, since it will wrap for large
-                // negative numbers. 
+                // negative numbers.
                 int currentHash = GetNameHash(index);
                 int c;
                 if (currentHash == hash)
@@ -291,9 +291,9 @@ namespace System.Resources
                 return -1;
             }
 
-            // index is the location in our hash array that corresponds with a 
+            // index is the location in our hash array that corresponds with a
             // value in the namePositions array.
-            // There could be collisions in our hash function.  Check on both sides 
+            // There could be collisions in our hash function.  Check on both sides
             // of index to find the range of hash values that are equal to the
             // target hash value.
             if (lo != index)
@@ -329,7 +329,7 @@ namespace System.Resources
         }
 
         // This compares the String in the .resources file at the current position
-        // with the string you pass in. 
+        // with the string you pass in.
         // Whoever calls this method should make sure that they take a lock
         // so no one else can cause us to seek in the stream.
         private unsafe bool CompareStringEqualsName(string name)
@@ -457,7 +457,7 @@ namespace System.Resources
 
         // This takes a virtual offset into the data section and reads a String
         // from that location.
-        // Anyone who calls LoadObject should make sure they take a lock so 
+        // Anyone who calls LoadObject should make sure they take a lock so
         // no one can cause us to do a seek in here.
         internal string? LoadString(int pos)
         {
@@ -478,7 +478,7 @@ namespace System.Resources
                 ResourceTypeCode typeCode = (ResourceTypeCode)typeIndex;
                 if (typeCode != ResourceTypeCode.String && typeCode != ResourceTypeCode.Null)
                 {
-                    string typeString;
+                    string? typeString;
                     if (typeCode < ResourceTypeCode.StartOfUserTypes)
                         typeString = typeCode.ToString();
                     else
@@ -513,7 +513,7 @@ namespace System.Resources
 
         // This takes a virtual offset into the data section and reads an Object
         // from that location.
-        // Anyone who calls LoadObject should make sure they take a lock so 
+        // Anyone who calls LoadObject should make sure they take a lock so
         // no one can cause us to do a seek in here.
         internal object? LoadObjectV1(int pos)
         {
@@ -522,7 +522,7 @@ namespace System.Resources
 
             try
             {
-                // mega try-catch performs exceptionally bad on x64; factored out body into 
+                // mega try-catch performs exceptionally bad on x64; factored out body into
                 // _LoadObjectV1 and wrap here.
                 return _LoadObjectV1(pos);
             }
@@ -543,8 +543,8 @@ namespace System.Resources
             if (typeIndex == -1)
                 return null;
             Type type = FindType(typeIndex);
-            // Consider putting in logic to see if this type is a 
-            // primitive or a value type first, so we can reach the 
+            // Consider putting in logic to see if this type is a
+            // primitive or a value type first, so we can reach the
             // deserialization code faster for arbitrary objects.
 
             if (type == typeof(string))
@@ -597,7 +597,7 @@ namespace System.Resources
 
             try
             {
-                // mega try-catch performs exceptionally bad on x64; factored out body into 
+                // mega try-catch performs exceptionally bad on x64; factored out body into
                 // _LoadObjectV2 and wrap here.
                 return _LoadObjectV2(pos, out typeCode);
             }
@@ -715,7 +715,7 @@ namespace System.Resources
                             return new PinnedBufferMemoryStream(bytes);
                         }
 
-                        // make sure we don't create an UnmanagedMemoryStream that is longer than the resource stream. 
+                        // make sure we don't create an UnmanagedMemoryStream that is longer than the resource stream.
                         if (len > _ums.Length - _ums.Position)
                         {
                             throw new BadImageFormatException(SR.Format(SR.BadImageFormat_ResourceDataLengthInvalid, len));
@@ -751,7 +751,7 @@ namespace System.Resources
 
             try
             {
-                // mega try-catch performs exceptionally bad on x64; factored out body into 
+                // mega try-catch performs exceptionally bad on x64; factored out body into
                 // _ReadResources and wrap here.
                 _ReadResources();
             }
@@ -832,8 +832,8 @@ namespace System.Resources
             }
 
             // Prepare to read in the array of name hashes
-            //  Note that the name hashes array is aligned to 8 bytes so 
-            //  we can use pointers into it on 64 bit machines. (4 bytes 
+            //  Note that the name hashes array is aligned to 8 bytes so
+            //  we can use pointers into it on 64 bit machines. (4 bytes
             //  may be sufficient, but let's plan for the future)
             //  Skip over alignment stuff.  All public .resources files
             //  should be aligned   No need to verify the byte values.
@@ -922,7 +922,7 @@ namespace System.Resources
             }
         }
 
-        // This allows us to delay-initialize the Type[].  This might be a 
+        // This allows us to delay-initialize the Type[].  This might be a
         // good startup time savings, since we might have to load assemblies
         // and initialize Reflection.
         private Type FindType(int typeIndex)
@@ -940,15 +940,15 @@ namespace System.Resources
                     string typeName = _store.ReadString();
                     _typeTable[typeIndex] = Type.GetType(typeName, true);
                 }
-                // If serialization isn't supported, we convert FileNotFoundException to 
-                // NotSupportedException for consistency with v2. This is a corner-case, but the 
+                // If serialization isn't supported, we convert FileNotFoundException to
+                // NotSupportedException for consistency with v2. This is a corner-case, but the
                 // idea is that we want to give the user a more accurate error message. Even if
                 // the dependency were found, we know it will require serialization since it
                 // can't be one of the types we special case. So if the dependency were found,
-                // it would go down the serialization code path, resulting in NotSupported for 
+                // it would go down the serialization code path, resulting in NotSupported for
                 // SKUs without serialization.
                 //
-                // We don't want to regress the expected case by checking the type info before 
+                // We don't want to regress the expected case by checking the type info before
                 // getting to Type.GetType -- this is costly with v1 resource formats.
                 catch (FileNotFoundException)
                 {

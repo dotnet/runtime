@@ -38,7 +38,7 @@ namespace System
             }
 
             object thisObj = (object)this;
-            object thisResult, thatResult;
+            object? thisResult, thatResult;
 
             // if there are no GC references in this object we can avoid reflection 
             // and do a fast memcmp
@@ -89,7 +89,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern int GetHashCodeOfPtr(IntPtr ptr);
 
-        public override string? ToString()
+        public override string ToString()
         {
             return this.GetType().ToString();
         }

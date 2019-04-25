@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
@@ -13,14 +14,14 @@ namespace System.Reflection
         #region Private Data Members
         private int m_token;
         private EventAttributes m_flags;
-        private string m_name;
+        private string? m_name;
         private void* m_utf8name;
-        private RuntimeTypeCache m_reflectedTypeCache;
-        private RuntimeMethodInfo m_addMethod;
-        private RuntimeMethodInfo m_removeMethod;
-        private RuntimeMethodInfo m_raiseMethod;
-        private MethodInfo[] m_otherMethod;
-        private RuntimeType m_declaringType;
+        private RuntimeTypeCache m_reflectedTypeCache = null!;
+        private RuntimeMethodInfo? m_addMethod = null;
+        private RuntimeMethodInfo? m_removeMethod;
+        private RuntimeMethodInfo? m_raiseMethod;
+        private MethodInfo[]? m_otherMethod;
+        private RuntimeType m_declaringType = null!;
         private BindingFlags m_bindingFlags;
         #endregion
 
@@ -46,7 +47,7 @@ namespace System.Reflection
 
             scope.GetEventProps(tkEvent, out m_utf8name, out m_flags);
 
-            RuntimeMethodInfo dummy;
+            RuntimeMethodInfo? dummy;
             Associates.AssignAssociates(scope, tkEvent, declaredType, reflectedType,
                 out m_addMethod, out m_removeMethod, out m_raiseMethod,
                 out dummy, out dummy, out m_otherMethod, out isPrivate, out m_bindingFlags);
@@ -54,11 +55,11 @@ namespace System.Reflection
         #endregion
 
         #region Internal Members
-        internal override bool CacheEquals(object o)
+        internal override bool CacheEquals(object? o)
         {
-            RuntimeEventInfo m = o as RuntimeEventInfo;
+            RuntimeEventInfo? m = o as RuntimeEventInfo;
 
-            if ((object)m == null)
+            if (m is null)
                 return false;
 
             return m.m_token == m_token &&
@@ -82,7 +83,7 @@ namespace System.Reflection
         #region ICustomAttributeProvider
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, typeof(object) as RuntimeType);
+            return CustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -90,7 +91,7 @@ namespace System.Reflection
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
 
-            RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
+            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -103,7 +104,7 @@ namespace System.Reflection
             if (attributeType == null)
                 throw new ArgumentNullException(nameof(attributeType));
 
-            RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
+            RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
             if (attributeRuntimeType == null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
@@ -129,9 +130,9 @@ namespace System.Reflection
                 return m_name;
             }
         }
-        public override Type DeclaringType { get { return m_declaringType; } }
+        public override Type? DeclaringType { get { return m_declaringType; } }
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeEventInfo>(other);
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get
             {
@@ -157,7 +158,7 @@ namespace System.Reflection
         {
             List<MethodInfo> ret = new List<MethodInfo>();
 
-            if ((object)m_otherMethod == null)
+            if (m_otherMethod is null)
                 return new MethodInfo[0];
 
             for (int i = 0; i < m_otherMethod.Length; i++)
@@ -169,7 +170,7 @@ namespace System.Reflection
             return ret.ToArray();
         }
 
-        public override MethodInfo GetAddMethod(bool nonPublic)
+        public override MethodInfo? GetAddMethod(bool nonPublic)
         {
             if (!Associates.IncludeAccessor(m_addMethod, nonPublic))
                 return null;
@@ -177,7 +178,7 @@ namespace System.Reflection
             return m_addMethod;
         }
 
-        public override MethodInfo GetRemoveMethod(bool nonPublic)
+        public override MethodInfo? GetRemoveMethod(bool nonPublic)
         {
             if (!Associates.IncludeAccessor(m_removeMethod, nonPublic))
                 return null;
@@ -185,7 +186,7 @@ namespace System.Reflection
             return m_removeMethod;
         }
 
-        public override MethodInfo GetRaiseMethod(bool nonPublic)
+        public override MethodInfo? GetRaiseMethod(bool nonPublic)
         {
             if (!Associates.IncludeAccessor(m_raiseMethod, nonPublic))
                 return null;
