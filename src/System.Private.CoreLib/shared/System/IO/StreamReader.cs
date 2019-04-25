@@ -135,17 +135,25 @@ namespace System.IO
         {
         }
 
-        public StreamReader(Stream stream, Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, bool leaveOpen)
+        public StreamReader(Stream stream, Encoding? encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false)
         {
-            if (stream == null || encoding == null)
+            if (stream == null)
             {
-                throw new ArgumentNullException(stream == null ? nameof(stream) : nameof(encoding));
+                throw new ArgumentNullException(nameof(stream));
+            }
+            if (encoding == null)
+            {
+                encoding = Encoding.UTF8;
             }
             if (!stream.CanRead)
             {
                 throw new ArgumentException(SR.Argument_StreamNotReadable);
             }
-            if (bufferSize <= 0)
+            if (bufferSize == -1)
+            {
+                bufferSize = DefaultBufferSize;
+            }
+            else if (bufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }

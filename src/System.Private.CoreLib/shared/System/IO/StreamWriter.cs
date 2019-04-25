@@ -90,18 +90,26 @@ namespace System.IO
         {
         }
 
-        public StreamWriter(Stream stream, Encoding encoding, int bufferSize, bool leaveOpen)
+        public StreamWriter(Stream stream, Encoding? encoding = null, int bufferSize = -1, bool leaveOpen = false)
             : base(null) // Ask for CurrentCulture all the time
         {
-            if (stream == null || encoding == null)
+            if (stream == null)
             {
-                throw new ArgumentNullException(stream == null ? nameof(stream) : nameof(encoding));
+                throw new ArgumentNullException(nameof(stream));
+            }
+            if (encoding == null)
+            {
+                encoding = UTF8NoBOM;
             }
             if (!stream.CanWrite)
             {
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
             }
-            if (bufferSize <= 0)
+            if (bufferSize == -1)
+            {
+                bufferSize = DefaultBufferSize;
+            }
+            else if (bufferSize <= 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedPosNum);
             }
