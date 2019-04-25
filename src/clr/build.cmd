@@ -672,8 +672,8 @@ if %__BuildCoreLib% EQU 1 (
         )
 
         echo Restoring IBCMerge version !__IbcMergeVersion!...
-        echo Running: %__ProjectDir%\dotnet.cmd restore "%INIT_TOOLS_RESTORE_PROJECT%" --no-cache --packages "%__PackagesDir%" --source "%BUILDTOOLS_SOURCE%"
-        call %__ProjectDir%\dotnet.cmd restore src/.nuget/optdata/ibcmerge.csproj --no-cache --packages "%__PackagesDir%" /p:UsingToolIbcOptimization=True
+        echo Running: %__ProjectDir%\dotnet.cmd restore src/.nuget/optdata/ibcmerge.csproj --no-cache --packages "%__PackagesDir%" --source "https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json"
+        call %__ProjectDir%\dotnet.cmd restore src/.nuget/optdata/ibcmerge.csproj --no-cache --packages "%__PackagesDir%" --source "https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json"
 
         set IbcMergePath=%__PackagesDir%\microsoft.dotnet.ibcmerge\!__IbcMergeVersion!\tools\netcoreapp2.0\ibcmerge.dll
         if exist !IbcMergePath! (
