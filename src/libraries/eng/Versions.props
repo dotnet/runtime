@@ -44,7 +44,7 @@
     <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview6-27623-74</MicrosoftNETCoreILAsmPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview6-27623-74</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview6.19223.9</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview6.19225.1</MicrosoftNETCorePlatformsPackageVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19223.1</NETStandardLibraryPackageVersion>
     <!-- dotnet-optimization dependencies -->
