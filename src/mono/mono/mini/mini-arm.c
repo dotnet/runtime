@@ -5027,40 +5027,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			code = realloc_code (cfg, max_len);
 
-			/*
-			 * The stack looks like the following:
-			 * <caller argument area>
-			 * <saved regs etc>
-			 * <rest of frame>
-			 * <callee argument area>
-			 * Need to copy the arguments from the callee argument area to
-			 * the caller argument area, and pop the frame.
-			 */
-			if (call->stack_usage) {
-				int i, prev_sp_offset = 0;
-				
-				/* Compute size of saved registers restored below */
-				if (iphone_abi)
-					prev_sp_offset = 2 * 4;
-				else
-					prev_sp_offset = 1 * 4;
-				for (i = 0; i < 16; ++i) {
-					if (cfg->used_int_regs & (1 << i))
-						prev_sp_offset += 4;
-				}
-
-				code = emit_big_add (code, ARMREG_IP, cfg->frame_reg, cfg->stack_usage + prev_sp_offset);
-
-				/* Copy arguments on the stack to our argument area */
-				// FIXME a fixed size memcpy is desirable here,
-				// at least for larger values of stack_usage.
-				for (i = 0; i < call->stack_usage; i += sizeof (target_mgreg_t)) {
-					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, i);
-					ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, i);
-				}
-
-			}
-
 			// For reg and membase, get destination in IP.
 
 			if (tailcall_reg) {
@@ -5076,6 +5042,70 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else {
 					ARM_LDR_IMM (code, ARMREG_IP, ins->sreg1, ins->inst_offset);
 				}
+			}
+
+			/*
+			 * The stack looks like the following:
+			 * <caller argument area>
+			 * <saved regs etc>
+			 * <rest of frame>
+			 * <callee argument area>
+			 * <optionally saved IP> (about to be)
+			 * Need to copy the arguments from the callee argument area to
+			 * the caller argument area, and pop the frame.
+			 */
+			if (call->stack_usage) {
+				int i, prev_sp_offset = 0;
+
+				// When we get here, the parameters to the tailcall are already formed,
+				// in registers and at the bottom of the grow-down stack.
+				//
+				// Our goal is generally preserve parameters, and trim the stack,
+				// and, before trimming stack, move parameters from the bottom of the
+				// frame to the bottom of the trimmed frame.
+
+				// For the case of large frames, and presently therefore always,
+				// IP is used as an adjusted frame_reg.
+				// Be conservative and save IP around the movement
+				// of parameters from the bottom of frame to top of the frame.
+				const gboolean save_ip = tailcall_membase || tailcall_reg;
+				if (save_ip)
+					ARM_PUSH (code, 1 << ARMREG_IP);
+
+				// When moving stacked parameters from the bottom
+				// of the frame (sp) to the top of the frame (ip),
+				// account, 0 or 4, for the conditional save of IP.
+				const int offset_sp = save_ip ? 4 : 0;
+				const int offset_ip = (save_ip && (cfg->frame_reg == ARMREG_SP)) ? 4 : 0;
+
+				/* Compute size of saved registers restored below */
+				if (iphone_abi)
+					prev_sp_offset = 2 * 4;
+				else
+					prev_sp_offset = 1 * 4;
+				for (i = 0; i < 16; ++i) {
+					if (cfg->used_int_regs & (1 << i))
+						prev_sp_offset += 4;
+				}
+
+				// Point IP at the start of where the parameters will go after trimming stack.
+				// After locals and saved registers.
+				code = emit_big_add (code, ARMREG_IP, cfg->frame_reg, cfg->stack_usage + prev_sp_offset);
+
+				/* Copy arguments on the stack to our argument area */
+				// FIXME a fixed size memcpy is desirable here,
+				// at least for larger values of stack_usage.
+				//
+				// FIXME For most functions, with frames < 4K, we can use frame_reg directly here instead of IP.
+				// See https://github.com/mono/mono/pull/12079
+				// See https://github.com/mono/mono/pull/12079/commits/93e7007a9567b78fa8152ce404b372b26e735516
+				for (i = 0; i < call->stack_usage; i += sizeof (target_mgreg_t)) {
+					ARM_LDR_IMM (code, ARMREG_LR, ARMREG_SP, i + offset_sp);
+					ARM_STR_IMM (code, ARMREG_LR, ARMREG_IP, i + offset_ip);
+				}
+
+				if (save_ip)
+					ARM_POP (code, 1 << ARMREG_IP);
 			}
 
 			/*
