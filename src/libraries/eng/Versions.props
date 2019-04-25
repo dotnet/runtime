@@ -45,6 +45,7 @@
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview6-27624-71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview6.19225.1</MicrosoftNETCorePlatformsPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview6.19225.1</runtimenativeSystemIOPortsPackageVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19224.1</NETStandardLibraryPackageVersion>
     <!-- dotnet-optimization dependencies -->

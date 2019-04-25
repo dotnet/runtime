@@ -30,6 +30,10 @@
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>8c7afe67ee2e9bd21a4412265b66f875cfafaede</Sha>
     </Dependency>
+    <Dependency Name="runtime.native.System.IO.Ports" Version="4.6.0-preview6.19225.1">
+      <Uri>https://github.com/dotnet/corefx</Uri>
+      <Sha>18cd561127e35841db2775dc7a85adad70363e18</Sha>
+    </Dependency>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19224.9">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>e02c88fca482f1141a9bb310c97be20b0ebd0465</Sha>
