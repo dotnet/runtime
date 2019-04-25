@@ -23,6 +23,16 @@ class EventPipeSession;
 class IpcStream;
 enum class EventPipeSessionType;
 
+enum class EventPipeEventLevel
+{
+    LogAlways,
+    Critical,
+    Error,
+    Warning,
+    Informational,
+    Verbose
+};
+
 // EVENT_FILTER_DESCRIPTOR (This type does not exist on non-Windows platforms.)
 //  https://docs.microsoft.com/en-us/windows/desktop/api/evntprov/ns-evntprov-_event_filter_descriptor
 //  The structure supplements the event provider, level, and keyword data that
@@ -234,7 +244,28 @@ public:
 
 typedef UINT64 EventPipeSessionID;
 
-class EventPipeProviderCallbackDataQueue;
+struct EventPipeProviderCallbackData
+{
+    LPCWSTR pFilterData;
+    EventPipeCallback pCallbackFunction;
+    bool enabled;
+    INT64 keywords;
+    EventPipeEventLevel providerLevel;
+    void* pCallbackData;
+};
+
+class EventPipeProviderCallbackDataQueue
+{
+public:
+    EventPipeProviderCallbackDataQueue();
+
+    void Enqueue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData);
+
+    bool TryDequeue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData);
+
+private:
+    SList<SListElem<EventPipeProviderCallbackData>> list;
+};
 
 class EventPipe
 {
@@ -301,6 +332,24 @@ public:
 
     // Get next event.
     static EventPipeEventInstance *GetNextEvent();
+
+    template<class T>
+    static void RunWithCallbackPostponed(T f)
+    {
+        EventPipeProviderCallbackDataQueue eventPipeProviderCallbackDataQueue;
+        EventPipeProviderCallbackData eventPipeProviderCallbackData;
+        {
+            CrstHolder _crst(GetLock());
+            f(&eventPipeProviderCallbackDataQueue);
+        }
+
+        while (eventPipeProviderCallbackDataQueue.TryDequeue(&eventPipeProviderCallbackData))
+        {
+            EventPipe::InvokeCallback(eventPipeProviderCallbackData);
+        }
+    }
+
+    static void InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData);
 
 private:
     // The counterpart to WriteEvent which after the payload is constructed

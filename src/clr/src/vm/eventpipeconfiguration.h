@@ -16,45 +16,6 @@ class EventPipeProvider;
 class EventPipeSession;
 enum class EventPipeSessionType;
 
-enum class EventPipeEventLevel
-{
-    LogAlways,
-    Critical,
-    Error,
-    Warning,
-    Informational,
-    Verbose
-};
-
-struct EventPipeProviderCallbackData
-{
-    LPCWSTR pFilterData;
-    EventPipeCallback pCallbackFunction;
-    bool enabled;
-    INT64 keywords;
-    EventPipeEventLevel providerLevel;
-    void* pCallbackData;
-};
-
-struct EventPipeProviderCallbackDataNode
-{
-    EventPipeProviderCallbackData* value;
-    EventPipeProviderCallbackDataNode* prev;
-};
-
-class EventPipeProviderCallbackDataQueue
-{
-public:
-    EventPipeProviderCallbackDataQueue();
-
-    void Enqueue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData);
-
-    bool TryDequeue(EventPipeProviderCallbackData* pEventPipeProviderCallbackData);
-
-private:
-    SList<SListElem<EventPipeProviderCallbackData>> list;
-};
-
 class EventPipeConfiguration
 {
 public:
