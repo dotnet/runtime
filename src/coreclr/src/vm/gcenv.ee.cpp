@@ -454,7 +454,9 @@ DWORD WINAPI BackgroundThreadStub(void* arg)
 //
 
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-inline BOOL ShouldTrackMovementForProfilerOrEtw()
+
+// Tracks all surviving objects (moved or otherwise).
+inline bool ShouldTrackSurvivorsForProfilerOrEtw()
 {
 #ifdef GC_PROFILING
     if (CORProfilerTrackGC())
@@ -466,6 +468,16 @@ inline BOOL ShouldTrackMovementForProfilerOrEtw()
         return true;
 #endif
 
+    return false;
+}
+
+// Only tracks surviving objects in compacting GCs (moved or otherwise).
+inline bool ShouldTrackSurvivorsInCompactingGCsForProfiler()
+{
+#ifdef GC_PROFILING
+    if (CORProfilerTrackGCMovedObjects())
+        return true;
+#endif
     return false;
 }
 #endif // defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
@@ -788,10 +800,11 @@ void WalkMovedReferences(uint8_t* begin, uint8_t* end,
                                !fBGC);
 }
 
-void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
+void GCToEEInterface::DiagWalkSurvivors(void* gcContext, bool fCompacting)
 {
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-    if (ShouldTrackMovementForProfilerOrEtw())
+    if (ShouldTrackSurvivorsForProfilerOrEtw() ||
+        (fCompacting && ShouldTrackSurvivorsInCompactingGCsForProfiler()))
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
@@ -804,7 +817,7 @@ void GCToEEInterface::DiagWalkSurvivors(void* gcContext)
 void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
 {
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-    if (ShouldTrackMovementForProfilerOrEtw())
+    if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);
@@ -817,7 +830,7 @@ void GCToEEInterface::DiagWalkLOHSurvivors(void* gcContext)
 void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 {
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
-    if (ShouldTrackMovementForProfilerOrEtw())
+    if (ShouldTrackSurvivorsForProfilerOrEtw())
     {
         size_t context = 0;
         ETW::GCLog::BeginMovedReferences(&context);

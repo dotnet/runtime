@@ -210,6 +210,7 @@ public:
     bool ShouldRestartFinalizerWatchDog();
 
     void DiagWalkObject (Object* obj, walk_fn fn, void* context);
+    void DiagWalkObject2 (Object* obj, walk_fn2 fn, void* context);
     void SetFinalizeRunOnShutdown(bool value);
 
 public:	// FIX 
