@@ -609,6 +609,8 @@ public:
         ObjectID references[],
         SIZE_T offsets[]);
 
+    COM_METHOD IsFrozenObject(ObjectID objectId, BOOL *pbFrozen);
+
     // end ICorProfilerInfo10
 
 protected:
