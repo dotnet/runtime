@@ -599,7 +599,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/24135")]
         void AssemblyLoadStringMultiLoadedAssemblyDefault()
         {
             string name = _fixture.defaultAlcAssembly.GetName().Name;
@@ -616,7 +615,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/24135")]
         void AssemblyLoadStringMultiLoadedAssemblyIsolated()
         {
             string name = _fixture.defaultAlcAssembly.GetName().Name;
@@ -953,7 +951,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/24135")]
         void ActivatorCreateInstanceNameMultiLoadedAssemblyDefault()
         {
             string typeName = typeof(ContextualReflectionTestFixture).FullName;
@@ -966,7 +963,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/24135")]
         void ActivatorCreateInstanceNameMultiLoadedAssemblyIsolated()
         {
             string typeName = typeof(ContextualReflectionTestFixture).FullName;
@@ -1019,7 +1015,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/coreclr/issues/24135")]
         void ActivatorCreateInstanceNameGenericMultiLoadedAssemblyIsolated()
         {
             string typeNameAGenericClass = typeof(AGenericClass<>).FullName;
