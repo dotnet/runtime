@@ -19,6 +19,7 @@
 #include "eventtracebase.h"
 #include "sampleprofiler.h"
 #include "win32threadpool.h"
+#include "ceemain.h"
 
 #ifdef FEATURE_PAL
 #include "pal.h"
@@ -33,7 +34,6 @@ EventPipeSession *EventPipe::s_pSession = NULL;
 EventPipeBufferManager *EventPipe::s_pBufferManager = NULL;
 EventPipeFile *EventPipe::s_pFile = NULL;
 EventPipeEventSource *EventPipe::s_pEventSource = NULL;
-LPCWSTR EventPipe::s_pCommandLine = NULL;
 HANDLE EventPipe::s_fileSwitchTimerHandle = NULL;
 ULONGLONG EventPipe::s_lastFlushSwitchTime = 0;
 
@@ -223,12 +223,6 @@ void EventPipe::Shutdown()
     delete s_pEventSource;
     s_pEventSource = NULL;
 
-    // On Windows, this is just a pointer to the return value from
-    // GetCommandLineW(), so don't attempt to free it.
-#ifdef FEATURE_PAL
-    delete[] s_pCommandLine;
-    s_pCommandLine = NULL;
-#endif
 }
 
 EventPipeSessionID EventPipe::Enable(
@@ -380,7 +374,7 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
         SampleProfiler::Disable();
 
         // Log the process information event.
-        s_pEventSource->SendProcessInfo(s_pCommandLine);
+        s_pEventSource->SendProcessInfo(GetManagedCommandLine());
 
         // Log the runtime information event.
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
@@ -888,47 +882,6 @@ StackWalkAction EventPipe::StackWalkCallback(CrawlFrame *pCf, StackContents *pDa
 
     // Continue the stack walk.
     return SWA_CONTINUE;
-}
-
-void EventPipe::SaveCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        PRECONDITION(pwzAssemblyPath != NULL);
-        PRECONDITION(argc <= 0 || argv != NULL);
-    }
-    CONTRACTL_END;
-
-    // Get the command line.
-    LPCWSTR osCommandLine = GetCommandLineW();
-
-#ifndef FEATURE_PAL
-    // On Windows, osCommandLine contains the executable and all arguments.
-    s_pCommandLine = osCommandLine;
-#else
-    // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
-    // osCommandLine contains the full path to the executable.
-    SString commandLine(osCommandLine);
-    commandLine.Append((WCHAR)' ');
-    commandLine.Append(pwzAssemblyPath);
-
-    for (int i = 0; i < argc; i++)
-    {
-        commandLine.Append((WCHAR)' ');
-        commandLine.Append(argv[i]);
-    }
-
-    // Allocate a new string for the command line.
-    SIZE_T commandLineLen = commandLine.GetCount();
-    WCHAR *pCommandLine = new WCHAR[commandLineLen + 1];
-    wcsncpy(pCommandLine, commandLine.GetUnicode(), commandLineLen);
-    pCommandLine[commandLineLen] = '\0';
-
-    s_pCommandLine = pCommandLine;
-#endif
 }
 
 EventPipeEventInstance *EventPipe::GetNextEvent()
