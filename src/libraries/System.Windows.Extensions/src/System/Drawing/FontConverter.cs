@@ -30,6 +30,10 @@ namespace System.Drawing
             {
                 if (destinationType == typeof(string))
                 {
+                    if (culture == null)
+                    {
+                        culture = CultureInfo.CurrentCulture;
+                    }
 
                     ValueStringBuilder sb = new ValueStringBuilder();
                     sb.Append(font.Name);

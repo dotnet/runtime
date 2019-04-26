@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Resources\ResourceWriter.cs" Link="System\Resources\Extensions\ResourceWriter.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\IO\PinnedBufferMemoryStream.cs" Link="System\IO\PinnedBufferMemoryStream.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Resources\FastResourceComparer.cs" Link="System\Resources\FastResourceComparer.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Resources\ResourceReader.cs" Link="System\Resources\Extensions\ResourceReader.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Resources\ResourceTypeCode.cs" Link="System\Resources\ResourceTypeCode.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Resources\RuntimeResourceSet.cs" Link="System\Resources\Extensions\RuntimeResourceSet.cs" />
+    <Compile Include="BinaryReaderExtensions.cs" />
+    <Compile Include="System\Resources\Extensions\DeserializingResourceReader.cs" />
+    <Compile Include="System\Resources\Extensions\PreserializedResourceWriter.cs" />
+    <Compile Include="System\Resources\Extensions\SerializationFormat.cs" />    
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Memory" />
+  </ItemGroup>
+</Project>

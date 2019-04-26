@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <TestDataPackageVersion>1.0.9</TestDataPackageVersion>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MyResourceType.cs" />
+    <Compile Include="TestData.cs" />
+    <Compile Include="BinaryResourceWriterUnitTest.cs" />
+    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\**\*.*" Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <EmbeddedResource Include="TestData.resources" WithCulture="false" Type="Non-Resx" />
+  </ItemGroup>
+  
+  <!-- use the following target to regenerate the test resources file
+       This is done from a test application and checked in so that we don't run
+       product code during the build -->
+  <Target Name="GenerateTestResourcesFile">
+    <PropertyGroup>
+      <_executor>Microsoft.DotNet.RemoteExecutorHost.dll</_executor>
+    </PropertyGroup>
+    <ItemGroup>
+      <ExecuteMethod Class="System.Resources.Extensions.Tests.TestData"
+                     Include="WriteResources" 
+                     Parameters="$(MSBuildProjectDirectory)\TestData.resources" />
+
+      <ExecuteMethod>
+        <ExceptionFile>$(TargetDir)%(Class)%(Identity).exception.txt</ExceptionFile>
+      </ExecuteMethod>
+      <ExecuteMethod>
+        <Command>$(TestHostRootPath)dotnet $(_executor) $(AssemblyName) %(Class) %(Identity) %(ExceptionFile) %(Parameters)</Command>
+      </ExecuteMethod>
+    </ItemGroup>
+    
+    <Exec Command="%(ExecuteMethod.Command)" WorkingDirectory="$(TargetDir)" />
+  </Target>
+</Project>
