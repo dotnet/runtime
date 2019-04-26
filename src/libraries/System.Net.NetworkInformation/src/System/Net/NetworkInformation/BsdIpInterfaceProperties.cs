@@ -54,6 +54,11 @@ namespace System.Net.NetworkInformation
                         Buffer.MemoryCopy(gatewayAddressInfo->AddressBytes, ipArrayPtr, ipBytes.Length, ipBytes.Length);
                     }
                     IPAddress ipAddress = new IPAddress(ipBytes);
+                    if (ipAddress.IsIPv6LinkLocal)
+                    {
+                        // For Link-Local addresses add ScopeId as that is not part of the route entry.
+                        ipAddress.ScopeId = interfaceIndex;
+                    }
                     addressSet.Add(ipAddress);
                 }) == -1)
             {

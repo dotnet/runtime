@@ -9,16 +9,11 @@ namespace System.Net.NetworkInformation
 {
     internal static partial class StringParsingHelpers
     {
+        private static char[] s_delimiter = new char[1] { ' ' };
         // /proc/net/route contains some information about gateway addresses,
         // and separates the information about by each interface.
-        internal static List<GatewayIPAddressInformation> ParseGatewayAddressesFromRouteFile(string filePath, string interfaceName)
+        internal static List<GatewayIPAddressInformation> ParseIPv4GatewayAddressesFromRouteFile(List<GatewayIPAddressInformation> collection, string filePath, string interfaceName)
         {
-            if (!File.Exists(filePath))
-            {
-                throw ExceptionHelper.CreateForInformationUnavailable();
-            }
-
-            List<GatewayIPAddressInformation> collection = new List<GatewayIPAddressInformation>();
             // Columns are as follows (first-line header):
             // Iface  Destination  Gateway  Flags  RefCnt  Use  Metric  Mask  MTU  Window  IRTT
             string[] fileLines = File.ReadAllLines(filePath);
@@ -31,12 +26,59 @@ namespace System.Net.NetworkInformation
                     parser.MoveNextOrFail();
                     string gatewayIPHex = parser.MoveAndExtractNext();
                     long addressValue = Convert.ToInt64(gatewayIPHex, 16);
-                    IPAddress address = new IPAddress(addressValue);
-                    collection.Add(new SimpleGatewayIPAddressInformation(address));
+                    if (addressValue != 0)
+                    {
+                        // Skip device routes without valid NextHop IP address.
+                        IPAddress address = new IPAddress(addressValue);
+                        collection.Add(new SimpleGatewayIPAddressInformation(address));
+                    }
                 }
             }
 
             return collection;
+        }
+
+        internal static void ParseIPv6GatewayAddressesFromRouteFile(List<GatewayIPAddressInformation> collection, string filePath, string interfaceName, long scopeId)
+        {
+            // Columns are as follows (first-line header):
+            // 00000000000000000000000000000000 00 00000000000000000000000000000000 00 00000000000000000000000000000000 ffffffff 00000001 00000001 00200200 lo
+            // +------------------------------+ ++ +------------------------------+ ++ +------------------------------+ +------+ +------+ +------+ +------+ ++
+            // |                                |  |                                |  |                                |        |        |        |        |
+            // 0                                1  2                                3  4                                5        6        7        8        9
+            //
+            // 0. IPv6 destination network displayed in 32 hexadecimal chars without colons as separator
+            // 1. IPv6 destination prefix length in hexadecimal
+            // 2. IPv6 source network displayed in 32 hexadecimal chars without colons as separator
+            // 3. IPv6 source prefix length in hexadecimal
+            // 4. IPv6 next hop displayed in 32 hexadecimal chars without colons as separator
+            // 5. Metric in hexadecimal
+            // 6. Reference counter
+            // 7. Use counter
+            // 8. Flags
+            // 9. Interface name
+            string[] fileLines = File.ReadAllLines(filePath);
+            foreach (string line in fileLines)
+            {
+                if (line.StartsWith("00000000000000000000000000000000"))
+                {
+                   string[] token = line.Split(s_delimiter, StringSplitOptions.RemoveEmptyEntries);
+                   if (token.Length > 9 && token[4] != "00000000000000000000000000000000")
+                   {
+                        if (!string.IsNullOrEmpty(interfaceName) && interfaceName != token[9])
+                        {
+                            continue;
+                        }
+
+                        IPAddress address = ParseIPv6HexString(token[4], isNetworkOrder: true);
+                        if (address.IsIPv6LinkLocal)
+                        {
+                            // For Link-Local addresses add ScopeId as that is not part of the route entry.
+                            address.ScopeId = scopeId;
+                        }
+                        collection.Add(new SimpleGatewayIPAddressInformation(address));
+                    }
+                }
+            }
         }
 
         internal static List<IPAddress> ParseDhcpServerAddressesFromLeasesFile(string filePath, string name)

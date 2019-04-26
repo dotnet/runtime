@@ -18,8 +18,9 @@ namespace System.Net.NetworkInformation
         private readonly long? _speed;
         private readonly LinuxIPInterfaceProperties _ipProperties;
 
-        internal LinuxNetworkInterface(string name) : base(name)
+        internal LinuxNetworkInterface(string name, int index) : base(name)
         {
+            _index = index;
             _operationalStatus = GetOperationalStatus(name);
             _supportsMulticast = GetSupportsMulticast(name);
             _speed = GetSpeed(name);
@@ -31,17 +32,18 @@ namespace System.Net.NetworkInformation
             Dictionary<string, LinuxNetworkInterface> interfacesByName = new Dictionary<string, LinuxNetworkInterface>();
             List<Exception> exceptions = null;
             const int MaxTries = 3;
+
             for (int attempt = 0; attempt < MaxTries; attempt++)
             {
                 // Because these callbacks are executed in a reverse-PInvoke, we do not want any exceptions
-                // to propogate out, because they will not be catchable. Instead, we track all the exceptions
+                // to propagate out, because they will not be catchable. Instead, we track all the exceptions
                 // that are thrown in these callbacks, and aggregate them at the end.
                 int result = Interop.Sys.EnumerateInterfaceAddresses(
                     (name, ipAddr, maskAddr) =>
                     {
                         try
                         {
-                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
+                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name, ipAddr->InterfaceIndex);
                             lni.ProcessIpv4Address(ipAddr, maskAddr);
                         }
                         catch (Exception e)
@@ -57,7 +59,7 @@ namespace System.Net.NetworkInformation
                     {
                         try
                         {
-                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
+                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name, ipAddr->InterfaceIndex);
                             lni.ProcessIpv6Address(ipAddr, *scopeId);
                         }
                         catch (Exception e)
@@ -73,7 +75,7 @@ namespace System.Net.NetworkInformation
                     {
                         try
                         {
-                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name);
+                            LinuxNetworkInterface lni = GetOrCreate(interfacesByName, name, llAddr->InterfaceIndex);
                             lni.ProcessLinkLayerAddress(llAddr);
                         }
                         catch (Exception e)
@@ -108,13 +110,14 @@ namespace System.Net.NetworkInformation
         /// </summary>
         /// <param name="interfaces">The Dictionary of existing interfaces.</param>
         /// <param name="name">The name of the interface.</param>
+        /// <param name="index">Interafce index of the interface.</param>
         /// <returns>The cached or new LinuxNetworkInterface with the given name.</returns>
-        private static LinuxNetworkInterface GetOrCreate(Dictionary<string, LinuxNetworkInterface> interfaces, string name)
+        private static LinuxNetworkInterface GetOrCreate(Dictionary<string, LinuxNetworkInterface> interfaces, string name, int index)
         {
             LinuxNetworkInterface lni;
             if (!interfaces.TryGetValue(name, out lni))
             {
-                lni = new LinuxNetworkInterface(name);
+                lni = new LinuxNetworkInterface(name, index);
                 interfaces.Add(name, lni);
             }
 
