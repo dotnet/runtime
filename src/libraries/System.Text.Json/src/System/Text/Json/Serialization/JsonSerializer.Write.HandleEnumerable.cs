@@ -26,25 +26,18 @@ namespace System.Text.Json.Serialization
 
             if (state.Current.Enumerator == null)
             {
-                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue, options);
+                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
 
                 if (enumerable == null)
                 {
                     // Write a null object or enumerable.
-                    writer.WriteNull(jsonPropertyInfo.Name);
+                    state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, writeNull: true);
                     return true;
                 }
 
                 state.Current.Enumerator = enumerable.GetEnumerator();
 
-                if (jsonPropertyInfo.Name == null)
-                {
-                    writer.WriteStartArray();
-                }
-                else
-                {
-                    writer.WriteStartArray(jsonPropertyInfo.Name);
-                }
+                state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer);
             }
 
             if (state.Current.Enumerator.MoveNext())
@@ -78,7 +71,7 @@ namespace System.Text.Json.Serialization
             // We are done enumerating.
             writer.WriteEndArray();
 
-            if (state.Current.PopStackOnEndArray)
+            if (state.Current.PopStackOnEnd)
             {
                 state.Pop();
             }

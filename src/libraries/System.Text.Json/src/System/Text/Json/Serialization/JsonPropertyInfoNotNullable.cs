@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
@@ -79,7 +78,7 @@ namespace System.Text.Json.Serialization
         public override void ApplyNullValue(JsonSerializerOptions options, ref ReadStack state)
         {
             Debug.Assert(state.Current.JsonPropertyInfo != null);
-            state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, null, options);
+            state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value : null);
         }
 
         // todo: have the caller check if current.Enumerator != null and call WriteEnumerable of the underlying property directly to avoid an extra virtual call.

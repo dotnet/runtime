@@ -18,8 +18,6 @@ namespace System.Text.Json.Serialization
             Utf8JsonWriter writer,
             ref WriteStack state)
         {
-            Debug.Assert(state.Current.JsonPropertyInfo.ClassType == ClassType.Dictionary);
-
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
             if (!jsonPropertyInfo.ShouldSerialize)
             {
@@ -29,25 +27,17 @@ namespace System.Text.Json.Serialization
 
             if (state.Current.Enumerator == null)
             {
-                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue, options);
+                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
 
                 if (enumerable == null)
                 {
                     // Write a null object or enumerable.
-                    writer.WriteNull(jsonPropertyInfo.Name);
+                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, writeNull : true);
                     return true;
                 }
 
                 state.Current.Enumerator = enumerable.GetEnumerator();
-
-                if (jsonPropertyInfo.Name == null)
-                {
-                    writer.WriteStartObject();
-                }
-                else
-                {
-                    writer.WriteStartObject(jsonPropertyInfo.Name);
-                }
+                state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer);
             }
 
             if (state.Current.Enumerator.MoveNext())
@@ -55,8 +45,7 @@ namespace System.Text.Json.Serialization
                 // Check for polymorphism.
                 if (elementClassInfo.ClassType == ClassType.Unknown)
                 {
-                    //todo:test
-                    object currentValue = ((IDictionaryEnumerator)(state.Current.Enumerator)).Entry;
+                    object currentValue = ((IDictionaryEnumerator)state.Current.Enumerator).Entry;
                     GetRuntimeClassInfo(currentValue, ref elementClassInfo, options);
                 }
 
@@ -71,8 +60,10 @@ namespace System.Text.Json.Serialization
                 else
                 {
                     // An object or another enumerator requires a new stack frame.
-                    object nextValue = state.Current.Enumerator.Current;
-                    state.Push(elementClassInfo, nextValue);
+                    var enumerator = (IDictionaryEnumerator)state.Current.Enumerator;
+                    object value = enumerator.Value;
+                    state.Push(elementClassInfo, value);
+                    state.Current.KeyName = (string)enumerator.Key;
                 }
 
                 return false;
@@ -81,7 +72,14 @@ namespace System.Text.Json.Serialization
             // We are done enumerating.
             writer.WriteEndObject();
 
-            state.Current.EndDictionary();
+            if (state.Current.PopStackOnEnd)
+            {
+                state.Pop();
+            }
+            else
+            {
+                state.Current.EndDictionary();
+            }
 
             return true;
         }
@@ -119,28 +117,35 @@ namespace System.Text.Json.Serialization
             }
             else
             {
+                byte[] utf8Key = Encoding.UTF8.GetBytes(key);
 #if true
                 // temporary behavior until the writer can accept escaped string.
-                byte[] utf8Key = Encoding.UTF8.GetBytes(key);
                 converter.Write(utf8Key, value, writer);
 #else
-                byte[] pooledKey = null;
-                byte[] utf8Key = Encoding.UTF8.GetBytes(key);
-                int length = JsonWriterHelper.GetMaxEscapedLength(utf8Key.Length, 0);
-
-                Span<byte> escapedKey = length <= JsonConstants.StackallocThreshold ?
-                    stackalloc byte[length] :
-                    (pooledKey = ArrayPool<byte>.Shared.Rent(length));
-
-                JsonWriterHelper.EscapeString(utf8Key, escapedKey, 0, out int written);
-
-                converter.Write(escapedKey.Slice(0, written), value, writer);
-
-                if (pooledKey != null)
+                int valueIdx = JsonWriterHelper.NeedsEscaping(utf8Key);
+                if (valueIdx == -1)
                 {
-                    // We clear the array because it is "user data" (although a property name).
-                    new Span<byte>(pooledKey, 0, written).Clear();
-                    ArrayPool<byte>.Shared.Return(pooledKey);
+                    converter.Write(utf8Key, value, writer);
+                }
+                else
+                {
+                    byte[] pooledKey = null;
+                    int length = JsonWriterHelper.GetMaxEscapedLength(utf8Key.Length, valueIdx);
+
+                    Span<byte> escapedKey = length <= JsonConstants.StackallocThreshold ?
+                        stackalloc byte[length] :
+                        (pooledKey = ArrayPool<byte>.Shared.Rent(length));
+
+                    JsonWriterHelper.EscapeString(utf8Key, escapedKey, valueIdx, out int written);
+
+                    converter.Write(escapedKey.Slice(0, written), value, writer);
+
+                    if (pooledKey != null)
+                    {
+                        // We clear the array because it is "user data" (although a property name).
+                        new Span<byte>(pooledKey, 0, written).Clear();
+                        ArrayPool<byte>.Shared.Return(pooledKey);
+                    }
                 }
 #endif
             }
