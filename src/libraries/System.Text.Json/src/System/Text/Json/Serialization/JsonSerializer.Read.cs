@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization
                         Debug.Assert(state.Current.ReturnValue != default);
                         Debug.Assert(state.Current.JsonClassInfo != default);
 
-                        if (state.Current.IsDictionary())
+                        if (state.Current.IsDictionary)
                         {
                             string keyName = reader.GetString();
                             if (options.DictionaryKeyPolicy != null)
@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization
                 }
                 else if (tokenType == JsonTokenType.StartObject)
                 {
-                    HandleStartObject(options, ref state);
+                    HandleStartObject(options, ref reader, ref state);
                 }
                 else if (tokenType == JsonTokenType.EndObject)
                 {

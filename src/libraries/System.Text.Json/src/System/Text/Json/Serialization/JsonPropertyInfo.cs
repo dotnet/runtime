@@ -251,7 +251,7 @@ namespace System.Text.Json.Serialization
             other._escapedName = _escapedName;
         }
 
-        public abstract object GetValueAsObject(object obj, JsonSerializerOptions options);
+        public abstract object GetValueAsObject(object obj);
 
         public TAttribute GetAttribute<TAttribute>() where TAttribute : Attribute
         {
@@ -266,7 +266,7 @@ namespace System.Text.Json.Serialization
 
         public abstract void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
         public abstract void ReadEnumerable(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
-        public abstract void SetValueAsObject(object obj, object value, JsonSerializerOptions options);
+        public abstract void SetValueAsObject(object obj, object value);
 
         public abstract void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer);
 

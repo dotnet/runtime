@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Tests
             json = JsonSerializer.ToString(null, typeof(object));
             Assert.Equal(@"null", json);
 
-            Decimal pi = 3.1415926535897932384626433833m;
+            decimal pi = 3.1415926535897932384626433833m;
             json = JsonSerializer.ToString<object>(pi);
             Assert.Equal(@"3.1415926535897932384626433833", json);
             json = JsonSerializer.ToString(pi, typeof(object));
@@ -59,11 +59,16 @@ namespace System.Text.Json.Serialization.Tests
         {
             const string ExpectedJson = @"[1,true,{""City"":""MyCity""},null,""foo""]";
 
-            Address address = new Address();
+            var address = new Address();
             address.Initialize();
 
-            object[] array = new object[] { 1, true, address, null, "foo" };
+            var array = new object[] { 1, true, address, null, "foo" };
             string json = JsonSerializer.ToString(array);
+            Assert.Equal(ExpectedJson, json);
+
+            var dictionary = new Dictionary<string, string> { { "City", "MyCity" } };
+            var arrayWithDictionary = new object[] { 1, true, dictionary, null, "foo" };
+            json = JsonSerializer.ToString(arrayWithDictionary);
             Assert.Equal(ExpectedJson, json);
 
             json = JsonSerializer.ToString<object>(array);

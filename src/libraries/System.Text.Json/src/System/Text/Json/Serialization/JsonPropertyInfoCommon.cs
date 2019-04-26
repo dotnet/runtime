@@ -53,11 +53,7 @@ namespace System.Text.Json.Serialization
                 _isPropertyPolicy = true;
                 HasGetter = true;
                 HasSetter = true;
-
-                if (ClassType == ClassType.Dictionary)
-                {
-                    ValueConverter = DefaultConverters<TRuntimeProperty>.s_converter;
-                }
+                ValueConverter = DefaultConverters<TRuntimeProperty>.s_converter;
             }
 
             GetPolicies(options);
@@ -69,7 +65,7 @@ namespace System.Text.Json.Serialization
             base.GetPolicies(options);
         }
 
-        public override object GetValueAsObject(object obj, JsonSerializerOptions options)
+        public override object GetValueAsObject(object obj)
         {
             if (_isPropertyPolicy)
             {
@@ -80,7 +76,7 @@ namespace System.Text.Json.Serialization
             return Get((TClass)obj);
         }
 
-        public override void SetValueAsObject(object obj, object value, JsonSerializerOptions options)
+        public override void SetValueAsObject(object obj, object value)
         {
             Debug.Assert(Set != null);
             TDeclaredProperty typedValue = (TDeclaredProperty)value;
