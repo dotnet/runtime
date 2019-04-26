@@ -469,11 +469,6 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
         GCPROTECT_END();
 
-        // When running under FEATURE_PAL, the SetCommandLineArgs call above will
-        // call SaveManagedCommandLine which will allocate memory using new WCHAR[]
-        // We can release this memory now.
-        //
-        ReleaseManagedCommandLine();
     }
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
