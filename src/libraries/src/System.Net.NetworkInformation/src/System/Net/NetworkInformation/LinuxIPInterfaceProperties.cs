@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 
 namespace System.Net.NetworkInformation
 {
@@ -50,9 +51,19 @@ namespace System.Net.NetworkInformation
         // and separates the information about by each interface.
         public GatewayIPAddressInformationCollection GetGatewayAddresses()
         {
-            List<GatewayIPAddressInformation> innerCollection
-                = StringParsingHelpers.ParseGatewayAddressesFromRouteFile(NetworkFiles.Ipv4RouteFile, _linuxNetworkInterface.Name);
-            return new GatewayIPAddressInformationCollection(innerCollection);
+            List<GatewayIPAddressInformation> collection = new List<GatewayIPAddressInformation>();
+
+            if (File.Exists(NetworkFiles.Ipv4RouteFile))
+            {
+                StringParsingHelpers.ParseIPv4GatewayAddressesFromRouteFile(collection, NetworkFiles.Ipv4RouteFile, _linuxNetworkInterface.Name);
+            }
+
+            if (File.Exists(NetworkFiles.Ipv6RouteFile))
+            {
+                StringParsingHelpers.ParseIPv6GatewayAddressesFromRouteFile(collection, NetworkFiles.Ipv6RouteFile, _linuxNetworkInterface.Name, _linuxNetworkInterface.Index);
+            }
+
+            return new GatewayIPAddressInformationCollection(collection);
         }
 
         private IPAddressCollection GetDhcpServerAddresses()

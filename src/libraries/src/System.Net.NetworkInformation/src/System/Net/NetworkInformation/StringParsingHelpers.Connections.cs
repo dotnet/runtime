@@ -287,24 +287,36 @@ namespace System.Net.NetworkInformation
         }
 
         // Parses a 128-bit IPv6 Address stored as 4 concatenated 32-bit hex numbers.
+        // If isSequence is true it assumes that hexAddress is in sequence of IPv6 bytes.
         // First number corresponds to lower address part
         // E.g. IP-address:                           fe80::215:5dff:fe00:402
         //      It's bytes in direct order:           FE-80-00-00  00-00-00-00  02-15-5D-FF  FE-00-04-02
         //      It's represenation in /proc/net/tcp6: 00-00-80-FE  00-00-00-00  FF-5D-15-02  02-04-00-FE
         //                                             (dashes and spaces added above for readability)
         // Strings passed to this must be 32 characters in length.
-        private static IPAddress ParseIPv6HexString(string hexAddress)
+        private static IPAddress ParseIPv6HexString(string hexAddress, bool isNetworkOrder = false)
         {
             Debug.Assert(hexAddress.Length == 32);
             byte[] addressBytes = new byte[16];
-            for (int i = 0; i < 4; i++)
+            if (isNetworkOrder)
             {
-                for (int j = 0; j < 4; j++)
+                for (int i = 0; i < 16; i++)
                 {
-                    int srcIndex = i * 4 + 3 - j;
-                    int targetIndex = i * 4 + j;
-                    addressBytes[targetIndex] = (byte)(HexToByte(hexAddress[srcIndex * 2]) * 16
-                                                     + HexToByte(hexAddress[srcIndex * 2 + 1]));
+                    addressBytes[i] = (byte)(HexToByte(hexAddress[(i * 2)]) * 16
+                                           + HexToByte(hexAddress[(i * 2) + 1]));
+                }
+            }
+            else
+            {
+                for (int i = 0; i < 4; i++)
+                {
+                    for (int j = 0; j < 4; j++)
+                    {
+                        int srcIndex = i * 4 + 3 - j;
+                        int targetIndex = i * 4 + j;
+                        addressBytes[targetIndex] = (byte)(HexToByte(hexAddress[srcIndex * 2]) * 16
+                                                         + HexToByte(hexAddress[srcIndex * 2 + 1]));
+                    }
                 }
             }
 

@@ -14,8 +14,9 @@ namespace System.Net.NetworkInformation
         private readonly bool _supportsMulticast;
         private readonly long _speed;
 
-        protected unsafe BsdNetworkInterface(string name) : base(name)
+        protected unsafe BsdNetworkInterface(string name, int index) : base(name)
         {
+            _index = index;
             Interop.Sys.NativeIPInterfaceStatistics nativeStats;
             if (Interop.Sys.GetNativeIPInterfaceStatistics(name, out nativeStats) == -1)
             {
@@ -51,7 +52,7 @@ namespace System.Net.NetworkInformation
                     {
                         try
                         {
-                            BsdNetworkInterface oni = GetOrCreate(interfacesByName, name);
+                            BsdNetworkInterface oni = GetOrCreate(interfacesByName, name, ipAddr->InterfaceIndex);
                             oni.ProcessIpv4Address(ipAddr, maskAddr);
                         }
                         catch (Exception e)
@@ -67,7 +68,7 @@ namespace System.Net.NetworkInformation
                     {
                         try
                         {
-                            BsdNetworkInterface oni = GetOrCreate(interfacesByName, name);
+                            BsdNetworkInterface oni = GetOrCreate(interfacesByName, name, ipAddr->InterfaceIndex);
                             oni.ProcessIpv6Address(ipAddr, *scopeId);
                         }
                         catch (Exception e)
@@ -83,7 +84,7 @@ namespace System.Net.NetworkInformation
                     {
                         try
                         {
-                            BsdNetworkInterface oni = GetOrCreate(interfacesByName, name);
+                            BsdNetworkInterface oni = GetOrCreate(interfacesByName, name, llAddr->InterfaceIndex);
                             oni.ProcessLinkLayerAddress(llAddr);
                         }
                         catch (Exception e)
@@ -118,13 +119,14 @@ namespace System.Net.NetworkInformation
         /// </summary>
         /// <param name="interfaces">The Dictionary of existing interfaces.</param>
         /// <param name="name">The name of the interface.</param>
+        /// <param name="index">Interface index of the interface.</param>
         /// <returns>The cached or new BsdNetworkInterface with the given name.</returns>
-        private static BsdNetworkInterface GetOrCreate(Dictionary<string, BsdNetworkInterface> interfaces, string name)
+        private static BsdNetworkInterface GetOrCreate(Dictionary<string, BsdNetworkInterface> interfaces, string name, int index)
         {
             BsdNetworkInterface oni;
             if (!interfaces.TryGetValue(name, out oni))
             {
-                oni = new BsdNetworkInterface(name);
+                oni = new BsdNetworkInterface(name, index);
                 interfaces.Add(name, oni);
             }
 
