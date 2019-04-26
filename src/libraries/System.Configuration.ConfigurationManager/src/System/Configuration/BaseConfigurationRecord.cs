@@ -3218,11 +3218,15 @@ namespace System.Configuration
             if (trimmedConfigSource.Length != configSource.Length)
                 throw new ConfigurationErrorsException(SR.Config_source_invalid_format, errorInfo);
 
-            if (configSource.IndexOf('/') != -1) // string.Contains(char) is .NetCore2.1+ specific
-                throw new ConfigurationErrorsException(SR.Config_source_invalid_chars, errorInfo);
-
             if (string.IsNullOrEmpty(configSource) || Path.IsPathRooted(configSource))
                 throw new ConfigurationErrorsException(SR.Config_source_invalid_format, errorInfo);
+
+            if (configSource.IndexOf('\\') != -1 || configSource.IndexOf('/') != -1) // string.Contains(char) is .NetCore2.1+ specific
+            {
+                string newConfigSource = configSource.Replace('\\', '/');
+                if (!ConfigPathUtility.IsValid(newConfigSource))
+                    throw new ConfigurationErrorsException(SR.Config_source_invalid_format, errorInfo);
+            }
 
             return configSource;
         }
