@@ -161,7 +161,8 @@ int32_t SystemNative_EnumerateInterfaceAddresses(IPv4AddressFound onIpv4Found,
 #if HAVE_RT_MSGHDR
 int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceIndex, GatewayAddressFound onGatewayFound)
 {
-    int routeDumpName[] = {CTL_NET, AF_ROUTE, 0, AF_INET, NET_RT_DUMP, 0};
+    static struct in6_addr anyaddr = IN6ADDR_ANY_INIT;
+    int routeDumpName[] = {CTL_NET, AF_ROUTE, 0, 0, NET_RT_DUMP, 0};
 
     size_t byteCount;
 
@@ -195,15 +196,50 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
         int isGateway = flags & RTF_GATEWAY;
         int gatewayPresent = hdr->rtm_addrs & RTA_GATEWAY;
 
-        if (isGateway && gatewayPresent)
+        if (isGateway && gatewayPresent && ((int)interfaceIndex == -1 || interfaceIndex == hdr->rtm_index))
         {
             IpAddressInfo iai;
+            struct sockaddr_storage* sock = (struct sockaddr_storage*)(hdr + 1);
             memset(&iai, 0, sizeof(IpAddressInfo));
-            iai.InterfaceIndex = interfaceIndex;
-            iai.NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS;
-            struct sockaddr_in* sain = (struct sockaddr_in*)(hdr + 1);
-            sain = sain + 1; // Skip over the first sockaddr, the destination address. The second is the gateway.
-            memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
+            iai.InterfaceIndex = hdr->rtm_index;
+
+            if (sock->ss_family == AF_INET)
+            {
+                iai.NumAddressBytes = NUM_BYTES_IN_IPV4_ADDRESS;
+                struct sockaddr_in* sain = (struct sockaddr_in*)sock;
+                if (sain->sin_addr.s_addr != 0)
+                {
+                    // filter out normal routes.
+                    continue;
+                }
+
+                sain = sain + 1; // Skip over the first sockaddr, the destination address. The second is the gateway.
+                memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), &sain->sin_addr.s_addr, sizeof(sain->sin_addr.s_addr));
+            }
+            else if (sock->ss_family == AF_INET6)
+            {
+                struct sockaddr_in6* sain6 = (struct sockaddr_in6*)sock;
+                iai.NumAddressBytes = NUM_BYTES_IN_IPV6_ADDRESS;
+                if (memcmp(&anyaddr, &sain6->sin6_addr, sizeof(sain6->sin6_addr)) != 0)
+                {
+                    // filter out normal routes.
+                    continue;
+                }
+
+                sain6 = sain6 + 1; // Skip over the first sockaddr, the destination address. The second is the gateway.
+                if ((sain6->sin6_addr.__u6_addr.__u6_addr16[0] & htons(0xfe80)) == htons(0xfe80))
+                {
+                    // clear embedded if index.
+                    sain6->sin6_addr.__u6_addr.__u6_addr16[1] = 0;
+                }
+
+                memcpy_s(iai.AddressBytes, sizeof_member(IpAddressInfo, AddressBytes), &sain6->sin6_addr, sizeof(sain6->sin6_addr));
+            }
+            else
+            {
+                // Ignore other address families.
+                continue;
+            }
             onGatewayFound(&iai);
         }
     }
