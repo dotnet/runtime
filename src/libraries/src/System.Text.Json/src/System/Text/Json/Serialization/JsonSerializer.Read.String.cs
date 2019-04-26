@@ -73,9 +73,9 @@ namespace System.Text.Json.Serialization
             var reader = new Utf8JsonReader(jsonBytes, isFinalBlock: true, readerState);
             object result = ReadCore(returnType, options, ref reader);
 
-            readerState = reader.CurrentState;
-            if (readerState.BytesConsumed != jsonBytes.Length)
+            if (reader.BytesConsumed != jsonBytes.Length)
             {
+                readerState = reader.CurrentState;
                 throw new JsonReaderException(SR.Format(SR.DeserializeDataRemaining,
                     jsonBytes.Length, jsonBytes.Length - readerState.BytesConsumed), readerState);
             }
