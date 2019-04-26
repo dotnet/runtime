@@ -3340,6 +3340,40 @@ namespace System.Text.Json.Tests
             WriteTooLargeHelper(options, key.Slice(0, 10_000_000 / 3), value.Slice(0, 10_000_000 / 3), noThrow: true);
         }
 
+        [Theory]
+        [MemberData(nameof(JsonDateTimeTestData.DateTimeFractionTrimBaseTests), MemberType = typeof(JsonDateTimeTestData))]
+        [MemberData(nameof(JsonDateTimeTestData.DateTimeFractionTrimUtcOffsetTests), MemberType = typeof(JsonDateTimeTestData))]
+        public void WriteDateTime_TrimsFractionCorrectly(string testStr, string expectedStr)
+        {
+            var output = new ArrayBufferWriter<byte>(1024);
+            using var jsonUtf8 = new Utf8JsonWriter(output);
+
+            jsonUtf8.WriteStringValue(DateTime.ParseExact(testStr, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+            jsonUtf8.Flush();
+
+            AssertContents($"\"{expectedStr}\"", output);
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonDateTimeTestData.DateTimeOffsetFractionTrimTests), MemberType = typeof(JsonDateTimeTestData))]
+        public void WriteDateTimeOffset_TrimsFractionCorrectly(string testStr, string expectedStr)
+        {
+            var output = new ArrayBufferWriter<byte>(1024);
+            using var jsonUtf8 = new Utf8JsonWriter(output);
+
+            jsonUtf8.WriteStringValue(DateTimeOffset.ParseExact(testStr, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind));
+            jsonUtf8.Flush();
+
+            AssertContents($"\"{expectedStr}\"", output);
+        }
+
+        [Fact]
+        public void WriteDateTime_TrimsFractionCorrectly_SerializerRoundtrip()
+        {
+            DateTime utcNow = DateTime.UtcNow;
+            Assert.Equal(utcNow, Serialization.JsonSerializer.Parse(Serialization.JsonSerializer.ToBytes(utcNow), typeof(DateTime)));
+        }
+
         private static void WriteTooLargeHelper(JsonWriterOptions options, ReadOnlySpan<byte> key, ReadOnlySpan<byte> value, bool noThrow = false)
         {
             // Resizing is too slow, even for outerloop tests, so initialize to a large output size up front.
