@@ -1463,6 +1463,12 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     DiagnosticServer::Shutdown();
 #endif // FEATURE_PERFTRACING
 
+    // When running under FEATURE_PAL, the SetCommandLineArgs call above will
+    // call SaveManagedCommandLine which will allocate memory using new WCHAR[]
+    // We can release this memory now.
+    //
+    ReleaseManagedCommandLine();
+
 #if defined(FEATURE_COMINTEROP)
     // Get the current thread.
     Thread * pThisThread = GetThread();
