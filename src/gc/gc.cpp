@@ -5195,23 +5195,31 @@ public:
     }
 
     static void init_numa_node_to_heap_map(int nheaps)
-    {   // called right after GCHeap::Init() for each heap is finished
-        // when numa is not enabled, heap_no_to_numa_node[] are all filled
-        // with 0s during initialization, and will be treated as one node
-        numa_node_to_heap_map[0] = 0;
-        int node_index = 1;
+    {   // Called right after GCHeap::Init() for each heap
+        // For each NUMA node used by the heaps, the
+        // numa_node_to_heap_map[numa_node] is set to the first heap number on that node and
+        // numa_node_to_heap_map[numa_node + 1] is set to the first heap number not on that node 
+
+        // Set the start of the heap number range for the first NUMA node
+        numa_node_to_heap_map[heap_no_to_numa_node[0]] = 0;
 
         for (int i=1; i < nheaps; i++)
         {
             if (heap_no_to_numa_node[i] != heap_no_to_numa_node[i-1])
-                numa_node_to_heap_map[node_index++] = (uint16_t)i;
+            {
+                // Set the end of the heap number range for the previous NUMA node
+                numa_node_to_heap_map[heap_no_to_numa_node[i-1] + 1] =
+                // Set the start of the heap number range for the current NUMA node
+                numa_node_to_heap_map[heap_no_to_numa_node[i]] = (uint16_t)i;
+            }
         }
-        numa_node_to_heap_map[node_index] = (uint16_t)nheaps; //mark the end with nheaps
+
+        // Set the end of the heap range for the last NUMA node
+        numa_node_to_heap_map[heap_no_to_numa_node[nheaps-1] + 1] = (uint16_t)nheaps; //mark the end with nheaps
     }
 
     static void get_heap_range_for_heap(int hn, int* start, int* end)
-    {   // 1-tier/no numa case: heap_no_to_numa_node[] all zeros, 
-        // and treated as in one node. thus: start=0, end=n_heaps
+    {
         uint16_t numa_node = heap_no_to_numa_node[hn];
         *start = (int)numa_node_to_heap_map[numa_node];
         *end   = (int)(numa_node_to_heap_map[numa_node+1]);
