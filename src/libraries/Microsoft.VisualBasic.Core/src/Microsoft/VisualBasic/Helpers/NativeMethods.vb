@@ -6,6 +6,7 @@ Option Explicit On
 
 Imports System
 Imports System.Runtime.InteropServices
+Imports System.Text
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -15,6 +16,23 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Declare Function _
             CloseHandle _
                 Lib "kernel32" (ByVal hObject As IntPtr) As Integer
+
+        <DllImport(
+             "kernel32",
+             CharSet:=CharSet.Auto,
+             PreserveSig:=True,
+             BestFitMapping:=False,
+             ThrowOnUnmappableChar:=True)>
+        Friend Shared Function GetVolumeInformation(
+             <MarshalAs(UnmanagedType.LPTStr)> ByVal lpRootPathName As String,
+             ByVal lpVolumeNameBuffer As StringBuilder,
+             ByVal nVolumeNameSize As Integer,
+             ByRef lpVolumeSerialNumber As Integer,
+             ByRef lpMaximumComponentLength As Integer,
+             ByRef lpFileSystemFlags As Integer,
+             ByVal lpFileSystemNameBuffer As IntPtr,
+             ByVal nFileSystemNameSize As Integer) As Integer
+        End Function
 
         ''' <summary>
         ''' Given a 32-bit SHFILEOPSTRUCT, call the appropriate SHFileOperation function

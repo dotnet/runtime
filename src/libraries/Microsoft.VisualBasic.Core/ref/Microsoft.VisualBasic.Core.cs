@@ -65,22 +65,44 @@ namespace Microsoft.VisualBasic
     public sealed partial class Constants
     {
         internal Constants() { }
+        public const FileAttribute vbArchive = FileAttribute.Archive;
         public const string vbBack = "\b";
         public const Microsoft.VisualBasic.CompareMethod vbBinaryCompare = Microsoft.VisualBasic.CompareMethod.Binary;
         public const string vbCr = "\r";
         public const string vbCrLf = "\r\n";
+        public const FileAttribute vbDirectory = FileAttribute.Directory;
         public const TriState vbFalse = TriState.False;
         public const string vbFormFeed = "\f";
+        public const DateFormat vbGeneralDate = DateFormat.GeneralDate;
+        public const FileAttribute vbHidden = FileAttribute.Hidden;
+        public const VbStrConv vbHiragana = VbStrConv.Hiragana;
+        public const VbStrConv vbKatakana = VbStrConv.Katakana;
         public const string vbLf = "\n";
+        public const VbStrConv vbLinguisticCasing = VbStrConv.LinguisticCasing;
+        public const DateFormat vbLongDate = DateFormat.LongDate;
+        public const DateFormat vbLongTime = DateFormat.LongTime;
+        public const VbStrConv vbLowerCase = VbStrConv.Lowercase;
         [System.ObsoleteAttribute("For a carriage return and line feed, use vbCrLf.  For the current platform's newline, use System.Environment.NewLine.")]
+        public const VbStrConv vbNarrow = VbStrConv.Narrow;
         public const string vbNewLine = "\r\n";
+        public const FileAttribute vbNormal = FileAttribute.Normal;
         public const string vbNullChar = "\0";
         public const string vbNullString = null;
+        public const VbStrConv vbProperCase = VbStrConv.ProperCase;
+        public const FileAttribute vbReadOnly = FileAttribute.ReadOnly;
+        public const DateFormat vbShortDate = DateFormat.ShortDate;
+        public const DateFormat vbShortTime = DateFormat.ShortTime;
+        public const VbStrConv vbSimplifiedChinese = VbStrConv.SimplifiedChinese;
+        public const FileAttribute vbSystem = FileAttribute.System;
         public const string vbTab = "\t";
         public const Microsoft.VisualBasic.CompareMethod vbTextCompare = Microsoft.VisualBasic.CompareMethod.Text;
+        public const VbStrConv vbTraditionalChinese = VbStrConv.TraditionalChinese;
         public const TriState vbTrue = TriState.True;
+        public const VbStrConv vbUpperCase = VbStrConv.Uppercase;
         public const TriState vbUseDefault = TriState.UseDefault;
         public const string vbVerticalTab = "\v";
+        public const FileAttribute vbVolume = FileAttribute.Volume;
+        public const VbStrConv vbWide = VbStrConv.Wide;
     }
     public sealed partial class ControlChars
     {
@@ -175,6 +197,106 @@ namespace Microsoft.VisualBasic
         public int Number { get { throw null; } set { } }
         public void Raise(int Number, object Source = null, object Description = null, object HelpFile = null, object HelpContext = null) { }
     }
+    [System.Flags]
+    public enum FileAttribute
+    {
+        Archive = 32,
+        Directory = 16,
+        Hidden = 2,
+        Normal = 0,
+        ReadOnly = 1,
+        System = 4,
+        Volume = 8,
+    }
+    [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
+    public sealed class FileSystem
+    {
+        internal FileSystem() { }
+        public static void ChDir(string Path){ throw null; }
+        public static void ChDrive(char Drive){ throw null; }
+        public static void ChDrive(string Drive){ throw null; }
+        public static string CurDir(){ throw null; }
+        public static string CurDir(char Drive){ throw null; }
+        public static string Dir(){ throw null; }
+        public static string Dir(string PathName, FileAttribute Attributes = FileAttribute.Normal){ throw null; }
+        public static bool EOF(int FileNumber){ throw null; }
+        public static OpenMode FileAttr(int FileNumber){ throw null; }
+        public static void FileClose(params int[] FileNumbers) { }
+        public static void FileCopy(string Source, string Destination) { }
+        public static System.DateTime FileDateTime(string PathName){ throw null; }
+        public static void FileGet(int FileNumber, ref bool Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref byte Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref char Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref decimal Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref double Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref float Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref int Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref long Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref short Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref string Value, long RecordNumber = -1, bool StringIsFixedLength = false) { }
+        public static void FileGet(int FileNumber, ref System.Array Value, long RecordNumber = -1, bool ArrayIsDynamic = false, bool StringIsFixedLength = false) { }
+        public static void FileGet(int FileNumber, ref System.DateTime Value, long RecordNumber = -1) { }
+        public static void FileGet(int FileNumber, ref System.ValueType Value, long RecordNumber = -1) { }
+        public static void FileGetObject(int FileNumber, ref object Value, long RecordNumber = -1) { }
+        public static long FileLen(string PathName) { throw null; }
+        public static void FileOpen(int FileNumber, string FileName, OpenMode Mode, OpenAccess Access = OpenAccess.Default, OpenShare Share = OpenShare.Default, int RecordLength = -1) { }
+        public static void FilePut(int FileNumber, bool Value, long RecordNumber = -1) { }
+        public static void FilePut(int FileNumber, byte Value, long RecordNumber = -1) { }
+        public static void FilePut(int FileNumber, char Value, long RecordNumber = -1) { }
+        public static void FilePut(int FileNumber, decimal Value, long RecordNumber = -1) { }
+        public static void FilePut(int FileNumber, double Value, long RecordNumber = -1) { }
+        public static void FilePut(int FileNumber, float Value, long RecordNumber = -1) { }
+        public static void FilePut(int FileNumber, int Value, long RecordNumber = -1) { }
+        public static void FilePut(int FileNumber, long Value, long RecordNumber = -1) { }
+        [System.ObsoleteAttribute("This member has been deprecated. Please use FilePutObject to write Object types, or coerce FileNumber and RecordNumber to Integer for writing non-Object types. http://go.microsoft.com/fwlink/?linkid=14202")]
+        public static void FilePut(object FileNumber, object Value, object RecordNumber/* = -1*/) { }
+        public static void FilePut(int FileNumber, short Value, long RecordNumber = -1) { }
+        public static void FilePut(int FileNumber, string Value, long RecordNumber = -1, bool StringIsFixedLength = false) { }
+        public static void FilePut(int FileNumber, System.Array Value, long RecordNumber = -1, bool ArrayIsDynamic = false, bool StringIsFixedLength = false) { }
+        public static void FilePut(int FileNumber, System.DateTime Value, long RecordNumber = -1) { }
+        public static void FilePut(int FileNumber, System.ValueType Value, long RecordNumber = -1) { }
+        public static void FilePutObject(int FileNumber, object Value, long RecordNumber = -1) { }
+        public static void FileWidth(int FileNumber, int RecordWidth) { }
+        public static int FreeFile(){ throw null; }
+        public static FileAttribute GetAttr(string PathName){ throw null; }
+        public static void Input(int FileNumber, ref bool Value) { }
+        public static void Input(int FileNumber, ref byte Value) { }
+        public static void Input(int FileNumber, ref char Value) { }
+        public static void Input(int FileNumber, ref decimal Value) { }
+        public static void Input(int FileNumber, ref double Value) { }
+        public static void Input(int FileNumber, ref float Value) { }
+        public static void Input(int FileNumber, ref int Value) { }
+        public static void Input(int FileNumber, ref long Value) { }
+        public static void Input(int FileNumber, ref object Value) { }
+        public static void Input(int FileNumber, ref short Value) { }
+        public static void Input(int FileNumber, ref string Value) { }
+        public static void Input(int FileNumber, ref System.DateTime Value) { }
+        public static string InputString(int FileNumber, int CharCount){ throw null; }
+        public static void Kill(string PathName) { }
+        public static string LineInput(int FileNumber){ throw null; }
+        public static long Loc(int FileNumber){ throw null; }
+        public static void Lock(int FileNumber){ throw null; }
+        public static void Lock(int FileNumber, long FromRecord, long ToRecord) { }
+        public static void Lock(int FileNumber, long Record) { }
+        public static long LOF(int FileNumber){ throw null; }
+        public static void MkDir(string Path) { }
+        public static void Print(int FileNumber, params object[] Output) { }
+        public static void PrintLine(int FileNumber, params object[] Output) { }
+        public static void Rename(string OldPath, string NewPath) { }
+        public static void Reset() { }
+        public static void RmDir(string Path) { }
+        public static void Seek(int FileNumber, long Position) { }
+        public static long Seek(int FileNumber) { throw null; }
+        public static void SetAttr(string PathName, FileAttribute Attributes) { }
+        public static SpcInfo SPC(short Count){ throw null; }
+        public static TabInfo TAB(){ throw null; }
+        public static TabInfo TAB(short Column){ throw null; }
+        public static void Unlock(int FileNumber) { }
+        public static void Unlock(int FileNumber, long Record) { }
+        public static void Unlock(int FileNumber, long FromRecord, long ToRecord) { }
+        public static void Write(int FileNumber, params object[] Output) { }
+        public static void WriteLine(int FileNumber, params object[] Output) { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class HideModuleNameAttribute : System.Attribute
@@ -217,6 +339,34 @@ namespace Microsoft.VisualBasic
         public string DefaultInstanceAlias { get { throw null; } }
         public string DisposeMethod { get { throw null; } }
         public string MyGroupName { get { throw null; } }
+    }
+    public enum OpenAccess
+    {
+        Default = -1,
+        Read = 1,
+        ReadWrite = 3,
+        Write = 2,
+    }
+    public enum OpenMode
+    {
+        Append = 8,
+        Binary = 32,
+        Input = 1,
+        Output = 2,
+        Random = 4,
+    }
+    public enum OpenShare
+    {
+        Default = -1,
+        LockRead = 2,
+        LockReadWrite = 0,
+        LockWrite = 1,
+        Shared = 3
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public struct SpcInfo
+    {
+        public short Count;
     }
     [Microsoft.VisualBasic.CompilerServices.StandardModuleAttribute]
     public sealed partial class Strings
@@ -283,6 +433,11 @@ namespace Microsoft.VisualBasic
         public static string Trim(string str) { throw null; }
         public static char UCase(char Value) { throw null; }
         public static string UCase(string Value) { throw null; }
+    }
+    [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+    public struct TabInfo
+    {
+        public short Column;
     }
     public enum TriState
     {

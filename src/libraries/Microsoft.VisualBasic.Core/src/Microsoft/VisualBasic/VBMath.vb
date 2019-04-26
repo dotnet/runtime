@@ -3,10 +3,6 @@
 ' See the LICENSE file in the project root for more information.
 
 Imports System
-Imports System.Security
-Imports System.Security.Permissions
-Imports System.Text
-Imports System.Globalization
 Imports Microsoft.VisualBasic.CompilerServices
 
 Namespace Microsoft.VisualBasic

@@ -6,9 +6,6 @@ Option Strict On
 Option Explicit On
 
 Imports System
-Imports System.ComponentModel
-Imports System.Security.Permissions
-Imports Microsoft.VisualBasic
 Imports Microsoft.VisualBasic.MyServices
 
 Namespace Microsoft.VisualBasic.Devices

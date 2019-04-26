@@ -7,7 +7,6 @@ Imports System.Diagnostics
 Imports System.Reflection
 Imports System.Globalization
 Imports System.Security
-Imports System.Security.Permissions
 
 Imports Microsoft.VisualBasic.CompilerServices.LateBinding
 Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils

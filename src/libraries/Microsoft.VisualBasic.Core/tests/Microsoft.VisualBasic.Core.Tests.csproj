@@ -17,6 +17,7 @@
     <Compile Include="DateTypeTests.cs" />
     <Compile Include="DateAndTimeTests.cs" />
     <Compile Include="ErrObjectTests.cs" />
+    <Compile Include="FileSystemTests.cs" />
     <Compile Include="IConvertibleWrapper.cs" />
     <Compile Include="InformationTests.cs" />
     <Compile Include="IntegerTypeTests.cs" />

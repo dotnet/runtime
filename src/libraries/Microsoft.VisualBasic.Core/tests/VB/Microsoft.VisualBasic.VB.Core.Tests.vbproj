@@ -7,7 +7,6 @@
     <Compile Include="FileIOTestBase.vb" />
     <Compile Include="Helpers.vb" />
     <Compile Include="SpecialDirectoriesTests.vb" />
-    <Compile Include="Dummy.vb" />
     <Compile Include="FileIOTests.vb" />
     <Compile Include="TextFieldParserTests.vb" />
   </ItemGroup>
