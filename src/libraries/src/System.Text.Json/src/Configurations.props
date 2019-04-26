@@ -1,12 +1,9 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp-Unix;
-      netcoreapp-Windows_NT;
-      uap-Windows_NT;
-      <!-- Only included for testing and validating that the sources are netstandard compatible. -->
-      <!-- This is meant to help with producing a source package and not to ship a netstandard compatible binary. -->
       netstandard;
+      netcoreapp;
+      uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

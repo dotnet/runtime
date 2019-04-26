@@ -50,10 +50,6 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>d37270268a65592cae630f1b979b70f74d4614dd</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.SourceRewriter" Version="1.0.0-beta.19225.5">
-      <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>d37270268a65592cae630f1b979b70f74d4614dd</Sha>
-    </Dependency>
     <Dependency Name="Microsoft.DotNet.GenAPI" Version="1.0.0-beta.19225.5">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>d37270268a65592cae630f1b979b70f74d4614dd</Sha>
