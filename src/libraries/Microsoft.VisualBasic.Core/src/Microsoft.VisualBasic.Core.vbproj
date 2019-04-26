@@ -21,7 +21,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\VisualBasic\FileIO\FileSystem.Windows.vb" />
-    <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.Windows.vb" />
+    <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.vb" />
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeTypes.vb" />
     <Compile Include="Microsoft\VisualBasic\Helpers\UnsafeNativeMethods.vb" />
   </ItemGroup>
@@ -51,6 +51,7 @@
     <Compile Include="Microsoft\VisualBasic\CompilerServices\IDOBinder.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\IncompleteInitialization.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\IntegerType.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\IOUtils.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\LateBinding.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\LikeOperator.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\LongType.vb" />
@@ -72,6 +73,11 @@
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Symbols.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.LateBinder.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Utils.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\VB6BinaryFile.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\VB6File.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\VB6InputFile.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\VB6OutputFile.vb" />
+    <Compile Include="Microsoft\VisualBasic\CompilerServices\VB6RandomFile.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\VBBinder.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\Versioned.vb" />
     <Compile Include="Microsoft\VisualBasic\Constants.vb" />
