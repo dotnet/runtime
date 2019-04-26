@@ -1428,6 +1428,14 @@
       "System.Resources.SatelliteContractVersionAttribute",
       "System.Resources.MissingManifestResourceException"
     ]
+  }, 
+  {
+    "Name": "System.Resources.Extensions",
+    "Description": "Provides classes which read and write resources in a format that supports non-primitive objects.",
+    "CommonTypes": [
+        "System.Resources.Extensions.DeserializingResourceReader",
+        "System.Resources.Extensions.PreserializedResourceWriter"
+    ]
   },
   {
     "Name": "System.Resources.Reader",

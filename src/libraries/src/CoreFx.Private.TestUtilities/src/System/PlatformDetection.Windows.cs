@@ -16,7 +16,7 @@ namespace System
     {
         public static Version OSXVersion => throw new PlatformNotSupportedException();
         public static Version OpenSslVersion => throw new PlatformNotSupportedException();
-        public static bool IsDrawingSupported => IsNotWindowsNanoServer && IsNotWindowsServerCore;
+        public static bool IsDrawingSupported => IsNotWindowsNanoServer && IsNotWindowsServerCore && !IsUap;
         public static bool IsSoundPlaySupported => IsNotWindowsNanoServer;
         public static bool IsSuperUser => throw new PlatformNotSupportedException();
         public static bool IsCentos6 => false;
