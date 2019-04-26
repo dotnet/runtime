@@ -3905,9 +3905,18 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, GenT
             GenTree**    useEdge  = linkData.result;
             GenTree*     parent   = linkData.parent;
             noway_assert(useEdge != nullptr);
-            assert(parent != nullptr);
 
-            parent->ReplaceOperand(useEdge, newTree);
+            if (parent != nullptr)
+            {
+                parent->ReplaceOperand(useEdge, newTree);
+            }
+            else
+            {
+                // If there's no parent, the tree being replaced is the root of the
+                // statement.
+                assert((stmt->gtStmtExpr == tree) && (&stmt->gtStmtExpr == useEdge));
+                stmt->gtStmtExpr = newTree;
+            }
 
             // We only need to ensure that the gtNext field is set as it is used to traverse
             // to the next node in the tree. We will re-morph this entire statement in
