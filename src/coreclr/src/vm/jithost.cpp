@@ -119,7 +119,7 @@ void JitHost::freeSlab(void* slab, size_t actualSize)
     {
         CrstHolder lock(&m_jitSlabAllocatorCrst);
 
-        if (m_totalCached < 0x1000000) // Do not cache more than 16MB
+        if (m_totalCached < g_pConfig->JitHostMaxSlabCache()) // Do not cache more than maximum allowed value
         {
             m_totalCached += actualSize;
 

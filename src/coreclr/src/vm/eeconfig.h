@@ -272,6 +272,8 @@ public:
     DWORD         MonitorSpinCount(void)          const {LIMITED_METHOD_CONTRACT;  return dwMonitorSpinCount; }
 
     // Jit-config
+
+    DWORD         JitHostMaxSlabCache(void)         const {LIMITED_METHOD_CONTRACT;  return dwJitHostMaxSlabCache; }
     
     unsigned int  GenOptimizeType(void)             const {LIMITED_METHOD_CONTRACT;  return iJitOptimizeType; }
     bool          JitFramed(void)                   const {LIMITED_METHOD_CONTRACT;  return fJitFramed; }
@@ -781,6 +783,8 @@ private: //----------------------------------------------------------------
     bool fInited;                   // have we synced to the registry at least once?
 
     // Jit-config
+
+    DWORD dwJitHostMaxSlabCache; // max size for jit host slab cache
 
     bool fJitFramed;           // Enable/Disable EBP based frames
     bool fJitAlignLoops;       // Enable/Disable loop alignment
