@@ -3902,36 +3902,17 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, GenT
         if (newTree != tree)
         {
             FindLinkData linkData = gtFindLink(stmt, tree);
-            GenTree**    link     = linkData.result;
-            noway_assert(link != nullptr);
+            GenTree**    useEdge  = linkData.result;
+            GenTree*     parent   = linkData.parent;
+            noway_assert(useEdge != nullptr);
+            assert(parent != nullptr);
 
-            // Replace the old operand with the newTree
-            *link = newTree;
+            parent->ReplaceOperand(useEdge, newTree);
 
             // We only need to ensure that the gtNext field is set as it is used to traverse
             // to the next node in the tree. We will re-morph this entire statement in
             // optAssertionPropMain(). It will reset the gtPrev and gtNext links for all nodes.
             newTree->gtNext = tree->gtNext;
-
-            if ((linkData.parent != nullptr) && linkData.parent->IsCall())
-            {
-                GenTreeCall* parentCall = linkData.parent->AsCall();
-                // Other functions can access call->fgArgInfo for other trees in the current statement
-                // before they are remorphed in optVNAssertionPropCurStmt, so we need to make sure
-                // that these links are updated.
-                fgArgInfo* argInfo = parentCall->fgArgInfo;
-                if (argInfo != nullptr)
-                {
-                    for (unsigned i = 0; i < argInfo->ArgCount(); ++i)
-                    {
-                        fgArgTabEntry* argTabEntry = argInfo->ArgTable()[i];
-                        if (argTabEntry->node == tree)
-                        {
-                            argTabEntry->node = newTree;
-                        }
-                    }
-                }
-            }
 
             // Old tree should not be referenced anymore.
             DEBUG_DESTROY_NODE(tree);
