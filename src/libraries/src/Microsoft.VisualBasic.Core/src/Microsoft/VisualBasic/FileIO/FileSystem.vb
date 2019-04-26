@@ -1138,7 +1138,7 @@ Namespace Microsoft.VisualBasic.FileIO
 
                     If Environment.OSVersion.Platform = PlatformID.Win32NT Then ' Platforms supporting MoveFileEx.
                         WinNTCopyOrMove(sourceFileFullPath, destinationFileFullPath)
-                    Else ' Win95, Win98, WinME, non Windows
+                    Else ' Non Windows
                         ' IO.File.Delete will not throw if destinationFileFullPath does not exist
                         ' (user may not have permission to discover this, but have permission to overwrite),
                         ' so always delete the destination.
@@ -1949,10 +1949,6 @@ End Namespace
 ' - MoveDirectory behaves the same so MoveDirectory is not equal to calling CopyDirectory and DeleteDirectory.
 ' - Overwrite in directory case means overwrite sub files. Sub directories will always be merged.
 '
-' - 2004/08/09: Including the Overwrite option and ShowUI in one method is confusing
-'       since there are cases Shell methods will ask questions, even with NOCONFIRMATION flag on.
-'       We made changes to separate methods containing Overwrite and ShowUI. UE should notice this.
-
 ' Shell behavior in exception cases:
 '   - Copy / Move File
 '       . Existing target:

@@ -7,9 +7,6 @@ Option Explicit On
 
 Imports System
 Imports Microsoft.VisualBasic.MyServices
-Imports System.ComponentModel
-Imports System.Security.Permissions
-Imports Microsoft.VisualBasic
 
 Namespace Microsoft.VisualBasic.Devices
 

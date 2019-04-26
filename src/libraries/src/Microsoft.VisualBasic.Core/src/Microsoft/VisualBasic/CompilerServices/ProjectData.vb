@@ -3,21 +3,112 @@
 ' See the LICENSE file in the project root for more information.
 
 Imports System
+Imports Microsoft.VisualBasic.CompilerServices.Utils
 Imports Microsoft.VisualBasic.FileIO
 
 Namespace Global.Microsoft.VisualBasic.CompilerServices
+
+    <System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)>
+    Friend NotInheritable Class AssemblyData
+
+        Friend Sub New()
+            Dim i As Integer
+            Dim o As Object
+            Dim files As Collections.ArrayList = New Collections.ArrayList(256)
+
+            o = Nothing
+
+            For i = 0 To 255
+                files.Add(o)
+            Next
+            m_Files = files
+        End Sub
+
+        Friend Function GetChannelObj(ByVal lChannel As Integer) As VB6File
+            Dim o As Object
+
+            If (lChannel < m_Files.Count) Then
+                o = m_Files.Item(lChannel)
+            Else
+                o = Nothing
+            End If
+
+            Return CType(o, VB6File)
+        End Function
+
+        Friend Sub SetChannelObj(ByVal lChannel As Integer, ByVal oFile As VB6File)
+            If m_Files Is Nothing Then
+                m_Files = New Collections.ArrayList(256)
+            End If
+
+            Dim o As Object
+
+            If oFile Is Nothing Then
+                Dim f As VB6File
+                f = CType(m_Files.Item(lChannel), VB6File)
+                If (Not f Is Nothing) Then
+                    f.CloseFile()
+                End If
+                m_Files.Item(lChannel) = Nothing
+            Else
+                o = oFile
+                m_Files.Item(lChannel) = o
+            End If
+        End Sub
+
+        Public m_Files As Collections.ArrayList
+        Friend m_DirFiles() As IO.FileSystemInfo
+        Friend m_DirNextFileIndex As Integer
+        Friend m_DirAttributes As IO.FileAttributes
+
+    End Class
+
     <Global.System.Diagnostics.DebuggerNonUserCode()>
     <Global.System.ComponentModel.EditorBrowsable(Global.System.ComponentModel.EditorBrowsableState.Never)>
     Public NotInheritable Class ProjectData
 
         Friend m_Err As ErrObject
         Friend m_rndSeed As Integer = &H50000I
+        Friend m_numprsPtr() As Byte
+        Friend m_DigitArray() As Byte
 
         'm_oProject is per-Thread
         <System.ThreadStaticAttribute()> Private Shared m_oProject As ProjectData
 
+        Friend m_AssemblyData As Collections.Hashtable
+
         Private Sub New()
+            MyBase.New()
+
+            m_AssemblyData = New System.Collections.Hashtable
+
+            Const DIGIT_ARRAY_SIZE As Integer = 30
+            Const NUMPRS_SIZE As Integer = 24
+
+            ReDim m_numprsPtr(NUMPRS_SIZE - 1)
+            ReDim m_DigitArray(DIGIT_ARRAY_SIZE - 1)
+
         End Sub
+
+        Private m_CachedMSCoreLibAssembly As System.Reflection.Assembly = GetType(System.Int32).Assembly
+
+        Friend Function GetAssemblyData(ByVal assem As System.Reflection.Assembly) As AssemblyData
+            'The first time, we will get an exception, but the remainder of the time there will be less overhead
+            '
+            If assem Is Utils.VBRuntimeAssembly OrElse assem Is m_CachedMSCoreLibAssembly Then
+                'Must have been from a latebound call to our own apis (potentially through context of mscorlib)
+                'This must not be allowed, as it would cause files to be shared across assemblies
+                Throw New Security.SecurityException(GetResourceString(SR.Security_LateBoundCallsNotPermitted))
+            End If
+
+            Dim AssemData As AssemblyData = CType(m_AssemblyData.Item(assem), AssemblyData)
+            If (AssemData Is Nothing) Then
+                AssemData = New AssemblyData
+                m_AssemblyData.Item(assem) = AssemData
+            End If
+
+            Return AssemData
+        End Function
 
         Friend Shared Function GetProjectData() As ProjectData
             '*************************

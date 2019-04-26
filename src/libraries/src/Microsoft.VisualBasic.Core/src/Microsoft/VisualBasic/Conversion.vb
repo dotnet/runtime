@@ -948,6 +948,177 @@ NextOctCharacter:
 
         End Function
 
+        <ResourceExposure(ResourceScope.None)>
+        <ResourceConsumption(ResourceScope.Machine, ResourceScope.Machine)>
+        Friend Function ParseInputField(ByVal Value As Object, ByVal vtInput As VariantType) As Object
+#If PLATFORM_WINDOWS Then
+            Dim numprsPtr() As Byte
+            Dim vtSuffix As Integer
+            Dim cDecMax As Integer
+            Dim StringValue As String = CStr(Value)
+            Dim DigitArray() As Byte
+            Dim pd As ProjectData
+            Dim cchUsed As Int32
+            Dim nPwr10 As Int32
+            Dim chTypeChar As Char
+            Dim dwOutFlags As Int32
+            Dim nBaseShift As Int32
+
+            Const INTEGER_SIZE As Integer = 4
+            Const INFLAGS_OFFSET As Integer = 4
+
+            If ((vtInput = VariantType.Empty) AndAlso ((Value Is Nothing) OrElse Len(CStr(Value)) = 0)) Then
+                Return Nothing
+            End If
+
+            pd = ProjectData.GetProjectData()
+            numprsPtr = pd.m_numprsPtr
+            DigitArray = pd.m_DigitArray
+
+            'numprsPtr is actually a struct. The first two fields are cDig (the size of the digits array)
+            'and dwInFlags which we set to PRSFLAGS
+
+            'Init NUMPARSE.cDig
+            Array.Copy(BitConverter.GetBytes(Convert.ToInt32(DigitArray.Length)), 0, numprsPtr, 0, INTEGER_SIZE)
+            'Init NUMPARSE.dwInFlags
+            Array.Copy(BitConverter.GetBytes(Convert.ToInt32(PRSFLAGS)), 0, numprsPtr, INFLAGS_OFFSET, INTEGER_SIZE)
+
+            ' For file interchangeability, we always use US decimal.
+            If UnsafeNativeMethods.VarParseNumFromStr(StringValue, LCID_US_ENGLISH, LOCALE_NOUSEROVERRIDE, numprsPtr, DigitArray) < 0 Then
+                If (vtInput <> VariantType.Empty) Then
+                    ' Just return 0 if we don't understand the number
+                    Return 0
+                End If
+                Return StringValue
+            End If
+
+            ' Look for type character following string
+            dwOutFlags = BitConverter.ToInt32(numprsPtr, 8)
+            cchUsed = BitConverter.ToInt32(numprsPtr, 12)
+            nBaseShift = BitConverter.ToInt32(numprsPtr, 16)
+            nPwr10 = BitConverter.ToInt32(numprsPtr, 20)
+
+            If cchUsed < StringValue.Length Then
+                chTypeChar = StringValue.Chars(cchUsed)
+            End If
+
+            Select Case (chTypeChar)
+                Case "%"c
+                    vtSuffix = VariantType.Short
+                    cDecMax = 0
+                Case "&"c
+                    vtSuffix = VariantType.Integer
+                    cDecMax = 0
+                Case "@"c
+                    'Convert currency to Decimal            
+                    'vtSuffix = VariantType.Currency
+                    vtSuffix = VariantType.Decimal
+                    cDecMax = 4
+                Case "!"c
+                    If (vtInput = VariantType.Double) Then
+                        vtSuffix = VariantType.Double
+                    Else
+                        vtSuffix = VariantType.Single
+                    End If
+                    cDecMax = System.Int32.MaxValue
+                Case "#"c
+                    vtSuffix = VariantType.Double
+                    cDecMax = System.Int32.MaxValue
+                Case Else
+                    ' No type suffix.
+                    If (vtInput = VariantType.Empty) Then
+                        ' no indication of type, either from suffix or defined
+                        ' by type we're inputting to.
+                        Dim dwVtBits As Integer = VTBITS
+
+                        If (dwOutFlags And NUMPRS_EXPONENT) <> 0 Then
+                            ' if exponent specified, result is R8 only.
+                            dwVtBits = VTBIT_R8
+                        End If
+
+                        Return UnsafeNativeMethods.VarNumFromParseNum(numprsPtr, DigitArray, dwVtBits)
+                    End If
+
+                    If (nBaseShift <> 0) Then
+                        Dim Int32Value As Integer
+
+                        ' Have a hex/octal number.  Sign extend if short.
+                        Value = UnsafeNativeMethods.VarNumFromParseNum(numprsPtr, DigitArray, VTBIT_I4)
+                        Int32Value = CInt(Value)
+
+                        If ((Int32Value And &HFFFF0000I) = 0) Then
+                            ' Sign extend if short.
+                            Int32Value = CShort(Int32Value)
+                        End If
+
+                        UnsafeNativeMethods.VariantChangeType(Value, Value, 0, CType(vtInput, Int16))
+                        Return Value
+                    End If
+
+                    Return UnsafeNativeMethods.VarNumFromParseNum(numprsPtr, DigitArray, ShiftVTBits(vtInput))
+            End Select
+
+            ' Have a type character suffix.  Convert to that type.
+            If (-nPwr10 > cDecMax) Then
+                Throw VbMakeException(vbErrors.TypeMismatch)
+            End If
+
+            Value = UnsafeNativeMethods.VarNumFromParseNum(numprsPtr, DigitArray, ShiftVTBits(vtSuffix))
+
+            If (vtInput = VariantType.Empty) Then
+                Return Value
+            End If
+
+            UnsafeNativeMethods.VariantChangeType(Value, Value, 0, CType(vtInput, Int16))
+            Return Value
+#Else
+            Throw New PlatformNotSupportedException()
+#End If
+        End Function
+
+        Private Function ShiftVTBits(ByVal vt As Integer) As Integer
+            Select Case vt
+                'Case VariantType.Empty     
+                'Fall through VTBIT_EMPTY
+                'Case VariantType.Null
+                'Fall through VTBIT_NULL
+                Case VariantType.Short
+                    Return VTBIT_I2
+                Case VariantType.Integer
+                    Return VTBIT_I4
+                Case VariantType.Single
+                    Return VTBIT_R4
+                Case VariantType.Double
+                    Return VTBIT_R8
+                Case VariantType.Decimal, VariantType.Currency
+                    Return VTBIT_DECIMAL
+                Case VariantType.Date
+                    Return VTBIT_DATE
+                Case VariantType.String
+                    Return VTBIT_BSTR
+                Case VariantType.Object
+                    Return VTBIT_OBJECT
+                Case VariantType.Error
+                    Return VTBIT_ERROR
+                Case VariantType.Boolean
+                    Return VTBIT_BOOL
+                Case VariantType.Variant
+                    Return VTBIT_VARIANT
+                Case VariantType.DataObject
+                    Return VTBIT_DATAOBJECT
+                Case VariantType.Decimal
+                    Return VTBIT_DECIMAL
+                Case VariantType.Byte
+                    Return VTBIT_BYTE
+                Case VariantType.Char
+                    Return VTBIT_CHAR
+                Case VariantType.Long
+                    Return VTBIT_LONG
+                Case Else
+                    Return 0
+            End Select
+        End Function
+
         Public Function CTypeDynamic(ByVal Expression As Object, ByVal TargetType As System.Type) As Object
             Return Conversions.ChangeType(Expression, TargetType, True)
         End Function
