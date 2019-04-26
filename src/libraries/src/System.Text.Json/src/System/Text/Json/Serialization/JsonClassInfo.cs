@@ -114,7 +114,7 @@ namespace System.Text.Json.Serialization
             else if (ClassType == ClassType.Enumerable || ClassType == ClassType.Dictionary)
             {
                 // Add a single property that maps to the class type so we can have policies applied.
-                JsonPropertyInfo jsonPropertyInfo = AddProperty(type, propertyInfo: null, type, options);
+                JsonPropertyInfo jsonPropertyInfo = AddPolicyProperty(type, options);
 
                 // Use the type from the property policy to get any late-bound concrete types (from an interface like IDictionary).
                 CreateObject = options.ClassMaterializerStrategy.CreateConstructor(jsonPropertyInfo.RuntimePropertyType);
@@ -127,7 +127,7 @@ namespace System.Text.Json.Serialization
             else if (ClassType == ClassType.Value)
             {
                 // Add a single property that maps to the class type so we can have policies applied.
-                AddProperty(type, propertyInfo: null, type, options);
+                AddPolicyProperty(type, options);
             }
             else
             {
@@ -319,19 +319,22 @@ namespace System.Text.Json.Serialization
 
                     if (propertyType.IsGenericType)
                     {
-                        if (GetClassType(propertyType) == ClassType.Dictionary)
+                        if (GetClassType(propertyType) == ClassType.Dictionary &&
+                            args.Length >= 2) // It is >= 2 in case there is a Dictionary<TKey, TValue, TSomeExtension>.
                         {
+                            
                             elementType = args[1];
                         }
-                        else
+                        else if (args.Length >= 1) // It is >= 1 in case there is an IEnumerable<T, TSomeExtension>.
                         {
+                            Debug.Assert(GetClassType(propertyType) == ClassType.Enumerable);
                             elementType = args[0];
                         }
                     }
                     else
                     {
                         // Unable to determine collection type; attempt to use object which will be used to create loosely-typed collection.
-                        return typeof(object);
+                        elementType = typeof(object);
                     }
                 }
             }
