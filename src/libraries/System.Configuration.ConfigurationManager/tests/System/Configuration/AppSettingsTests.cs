@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using Xunit;
@@ -103,6 +104,60 @@ namespace System.ConfigurationTests
                 var config = ConfigurationManager.OpenMappedExeConfiguration(map, ConfigurationUserLevel.PerUserRoaming);
 
                 Assert.Throws<ConfigurationErrorsException>(() => config.AppSettings);
+            }
+        }
+
+        public static string AppSettingsConfig =
+@"<?xml version='1.0' encoding='utf-8' ?>
+<appSettings>
+  <add key='AppSettingsKey' value='AppSettingsValue'/>
+</appSettings>";
+
+        [Fact]
+        public void AppSettingsCannotLoadFromConfigSource()
+        {
+            using (var tempConfig = new TempConfig(TestData.EmptyConfig))
+            {
+                const string SubDirectory = "Config";
+                const string AppConfigFileName = "tempAppConfig.config";
+                string tempConfigDirectory = Path.Combine(Path.GetDirectoryName(tempConfig.ConfigPath), SubDirectory);
+                using (var tempDirectory = new TempDirectory(tempConfigDirectory))
+                {
+                    // set configSource and save the config
+                    var config = ConfigurationManager.OpenExeConfiguration(tempConfig.ExePath);
+                    config.AppSettings.SectionInformation.ConfigSource = Path.Combine(SubDirectory, AppConfigFileName);
+                    config.Save();
+
+                    // write temporary appConfig
+                    var tempAppConfigPath = Path.Combine(tempConfigDirectory, AppConfigFileName);
+                    File.WriteAllText(tempAppConfigPath, AppSettingsConfig);
+
+                    // load config and test the appSettings
+                    config = ConfigurationManager.OpenExeConfiguration(tempConfig.ExePath);
+                    Assert.NotEmpty(config.AppSettings.Settings);
+                    Assert.Equal("AppSettingsValue", config.AppSettings.Settings["AppSettingsKey"].Value);
+                }
+            }
+        }
+
+        public static IEnumerable<object[]> ConfigPaths = new List<object[]>()
+        {
+            new object[] { @"../Config/foo.config" },
+            new object[] { @"..\Config\foo.config" },
+            new object[] { @"\Config\foo.config" },
+            new object[] { @"/Config/foo.config" },
+            new object[] { @"\..\Config\foo.config" },
+            new object[] { @"/../Config/foo.config" },
+        };
+
+        [Theory]
+        [MemberData(nameof(ConfigPaths))]
+        public void AppSettingsInvalidConfigSourcePath_Throws(string configPath)
+        {
+            using (var tempConfig = new TempConfig(TestData.EmptyConfig))
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(tempConfig.ExePath);
+                Assert.ThrowsAny<Exception>(() => config.AppSettings.SectionInformation.ConfigSource = configPath);
             }
         }
     }
