@@ -256,13 +256,12 @@ namespace System.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Assembly.LoadFile is not supported in AppX.")]
-        [ActiveIssue("dotnet/coreclr#24154")]
         public static void CreateInstanceAssemblyResolve()
         {
             RemoteExecutor.Invoke(() =>
             {
                 AppDomain.CurrentDomain.AssemblyResolve += (object sender, ResolveEventArgs args) => Assembly.LoadFile(Path.Combine(Directory.GetCurrentDirectory(), "TestLoadAssembly.dll"));
-                Assert.Throws<FileNotFoundException>(() => Activator.CreateInstance(",,,,", "PublicClassSample"));
+                Assert.Throws<FileLoadException>(() => Activator.CreateInstance(",,,,", "PublicClassSample"));
             }).Dispose();
         }
 
