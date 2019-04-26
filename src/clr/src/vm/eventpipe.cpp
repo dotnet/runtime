@@ -250,9 +250,9 @@ EventPipeSessionID EventPipe::Enable(
         [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
         {
             // Create a new session.
-            SampleProfiler::SetSamplingRate((unsigned long)profilerSamplingRateInNanoseconds);
+            SampleProfiler::SetSamplingRate(static_cast<unsigned long>(profilerSamplingRateInNanoseconds));
             EventPipeSession *pSession = s_pConfig->CreateSession(
-                (strOutputPath != NULL) ? EventPipeSessionType::File : EventPipeSessionType::Streaming,
+                sessionType,
                 circularBufferSizeInMB,
                 pProviders,
                 numProviders);
@@ -591,7 +591,7 @@ EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventP
         PRECONDITION(!GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
-    
+
     EventPipeProvider *pProvider = NULL;
     EventPipe::RunWithCallbackPostponed(
         [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
@@ -613,7 +613,7 @@ EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventP
         PRECONDITION(GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
-    
+
     EventPipeProvider *pProvider = NULL;
     if (s_pConfig != NULL)
     {
