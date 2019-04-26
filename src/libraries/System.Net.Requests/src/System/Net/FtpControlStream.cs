@@ -570,12 +570,12 @@ namespace System.Net
 
                 if (request.UsePassive)
                 {
-                    string passiveCommand = (ServerAddress.AddressFamily == AddressFamily.InterNetwork) ? "PASV" : "EPSV";
+                    string passiveCommand = (ServerAddress.AddressFamily == AddressFamily.InterNetwork || ServerAddress.IsIPv4MappedToIPv6) ? "PASV" : "EPSV";
                     commandList.Add(new PipelineEntry(FormatFtpCommand(passiveCommand, null), PipelineEntryFlags.CreateDataConnection));
                 }
                 else
                 {
-                    string portCommand = (ServerAddress.AddressFamily == AddressFamily.InterNetwork) ? "PORT" : "EPRT";
+                    string portCommand = (ServerAddress.AddressFamily == AddressFamily.InterNetwork || ServerAddress.IsIPv4MappedToIPv6) ? "PORT" : "EPRT";
                     CreateFtpListenerSocket(request);
                     commandList.Add(new PipelineEntry(FormatFtpCommand(portCommand, GetPortCommandLine(request))));
                 }
@@ -645,6 +645,7 @@ namespace System.Net
             // Handle passive responses by parsing the port and later doing a Connect(...)
             bool isPassive = false;
             int port = -1;
+
             if (entry.Command == "PASV\r\n" || entry.Command == "EPSV\r\n")
             {
                 if (!response.PositiveCompletion)
@@ -791,9 +792,9 @@ namespace System.Net
             // produces a string in FTP IPAddress/Port encoding (a1, a2, a3, a4, p1, p2), for sending as a parameter
             // to the port command.
             StringBuilder sb = new StringBuilder(32);
-            foreach (byte element in localAddressInBytes)
+            for (int i = address.IsIPv4MappedToIPv6 ? 12 : 0; i < localAddressInBytes.Length; i++)
             {
-                sb.Append(element);
+                sb.Append(localAddressInBytes[i]);
                 sb.Append(',');
             }
             sb.Append(Port / 256);
@@ -1100,7 +1101,7 @@ namespace System.Net
             {
                 // retrieves the IP address of the local endpoint
                 IPEndPoint localEP = (IPEndPoint)_dataSocket.LocalEndPoint;
-                if (ServerAddress.AddressFamily == AddressFamily.InterNetwork)
+                if (ServerAddress.AddressFamily == AddressFamily.InterNetwork || ServerAddress.IsIPv4MappedToIPv6)
                 {
                     return FormatAddress(localEP.Address, localEP.Port);
                 }
@@ -1144,6 +1145,11 @@ namespace System.Net
         {
             // Safe to be called under an Assert.
             Socket socket = new Socket(templateSocket.AddressFamily, templateSocket.SocketType, templateSocket.ProtocolType);
+            if (templateSocket.AddressFamily == AddressFamily.InterNetworkV6 && templateSocket.DualMode)
+            {
+                socket.DualMode = true;
+            }
+
             return socket;
         }
 
