@@ -176,7 +176,7 @@ libmono_icall_table_la_SOURCES = \
 libmono_icall_table_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
 libmono_icall_table_la_LDFLAGS = $(libmonoldflags)
 if BITCODE
-libmono_icall_table_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+libmono_icall_table_la_LIBADD =
 endif
 endif
 
@@ -196,7 +196,7 @@ libmono_ilgen_la_SOURCES = \
 libmono_ilgen_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
 libmono_ilgen_la_LDFLAGS = $(libmonoldflags)
 if BITCODE
-libmono_ilgen_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+libmono_ilgen_la_LIBADD = 
 endif
 endif
 
