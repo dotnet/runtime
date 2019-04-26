@@ -16,7 +16,7 @@ jobs:
     parameters:
       configuration: Release
       pool:
-        name: NetCoreInternal-Int-Pool
+        name: NetCoreInternal-Pool
         queue: BuildPool.Windows.10.Amd64.VS2017
       dependsOn: ${{ parameters.dependsOn }}
   # Update dotnet/versions
