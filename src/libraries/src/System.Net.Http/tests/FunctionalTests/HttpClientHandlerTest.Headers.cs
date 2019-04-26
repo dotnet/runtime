@@ -98,6 +98,30 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        public async Task GetAsync_EmptyResponseHeader_Success()
+        {
+            IList<HttpHeaderData> headers = new HttpHeaderData[] {
+                                                new HttpHeaderData("x-test", "SendAsync_EmptyHeader_Success"),
+                                                new HttpHeaderData("x-empty", ""),
+                                                new HttpHeaderData("x-last", "bye") };
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    HttpResponseMessage response = await  client.GetAsync(uri).ConfigureAwait(false);
+                    // HTTP/1.1 LoopbackServer adds Connection: close and Date to responses.
+                    Assert.Equal(UseHttp2LoopbackServer ?  headers.Count : headers.Count + 2, response.Headers.Count());
+                    Assert.NotNull(response.Headers.GetValues("x-empty"));
+                }
+            },
+            async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK, headers);
+            });
+        }
+
+        [Fact]
         public async Task GetAsync_MissingExpires_ReturnNull()
         {
              await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
