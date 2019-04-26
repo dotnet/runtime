@@ -40,12 +40,12 @@ jobs:
 
       # Public Linux Build Pool
       ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
-        name:  NetCorePublic-Int-Pool
+        name:  NetCorePublic-Pool
         queue: BuildPool.Ubuntu.1604.Amd64.Open
 
       # Official Build Linux Pool
       ${{ if and(eq(parameters.osGroup, 'Linux'), ne(variables['System.TeamProject'], 'public')) }}:
-        name: NetCoreInternal-Int-Pool
+        name: NetCoreInternal-Pool
         queue: BuildPool.Ubuntu.1604.Amd64
 
       # FreeBSD builds only in the internal project
@@ -62,12 +62,12 @@ jobs:
 
       # Official Build Windows Pool
       ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(variables['System.TeamProject'], 'public')) }}:
-        name: NetCoreInternal-Int-Pool
+        name: NetCoreInternal-Pool
         queue: BuildPool.Windows.10.Amd64.VS2017
 
       # Public Windows Build Pool
       ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(variables['System.TeamProject'], 'public')) }}:
-        name: NetCorePublic-Int-Pool
+        name: NetCorePublic-Pool
         queue: BuildPool.Windows.10.Amd64.VS2017.Open
 
     workspace:
