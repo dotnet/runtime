@@ -8,6 +8,7 @@ using System.IO;
 using Newtonsoft.Json;
 using System.Globalization;
 using System.Threading.Tasks;
+using System.IO.Pipelines;
 
 namespace System.Text.Json.Tests
 {
@@ -3401,6 +3402,82 @@ namespace System.Text.Json.Tests
 
             jsonUtf8.WriteEndObject();
             jsonUtf8.Flush();
+        }
+
+        [ConditionalTheory(nameof(IsX64))]
+        [OuterLoop]
+        [InlineData(true, true)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(false, false)]
+        public void WriteTooLargeArguments(bool formatted, bool skipValidation)
+        {
+            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+
+            byte[] bytesTooLarge;
+            char[] charsTooLarge;
+            var bytes = new byte[5];
+            var chars = new char[5];
+
+            try
+            {
+                bytesTooLarge = new byte[400_000_000];
+                charsTooLarge = new char[400_000_000];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
+
+            bytesTooLarge.AsSpan().Fill((byte)'a');
+            charsTooLarge.AsSpan().Fill('a');
+            bytes.AsSpan().Fill((byte)'a');
+            chars.AsSpan().Fill('a');
+
+            var pipe = new Pipe();
+            var output = pipe.Writer;
+            using var jsonUtf8 = new Utf8JsonWriter(output, options);
+
+            jsonUtf8.WriteStartArray();
+
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartObject(bytesTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, bytes));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytes, bytesTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, chars));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(chars, bytesTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, new DateTime(2015, 11, 9)));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, new DateTimeOffset(new DateTime(2015, 11, 9))));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytesTooLarge, Guid.NewGuid()));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(bytesTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(bytesTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 10m));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 10.1));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 10.1f));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, 12345678901));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, (ulong)12345678901));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBoolean(bytesTooLarge, true));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNull(bytesTooLarge));
+
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartObject(charsTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, chars));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(chars, charsTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, bytes));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(bytes, charsTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, new DateTime(2015, 11, 9)));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, new DateTimeOffset(new DateTime(2015, 11, 9))));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, Guid.NewGuid()));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(charsTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteCommentValue(charsTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 10m));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 10.1));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 10.1f));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, 12345678901));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, (ulong)12345678901));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBoolean(charsTooLarge, true));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNull(charsTooLarge));
+
+            jsonUtf8.Flush();
+            Assert.Equal(1, jsonUtf8.BytesCommitted);
         }
 
         private static string GetHelloWorldExpectedString(bool prettyPrint, string propertyName, string value)
