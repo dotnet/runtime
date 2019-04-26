@@ -11700,7 +11700,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     CONTRACTL_END;
 
     // Get the command line.
-    LPCWSTR osCommandLine = GetCommandLineW();
+    LPCWSTR osCommandLine  = GetCommandLineW();
 
 #ifndef FEATURE_PAL
     // On Windows, osCommandLine contains the executable and all arguments.
@@ -11735,17 +11735,6 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 
     s_pCommandLine = pNewCommandLine;
 #endif 
-}
-
-// Release any memory that we allocated for the managed command line
-void ReleaseManagedCommandLine()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef FEATURE_PAL
-    delete[] s_pCommandLine; 
-    s_pCommandLine = NULL;
-#endif
 }
 
 static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR scopeName, GUID* pMvid)
