@@ -220,5 +220,39 @@ namespace System.Text.Json.Tests
             // Proper format but invalid calendar date, time, or time zone designator fields 1997-00-16
             yield return new object[] { "\"\\u0031\\u0039\\u0039\\u0037\\u002d\\u0030\\u0030\\u002d\\u0031\\u0036\"" };
         }
+
+        public static IEnumerable<object[]> DateTimeFractionTrimBaseTests()
+        {
+            yield return new object[] { "2019-04-24T14:50:17.0000000", "2019-04-24T14:50:17" };
+            yield return new object[] { "2019-04-24T14:50:17.1000000", "2019-04-24T14:50:17.1" };
+            yield return new object[] { "2019-04-24T14:50:17.1100000", "2019-04-24T14:50:17.11" };
+            yield return new object[] { "2019-04-24T14:50:17.1110000", "2019-04-24T14:50:17.111" };
+            yield return new object[] { "2019-04-24T14:50:17.1111000", "2019-04-24T14:50:17.1111" };
+            yield return new object[] { "2019-04-24T14:50:17.1111100", "2019-04-24T14:50:17.11111" };
+            yield return new object[] { "2019-04-24T14:50:17.1111110", "2019-04-24T14:50:17.111111" };
+            yield return new object[] { "2019-04-24T14:50:17.1111111", "2019-04-24T14:50:17.1111111" };
+            yield return new object[] { "2019-04-24T14:50:17.0000001", "2019-04-24T14:50:17.0000001" };
+            yield return new object[] { "2019-04-24T14:50:17.0000010", "2019-04-24T14:50:17.000001" };
+            yield return new object[] { "2019-04-24T14:50:17.0000100", "2019-04-24T14:50:17.00001" };
+            yield return new object[] { "2019-04-24T14:50:17.0001000", "2019-04-24T14:50:17.0001" };
+            yield return new object[] { "2019-04-24T14:50:17.0010000", "2019-04-24T14:50:17.001" };
+            yield return new object[] { "2019-04-24T14:50:17.0100000", "2019-04-24T14:50:17.01" };
+        }
+
+        public static IEnumerable<object[]> DateTimeFractionTrimUtcOffsetTests()
+        {
+            foreach (object[] test in DateTimeFractionTrimBaseTests())
+            {
+                yield return new object[] { $"{(string)(test[0])}Z", $"{(string)(test[1])}Z" };
+            }
+        }
+
+        public static IEnumerable<object[]> DateTimeOffsetFractionTrimTests()
+        {
+            foreach (object[] test in DateTimeFractionTrimBaseTests())
+            {
+                yield return new object[] { $"{(string)(test[0])}+01:00", $"{(string)(test[1])}+01:00" };
+            }
+        }
     }
 }
