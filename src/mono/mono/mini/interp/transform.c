@@ -5923,9 +5923,10 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	imethod = real_imethod;
 	mono_os_mutex_lock (&calc_section);
 	if (!imethod->transformed) {
-		InterpMethod *hash = imethod->next_jit_code_hash;
-		memcpy (imethod, &tmp_imethod, sizeof (InterpMethod));
-		imethod->next_jit_code_hash = hash;
+		// Ignore the first two fields which are unchanged. next_jit_code_hash shouldn't
+		// be modified because it is racy with internal hash table insert.
+		const int start_offset = 2 * sizeof (gpointer);
+		memcpy ((char*)imethod + start_offset, (char*)&tmp_imethod + start_offset, sizeof (InterpMethod) - start_offset);
 		mono_memory_barrier ();
 		imethod->transformed = TRUE;
 		mono_atomic_fetch_add_i32 (&mono_jit_stats.methods_with_interp, 1);
