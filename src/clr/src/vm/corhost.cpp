@@ -39,6 +39,11 @@
 #include "dwreport.h"
 #endif // !FEATURE_PAL
 
+#include "stringarraylist.h"
+#ifdef FEATURE_PERFTRACING
+#include "eventpipe.h"
+#endif // FEATURE_PERFTRACING
+
 #ifdef FEATURE_COMINTEROP
 #include "winrttypenameconverter.h"
 #endif
@@ -338,8 +343,10 @@ void SetCommandLineArgs(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR* argv)
     }
     CONTRACTL_END;
 
-    // Record the command line.
-    SaveManagedCommandLine(pwzAssemblyPath, argc, argv);
+    // Send the command line to EventPipe.
+#ifdef FEATURE_PERFTRACING
+    EventPipe::SaveCommandLine(pwzAssemblyPath, argc, argv);
+#endif // FEATURE_PERFTRACING
 
     // Send the command line to System.Environment.
     struct _gc
@@ -469,11 +476,6 @@ HRESULT CorHost2::ExecuteAssembly(DWORD dwAppDomainId,
 
         GCPROTECT_END();
 
-        // When running under FEATURE_PAL, the SetCommandLineArgs call above will
-        // call SaveManagedCommandLine which will allocate memory using new WCHAR[]
-        // We can release this memory now.
-        //
-        ReleaseManagedCommandLine();
     }
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
