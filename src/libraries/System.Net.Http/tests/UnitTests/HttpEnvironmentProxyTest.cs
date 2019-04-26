@@ -21,9 +21,12 @@ namespace System.Net.Http.Tests
         // to be sure they do not interfere with the test.
         private void CleanEnv()
         {
-            List<string>  vars = new List<string>() { "http_proxy", "HTTPS_PROXY", "https_proxy",
-                                                      "all_proxy", "ALL_PROXY",
-                                                      "NO_PROXY" };
+            List<string> vars = new List<string>() { "http_proxy", "HTTP_PROXY",
+                                                     "https_proxy", "HTTPS_PROXY",
+                                                     "all_proxy", "ALL_PROXY",
+                                                     "no_proxy", "NO_PROXY",
+                                                     "GATEWAY_INTERFACE" };
+
             foreach (string v in vars)
             {
                 Environment.SetEnvironmentVariable(v, null);
@@ -115,7 +118,7 @@ namespace System.Net.Http.Tests
         [InlineData("HTTP://ABC.COM/", "abc.com", "80", null, null)]
         [InlineData("http://10.30.62.64:7890/", "10.30.62.64", "7890", null, null)]
         [InlineData("http://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
-        public void HttpProxy_Uri_Parsing(string _input, string _host, string _port, string _user , string _password)
+        public void HttpProxy_Uri_Parsing(string _input, string _host, string _port, string _user, string _password)
         {
             RemoteExecutor.Invoke((input, host, port, user, password) =>
             {
@@ -149,7 +152,7 @@ namespace System.Net.Http.Tests
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, _input, _host, _port, _user ?? "null" , _password ?? "null").Dispose();
+            }, _input, _host, _port, _user ?? "null", _password ?? "null").Dispose();
         }
 
         [Fact]
@@ -205,7 +208,85 @@ namespace System.Net.Http.Tests
                 Assert.True(p.IsBypassed(new Uri("http://www.test.com")));
 
                 return RemoteExecutor.SuccessExitCode;
-           }).Dispose();
+            }).Dispose();
+        }
+
+        public static IEnumerable<object[]> HttpProxyNoProxyEnvVarMemberData()
+        {
+            yield return new object[] { "http_proxy", "no_proxy" };
+            yield return new object[] { "http_proxy", "NO_PROXY" };
+            yield return new object[] { "HTTP_PROXY", "no_proxy" };
+            yield return new object[] { "HTTP_PROXY", "NO_PROXY" };
+        }
+
+        [Theory]
+        [MemberData(nameof(HttpProxyNoProxyEnvVarMemberData))]
+        public void HttpProxy_TryCreate_CaseInsensitiveVariables(string proxyEnvVar, string noProxyEnvVar)
+        {
+            string proxy = "http://foo:bar@1.1.1.1:3000";
+
+            var options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables.Add(proxyEnvVar, proxy);
+            options.StartInfo.EnvironmentVariables.Add(noProxyEnvVar, ".test.com, foo.com");
+            RemoteExecutor.Invoke((proxy) =>
+            {
+                var directUri = new Uri("http://test.com");
+                var thruProxyUri = new Uri("http://atest.com");
+
+                Assert.True(HttpEnvironmentProxy.TryCreate(out IWebProxy p));
+                Assert.NotNull(p);
+
+                Assert.True(p.IsBypassed(directUri));
+                Assert.False(p.IsBypassed(thruProxyUri));
+                Assert.Equal(new Uri(proxy), p.GetProxy(thruProxyUri));
+
+                return RemoteExecutor.SuccessExitCode;
+            }, proxy, options).Dispose();
+        }
+
+        public static IEnumerable<object[]> HttpProxyCgiEnvVarMemberData()
+        {
+            foreach (bool cgi in new object[] { false, true })
+            {
+                yield return new object[] { "http_proxy", cgi, true };
+                yield return new object[] { "HTTP_PROXY", cgi, !cgi };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(HttpProxyCgiEnvVarMemberData))]
+        [PlatformSpecific(~TestPlatforms.Windows)]
+        public void HttpProxy_TryCreateAndPossibleCgi_HttpProxyUpperCaseDisabledInCgi(
+            string proxyEnvVar, bool cgi, bool expectedProxyUse)
+        {
+            string proxy = "http://foo:bar@1.1.1.1:3000";
+
+            var options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables.Add(proxyEnvVar, proxy);
+            if (cgi)
+            {
+                options.StartInfo.EnvironmentVariables.Add("GATEWAY_INTERFACE", "CGI/1.1");
+            }
+
+            RemoteExecutor.Invoke((proxy, expectedProxyUseString) =>
+            {
+                bool expectedProxyUse = bool.Parse(expectedProxyUseString);
+                var destinationUri = new Uri("http://test.com");
+
+                bool created = HttpEnvironmentProxy.TryCreate(out IWebProxy p);
+                if (expectedProxyUse)
+                {
+                    Assert.True(created);
+                    Assert.NotNull(p);
+                    Assert.Equal(new Uri(proxy), p.GetProxy(destinationUri));
+                }
+                else
+                {
+                    Assert.False(created);
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, proxy, expectedProxyUse.ToString(), options).Dispose();
         }
     }
 }

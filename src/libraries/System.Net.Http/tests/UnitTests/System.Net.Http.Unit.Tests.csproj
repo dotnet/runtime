@@ -383,7 +383,7 @@
       <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\src\System\Net\Http\WinHttpTraceHelper.cs">
-      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+      <Link>ProductionCode\System\Net\Http\WinHttpTraceHelper.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
@@ -407,22 +407,22 @@
       <Link>Common\Interop\Windows\WinHttp\Interop.winhttp_types.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs">
-      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+      <Link>WinHttpHandler\UnitTests\FakeInterop.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeRegistry.cs">
-      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+      <Link>WinHttpHandler\UnitTests\FakeRegistry.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeSafeWinHttpHandle.cs">
-      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+      <Link>WinHttpHandler\UnitTests\FakeSafeWinHttpHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\TestControl.cs">
-      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+      <Link>WinHttpHandler\UnitTests\TestControl.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\APICallHistory.cs">
-      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+      <Link>WinHttpHandler\UnitTests\APICallHistory.cs</Link>
     </Compile>
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\TestServer.cs">
-      <Link>ProductionCode\System\Net\Http\WinInetProxyHelper.cs</Link>
+      <Link>WinHttpHandler\UnitTests\TestServer.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>
