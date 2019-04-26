@@ -29,10 +29,10 @@ namespace System.Configuration
 
             // Compare up to but not including trailing backslash
             int lDir = dir.Length;
-            if (dir[lDir - 1] == '\\') lDir -= 1;
+            if (dir[lDir - 1] == '\\' || dir[lDir - 1] == '/') lDir -= 1;
 
             int lSubdir = subdir.Length;
-            if (subdir[lSubdir - 1] == '\\') lSubdir -= 1;
+            if (subdir[lSubdir - 1] == '\\' || dir[lDir - 1] == '/') lSubdir -= 1;
 
             if (lSubdir < lDir)
                 return false;
@@ -41,7 +41,7 @@ namespace System.Configuration
                 return false;
 
             // Check subdir that character following length of dir is a backslash
-            return (lSubdir <= lDir) || (subdir[lDir] == '\\');
+            return (lSubdir <= lDir) || (subdir[lDir] == '\\') || (subdir[lDir] == '/');
         }
 
         // NOTE: This function is also present in fx\src\xsp\system\web\util\urlpath.cs
