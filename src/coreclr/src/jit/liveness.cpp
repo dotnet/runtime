@@ -2359,6 +2359,19 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                     printf("\n");
                 }
 #endif // DEBUG
+
+                if (rhsNode->TypeGet() == TYP_STRUCT)
+                {
+                    // This is a block assignment. An indirection of the rhs is not considered to
+                    // happen until the assignment, so we will extract the side effects from only
+                    // the address.
+                    if (rhsNode->OperIsIndir())
+                    {
+                        assert(rhsNode->OperGet() != GT_NULLCHECK);
+                        rhsNode = rhsNode->AsIndir()->Addr();
+                    }
+                }
+
                 gtExtractSideEffList(rhsNode, &sideEffList);
 
                 if (!sideEffList)
