@@ -40,3 +40,6 @@
 
 # arm32/arm64 timeout. https://github.com/dotnet/coreclr/issues/22414
 -nomethod "System.Numerics.Tests.ToStringTest.RunRegionSpecificStandardFormatToStringTests"
+
+# https://github.com/dotnet/coreclr/issues/24265
+-nomethod "System.IO.Tests.CtorTests.NullEncodingThrows"

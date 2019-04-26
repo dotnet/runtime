@@ -15,3 +15,4 @@ System.Runtime.Tests                 # https://github.com/dotnet/coreclr/issues/
 System.Text.Encodings.Web.Tests      # https://github.com/dotnet/coreclr/issues/21113 -- minopts
 System.Text.Json.Tests               # https://github.com/dotnet/coreclr/issues/21112
 System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only
+System.Xml.RW.XmlConvert.Tests       # https://github.com/dotnet/coreclr/issues/24236

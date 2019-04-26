@@ -11,4 +11,5 @@ System.Management.Tests              # https://github.com/dotnet/coreclr/issues/
 System.Net.HttpListener.Tests        # https://github.com/dotnet/coreclr/issues/17584
 System.Net.Sockets.Tests             # flaky test
 System.Runtime.Tests                 # https://github.com/dotnet/coreclr/issues/22379
+System.Security.Cryptography.X509Certificates.Tests # https://github.com/dotnet/coreclr/issues/23473
 System.Text.RegularExpressions.Tests # https://github.com/dotnet/coreclr/issues/17754 -- timeout -- JitMinOpts only
