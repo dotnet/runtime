@@ -3419,11 +3419,4 @@ struct VASigCookieEx : public VASigCookie
     const BYTE *m_pArgs;        // pointer to first unfixed unmanaged arg
 };
 
-// Rerieve the full command line for the current process.
-LPCWSTR GetManagedCommandLine();
-// Save the command line for the current process.
-void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv);
-// Release any memory that we allocated for the managed command line
-void ReleaseManagedCommandLine();
-
 #endif // !CEELOAD_H_
