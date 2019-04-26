@@ -2560,45 +2560,46 @@ interp_emit_stobj (TransformData *td, MonoClass *klass)
 }
 
 static void
-interp_emit_ldsfld (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, MonoError *error)
+interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, gboolean is_load, MonoError *error)
 {
+	MonoDomain *domain = td->rtm->domain;
+	// Initialize the offset for the field
+	MonoVTable *vtable = mono_class_vtable_checked (domain, field->parent, error);
+	return_if_nok (error);
+
 	if (mono_class_field_is_special_static (field)) {
-		interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_LDSSFLD_VT_SLOW : MINT_LDSSFLD_SLOW);
-		td->last_ins->data [0] = get_data_item_index (td, field);
-		if (mt == MINT_TYPE_VT) {
-			int size = mono_class_value_size (field_class, NULL);
-			WRITE32_INS(td->last_ins, 1, &size);
+		guint32 offset;
+
+		mono_domain_lock (domain);
+		g_assert (domain->special_static_fields);
+		offset = GPOINTER_TO_UINT (g_hash_table_lookup (domain->special_static_fields, field));
+		mono_domain_unlock (domain);
+		g_assert (offset);
+
+		// Offset is SpecialStaticOffset
+		if ((offset & 0x80000000) == 0 && mt != MINT_TYPE_VT) {
+			// This field is thread static
+			interp_add_ins (td, (is_load ? MINT_LDTSFLD_I1 : MINT_STTSFLD_I1) + mt);
+			WRITE32_INS(td->last_ins, 0, &offset);
+		} else {
+			if (mt == MINT_TYPE_VT) {
+				interp_add_ins (td, is_load ? MINT_LDSSFLD_VT : MINT_STSSFLD_VT);
+				WRITE32_INS(td->last_ins, 0, &offset);
+
+				int size = mono_class_value_size (field_class, NULL);
+				WRITE32_INS(td->last_ins, 2, &size);
+			} else {
+				interp_add_ins (td, is_load ? MINT_LDSSFLD : MINT_STSSFLD);
+				td->last_ins->data [0] = get_data_item_index (td, field);
+				WRITE32_INS(td->last_ins, 1, &offset);
+			}
 		}
 	} else {
-		MonoVTable *vtable = mono_class_vtable_checked (td->rtm->domain, field->parent, error);
-		return_if_nok (error);
+		if (is_load)
+			interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_LDSFLD_VT : (MINT_LDSFLD_I1 + mt - MINT_TYPE_I1));
+		else
+			interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
 
-		interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_LDSFLD_VT : (MINT_LDSFLD_I1 + mt - MINT_TYPE_I1));
-		td->last_ins->data [0] = get_data_item_index (td, vtable);
-		td->last_ins->data [1] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
-
-		if (mt == MINT_TYPE_VT) {
-			int size = mono_class_value_size (field_class, NULL);
-			WRITE32_INS(td->last_ins, 2, &size);
-		}
-	}
-}
-
-static void
-interp_emit_stsfld (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, MonoError *error)
-{
-	if (mono_class_field_is_special_static (field)) {
-		interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSSFLD_VT_SLOW : MINT_STSSFLD_SLOW);
-		td->last_ins->data [0] = get_data_item_index (td, field);
-		if (mt == MINT_TYPE_VT) {
-			int size = mono_class_value_size (field_class, NULL);
-			WRITE32_INS(td->last_ins, 1, &size);
-		}
-	} else {
-		MonoVTable *vtable = mono_class_vtable_checked (td->rtm->domain, field->parent, error);
-		return_if_nok (error);
-
-		interp_add_ins (td, (mt == MINT_TYPE_VT) ? MINT_STSFLD_VT : (MINT_STSFLD_I1 + mt - MINT_TYPE_I1));
 		td->last_ins->data [0] = get_data_item_index (td, vtable);
 		td->last_ins->data [1] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
 
@@ -4057,7 +4058,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				if (is_static) {
 					interp_add_ins (td, MINT_POP);
 					td->last_ins->data [0] = 0;
-					interp_emit_ldsfld (td, field, field_klass, mt, error);
+					interp_emit_sfld_access (td, field, field_klass, mt, TRUE, error);
 					goto_if_nok (error, exit);
 				} else {
 					int opcode = MINT_LDFLD_I1 + mt - MINT_TYPE_I1;
@@ -4127,7 +4128,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				if (is_static) {
 					interp_add_ins (td, MINT_POP);
 					td->last_ins->data [0] = 1;
-					interp_emit_stsfld (td, field, field_klass, mt, error);
+					interp_emit_sfld_access (td, field, field_klass, mt, FALSE, error);
 					goto_if_nok (error, exit);
 
 					/* the vtable of the field might not be initialized at this point */
@@ -4177,7 +4178,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			mt = mint_type (ftype);
 			klass = mono_class_from_mono_type_internal (ftype);
 
-			interp_emit_ldsfld (td, field, klass, mt, error);
+			interp_emit_sfld_access (td, field, klass, mt, TRUE, error);
 			goto_if_nok (error, exit);
 
 			if (mt == MINT_TYPE_VT) {
@@ -4201,7 +4202,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			mono_class_vtable_checked (domain, fld_klass, error);
 			goto_if_nok (error, exit);
 
-			interp_emit_stsfld (td, field, fld_klass, mt, error);
+			interp_emit_sfld_access (td, field, fld_klass, mt, FALSE, error);
 			goto_if_nok (error, exit);
 
 			if (mt == MINT_TYPE_VT) {
