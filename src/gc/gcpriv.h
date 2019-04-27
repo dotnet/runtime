@@ -1222,9 +1222,15 @@ public:
                              alloc_context* acontext);
 
 #ifdef MULTIPLE_HEAPS
-    static void balance_heaps (alloc_context* acontext);
+    static
+    void balance_heaps (alloc_context* acontext);
+    PER_HEAP
+    ptrdiff_t get_balance_heaps_loh_effective_budget ();
     static 
     gc_heap* balance_heaps_loh (alloc_context* acontext, size_t size);
+    // Unlike balance_heaps_loh, this may return nullptr if we failed to change heaps.
+    static
+    gc_heap* balance_heaps_loh_hard_limit_retry (alloc_context* acontext, size_t size);
     static
     void gc_thread_stub (void* arg);
 #endif //MULTIPLE_HEAPS
@@ -1232,6 +1238,8 @@ public:
     // For LOH allocations we only update the alloc_bytes_loh in allocation
     // context - we don't actually use the ptr/limit from it so I am
     // making this explicit by not passing in the alloc_context.
+    // Note: This is an instance method, but the heap instance is only used for
+    // lowest_address and highest_address, which are currently the same accross all heaps.
     PER_HEAP
     CObjectHeader* allocate_large_object (size_t size, int64_t& alloc_bytes);
 
@@ -1446,7 +1454,7 @@ protected:
     PER_HEAP
     allocation_state try_allocate_more_space (alloc_context* acontext, size_t jsize,
                                               int alloc_generation_number);
-    PER_HEAP
+    PER_HEAP_ISOLATED
     BOOL allocate_more_space (alloc_context* acontext, size_t jsize,
                               int alloc_generation_number);
 
