@@ -2364,7 +2364,8 @@ public:
             // Walk the statement 'stmt' and find the pointer
             // in the tree is pointing to 'exp'
             //
-            GenTree** link = m_pCompiler->gtFindLink(stmt, exp);
+            Compiler::FindLinkData linkData = m_pCompiler->gtFindLink(stmt, exp);
+            GenTree**              link     = linkData.result;
 
 #ifdef DEBUG
             if (link == nullptr)

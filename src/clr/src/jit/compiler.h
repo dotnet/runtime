@@ -2994,7 +2994,14 @@ public:
     static fgWalkPreFn gtMarkColonCond;
     static fgWalkPreFn gtClearColonCond;
 
-    GenTree** gtFindLink(GenTreeStmt* stmt, GenTree* node);
+    struct FindLinkData
+    {
+        GenTree*  nodeToFind;
+        GenTree** result;
+        GenTree*  parent;
+    };
+
+    FindLinkData gtFindLink(GenTreeStmt* stmt, GenTree* node);
     bool gtHasCatchArg(GenTree* tree);
 
     typedef ArrayStack<GenTree*> GenTreeStack;
