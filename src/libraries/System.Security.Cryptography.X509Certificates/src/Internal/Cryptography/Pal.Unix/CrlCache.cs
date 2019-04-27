@@ -237,13 +237,17 @@ namespace Internal.Cryptography.Pal
                         }
                     }
                 }
-
-                return null;
+            }
+            catch (CryptographicException)
+            {
+                // Treat any ASN errors as if the extension was missing.
             }
             finally
             {
                 ArrayPool<byte>.Shared.Return(crlDistributionPoints.Array);
             }
+
+            return null;
         }
     }
 }
