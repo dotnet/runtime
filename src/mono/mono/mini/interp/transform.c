@@ -284,9 +284,8 @@ static const MagicIntrinsic int_cmpop[] = {
 
 static gboolean generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, MonoGenericContext *generic_context, MonoError *error);
 
-// This version need to be used with switch opcode, which doesn't have constant length
 static InterpInst*
-interp_add_ins_explicit (TransformData *td, guint16 opcode, int len)
+interp_new_ins (TransformData *td, guint16 opcode, int len)
 {
 	InterpInst *new_inst;
 	g_assert (len);
@@ -299,6 +298,14 @@ interp_add_ins_explicit (TransformData *td, guint16 opcode, int len)
 		new_inst->il_offset = td->in_start - td->il_code;
 	else
 		new_inst->il_offset = -1;
+	return new_inst;
+}
+
+// This version need to be used with switch opcode, which doesn't have constant length
+static InterpInst*
+interp_add_ins_explicit (TransformData *td, guint16 opcode, int len)
+{
+	InterpInst *new_inst = interp_new_ins (td, opcode, len);
 	new_inst->prev = td->last_ins;
 	if (td->last_ins)
 		td->last_ins->next = new_inst;
@@ -312,6 +319,36 @@ static InterpInst*
 interp_add_ins (TransformData *td, guint16 opcode)
 {
 	return interp_add_ins_explicit (td, opcode, mono_interp_oplen [opcode]);
+}
+
+// Inserts a new instruction inside the instruction stream
+static InterpInst*
+interp_insert_ins (TransformData *td, InterpInst *prev_ins, guint16 opcode)
+{
+	InterpInst *new_inst = interp_new_ins (td, opcode, mono_interp_oplen [opcode]);
+	g_assert (prev_ins && prev_ins->next);
+
+	new_inst->prev = prev_ins;
+	new_inst->next = prev_ins->next;
+	prev_ins->next = new_inst;
+	new_inst->next->prev = new_inst;
+
+	return new_inst;
+}
+
+static void
+interp_remove_ins (TransformData *td, InterpInst *ins)
+{
+	if (ins->prev) {
+		ins->prev->next = ins->next;
+	} else {
+		td->first_ins = ins->next;
+	}
+	if (ins->next) {
+		ins->next->prev = ins->prev;
+	} else {
+		td->last_ins =  ins->prev;
+	}
 }
 
 #define CHECK_STACK(td, n) \
@@ -923,9 +960,71 @@ emit_store_value_as_local (TransformData *td, MonoType *src)
 	PUSH_TYPE (td, STACK_TYPE_VT, NULL);
 }
 
+// Returns whether we can optimize away the instructions starting at start.
+// If any instructions are part of a new basic block, we can't remove them.
+static gboolean
+interp_is_bb_start (TransformData *td, InterpInst *start, InterpInst *end)
+{
+	InterpInst *ins = start;
+	while (ins != end) {
+		if (ins->il_offset != -1) {
+			if (td->is_bb_start [ins->il_offset])
+				return TRUE;
+		}
+		ins = ins->next;
+	}
+	return FALSE;
+}
+
+static gboolean
+interp_ins_is_ldc (InterpInst *ins)
+{
+	return ins->opcode >= MINT_LDC_I4_M1 && ins->opcode <= MINT_LDC_I8;
+}
+
+static gint32
+interp_ldc_i4_get_const (InterpInst *ins)
+{
+	switch (ins->opcode) {
+		case MINT_LDC_I4_M1: return -1;
+		case MINT_LDC_I4_0: return 0;
+		case MINT_LDC_I4_1: return 1;
+		case MINT_LDC_I4_2: return 2;
+		case MINT_LDC_I4_3: return 3;
+		case MINT_LDC_I4_4: return 4;
+		case MINT_LDC_I4_5: return 5;
+		case MINT_LDC_I4_6: return 6;
+		case MINT_LDC_I4_7: return 7;
+		case MINT_LDC_I4_8: return 8;
+		case MINT_LDC_I4_S: return (gint32)(gint8)ins->data [0];
+		case MINT_LDC_I4: return READ32 (&ins->data [0]);
+		default:
+			g_assert_not_reached ();
+	}
+}
+
+static int
+interp_get_ldind_for_mt (int mt)
+{
+	switch (mt) {
+		case MINT_TYPE_I1: return MINT_LDIND_I1_CHECK;
+		case MINT_TYPE_U1: return MINT_LDIND_U1_CHECK;
+		case MINT_TYPE_I2: return MINT_LDIND_I2_CHECK;
+		case MINT_TYPE_U2: return MINT_LDIND_U2_CHECK;
+		case MINT_TYPE_I4: return MINT_LDIND_I4_CHECK;
+		case MINT_TYPE_I8: return MINT_LDIND_I8_CHECK;
+		case MINT_TYPE_R4: return MINT_LDIND_R4_CHECK;
+		case MINT_TYPE_R8: return MINT_LDIND_R8_CHECK;
+		case MINT_TYPE_O: return MINT_LDIND_REF;
+		default:
+			g_assert_not_reached ();
+	}
+	return -1;
+}
+
 /* Return TRUE if call transformation is finished */
 static gboolean
-interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMethodSignature *csignature, gboolean readonly, int *op)
+interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClass *constrained_class, MonoMethodSignature *csignature, gboolean readonly, int *op)
 {
 	const char *tm = target_method->name;
 	int i;
@@ -1294,6 +1393,50 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoMeth
 		else if (!strcmp (tm, "GetType"))
 			*op = MINT_INTRINS_GET_TYPE;
 #endif
+	} else if (in_corlib && target_method->klass == mono_defaults.enum_class && !strcmp (tm, "HasFlag")) {
+		gboolean intrinsify = FALSE;
+		MonoClass *base_klass = NULL;
+		if (td->last_ins && td->last_ins->opcode == MINT_BOX &&
+				td->last_ins->prev && interp_ins_is_ldc (td->last_ins->prev) &&
+				td->last_ins->prev->prev && td->last_ins->prev->prev->opcode == MINT_BOX &&
+				td->sp [-2].klass == td->sp [-1].klass &&
+				!interp_is_bb_start (td, td->last_ins->prev->prev, NULL) &&
+				!td->is_bb_start [td->in_start - td->il_code]) {
+			// csc pattern : box, ldc, box, call HasFlag
+			g_assert (m_class_is_enumtype (td->sp [-2].klass));
+			MonoType *base_type = mono_type_get_underlying_type (m_class_get_byval_arg (td->sp [-2].klass));
+			base_klass = mono_class_from_mono_type_internal (base_type);
+
+			// Remove the boxing of valuetypes
+			interp_remove_ins (td, td->last_ins->prev->prev);
+			interp_remove_ins (td, td->last_ins);
+
+			intrinsify = TRUE;
+		} else if (td->last_ins && td->last_ins->opcode == MINT_BOX &&
+				td->last_ins->prev && interp_ins_is_ldc (td->last_ins->prev) &&
+				constrained_class && td->sp [-1].klass == constrained_class &&
+				!interp_is_bb_start (td, td->last_ins->prev, NULL) &&
+				!td->is_bb_start [td->in_start - td->il_code]) {
+			// mcs pattern : ldc, box, constrained Enum, call HasFlag
+			g_assert (m_class_is_enumtype (constrained_class));
+			MonoType *base_type = mono_type_get_underlying_type (m_class_get_byval_arg (constrained_class));
+			base_klass = mono_class_from_mono_type_internal (base_type);
+			int mt = mint_type (m_class_get_byval_arg (base_klass));
+
+			// Remove boxing and load the value of this
+			interp_remove_ins (td, td->last_ins);
+			interp_insert_ins (td, td->last_ins->prev, interp_get_ldind_for_mt (mt));
+
+			intrinsify = TRUE;
+		}
+		if (intrinsify) {
+			interp_add_ins (td, MINT_INTRINS_ENUM_HASFLAG);
+			td->last_ins->data [0] = get_data_item_index (td, base_klass);
+			td->sp -= 2;
+			PUSH_SIMPLE_TYPE (td, STACK_TYPE_I4);
+			td->ip += 5;
+			return TRUE;
+		}
 	}
 
 	return FALSE;
@@ -1692,7 +1835,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	}
 
 	/* Intrinsics */
-	if (target_method && interp_handle_intrinsics (td, target_method, csignature, readonly, &op))
+	if (target_method && interp_handle_intrinsics (td, target_method, constrained_class, csignature, readonly, &op))
 		return TRUE;
 
 	if (constrained_class) {
@@ -1721,7 +1864,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		g_print ("                    : %s::%s.  %s (%p)\n", target_method->klass->name, target_method->name, mono_signature_full_name (target_method->signature), target_method);
 #endif
 		/* Intrinsics: Try again, it could be that `mono_get_method_constrained_with_method` resolves to a method that we can substitute */
-		if (target_method && interp_handle_intrinsics (td, target_method, csignature, readonly, &op))
+		if (target_method && interp_handle_intrinsics (td, target_method, constrained_class, csignature, readonly, &op))
 			return TRUE;
 
 		return_val_if_nok (error, FALSE);
@@ -2496,19 +2639,7 @@ interp_emit_ldobj (TransformData *td, MonoClass *klass)
 		WRITE32_INS (td->last_ins, 0, &size);
 		PUSH_VT (td, size);
 	} else {
-		int opcode;
-		switch (mt) {
-			case MINT_TYPE_I1: opcode = MINT_LDIND_I1_CHECK; break;
-			case MINT_TYPE_U1: opcode = MINT_LDIND_U1_CHECK; break;
-			case MINT_TYPE_I2: opcode = MINT_LDIND_I2_CHECK; break;
-			case MINT_TYPE_U2: opcode = MINT_LDIND_U2_CHECK; break;
-			case MINT_TYPE_I4: opcode = MINT_LDIND_I4_CHECK; break;
-			case MINT_TYPE_I8: opcode = MINT_LDIND_I8_CHECK; break;
-			case MINT_TYPE_R4: opcode = MINT_LDIND_R4_CHECK; break;
-			case MINT_TYPE_R8: opcode = MINT_LDIND_R8_CHECK; break;
-			case MINT_TYPE_O: opcode = MINT_LDIND_REF; break;
-			default: g_assert_not_reached (); break;
-		}
+		int opcode = interp_get_ldind_for_mt (mt);
 		interp_add_ins (td, opcode);
 	}
 
@@ -3638,9 +3769,18 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case STACK_TYPE_R8:
 				interp_add_ins (td, MINT_CONV_I8_R8);
 				break;
-			case STACK_TYPE_I4:
-				interp_add_ins (td, MINT_CONV_I8_I4);
+			case STACK_TYPE_I4: {
+				if (interp_ins_is_ldc (td->last_ins) && !td->is_bb_start [in_offset]) {
+					gint64 ct = interp_ldc_i4_get_const (td->last_ins);
+					interp_remove_ins (td, td->last_ins);
+
+					interp_add_ins (td, MINT_LDC_I8);
+					WRITE64_INS (td->last_ins, 0, &ct);
+				} else {
+					interp_add_ins (td, MINT_CONV_I8_I4);
+				}
 				break;
+			}
 			case STACK_TYPE_I8:
 				break;
 			case STACK_TYPE_MP:
@@ -3699,7 +3839,15 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			CHECK_STACK (td, 1);
 			switch (td->sp [-1].type) {
 			case STACK_TYPE_I4:
-				interp_add_ins (td, MINT_CONV_U8_I4);
+				if (interp_ins_is_ldc (td->last_ins) && !td->is_bb_start [in_offset]) {
+					gint64 ct = (guint32)interp_ldc_i4_get_const (td->last_ins);
+					interp_remove_ins (td, td->last_ins);
+
+					interp_add_ins (td, MINT_LDC_I8);
+					WRITE64_INS (td->last_ins, 0, &ct);
+				} else {
+					interp_add_ins (td, MINT_CONV_U8_I4);
+				}
 				break;
 			case STACK_TYPE_I8:
 				break;
