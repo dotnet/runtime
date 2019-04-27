@@ -45,7 +45,7 @@ mono_dl_get_system_dir (void)
 void*
 mono_dl_lookup_symbol (MonoDl *module, const char *name)
 {
-	return NULL;
+	return dlsym(module->handle, name);
 }
 
 char*
@@ -58,19 +58,25 @@ mono_dl_current_error_string (void)
 int
 mono_dl_convert_flags (int flags)
 {
-	return flags;
+	int lflags = flags & MONO_DL_LOCAL ? 0 : RTLD_GLOBAL;
+
+	if (flags & MONO_DL_LAZY)
+		lflags |= RTLD_LAZY;
+	else
+		lflags |= RTLD_NOW;
+	return lflags;
 }
 
 void *
 mono_dl_open_file (const char *file, int flags)
 {
-	return NULL;
+	return dlopen(file, flags);
 }
 
 void
 mono_dl_close_handle (MonoDl *module)
 {
-	//nothing to do
+	dlclose(module->handle);
 }
 
 #endif
