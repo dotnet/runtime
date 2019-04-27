@@ -848,23 +848,30 @@ namespace Internal.Cryptography.Pal
 
         private static string FindHttpAiaRecord(ReadOnlyMemory<byte> authorityInformationAccess, string recordTypeOid)
         {
-            AsnReader reader = new AsnReader(authorityInformationAccess, AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
-            reader.ThrowIfNotEmpty();
-
-            while (sequenceReader.HasData)
+            try
             {
-                AccessDescriptionAsn.Decode(sequenceReader, out AccessDescriptionAsn description);
-                if (StringComparer.Ordinal.Equals(description.AccessMethod, recordTypeOid))
+                AsnReader reader = new AsnReader(authorityInformationAccess, AsnEncodingRules.DER);
+                AsnReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
+
+                while (sequenceReader.HasData)
                 {
-                    GeneralNameAsn name = description.AccessLocation;
-                    if (name.Uri != null &&
-                        Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
-                        uri.Scheme == "http")
+                    AccessDescriptionAsn.Decode(sequenceReader, out AccessDescriptionAsn description);
+                    if (StringComparer.Ordinal.Equals(description.AccessMethod, recordTypeOid))
                     {
-                        return name.Uri;
+                        GeneralNameAsn name = description.AccessLocation;
+                        if (name.Uri != null &&
+                            Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
+                            uri.Scheme == "http")
+                        {
+                            return name.Uri;
+                        }
                     }
                 }
+            }
+            catch (CryptographicException)
+            {
+                // Treat any ASN errors as if the extension was missing.
             }
 
             return null;
