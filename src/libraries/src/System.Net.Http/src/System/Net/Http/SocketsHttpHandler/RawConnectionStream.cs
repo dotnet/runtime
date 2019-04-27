@@ -152,7 +152,7 @@ namespace System.Net.Http
             {
                 if (_connection == null)
                 {
-                    throw new IOException(SR.net_http_io_write);
+                    throw new IOException(SR.ObjectDisposed_StreamClosed);
                 }
 
                 if (buffer.Length != 0)
@@ -170,7 +170,7 @@ namespace System.Net.Http
 
                 if (_connection == null)
                 {
-                    return new ValueTask(Task.FromException(new IOException(SR.net_http_io_write)));
+                    return new ValueTask(Task.FromException(new IOException(SR.ObjectDisposed_StreamClosed)));
                 }
 
                 if (buffer.Length == 0)

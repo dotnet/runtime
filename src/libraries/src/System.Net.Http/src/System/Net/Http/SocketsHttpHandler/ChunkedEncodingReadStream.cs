@@ -5,6 +5,7 @@
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -71,7 +72,7 @@ namespace System.Net.Http
                         bytesRead = _connection.Read(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining)));
                         if (bytesRead == 0)
                         {
-                            throw new IOException(SR.net_http_invalid_response);
+                            throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _chunkBytesRemaining));
                         }
                         _chunkBytesRemaining -= (ulong)bytesRead;
                         if (_chunkBytesRemaining == 0)
@@ -157,7 +158,7 @@ namespace System.Net.Http
                             int bytesRead = await _connection.ReadAsync(buffer.Slice(0, (int)Math.Min((ulong)buffer.Length, _chunkBytesRemaining))).ConfigureAwait(false);
                             if (bytesRead == 0)
                             {
-                                throw new IOException(SR.net_http_invalid_response);
+                                throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _chunkBytesRemaining));
                             }
                             _chunkBytesRemaining -= (ulong)bytesRead;
                             if (_chunkBytesRemaining == 0)
@@ -277,7 +278,7 @@ namespace System.Net.Http
                             // Parse the hex value from it.
                             if (!Utf8Parser.TryParse(currentLine, out ulong chunkSize, out int bytesConsumed, 'X'))
                             {
-                                throw new IOException(SR.net_http_invalid_response);
+                                throw new IOException(SR.Format(SR.net_http_invalid_response_chunk_header_invalid, BitConverter.ToString(currentLine.ToArray())));
                             }
                             _chunkBytesRemaining = chunkSize;
 
@@ -332,7 +333,7 @@ namespace System.Net.Http
 
                             if (currentLine.Length != 0)
                             {
-                                ThrowInvalidHttpResponse();
+                                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_chunk_terminator_invalid, Encoding.ASCII.GetString(currentLine)));
                             }
 
                             _state = ParsingState.ExpectChunkHeader;
@@ -412,7 +413,7 @@ namespace System.Net.Http
                     }
                     else if (c != ' ' && c != '\t') // not called out in the RFC, but WinHTTP allows it
                     {
-                        throw new IOException(SR.net_http_invalid_response);
+                        throw new IOException(SR.Format(SR.net_http_invalid_response_chunk_extension_invalid, BitConverter.ToString(lineAfterChunkSize.ToArray())));
                     }
                 }
             }

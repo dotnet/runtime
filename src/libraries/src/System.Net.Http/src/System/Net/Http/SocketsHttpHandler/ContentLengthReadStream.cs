@@ -39,7 +39,7 @@ namespace System.Net.Http
                 if (bytesRead <= 0)
                 {
                     // Unexpected end of response stream.
-                    throw new IOException(SR.net_http_invalid_response);
+                    throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
                 }
 
                 Debug.Assert((ulong)bytesRead <= _contentBytesRemaining);
@@ -101,7 +101,7 @@ namespace System.Net.Http
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                     // Unexpected end of response stream.
-                    throw new IOException(SR.net_http_invalid_response);
+                    throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _contentBytesRemaining));
                 }
 
                 Debug.Assert((ulong)bytesRead <= _contentBytesRemaining);

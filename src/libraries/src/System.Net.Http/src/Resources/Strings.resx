@@ -326,6 +326,45 @@
   <data name="net_http_invalid_response" xml:space="preserve">
     <value>The server returned an invalid or unrecognized response.</value>
   </data>
+  <data name="net_http_invalid_response_premature_eof" xml:space="preserve">
+    <value>The response ended prematurely.</value>
+  </data>
+  <data name="net_http_invalid_response_premature_eof_bytecount" xml:space="preserve">
+    <value>The response ended prematurely, with at least {0} additional bytes expected.</value>
+  </data>
+  <data name="net_http_invalid_response_chunk_header_invalid" xml:space="preserve">
+    <value>Received chunk header length could not be parsed: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_chunk_extension_invalid" xml:space="preserve">
+    <value>Received an invalid chunk extension: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_chunk_terminator_invalid" xml:space="preserve">
+    <value>Received an invalid chunk terminator: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_status_line" xml:space="preserve">
+    <value>Received an invalid status line: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_status_code" xml:space="preserve">
+    <value>Received an invalid status code: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_status_reason" xml:space="preserve">
+    <value>Received status phrase could not be decoded with iso-8859-1: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_header_folder" xml:space="preserve">
+    <value>Received an invalid folded header.</value>
+  </data>
+  <data name="net_http_invalid_response_header_line" xml:space="preserve">
+    <value>Received an invalid header line: '{0}'.</value>
+  </data>
+  <data name="net_http_invalid_response_header_name" xml:space="preserve">
+    <value>Received an invalid header name: '{0}'.</value>
+  </data>
+  <data name="net_http_request_aborted" xml:space="preserve">
+    <value>The request was aborted.</value>
+  </data>
+  <data name="net_http_invalid_response_pseudo_header_in_trailer" xml:space="preserve">
+    <value>Received an HTTP/2 pseudo-header as a trailing header.</value>
+  </data>
   <data name="net_http_unix_handler_disposed" xml:space="preserve">
     <value>The handler was disposed of while active operations were in progress.</value>
   </data>
@@ -391,6 +430,9 @@
   </data>
   <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
     <value>The application protocol list is invalid.</value>
+  </data>
+  <data name="net_ssl_http2_requires_tls12" xml:space="preserve">
+    <value>HTTP/2 requires TLS 1.2 or newer, but '{0}' was negotiated.</value>
   </data>
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
