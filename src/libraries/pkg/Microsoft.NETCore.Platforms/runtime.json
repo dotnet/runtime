@@ -1345,6 +1345,35 @@
         "ubuntu-x86"
       ]
     },
+    "ubuntu.19.04": {
+      "#import": [
+        "ubuntu"
+      ]
+    },
+    "ubuntu.19.04-arm": {
+      "#import": [
+        "ubuntu.19.04",
+        "ubuntu-arm"
+      ]
+    },
+    "ubuntu.19.04-arm64": {
+      "#import": [
+        "ubuntu.19.04",
+        "ubuntu-arm64"
+      ]
+    },
+    "ubuntu.19.04-x64": {
+      "#import": [
+        "ubuntu.19.04",
+        "ubuntu-x64"
+      ]
+    },
+    "ubuntu.19.04-x86": {
+      "#import": [
+        "ubuntu.19.04",
+        "ubuntu-x86"
+      ]
+    },
     "unix": {
       "#import": [
         "any"
