@@ -715,7 +715,7 @@ namespace System.Net.Http
             // If the connection has been aborted, then fail now instead of trying to send more data.
             if (IsAborted())
             {
-                throw new IOException(SR.net_http_invalid_response);
+                throw new IOException(SR.net_http_request_aborted);
             }
         }
 
@@ -1486,7 +1486,7 @@ namespace System.Net.Http
                 int bytesRead = await stream.ReadAsync(buffer.Slice(totalBytesRead)).ConfigureAwait(false);
                 if (bytesRead == 0)
                 {
-                    throw new IOException(SR.net_http_invalid_response);
+                    throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, minReadBytes));
                 }
 
                 totalBytesRead += bytesRead;

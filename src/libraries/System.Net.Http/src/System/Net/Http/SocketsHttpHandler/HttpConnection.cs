@@ -519,7 +519,7 @@ namespace System.Net.Http
 
                     if (bytesRead == 0)
                     {
-                        throw new IOException(SR.net_http_invalid_response);
+                        throw new IOException(SR.net_http_invalid_response_premature_eof);
                     }
 
                     _readOffset = 0;
@@ -824,7 +824,7 @@ namespace System.Net.Http
             const int MinStatusLineLength = 12; // "HTTP/1.x 123" 
             if (line.Length < MinStatusLineLength || line[8] != ' ')
             {
-                ThrowInvalidHttpResponse();
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
             }
 
             ulong first8Bytes = BitConverter.ToUInt64(line);
@@ -846,7 +846,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    ThrowInvalidHttpResponse();
+                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
                 }
             }
 
@@ -854,7 +854,7 @@ namespace System.Net.Http
             byte status1 = line[9], status2 = line[10], status3 = line[11];
             if (!IsDigit(status1) || !IsDigit(status2) || !IsDigit(status3))
             {
-                ThrowInvalidHttpResponse();
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(line.Slice(9, 3))));
             }
             response.SetStatusCodeWithoutValidation((HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0')));
 
@@ -879,13 +879,13 @@ namespace System.Net.Http
                     }
                     catch (FormatException error)
                     {
-                        ThrowInvalidHttpResponse(error);
+                        throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_reason, Encoding.ASCII.GetString(reasonBytes.ToArray())), error);
                     }
                 }
             }
             else
             {
-                ThrowInvalidHttpResponse();
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_line, Encoding.ASCII.GetString(line)));
             }
         }
 
@@ -905,20 +905,20 @@ namespace System.Net.Http
                 if (pos == line.Length)
                 {
                     // Invalid header line that doesn't contain ':'.
-                    ThrowInvalidHttpResponse();
+                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(line)));
                 }
             }
 
             if (pos == 0)
             {
                 // Invalid empty header name.
-                ThrowInvalidHttpResponse();
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, ""));
             }
 
             if (!HeaderDescriptor.TryGet(line.Slice(0, pos), out HeaderDescriptor descriptor))
             {
                 // Invalid header name.
-                ThrowInvalidHttpResponse();
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(line.Slice(0, pos))));
             }
 
             if (isFromTrailer && descriptor.KnownHeader != null && s_disallowedTrailers.Contains(descriptor.KnownHeader))
@@ -936,14 +936,14 @@ namespace System.Net.Http
                 if (pos == line.Length)
                 {
                     // Invalid header line that doesn't contain ':'.
-                    ThrowInvalidHttpResponse();
+                    throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(line)));
                 }
             }
 
             if (line[pos++] != ':')
             {
                 // Invalid header line that doesn't contain ':'.
-                ThrowInvalidHttpResponse();
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_line, Encoding.ASCII.GetString(line)));
             }
 
             // Skip whitespace after colon
@@ -1243,7 +1243,7 @@ namespace System.Net.Http
             {
                 if (_allowedReadLineBytes < buffer.Length)
                 {
-                    ThrowInvalidHttpResponse();
+                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength));
                 }
 
                 line = default;
@@ -1311,7 +1311,7 @@ namespace System.Net.Http
                             // so if we haven't seen a colon, this is invalid.
                             if (Array.IndexOf(_readBuffer, (byte)':', _readOffset, lfIndex - _readOffset) == -1)
                             {
-                                ThrowInvalidHttpResponse();
+                                throw new HttpRequestException(SR.net_http_invalid_response_header_folder);
                             }
 
                             // When we return the line, we need the interim newlines filtered out. According
@@ -1354,7 +1354,7 @@ namespace System.Net.Http
         {
             if (_allowedReadLineBytes < 0)
             {
-                ThrowInvalidHttpResponse();
+                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength));
             }
         }
 
@@ -1398,7 +1398,7 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
             if (bytesRead == 0)
             {
-                throw new IOException(SR.net_http_invalid_response);
+                throw new IOException(SR.net_http_invalid_response_premature_eof);
             }
 
             _readLength += bytesRead;
@@ -1445,7 +1445,7 @@ namespace System.Net.Http
             if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
             if (bytesRead == 0)
             {
-                throw new IOException(SR.net_http_invalid_response);
+                throw new IOException(SR.net_http_invalid_response_premature_eof);
             }
 
             _readLength += bytesRead;
@@ -1845,10 +1845,6 @@ namespace System.Net.Http
         }
 
         public sealed override string ToString() => $"{nameof(HttpConnection)}({_pool})"; // Description for diagnostic purposes
-
-        private static void ThrowInvalidHttpResponse() => throw new HttpRequestException(SR.net_http_invalid_response);
-
-        private static void ThrowInvalidHttpResponse(Exception innerException) => throw new HttpRequestException(SR.net_http_invalid_response, innerException);
 
         internal sealed override void Trace(string message, [CallerMemberName] string memberName = null) =>
             NetEventSource.Log.HandlerMessage(
