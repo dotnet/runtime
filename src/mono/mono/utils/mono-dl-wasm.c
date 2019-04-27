@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
+#include <dlfcn.h>
 
 const char *
 mono_dl_get_so_prefix (void)
