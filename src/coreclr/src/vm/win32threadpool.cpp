@@ -3803,7 +3803,7 @@ BOOL ThreadpoolMgr::ShouldGrowCompletionPortThreadpool(ThreadCounter::Counts cou
         && (counts.NumActive == 0 ||  !GCHeapUtilities::IsGCInProgress(TRUE))
         )
     {
-        // adjust limit if neeeded
+        // adjust limit if needed
         if (counts.NumRetired == 0)
         {
             if (counts.NumActive + counts.NumRetired < MaxLimitTotalCPThreads &&
