@@ -1963,7 +1963,7 @@ void NDirectStubLinker::AdjustTargetStackDeltaForReverseInteropHRESULTSwapping()
         // If the managed return type is void, undo the HRESULT 
         // return type added to our target sig for HRESULT swapping.
         // No extra argument will have been added because it makes
-        // no sense to add an extry byref void argument.
+        // no sense to add an extra byref void argument.
         //
         m_iTargetStackDelta--;
     }

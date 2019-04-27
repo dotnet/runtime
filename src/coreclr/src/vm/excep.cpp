@@ -7988,7 +7988,7 @@ LONG WINAPI CLRVectoredExceptionHandlerShim(PEXCEPTION_POINTERS pExceptionInfo)
     // in-proc helper thread to work. What it does is continue the exception unhandled which
     // will let the thread immediately execute to this point. Inside this worker the thread
     // will block until the debugger knows how to continue the exception. If it decides the
-    // exception was handled then we immediately resume execution as if the exeption had never
+    // exception was handled then we immediately resume execution as if the exception had never
     // even been allowed to run into this handler. If it is unhandled then we keep processing
     // this handler
     //

@@ -6106,7 +6106,7 @@ void ExceptionTracker::StackRange::CombineWith(StackFrame sfCurrent, StackRange*
         // So in this case, we'll see a sfCurrent that is larger than the previous tracker's high bound and
         // we'll have an empty scan range for the current tracker.  And we'll just need to pre-init the 
         // scanned stack range for the new tracker to the previous tracker's range.  This maintains the 
-        // invariant that the scanned range for nested trackers completely cover the scanned range of thier
+        // invariant that the scanned range for nested trackers completely cover the scanned range of their
         // previous tracker once they "escape" the previous tracker.
         STRESS_LOG3(LF_EH, LL_INFO100, 
             "Initializing current StackRange with previous tracker's StackRange.  sfCurrent: %p, prev low: %p, prev high: %p\n",
@@ -6431,7 +6431,7 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
                 // then:
                 //
                 // For case (1) above, sfCurrentEstablisherFrame will be the same as the callerSP of the managed frame.
-                // For case (2) above, sfLastUnwoundEstbalisherFrame would be the same as the managed frame's SP (or upper bound)
+                // For case (2) above, sfLastUnwoundEstablisherFrame would be the same as the managed frame's SP (or upper bound)
                 //
                 // For these scenarios, the frame is considered unwound.
 
@@ -6454,8 +6454,8 @@ bool ExceptionTracker::HasFrameBeenUnwoundByAnyActiveException(CrawlFrame * pCF)
 #else // !STACK_RANGE_BOUNDS_ARE_CALLER_SP
                 // On ARM, if the callerSP of the managed frame is the same as upper bound, then:
                 // 
-                // For case (1), sfCurrentEstablisherFrame will be above the callerSP of the managed frame (since EstbalisherFrame is the caller SP for a given frame on ARM)
-                // For case (2), upper bound will be the same as LastUnwoundEstbalisherFrame.
+                // For case (1), sfCurrentEstablisherFrame will be above the callerSP of the managed frame (since EstablisherFrame is the caller SP for a given frame on ARM)
+                // For case (2), upper bound will be the same as LastUnwoundEstablisherFrame.
                 //
                 // For these scenarios, the frame is considered unwound.
                 if (sfUpperBound == csfToCheck)
