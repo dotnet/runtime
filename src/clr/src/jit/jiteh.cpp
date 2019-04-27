@@ -1598,7 +1598,7 @@ EHblkDsc* Compiler::fgAddEHTableEntry(unsigned XTnum)
 #if !FEATURE_EH
 
 /*****************************************************************************
- *  fgRemoveEH: To facilitiate the bring-up of new platforms without having to
+ *  fgRemoveEH: To facilitate the bring-up of new platforms without having to
  *  worry about fully implementing EH, we want to simply remove EH constructs
  *  from the IR. This works because a large percentage of our tests contain
  *  EH constructs but don't actually throw exceptions. This function removes

@@ -2490,7 +2490,7 @@ GenTree* Lowering::DecomposeLongCompare(GenTree* cmp)
             // Try to move the first SUB_HI operands right in front of it, this allows using
             // a single temporary register instead of 2 (one for CMP and one for SUB_HI). Do
             // this only for locals as they won't change condition flags. Note that we could
-            // move constants (except 0 which generates XOR reg, reg) but it's extremly rare
+            // move constants (except 0 which generates XOR reg, reg) but it's extremely rare
             // to have a constant as the first operand.
             //
 

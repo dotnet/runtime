@@ -2815,7 +2815,7 @@ void Module::AllocateStatics(AllocMemTracker *pamTracker)
         m_dwThreadStaticsBlockSize = ThreadLocalModule::OffsetOfDataBlob();
 
         // If it has no code, we don't have to allocate anything
-        LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Resource module %s. No statics neeeded\n", GetSimpleName()));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "STATICS: Resource module %s. No statics needed\n", GetSimpleName()));
         _ASSERTE(m_maxTypeRidStaticsAllocated == 0);
         return;
     }
