@@ -200,6 +200,48 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        public static void TestInvalidAia()
+        {
+            using (RSA key = RSA.Create())
+            {
+                CertificateRequest rootReq = new CertificateRequest(
+                    "CN=Root",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                rootReq.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                CertificateRequest certReq = new CertificateRequest(
+                    "CN=test",
+                    key,
+                    HashAlgorithmName.SHA256,
+                    RSASignaturePadding.Pkcs1);
+
+                certReq.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(false, false, 0, false));
+
+                certReq.CertificateExtensions.Add(
+                    new X509Extension(
+                        "1.3.6.1.5.5.7.1.1",
+                        new byte[] { 5 },
+                        critical: false));
+
+                DateTimeOffset notBefore = DateTimeOffset.UtcNow.AddDays(-1);
+                DateTimeOffset notAfter = notBefore.AddDays(30);
+
+                using (X509Certificate2 root = rootReq.CreateSelfSigned(notBefore, notAfter))
+                using (X509Certificate2 ee = certReq.Create(root, notBefore, notAfter, root.GetSerialNumber()))
+                {
+                    X509Chain chain = new X509Chain();
+                    Assert.False(chain.Build(ee));
+                    Assert.Equal(1, chain.ChainElements.Count);
+                }
+            }
+        }
+
         private static X509Certificate2 TamperSignature(X509Certificate2 input)
         {
             byte[] cert = input.RawData;
