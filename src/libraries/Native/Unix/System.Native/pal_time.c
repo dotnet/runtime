@@ -62,8 +62,11 @@ uint64_t SystemNative_GetTimestampResolution()
         return 0;
     }
 
-    uint64_t nanosecondsPerTick = ((uint64_t)(mtid.denom) / (uint64_t)(mtid.numer));
-    return SecondsToNanoSeconds * nanosecondsPerTick;
+    // (numer / denom) gives you the nanoseconds per tick, so the below code
+    // computes the number of ticks per second. We explicitly do the multiplication
+    // first in order to help minimize the error that is produced by integer division.
+
+    return (SecondsToNanoSeconds * (uint64_t)(mtid.denom)) / (uint64_t)(mtid.numer);
 #else
     struct timespec ts;
 
@@ -73,7 +76,7 @@ uint64_t SystemNative_GetTimestampResolution()
     }
 
     uint64_t nanosecondsPerTick = ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
-    return SecondsToNanoSeconds * nanosecondsPerTick;
+    return SecondsToNanoSeconds / nanosecondsPerTick;
 #endif
 }
 
