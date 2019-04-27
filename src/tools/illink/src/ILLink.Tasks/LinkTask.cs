@@ -123,19 +123,24 @@ namespace ILLink.Tasks
 			set => _illinkPath = value;
 		}
 
+		private static string Quote (string path)
+		{
+			return $"\"{path.TrimEnd('\\')}\"";
+		}
+
 		protected override string GenerateCommandLineCommands ()
 		{
 			var args = new StringBuilder ();
-			args.Append (ILLinkPath);
+			args.Append (Quote (ILLinkPath));
 
 			if (RootDescriptorFiles != null) {
 				foreach (var rootFile in RootDescriptorFiles) {
-					args.Append (" -x ").Append (rootFile.ItemSpec);
+					args.Append (" -x ").Append (Quote (rootFile.ItemSpec));
 				}
 			}
 
 			foreach (var assemblyItem in RootAssemblyNames) {
-				args.Append (" -a ").Append (assemblyItem.ItemSpec);
+				args.Append (" -a ").Append (Quote (assemblyItem.ItemSpec));
 			}
 
 			HashSet<string> directories = new HashSet<string> (StringComparer.OrdinalIgnoreCase);
@@ -149,14 +154,14 @@ namespace ILLink.Tasks
 				var dir = Path.GetDirectoryName (assemblyPath);
 				if (!directories.Contains (dir)) {
 					directories.Add (dir);
-					args.Append (" -d ").Append (dir);
+					args.Append (" -d ").Append (Quote (dir));
 				}
 
 				string action = assembly.GetMetadata ("action");
 				if ((action != null) && (action.Length > 0)) {
 					args.Append (" -p ");
 					args.Append (action);
-					args.Append (" ").Append (assemblyName);
+					args.Append (" ").Append (Quote (assemblyName));
 				}
 			}
 
@@ -172,17 +177,17 @@ namespace ILLink.Tasks
 				var dir = Path.GetDirectoryName (assemblyPath);
 				if (!directories.Contains (dir)) {
 					directories.Add (dir);
-					args.Append (" -d ").Append (dir);
+					args.Append (" -d ").Append (Quote (dir));
 				}
 
 				// Treat reference assemblies as "skip". Ideally we
 				// would not even look at the IL, but only use them to
 				// resolve surface area.
-				args.Append (" -p skip ").Append (assemblyName);
+				args.Append (" -p skip ").Append (Quote (assemblyName));
 			}
 
 			if (OutputDirectory != null) {
-				args.Append (" -out ").Append (OutputDirectory.ItemSpec);
+				args.Append (" -out ").Append (Quote (OutputDirectory.ItemSpec));
 			}
 
 			if (ClearInitLocals) {
