@@ -3,31 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
-/*============================================================
-**
-** 
-** 
-**
-**
-** Purpose: Default way to read streams of resources on 
-** demand.
-**
-**         Version 2 support on October 6, 2003
-** 
-===========================================================*/
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Text;
 
 namespace System.Resources
 #if RESOURCES_EXTENSIONS
     .Extensions
 #endif
 {
-    using System;
-    using System.IO;
-    using System.Text;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-
 #if RESOURCES_EXTENSIONS
     using ResourceReader = DeserializingResourceReader;
 #endif
