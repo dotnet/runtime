@@ -1544,7 +1544,9 @@ bitcount (mword d)
 {
 	int count = 0;
 
-#ifdef __GNUC__
+#if defined (__GNUC__) && !defined (HOST_WIN32)
+// The builtins do work on Win32, but can cause a not worthwhile runtime dependency.
+// See https://github.com/mono/mono/pull/14248.
 	if (sizeof (mword) == 8)
 		count += __builtin_popcountll (d);
 	else
