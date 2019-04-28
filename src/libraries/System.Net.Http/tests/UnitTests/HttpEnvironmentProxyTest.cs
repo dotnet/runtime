@@ -21,13 +21,13 @@ namespace System.Net.Http.Tests
         // to be sure they do not interfere with the test.
         private void CleanEnv()
         {
-            List<string> vars = new List<string>() { "http_proxy", "HTTP_PROXY",
-                                                     "https_proxy", "HTTPS_PROXY",
-                                                     "all_proxy", "ALL_PROXY",
-                                                     "no_proxy", "NO_PROXY",
-                                                     "GATEWAY_INTERFACE" };
+            var envVars = new List<string>() { "http_proxy", "HTTP_PROXY",
+                                               "https_proxy", "HTTPS_PROXY",
+                                               "all_proxy", "ALL_PROXY",
+                                               "no_proxy", "NO_PROXY",
+                                               "GATEWAY_INTERFACE" };
 
-            foreach (string v in vars)
+            foreach (string v in envVars)
             {
                 Environment.SetEnvironmentVariable(v, null);
             }
@@ -248,14 +248,13 @@ namespace System.Net.Http.Tests
         {
             foreach (bool cgi in new object[] { false, true })
             {
-                yield return new object[] { "http_proxy", cgi, true };
+                yield return new object[] { "http_proxy", cgi, !cgi || !PlatformDetection.IsWindows };
                 yield return new object[] { "HTTP_PROXY", cgi, !cgi };
             }
         }
 
         [Theory]
         [MemberData(nameof(HttpProxyCgiEnvVarMemberData))]
-        [PlatformSpecific(~TestPlatforms.Windows)]
         public void HttpProxy_TryCreateAndPossibleCgi_HttpProxyUpperCaseDisabledInCgi(
             string proxyEnvVar, bool cgi, bool expectedProxyUse)
         {

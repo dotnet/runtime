@@ -216,6 +216,7 @@
   <!-- SocketsHttpHandler platform parts -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Unix.cs" />
     <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Unix.cs">
       <Link>Common\System\Net\ContextAwareResult.Unix.cs</Link>
     </Compile>
@@ -301,6 +302,8 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpSystemProxy.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>

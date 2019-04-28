@@ -27,10 +27,13 @@ namespace System.Net.Test.Common
         private const string ProxyAuthenticateNtlmHeader = "Proxy-Authenticate: NTLM\r\n";
         private const string ProxyAuthenticateNegotiateHeader = "Proxy-Authenticate: Negotiate\r\n";
 
+        private const string ViaHeaderValue = "HTTP/1.1 LoopbackProxyServer";
+
         private readonly Socket _listener;
         private readonly Uri _uri;
         private readonly AuthenticationSchemes _authSchemes;
         private readonly bool _connectionCloseAfter407;
+        private readonly bool _addViaRequestHeader;
         private readonly ManualResetEvent _serverStopped;
         private readonly List<ReceivedRequest> _requests;
         private int _connections;
@@ -50,6 +53,7 @@ namespace System.Net.Test.Common
             _uri = new Uri($"http://{ep.Address}:{ep.Port}/");
             _authSchemes = options.AuthenticationSchemes;
             _connectionCloseAfter407 = options.ConnectionCloseAfter407;
+            _addViaRequestHeader = options.AddViaRequestHeader;
             _serverStopped = new ManualResetEvent(false);
 
             _requests = new List<ReceivedRequest>();
@@ -170,8 +174,15 @@ namespace System.Net.Test.Common
                     requestMessage.Headers.Add(header.Key, header.Value);
                 }
             }
+            
+            // Add 'Via' header.
+            if (_addViaRequestHeader)
+            {
+                requestMessage.Headers.Add("Via", ViaHeaderValue);
+            }
 
-            using (HttpClient outboundClient = new HttpClient())
+            var handler = new HttpClientHandler() { UseProxy = false };
+            using (HttpClient outboundClient = new HttpClient(handler))
             using (HttpResponseMessage response =
                 await outboundClient.SendAsync(requestMessage))
             {
@@ -303,7 +314,9 @@ namespace System.Net.Test.Common
                 _disposed = true;
             }
         }
-        
+
+        public string ViaHeader => ViaHeaderValue;
+            
         public class ReceivedRequest
         {
             public string RequestLine { get; set; }
@@ -315,6 +328,7 @@ namespace System.Net.Test.Common
         {
             public AuthenticationSchemes AuthenticationSchemes { get; set; } = AuthenticationSchemes.None;
             public bool ConnectionCloseAfter407 { get; set; } = false;
+            public bool AddViaRequestHeader { get; set; } = false;
         }        
     }
 }
