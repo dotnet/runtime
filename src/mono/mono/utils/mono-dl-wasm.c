@@ -71,6 +71,10 @@ mono_dl_convert_flags (int flags)
 void *
 mono_dl_open_file (const char *file, int flags)
 {
+	if (strstr(file, "System.Native")) {
+		return NULL;
+	}
+
 	return dlopen(file, flags);
 }
 
