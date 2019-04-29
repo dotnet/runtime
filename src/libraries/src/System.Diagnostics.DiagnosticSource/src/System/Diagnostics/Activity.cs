@@ -745,14 +745,6 @@ namespace System.Diagnostics
             string overflowSuffix = ((int)GetRandomNumber()).ToString("x8");
             return parentId.Substring(0, trimPosition) + overflowSuffix + '#';
         }
-
-        private string GenerateRootId()
-        {
-            // It is important that the part that changes frequently be first, because
-            // many hash functions don't 'randomize' the tail of a string.   This makes
-            // sampling based on the hash produce poor samples.
-            return '|' + Interlocked.Increment(ref s_currentRootId).ToString("x") + s_uniqSuffix;
-        }
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
         [System.Security.SecuritySafeCriticalAttribute]
 #endif
