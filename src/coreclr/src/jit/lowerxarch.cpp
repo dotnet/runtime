@@ -2492,15 +2492,32 @@ bool Lowering::IsContainableHWIntrinsicOp(GenTreeHWIntrinsic* containingNode, Ge
 
         case HW_Category_SimpleSIMD:
         {
-            // These intrinsics only expect 16 or 32-byte nodes for containment
-            assert((genTypeSize(node->TypeGet()) == 16) || (genTypeSize(node->TypeGet()) == 32));
+            switch (containingIntrinsicId)
+            {
+                case NI_SSE41_ConvertToVector128Int16:
+                case NI_SSE41_ConvertToVector128Int32:
+                case NI_SSE41_ConvertToVector128Int64:
+                case NI_AVX2_ConvertToVector256Int16:
+                case NI_AVX2_ConvertToVector256Int32:
+                case NI_AVX2_ConvertToVector256Int64:
+                {
+                    supportsGeneralLoads = (!node->OperIsHWIntrinsic());
+                    break;
+                }
+
+                default:
+                {
+                    // These intrinsics only expect 16 or 32-byte nodes for containment
+                    assert((genTypeSize(node->TypeGet()) == 16) || (genTypeSize(node->TypeGet()) == 32));
+                    supportsAlignedSIMDLoads =
+                        !comp->canUseVexEncoding() && (containingIntrinsicId != NI_SSE2_ConvertToVector128Double);
+                    supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
+                    supportsGeneralLoads       = supportsUnalignedSIMDLoads;
+                    break;
+                }
+            }
+
             assert(supportsSIMDScalarLoads == false);
-
-            supportsAlignedSIMDLoads =
-                !comp->canUseVexEncoding() && (containingIntrinsicId != NI_SSE2_ConvertToVector128Double);
-            supportsUnalignedSIMDLoads = !supportsAlignedSIMDLoads;
-            supportsGeneralLoads       = supportsUnalignedSIMDLoads;
-
             break;
         }
 
@@ -2905,6 +2922,22 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             return;
                         }
 
+                        break;
+                    }
+
+                    case NI_SSE41_ConvertToVector128Int16:
+                    case NI_SSE41_ConvertToVector128Int32:
+                    case NI_SSE41_ConvertToVector128Int64:
+                    case NI_AVX2_ConvertToVector256Int16:
+                    case NI_AVX2_ConvertToVector256Int32:
+                    case NI_AVX2_ConvertToVector256Int64:
+                    {
+                        if (!varTypeIsSIMD(op1->gtType))
+                        {
+                            GenTree** pAddr = &node->gtOp1;
+                            ContainCheckHWIntrinsicAddr(node, pAddr);
+                            return;
+                        }
                         break;
                     }
 
