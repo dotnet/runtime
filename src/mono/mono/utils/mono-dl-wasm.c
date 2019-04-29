@@ -71,6 +71,7 @@ mono_dl_convert_flags (int flags)
 void *
 mono_dl_open_file (const char *file, int flags)
 {
+	// issue https://github.com/emscripten-core/emscripten/issues/8511
 	if (strstr(file, "System.Native")) {
 		return NULL;
 	}
