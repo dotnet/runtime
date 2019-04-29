@@ -462,7 +462,7 @@ namespace System
                     return InternalGetCustomAttributes((EventInfo)element, type, inherit);
 
                 default:
-                    return (Attribute[])element.GetCustomAttributes(type, inherit);
+                    return (element.GetCustomAttributes(type, inherit) as Attribute[])!;
             }
         }
 
@@ -485,7 +485,7 @@ namespace System
                     return InternalGetCustomAttributes((EventInfo)element, typeof(Attribute), inherit);
 
                 default:
-                    return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
+                    return (element.GetCustomAttributes(typeof(Attribute), inherit) as Attribute[])!;
             }
         }
 
@@ -567,9 +567,9 @@ namespace System
 
             MemberInfo member = element.Member;
             if (member.MemberType == MemberTypes.Method && inherit)
-                return InternalParamGetCustomAttributes(element, attributeType, inherit);
+                return InternalParamGetCustomAttributes(element, attributeType, inherit) as Attribute[];
 
-            return (Attribute[])element.GetCustomAttributes(attributeType, inherit);
+            return (element.GetCustomAttributes(attributeType, inherit) as Attribute[])!;
         }
 
         public static Attribute[] GetCustomAttributes(ParameterInfo element, bool inherit)
@@ -583,9 +583,9 @@ namespace System
 
             MemberInfo member = element.Member;
             if (member.MemberType == MemberTypes.Method && inherit)
-                return InternalParamGetCustomAttributes(element, null, inherit);
+                return InternalParamGetCustomAttributes(element, null, inherit) as Attribute[];
 
-            return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
+            return (element.GetCustomAttributes(typeof(Attribute), inherit) as Attribute[])!;
         }
 
         public static bool IsDefined(ParameterInfo element, Type attributeType)

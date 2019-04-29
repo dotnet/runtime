@@ -92,7 +92,7 @@ namespace System.Reflection.Emit
             if (!(type is TypeBuilderInstantiation))
                 throw new ArgumentException(SR.Argument_NeedNonGenericType, nameof(type));
 
-            return MethodOnTypeBuilderInstantiation.GetMethod(method, (TypeBuilderInstantiation)type);
+            return MethodOnTypeBuilderInstantiation.GetMethod(method, (type as TypeBuilderInstantiation)!);
         }
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit
             if (type.GetGenericTypeDefinition() != constructor.DeclaringType)
                 throw new ArgumentException(SR.Argument_InvalidConstructorDeclaringType, nameof(type));
 
-            return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, (TypeBuilderInstantiation)type);
+            return ConstructorOnTypeBuilderInstantiation.GetConstructor(constructor, (type as TypeBuilderInstantiation)!);
         }
         public static FieldInfo GetField(Type type, FieldInfo field)
         {
@@ -132,7 +132,7 @@ namespace System.Reflection.Emit
             if (type.GetGenericTypeDefinition() != field.DeclaringType)
                 throw new ArgumentException(SR.Argument_InvalidFieldDeclaringType, nameof(type));
 
-            return FieldOnTypeBuilderInstantiation.GetField(field, (TypeBuilderInstantiation)type);
+            return FieldOnTypeBuilderInstantiation.GetField(field, (type as TypeBuilderInstantiation)!);
         }
         #endregion
 
@@ -1167,7 +1167,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, (RuntimeType)typeof(object), inherit);
+            return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, (typeof(object) as RuntimeType)!, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
