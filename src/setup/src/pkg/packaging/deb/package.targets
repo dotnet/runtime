@@ -14,11 +14,11 @@
           Condition="'$(BuildDebPackage)'=='true'" />
 
   <Target Name="GenerateRuntimeDebs" 
-          DependsOnTargets="GenerateSharedHostDeb;GenerateHostFxrDeb;GenerateSharedFrameworkDeb"
+          DependsOnTargets="GenerateSharedHostDeb;GenerateHostFxrDeb;GenerateSharedFrameworkDeb;GenerateRuntimeDependenciesDeb"
           Condition="'$(BuildRuntimeDebs)' == 'true'" />
 
   <Target Name="BuildDebs"
-          DependsOnTargets="InitializeDotnetDebTool;GenerateRuntimeDebs;GenerateRuntimeDependenciesDeb"
+          DependsOnTargets="InitializeDotnetDebTool;GenerateRuntimeDebs"
           Condition="'$(BuildDebPackage)'=='true' and '$(DebuildPresent)' == 'true'" />
 
   <Target Name="GenerateSharedHostDeb">
@@ -271,7 +271,7 @@
       <DebPackageName>$(RuntimeDependenciesDebPkgName)</DebPackageName>
       <DebPackageVersion>$(RuntimeDepsDebPackageVersion)</DebPackageVersion>
       <DebFile>$(DotnetRuntimeDependenciesPackageInstallerFile)</DebFile>
-      <ConfigJsonName>dotnet-runtime-deps-debian_config_$(OutputRid).json</ConfigJsonName>
+      <ConfigJsonName>dotnet-runtime-deps-debian_config.json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
     </PropertyGroup>
@@ -309,6 +309,19 @@
       <SharedFrameworkTokenValue Include="%RUNTIME_DEPS_REVISION%">
         <ReplacementString>$(RuntimeDepsDebPackageRelease)</ReplacementString>
       </SharedFrameworkTokenValue>
+
+      <!--
+        In every runtime deps Deb package, include alternatives known to work with .NET Core.
+        Specifying these as "or" dependencies lets us create one package that works on many distros.
+      -->
+      <SharedFrameworkTokenValue
+        Include="%SSL_DEPENDENCY_LIST%"
+        ReplacementString="libssl1.0.0 | libssl1.0.2 | libssl1.1" />
+
+      <KnownLibIcuVersion Include="63;60;57;55;52" />
+      <SharedFrameworkTokenValue
+        Include="%LIBICU_DEPENDENCY_LIST%"
+        ReplacementString="libicu | @(KnownLibIcuVersion -> 'libicu%(Identity)', ' | ')" />
     </ItemGroup>
 
     <ReplaceFileContents InputFile="$(ConfigJsonFile)"
