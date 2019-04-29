@@ -210,6 +210,11 @@ public:
     // Get the thread associated with this list.
     EventPipeThread* GetThread();
 
+    // Get the first buffer that might contain the oldest event
+    EventPipeBuffer* TryGetBuffer(LARGE_INTEGER beforeTimeStamp);
+
+    // Convert the buffer into read only
+    void ConvertBufferToReadOnly(EventPipeBuffer *pNewReadBuffer);
 
 #ifdef _DEBUG
     // Validate the consistency of the list.
