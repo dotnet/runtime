@@ -43,6 +43,7 @@ namespace System.Net.Http
 
             private StreamState _state;
             private bool _disposed;
+            private Exception _abortException;
 
             /// <summary>The core logic for the IValueTaskSource implementation.</summary>
             private ManualResetValueTaskSourceCore<bool> _waitSource = new ManualResetValueTaskSourceCore<bool> { RunContinuationsAsynchronously = true }; // mutable struct, do not make this readonly
@@ -262,7 +263,7 @@ namespace System.Net.Http
                 }
             }
 
-            public void OnResponseAbort()
+            public void OnResponseAbort(Exception abortException)
             {
                 bool signalWaiter;
                 lock (SyncObject)
@@ -277,6 +278,7 @@ namespace System.Net.Http
                         return;
                     }
 
+                    _abortException = abortException;
                     _state = StreamState.Aborted;
 
                     signalWaiter = _hasWaiter;
@@ -300,7 +302,7 @@ namespace System.Net.Http
 
                     if (_state == StreamState.Aborted)
                     {
-                        throw new IOException(SR.net_http_request_aborted);
+                        throw new IOException(SR.net_http_request_aborted, _abortException);
                     }
                     else if (_state == StreamState.ExpectingHeaders)
                     {
@@ -393,7 +395,7 @@ namespace System.Net.Http
                     }
                     else if (_state == StreamState.Aborted)
                     {
-                        throw new IOException(SR.net_http_request_aborted);
+                        throw new IOException(SR.net_http_request_aborted, _abortException);
                     }
 
                     Debug.Assert(_state == StreamState.ExpectingData || _state == StreamState.ExpectingTrailingHeaders);
@@ -493,6 +495,7 @@ namespace System.Net.Http
                 lock (SyncObject)
                 {
                     Task ignored = _connection.SendRstStreamAsync(_streamId, Http2ProtocolErrorCode.Cancel);
+                    _abortException = new OperationCanceledException();
                     _state = StreamState.Aborted;
 
                     signalWaiter = _hasWaiter;
