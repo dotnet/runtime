@@ -1019,18 +1019,17 @@ namespace Microsoft.VisualBasic.FileIO
     public partial class FileSystem
     {
         public FileSystem() { }
-        public static string CurrentDirectory { get { throw null; } set { } }
-        public static System.Collections.ObjectModel.ReadOnlyCollection<System.IO.DriveInfo> Drives { get { throw null; } }
         public static string CombinePath(string baseDirectory, string relativePath) { throw null; }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
+        public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
-        public static void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public static void CopyFile(string sourceFileName, string destinationFileName) { }
+        public static void CopyFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public static void CopyFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void CopyFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
-        public static void CopyFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public static void CreateDirectory(string directory) { }
+        public static string CurrentDirectory { get { throw null; } set { } }
         public static void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.DeleteDirectoryOption onDirectoryNotEmpty) { }
         public static void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle) { }
         public static void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
@@ -1038,6 +1037,7 @@ namespace Microsoft.VisualBasic.FileIO
         public static void DeleteFile(string file, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle) { }
         public static void DeleteFile(string file, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
         public static bool DirectoryExists(string directory) { throw null; }
+        public static System.Collections.ObjectModel.ReadOnlyCollection<System.IO.DriveInfo> Drives { get { throw null; } }
         public static bool FileExists(string file) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, Microsoft.VisualBasic.FileIO.SearchOption searchType) { throw null; }
         public static System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, Microsoft.VisualBasic.FileIO.SearchOption searchType, params string[] fileWildcards) { throw null; }
@@ -1052,13 +1052,13 @@ namespace Microsoft.VisualBasic.FileIO
         public static string GetParentPath(string path) { throw null; }
         public static string GetTempFileName() { throw null; }
         public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
+        public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
-        public static void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
         public static void MoveFile(string sourceFileName, string destinationFileName) { }
+        public static void MoveFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public static void MoveFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
         public static void MoveFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
-        public static void MoveFile(string sourceFileName, string destinationFileName, bool overwrite) { }
         public static Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file) { throw null; }
         public static Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file, params int[] fieldWidths) { throw null; }
         public static Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file, params string[] delimiters) { throw null; }
@@ -1123,9 +1123,13 @@ namespace Microsoft.VisualBasic.FileIO
         public TextFieldParser(string path) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding, bool detectEncoding) { }
+        ~TextFieldParser() { }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        public void Close() { }
         public string[] CommentTokens { get { throw null; } set { } }
         public string[] Delimiters { get { throw null; } set { } }
+        protected virtual void Dispose(bool disposing) { }
+        void System.IDisposable.Dispose() { }
         public bool EndOfData { get { throw null; } }
         public string ErrorLine { get { throw null; } }
         public long ErrorLineNumber { get { throw null; } }
@@ -1134,11 +1138,6 @@ namespace Microsoft.VisualBasic.FileIO
         public bool HasFieldsEnclosedInQuotes { get { throw null; } set { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public long LineNumber { get { throw null; } }
-        public Microsoft.VisualBasic.FileIO.FieldType TextFieldType { get { throw null; } set { } }
-        public bool TrimWhiteSpace { get { throw null; } set { } }
-        public void Close() { }
-        protected virtual void Dispose(bool disposing) { }
-        ~TextFieldParser() { }
         public string PeekChars(int numberOfChars) { throw null; }
         public string[] ReadFields() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
@@ -1147,7 +1146,8 @@ namespace Microsoft.VisualBasic.FileIO
         public string ReadToEnd() { throw null; }
         public void SetDelimiters(params string[] delimiters) { }
         public void SetFieldWidths(params int[] fieldWidths) { }
-        void System.IDisposable.Dispose() { }
+        public Microsoft.VisualBasic.FileIO.FieldType TextFieldType { get { throw null; } set { } }
+        public bool TrimWhiteSpace { get { throw null; } set { } }
     }
     public enum UICancelOption
     {
@@ -1171,7 +1171,62 @@ namespace Microsoft.VisualBasic.MyServices
     public partial class FileSystemProxy
     {
         internal FileSystemProxy() { }
+        public string CombinePath(string baseDirectory, string relativePath) { throw null; }
+        public void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
+        public void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
+        public void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
+        public void CopyDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public void CopyFile(string sourceFileName, string destinationFileName) { }
+        public void CopyFile(string sourceFileName, string destinationFileName, bool overwrite) { }
+        public void CopyFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
+        public void CopyFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public void CreateDirectory(string directory) { }
+        public string CurrentDirectory { get { throw null; } set { } }
+        public void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.DeleteDirectoryOption onDirectoryNotEmpty) { }
+        public void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle) { }
+        public void DeleteDirectory(string directory, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public void DeleteFile(string file) { }
+        public void DeleteFile(string file, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle) { }
+        public void DeleteFile(string file, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.RecycleOption recycle, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public bool DirectoryExists(string directory) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<System.IO.DriveInfo> Drives { get { throw null; } }
+        public bool FileExists(string file) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, FileIO.SearchOption searchType) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> FindInFiles(string directory, string containsText, bool ignoreCase, FileIO.SearchOption searchType, params string[] fileWildcards) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> GetDirectories(string directory) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> GetDirectories(string directory, FileIO.SearchOption searchType, params string[] wildcards) { throw null; }
+        public System.IO.DirectoryInfo GetDirectoryInfo(string directory) { throw null; }
+        public System.IO.DriveInfo GetDriveInfo(string drive) { throw null; }
+        public System.IO.FileInfo GetFileInfo(string file) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> GetFiles(string directory) { throw null; }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> GetFiles(string directory, FileIO.SearchOption searchType, params string[] wildcards) { throw null; }
+        public string GetName(string path) { throw null; }
+        public string GetParentPath(string path) { throw null; }
+        public string GetTempFileName() { throw null; }
+        public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName) { }
+        public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, bool overwrite) { }
+        public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
+        public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public void MoveFile(string sourceFileName, string destinationFileName) { }
+        public void MoveFile(string sourceFileName, string destinationFileName, bool overwrite) { }
+        public void MoveFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI) { }
+        public void MoveFile(string sourceFileName, string destinationFileName, Microsoft.VisualBasic.FileIO.UIOption showUI, Microsoft.VisualBasic.FileIO.UICancelOption onUserCancel) { }
+        public Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file) { throw null; }
+        public Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file, params int[] fieldWidths) { throw null; }
+        public Microsoft.VisualBasic.FileIO.TextFieldParser OpenTextFieldParser(string file, params string[] delimiters) { throw null; }
+        public System.IO.StreamReader OpenTextFileReader(string file) { throw null; }
+        public System.IO.StreamReader OpenTextFileReader(string file, System.Text.Encoding encoding) { throw null; }
+        public System.IO.StreamWriter OpenTextFileWriter(string file, bool append) { throw null; }
+        public System.IO.StreamWriter OpenTextFileWriter(string file, bool append, System.Text.Encoding encoding) { throw null; }
+        public byte[] ReadAllBytes(string file) { throw null; }
+        public string ReadAllText(string file) { throw null; }
+        public string ReadAllText(string file, System.Text.Encoding encoding) { throw null; }
+        public void RenameDirectory(string directory, string newName) { }
+        public void RenameFile(string file, string newName) { }
         public SpecialDirectoriesProxy SpecialDirectories { get { throw null; } }
+        public void WriteAllBytes(string file, byte[] data, bool append) { }
+        public void WriteAllText(string file, string text, bool append) { }
+        public void WriteAllText(string file, string text, bool append, System.Text.Encoding encoding) { }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public partial class RegistryProxy

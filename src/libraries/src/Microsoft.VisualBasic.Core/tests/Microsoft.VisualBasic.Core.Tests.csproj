@@ -41,6 +41,9 @@
     <Compile Include="Microsoft\VisualBasic\Devices\ComputerTests.cs" />
     <Compile Include="Microsoft\VisualBasic\Devices\NetworkAvailableEventArgsTests.cs" />
     <Compile Include="Microsoft\VisualBasic\Devices\ServerComputerTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\FileIO\FileSystemTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\FileIO\SpecialDirectoriesTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\FileIO\TextFieldParserTests.cs" />
     <Compile Include="Microsoft\VisualBasic\HideModuleNameAttributeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\MyGroupCollectionAttributeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\MyServices\FileSystemProxyTests.cs" />
