@@ -11,6 +11,8 @@ namespace System.ComponentModel
     /// </summary>
     public abstract class BaseNumberConverter : TypeConverter
     {
+        internal BaseNumberConverter() { }
+
         /// <summary>
         /// Determines whether this editor will attempt to convert hex (0x or #) strings
         /// </summary>

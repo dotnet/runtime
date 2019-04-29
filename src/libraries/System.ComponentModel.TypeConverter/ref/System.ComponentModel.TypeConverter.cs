@@ -84,7 +84,7 @@ namespace System.ComponentModel
     }
     public abstract partial class BaseNumberConverter : System.ComponentModel.TypeConverter
     {
-        protected BaseNumberConverter() { }
+        internal BaseNumberConverter() { }
         public override bool CanConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Type sourceType) { throw null; }
         public override bool CanConvertTo(System.ComponentModel.ITypeDescriptorContext context, System.Type destinationType) { throw null; }
         public override object ConvertFrom(System.ComponentModel.ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value) { throw null; }
