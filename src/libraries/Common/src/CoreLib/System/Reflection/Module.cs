@@ -141,7 +141,7 @@ namespace System.Reflection
 
         public override string ToString() => ScopeName;
 
-        public static readonly TypeFilter FilterTypeName = (m, c) => FilterTypeNameImpl(m, c, StringComparison.Ordinal); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/23268
+        public static readonly TypeFilter FilterTypeName = (m, c) => FilterTypeNameImpl(m, c, StringComparison.Ordinal);
         public static readonly TypeFilter FilterTypeNameIgnoreCase = (m, c) => FilterTypeNameImpl(m, c, StringComparison.OrdinalIgnoreCase);
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
