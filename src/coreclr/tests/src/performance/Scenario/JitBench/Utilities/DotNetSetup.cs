@@ -215,7 +215,7 @@ namespace JitBench
 
         public static string GetRuntimeDownloadLink(string azureFeed, string version, string os, string arch)
         {
-            return string.Format("{0}/Runtime/{1}/dotnet-runtime-{1}-{2}-{3}.zip", azureFeed, version, os, arch);
+            return string.Format("{0}/Runtime/{1}/dotnet-runtime-{1}-{2}-{3}.{4}", azureFeed, version, os, arch, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "zip" : "tar.gz");
         }
 
         public static string GetSDKDownloadLink(string version, Architecture arch)
@@ -230,7 +230,7 @@ namespace JitBench
 
         public static string GetSDKDownloadLink(string azureFeed, string version, string os, string arch)
         {
-            return string.Format("{0}/Sdk/{1}/dotnet-sdk-{1}-{2}-{3}.zip", azureFeed, version, os, arch);
+            return string.Format("{0}/Sdk/{1}/dotnet-sdk-{1}-{2}-{3}.{4}", azureFeed, version, os, arch, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "zip" : "tar.gz");
         }
 
         public static string GetTargetFrameworkMonikerForFrameworkVersion(string runtimeVersion)

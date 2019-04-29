@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -142,7 +142,7 @@ namespace JitBench
                 string[] args = new string[] { "--perf:collect", string.Join("+", run.MetricNames), "--perf:outputdir", run.OutputDir, "--perf:runid", run.BenchviewRunId };
                 using (var harness = new XunitPerformanceHarness(args))
                 {
-                    ProcessStartInfo startInfo = new ProcessStartInfo(run.DotNetInstallation.DotNetExe, (ExePath + " " + CommandLineArguments).Trim());
+                    ProcessStartInfo startInfo = new ProcessStartInfo(run.DotNetInstallation.DotNetExe, $"{ExePath} {CommandLineArguments}");
                     startInfo.WorkingDirectory = WorkingDirPath;
                     startInfo.RedirectStandardError = true;
                     startInfo.RedirectStandardOutput = true;
