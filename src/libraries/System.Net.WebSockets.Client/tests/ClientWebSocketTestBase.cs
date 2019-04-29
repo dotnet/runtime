@@ -82,12 +82,6 @@ namespace System.Net.WebSockets.Client.Tests
                 }
                 catch (WebSocketException exception)
                 {
-                    Assert.Equal(ResourceHelper.GetExceptionMessage(
-                        "net_WebSockets_InvalidState_ClosedOrAborted",
-                        "System.Net.WebSockets.InternalClientWebSocket",
-                        "Aborted"),
-                        exception.Message);
-
                     Assert.Equal(WebSocketError.InvalidState, exception.WebSocketErrorCode);
                     Assert.Equal(WebSocketState.Aborted, cws.State);
                 }
