@@ -148,12 +148,7 @@ jobs:
     packageDistroList:
     - image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-debpkg-e5cf912-20175003025046
       imageRid: ubuntu.14.04
-      rids:
-      - debian.8
-      - debian.9
-      - ubuntu.16.04
-      - ubuntu.18.04
-      - ubuntu.19.04
+      rids: []
     - image: mcr.microsoft.com/dotnet-buildtools/prereqs:rhel-7-rpmpkg-c982313-20174116044113
       imageRid: rhel.7
       rids:
