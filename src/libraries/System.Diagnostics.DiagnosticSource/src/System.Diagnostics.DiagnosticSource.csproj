@@ -44,6 +44,12 @@
   <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'netstandard1.1' OR '$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'netstandard'">
     <Compile Include="System\Diagnostics\Activity.DateTime.corefx.cs" />
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'netstandard2.1'">
+    <Compile Include="System\Diagnostics\Activity.GenerateRootId.netcoreapp.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetGroup)' != 'netcoreapp' AND '$(TargetGroup)' != 'uap' AND '$(TargetGroup)' != 'netstandard2.1' AND '$(TargetGroup)' != 'netstandard1.1'">
+    <Compile Include="System\Diagnostics\Activity.GenerateRootId.netfx.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <Compile Include="System\Diagnostics\HttpHandlerDiagnosticListener.cs" />
   </ItemGroup>
