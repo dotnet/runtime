@@ -53,7 +53,7 @@
 static void
 mono_System_ComObject_ReleaseInterfaces (MonoComObjectHandle obj);
 
-#ifndef DISABLE_COM
+#if !defined (DISABLE_COM) || defined (HOST_WIN32)
 
 static int
 mono_IUnknown_QueryInterface (MonoIUnknown *pUnk, gconstpointer riid, gpointer* ppv)
@@ -3623,6 +3623,29 @@ mono_marshal_free_ccw (MonoObject* object)
 	return FALSE;
 }
 
+#ifdef HOST_WIN32
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (MonoIUnknown *pUnk)
+{
+	return mono_IUnknown_AddRef (pUnk);
+}
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (MonoIUnknown *pUnk)
+{
+	g_assert (pUnk);
+	return mono_IUnknown_Release (pUnk);
+}
+
+int
+ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUnknown *pUnk, gconstpointer riid, gpointer* ppv)
+{
+	return mono_IUnknown_QueryInterface (pUnk, riid, ppv);
+}
+
+#else /* HOST_WIN32 */
+
 int
 ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal (MonoIUnknown *pUnk)
 {
@@ -3637,6 +3660,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal (MonoIUnknown *
 	return 0;
 }
 
+
 int
 ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUnknown *pUnk, gconstpointer riid, gpointer* ppv)
 {
@@ -3644,6 +3668,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal (MonoIUn
 	return 0;
 }
 
+#endif /* HOST_WIN32 */
 #endif /* DISABLE_COM */
 
 MonoStringHandle
