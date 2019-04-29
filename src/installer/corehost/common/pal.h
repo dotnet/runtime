@@ -58,7 +58,7 @@
 // at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
 // consuming the native assets.
 //
-// For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the 
+// For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the
 // degree of compat across their respective releases is usually high.
 //
 // We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Plaform.
@@ -229,7 +229,7 @@ namespace pal
 
         return fallbackRid;
     }
-        
+
     bool touch_file(const pal::string_t& path);
     bool realpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);
@@ -245,7 +245,7 @@ namespace pal
     bool get_current_module(dll_t *mod);
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_servicing_directory(string_t* recv);
-    
+
     //On Linux, there are no global locations
     //On Windows there will be up to 2 global locations
     bool get_global_dotnet_dirs(std::vector<pal::string_t>* recv);
@@ -258,6 +258,7 @@ namespace pal
 
     int xtoi(const char_t* input);
 
+    bool get_loaded_library(const char_t *library_name, const char *symbol_name, /*out*/ dll_t *dll, /*out*/ pal::string_t *path);
     bool load_library(const string_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);

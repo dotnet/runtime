@@ -75,6 +75,91 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
+namespace
+{
+    bool get_loaded_library_from_proc_maps(const pal::char_t *library_name, pal::dll_t *dll, pal::string_t *path)
+    {
+        char *line = nullptr;
+        size_t lineLen = 0;
+        ssize_t read;
+        FILE *file = pal::file_open(_X("/proc/self/maps"), _X("r"));
+        if (file == nullptr)
+            return false;
+
+        // Read maps file line by line to check fo the library
+        bool found = false;
+        pal::string_t path_local;
+        while ((read = getline(&line, &lineLen, file)) != -1)
+        {
+            char buf[PATH_MAX];
+            if (sscanf(line, "%*p-%*p %*[-rwxsp] %*p %*[:0-9a-f] %*d %s\n", buf) == 1)
+            {
+                path_local = buf;
+                size_t pos = path_local.rfind(DIR_SEPARATOR);
+                if (pos == std::string::npos)
+                    continue;
+
+                pos = path_local.find(library_name, pos);
+                if (pos != std::string::npos)
+                {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        fclose(file);
+        if (!found)
+            return false;
+
+        pal::dll_t dll_maybe = dlopen(path_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
+        if (dll_maybe == nullptr)
+            return false;
+
+        *dll = dll_maybe;
+        path->assign(path_local);
+        return true;
+    }
+}
+
+bool pal::get_loaded_library(
+    const char_t *library_name,
+    const char *symbol_name,
+    /*out*/ dll_t *dll,
+    /*out*/ pal::string_t *path)
+{
+    pal::string_t library_name_local;
+#if defined(__APPLE__)
+    if (!pal::is_path_rooted(library_name))
+        library_name_local.append("@rpath/");
+#endif
+    library_name_local.append(library_name);
+
+    dll_t dll_maybe = dlopen(library_name_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
+    if (dll_maybe == nullptr)
+    {
+        if (pal::is_path_rooted(library_name))
+            return false;
+
+        // dlopen on some systems only finds loaded libraries when given the full path
+        // Check proc maps as a fallback
+        return get_loaded_library_from_proc_maps(library_name, dll, path);
+    }
+
+    // Not all systems support getting the path from just the handle (e.g. dlinfo),
+    // so we rely on the caller passing in a symbol name so that we get (any) address
+    // in the library
+    assert(symbol_name != nullptr);
+    pal::proc_t proc = pal::get_symbol(dll_maybe, symbol_name);
+    Dl_info info;
+    if (dladdr(proc, &info) == 0)
+        return false;
+
+    *dll = dll_maybe;
+    path->assign(info.dli_fname);
+    return true;
+}
+
 bool pal::load_library(const string_t* path, dll_t* dll)
 {
     *dll = dlopen(path->c_str(), RTLD_LAZY);
@@ -156,7 +241,7 @@ bool pal::get_default_servicing_directory(string_t* recv)
         // We should have the path in ext.
         trace::info(_X("Realpath CORE_SERVICING [%s]"), ext.c_str());
     }
-    
+
     if (!pal::directory_exists(ext))
     {
         trace::info(_X("Directory core servicing at [%s] was not specified or found"), ext.c_str());
@@ -357,7 +442,7 @@ pal::string_t pal::get_current_os_rid_platform()
         // Read the file to get ID and VERSION_ID data that will be used
         // to construct the RID.
         std::fstream fsVersionFile;
-        
+
         fsVersionFile.open(versionFile, std::fstream::in);
 
         // Proceed only if we were able to open the file
@@ -416,7 +501,7 @@ pal::string_t pal::get_current_os_rid_platform()
             {
                 ridOS.append(valID);
             }
-            
+
             if (fFoundVersion)
             {
                 ridOS.append(_X("."));
@@ -434,7 +519,7 @@ pal::string_t pal::get_current_os_rid_platform()
     {
         // Read the file to check if the current OS is RHEL or CentOS 6.x
         std::fstream fsVersionFile;
-        
+
         fsVersionFile.open(rhelVersionFile, std::fstream::in);
 
         // Proceed only if we were able to open the file
@@ -457,7 +542,7 @@ pal::string_t pal::get_current_os_rid_platform()
 
             // Close the file now that we are done with it.
             fsVersionFile.close();
-        }        
+        }
     }
 
     return normalize_linux_rid(ridOS);
@@ -496,7 +581,7 @@ bool pal::get_own_executable_path(pal::string_t* recv)
         recv->assign(buf);
         return true;
     }
-    
+
     // ENOMEM
     if (error_code == ENOMEM)
     {
@@ -570,7 +655,7 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
         {
             perror("realpath()");
         }
-        
+
         return false;
     }
 
@@ -605,7 +690,7 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
             {
                 continue;
             }
-             
+
             // We are interested in files only
             switch (entry->d_type)
             {
