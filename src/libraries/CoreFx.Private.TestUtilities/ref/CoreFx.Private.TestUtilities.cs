@@ -80,6 +80,7 @@ namespace System
         public static bool IsNotNetNative { get { throw null; } }
         public static bool IsNotNetNativeRunningAsConsoleApp { get { throw null; } }
         public static bool IsNotOneCoreUAP { get { throw null; } }
+        public static bool IsNotOSX { get { throw null; } }
         public static bool IsNotRedHatFamily { get { throw null; } }
         public static bool IsNotRedHatFamily6 { get { throw null; } }
         public static bool IsNotWindows8x { get { throw null; } }
