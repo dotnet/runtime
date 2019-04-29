@@ -28,7 +28,7 @@ namespace System.Net.Security.Tests
 
         private const SslProtocols NonTls13Protocols = AllProtocols & (~SslProtocols.Tls13);
 
-        private static bool IsKnownPlatformSupportingTls13 => PlatformDetection.IsUbuntu1810OrHigher;
+        private static bool IsKnownPlatformSupportingTls13 => PlatformDetection.SupportsTls13;
         private static bool CipherSuitesPolicySupported => s_cipherSuitePolicySupported.Value;
         private static bool Tls13Supported { get; set; } = IsKnownPlatformSupportingTls13 || ProtocolsSupported(SslProtocols.Tls13);
         private static bool CipherSuitesPolicyAndTls13Supported => Tls13Supported && CipherSuitesPolicySupported;

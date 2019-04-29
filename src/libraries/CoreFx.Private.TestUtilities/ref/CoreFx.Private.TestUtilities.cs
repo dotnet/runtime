@@ -130,6 +130,7 @@ namespace System
         public static bool SupportsAlpn { get { throw null; } }
         public static bool SupportsClientAlpn { get { throw null; } }
         public static bool SupportsSsl3 { get { throw null; } }
+        public static bool SupportsTls13 { get { throw null; } }
         public static bool TargetsNetFx452OrLower { get { throw null; } }
         public static int WindowsVersion { get { throw null; } }
         public static string GetDistroVersionString() { throw null; }

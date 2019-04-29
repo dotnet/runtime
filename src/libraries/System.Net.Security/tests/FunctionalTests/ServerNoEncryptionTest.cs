@@ -85,7 +85,8 @@ namespace System.Net.Security.Tests
                 {
                     if (SupportsNullEncryption)
                     {
-                        await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocolSupport.DefaultSslProtocols, false);
+                        // null encryption is not permitted with Tls13
+                        await sslStream.AuthenticateAsClientAsync("localhost", null, SslProtocols.Tls | SslProtocols.Tls11 |  SslProtocols.Tls12, false);
                         _log.WriteLine("Client authenticated to server({0}) with encryption cipher: {1} {2}-bit strength",
                             serverNoEncryption.RemoteEndPoint, sslStream.CipherAlgorithm, sslStream.CipherStrength);
 
