@@ -1764,9 +1764,9 @@ namespace System
                     // Without this the reflectedType.Cache.GetMethod call below may return a MethodInfo
                     // object whose ReflectedType is string[] and DeclaringType is object[]. That would
                     // be (arguabally) incorrect because string[] is not a subclass of object[].
-                    MethodBase[] methodBases = (MethodBase[])reflectedType.GetMember(
+                    MethodBase[] methodBases = (reflectedType.GetMember(
                         RuntimeMethodHandle.GetName(methodHandle), MemberTypes.Constructor | MemberTypes.Method,
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) as MethodBase[])!;
 
                     bool loaderAssuredCompatible = false;
                     for (int i = 0; i < methodBases.Length; i++)
@@ -1787,7 +1787,7 @@ namespace System
                     // ignoring instantiation is the ReflectedType a subtype of the DeclaringType
                     RuntimeType declaringDefinition = (RuntimeType)declaredType.GetGenericTypeDefinition();
 
-                    RuntimeType baseType = reflectedType;
+                    RuntimeType? baseType = reflectedType;
 
                     while (baseType != null)
                     {
@@ -1799,7 +1799,7 @@ namespace System
                         if (baseDefinition == declaringDefinition)
                             break;
 
-                        baseType = baseType.GetBaseType()!;
+                        baseType = baseType.GetBaseType();
                     }
 
                     if (baseType == null)
@@ -2664,23 +2664,23 @@ namespace System
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
 
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.GetTypeHandleInternal();
+
             GetTypeHandleInternal().VerifyInterfaceIsImplemented(ifaceRtTypeHandle);
+            Debug.Assert(ifaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
+            Debug.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
 
-                Debug.Assert(ifaceType.IsInterface);  // VerifyInterfaceIsImplemented enforces this invariant
-                Debug.Assert(!IsInterface); // VerifyInterfaceIsImplemented enforces this invariant
+            // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
+            // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
+            if (IsSZArray && ifaceType.IsGenericType)
+                throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
 
-                // SZArrays implement the methods on IList`1, IEnumerable`1, and ICollection`1 with
-                // SZArrayHelper and some runtime magic. We don't have accurate interface maps for them.
-                if (IsSZArray && ifaceType.IsGenericType)
-                    throw new ArgumentException(SR.Argument_ArrayGetInterfaceMap);
+            int ifaceInstanceMethodCount = RuntimeTypeHandle.GetNumVirtuals(ifaceRtType);
 
-                int ifaceInstanceMethodCount = RuntimeTypeHandle.GetNumVirtuals(ifaceRtType);
-
-                InterfaceMapping im;
-                im.InterfaceType = ifaceType;
-                im.TargetType = this;
-                im.InterfaceMethods = new MethodInfo[ifaceInstanceMethodCount];
-                im.TargetMethods = new MethodInfo[ifaceInstanceMethodCount];
+            InterfaceMapping im;
+            im.InterfaceType = ifaceType;
+            im.TargetType = this;
+            im.InterfaceMethods = new MethodInfo[ifaceInstanceMethodCount];
+            im.TargetMethods = new MethodInfo[ifaceInstanceMethodCount];
 
             for (int i = 0; i < ifaceInstanceMethodCount; i++)
             {
@@ -2703,11 +2703,12 @@ namespace System
                     reflectedType = this;
 
                 // GetMethodBase will convert this to the instantiating/unboxing stub if necessary
-                MethodBase rtTypeMethodBase = GetMethodBase(reflectedType, classRtMethodHandle)!;
+                MethodBase? rtTypeMethodBase = GetMethodBase(reflectedType, classRtMethodHandle);
                 // a class may not implement all the methods of an interface (abstract class) so null is a valid value 
                 Debug.Assert(rtTypeMethodBase is null || rtTypeMethodBase is RuntimeMethodInfo);
                 im.TargetMethods[i] = (MethodInfo)rtTypeMethodBase!;
             }
+
             return im;           
         }
         #endregion
@@ -3153,7 +3154,6 @@ namespace System
         {
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
-
             RuntimeType? rtType = type as RuntimeType;
             if (rtType == null)
                 return false;
@@ -4042,7 +4042,7 @@ namespace System
                         if (argCnt != 1)
                             throw new ArgumentException(SR.Arg_FldSetArgErr, nameof(bindingFlags));
 
-                        selFld.SetValue(target!, providedArgs![0], bindingFlags, binder, culture);
+                        selFld.SetValue(target, providedArgs![0], bindingFlags, binder, culture);
                         return null;
                     }
                 }
@@ -4081,7 +4081,7 @@ namespace System
             if ((bindingFlags & BindingFlags.InvokeMethod) != 0)
             {
                 // Lookup Methods
-                MethodInfo[] semiFinalists = (MethodInfo[])GetMember(name, MemberTypes.Method, bindingFlags);
+                MethodInfo[] semiFinalists = (GetMember(name, MemberTypes.Method, bindingFlags) as MethodInfo[])!;
                 List<MethodInfo>? results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)
@@ -4121,7 +4121,7 @@ namespace System
             if (finalist == null && isGetProperty || isSetProperty)
             {
                 // Lookup Property
-                PropertyInfo[] semiFinalists = (PropertyInfo[])GetMember(name, MemberTypes.Property, bindingFlags);
+                PropertyInfo[] semiFinalists = (GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[])!;
                 List<MethodInfo>? results = null;
 
                 for (int i = 0; i < semiFinalists.Length; i++)

@@ -3408,7 +3408,6 @@ namespace System.Diagnostics.Tracing
                         bool hasRelatedActivityID = RemoveFirstArgIfRelatedActivityId(ref args);
                         if (!(source != null && source.SelfDescribingEvents))
                         {
-                            Debug.Assert(eventData != null);
                             manifest.StartEvent(eventName, eventAttribute);
                             for (int fieldIdx = 0; fieldIdx < args.Length; fieldIdx++)
                             {

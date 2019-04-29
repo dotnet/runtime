@@ -270,13 +270,8 @@ namespace System.Reflection.Emit
                 {
                     if (signature[i] == null)
                         throw new ArgumentException(SR.Arg_InvalidTypeInSignature);
-
-                    if (signature[i].UnderlyingSystemType is RuntimeType rt)
-                        m_parameterTypes[i] = rt;
-                    else
-                        throw new ArgumentException(SR.Arg_InvalidTypeInSignature);
-
-                    if (m_parameterTypes[i] == typeof(void))
+                    m_parameterTypes[i] = (signature[i].UnderlyingSystemType as RuntimeType)!;
+                    if (m_parameterTypes[i] == null || m_parameterTypes[i] == typeof(void))
                         throw new ArgumentException(SR.Arg_InvalidTypeInSignature);
                 }
             }
@@ -468,7 +463,7 @@ namespace System.Reflection.Emit
             object retValue;
             if (actualCount > 0)
             {
-                object[] arguments = CheckArguments(parameters!, binder!, invokeAttr, culture, sig);
+                object[] arguments = CheckArguments(parameters!, binder, invokeAttr, culture, sig);
                 retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, false, wrapExceptions);
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)
@@ -590,7 +585,7 @@ namespace System.Reflection.Emit
             {
                 var sbName = new ValueStringBuilder(MethodNameBufferSize);
 
-                sbName.Append(ReturnType!.FormatTypeName());
+                sbName.Append(ReturnType.FormatTypeName());
                 sbName.Append(' ');
                 sbName.Append(Name);
 

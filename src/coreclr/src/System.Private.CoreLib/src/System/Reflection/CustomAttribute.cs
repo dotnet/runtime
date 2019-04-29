@@ -1467,7 +1467,7 @@ namespace System.Reflection
                         else
                         {
                             FieldInfo field = attributeType.GetField(name)!;
-                            field.SetValue(attribute, value!, BindingFlags.Default, Type.DefaultBinder, null);
+                            field.SetValue(attribute, value, BindingFlags.Default, Type.DefaultBinder, null);
                         }
                     }
                     catch (Exception e)
@@ -1504,7 +1504,7 @@ namespace System.Reflection
             isVarArg = false;
 
             // Resolve attribute type from ctor parent token found in decorated decoratedModule scope
-            attributeType = (RuntimeType)decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null);
+            attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
 
             // Test attribute type against user provided attribute type filter
             if (!(attributeFilterType.IsAssignableFrom(attributeType)))
