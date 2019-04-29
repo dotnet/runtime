@@ -11737,17 +11737,6 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
 #endif 
 }
 
-// Release any memory that we allocated for the managed command line
-void ReleaseManagedCommandLine()
-{
-    LIMITED_METHOD_CONTRACT;
-
-#ifdef FEATURE_PAL
-    delete[] s_pCommandLine; 
-    s_pCommandLine = NULL;
-#endif
-}
-
 static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR scopeName, GUID* pMvid)
 {
     CONTRACTL
