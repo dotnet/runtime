@@ -10,6 +10,7 @@
  ******************************************************************************/
 
 using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -28,6 +29,9 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates basic functionality works, using Unsafe.Read
                 test.RunBasicScenario_UnsafeRead();
 
+                // Validates basic functionality works, using the pointer overload
+                test.RunBasicScenario_Ptr();
+
                 if (Avx.IsSupported)
                 {
                     // Validates basic functionality works, using Load
@@ -39,6 +43,9 @@ namespace JIT.HardwareIntrinsics.X86
 
                 // Validates calling via reflection works, using Unsafe.Read
                 test.RunReflectionScenario_UnsafeRead();
+
+                // Validates calling via reflection works, using the pointer overload
+                test.RunReflectionScenario_Ptr();
 
                 if (Avx.IsSupported)
                 {
@@ -133,6 +140,16 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 
+        public void RunBasicScenario_Ptr()
+        {
+            var result = Avx2.ConvertToVector256Int32(
+                (SByte*)(_dataTable.inArrayPtr)
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
         public void RunBasicScenario_Load()
         {
             var result = Avx2.ConvertToVector256Int32(
@@ -158,6 +175,17 @@ namespace JIT.HardwareIntrinsics.X86
             var result = typeof(Avx2).GetMethod(nameof(Avx2.ConvertToVector256Int32), new Type[] { typeof(Vector128<SByte>) })
                                      .Invoke(null, new object[] {
                                         Unsafe.Read<Vector128<SByte>>(_dataTable.inArrayPtr)
+                                     });
+
+            Unsafe.Write(_dataTable.outArrayPtr, (Vector256<Int32>)(result));
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario_Ptr()
+        {
+            var result = typeof(Avx2).GetMethod(nameof(Avx2.ConvertToVector256Int32), new Type[] { typeof(SByte*) })
+                                     .Invoke(null, new object[] {
+                                        Pointer.Box(_dataTable.inArrayPtr, typeof(SByte*))
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector256<Int32>)(result));
