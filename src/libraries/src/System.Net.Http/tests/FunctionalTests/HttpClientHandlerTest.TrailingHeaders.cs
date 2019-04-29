@@ -258,6 +258,34 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
+        public async Task Http2GetAsync_TrailingHeaders_NoData_EmptyResponseObserved()
+        {
+            using (Http2LoopbackServer server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = new HttpClient(CreateHttpClientHandler(useSocketsHttpHandler: true, useHttp2LoopbackServer: true)))
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+
+                int streamId = await server.ReadRequestHeaderAsync();
+
+                // Response header.
+                await server.SendDefaultResponseHeadersAsync(streamId);
+
+                // No data.
+
+                // Response trailing headers
+                await server.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: s_trailingHeaders);
+
+                HttpResponseMessage response = await sendTask;
+                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                Assert.Equal<byte>(Array.Empty<byte>(), await response.Content.ReadAsByteArrayAsync());
+                Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
+                Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]
         public async Task Http2GetAsync_MissingTrailer_TrailingHeadersAccepted()
         {
             using (var server = Http2LoopbackServer.CreateServer())

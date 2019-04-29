@@ -162,9 +162,9 @@ namespace System.Net.Http
             {
                 await _stream.WriteAsync(_outgoingBuffer.ActiveMemory).ConfigureAwait(false);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Abort();
+                Abort(e);
                 throw;
             }
             finally
@@ -251,9 +251,9 @@ namespace System.Net.Http
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Abort();
+                Abort(e);
             }
         }
 
@@ -604,12 +604,11 @@ namespace System.Net.Http
                 return;
             }
 
+            var protocolError = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan);
+
             _incomingBuffer.Discard(frameHeader.Length);
 
-            // CONSIDER: We ignore the error code in the RST_STREAM frame.
-            // We could read this and report it to the user as part of the request exception.
-
-            http2Stream.OnResponseAbort();
+            http2Stream.OnResponseAbort(new Http2ProtocolException(protocolError));
 
             RemoveStream(http2Stream);
         }
@@ -630,9 +629,10 @@ namespace System.Net.Http
                 throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
             }
 
-            int lastValidStream = (int)((uint)((_incomingBuffer.ActiveSpan[0] << 24) | (_incomingBuffer.ActiveSpan[1] << 16) | (_incomingBuffer.ActiveSpan[2] << 8) | _incomingBuffer.ActiveSpan[3]) & 0x7FFFFFFF);
+            int lastValidStream = (int)(BinaryPrimitives.ReadUInt32BigEndian(_incomingBuffer.ActiveSpan) & 0x7FFFFFFF);
+            var errorCode = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan.Slice(sizeof(int)));
 
-            AbortStreams(lastValidStream);
+            AbortStreams(lastValidStream, new Http2ProtocolException(errorCode));
 
             _incomingBuffer.Discard(frameHeader.Length);
         }
@@ -1113,11 +1113,11 @@ namespace System.Net.Http
             _outgoingBuffer.Commit(FrameHeader.Size);
         }
 
-        private void Abort()
+        private void Abort(Exception abortException)
         {
             // The connection has failed, e.g. failed IO or a connection-level frame error.
             // Abort all streams and cause further processing to fail.
-            AbortStreams(0);
+            AbortStreams(0, abortException);
         }
 
         private bool IsAborted()
@@ -1160,7 +1160,7 @@ namespace System.Net.Http
             return LifetimeExpired(nowTicks, connectionLifetime);
         }
 
-        private void AbortStreams(int lastValidStream)
+        private void AbortStreams(int lastValidStream, Exception abortException)
         {
             lock (SyncObject)
             {
@@ -1178,7 +1178,7 @@ namespace System.Net.Http
 
                     if (streamId > lastValidStream)
                     {
-                        kvp.Value.OnResponseAbort();
+                        kvp.Value.OnResponseAbort(abortException);
 
                         _httpStreams.Remove(kvp.Value.StreamId);
                     }
@@ -1338,8 +1338,6 @@ namespace System.Net.Http
 
         public sealed override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            // TODO: ISSUE 31310: Cancellation support
-
             Http2Stream http2Stream = null;
             try
             {
@@ -1354,20 +1352,13 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                http2Stream?.Dispose();
+                Exception replacementException = null;
 
-                if (e is IOException)
+                if (e is IOException ||
+                    e is ObjectDisposedException ||
+                    e is Http2ProtocolException)
                 {
-                    throw new HttpRequestException(SR.net_http_client_execution_error, e);
-                }
-                else if (e is ObjectDisposedException)
-                {
-                    throw new HttpRequestException(SR.net_http_client_execution_error, e);
-                }
-                else if (e is Http2ProtocolException)
-                {
-                    // ISSUE 31315: Determine if/how to expose HTTP2 error codes
-                    throw new HttpRequestException(SR.net_http_client_execution_error, e);
+                    replacementException = new HttpRequestException(SR.net_http_client_execution_error, e);
                 }
                 else if (e is OperationCanceledException oce)
                 {
@@ -1377,17 +1368,19 @@ namespace System.Net.Http
                         http2Stream.Cancel();
                     }
 
-                    if (oce.CancellationToken == cancellationToken)
+                    if (oce.CancellationToken != cancellationToken)
                     {
-                        throw;
+                        replacementException = new OperationCanceledException(oce.Message, oce, cancellationToken);
                     }
+                }
 
-                    throw new OperationCanceledException(cancellationToken);
-                }
-                else
+                http2Stream?.Dispose();
+
+                if (replacementException != null)
                 {
-                    throw;
+                    throw replacementException;
                 }
+                throw;
             }
 
             return http2Stream.Response;
@@ -1401,7 +1394,7 @@ namespace System.Net.Http
                 {
                     // Throw a retryable request exception. This will cause retry logic to kick in
                     // and perform another connection attempt. The user should never see this exception.
-                    throw new HttpRequestException(null, null, true);
+                    throw new HttpRequestException(null, null, allowRetry: true);
                 }
 
                 int streamId = _nextStream;
@@ -1443,40 +1436,7 @@ namespace System.Net.Http
             }
         }
 
-        // TODO: ISSUE 31315: Should this be public?
-        internal enum Http2ProtocolErrorCode
-        {
-            NoError = 0x0,
-            ProtocolError = 0x1,
-            InternalError = 0x2,
-            FlowControlError = 0x3,
-            SettingsTimeout = 0x4,
-            StreamClosed = 0x5,
-            FrameSizeError = 0x6,
-            RefusedStream = 0x7,
-            Cancel = 0x8,
-            CompressionError = 0x9,
-            ConnectError = 0xa,
-            EnhanceYourCalm = 0xb,
-            InadequateSecurity = 0xc,
-            Http11Required = 0xd
-        }
-
-        // TODO: ISSUE 31315: Should this be public?
-        internal class Http2ProtocolException : Exception
-        {
-            private readonly Http2ProtocolErrorCode _errorCode;
-
-            public Http2ProtocolException(Http2ProtocolErrorCode errorCode)
-                : base($"Http2 Protocol Error, errorCode = {errorCode}")
-            {
-                _errorCode = errorCode;
-            }
-
-            public Http2ProtocolErrorCode ErrorCode => _errorCode;
-        }
-
-        internal static async ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minReadBytes)
+        private static async ValueTask<int> ReadAtLeastAsync(Stream stream, Memory<byte> buffer, int minReadBytes)
         {
             Debug.Assert(buffer.Length >= minReadBytes);
 
