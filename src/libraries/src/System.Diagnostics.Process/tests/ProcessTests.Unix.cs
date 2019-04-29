@@ -124,6 +124,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(37198)]
         [Theory, InlineData(true), InlineData(false)]
         [OuterLoop("Opens program")]
         public void ProcessStart_UseShellExecute_OnUnix_SuccessWhenProgramInstalled(bool isFolder)
