@@ -27,12 +27,12 @@ namespace System.Net.Test.Common
         private bool _connectionBroken = false;
 
         public byte[] ReadFrame(bool server) =>
-            ReadFrameCoreAsync(server, sync: true).GetAwaiter().GetResult();
+            ReadFrameCoreAsync(server, sync: true, cancellationToken: default).GetAwaiter().GetResult();
 
-        public Task<byte[]> ReadFrameAsync(bool server) =>
-            ReadFrameCoreAsync(server, sync: false);
+        public Task<byte[]> ReadFrameAsync(bool server, CancellationToken cancellationToken) =>
+            ReadFrameCoreAsync(server, sync: false, cancellationToken);
 
-        private async Task<byte[]> ReadFrameCoreAsync(bool server, bool sync)
+        private async Task<byte[]> ReadFrameCoreAsync(bool server, bool sync, CancellationToken cancellationToken)
         {
             if (_connectionBroken)
             {
@@ -54,8 +54,8 @@ namespace System.Net.Test.Common
             }
 
             bool successfulWait = sync ?
-                semaphore.Wait(WaitForReadDataTimeoutMilliseconds) :
-                await semaphore.WaitAsync(WaitForReadDataTimeoutMilliseconds).ConfigureAwait(false);
+                semaphore.Wait(WaitForReadDataTimeoutMilliseconds, cancellationToken) :
+                await semaphore.WaitAsync(WaitForReadDataTimeoutMilliseconds, cancellationToken).ConfigureAwait(false);
             if (!successfulWait)
             {
                 throw new TimeoutException("VirtualNetwork: Timeout reading the next frame.");
@@ -84,7 +84,7 @@ namespace System.Net.Test.Common
                 }
                 else
                 {
-                    await Task.Delay(backOffDelayMilliseconds).ConfigureAwait(false);
+                    await Task.Delay(backOffDelayMilliseconds, cancellationToken).ConfigureAwait(false);
                 }
             }
             while (remainingTries > 0);

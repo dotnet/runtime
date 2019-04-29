@@ -89,10 +89,10 @@ namespace System.Net.Test.Common
             {
                 if (_readStream == null || (_readStream.Position >= _readStream.Length))
                 {
-                    _readStream = new MemoryStream(await _network.ReadFrameAsync(_isServer).ConfigureAwait(false));
+                    _readStream = new MemoryStream(await _network.ReadFrameAsync(_isServer, cancellationToken).ConfigureAwait(false));
                 }
 
-                return await _readStream.ReadAsync(buffer, offset, count).ConfigureAwait(false);
+                return await _readStream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             }
             finally
             {

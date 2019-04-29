@@ -4,6 +4,7 @@
 
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Security
@@ -64,7 +65,7 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private void ProcessAuthentication(LazyAsyncResult lazyResult)
+        private void ProcessAuthentication(LazyAsyncResult lazyResult, CancellationToken cancellationToken)
         {
         }
 
