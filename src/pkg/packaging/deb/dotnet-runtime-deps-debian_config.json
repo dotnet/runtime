@@ -34,8 +34,8 @@
         "libgssapi-krb5-2":{},
         "libstdc++6":{},
         "zlib1g":{},
-        "libssl1.1" : {},
-        "libicu63": {} 
+        "%SSL_DEPENDENCY_LIST%" : {},
+        "%LIBICU_DEPENDENCY_LIST%": {} 
     },
 
     "debian_ignored_dependencies" : [
