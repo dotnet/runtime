@@ -104,6 +104,20 @@ bool pal::getcwd(pal::string_t* recv)
     return false;
 }
 
+bool pal::get_loaded_library(
+    const char_t *library_name,
+    const char *symbol_name,
+    /*out*/ dll_t *dll,
+    /*out*/ pal::string_t *path)
+{
+    dll_t dll_maybe = ::GetModuleHandleW(library_name);
+    if (dll_maybe == nullptr)
+        return false;
+
+    *dll = dll_maybe;
+    return pal::get_module_path(*dll, path);
+}
+
 bool pal::load_library(const string_t* in_path, dll_t* dll)
 {
     string_t path = *in_path;
@@ -120,7 +134,7 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
             return false;
         }
     }
-    
+
     //Adding the assert to ensure relative paths which are not just filenames are not used for LoadLibrary Calls
     assert(!LongFile::IsPathNotFullyQualified(path) || !LongFile::ContainsDirectorySeparator(path));
 
@@ -329,7 +343,7 @@ typedef NTSTATUS (WINAPI *pFuncRtlGetVersion)(RTL_OSVERSIONINFOW *);
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
-    
+
     RTL_OSVERSIONINFOW osinfo;
 
     // Init the buffer
@@ -350,7 +364,7 @@ pal::string_t pal::get_current_os_rid_platform()
                 if (osinfo.dwMajorVersion > majorVer)
                 {
                     majorVer = osinfo.dwMajorVersion;
-                    
+
                     // Reset the minor version since we picked a different major version.
                     minorVer = 0;
                 }
@@ -371,7 +385,7 @@ pal::string_t pal::get_current_os_rid_platform()
                             ridOS.append(_X("win8"));
                             break;
                         case 3:
-                        default: 
+                        default:
                             // For unknown version, we will support the highest RID that we know for this major version.
                             ridOS.append(_X("win81"));
                             break;
@@ -386,7 +400,7 @@ pal::string_t pal::get_current_os_rid_platform()
             }
         }
     }
-    
+
     return ridOS;
 }
 
@@ -562,7 +576,7 @@ bool pal::realpath(string_t* path, bool skip_error_logging)
         }
 
         const string_t* prefix = &LongFile::ExtendedPrefix;
-        //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk 
+        //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk
         if (str.compare(0, LongFile::UNCPathPrefix.length(), LongFile::UNCPathPrefix) == 0)
         {
             prefix = &LongFile::UNCExtendedPathPrefix;

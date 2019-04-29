@@ -33,6 +33,7 @@ int main(const int argc, const pal::char_t *argv[])
     const pal::char_t *command = argv[1];
     if (pal::strcmp(command, _X("get_hostfxr_path")) == 0)
     {
+        // args: ... [<assembly_path>] [<hostfxr_to_load>]
         const pal::char_t *assembly_path = nullptr;
         if (argc >= 3)
             assembly_path = argv[2];
@@ -46,6 +47,17 @@ int main(const int argc, const pal::char_t *argv[])
             ::SetEnvironmentVariableW(_X("ProgramFiles(x86)"), testOverride.c_str());
         }
 #endif
+
+        if (argc >= 4)
+        {
+            pal::string_t to_load = argv[3];
+            pal::dll_t fxr;
+            if (!pal::load_library(&to_load, &fxr))
+            {
+                std::cout << "Failed to load library: " << tostr(to_load).data() << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
 
         pal::string_t fxr_path;
         size_t len = fxr_path.size();

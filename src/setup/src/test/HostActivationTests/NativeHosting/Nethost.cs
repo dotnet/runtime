@@ -129,6 +129,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .And.HaveStdOutContaining($"hostfxr_path: {hostFxrPath}".ToLower());
         }
 
+        [Fact]
+        public void GetHostFxrPath_HostFxrAlreadyLoaded()
+        {
+            Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {sharedState.TestAssemblyPath} {sharedState.ProductHostFxrPath}")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining($"hostfxr_path: {sharedState.ProductHostFxrPath}".ToLower())
+                .And.HaveStdErrContaining($"Found previously loaded library {HostFxrName}");
+        }
+
         public class SharedTestState : SharedTestStateBase
         {
             public string HostFxrPath { get; }
@@ -136,6 +149,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string ValidInstallRoot { get; }
 
             public string TestAssemblyPath { get; }
+
+            public string ProductHostFxrPath { get; }
 
             public SharedTestState()
             {
@@ -156,6 +171,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 string assemblyPath = Path.Combine(appDir, "App.dll");
                 File.WriteAllText(assemblyPath, string.Empty);
                 TestAssemblyPath = assemblyPath;
+
+                string productDir = Path.Combine(BaseDirectory, "product");
+                Directory.CreateDirectory(productDir);
+                ProductHostFxrPath = Path.Combine(productDir, HostFxrName);
+                File.Copy(Path.Combine(RepoDirectories.CorehostPackages, HostFxrName), ProductHostFxrPath);
             }
 
             private string CreateHostFxr(string destinationDirectory)

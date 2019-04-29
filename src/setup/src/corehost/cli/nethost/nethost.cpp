@@ -33,10 +33,14 @@ NETHOST_API int NETHOST_CALLTYPE get_hostfxr_path(
     if (assembly_path != nullptr)
         root_path = get_directory(assembly_path);
 
-    pal::string_t dotnet_root;
+    pal::dll_t fxr;
     pal::string_t fxr_path;
-    if(!fxr_resolver::try_get_path(root_path, &dotnet_root, &fxr_path))
-        return StatusCode::CoreHostLibMissingFailure;
+    if (!fxr_resolver::try_get_existing_fxr(&fxr, &fxr_path))
+    {
+        pal::string_t dotnet_root;
+        if(!fxr_resolver::try_get_path(root_path, &dotnet_root, &fxr_path))
+            return StatusCode::CoreHostLibMissingFailure;
+    }
 
     size_t len = fxr_path.length();
     size_t required_size = len + 1; // null terminator
