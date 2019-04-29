@@ -6792,6 +6792,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
             // Initialize the AssemblyName object from the AssemblySpec
             spec.AssemblyNameInit(&_gcRefs.oRefAssemblyName, NULL);
                 
+            bool isSatelliteAssemblyRequest = !spec.IsNeutralCulture();
+
             if (!fInvokedForTPABinder)
             {
                 // Step 2 (of CLRPrivBinderAssemblyLoadContext::BindUsingAssemblyName) - Invoke Load method
@@ -6814,9 +6816,9 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 {
                     fResolvedAssembly = true;
                 }
-            
+
                 // Step 3 (of CLRPrivBinderAssemblyLoadContext::BindUsingAssemblyName)
-                if (!fResolvedAssembly)
+                if (!fResolvedAssembly && !isSatelliteAssemblyRequest)
                 {
                     // If we could not resolve the assembly using Load method, then attempt fallback with TPA Binder.
                     // Since TPA binder cannot fallback to itself, this fallback does not happen for binds within TPA binder.
@@ -6833,16 +6835,41 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                     }
                 }
             }
-            
-            if (!fResolvedAssembly)
+
+            if (!fResolvedAssembly && isSatelliteAssemblyRequest)
             {
                 // Step 4 (of CLRPrivBinderAssemblyLoadContext::BindUsingAssemblyName)
+                //
+                // Attempt to resolve it using the ResolveSatelliteAssembly method.
+                // Finally, setup arguments for invocation
+                BinderMethodID idHAR_ResolveSatelitteAssembly = METHOD__ASSEMBLYLOADCONTEXT__RESOLVESATELLITEASSEMBLY;
+                MethodDescCallSite methResolveSatelitteAssembly(idHAR_ResolveSatelitteAssembly);
+
+                // Setup the arguments for the call
+                ARG_SLOT args[2] =
+                {
+                    PtrToArgSlot(pManagedAssemblyLoadContextToBindWithin), // IntPtr for managed assembly load context instance
+                    ObjToArgSlot(_gcRefs.oRefAssemblyName), // AssemblyName instance
+                };
+
+                // Make the call
+                _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methResolveSatelitteAssembly.Call_RetOBJECTREF(args);
+                if (_gcRefs.oRefLoadedAssembly != NULL)
+                {
+                    // Set the flag indicating we found the assembly
+                    fResolvedAssembly = true;
+                }
+            }
+
+            if (!fResolvedAssembly)
+            {
+                // Step 5 (of CLRPrivBinderAssemblyLoadContext::BindUsingAssemblyName)
                 //
                 // If we couldnt resolve the assembly using TPA LoadContext as well, then
                 // attempt to resolve it using the Resolving event.
                 // Finally, setup arguments for invocation
                 BinderMethodID idHAR_ResolveUsingEvent = METHOD__ASSEMBLYLOADCONTEXT__RESOLVEUSINGEVENT;
-                MethodDescCallSite methLoadAssembly(idHAR_ResolveUsingEvent);
+                MethodDescCallSite methResolveUsingEvent(idHAR_ResolveUsingEvent);
                 
                 // Setup the arguments for the call
                 ARG_SLOT args[2] =
@@ -6852,7 +6879,7 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 };
 
                 // Make the call
-                _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methLoadAssembly.Call_RetOBJECTREF(args);
+                _gcRefs.oRefLoadedAssembly = (ASSEMBLYREF) methResolveUsingEvent.Call_RetOBJECTREF(args);
                 if (_gcRefs.oRefLoadedAssembly != NULL)
                 {
                     // Set the flag indicating we found the assembly

@@ -65,9 +65,10 @@ HRESULT CLRPrivBinderAssemblyLoadContext::BindAssemblyByName(IAssemblyName     *
         //
         // 1) Lookup the assembly within the LoadContext itself. If assembly is found, use it.
         // 2) Invoke the LoadContext's Load method implementation. If assembly is found, use it.
-        // 3) Lookup the assembly within TPABinder. If assembly is found, use it.
-        // 4) Invoke the LoadContext's Resolving event. If assembly is found, use it.
-        // 5) Raise exception.
+        // 3) Lookup the assembly within TPABinder (except for satellite requests). If assembly is found, use it.
+        // 4) Invoke the LoadContext's ResolveSatelliteAssembly method (for satellite requests). If assembly is found, use it.
+        // 5) Invoke the LoadContext's Resolving event. If assembly is found, use it.
+        // 6) Raise exception.
         //
         // This approach enables a LoadContext to override assemblies that have been loaded in TPA context by loading
         // a different (or even the same!) version.

@@ -98,6 +98,7 @@ public:
     void SetCodeBase(LPCWSTR szCodeBase);
 
     VOID SetCulture(LPCSTR szCulture);
+    bool IsNeutralCulture();
 
     VOID ConvertPublicKeyToToken();
 
