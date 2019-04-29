@@ -17,7 +17,7 @@ namespace System.Reflection
         private string? m_name;
         private void* m_utf8name;
         private RuntimeTypeCache m_reflectedTypeCache = null!;
-        private RuntimeMethodInfo? m_addMethod = null;
+        private RuntimeMethodInfo? m_addMethod;
         private RuntimeMethodInfo? m_removeMethod;
         private RuntimeMethodInfo? m_raiseMethod;
         private MethodInfo[]? m_otherMethod;
@@ -83,7 +83,7 @@ namespace System.Reflection
         #region ICustomAttributeProvider
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
+            return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)

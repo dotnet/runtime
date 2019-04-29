@@ -329,7 +329,7 @@ namespace System.Reflection
                             CustomAttributeData.GetCustomAttributes(this), typeof(DateTimeConstantAttribute), 0);
 
                     if (value.ArgumentType != null)
-                        return new DateTime((long)value.Value!); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
+                        return new DateTime((long)value.Value!);
                 }
                 else
                 {
@@ -405,7 +405,7 @@ namespace System.Reflection
                 {
                     // This is not possible because Decimal cannot be represented directly in the metadata.
                     Debug.Fail("Decimal cannot be represented directly in the metadata.");
-                    return (decimal)namedArgument.TypedValue.Value!; // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
+                    return (decimal)namedArgument.TypedValue.Value!;
                 }
             }
 
@@ -418,22 +418,22 @@ namespace System.Reflection
             if (parameters[2].ParameterType == typeof(uint))
             {
                 // DecimalConstantAttribute(byte scale, byte sign, uint hi, uint mid, uint low)
-                int low = (int)(uint)args[4].Value!; // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
-                int mid = (int)(uint)args[3].Value!; // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
-                int hi = (int)(uint)args[2].Value!;  // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
-                byte sign = (byte)args[1].Value!;    // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
-                byte scale = (byte)args[0].Value!;   // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
+                int low = (int)(uint)args[4].Value!;
+                int mid = (int)(uint)args[3].Value!;
+                int hi = (int)(uint)args[2].Value!;
+                byte sign = (byte)args[1].Value!;
+                byte scale = (byte)args[0].Value!;
 
                 return new System.Decimal(low, mid, hi, (sign != 0), scale);
             }
             else
             {
                 // DecimalConstantAttribute(byte scale, byte sign, int hi, int mid, int low)
-                int low = (int)args[4].Value!;     // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
-                int mid = (int)args[3].Value!;     // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
-                int hi = (int)args[2].Value!;      // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
-                byte sign = (byte)args[1].Value!;  // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
-                byte scale = (byte)args[0].Value!; // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
+                int low = (int)args[4].Value!;
+                int mid = (int)args[3].Value!;
+                int hi = (int)args[2].Value!;
+                byte sign = (byte)args[1].Value!;
+                byte scale = (byte)args[0].Value!;
 
                 return new System.Decimal(low, mid, hi, (sign != 0), scale);
             }
@@ -448,12 +448,12 @@ namespace System.Reflection
             {
                 if (namedArgument.MemberInfo.Name.Equals("Value"))
                 {
-                    return new DateTime((long)namedArgument.TypedValue.Value!); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
+                    return new DateTime((long)namedArgument.TypedValue.Value!);
                 }
             }
 
             // Look at the ctor argument if the "Value" property was not explicitly defined.
-            return new DateTime((long)attr.ConstructorArguments[0].Value!); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34976
+            return new DateTime((long)attr.ConstructorArguments[0].Value!);
         }
 
         private static object? GetRawConstant(CustomAttributeData attr)
@@ -511,7 +511,7 @@ namespace System.Reflection
             if (MdToken.IsNullToken(m_tkParamDef))
                 return Array.Empty<object>();
 
-            return CustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object));
+            return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
