@@ -222,7 +222,7 @@ namespace System.Net.Security
             return BeginAuthenticateAsClient(options, CancellationToken.None, asyncCallback, asyncState);
         }
 
-        internal virtual IAsyncResult BeginAuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback asyncCallback, object asyncState)
+        internal IAsyncResult BeginAuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken, AsyncCallback asyncCallback, object asyncState)
         {
             SetAndVerifyValidationCallback(sslClientAuthenticationOptions.RemoteCertificateValidationCallback);
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
@@ -230,7 +230,7 @@ namespace System.Net.Security
             ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
 
             LazyAsyncResult result = new LazyAsyncResult(this, asyncState, asyncCallback);
-            ProcessAuthentication(result);
+            ProcessAuthentication(result, cancellationToken);
             return result;
         }
 
@@ -277,13 +277,13 @@ namespace System.Net.Security
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
 
             LazyAsyncResult result = new LazyAsyncResult(this, asyncState, asyncCallback);
-            ProcessAuthentication(result);
+            ProcessAuthentication(result, cancellationToken);
             return result;
         }
 
         public virtual void EndAuthenticateAsServer(IAsyncResult asyncResult) => EndProcessAuthentication(asyncResult);
 
-        internal virtual IAsyncResult BeginShutdown(AsyncCallback asyncCallback, object asyncState)
+        internal IAsyncResult BeginShutdown(AsyncCallback asyncCallback, object asyncState)
         {
             CheckThrow(authSuccessCheck: true, shutdownCheck: true);
 
@@ -291,7 +291,7 @@ namespace System.Net.Security
             return TaskToApm.Begin(InnerStream.WriteAsync(message.Payload, 0, message.Payload.Length), asyncCallback, asyncState);
         }
 
-        internal virtual void EndShutdown(IAsyncResult asyncResult)
+        internal void EndShutdown(IAsyncResult asyncResult)
         {
             CheckThrow(authSuccessCheck: true, shutdownCheck: true);
 
@@ -334,7 +334,7 @@ namespace System.Net.Security
             SetAndVerifySelectionCallback(sslClientAuthenticationOptions.LocalCertificateSelectionCallback);
 
             ValidateCreateContext(sslClientAuthenticationOptions, _certValidationDelegate, _certSelectionDelegate);
-            ProcessAuthentication(null);
+            ProcessAuthentication(null, default);
         }
 
         public virtual void AuthenticateAsServer(X509Certificate serverCertificate)
@@ -366,7 +366,7 @@ namespace System.Net.Security
             SetAndVerifyValidationCallback(sslServerAuthenticationOptions.RemoteCertificateValidationCallback);
 
             ValidateCreateContext(CreateAuthenticationOptions(sslServerAuthenticationOptions));
-            ProcessAuthentication(null);
+            ProcessAuthentication(null, default);
         }
         #endregion
 

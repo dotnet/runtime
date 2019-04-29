@@ -13,12 +13,14 @@ namespace System.Net.Security
         {
             Task LockAsync();
             ValueTask WriteAsync(byte[] buffer, int offset, int count);
+            CancellationToken CancellationToken { get; }
         }
 
         private interface ISslReadAdapter
         {
             ValueTask<int> ReadAsync(byte[] buffer, int offset, int count);
             ValueTask<int> LockAsync(Memory<byte> buffer);
+            CancellationToken CancellationToken { get; }
         }
 
         private readonly struct SslReadAsync : ISslReadAdapter
@@ -35,6 +37,8 @@ namespace System.Net.Security
             public ValueTask<int> ReadAsync(byte[] buffer, int offset, int count) => _sslStream.InnerStream.ReadAsync(new Memory<byte>(buffer, offset, count), _cancellationToken);
 
             public ValueTask<int> LockAsync(Memory<byte> buffer) => _sslStream.CheckEnqueueReadAsync(buffer);
+
+            public CancellationToken CancellationToken => _cancellationToken;
         }
 
         private readonly struct SslReadSync : ISslReadAdapter
@@ -46,6 +50,8 @@ namespace System.Net.Security
             public ValueTask<int> ReadAsync(byte[] buffer, int offset, int count) => new ValueTask<int>(_sslStream.InnerStream.Read(buffer, offset, count));
 
             public ValueTask<int> LockAsync(Memory<byte> buffer) => new ValueTask<int>(_sslStream.CheckEnqueueRead(buffer));
+
+            public CancellationToken CancellationToken => default;
         }
 
         private readonly struct SslWriteAsync : ISslWriteAdapter
@@ -62,6 +68,8 @@ namespace System.Net.Security
             public Task LockAsync() => _sslStream.CheckEnqueueWriteAsync();
 
             public ValueTask WriteAsync(byte[] buffer, int offset, int count) => _sslStream.InnerStream.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), _cancellationToken);
+
+            public CancellationToken CancellationToken => _cancellationToken;
         }
 
         private readonly struct SslWriteSync : ISslWriteAdapter
@@ -81,6 +89,8 @@ namespace System.Net.Security
                 _sslStream.InnerStream.Write(buffer, offset, count);
                 return default;
             }
+
+            public CancellationToken CancellationToken => default;
         }
     }
 }

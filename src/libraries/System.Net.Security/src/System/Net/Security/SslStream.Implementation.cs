@@ -283,7 +283,7 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private void ProcessAuthentication(LazyAsyncResult lazyResult)
+        private void ProcessAuthentication(LazyAsyncResult lazyResult, CancellationToken cancellationToken)
         {
             if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
             {
@@ -296,7 +296,7 @@ namespace System.Net.Security
                 AsyncProtocolRequest asyncRequest = null;
                 if (lazyResult != null)
                 {
-                    asyncRequest = new AsyncProtocolRequest(lazyResult);
+                    asyncRequest = new AsyncProtocolRequest(lazyResult, cancellationToken);
                     asyncRequest.Buffer = null;
 #if DEBUG
                     lazyResult._debugAsyncChain = asyncRequest;
@@ -342,7 +342,7 @@ namespace System.Net.Security
         //
         // This is used to reply on re-handshake when received SEC_I_RENEGOTIATE on Read().
         //
-        private void ReplyOnReAuthentication(byte[] buffer)
+        private void ReplyOnReAuthentication(byte[] buffer, CancellationToken cancellationToken)
         {
             lock (SyncLock)
             {
@@ -362,7 +362,7 @@ namespace System.Net.Security
             // Forcing async mode.  The caller will queue another Read as soon as we return using its preferred
             // calling convention, which will be woken up when the handshake completes.  The callback is just
             // to capture any SocketErrors that happen during the handshake so they can be surfaced from the Read.
-            AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(new LazyAsyncResult(this, null, new AsyncCallback(RehandshakeCompleteCallback)));
+            AsyncProtocolRequest asyncRequest = new AsyncProtocolRequest(new LazyAsyncResult(this, null, new AsyncCallback(RehandshakeCompleteCallback)), cancellationToken);
             // Buffer contains a result from DecryptMessage that will be passed to ISC/ASC
             asyncRequest.Buffer = buffer;
             ForceAuthentication(false, buffer, asyncRequest);
@@ -504,7 +504,7 @@ namespace System.Net.Security
                 else
                 {
                     asyncRequest.AsyncState = message;
-                    Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size);
+                    Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size, asyncRequest.CancellationToken);
                     if (t.IsCompleted)
                     {
                         t.GetAwaiter().GetResult();
@@ -717,7 +717,7 @@ namespace System.Net.Security
             else
             {
                 asyncRequest.AsyncState = exception;
-                Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size);
+                Task t = InnerStream.WriteAsync(message.Payload, 0, message.Size, asyncRequest.CancellationToken);
                 if (t.IsCompleted)
                 {
                     t.GetAwaiter().GetResult();
@@ -1405,7 +1405,7 @@ namespace System.Net.Security
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
 
-                            ReplyOnReAuthentication(extraBuffer);
+                            ReplyOnReAuthentication(extraBuffer, adapter.CancellationToken);
 
                             // Loop on read.
                             continue;
@@ -1425,7 +1425,7 @@ namespace System.Net.Security
             {
                 FinishRead(null);
 
-                if (e is IOException)
+                if (e is IOException || (e is OperationCanceledException && adapter.CancellationToken.IsCancellationRequested))
                 {
                     throw;
                 }
@@ -1524,7 +1524,7 @@ namespace System.Net.Security
             {
                 FinishWrite();
 
-                if (e is IOException)
+                if (e is IOException || (e is OperationCanceledException && writeAdapter.CancellationToken.IsCancellationRequested))
                 {
                     throw;
                 }
