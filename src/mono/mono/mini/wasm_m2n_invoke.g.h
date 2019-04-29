@@ -102,6 +102,42 @@ wasm_invoke_viiiiiiiiii (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_viiiiiiiiiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, int arg_2, int arg_3, int arg_4, int arg_5, int arg_6, int arg_7, int arg_8, int arg_9, int arg_10);
+	T func = (T)target_func;
+	func ((int)margs->iargs [0], (int)margs->iargs [1], (int)margs->iargs [2], (int)margs->iargs [3], (int)margs->iargs [4], (int)margs->iargs [5], (int)margs->iargs [6], (int)margs->iargs [7], (int)margs->iargs [8], (int)margs->iargs [9], (int)margs->iargs [10]);
+
+}
+
+static void
+wasm_invoke_viiiiiiiiiiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, int arg_2, int arg_3, int arg_4, int arg_5, int arg_6, int arg_7, int arg_8, int arg_9, int arg_10, int arg_11);
+	T func = (T)target_func;
+	func ((int)margs->iargs [0], (int)margs->iargs [1], (int)margs->iargs [2], (int)margs->iargs [3], (int)margs->iargs [4], (int)margs->iargs [5], (int)margs->iargs [6], (int)margs->iargs [7], (int)margs->iargs [8], (int)margs->iargs [9], (int)margs->iargs [10], (int)margs->iargs [11]);
+
+}
+
+static void
+wasm_invoke_viiiiiiiiiiiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, int arg_2, int arg_3, int arg_4, int arg_5, int arg_6, int arg_7, int arg_8, int arg_9, int arg_10, int arg_11, int arg_12);
+	T func = (T)target_func;
+	func ((int)margs->iargs [0], (int)margs->iargs [1], (int)margs->iargs [2], (int)margs->iargs [3], (int)margs->iargs [4], (int)margs->iargs [5], (int)margs->iargs [6], (int)margs->iargs [7], (int)margs->iargs [8], (int)margs->iargs [9], (int)margs->iargs [10], (int)margs->iargs [11], (int)margs->iargs [12]);
+
+}
+
+static void
+wasm_invoke_viiiiiiiiiiiiii (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, int arg_1, int arg_2, int arg_3, int arg_4, int arg_5, int arg_6, int arg_7, int arg_8, int arg_9, int arg_10, int arg_11, int arg_12, int arg_13);
+	T func = (T)target_func;
+	func ((int)margs->iargs [0], (int)margs->iargs [1], (int)margs->iargs [2], (int)margs->iargs [3], (int)margs->iargs [4], (int)margs->iargs [5], (int)margs->iargs [6], (int)margs->iargs [7], (int)margs->iargs [8], (int)margs->iargs [9], (int)margs->iargs [10], (int)margs->iargs [11], (int)margs->iargs [12], (int)margs->iargs [13]);
+
+}
+
+static void
 wasm_invoke_i (void *target_func, InterpMethodArguments *margs)
 {
 	typedef int (*T)(void);
