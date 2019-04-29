@@ -23,12 +23,10 @@ namespace Microsoft.VisualBasic.Tests
             base.Dispose(disposing);
         }
 
-        private static bool IsNotOSX() => !PlatformDetection.IsOSX;
-
         // On OSX, the temp directory /tmp/ is a symlink to /private/tmp, so setting the current
         // directory to a symlinked path will result in GetCurrentDirectory returning the absolute
         // path that followed the symlink.
-        [ConditionalFact(nameof(IsNotOSX))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
         public void ChDir()
         {
             var savedDirectory = System.IO.Directory.GetCurrentDirectory();
@@ -84,7 +82,7 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         // Can't get current directory on OSX before setting it.
-        [ConditionalFact(nameof(IsNotOSX))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotOSX))]
         public void CurDir()
         {
             Assert.Equal(FileSystem.CurDir(), System.IO.Directory.GetCurrentDirectory());
