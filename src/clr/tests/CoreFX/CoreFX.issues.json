@@ -1016,6 +1016,116 @@
         }
     },
     {
+        "name": "System.Runtime.Tests",
+        "enabled": true,
+        "exclusions": {
+            "namespaces": null,
+            "classes": null,
+            "methods": [
+                {
+                    "name": "System.Tests.TimeSpanTests.FromMilliseconds",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.FromMilliseconds_Invalid",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.NamedMultiplication",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Multiplication",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Division",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.NamedDivision",
+                    "reason": "The test will be enabled after https://github.com/dotnet/corefx/pull/37235"
+                },
+                {
+                    "name": "System.Text.Tests.StringBuilderTests.Equals",
+                    "reason": "Because of a change in StringBuilder, this test is outdated."
+                },
+                {
+                    "name": "System.Tests.DecimalTests.Remainder",
+                    "reason": "https://github.com/dotnet/coreclr/issues/12605"
+                },
+                {
+                    "name": "System.Tests.DecimalTests.Remainder_Invalid",
+                    "reason": "https://github.com/dotnet/coreclr/issues/12605"
+                },
+                {
+                    "name": "System.Tests.DecimalTests+BigIntegerMod.Test",
+                    "reason": "https://github.com/dotnet/coreclr/issues/12605"
+                },
+                {
+                    "name": "System.Tests.DecimalTests.Round_InvalidMidpointRounding_ThrowsArgumentException",
+                    "reason": "outdated"
+                },
+                {
+                    "name": "System.Tests.ArrayTests.Copy",
+                    "reason": "Needs updates for XUnit 2.4"
+                },
+                {
+                    "name": "System.Tests.ArraySegment_Tests.CopyTo_Invalid",
+                    "reason": "Needs parameter name updated to 'destination'."
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Parse_Invalid",
+                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Parse_Span",
+                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Parse_Span_Invalid",
+                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Parse",
+                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
+                },
+                {
+                    "name": "System.Tests.SingleTests.Test_ToString",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.Tests.SingleTests.TryFormat",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.Tests.DoubleTests.Test_ToString",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.Tests.DoubleTests.TryFormat",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.Tests.TimeSpanTests.Total_Days_Hours_Minutes_Seconds_Milliseconds",
+                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
+                },
+                {
+                    "name": "System.Tests.BufferTests.BlockCopy_Invalid",
+                    "reason": "https://github.com/dotnet/coreclr/pull/23636"
+                },
+                {
+                    "name": "System.Tests.VersionTests.Comparisons_NullArgument_ThrowsArgumentNullException",
+                    "reason":  "Version was improved to no longer throw from comparison operators"
+                },
+                {
+                    "name" : "System.Tests.ActivatorNetcoreTests.CreateInstanceAssemblyResolve",
+                    "reason" : "Waiting for https://github.com/dotnet/corefx/pull/37080"
+                }
+            ]
+        }
+    },
+    {
         "name": "System.Runtime.Extensions.Tests",
         "enabled": true,
         "exclusions": {
@@ -1340,92 +1450,6 @@
                 }
             ],
             "methods": null
-        }
-    },
-    {
-        "name": "System.Runtime.Tests",
-        "enabled": true,
-        "exclusions": {
-            "namespaces": null,
-            "classes": null,
-            "methods": [
-                {
-                    "name": "System.Text.Tests.StringBuilderTests.Equals",
-                    "reason": "Because of a change in StringBuilder, this test is outdated."
-                },
-                {
-                    "name": "System.Tests.DecimalTests.Remainder",
-                    "reason": "https://github.com/dotnet/coreclr/issues/12605"
-                },
-                {
-                    "name": "System.Tests.DecimalTests.Remainder_Invalid",
-                    "reason": "https://github.com/dotnet/coreclr/issues/12605"
-                },
-                {
-                    "name": "System.Tests.DecimalTests+BigIntegerMod.Test",
-                    "reason": "https://github.com/dotnet/coreclr/issues/12605"
-                },
-                {
-                    "name": "System.Tests.DecimalTests.Round_InvalidMidpointRounding_ThrowsArgumentException",
-                    "reason": "outdated"
-                }, 
-                {
-                    "name": "System.Tests.ArrayTests.Copy",
-                    "reason": "Needs updates for XUnit 2.4"
-                },
-                {
-                    "name": "System.Tests.ArraySegment_Tests.CopyTo_Invalid",
-                    "reason": "Needs parameter name updated to 'destination'."
-                },
-                {
-                    "name": "System.Tests.TimeSpanTests.Parse_Invalid",
-                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
-                },
-                {
-                    "name": "System.Tests.TimeSpanTests.Parse_Span",
-                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
-                },
-                {
-                    "name": "System.Tests.TimeSpanTests.Parse_Span_Invalid",
-                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
-                },
-                {
-                    "name": "System.Tests.TimeSpanTests.Parse",
-                    "reason": "Temporary disabling till merging the PR https://github.com/dotnet/corefx/pull/34561"
-                },
-                {
-                    "name": "System.Tests.SingleTests.Test_ToString",
-                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
-                },
-                {
-                    "name": "System.Tests.SingleTests.TryFormat",
-                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
-                },
-                {
-                    "name": "System.Tests.DoubleTests.Test_ToString",
-                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
-                },
-                {
-                    "name": "System.Tests.DoubleTests.TryFormat",
-                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
-                },
-                {
-                    "name": "System.Tests.TimeSpanTests.Total_Days_Hours_Minutes_Seconds_Milliseconds",
-                    "reason" : "https://github.com/dotnet/coreclr/pull/22040"
-                },
-                {
-                    "name": "System.Tests.BufferTests.BlockCopy_Invalid",
-                    "reason": "https://github.com/dotnet/coreclr/pull/23636"
-                },
-                {
-                    "name": "System.Tests.VersionTests.Comparisons_NullArgument_ThrowsArgumentNullException",
-                    "reason":  "Version was improved to no longer throw from comparison operators"
-                },
-                {
-                    "name" : "System.Tests.ActivatorNetcoreTests.CreateInstanceAssemblyResolve",
-                    "reason" : "Waiting for https://github.com/dotnet/corefx/pull/37080"
-                }
-            ]
         }
     },
     {
