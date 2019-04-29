@@ -42,7 +42,7 @@ namespace System.Reflection
                     //
                     // first take care of all the NO_INVOKE cases. 
                     if (ContainsGenericParameters ||
-                         IsDisallowedByRefType(ReturnType!) ||
+                         IsDisallowedByRefType(ReturnType) ||
                          (declaringType != null && declaringType.ContainsGenericParameters) ||
                          ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
                     {
@@ -52,7 +52,7 @@ namespace System.Reflection
                     else
                     {
                         // Check for byref-like types
-                        if ((declaringType != null && declaringType.IsByRefLike) || ReturnType!.IsByRefLike)
+                        if ((declaringType != null && declaringType.IsByRefLike) || ReturnType.IsByRefLike)
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
                     }
 
@@ -182,7 +182,7 @@ namespace System.Reflection
             {
                 var sbName = new ValueStringBuilder(MethodNameBufferSize);
 
-                sbName.Append(ReturnType!.FormatTypeName());
+                sbName.Append(ReturnType.FormatTypeName());
                 sbName.Append(' ');
                 sbName.Append(Name);
 
@@ -254,7 +254,7 @@ namespace System.Reflection
         #region ICustomAttributeProvider
         public override object[] GetCustomAttributes(bool inherit)
         {
-            return CustomAttribute.GetCustomAttributes(this, (RuntimeType)typeof(object), inherit);
+            return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!, inherit);
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -441,7 +441,7 @@ namespace System.Reflection
             {
                 throw new MemberAccessException();
             }
-            else if (ReturnType!.IsByRef)
+            else if (ReturnType.IsByRef)
             {
                 Type elementType = ReturnType.GetElementType()!;
                 if (elementType.IsByRefLike)
@@ -457,7 +457,7 @@ namespace System.Reflection
         [Diagnostics.DebuggerHidden]
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            object[]? arguments = InvokeArgumentsCheck(obj, invokeAttr, binder!, parameters, culture);
+            object[]? arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
 
             bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (arguments == null || arguments.Length == 0)
@@ -476,7 +476,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        private object[]? InvokeArgumentsCheck(object? obj, BindingFlags invokeAttr, Binder binder, object?[]? parameters, CultureInfo? culture)
+        private object[]? InvokeArgumentsCheck(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             Signature sig = Signature;
 
@@ -507,17 +507,18 @@ namespace System.Reflection
         #endregion
 
         #region MethodInfo Overrides
-        public override Type? ReturnType
+
+#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+        public override Type ReturnType
         {
             get { return Signature.ReturnType; }
         }
 
-        public override ICustomAttributeProvider? ReturnTypeCustomAttributes
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes
         {
             get { return ReturnParameter; }
         }
 
-#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public override ParameterInfo ReturnParameter
         {
             get

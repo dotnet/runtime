@@ -78,7 +78,7 @@ namespace System.Reflection.Emit
 
         // _TypeBuilder contains both TypeBuilder and EnumBuilder objects
         private Dictionary<string, Type> _typeBuilderDict = null!;
-        private ISymbolWriter? _iSymWriter = null;
+        private ISymbolWriter? _iSymWriter;
         internal ModuleBuilderData _moduleData = null!;
         internal InternalModuleBuilder _internalModuleBuilder;
         // This is the "external" AssemblyBuilder
@@ -439,7 +439,7 @@ namespace System.Reflection.Emit
                 if (masmi != null)
                     tkParent = GetMethodToken(masmi).Token;
                 else
-                    tkParent = GetConstructorToken((ConstructorInfo)method).Token;
+                    tkParent = GetConstructorToken((method as ConstructorInfo)!).Token;
             }
 
             return GetMemberRefFromSignature(tkParent, method.Name, sigBytes, sigLength);
@@ -1288,7 +1288,7 @@ namespace System.Reflection.Emit
                     }
                     else
                     {
-                        tk = GetConstructorToken((ConstructorInfo)method).Token;
+                        tk = GetConstructorToken((method as ConstructorInfo)!).Token;
                     }
                 }
                 else
