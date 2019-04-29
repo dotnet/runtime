@@ -12,10 +12,8 @@
   <ItemGroup>
     <Compile Include="../../shared/*.cs" />
 
-    <Reference Include="Microsoft.Bcl.Json.Sources">
-      <PrivateAssets>All</PrivateAssets>
-    </Reference>
     <Reference Include="Microsoft.Extensions.Logging" />
+    <Reference Include="System.Text.Json" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 
