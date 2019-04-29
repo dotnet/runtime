@@ -46,7 +46,7 @@ mono_dl_get_system_dir (void)
 void*
 mono_dl_lookup_symbol (MonoDl *module, const char *name)
 {
-	return dlsym(module->handle, name);
+	return dlsym (module->handle, name);
 }
 
 char*
@@ -72,17 +72,17 @@ void *
 mono_dl_open_file (const char *file, int flags)
 {
 	// issue https://github.com/emscripten-core/emscripten/issues/8511
-	if (strstr(file, "System.Native")) {
+	if (strstr (file, "System.Native")) {
 		return NULL;
 	}
 
-	return dlopen(file, flags);
+	return dlopen (file, flags);
 }
 
 void
 mono_dl_close_handle (MonoDl *module)
 {
-	dlclose(module->handle);
+	dlclose (module->handle);
 }
 
 #endif
