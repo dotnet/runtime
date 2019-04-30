@@ -20,10 +20,15 @@ namespace System.Net.Http
             public sealed override bool CanWrite => true;
 
             public sealed override void Flush() =>
-                _connection.Flush();
+                _connection?.Flush();
 
-            public sealed override Task FlushAsync(CancellationToken ignored) =>
-                _connection.FlushAsync().AsTask();
+            public sealed override Task FlushAsync(CancellationToken ignored)
+            {
+                HttpConnection connection = _connection;
+                return connection != null ?
+                    connection.FlushAsync().AsTask() :
+                    default;
+            }
 
             public sealed override int Read(Span<byte> buffer) => throw new NotSupportedException();
 
