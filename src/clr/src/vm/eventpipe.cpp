@@ -35,7 +35,7 @@ EventPipeBufferManager *EventPipe::s_pBufferManager = NULL;
 EventPipeFile *EventPipe::s_pFile = NULL;
 EventPipeEventSource *EventPipe::s_pEventSource = NULL;
 HANDLE EventPipe::s_fileSwitchTimerHandle = NULL;
-ULONGLONG EventPipe::s_lastFlushSwitchTime = 0;
+ULONGLONG EventPipe::s_lastFlushTime = 0;
 
 #ifdef FEATURE_PAL
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -386,7 +386,7 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
         s_pConfig->DeleteSession(s_pSession);
         s_pSession = NULL;
 
-        // Delete the file switch timer.
+        // Delete the flush timer.
         DeleteFlushTimerCallback();
 
         // Flush all write buffers to make sure that all threads see the change.
@@ -460,8 +460,8 @@ void EventPipe::CreateFlushTimerCallback()
 
     timerContextHolder->TimerId = 0;
 
-    // Initialize the last file switch time.
-    s_lastFlushSwitchTime = CLRGetTickCount64();
+    // Initialize the last flush time.
+    s_lastFlushTime = CLRGetTickCount64();
 
     bool success = false;
     _ASSERTE(s_fileSwitchTimerHandle == NULL);
@@ -527,11 +527,11 @@ void WINAPI EventPipe::FlushTimer(PVOID parameter, BOOLEAN timerFired)
             if (s_pSession == nullptr || s_pFile == nullptr)
                 return;
 
-            // Make sure that we should actually switch files.
+            // Make sure that we should actually flush.
             if (!Enabled() || s_pSession->GetSessionType() != EventPipeSessionType::IpcStream)
                 return;
 
-            if (CLRGetTickCount64() > (s_lastFlushSwitchTime + 100))
+            if (CLRGetTickCount64() > (s_lastFlushTime + 100))
             {
                 // Get the current time stamp.
                 // WriteAllBuffersToFile will use this to ensure that no events after
@@ -540,7 +540,7 @@ void WINAPI EventPipe::FlushTimer(PVOID parameter, BOOLEAN timerFired)
                 QueryPerformanceCounter(&stopTimeStamp);
                 s_pBufferManager->WriteAllBuffersToFile(s_pFile, stopTimeStamp);
 
-                s_lastFlushSwitchTime = CLRGetTickCount64();
+                s_lastFlushTime = CLRGetTickCount64();
             }
 
             if (s_pFile->HasErrors())
