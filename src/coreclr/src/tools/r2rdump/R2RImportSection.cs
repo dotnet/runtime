@@ -27,6 +27,10 @@ namespace R2RDump
             public string Signature { get; set; }
             public GCRefMap GCRefMap { get; set; }
 
+            public ImportSectionEntry()
+            {
+            }
+
             public ImportSectionEntry(int index, int startOffset, int startRVA, long section, uint signatureRVA, string signature)
             {
                 Index = index;

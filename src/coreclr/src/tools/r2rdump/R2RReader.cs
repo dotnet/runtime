@@ -75,7 +75,7 @@ namespace R2RDump
         }
     }
 
-    public class R2RReader
+    public class EcmaMetadataReader
     {
         /// <summary>
         /// Option are used to specify details of signature formatting.
@@ -94,6 +94,18 @@ namespace R2RDump
         public readonly MetadataReader MetadataReader;
 
         /// <summary>
+        /// Extra reference assemblies parsed from the manifest metadata.
+        /// Only used by R2R assemblies with larger version bubble.
+        /// The manifest contains extra assembly references created by resolved
+        /// inlines and facades (non-existent in the source MSIL).
+        /// In module overrides, these assembly references are represented
+        /// by indices larger than the number of AssemblyRef rows in MetadataReader.
+        /// The list originates in the top-level R2R image and is copied
+        /// to all reference assemblies for the sake of simplicity.
+        /// </summary>
+        public readonly List<string> ManifestReferenceAssemblies;
+
+        /// <summary>
         /// Byte array containing the ReadyToRun image
         /// </summary>
         public byte[] Image { get; }
@@ -103,6 +115,82 @@ namespace R2RDump
         /// </summary>
         public string Filename { get; set; }
 
+        /// <summary>
+        /// The default constructor initializes an empty metadata reader.
+        /// </summary>
+        public EcmaMetadataReader()
+        {
+        }
+
+        /// <summary>
+        /// Open an MSIL binary and locate the metadata blob.
+        /// </summary>
+        /// <param name="options">Ambient options to use</param>
+        /// <param name="filename">PE image</param>
+        /// <param name="manifestReferenceAssemblies">List of reference assemblies from the R2R metadata manifest</param>
+        /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
+        public unsafe EcmaMetadataReader(DumpOptions options, string filename, List<string> manifestReferenceAssemblies)
+        {
+            Options = options;
+            Filename = filename;
+            ManifestReferenceAssemblies = manifestReferenceAssemblies;
+            Image = File.ReadAllBytes(filename);
+
+            fixed (byte* p = Image)
+            {
+                IntPtr ptr = (IntPtr)p;
+                PEReader = new PEReader(p, Image.Length);
+
+                if (!PEReader.HasMetadata)
+                {
+                    throw new Exception($"ECMA metadata not found in file '{filename}'");
+                }
+
+                MetadataReader = PEReader.GetMetadataReader();
+            }
+        }
+
+        /// <summary>
+        /// Open a given reference assembly (relative to this ECMA metadata file).
+        /// </summary>
+        /// <param name="refAsmIndex">Reference assembly index</param>
+        /// <returns>EcmaMetadataReader instance representing the reference assembly</returns>
+        public EcmaMetadataReader OpenReferenceAssembly(int refAsmIndex)
+        {
+            if (refAsmIndex == 0)
+            {
+                return this;
+            }
+
+            int assemblyRefCount = MetadataReader.GetTableRowCount(TableIndex.AssemblyRef);
+            string name;
+            if (refAsmIndex <= assemblyRefCount)
+            {
+                AssemblyReference asmRef = MetadataReader.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle(refAsmIndex));
+                name = MetadataReader.GetString(asmRef.Name);
+            }
+            else
+            {
+                name = ManifestReferenceAssemblies[refAsmIndex - assemblyRefCount - 2];
+            }
+
+            EcmaMetadataReader ecmaReader;
+            if (!Options.AssemblyCache.TryGetValue(name, out ecmaReader))
+            {
+                string assemblyPath = Options.FindAssembly(name, Filename);
+                if (assemblyPath == null)
+                {
+                    throw new Exception($"Missing reference assembly: {name}");
+                }
+                ecmaReader = new EcmaMetadataReader(Options, assemblyPath, ManifestReferenceAssemblies);
+                Options.AssemblyCache.Add(name, ecmaReader);
+            }
+            return ecmaReader;
+        }
+    }
+
+    public class R2RReader : EcmaMetadataReader
+    {
         /// <summary>
         /// True if the image is ReadyToRun
         /// </summary>
@@ -176,7 +264,7 @@ namespace R2RDump
 
         private Dictionary<int, DebugInfo> _runtimeFunctionToDebugInfo = new Dictionary<int, DebugInfo>();
 
-        public unsafe R2RReader() { }
+        public R2RReader() { }
 
         /// <summary>
         /// Initializes the fields of the R2RHeader and R2RMethods
@@ -184,118 +272,121 @@ namespace R2RDump
         /// <param name="filename">PE image</param>
         /// <exception cref="BadImageFormatException">The Cor header flag must be ILLibrary</exception>
         public unsafe R2RReader(DumpOptions options, string filename)
+            : base(options, filename, new List<string>())
         {
-            Options = options;
-            Filename = filename;
-            Image = File.ReadAllBytes(filename);
-
-            fixed (byte* p = Image)
+            IsR2R = ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) != 0);
+            if (!IsR2R)
             {
-                IntPtr ptr = (IntPtr)p;
-                PEReader = new PEReader(p, Image.Length);
+                throw new BadImageFormatException("The file is not a ReadyToRun image");
+            }
 
-                IsR2R = ((PEReader.PEHeaders.CorHeader.Flags & CorFlags.ILLibrary) != 0);
-                if (!IsR2R)
+            uint machine = (uint)PEReader.PEHeaders.CoffHeader.Machine;
+            OS = OperatingSystem.Unknown;
+            foreach (OperatingSystem os in Enum.GetValues(typeof(OperatingSystem)))
+            {
+                Machine = (Machine)(machine ^ (uint)os);
+                if (Enum.IsDefined(typeof(Machine), Machine))
                 {
-                    throw new BadImageFormatException("The file is not a ReadyToRun image");
-                }
-
-                uint machine = (uint)PEReader.PEHeaders.CoffHeader.Machine;
-                OS = OperatingSystem.Unknown;
-                foreach(OperatingSystem os in Enum.GetValues(typeof(OperatingSystem)))
-                {
-                    Machine = (Machine)(machine ^ (uint)os);
-                    if (Enum.IsDefined(typeof(Machine), Machine))
-                    {
-                        OS = os;
-                        break;
-                    }
-                }
-                if (OS == OperatingSystem.Unknown)
-                {
-                    throw new BadImageFormatException($"Invalid Machine: {machine}");
-                }
-
-                switch (Machine)
-                {
-                    case Machine.I386:
-                        Architecture = Architecture.X86;
-                        PointerSize = 4;
-                        break;
-
-                    case Machine.Amd64:
-                        Architecture = Architecture.X64;
-                        PointerSize = 8;
-                        break;
-
-                    case Machine.Arm:
-                    case Machine.Thumb:
-                    case Machine.ArmThumb2:
-                        Architecture = Architecture.Arm;
-                        PointerSize = 4;
-                        break;
-
-                    case Machine.Arm64:
-                        Architecture = Architecture.Arm64;
-                        PointerSize = 8;
-                        break;
-
-                    default:
-                        throw new NotImplementedException(Machine.ToString());
-                }
-
-
-                ImageBase = PEReader.PEHeaders.PEHeader.ImageBase;
-
-                // initialize R2RHeader
-                DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
-                int r2rHeaderOffset = GetOffset(r2rHeaderDirectory.RelativeVirtualAddress);
-                R2RHeader = new R2RHeader(Image, r2rHeaderDirectory.RelativeVirtualAddress, r2rHeaderOffset);
-                if (r2rHeaderDirectory.Size != R2RHeader.Size)
-                {
-                    throw new BadImageFormatException("The calculated size of the R2RHeader doesn't match the size saved in the ManagedNativeHeaderDirectory");
-                }
-
-                if (PEReader.HasMetadata)
-                {
-                    MetadataReader = PEReader.GetMetadataReader();
-
-                    ParseDebugInfo();
-
-                    if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO))
-                    {
-                        R2RSection exceptionInfoSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO];
-                        EHLookupTable = new EHLookupTable(Image, GetOffset(exceptionInfoSection.RelativeVirtualAddress), exceptionInfoSection.Size);
-                    }
-
-                    ImportSections = new List<R2RImportSection>();
-                    ImportCellNames = new Dictionary<int, string>();
-                    ParseImportSections();
-
-                    R2RMethods = new List<R2RMethod>();
-                    InstanceMethods = new List<InstanceMethod>();
-
-                    if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
-                    {
-                        int runtimeFunctionSize = CalculateRuntimeFunctionSize();
-                        R2RSection runtimeFunctionSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS];
-
-                        uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
-                        int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
-                        bool[] isEntryPoint = new bool[nRuntimeFunctions];
-
-                        // initialize R2RMethods
-                        ParseMethodDefEntrypoints(isEntryPoint);
-                        ParseInstanceMethodEntrypoints(isEntryPoint);
-                        ParseRuntimeFunctions(isEntryPoint, runtimeFunctionOffset, runtimeFunctionSize);
-                    }
-
-                    AvailableTypes = new List<string>();
-                    ParseAvailableTypes();
-
-                    CompilerIdentifier = ParseCompilerIdentifier();
+                    OS = os;
+                    break;
                 }
             }
+            if (OS == OperatingSystem.Unknown)
+            {
+                throw new BadImageFormatException($"Invalid Machine: {machine}");
+            }
+
+            switch (Machine)
+            {
+                case Machine.I386:
+                    Architecture = Architecture.X86;
+                    PointerSize = 4;
+                    break;
+
+                case Machine.Amd64:
+                    Architecture = Architecture.X64;
+                    PointerSize = 8;
+                    break;
+
+                case Machine.Arm:
+                case Machine.Thumb:
+                case Machine.ArmThumb2:
+                    Architecture = Architecture.Arm;
+                    PointerSize = 4;
+                    break;
+
+                case Machine.Arm64:
+                    Architecture = Architecture.Arm64;
+                    PointerSize = 8;
+                    break;
+
+                default:
+                    throw new NotImplementedException(Machine.ToString());
+            }
+
+
+            ImageBase = PEReader.PEHeaders.PEHeader.ImageBase;
+
+            // initialize R2RHeader
+            DirectoryEntry r2rHeaderDirectory = PEReader.PEHeaders.CorHeader.ManagedNativeHeaderDirectory;
+            int r2rHeaderOffset = GetOffset(r2rHeaderDirectory.RelativeVirtualAddress);
+            R2RHeader = new R2RHeader(Image, r2rHeaderDirectory.RelativeVirtualAddress, r2rHeaderOffset);
+            if (r2rHeaderDirectory.Size != R2RHeader.Size)
+            {
+                throw new BadImageFormatException("The calculated size of the R2RHeader doesn't match the size saved in the ManagedNativeHeaderDirectory");
+            }
+
+            ParseDebugInfo();
+
+            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA))
+            {
+                R2RSection manifestMetadata = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_MANIFEST_METADATA];
+                fixed (byte* image = Image)
+                {
+                    MetadataReader manifestReader = new MetadataReader(image + GetOffset(manifestMetadata.RelativeVirtualAddress), manifestMetadata.Size);
+                    int assemblyRefCount = manifestReader.GetTableRowCount(TableIndex.AssemblyRef);
+                    for (int assemblyRefIndex = 1; assemblyRefIndex <= assemblyRefCount; assemblyRefIndex++)
+                    {
+                        AssemblyReferenceHandle asmRefHandle = MetadataTokens.AssemblyReferenceHandle(assemblyRefIndex);
+                        AssemblyReference asmRef = manifestReader.GetAssemblyReference(asmRefHandle);
+                        string asmRefName = manifestReader.GetString(asmRef.Name);
+                        ManifestReferenceAssemblies.Add(asmRefName);
+                    }
+                }
+            }
+
+            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO))
+            {
+                R2RSection exceptionInfoSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_EXCEPTION_INFO];
+                EHLookupTable = new EHLookupTable(Image, GetOffset(exceptionInfoSection.RelativeVirtualAddress), exceptionInfoSection.Size);
+            }
+
+            ImportSections = new List<R2RImportSection>();
+            ImportCellNames = new Dictionary<int, string>();
+            ParseImportSections();
+
+            R2RMethods = new List<R2RMethod>();
+            InstanceMethods = new List<InstanceMethod>();
+
+            if (R2RHeader.Sections.ContainsKey(R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS))
+            {
+                int runtimeFunctionSize = CalculateRuntimeFunctionSize();
+                R2RSection runtimeFunctionSection = R2RHeader.Sections[R2RSection.SectionType.READYTORUN_SECTION_RUNTIME_FUNCTIONS];
+
+                uint nRuntimeFunctions = (uint)(runtimeFunctionSection.Size / runtimeFunctionSize);
+                int runtimeFunctionOffset = GetOffset(runtimeFunctionSection.RelativeVirtualAddress);
+                bool[] isEntryPoint = new bool[nRuntimeFunctions];
+
+                // initialize R2RMethods
+                ParseMethodDefEntrypoints(isEntryPoint);
+                ParseInstanceMethodEntrypoints(isEntryPoint);
+                ParseRuntimeFunctions(isEntryPoint, runtimeFunctionOffset, runtimeFunctionSize);
+            }
+
+            AvailableTypes = new List<string>();
+            ParseAvailableTypes();
+
+            CompilerIdentifier = ParseCompilerIdentifier();
         }
 
         public bool InputArchitectureSupported()
@@ -470,7 +561,7 @@ namespace R2RDump
                             {
                                 Console.WriteLine($"Warning: Could not parse GC Info for method: {method.SignatureString}");
                             }
-                            
+
                         }
                     }
                     else if (Machine == Machine.I386)
