@@ -176,15 +176,6 @@ public:
             }
     }
 
-    ~HostEnvironment() {
-        if(m_coreCLRModule) {
-            // Free the module. This is done for completeness, but in fact CoreCLR.dll 
-            // was pinned earlier so this call won't actually free it. The pinning is
-            // done because CoreCLR does not support unloading.
-            ::FreeLibrary(m_coreCLRModule);
-        }
-    }
-
     bool TPAListContainsFile(_In_z_ wchar_t* fileNameWithoutExtension, _In_reads_(countExtensions) const wchar_t** rgTPAExtensions, int countExtensions)
     {
         if (!m_tpaList.CStr()) return false;
