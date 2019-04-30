@@ -217,7 +217,7 @@ namespace System
                     // now do a "classic" type check
                     if (pCls.IsPrimitive)
                     {
-                        if (argTypes[paramOrder[i][j]] == null || !CanChangePrimitiveObjectToType(args[paramOrder[i][j]], pCls))
+                        if (argTypes[paramOrder[i][j]] == null || !CanChangePrimitive(args[paramOrder[i][j]].GetType(), pCls))
                         {
                             break;
                         }
@@ -247,7 +247,7 @@ namespace System
                     {
                         if (paramArrayType.IsPrimitive)
                         {
-                            if (argTypes[j] == null || !CanChangePrimitiveObjectToType(args[j], paramArrayType))
+                            if (argTypes[j] == null || !CanChangePrimitive(args[j]?.GetType(), paramArrayType))
                                 break;
                         }
                         else
@@ -475,7 +475,7 @@ namespace System
                     }
                     if (pCls.IsPrimitive)
                     {
-                        if (CanChangePrimitiveObjectToType(value, pCls))
+                        if (CanChangePrimitive(valueType, pCls))
                         {
                             candidates[CurIdx++] = candidates[i];
                             continue;
@@ -1202,6 +1202,62 @@ namespace System
                 }
             }
             return true;
+        }
+
+        // CanChangePrimitive
+        // This will determine if the source can be converted to the target type
+        internal static bool CanChangePrimitive(Type source, Type target)
+        {
+            if ((source == typeof(IntPtr) && target == typeof(IntPtr)) ||
+                (source == typeof(UIntPtr) && target == typeof(UIntPtr)))
+                return true;
+
+            Primitives widerCodes = s_primitiveConversions[(int)(Type.GetTypeCode(source))];
+            Primitives targetCode = (Primitives)(1 << (int)(Type.GetTypeCode(target)));
+
+            return (widerCodes & targetCode) != 0;
+        }
+
+        private static readonly Primitives[] s_primitiveConversions = {
+            /* Empty    */  0, // not primitive
+            /* Object   */  0, // not primitive
+            /* DBNull   */  0, // not primitive
+            /* Boolean  */  Primitives.Boolean,
+            /* Char     */  Primitives.Char    | Primitives.UInt16 | Primitives.UInt32 | Primitives.Int32  | Primitives.UInt64 | Primitives.Int64  | Primitives.Single |  Primitives.Double,
+            /* SByte    */  Primitives.SByte   | Primitives.Int16  | Primitives.Int32  | Primitives.Int64  | Primitives.Single | Primitives.Double,
+            /* Byte     */  Primitives.Byte    | Primitives.Char   | Primitives.UInt16 | Primitives.Int16  | Primitives.UInt32 | Primitives.Int32  | Primitives.UInt64 |  Primitives.Int64 |  Primitives.Single |  Primitives.Double,
+            /* Int16    */  Primitives.Int16   | Primitives.Int32  | Primitives.Int64  | Primitives.Single | Primitives.Double,
+            /* UInt16   */  Primitives.UInt16  | Primitives.UInt32 | Primitives.Int32  | Primitives.UInt64 | Primitives.Int64  | Primitives.Single | Primitives.Double,
+            /* Int32    */  Primitives.Int32   | Primitives.Int64  | Primitives.Single | Primitives.Double,
+            /* UInt32   */  Primitives.UInt32  | Primitives.UInt64 | Primitives.Int64  | Primitives.Single | Primitives.Double,
+            /* Int64    */  Primitives.Int64   | Primitives.Single | Primitives.Double,
+            /* UInt64   */  Primitives.UInt64  | Primitives.Single | Primitives.Double,
+            /* Single   */  Primitives.Single  | Primitives.Double,
+            /* Double   */  Primitives.Double,
+            /* Decimal  */  Primitives.Decimal,
+            /* DateTime */  Primitives.DateTime,
+            /* [Unused] */  0,
+            /* String   */  Primitives.String,
+        };
+
+        [Flags]
+        private enum Primitives
+        {
+            Boolean = 1 << TypeCode.Boolean,
+            Char = 1 << TypeCode.Char,
+            SByte = 1 << TypeCode.SByte,
+            Byte = 1 << TypeCode.Byte,
+            Int16 = 1 << TypeCode.Int16,
+            UInt16 = 1 << TypeCode.UInt16,
+            Int32 = 1 << TypeCode.Int32,
+            UInt32 = 1 << TypeCode.UInt32,
+            Int64 = 1 << TypeCode.Int64,
+            UInt64 = 1 << TypeCode.UInt64,
+            Single = 1 << TypeCode.Single,
+            Double = 1 << TypeCode.Double,
+            Decimal = 1 << TypeCode.Decimal,
+            DateTime = 1 << TypeCode.DateTime,
+            String = 1 << TypeCode.String,
         }
 
         internal class BinderState
