@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{2CD5A44C-65B4-4C51-AC7B-B2938307848A}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ReferencedClassLib.cs" />
+    <EmbeddedResource Include="ReferencedStrings*.resx" />
+  </ItemGroup>
+</Project>

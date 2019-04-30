@@ -12,6 +12,8 @@
     <Compile Include="ContextualReflection.cs" />
     <Compile Include="CustomTPALoadContext.cs" />
     <Compile Include="ResourceAssemblyLoadContext.cs" />
+    <Compile Include="SatelliteAssemblies.cs" />
+    <EmbeddedResource Include="MainStrings*.resx" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="System.Runtime.Loader.Test.Assembly\System.Runtime.Loader.Test.Assembly.csproj">
@@ -33,5 +35,7 @@
       <OutputItemType>EmbeddedResource</OutputItemType>
     </ProjectReference>
     <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
+    <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
+    <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
   </ItemGroup>
 </Project>

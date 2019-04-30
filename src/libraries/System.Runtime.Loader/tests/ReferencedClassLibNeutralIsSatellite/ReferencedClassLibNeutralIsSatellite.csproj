@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{7FA764E6-47A3-42B5-923B-7D5DBC611E8E}</ProjectGuid>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ReferencedClassLibNeutralIsSatellite.cs" />
+    <EmbeddedResource Include="ReferencedStrings*.resx" />
+  </ItemGroup>
+</Project>
