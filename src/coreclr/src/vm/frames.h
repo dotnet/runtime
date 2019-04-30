@@ -3610,9 +3610,12 @@ public:
                 if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
 
 #define GCPROTECT_BEGININTERIOR(ObjRefStruct)           do {            \
+                /* work around Wsizeof-pointer-div warning as we */     \
+                /* mean to capture pointer or object size */            \
+                UINT subjectSize = sizeof(ObjRefStruct);                \
                 FrameWithCookie<GCFrame> __gcframe(                     \
                         (OBJECTREF*)&(ObjRefStruct),                    \
-                        sizeof(ObjRefStruct)/sizeof(OBJECTREF),         \
+                        subjectSize/sizeof(OBJECTREF),                  \
                         TRUE);                                          \
                 /* work around unreachable code warning */              \
                 if (true) { DEBUG_ASSURE_NO_RETURN_BEGIN(GCPROTECT)
