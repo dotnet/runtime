@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Threading;
 using Xunit;
 
@@ -91,6 +92,35 @@ namespace System.Diagnostics.Tests
                 }
                 break;
             }
+        }
+
+        [OuterLoop("Sleeps for relatively long periods of time")]
+        [Fact]
+        public static void ElapsedMilliseconds_WithinExpectedWindow()
+        {
+            const int AllowedTries = 30;
+            const int SleepTime = 1000;
+            const double WindowFactor = 2;
+
+            var results = new List<long>();
+
+            var sw = new Stopwatch();
+            for (int trial = 0; trial < AllowedTries; trial++)
+            {
+                sw.Restart();
+                Thread.Sleep(SleepTime);
+                sw.Stop();
+
+                if (sw.ElapsedMilliseconds >= (SleepTime / WindowFactor) &&
+                    sw.ElapsedMilliseconds <= (SleepTime * WindowFactor))
+                {
+                    return;
+                }
+
+                results.Add(sw.ElapsedMilliseconds);
+            }
+
+            Assert.True(false, $"All {AllowedTries} fell outside of {WindowFactor} window of {SleepTime} sleep time: {string.Join(", ", results)}");
         }
 
         private static void Sleep(int milliseconds = 1)
