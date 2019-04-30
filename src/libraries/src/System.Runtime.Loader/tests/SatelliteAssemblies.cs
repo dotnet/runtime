@@ -111,7 +111,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Theory]
-        [ActiveIssue("dotnet/sdk#3185")]
         [ActiveIssue("dotnet/corefx#37246")]
         [InlineData("Default", "ReferencedClassLib.Program, ReferencedClassLib", "",        "Neutral language ReferencedClassLib description 1.0.0")]
         [InlineData("Default", "ReferencedClassLib.Program, ReferencedClassLib", "en",      "English language ReferencedClassLib description 1.0.0")]
@@ -121,7 +120,7 @@ namespace System.Runtime.Loader.Tests
         [InlineData("Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en",      "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
         [InlineData("Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en-US",   "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
         [InlineData("Default", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "es",      "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
-        public void describeLib3185(string alc, string type, string culture, string expected)
+        public void describeLib37246(string alc, string type, string culture, string expected)
         {
             describeLib(alc, type, culture, expected);
         }
@@ -148,7 +147,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Theory]
-        [ActiveIssue("dotnet/sdk#3185")]
         [ActiveIssue("dotnet/corefx#37246")]
         [ActiveIssue("dotnet/coreclr#24191")]
         [InlineData("ReferencedClassLib", "ReferencedClassLib.Program, ReferencedClassLib", "",        "Neutral language ReferencedClassLib description 1.0.0")]
@@ -159,7 +157,7 @@ namespace System.Runtime.Loader.Tests
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en",      "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "en-US",   "English language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite.Program, ReferencedClassLibNeutralIsSatellite", "es",      "Neutral (es) language ReferencedClassLibNeutralIsSatellite description 1.0.0")]
-        public void describeLib3185_24191(string alc, string type, string culture, string expected)
+        public void describeLib37246_24191(string alc, string type, string culture, string expected)
         {
             describeLib(alc, type, culture, expected);
         }
@@ -203,7 +201,6 @@ namespace System.Runtime.Loader.Tests
         }
 
         [Theory]
-        [ActiveIssue("dotnet/sdk#3185")]
         [ActiveIssue("dotnet/corefx#37246")]
         [InlineData("Default", "ReferencedClassLib", "en")]
         [InlineData("Default", "ReferencedClassLibNeutralIsSatellite", "en")]
@@ -217,19 +214,18 @@ namespace System.Runtime.Loader.Tests
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLib", "en")]
         [InlineData("ReferencedClassLib", "ReferencedClassLibNeutralIsSatellite", "en")]
         [InlineData("ReferencedClassLib", "ReferencedClassLibNeutralIsSatellite", "es")]
-        public void SatelliteLoadsCorrectly3185(string alc, string assemblyName, string culture)
+        public void SatelliteLoadsCorrectly37246(string alc, string assemblyName, string culture)
         {
             SatelliteLoadsCorrectly(alc, assemblyName, culture);
         }
 
         [Theory]
-        [ActiveIssue("dotnet/sdk#3185")]
         [ActiveIssue("dotnet/corefx#37246")]
         [ActiveIssue("dotnet/coreclr#24191")]
         [InlineData("ReferencedClassLib", "ReferencedClassLib", "en")]
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite", "en")]
         [InlineData("ReferencedClassLibNeutralIsSatellite", "ReferencedClassLibNeutralIsSatellite", "es")]
-        public void SatelliteLoadsCorrectly3185_24191(string alc, string assemblyName, string culture)
+        public void SatelliteLoadsCorrectly37246_24191(string alc, string assemblyName, string culture)
         {
             SatelliteLoadsCorrectly(alc, assemblyName, culture);
         }
