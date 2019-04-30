@@ -582,6 +582,11 @@ inline void BaseAssemblySpec::SetCulture(LPCSTR szCulture)
         m_context.szLocale=szCulture;
 }
 
+inline bool BaseAssemblySpec::IsNeutralCulture()
+{
+    return strcmp(m_context.szLocale,"")==0;
+}
+
 inline void BaseAssemblySpec::SetContext(ASSEMBLYMETADATA* assemblyData)
 {
     LIMITED_METHOD_CONTRACT;

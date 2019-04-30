@@ -178,7 +178,11 @@ struct HWIntrinsicInfo
 
     static instruction lookupIns(NamedIntrinsic id, var_types type)
     {
-        assert((type >= TYP_BYTE) && (type <= TYP_DOUBLE));
+        if ((type < TYP_BYTE) || (type > TYP_DOUBLE))
+        {
+            assert(!"Unexpected type");
+            return INS_invalid;
+        }
         return lookup(id).ins[type - TYP_BYTE];
     }
 

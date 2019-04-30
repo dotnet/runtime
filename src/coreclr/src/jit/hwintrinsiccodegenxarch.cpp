@@ -1764,6 +1764,26 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
 
     switch (intrinsicId)
     {
+        case NI_SSE41_ConvertToVector128Int16:
+        case NI_SSE41_ConvertToVector128Int32:
+        case NI_SSE41_ConvertToVector128Int64:
+        {
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+
+            if (!varTypeIsSIMD(op1->gtType))
+            {
+                // Until we improve the handling of addressing modes in the emitter, we'll create a
+                // temporary GT_IND to generate code with.
+                GenTreeIndir load = indirForm(node->TypeGet(), op1);
+                emit->emitInsLoadInd(ins, emitTypeSize(TYP_SIMD16), node->gtRegNum, &load);
+            }
+            else
+            {
+                genHWIntrinsic_R_RM(node, ins, emitTypeSize(TYP_SIMD16));
+            }
+            break;
+        }
+
         case NI_SSE41_TestAllOnes:
         {
             op1Reg           = op1->gtRegNum;
@@ -1952,6 +1972,26 @@ void CodeGen::genAvxOrAvx2Intrinsic(GenTreeHWIntrinsic* node)
             assert((baseType == TYP_INT) || (baseType == TYP_UINT));
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
             emit->emitIns_R_R(ins, emitActualTypeSize(baseType), op1Reg, targetReg);
+            break;
+        }
+
+        case NI_AVX2_ConvertToVector256Int16:
+        case NI_AVX2_ConvertToVector256Int32:
+        case NI_AVX2_ConvertToVector256Int64:
+        {
+            instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType);
+
+            if (!varTypeIsSIMD(op1->gtType))
+            {
+                // Until we improve the handling of addressing modes in the emitter, we'll create a
+                // temporary GT_IND to generate code with.
+                GenTreeIndir load = indirForm(node->TypeGet(), op1);
+                emit->emitInsLoadInd(ins, emitTypeSize(TYP_SIMD32), node->gtRegNum, &load);
+            }
+            else
+            {
+                genHWIntrinsic_R_RM(node, ins, emitTypeSize(TYP_SIMD32));
+            }
             break;
         }
 

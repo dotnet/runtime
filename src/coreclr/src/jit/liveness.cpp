@@ -2235,137 +2235,95 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             return false;
         }
 
-        /* Test for interior statement */
+        // Check for side effects
+        GenTree* sideEffList = nullptr;
+        if (rhsNode->gtFlags & GTF_SIDE_EFFECT)
+        {
+#ifdef DEBUG
+            if (verbose)
+            {
+                printf(FMT_BB " - Dead assignment has side effects...\n", compCurBB->bbNum);
+                gtDispTree(asgNode);
+                printf("\n");
+            }
+#endif // DEBUG
+            // Extract the side effects
+            if (rhsNode->TypeGet() == TYP_STRUCT)
+            {
+                // This is a block assignment. An indirection of the rhs is not considered to
+                // happen until the assignment, so we will extract the side effects from only
+                // the address.
+                if (rhsNode->OperIsIndir())
+                {
+                    assert(rhsNode->OperGet() != GT_NULLCHECK);
+                    rhsNode = rhsNode->AsIndir()->Addr();
+                }
+            }
+            gtExtractSideEffList(rhsNode, &sideEffList);
+        }
+
+        // Test for interior statement
 
         if (asgNode->gtNext == nullptr)
         {
-            /* This is a "NORMAL" statement with the
-             * assignment node hanging from the GT_STMT node */
+            // This is a "NORMAL" statement with the assignment node hanging from the GT_STMT node.
 
             noway_assert(compCurStmt->gtStmtExpr == asgNode);
             JITDUMP("top level assign\n");
 
-            /* Check for side effects */
-
-            if (rhsNode->gtFlags & GTF_SIDE_EFFECT)
+            if (sideEffList != nullptr)
             {
-            EXTRACT_SIDE_EFFECTS:
-                /* Extract the side effects */
-
-                GenTree* sideEffList = nullptr;
+                noway_assert(sideEffList->gtFlags & GTF_SIDE_EFFECT);
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf(FMT_BB " - Dead assignment has side effects...\n", compCurBB->bbNum);
-                    gtDispTree(asgNode);
+                    printf("Extracted side effects list...\n");
+                    gtDispTree(sideEffList);
                     printf("\n");
                 }
 #endif // DEBUG
-                if (rhsNode->TypeGet() == TYP_STRUCT)
-                {
-                    // This is a block assignment. An indirection of the rhs is not considered to
-                    // happen until the assignment, so we will extract the side effects from only
-                    // the address.
-                    if (rhsNode->OperIsIndir())
-                    {
-                        assert(rhsNode->OperGet() != GT_NULLCHECK);
-                        rhsNode = rhsNode->AsIndir()->Addr();
-                    }
-                }
-                gtExtractSideEffList(rhsNode, &sideEffList);
 
-                if (sideEffList)
-                {
-                    noway_assert(sideEffList->gtFlags & GTF_SIDE_EFFECT);
+                // Replace the assignment statement with the list of side effects
+                noway_assert(sideEffList->gtOper != GT_STMT);
+
+                *pTree = compCurStmt->gtStmtExpr = sideEffList;
 #ifdef DEBUG
-                    if (verbose)
-                    {
-                        printf("Extracted side effects list...\n");
-                        gtDispTree(sideEffList);
-                        printf("\n");
-                    }
+                *treeModf = true;
 #endif // DEBUG
+                // Update ordering, costs, FP levels, etc.
+                gtSetStmtInfo(compCurStmt);
 
-                    /* Replace the assignment statement with the list of side effects */
-                    noway_assert(sideEffList->gtOper != GT_STMT);
+                // Re-link the nodes for this statement
+                fgSetStmtSeq(compCurStmt);
 
-                    *pTree = compCurStmt->gtStmtExpr = sideEffList;
-#ifdef DEBUG
-                    *treeModf = true;
-#endif // DEBUG
-                    /* Update ordering, costs, FP levels, etc. */
-                    gtSetStmtInfo(compCurStmt);
+                // Since the whole statement gets replaced it is safe to
+                // re-thread and update order. No need to compute costs again.
+                *pStmtInfoDirty = false;
 
-                    /* Re-link the nodes for this statement */
-                    fgSetStmtSeq(compCurStmt);
-
-                    // Since the whole statement gets replaced it is safe to
-                    // re-thread and update order. No need to compute costs again.
-                    *pStmtInfoDirty = false;
-
-                    /* Compute the live set for the new statement */
-                    *doAgain = true;
-                    return false;
-                }
-                else
-                {
-                    /* No side effects, most likely we forgot to reset some flags */
-                    fgRemoveStmt(compCurBB, compCurStmt);
-
-                    return true;
-                }
+                // Compute the live set for the new statement
+                *doAgain = true;
+                return false;
             }
             else
             {
-                /* If this is GT_CATCH_ARG saved to a local var don't bother */
-
                 JITDUMP("removing stmt with no side effects\n");
 
-                if (asgNode->gtFlags & GTF_ORDER_SIDEEFF)
-                {
-                    if (rhsNode->gtOper == GT_CATCH_ARG)
-                    {
-                        goto EXTRACT_SIDE_EFFECTS;
-                    }
-                }
-
-                /* No side effects - remove the whole statement from the block->bbTreeList */
-
+                // No side effects - remove the whole statement from the block->bbTreeList
                 fgRemoveStmt(compCurBB, compCurStmt);
 
-                /* Since we removed it do not process the rest (i.e. RHS) of the statement
-                 * variables in the RHS will not be marked as live, so we get the benefit of
-                 * propagating dead variables up the chain */
-
+                // Since we removed it do not process the rest (i.e. RHS) of the statement
+                // variables in the RHS will not be marked as live, so we get the benefit of
+                // propagating dead variables up the chain
                 return true;
             }
         }
         else
         {
-            /* This is an INTERIOR STATEMENT with a dead assignment - remove it */
-
+            // This is an INTERIOR STATEMENT with a dead assignment - remove it
             noway_assert(!VarSetOps::IsMember(this, life, varDsc->lvVarIndex));
 
-            if (rhsNode->gtFlags & GTF_SIDE_EFFECT)
+            if (sideEffList != nullptr)
             {
-                /* :-( we have side effects */
-
-                GenTree* sideEffList = nullptr;
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf(FMT_BB " - INTERIOR dead assignment has side effects...\n", compCurBB->bbNum);
-                    gtDispTree(asgNode);
-                    printf("\n");
-                }
-#endif // DEBUG
-                gtExtractSideEffList(rhsNode, &sideEffList);
-
-                if (!sideEffList)
-                {
-                    goto NO_SIDE_EFFECTS;
-                }
-
                 noway_assert(sideEffList->gtFlags & GTF_SIDE_EFFECT);
 #ifdef DEBUG
                 if (verbose)
@@ -2389,7 +2347,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #ifdef DEBUG
                     *treeModf = true;
 #endif // DEBUG
-                    /* Change the node to a GT_COMMA holding the side effect list */
+                    // Change the node to a GT_COMMA holding the side effect list
                     asgNode->gtBashToNOP();
 
                     asgNode->ChangeOper(GT_COMMA);
@@ -2409,7 +2367,6 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
             }
             else
             {
-            NO_SIDE_EFFECTS:
 #ifdef DEBUG
                 if (verbose)
                 {
@@ -2420,7 +2377,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
                     printf("\n");
                 }
 #endif // DEBUG
-                /* No side effects - Change the assignment to a GT_NOP node */
+                // No side effects - Change the assignment to a GT_NOP node
                 asgNode->gtBashToNOP();
 
 #ifdef DEBUG
@@ -2428,7 +2385,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 #endif // DEBUG
             }
 
-            /* Re-link the nodes for this statement - Do not update ordering! */
+            // Re-link the nodes for this statement - Do not update ordering!
 
             // Do not update costs by calling gtSetStmtInfo. fgSetStmtSeq modifies
             // the tree threading based on the new costs. Removing nodes could
@@ -2439,7 +2396,7 @@ bool Compiler::fgRemoveDeadStore(GenTree**        pTree,
 
             fgSetStmtSeq(compCurStmt);
 
-            /* Continue analysis from this node */
+            // Continue analysis from this node
 
             *pTree = asgNode;
 

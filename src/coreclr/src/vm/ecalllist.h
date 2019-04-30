@@ -345,11 +345,6 @@ FCFuncStart(gRuntimeMethodHandle)
     FCFuncElement("GetLoaderAllocator", RuntimeMethodHandle::GetLoaderAllocator)
 FCFuncEnd()
 
-FCFuncStart(gCOMDefaultBinderFuncs)
-    FCFuncElement("CanConvertPrimitive", ReflectionBinder::DBCanConvertPrimitive)
-    FCFuncElement("CanConvertPrimitiveObjectToType",  ReflectionBinder::DBCanConvertObjectPrimitive)
-FCFuncEnd()
-
 
 FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetValue", RuntimeFieldHandle::GetValue)
@@ -1209,7 +1204,6 @@ FCClassElement("CustomAttributeEncodedArgument", "System.Reflection", gCustomAtt
 FCClassElement("DateMarshaler", "System.StubHelpers", gDateMarshalerFuncs)
 FCClassElement("DateTime", "System", gDateTimeFuncs)
 FCClassElement("Debugger", "System.Diagnostics", gDiagnosticsDebugger)
-FCClassElement("DefaultBinder", "System", gCOMDefaultBinderFuncs)
 FCClassElement("Delegate", "System", gDelegateFuncs)
 FCClassElement("DependentHandle", "System.Runtime.CompilerServices", gDependentHandleFuncs)
 FCClassElement("Enum", "System", gEnumFuncs)

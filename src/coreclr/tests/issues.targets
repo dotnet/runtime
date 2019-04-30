@@ -114,6 +114,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/inducedgc/inducedgc/*">
             <Issue>23124</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/NativeLibraryResolveCallback/CallbackStressTest/*">
+            <Issue>24305</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->

@@ -15,8 +15,7 @@ namespace JitBench
     {
         public async static Task DownloadAndUnzip(string remotePath, string localExpandedDirPath, ITestOutputHelper output, bool deleteTempFiles=true)
         {
-            string tempFileNameBase = Guid.NewGuid().ToString();
-            string tempDownloadPath = Path.Combine(Path.GetTempPath(), tempFileNameBase + Path.GetExtension(remotePath));
+            string tempDownloadPath = Path.Combine(Path.GetTempPath(), Path.GetFileName(remotePath));
             Download(remotePath, tempDownloadPath, output);
             await Unzip(tempDownloadPath, localExpandedDirPath, output, true);
         }
@@ -51,8 +50,7 @@ namespace JitBench
                 bool deleteTar = deleteZippedFiles;
                 if(tempTarPath == null)
                 {
-                    string tempFileNameBase = Guid.NewGuid().ToString();
-                    tempTarPath = Path.Combine(Path.GetTempPath(), tempFileNameBase + ".tar");
+                    tempTarPath = Path.Combine(Path.GetTempPath(), zipPath.Substring(0, zipPath.Length - ".gz".Length));
                     deleteTar = true;
                 }
                 await UnGZip(zipPath, tempTarPath, output);
