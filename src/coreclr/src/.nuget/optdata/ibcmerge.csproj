@@ -9,11 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="microsoft.dotnet.ibcmerge" Version="$(IbcMergePackageVersion)" Condition="'$(IbcMergePackageVersion)'!=''" />
+    <PackageReference Include="microsoft.dotnet.ibcmerge" Version="[$(IbcMergePackageVersion)]" Condition="'$(IbcMergePackageVersion)'!=''" />
   </ItemGroup>
 
   <Target Name="DumpIbcMergePackageVersion">
     <Message Importance="high" Text="$(IbcMergePackageVersion)" />
   </Target>
 
+  <PropertyGroup>
+    <RestoreSources>
+      https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json;
+    </RestoreSources>
+  </PropertyGroup>
 </Project>

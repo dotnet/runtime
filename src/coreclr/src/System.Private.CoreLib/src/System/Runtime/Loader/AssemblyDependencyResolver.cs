@@ -181,7 +181,7 @@ namespace System.Runtime.Loader
             }
 
             bool isRelativePath = !Path.IsPathFullyQualified(unmanagedDllName);
-            foreach (LibraryNameVariation libraryNameVariation in DetermineLibraryNameVariations(unmanagedDllName, isRelativePath))
+            foreach (LibraryNameVariation libraryNameVariation in LibraryNameVariation.DetermineLibraryNameVariations(unmanagedDllName, isRelativePath))
             {
                 string libraryName = libraryNameVariation.Prefix + unmanagedDllName + libraryNameVariation.Suffix;
                 foreach (string searchPath in searchPaths)
@@ -209,93 +209,10 @@ namespace System.Runtime.Loader
             }
         }
 
-        private struct LibraryNameVariation
-        {
-            public string Prefix;
-            public string Suffix;
-
-            public LibraryNameVariation(string prefix, string suffix)
-            {
-                Prefix = prefix;
-                Suffix = suffix;
-            }
-        }
-
 #if PLATFORM_WINDOWS
         private const CharSet HostpolicyCharSet = CharSet.Unicode;
-        private const string LibraryNameSuffix = ".dll";
-
-        private IEnumerable<LibraryNameVariation> DetermineLibraryNameVariations(string libName, bool isRelativePath)
-        {
-            // This is a copy of the logic in DetermineLibNameVariations in dllimport.cpp in CoreCLR
-
-            yield return new LibraryNameVariation(string.Empty, string.Empty);
-
-            if (isRelativePath &&
-                !libName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) &&
-                !libName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            {
-                yield return new LibraryNameVariation(string.Empty, LibraryNameSuffix);
-            }
-        }
 #else
         private const CharSet HostpolicyCharSet = CharSet.Ansi;
-
-        private const string LibraryNamePrefix = "lib";
-#if PLATFORM_OSX
-        private const string LibraryNameSuffix = ".dylib";
-#else
-        private const string LibraryNameSuffix = ".so";
-#endif
-
-        private IEnumerable<LibraryNameVariation> DetermineLibraryNameVariations(string libName, bool isRelativePath)
-        {
-            // This is a copy of the logic in DetermineLibNameVariations in dllimport.cpp in CoreCLR
-
-            if (!isRelativePath)
-            {
-                yield return new LibraryNameVariation(string.Empty, string.Empty);
-            }
-            else
-            {
-                bool containsSuffix = false;
-                int indexOfSuffix = libName.IndexOf(LibraryNameSuffix, StringComparison.OrdinalIgnoreCase);
-                if (indexOfSuffix >= 0)
-                {
-                    indexOfSuffix += LibraryNameSuffix.Length;
-                    containsSuffix = indexOfSuffix == libName.Length || libName[indexOfSuffix] == '.';
-                }
-
-                bool containsDelim = libName.Contains(Path.DirectorySeparatorChar);
-
-                if (containsSuffix)
-                {
-                    yield return new LibraryNameVariation(string.Empty, string.Empty);
-                    if (!containsDelim)
-                    {
-                        yield return new LibraryNameVariation(LibraryNamePrefix, string.Empty);
-                    }
-                    yield return new LibraryNameVariation(string.Empty, LibraryNameSuffix);
-                    if (!containsDelim)
-                    {
-                        yield return new LibraryNameVariation(LibraryNamePrefix, LibraryNameSuffix);
-                    }
-                }
-                else
-                {
-                    yield return new LibraryNameVariation(string.Empty, LibraryNameSuffix);
-                    if (!containsDelim)
-                    {
-                        yield return new LibraryNameVariation(LibraryNamePrefix, LibraryNameSuffix);
-                    }
-                    yield return new LibraryNameVariation(string.Empty, string.Empty);
-                    if (!containsDelim)
-                    {
-                        yield return new LibraryNameVariation(LibraryNamePrefix, string.Empty);
-                    }
-                }
-            }
-        }
 #endif
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet = HostpolicyCharSet)]

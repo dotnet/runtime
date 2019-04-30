@@ -88,13 +88,12 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(libraryName));
             if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly));
-            if (!(assembly is RuntimeAssembly))
+            if (!assembly.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
             
-            return LoadByName(libraryName, 
-                              ((RuntimeAssembly)assembly).GetNativeHandle(), 
-                              searchPath.HasValue, 
-                              (uint) searchPath.GetValueOrDefault(), 
+            return LoadLibraryByName(libraryName, 
+                              assembly,
+                              searchPath,
                               throwOnError: true);
         }
 
@@ -114,13 +113,12 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(libraryName));
             if (assembly == null)
                 throw new ArgumentNullException(nameof(assembly));
-            if (!(assembly is RuntimeAssembly))
+            if (!assembly.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
             
-            handle = LoadByName(libraryName, 
-                                ((RuntimeAssembly)assembly).GetNativeHandle(), 
-                                searchPath.HasValue, 
-                                (uint) searchPath.GetValueOrDefault(),
+            handle = LoadLibraryByName(libraryName,
+                                assembly,
+                                searchPath,
                                 throwOnError: false);
             return handle != IntPtr.Zero;
         }
@@ -200,7 +198,7 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentNullException(nameof(assembly));
             if (resolver == null)
                 throw new ArgumentNullException(nameof(resolver));
-            if (!(assembly is RuntimeAssembly))
+            if (!assembly.IsRuntimeImplemented())
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
             if (s_nativeDllResolveMap == null)
@@ -245,21 +243,5 @@ namespace System.Runtime.InteropServices
 
             return resolver(libraryName, assembly, hasDllImportSearchPathFlags ? (DllImportSearchPath?)dllImportSearchPathFlags : null);
         }
-
-        /// External functions that implement the NativeLibrary interface
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr LoadFromPath(string libraryName, bool throwOnError);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr LoadByName(string libraryName, RuntimeAssembly callingAssembly,
-                                                 bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag, 
-                                                 bool throwOnError);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern void FreeLib(IntPtr handle);
-
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr GetSymbol(IntPtr handle, string symbolName, bool throwOnError);
     }
 }

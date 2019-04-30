@@ -415,6 +415,7 @@ void EventPipeBufferManager::WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_I
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(pFile != nullptr);
+        PRECONDITION(EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
@@ -488,6 +489,7 @@ EventPipeEventInstance* EventPipeBufferManager::GetNextEvent()
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(!EventPipe::GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
