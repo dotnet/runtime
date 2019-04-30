@@ -41,6 +41,10 @@ namespace R2RDump
         public readonly uint StackPop;
         public readonly GCRefMapEntry[] Entries;
 
+        public GCRefMap()
+        {
+        }
+
         public GCRefMap(uint stackPop, GCRefMapEntry[] entries)
         {
             StackPop = stackPop;

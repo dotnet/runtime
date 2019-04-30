@@ -26,6 +26,49 @@ namespace R2RDump
         public bool GC;
         public bool SectionContents;
         public bool EntryPoints;
+
+        public IReadOnlyList<string> ReferenceAssemblies = Array.Empty<string>();
+        public IReadOnlyList<string> ReferencePaths = Array.Empty<string>();
+        public Dictionary<string, EcmaMetadataReader> AssemblyCache = new Dictionary<string, EcmaMetadataReader>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Probing extensions to use when looking up assemblies under reference paths.
+        /// </summary>
+        private readonly static string[] ProbeExtensions = new string[] { ".ni.exe", ".ni.dll", ".exe", ".dll" };
+
+        /// <summary>
+        /// Try to locate a (reference) assembly using the list of explicit reference assemblies
+        /// and the list of reference paths passed to R2RDump.
+        /// </summary>
+        /// <param name="simpleName">Simple name of the assembly to look up</param>
+        /// <param name="parentFile">Name of assembly from which we're performing the lookup</param>
+        /// <returns></returns>
+        public string FindAssembly(string simpleName, string parentFile)
+        {
+            foreach (string refAsm in ReferenceAssemblies)
+            {
+                if (Path.GetFileNameWithoutExtension(refAsm).Equals(simpleName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return refAsm;
+                }
+            }
+
+            IEnumerable<string> allRefPaths = new string[] { Path.GetDirectoryName(parentFile) }.Concat(ReferencePaths);
+
+            foreach (string refPath in allRefPaths)
+            {
+                foreach (string extension in ProbeExtensions)
+                {
+                    string probeFile = Path.Combine(refPath, simpleName + extension);
+                    if (File.Exists(probeFile))
+                    {
+                        return probeFile;
+                    }
+                }
+            }
+
+            return null;
+        }
     }
 
     public abstract class Dumper
@@ -131,7 +174,7 @@ namespace R2RDump
                 syntax.DefineOption("naked", ref _options.Naked, "Naked dump suppresses most compilation details like placement addresses");
                 syntax.DefineOptionList("q|query", ref _queries, "Query method by exact name, signature, row id or token");
                 syntax.DefineOptionList("k|keyword", ref _keywords, "Search method by keyword");
-                syntax.DefineOptionList("r|runtimefunction", ref _runtimeFunctions, ArgStringToInt, "Get one runtime function by id or relative virtual address");
+                syntax.DefineOptionList("f|runtimefunction", ref _runtimeFunctions, ArgStringToInt, "Get one runtime function by id or relative virtual address");
                 syntax.DefineOptionList("s|section", ref _sections, "Get section by keyword");
                 syntax.DefineOption("unwind", ref _options.Unwind, "Dump unwindInfo");
                 syntax.DefineOption("gc", ref _options.GC, "Dump gcInfo and slot table");
@@ -141,6 +184,8 @@ namespace R2RDump
                 syntax.DefineOption("v|verbose", ref verbose, "Dump disassembly, unwindInfo, gcInfo and section contents");
                 syntax.DefineOption("diff", ref _diff, "Compare two R2R images");
                 syntax.DefineOption("ignoreSensitive", ref _ignoreSensitive, "Ignores sensitive properties in xml dump to avoid failing tests");
+                syntax.DefineOptionList("r|reference", ref _options.ReferenceAssemblies, "Explicit reference assembly files");
+                syntax.DefineOptionList("rp|referencepath", ref _options.ReferencePaths, "Search paths for reference assemblies");
             });
 
             if (verbose)
