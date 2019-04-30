@@ -903,15 +903,14 @@ namespace System.Text.Json
             int numberOfRowsForMembers = 0;
             int numberOfRowsForValues = 0;
 
-            ref byte jsonStart = ref MemoryMarshal.GetReference(utf8JsonSpan);
-
             while (reader.Read())
             {
                 JsonTokenType tokenType = reader.TokenType;
 
-                int tokenStart = Unsafe.ByteOffset(
-                    ref jsonStart,
-                    ref MemoryMarshal.GetReference(reader.ValueSpan)).ToInt32();
+                // Since the input payload is contained within a Span, 
+                // token start index can never be larger than int.MaxValue (i.e. utf8JsonSpan.Length).
+                Debug.Assert(reader.TokenStartIndex <= int.MaxValue);
+                int tokenStart = (int)reader.TokenStartIndex;
 
                 if (tokenType == JsonTokenType.StartObject)
                 {
@@ -992,7 +991,11 @@ namespace System.Text.Json
                 {
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
-                    database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
+
+                    // Adding 1 to skip the start quote will never overflow
+                    Debug.Assert(tokenStart < int.MaxValue);
+
+                    database.Append(tokenType, tokenStart + 1, reader.ValueSpan.Length);
 
                     if (reader._stringHasEscaping)
                     {
@@ -1006,32 +1009,41 @@ namespace System.Text.Json
                     Debug.Assert(tokenType >= JsonTokenType.String && tokenType <= JsonTokenType.Null);
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
-                    database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
 
                     if (inArray)
                     {
                         arrayItemsCount++;
                     }
 
-                    if (tokenType == JsonTokenType.Number)
+                    if (tokenType == JsonTokenType.String)
                     {
-                        switch (reader._numberFormat)
-                        {
-                            case JsonConstants.ScientificNotationFormat:
-                                database.SetHasComplexChildren(database.Length - DbRow.Size);
-                                break;
-                            default:
-                                Debug.Assert(
-                                    reader._numberFormat == default,
-                                    $"Unhandled numeric format {reader._numberFormat}");
-                                break;
-                        }
-                    }
-                    else if (tokenType == JsonTokenType.String)
-                    {
+                        // Adding 1 to skip the start quote will never overflow
+                        Debug.Assert(tokenStart < int.MaxValue);
+
+                        database.Append(tokenType, tokenStart + 1, reader.ValueSpan.Length);
+
                         if (reader._stringHasEscaping)
                         {
                             database.SetHasComplexChildren(database.Length - DbRow.Size);
+                        }
+                    }
+                    else
+                    {
+                        database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
+
+                        if (tokenType == JsonTokenType.Number)
+                        {
+                            switch (reader._numberFormat)
+                            {
+                                case JsonConstants.ScientificNotationFormat:
+                                    database.SetHasComplexChildren(database.Length - DbRow.Size);
+                                    break;
+                                default:
+                                    Debug.Assert(
+                                        reader._numberFormat == default,
+                                        $"Unhandled numeric format {reader._numberFormat}");
+                                    break;
+                            }
                         }
                     }
                 }

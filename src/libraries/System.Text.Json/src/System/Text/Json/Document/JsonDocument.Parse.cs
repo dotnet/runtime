@@ -349,10 +349,6 @@ namespace System.Text.Json
             // Value copy to overwrite the ref on an exception and undo the destructive reads.
             Utf8JsonReader restore = reader;
 
-            // Only used for StartArray or StartObject,
-            // the beginning of the token is one byte earlier.
-            long startingOffset = state.BytesConsumed;
-
             ReadOnlySpan<byte> valueSpan = default;
             ReadOnlySequence<byte> valueSequence = default;
 
@@ -381,9 +377,6 @@ namespace System.Text.Json
                             document = null;
                             return false;
                         }
-
-                        // Reset the starting position since we moved.
-                        startingOffset = reader.BytesConsumed;
                         break;
                     }
                 }
@@ -394,6 +387,8 @@ namespace System.Text.Json
                     case JsonTokenType.StartObject:
                     case JsonTokenType.StartArray:
                     {
+                        long startingOffset = reader.TokenStartIndex;
+
                         // Placeholder until reader.Skip() is written (#33295)
                         {
                             int depth = reader.CurrentDepth;
@@ -421,8 +416,6 @@ namespace System.Text.Json
                             } while (reader.CurrentDepth > depth);
                         }
 
-                        // Back up to be at the beginning of the { or [, vs the end.
-                        startingOffset--;
                         long totalLength = reader.BytesConsumed - startingOffset;
                         ReadOnlySequence<byte> sequence = reader.OriginalSequence;
 
@@ -473,18 +466,17 @@ namespace System.Text.Json
                             int payloadLength = reader.ValueSpan.Length + 2;
                             Debug.Assert(payloadLength > 1);
 
-                            int openQuote = checked((int)startingOffset) - payloadLength;
                             ReadOnlySpan<byte> readerSpan = reader.OriginalSpan;
 
                             Debug.Assert(
-                                readerSpan[openQuote] == (byte)'"',
-                                $"Calculated span starts with {readerSpan[openQuote]}");
+                                readerSpan[(int)reader.TokenStartIndex] == (byte)'"',
+                                $"Calculated span starts with {readerSpan[(int)reader.TokenStartIndex]}");
 
                             Debug.Assert(
-                                readerSpan[(int)startingOffset - 1] == (byte)'"',
-                                $"Calculated span ends with {readerSpan[(int)startingOffset - 1]}");
+                                readerSpan[(int)reader.TokenStartIndex + payloadLength - 1] == (byte)'"',
+                                $"Calculated span ends with {readerSpan[(int)reader.TokenStartIndex + payloadLength - 1]}");
 
-                            valueSpan = readerSpan.Slice(openQuote, payloadLength);
+                            valueSpan = readerSpan.Slice((int)reader.TokenStartIndex, payloadLength);
                         }
                         else
                         {
@@ -499,10 +491,14 @@ namespace System.Text.Json
                                 payloadLength += reader.ValueSpan.Length;
                             }
 
-                            valueSequence = sequence.Slice(startingOffset - payloadLength, payloadLength);
+                            valueSequence = sequence.Slice(reader.TokenStartIndex, payloadLength);
                             Debug.Assert(
                                 valueSequence.First.Span[0] == (byte)'"',
                                 $"Calculated sequence starts with {valueSequence.First.Span[0]}");
+
+                            Debug.Assert(
+                                valueSequence.ToArray()[payloadLength - 1] == (byte)'"',
+                                $"Calculated sequence ends with {valueSequence.ToArray()[payloadLength - 1]}");
                         }
 
                         break;
