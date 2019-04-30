@@ -41,9 +41,9 @@ namespace R2RDump
             return formatter.EmitHandleName(handle, namespaceQualified, owningTypeOverride);
         }
 
-        public static string FormatSignature(DumpOptions options, R2RReader r2rReader, int imageOffset)
+        public static string FormatSignature(DumpOptions options, EcmaMetadataReader ecmaReader, int imageOffset)
         {
-            SignatureDecoder decoder = new SignatureDecoder(options, r2rReader, imageOffset);
+            SignatureDecoder decoder = new SignatureDecoder(options, ecmaReader, imageOffset);
             string result = decoder.ReadR2RSignature();
             return result;
         }
@@ -73,6 +73,9 @@ namespace R2RDump
 
                 case HandleKind.TypeDefinition:
                     return EmitTypeDefinitionName((TypeDefinitionHandle)handle, namespaceQualified);
+
+                case HandleKind.FieldDefinition:
+                    return EmitFieldDefinitionName((FieldDefinitionHandle)handle, namespaceQualified, owningTypeOverride);
 
                 default:
                     throw new NotImplementedException();
@@ -279,6 +282,26 @@ namespace R2RDump
             return typeSpec.DecodeSignature<string, DisassemblingGenericContext>(this, genericContext);
         }
 
+        /// <summary>
+        /// Emit the textual representation of a FieldDef metadata record.
+        /// </summary>
+        /// <param name="fieldDefHandle">Field definition handle to format</param>
+        /// <param name="namespaceQualified">True = display namespace information for the owning type</param>
+        /// <param name="owningTypeOverride">Owning type override when non-null</param>
+        /// <returns>Textual representation of the field declaration</returns>
+        private string EmitFieldDefinitionName(FieldDefinitionHandle fieldDefHandle, bool namespaceQualified, string owningTypeOverride)
+        {
+            FieldDefinition fieldDef = _metadataReader.GetFieldDefinition(fieldDefHandle);
+            DisassemblingGenericContext genericContext = new DisassemblingGenericContext(Array.Empty<string>(), Array.Empty<string>());
+            StringBuilder output = new StringBuilder();
+            output.Append(fieldDef.DecodeSignature<string, DisassemblingGenericContext>(this, genericContext));
+            output.Append(' ');
+            output.Append(EmitHandleName(fieldDef.GetDeclaringType(), namespaceQualified, owningTypeOverride));
+            output.Append('.');
+            output.Append(_metadataReader.GetString(fieldDef.Name));
+            return output.ToString();
+        }
+
         private string EmitString(StringHandle handle)
         {
             return _metadataReader.GetString(handle);
@@ -291,9 +314,9 @@ namespace R2RDump
     public class SignatureDecoder
     {
         /// <summary>
-        /// Metadata reader is used to access the embedded MSIL metadata blob in the R2R file.
+        /// ECMA reader is used to access the embedded MSIL metadata blob in the R2R file.
         /// </summary>
-        private readonly MetadataReader _metadataReader;
+        private readonly EcmaMetadataReader _ecmaReader;
 
         /// <summary>
         /// Dump options are used to specify details of signature formatting.
@@ -318,26 +341,27 @@ namespace R2RDump
         /// <summary>
         /// Construct the signature decoder by storing the image byte array and offset within the array. 
         /// </summary>
-        /// <param name="reader">R2RReader object representing the R2R PE file</param>
-        /// <param name="offset">Signature offset within the array</param>
-        /// <param name="options">Formatting options</param>
-        public SignatureDecoder(DumpOptions options, R2RReader reader, int offset)
+        /// <param name="options">Dump options and paths</param>
+        /// <param name="ecmaReader">EcmaMetadataReader object representing the PE file containing the ECMA metadata</param>
+        /// <param name="offset">Signature offset within the PE file byte array</param>
+        public SignatureDecoder(DumpOptions options, EcmaMetadataReader ecmaReader, int offset)
         {
-            _metadataReader = reader.MetadataReader;
+            _ecmaReader = ecmaReader;
             _options = options;
-            _image = reader.Image;
+            _image = ecmaReader.Image;
             _offset = offset;
         }
 
         /// <summary>
         /// Construct the signature decoder by storing the image byte array and offset within the array. 
         /// </summary>
-        /// <param name="metadataReader">Metadata reader for the R2R image</param>
+        /// <param name="options">Dump options and paths</param>
+        /// <param name="ecmaReader">Metadata reader for the R2R image</param>
         /// <param name="signature">Signature to parse</param>
-        /// <param name="offset">Optional signature offset within the signature byte array, 0 by default</param>
-        public SignatureDecoder(DumpOptions options, MetadataReader metadataReader, byte[] signature, int offset = 0)
+        /// <param name="offset">Signature offset within the signature byte array</param>
+        public SignatureDecoder(DumpOptions options, EcmaMetadataReader ecmaReader, byte[] signature, int offset)
         {
-            _metadataReader = metadataReader;
+            _ecmaReader = ecmaReader;
             _options = options;
             _image = signature;
             _offset = offset;
@@ -465,21 +489,34 @@ namespace R2RDump
         /// <summary>
         /// Parse the signature into a given output string builder.
         /// </summary>
-        /// <param name="builder"></param>
+        /// <param name="builder">Output signature builder</param>
         private void ParseSignature(StringBuilder builder)
         {
             uint fixupType = ReadByte();
             bool moduleOverride = (fixupType & (byte)CORCOMPILE_FIXUP_BLOB_KIND.ENCODE_MODULE_OVERRIDE) != 0;
+            SignatureDecoder moduleDecoder = this;
+            
             // Check first byte for a module override being encoded
             if (moduleOverride)
             {
-                builder.Append("ENCODE_MODULE_OVERRIDE @ ");
                 fixupType &= ~(uint)CORCOMPILE_FIXUP_BLOB_KIND.ENCODE_MODULE_OVERRIDE;
-                uint moduleIndex = ReadUInt();
-                builder.Append(string.Format(" Index:  {0:X2}", moduleIndex));
+                int moduleIndex = (int)ReadUInt();
+                EcmaMetadataReader refAsmEcmaReader = _ecmaReader.OpenReferenceAssembly(moduleIndex);
+                moduleDecoder = new SignatureDecoder(_options, refAsmEcmaReader, _image, _offset);
             }
 
-            switch ((ReadyToRunFixupKind)fixupType)
+            moduleDecoder.ParseSignature((ReadyToRunFixupKind)fixupType, builder);
+            _offset = moduleDecoder.Offset;
+        }
+
+        /// <summary>
+        /// Parse the signature with a given fixup type after module overrides have been resolved.
+        /// </summary>
+        /// <param name="fixupType">Fixup type to parse</param>
+        /// <param name="builder">Output signature builder</param>
+        private void ParseSignature(ReadyToRunFixupKind fixupType, StringBuilder builder)
+        {
+            switch (fixupType)
             {
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_ThisObjDictionaryLookup:
                     builder.Append("THISOBJ_DICTIONARY_LOOKUP @ ");
@@ -509,8 +546,8 @@ namespace R2RDump
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_FieldHandle:
-                    builder.Append("FIELD_HANDLE");
-                    // TODO
+                    ParseField(builder);
+                    builder.Append(" (FIELD_HANDLE)");
                     break;
 
 
@@ -520,10 +557,7 @@ namespace R2RDump
                     break;
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_MethodEntry_DefToken:
-                    if (!moduleOverride)
-                    {
-                        ParseMethodDefToken(builder, owningTypeOverride: null);
-                    }
+                    ParseMethodDefToken(builder, owningTypeOverride: null);
                     builder.Append(" (METHOD_ENTRY");
                     builder.Append(_options.Naked ? ")" : "_DEF_TOKEN)");
                     break;
@@ -536,10 +570,7 @@ namespace R2RDump
 
 
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry:
-                    if(!moduleOverride)
-                    {
-                        ParseMethod(builder);
-                    }
+                    ParseMethod(builder);
                     builder.Append(" (VIRTUAL_ENTRY)");
                     break;
 
@@ -558,10 +589,7 @@ namespace R2RDump
                 case ReadyToRunFixupKind.READYTORUN_FIXUP_VirtualEntry_Slot:
                     {
                         uint slot = ReadUInt();
-                        if (!moduleOverride)
-                        {
-                            ParseType(builder);
-                        }
+                        ParseType(builder);
 
                         builder.Append($@" #{slot} (VIRTUAL_ENTRY_SLOT)");
                     }
@@ -893,7 +921,13 @@ namespace R2RDump
                     break;
 
                 case CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG:
-                    builder.Append("module_zapsig");
+                    {
+                        int moduleIndex = (int)ReadUInt();
+                        EcmaMetadataReader refAsmReader = _ecmaReader.OpenReferenceAssembly(moduleIndex);
+                        SignatureDecoder refAsmDecoder = new SignatureDecoder(_options, refAsmReader, _image, _offset);
+                        refAsmDecoder.ParseType(builder);
+                        _offset = refAsmDecoder.Offset;
+                    }
                     break;
 
                 default:
@@ -919,7 +953,7 @@ namespace R2RDump
         private void ParseTypeToken(StringBuilder builder)
         {
             uint token = ReadToken();
-            builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)token)));
+            builder.Append(MetadataNameFormatter.FormatHandle(_ecmaReader.MetadataReader, MetadataTokens.Handle((int)token)));
         }
 
         /// <summary>
@@ -929,10 +963,20 @@ namespace R2RDump
         private void ParseMethod(StringBuilder builder)
         {
             uint methodFlags = ReadUInt();
+
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_UnboxingStub) != 0)
+            {
+                builder.Append("[UNBOX] ");
+            }
+            if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_InstantiatingStub) != 0)
+            {
+                builder.Append("[INST] ");
+            }
+
             string owningTypeOverride = null;
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
-                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_options, _metadataReader, _image, _offset);
+                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_options, _ecmaReader, _image, _offset);
                 owningTypeOverride = owningTypeDecoder.ReadTypeSignature();
                 _offset = owningTypeDecoder._offset;
             }
@@ -978,7 +1022,7 @@ namespace R2RDump
         private void ParseMethodDefToken(StringBuilder builder, string owningTypeOverride)
         {
             uint methodDefToken = ReadUInt() | (uint)CorTokenType.mdtMethodDef;
-            builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)methodDefToken), namespaceQualified: true, owningTypeOverride: owningTypeOverride));
+            builder.Append(MetadataNameFormatter.FormatHandle(_ecmaReader.MetadataReader, MetadataTokens.Handle((int)methodDefToken), namespaceQualified: true, owningTypeOverride: owningTypeOverride));
         }
 
         /// <summary>
@@ -989,7 +1033,7 @@ namespace R2RDump
         private void ParseMethodRefToken(StringBuilder builder, string owningTypeOverride)
         {
             uint methodRefToken = ReadUInt() | (uint)CorTokenType.mdtMemberRef;
-            builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)methodRefToken), namespaceQualified: false, owningTypeOverride: owningTypeOverride));
+            builder.Append(MetadataNameFormatter.FormatHandle(_ecmaReader.MetadataReader, MetadataTokens.Handle((int)methodRefToken), namespaceQualified: false, owningTypeOverride: owningTypeOverride));
         }
 
         /// <summary>
@@ -1015,7 +1059,7 @@ namespace R2RDump
             {
                 fieldToken = ReadUInt() | (uint)CorTokenType.mdtFieldDef;
             }
-            builder.Append(MetadataNameFormatter.FormatHandle(_metadataReader, MetadataTokens.Handle((int)fieldToken), namespaceQualified: false, owningTypeOverride: owningTypeOverride));
+            builder.Append(MetadataNameFormatter.FormatHandle(_ecmaReader.MetadataReader, MetadataTokens.Handle((int)fieldToken), namespaceQualified: false, owningTypeOverride: owningTypeOverride));
         }
 
         /// <summary>
@@ -1405,7 +1449,7 @@ namespace R2RDump
         {
             uint rid = ReadUInt();
             UserStringHandle stringHandle = MetadataTokens.UserStringHandle((int)rid);
-            builder.Append(_metadataReader.GetUserString(stringHandle));
+            builder.Append(_ecmaReader.MetadataReader.GetUserString(stringHandle));
         }
     }
 }
