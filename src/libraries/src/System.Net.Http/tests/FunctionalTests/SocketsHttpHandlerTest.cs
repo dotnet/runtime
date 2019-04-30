@@ -457,6 +457,56 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_PostScenarioTest(ITestOutputHelper output) : base(output) { }
         protected override bool UseSocketsHttpHandler => true;
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposeTargetStream_ThrowsObjectDisposedException(bool knownLength)
+        {
+            var tcs = new TaskCompletionSource<int>(TaskContinuationOptions.RunContinuationsAsynchronously);
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                try
+                {
+                    using (HttpClient client = CreateHttpClient())
+                    {
+                        Task t = client.PostAsync(uri, new DisposeStreamWhileCopyingContent(knownLength));
+                        Assert.IsType<ObjectDisposedException>((await Assert.ThrowsAsync<HttpRequestException>(() => t)).InnerException);
+                    }
+                }
+                finally
+                {
+                    tcs.SetResult(0);
+                }
+            }, server => tcs.Task);
+        }
+
+        private sealed class DisposeStreamWhileCopyingContent : HttpContent
+        {
+            private readonly bool _knownLength;
+
+            public DisposeStreamWhileCopyingContent(bool knownLength) => _knownLength = knownLength;
+
+            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            {
+                await stream.WriteAsync(new byte[42], 0, 42);
+                stream.Dispose();
+            }
+
+            protected override bool TryComputeLength(out long length)
+            {
+                if (_knownLength)
+                {
+                    length = 42;
+                    return true;
+                }
+                else
+                {
+                    length = 0;
+                    return false;
+                }
+            }
+        }
     }
 
     public sealed class SocketsHttpHandler_ResponseStreamTest : ResponseStreamTest
