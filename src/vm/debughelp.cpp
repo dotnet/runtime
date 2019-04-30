@@ -461,6 +461,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
     int nLen = MAX_CLASSNAME_LENGTH * 4 + 400;  // this should be enough
 
     wchar_t *buff = (wchar_t *) qb.AllocThrows(nLen * sizeof(wchar_t));
+    wchar_t *buffEnd = buff + nLen;
 
     while (ptr < end)
     {
@@ -476,7 +477,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
 
         if (isRetAddr((TADDR)*ptr, &whereCalled))
         {
-            if (_snwprintf_s(buffPtr, buff+NumItems(buff)-buffPtr-1, _TRUNCATE,  W("STK[%08X] = %08X "), (size_t)ptr, *ptr)  <0)
+            if (_snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE,  W("STK[%08X] = %08X "), (size_t)ptr, *ptr) < 0)
             {
                 return(0);
             }
@@ -519,7 +520,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
                 ftn = ExecutionManager::GetCodeMethodDesc((PCODE)(*ptr));
             }
 
-            if(_snwprintf_s(buffPtr, buff+ nLen -buffPtr-1, _TRUNCATE, W("%s "), kind) < 0)
+            if (_snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE, W("%s "), kind) < 0)
             {
                 return(0);
             }
@@ -529,7 +530,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
             if (ftn != 0)
             {
                 // buffer is not large enough
-                if( formatMethodDesc(ftn, buffPtr, static_cast<DWORD>(buff+ nLen -buffPtr-1)) == NULL)
+                if (formatMethodDesc(ftn, buffPtr, static_cast<DWORD>(buffEnd - buffPtr)) == NULL)
                 {
                     return(0);
                 }
@@ -538,13 +539,13 @@ int dumpStack(BYTE* topOfStack, unsigned len)
             }
             else
             {
-                wcsncpy_s(buffPtr, nLen - (buffPtr - buff), W("<UNKNOWN FTN>"), _TRUNCATE);
+                wcsncpy_s(buffPtr, buffEnd - buffPtr, W("<UNKNOWN FTN>"), _TRUNCATE);
                 buffPtr += wcslen(buffPtr);
             }
 
             if (whereCalled != 0)
             {
-                if(_snwprintf_s(buffPtr, buff+ nLen -buffPtr-1, _TRUNCATE, W(" Caller called Entry %X"), whereCalled) <0)
+                if (_snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE, W(" Caller called Entry %X"), whereCalled) < 0)
                 {
                     return(0);
                 }
@@ -552,7 +553,7 @@ int dumpStack(BYTE* topOfStack, unsigned len)
                 buffPtr += wcslen(buffPtr);
             }
 
-            wcsncpy_s(buffPtr, nLen - (buffPtr - buff), W("\n"), _TRUNCATE);
+            wcsncpy_s(buffPtr, buffEnd - buffPtr, W("\n"), _TRUNCATE);
             buffPtr += wcslen(buffPtr);
             WszOutputDebugString(buff);
         }
@@ -561,21 +562,21 @@ int dumpStack(BYTE* topOfStack, unsigned len)
         if (pMT != 0)
         {
             buffPtr = buff;
-            if( _snwprintf_s(buffPtr, buff+ nLen -buffPtr-1, _TRUNCATE, W("STK[%08X] = %08X          MT PARAM "), (size_t)ptr, *ptr ) <0)
+            if ( _snwprintf_s(buffPtr, buffEnd - buffPtr, _TRUNCATE, W("STK[%08X] = %08X          MT PARAM "), (size_t)ptr, *ptr ) < 0)
             {
                 return(0);
             }
 
             buffPtr += wcslen(buffPtr);
 
-            if( formatMethodTable(pMT, buffPtr, static_cast<DWORD>(buff+ nLen -buffPtr-1)) == NULL)
+            if (formatMethodTable(pMT, buffPtr, static_cast<DWORD>(buffEnd - buffPtr)) == NULL)
             {
                 return(0);
             }
 
             buffPtr += wcslen(buffPtr);
 
-            wcsncpy_s(buffPtr, nLen - (buffPtr - buff), W("\n"), _TRUNCATE);
+            wcsncpy_s(buffPtr, buffEnd - buffPtr, W("\n"), _TRUNCATE);
             WszOutputDebugString(buff);
 
         }
