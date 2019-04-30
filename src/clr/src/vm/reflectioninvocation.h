@@ -102,12 +102,4 @@ public:
     static FCDECL2(int, InternalCompareTo, Object *pRefThis, Object* pRefTarget);
 };
 
-class ReflectionBinder {
-public:
-    static FCDECL2(FC_BOOL_RET, DBCanConvertPrimitive, ReflectClassBaseObject* vSource, ReflectClassBaseObject* vTarget);
-    static FCDECL2(FC_BOOL_RET, DBCanConvertObjectPrimitive, Object* vSourceObj, ReflectClassBaseObject* vTarget);
-
-
-};
-
 #endif // _REFLECTIONINVOCATION_H_
