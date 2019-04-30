@@ -417,7 +417,7 @@ namespace System.Resources
             {
                 string fileName = GetResourceFileName(culture);
                 Debug.Assert(MainAssembly != null);
-                Stream stream = MainAssembly.GetManifestResourceStream(_locationInfo, fileName);
+                Stream? stream = MainAssembly.GetManifestResourceStream(_locationInfo!, fileName);
                 if (createIfNotExists && stream != null)
                 {
                     rs = ((ManifestBasedResourceGroveler)_resourceGroveler).CreateResourceSet(stream, MainAssembly);

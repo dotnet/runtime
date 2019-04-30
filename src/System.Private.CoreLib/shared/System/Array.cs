@@ -384,7 +384,7 @@ namespace System
 
             for (int i = (this.Length >= 8 ? this.Length - 8 : 0); i < this.Length; i++)
             {
-                ret = CombineHashCodes(ret, comparer!.GetHashCode(GetValue(i))); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                ret = CombineHashCodes(ret, comparer!.GetHashCode(GetValue(i)!)); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
 
             return ret;
@@ -1592,7 +1592,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
 
-            ArraySortHelper<T>.Sort(array!, 0, array!.Length, comparison); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            ArraySortHelper<T>.Sort(array!, 0, array!.Length, comparison!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
         }
 
         public static bool TrueForAll<T>(T[] array, Predicate<T> match)

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 
@@ -30,7 +31,7 @@ namespace System.Diagnostics.Tracing
         private readonly EventOpcode opcode = (EventOpcode)(-1);
         private readonly EventTags tags;
         private readonly Type dataType;
-        private readonly Func<object, PropertyValue> propertyValueFactory;
+        private readonly Func<object?, PropertyValue> propertyValueFactory;
 
         internal TraceLoggingTypeInfo(Type dataType)
         {
@@ -124,7 +125,7 @@ namespace System.Diagnostics.Tracing
             get { return this.dataType; }
         }
 
-        internal Func<object, PropertyValue> PropertyValueFactory
+        internal Func<object?, PropertyValue> PropertyValueFactory
         {
             get { return this.propertyValueFactory; }
         }
@@ -153,7 +154,7 @@ namespace System.Diagnostics.Tracing
         /// </param>
         public abstract void WriteMetadata(
             TraceLoggingMetadataCollector collector,
-            string name,
+            string? name,
             EventFieldFormat format);
 
         /// <summary>
@@ -177,15 +178,15 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public virtual object GetData(object value)
+        public virtual object? GetData(object? value)
         {
             return value;
         }
 
         [ThreadStatic] // per-thread cache to avoid synchronization
-        private static Dictionary<Type, TraceLoggingTypeInfo> threadCache;
+        private static Dictionary<Type, TraceLoggingTypeInfo>? threadCache;
 
-        public static TraceLoggingTypeInfo GetInstance(Type type, List<Type> recursionCheck)
+        public static TraceLoggingTypeInfo GetInstance(Type type, List<Type>? recursionCheck)
         {
             var cache = threadCache ?? (threadCache = new Dictionary<Type, TraceLoggingTypeInfo>());
 

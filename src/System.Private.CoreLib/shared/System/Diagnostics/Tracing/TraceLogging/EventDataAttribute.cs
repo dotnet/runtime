@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 
 #if ES_BUILD_STANDALONE
@@ -53,7 +54,7 @@ namespace System.Diagnostics.Tracing
         /// else
         ///     fieldName = typeof(T).Name;
         /// </summary>
-        public string Name
+        public string? Name
         {
             get;
             set;

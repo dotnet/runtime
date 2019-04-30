@@ -6,26 +6,27 @@
 // 
 // This class wraps a Type object and delegates all methods to that Type.
 
+#nullable enable
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection
 {
     public class TypeDelegator : TypeInfo
     {
-        public override bool IsAssignableFrom(TypeInfo typeInfo)
+        public override bool IsAssignableFrom(TypeInfo? typeInfo)
         {
             if (typeInfo == null)
                 return false;
             return IsAssignableFrom(typeInfo.AsType());
         }
 
-        protected Type typeImpl;
+        protected Type typeImpl = null!;
 
         protected TypeDelegator() { }
 
         public TypeDelegator(Type delegatingType)
         {
-            if (delegatingType == null)
+            if (delegatingType is null)
                 throw new ArgumentNullException(nameof(delegatingType));
 
             typeImpl = delegatingType;
@@ -34,8 +35,8 @@ namespace System.Reflection
         public override Guid GUID => typeImpl.GUID;
         public override int MetadataToken => typeImpl.MetadataToken;
 
-        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target,
-            object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+        public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
+            object[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
             return typeImpl.InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
         }
@@ -44,21 +45,21 @@ namespace System.Reflection
         public override Assembly Assembly => typeImpl.Assembly;
         public override RuntimeTypeHandle TypeHandle => typeImpl.TypeHandle;
         public override string Name => typeImpl.Name;
-        public override string FullName => typeImpl.FullName;
-        public override string Namespace => typeImpl.Namespace;
-        public override string AssemblyQualifiedName => typeImpl.AssemblyQualifiedName;
-        public override Type BaseType => typeImpl.BaseType;
+        public override string? FullName => typeImpl.FullName;
+        public override string? Namespace => typeImpl.Namespace;
+        public override string? AssemblyQualifiedName => typeImpl.AssemblyQualifiedName;
+        public override Type? BaseType => typeImpl.BaseType;
 
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder,
-                CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
+                CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             return typeImpl.GetConstructor(bindingAttr, binder, callConvention, types, modifiers);
         }
 
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr) => typeImpl.GetConstructors(bindingAttr);
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder,
-                CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
+                CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             // This is interesting there are two paths into the impl.  One that validates
             //  type as non-null and one where type may be null.
@@ -70,30 +71,30 @@ namespace System.Reflection
 
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr) => typeImpl.GetMethods(bindingAttr);
 
-        public override FieldInfo GetField(string name, BindingFlags bindingAttr) => typeImpl.GetField(name, bindingAttr);
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr) => typeImpl.GetField(name, bindingAttr);
         public override FieldInfo[] GetFields(BindingFlags bindingAttr) => typeImpl.GetFields(bindingAttr);
 
-        public override Type GetInterface(string name, bool ignoreCase) => typeImpl.GetInterface(name, ignoreCase);
+        public override Type? GetInterface(string name, bool ignoreCase) => typeImpl.GetInterface(name, ignoreCase);
 
         public override Type[] GetInterfaces() => typeImpl.GetInterfaces();
 
-        public override EventInfo GetEvent(string name, BindingFlags bindingAttr) => typeImpl.GetEvent(name, bindingAttr);
+        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr) => typeImpl.GetEvent(name, bindingAttr);
 
         public override EventInfo[] GetEvents() => typeImpl.GetEvents();
 
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder,
-                        Type returnType, Type[] types, ParameterModifier[] modifiers)
+        protected override PropertyInfo? GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
+                        Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             if (returnType == null && types == null)
                 return typeImpl.GetProperty(name, bindingAttr);
             else
-                return typeImpl.GetProperty(name, bindingAttr, binder, returnType, types, modifiers);
+                return typeImpl.GetProperty(name, bindingAttr, binder, returnType, types!, modifiers);
         }
 
         public override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => typeImpl.GetProperties(bindingAttr);
         public override EventInfo[] GetEvents(BindingFlags bindingAttr) => typeImpl.GetEvents(bindingAttr);
         public override Type[] GetNestedTypes(BindingFlags bindingAttr) => typeImpl.GetNestedTypes(bindingAttr);
-        public override Type GetNestedType(string name, BindingFlags bindingAttr) => typeImpl.GetNestedType(name, bindingAttr);
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr) => typeImpl.GetNestedType(name, bindingAttr);
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => typeImpl.GetMember(name, type, bindingAttr);
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => typeImpl.GetMembers(bindingAttr);
 
@@ -115,7 +116,7 @@ namespace System.Reflection
 
         public override bool IsCollectible => typeImpl.IsCollectible;
 
-        public override Type GetElementType() => typeImpl.GetElementType();
+        public override Type? GetElementType() => typeImpl.GetElementType();
         protected override bool HasElementTypeImpl() => typeImpl.HasElementType;
 
         public override Type UnderlyingSystemType => typeImpl.UnderlyingSystemType;

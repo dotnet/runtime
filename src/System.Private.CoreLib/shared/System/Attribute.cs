@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Reflection;
 
@@ -15,7 +16,7 @@ namespace System
         protected Attribute() { }
 
 #if !CORERT
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj == null)
                 return false;
@@ -25,7 +26,7 @@ namespace System
 
             Type thisType = this.GetType();
             object thisObj = this;
-            object thisResult, thatResult;
+            object? thisResult, thatResult;
 
             while (thisType != typeof(Attribute))
             {
@@ -41,7 +42,7 @@ namespace System
                         return false;
                     }
                 }
-                thisType = thisType.BaseType;
+                thisType = thisType.BaseType!;
             }
 
             return true;
@@ -54,11 +55,11 @@ namespace System
             while (type != typeof(Attribute))
             {
                 FieldInfo[] fields = type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
-                object vThis = null;
+                object? vThis = null;
 
                 for (int i = 0; i < fields.Length; i++)
                 {
-                    object fieldValue = fields[i].GetValue(this);
+                    object? fieldValue = fields[i].GetValue(this);
 
                     // The hashcode of an array ignores the contents of the array, so it can produce 
                     // different hashcodes for arrays with the same contents.
@@ -74,7 +75,7 @@ namespace System
                 if (vThis != null)
                     return vThis.GetHashCode();
 
-                type = type.BaseType;
+                type = type.BaseType!;
             }
 
             return type.GetHashCode();
@@ -82,7 +83,7 @@ namespace System
 #endif
 
         // Compares values of custom-attribute fields.    
-        private static bool AreFieldValuesEqual(object thisValue, object thatValue)
+        private static bool AreFieldValuesEqual(object? thisValue, object? thatValue)
         {
             if (thisValue == null && thatValue == null)
                 return true;
@@ -99,8 +100,8 @@ namespace System
                     return false;
                 }
 
-                Array thisValueArray = thisValue as Array;
-                Array thatValueArray = thatValue as Array;
+                Array thisValueArray = (Array)thisValue;
+                Array thatValueArray = (Array)thatValue;
                 if (thisValueArray.Length != thatValueArray.Length)
                 {
                     return false;
@@ -132,7 +133,7 @@ namespace System
 
         public virtual object TypeId => GetType();
 
-        public virtual bool Match(object obj) => Equals(obj);
+        public virtual bool Match(object? obj) => Equals(obj);
 
         public virtual bool IsDefaultAttribute() => false;
     }

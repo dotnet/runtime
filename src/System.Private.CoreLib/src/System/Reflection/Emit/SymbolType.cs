@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+#nullable enable
+using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    using System.Runtime.InteropServices;
-    using System;
-    using System.Reflection;
-    using CultureInfo = System.Globalization.CultureInfo;
-
     internal enum TypeKind
     {
         IsArray = 1,
@@ -21,14 +17,14 @@ namespace System.Reflection.Emit
     // This is a kind of Type object that will represent the compound expression of a parameter type or field type.
     internal sealed class SymbolType : TypeInfo
     {
-        public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo)
+        public override bool IsAssignableFrom(TypeInfo? typeInfo)
         {
             if (typeInfo == null) return false;
             return IsAssignableFrom(typeInfo.AsType());
         }
 
         #region Static Members
-        internal static Type FormCompoundType(string format, Type baseType, int curIndex)
+        internal static Type? FormCompoundType(string? format, Type baseType, int curIndex)
         {
             // This function takes a string to describe the compound type, such as "[,][]", and a baseType.
             // 
@@ -208,13 +204,13 @@ namespace System.Reflection.Emit
 
         #region Data Members
         internal TypeKind m_typeKind;
-        internal Type m_baseType;
+        internal Type m_baseType = null!;
         internal int m_cRank;        // count of dimension
         // If LowerBound and UpperBound is equal, that means one element. 
         // If UpperBound is less than LowerBound, then the size is not specified.
         internal int[] m_iaLowerBound;
         internal int[] m_iaUpperBound; // count of dimension
-        private string m_format;      // format string to form the full name.
+        private string? m_format;      // format string to form the full name.
         private bool m_isSzArray = true;
         #endregion
 
@@ -231,7 +227,7 @@ namespace System.Reflection.Emit
         #region Internal Members
         internal void SetElementType(Type baseType)
         {
-            if (baseType == null)
+            if (baseType is null)
                 throw new ArgumentNullException(nameof(baseType));
 
             m_baseType = baseType;
@@ -275,17 +271,17 @@ namespace System.Reflection.Emit
 
         public override Type MakePointerType()
         {
-            return SymbolType.FormCompoundType(m_format + "*", m_baseType, 0);
+            return SymbolType.FormCompoundType(m_format + "*", m_baseType, 0)!;
         }
 
         public override Type MakeByRefType()
         {
-            return SymbolType.FormCompoundType(m_format + "&", m_baseType, 0);
+            return SymbolType.FormCompoundType(m_format + "&", m_baseType, 0)!;
         }
 
         public override Type MakeArrayType()
         {
-            return SymbolType.FormCompoundType(m_format + "[]", m_baseType, 0);
+            return SymbolType.FormCompoundType(m_format + "[]", m_baseType, 0)!;
         }
 
         public override Type MakeArrayType(int rank)
@@ -305,8 +301,8 @@ namespace System.Reflection.Emit
             }
 
             string s = string.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
-            SymbolType st = SymbolType.FormCompoundType(m_format + s, m_baseType, 0) as SymbolType;
-            return st;
+            SymbolType? st = SymbolType.FormCompoundType(m_format + s, m_baseType, 0) as SymbolType;
+            return st!;
         }
 
         public override int GetArrayRank()
@@ -322,8 +318,8 @@ namespace System.Reflection.Emit
             get { throw new NotSupportedException(SR.NotSupported_NonReflectedType); }
         }
 
-        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder binder, object target,
-            object[] args, ParameterModifier[] modifiers, CultureInfo culture, string[] namedParameters)
+        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
+            object[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
@@ -361,7 +357,7 @@ namespace System.Reflection.Emit
             get
             {
                 Type baseType;
-                string sFormat = m_format;
+                string? sFormat = m_format;
 
                 for (baseType = m_baseType; baseType is SymbolType; baseType = ((SymbolType)baseType).m_baseType)
                     sFormat = ((SymbolType)baseType).m_format + sFormat;
@@ -370,7 +366,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override string FullName
+        public override string? FullName
         {
             get
             {
@@ -378,7 +374,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override string AssemblyQualifiedName
+        public override string? AssemblyQualifiedName
         {
             get
             {
@@ -388,21 +384,23 @@ namespace System.Reflection.Emit
 
         public override string ToString()
         {
-            return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.ToString);
+            return TypeNameBuilder.ToString(this, TypeNameBuilder.Format.ToString)!;
         }
 
-        public override string Namespace
+        public override string? Namespace
         {
             get { return m_baseType.Namespace; }
         }
 
+#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public override Type BaseType
         {
             get { return typeof(System.Array); }
         }
+#pragma warning restore CS8608
 
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder,
-                CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
+                CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
@@ -412,8 +410,8 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder,
-                CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
+                CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
@@ -453,8 +451,8 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
 
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder,
-                Type returnType, Type[] types, ParameterModifier[] modifiers)
+        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
+                Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_NonReflectedType);
         }
@@ -540,7 +538,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type GetElementType()
+        public override Type? GetElementType()
         {
             return m_baseType;
         }

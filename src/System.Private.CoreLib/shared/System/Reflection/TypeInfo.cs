@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 
 namespace System.Reflection
@@ -15,11 +16,11 @@ namespace System.Reflection
 
         public virtual Type[] GenericTypeParameters => IsGenericTypeDefinition ? GetGenericArguments() : Type.EmptyTypes;
 
-        public virtual EventInfo GetDeclaredEvent(string name) => GetEvent(name, TypeInfo.DeclaredOnlyLookup);
-        public virtual FieldInfo GetDeclaredField(string name) => GetField(name, TypeInfo.DeclaredOnlyLookup);
-        public virtual MethodInfo GetDeclaredMethod(string name) => GetMethod(name, TypeInfo.DeclaredOnlyLookup);
-        public virtual TypeInfo GetDeclaredNestedType(string name) => GetNestedType(name, TypeInfo.DeclaredOnlyLookup)?.GetTypeInfo();
-        public virtual PropertyInfo GetDeclaredProperty(string name) => GetProperty(name, TypeInfo.DeclaredOnlyLookup);
+        public virtual EventInfo? GetDeclaredEvent(string name) => GetEvent(name, TypeInfo.DeclaredOnlyLookup);
+        public virtual FieldInfo? GetDeclaredField(string name) => GetField(name, TypeInfo.DeclaredOnlyLookup);
+        public virtual MethodInfo? GetDeclaredMethod(string name) => GetMethod(name, TypeInfo.DeclaredOnlyLookup);
+        public virtual TypeInfo? GetDeclaredNestedType(string name) => GetNestedType(name, TypeInfo.DeclaredOnlyLookup)?.GetTypeInfo();
+        public virtual PropertyInfo? GetDeclaredProperty(string name) => GetProperty(name, TypeInfo.DeclaredOnlyLookup);
 
         public virtual IEnumerable<MethodInfo> GetDeclaredMethods(string name)
         {
@@ -50,7 +51,7 @@ namespace System.Reflection
         public virtual IEnumerable<Type> ImplementedInterfaces => GetInterfaces();
 
         //a re-implementation of ISAF from Type, skipping the use of UnderlyingType
-        public virtual bool IsAssignableFrom(TypeInfo typeInfo)
+        public virtual bool IsAssignableFrom(TypeInfo? typeInfo)
         {
             if (typeInfo == null)
                 return false;

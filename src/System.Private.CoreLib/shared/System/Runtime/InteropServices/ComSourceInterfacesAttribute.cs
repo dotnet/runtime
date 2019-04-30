@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices
 
         public ComSourceInterfacesAttribute(Type sourceInterface)
         {
-            Value = sourceInterface.FullName;
+            Value = sourceInterface.FullName!;
         }
 
         public ComSourceInterfacesAttribute(Type sourceInterface1, Type sourceInterface2)

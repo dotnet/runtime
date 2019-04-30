@@ -2,20 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
-using System;
-
+#nullable enable
 namespace System.Reflection
 {
     internal static class MdConstant
     {
-        public static unsafe object GetValue(MetadataImport scope, int token, RuntimeTypeHandle fieldTypeHandle, bool raw)
+        public static unsafe object? GetValue(MetadataImport scope, int token, RuntimeTypeHandle fieldTypeHandle, bool raw)
         {
             CorElementType corElementType = 0;
             long buffer = 0;
             int length;
-            string stringVal;
+            string? stringVal;
 
             stringVal = scope.GetDefaultValue(token, out buffer, out length, out corElementType);
 

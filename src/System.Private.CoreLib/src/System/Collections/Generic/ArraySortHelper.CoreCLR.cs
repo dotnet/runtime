@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
@@ -11,8 +12,8 @@ namespace System.Collections.Generic
 {
     internal interface IArraySortHelper<TKey>
     {
-        void Sort(TKey[] keys, int index, int length, IComparer<TKey> comparer);
-        int BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey> comparer);
+        void Sort(TKey[] keys, int index, int length, IComparer<TKey>? comparer);
+        int BinarySearch(TKey[] keys, int index, int length, TKey value, IComparer<TKey>? comparer);
     }
 
     [TypeDependencyAttribute("System.Collections.Generic.GenericArraySortHelper`1")]
@@ -52,7 +53,7 @@ namespace System.Collections.Generic
 
     internal interface IArraySortHelper<TKey, TValue>
     {
-        void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer);
+        void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey>? comparer);
     }
 
     [TypeDependencyAttribute("System.Collections.Generic.GenericArraySortHelper`2")]
