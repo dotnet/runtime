@@ -87,7 +87,7 @@ namespace System
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             RuntimeMethodHandleInternal method = new RuntimeMethodHandleInternal(GetInvokeMethod());
-            RuntimeMethodInfo invoke = (RuntimeMethodInfo)RuntimeType.GetMethodBase((RuntimeType)this.GetType(), method);
+            RuntimeMethodInfo invoke = (RuntimeMethodInfo)RuntimeType.GetMethodBase((RuntimeType)this.GetType(), method)!;
 
             return invoke.Invoke(this, BindingFlags.Default, null, args, null);
         }
@@ -185,7 +185,7 @@ namespace System
                             // types at each step) until we find the declaring type. Since the declaring type
                             // we get from the method is probably shared and those in the hierarchy we're
                             // walking won't be we compare using the generic type definition forms instead.
-                            Type currentType = _target!.GetType();
+                            Type? currentType = _target!.GetType();
                             Type targetType = declaringType.GetGenericTypeDefinition();
                             while (currentType != null)
                             {
@@ -206,12 +206,12 @@ namespace System
                         else
                         {
                             // it's an open one, need to fetch the first arg of the instantiation
-                            MethodInfo invoke = this.GetType().GetMethod("Invoke");
+                            MethodInfo invoke = this.GetType().GetMethod("Invoke")!;
                             declaringType = (RuntimeType)invoke.GetParameters()[0].ParameterType;
                         }
                     }
                 }
-                _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method);
+                _methodBase = (MethodInfo)RuntimeType.GetMethodBase(declaringType, method)!;
             }
             return (MethodInfo)_methodBase;
         }

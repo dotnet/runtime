@@ -252,7 +252,7 @@ namespace System.Resources
                         }
                         else
                         {
-                            Type readerType = Type.GetType(readerTypeName, throwOnError: true);
+                            Type readerType = Type.GetType(readerTypeName, throwOnError: true)!;
                             object[] args = new object[1];
                             args[0] = store;
                             reader = (IResourceReader)Activator.CreateInstance(readerType, args)!;
@@ -265,7 +265,7 @@ namespace System.Resources
                         if (_mediator.UserResourceSet == null)
                         {
                             Debug.Assert(resSetTypeName != null, "We should have a ResourceSet type name from the custom resource file here.");
-                            resSetType = Type.GetType(resSetTypeName, true, false);
+                            resSetType = Type.GetType(resSetTypeName, true, false)!;
                         }
                         else
                         {
@@ -325,7 +325,7 @@ namespace System.Resources
             Debug.Assert(satellite != null, "satellite shouldn't be null; check caller");
             Debug.Assert(fileName != null, "fileName shouldn't be null; check caller");
 
-            Stream? stream = satellite.GetManifestResourceStream(_mediator.LocationInfo, fileName);
+            Stream? stream = satellite.GetManifestResourceStream(_mediator.LocationInfo!, fileName);
             if (stream == null)
             {
                 stream = CaseInsensitiveManifestResourceStreamLookup(satellite, fileName);

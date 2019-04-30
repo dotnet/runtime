@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using Interlocked = System.Threading.Interlocked;
 
@@ -26,11 +27,11 @@ namespace System.Diagnostics.Tracing
     internal struct ConcurrentSet<KeyType, ItemType>
         where ItemType : ConcurrentSetItem<KeyType, ItemType>
     {
-        private ItemType[] items;
+        private ItemType[]? items;
 
-        public ItemType TryGet(KeyType key)
+        public ItemType? TryGet(KeyType key)
         {
-            ItemType item;
+            ItemType? item;
             var oldItems = this.items;
 
             if (oldItems != null)
@@ -110,7 +111,7 @@ namespace System.Diagnostics.Tracing
                 Array.Copy(oldItems, lo, newItems, lo + 1, oldLength - lo);
             }
 
-            newItems = Interlocked.CompareExchange(ref this.items, newItems, oldItems);
+            newItems = Interlocked.CompareExchange(ref this.items, newItems, oldItems)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34901
             if (oldItems != newItems)
             {
                 oldItems = newItems;

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.ComponentModel;
 using System.Text;
 
@@ -19,7 +20,7 @@ namespace System.Collections.Generic
         /// <summary>
         /// Used by KeyValuePair.ToString to reduce generic code
         /// </summary>
-        internal static string PairToString(object key, object value)
+        internal static string PairToString(object? key, object? value)
         {
             StringBuilder s = StringBuilderCache.Acquire();
             s.Append('[');

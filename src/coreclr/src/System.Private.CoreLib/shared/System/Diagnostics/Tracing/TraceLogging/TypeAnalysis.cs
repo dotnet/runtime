@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -19,7 +20,7 @@ namespace System.Diagnostics.Tracing
     internal sealed class TypeAnalysis
     {
         internal readonly PropertyAnalysis[] properties;
-        internal readonly string name;
+        internal readonly string? name;
         internal readonly EventKeywords keywords;
         internal readonly EventLevel level = (EventLevel)(-1);
         internal readonly EventOpcode opcode = (EventOpcode)(-1);
@@ -27,7 +28,7 @@ namespace System.Diagnostics.Tracing
 
         public TypeAnalysis(
             Type dataType,
-            EventDataAttribute eventAttrib,
+            EventDataAttribute? eventAttrib,
             List<Type> recursionCheck)
         {
             var propertyInfos = Statics.GetProperties(dataType);
@@ -46,7 +47,7 @@ namespace System.Diagnostics.Tracing
                     continue;
                 }
 
-                MethodInfo getterInfo = Statics.GetGetMethod(propertyInfo);
+                MethodInfo? getterInfo = Statics.GetGetMethod(propertyInfo);
                 if (getterInfo == null)
                 {
                     continue;
@@ -59,7 +60,7 @@ namespace System.Diagnostics.Tracing
 
                 var propertyType = propertyInfo.PropertyType;
                 var propertyTypeInfo = TraceLoggingTypeInfo.GetInstance(propertyType, recursionCheck);
-                var fieldAttribute = Statics.GetCustomAttribute<EventFieldAttribute>(propertyInfo);
+                var fieldAttribute = Statics.GetCustomAttribute<EventFieldAttribute?>(propertyInfo);
 
                 string propertyName =
                     fieldAttribute != null && fieldAttribute.Name != null

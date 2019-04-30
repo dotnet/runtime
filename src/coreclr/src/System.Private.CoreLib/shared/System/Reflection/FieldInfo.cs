@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -37,11 +38,11 @@ namespace System.Reflection
 
         public abstract RuntimeFieldHandle FieldHandle { get; }
 
-        public override bool Equals(object obj) => base.Equals(obj);
+        public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(FieldInfo left, FieldInfo right)
+        public static bool operator ==(FieldInfo? left, FieldInfo? right)
         {
             // Test "right" first to allow branch elimination when inlined for null checks (== null)
             // so it can become a simple test
@@ -52,7 +53,7 @@ namespace System.Reflection
             }
 
             // Try fast reference equality and opposite null check prior to calling the slower virtual Equals
-            if ((object)left == (object)right)
+            if ((object?)left == (object)right)
             {
                 return true;
             }
@@ -60,14 +61,14 @@ namespace System.Reflection
             return (left is null) ? false : left.Equals(right);
         }
 
-        public static bool operator !=(FieldInfo left, FieldInfo right) => !(left == right);
+        public static bool operator !=(FieldInfo? left, FieldInfo? right) => !(left == right);
 
-        public abstract object GetValue(object obj);
+        public abstract object? GetValue(object? obj);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public void SetValue(object obj, object value) => SetValue(obj, value, BindingFlags.Default, Type.DefaultBinder, null);
-        public abstract void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture);
+        public void SetValue(object? obj, object value) => SetValue(obj, value, BindingFlags.Default, Type.DefaultBinder, null);
+        public abstract void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture);
 
         [CLSCompliant(false)]
         public virtual void SetValueDirect(TypedReference obj, object value) { throw new NotSupportedException(SR.NotSupported_AbstractNonCLS); }
