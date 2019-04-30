@@ -169,7 +169,7 @@ int run_as_app(
     if (trace::is_enabled())
     {
         pal::string_t arg_str;
-        for (int i = 0; i < argv_local.size(); i++)
+        for (size_t i = 0; i < argv_local.size(); i++)
         {
             pal::string_t cur;
             pal::clr_palstring(argv_local[i], &cur);
@@ -207,7 +207,7 @@ int run_as_app(
     trace::info(_X("Execute managed assembly exit code: 0x%X"), exit_code);
 
     // Shut down the CoreCLR
-    hr = g_coreclr->shutdown((int*)&exit_code);
+    hr = g_coreclr->shutdown(reinterpret_cast<int*>(&exit_code));
     if (!SUCCEEDED(hr))
     {
         trace::warning(_X("Failed to shut down CoreCLR, HRESULT: 0x%X"), hr);

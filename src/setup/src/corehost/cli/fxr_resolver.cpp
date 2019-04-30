@@ -56,7 +56,7 @@ namespace
 bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path)
 {
     pal::string_t fxr_dir;
-#if FEATURE_APPHOST || FEATURE_LIBHOST
+#if defined(FEATURE_APPHOST) || defined(FEATURE_LIBHOST)
     // If a hostfxr exists in root_path, then assume self-contained.
     if (root_path.length() > 0 && library_exists_in_dir(root_path, LIBFXR_NAME, out_fxr_path))
     {
@@ -133,7 +133,6 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
 
 bool fxr_resolver::try_get_existing_fxr(pal::dll_t *out_fxr, pal::string_t *out_fxr_path)
 {
-    pal::dll_t fxr;
     if (!pal::get_loaded_library(LIBFXR_NAME, "hostfxr_main", out_fxr, out_fxr_path))
         return false;
 

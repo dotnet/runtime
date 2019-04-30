@@ -95,7 +95,7 @@ public:
 
     bool valid(pal::string_t* errors)
     {
-        for (int i = 0; i < m_fx_definitions.size(); ++i)
+        for (size_t i = 0; i < m_fx_definitions.size(); ++i)
         {
             // Verify the deps file exists. The app deps file does not need to exist
             if (i != 0)

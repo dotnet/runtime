@@ -12,9 +12,9 @@
 #include <cassert>
 #include <functional>
 
-const std::array<const pal::char_t*, deps_entry_t::asset_types::count> deps_entry_t::s_known_asset_types = {
+const std::array<const pal::char_t*, deps_entry_t::asset_types::count> deps_entry_t::s_known_asset_types = {{
     _X("runtime"), _X("resources"), _X("native")
-};
+}};
 
 const deps_entry_t& deps_json_t::try_ni(const deps_entry_t& entry) const
 {
@@ -84,7 +84,7 @@ void deps_json_t::reconcile_libraries_with_targets(
         pal::string_t library_hash_path = get_optional_path(properties, _X("hashPath"));
         pal::string_t runtime_store_manifest_list = get_optional_path(properties, _X("runtimeStoreManifestName"));
 
-        for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
+        for (size_t i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
             bool rid_specific = false;
             for (const auto& asset : get_assets_fn(library.first, i, &rid_specific))
@@ -106,7 +106,7 @@ void deps_json_t::reconcile_libraries_with_targets(
                 entry.library_path = library_path;
                 entry.library_hash_path = library_hash_path;
                 entry.runtime_store_manifest_list = runtime_store_manifest_list;
-                entry.asset_type = (deps_entry_t::asset_types) i;
+                entry.asset_type = static_cast<deps_entry_t::asset_types>(i);
                 entry.is_serviceable = serviceable;
                 entry.is_rid_specific = rid_specific;
                 entry.deps_file = deps_file;
@@ -231,7 +231,7 @@ bool deps_json_t::process_runtime_targets(const json_value& json, const pal::str
         for (const auto& file : files)
         {
             const auto& type = file.second.at(_X("assetType")).as_string();
-            for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
+            for (size_t i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
             {
                 if (pal::strcasecmp(type.c_str(), deps_entry_t::s_known_asset_types[i]) == 0)
                 {
@@ -282,7 +282,7 @@ bool deps_json_t::process_targets(const json_value& json, const pal::string_t& t
     for (const auto& package : json.at(_X("targets")).at(target_name).as_object())
     {
         const auto& asset_types = package.second.as_object();
-        for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
+        for (size_t i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
             auto iter = asset_types.find(deps_entry_t::s_known_asset_types[i]);
             if (iter != asset_types.end())

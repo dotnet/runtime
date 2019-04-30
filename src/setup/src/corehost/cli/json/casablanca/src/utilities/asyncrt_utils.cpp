@@ -51,8 +51,8 @@ namespace details
 {
 
 #if !defined(ANDROID) && !defined(__ANDROID__)
-std::once_flag g_c_localeFlag;
-std::unique_ptr<scoped_c_thread_locale::xplat_locale, void(*)(scoped_c_thread_locale::xplat_locale *)> g_c_locale(nullptr, [](scoped_c_thread_locale::xplat_locale *){});
+static std::once_flag g_c_localeFlag;
+static std::unique_ptr<scoped_c_thread_locale::xplat_locale, void(*)(scoped_c_thread_locale::xplat_locale *)> g_c_locale(nullptr, [](scoped_c_thread_locale::xplat_locale *){});
 scoped_c_thread_locale::xplat_locale scoped_c_thread_locale::c_locale()
 {
     std::call_once(g_c_localeFlag, [&]()
