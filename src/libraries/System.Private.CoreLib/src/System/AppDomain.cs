@@ -399,8 +399,8 @@ namespace System
                     case PrincipalPolicy.UnauthenticatedPrincipal:
                         if (s_getUnauthenticatedPrincipal == null)
                         {
-                            Type type = Type.GetType("System.Security.Principal.GenericPrincipal, System.Security.Claims", throwOnError: true);
-                            MethodInfo mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static);
+                            Type type = Type.GetType("System.Security.Principal.GenericPrincipal, System.Security.Claims", throwOnError: true)!;
+                            MethodInfo? mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static);
                             Debug.Assert(mi != null);
                             // Don't throw PNSE if null like for WindowsPrincipal as UnauthenticatedPrincipal should
                             // be available on all platforms.
@@ -414,8 +414,8 @@ namespace System
                     case PrincipalPolicy.WindowsPrincipal:
                         if (s_getWindowsPrincipal == null)
                         {
-                            Type type = Type.GetType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows", throwOnError: true);
-                            MethodInfo mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static);
+                            Type type = Type.GetType("System.Security.Principal.WindowsPrincipal, System.Security.Principal.Windows", throwOnError: true)!;
+                            MethodInfo? mi = type.GetMethod("GetDefaultInstance", BindingFlags.NonPublic | BindingFlags.Static);
                             if (mi == null)
                             {
                                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_Principal);

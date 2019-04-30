@@ -236,7 +236,7 @@ namespace System.Diagnostics
                     if (declaringType != null)
                     {
                         // Append t.FullName, replacing '+' with '.'
-                        string fullName = declaringType.FullName;
+                        string fullName = declaringType.FullName!;
                         for (int i = 0; i < fullName.Length; i++)
                         {
                             char ch = fullName[i];
@@ -386,7 +386,7 @@ namespace System.Diagnostics
                     // of the original method. Non-iterator async state machines resolve directly to their builder methods
                     // so aren't marked as changed.
                     method = candidateMethod;
-                    declaringType = candidateMethod.DeclaringType;
+                    declaringType = candidateMethod.DeclaringType!;
                     return foundIteratorAttribute;
                 }
             }

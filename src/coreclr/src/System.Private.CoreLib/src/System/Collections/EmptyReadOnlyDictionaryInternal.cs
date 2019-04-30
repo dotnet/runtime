@@ -208,7 +208,7 @@ namespace System.Collections
                 }
             }
 
-            public object Value
+            public object? Value
             {
                 get
                 {

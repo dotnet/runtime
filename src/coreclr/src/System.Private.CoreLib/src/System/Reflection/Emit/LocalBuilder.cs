@@ -2,10 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Reflection;
-using System.Runtime.InteropServices;
-
+#nullable enable
 namespace System.Reflection.Emit
 {
     public sealed class LocalBuilder : LocalVariableInfo
@@ -67,7 +64,7 @@ namespace System.Reflection.Emit
             byte[] mungedSig;
             int index;
 
-            MethodBuilder methodBuilder = m_methodBuilder as MethodBuilder;
+            MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
             if (methodBuilder == null)
                 // it's a light code gen entity
                 throw new NotSupportedException();
@@ -101,7 +98,7 @@ namespace System.Reflection.Emit
             if (index == -1)
             {
                 // top level scope information is kept with methodBuilder
-                methodBuilder.m_localSymInfo.AddLocalSymInfo(
+                methodBuilder.m_localSymInfo!.AddLocalSymInfo(
                      name,
                      mungedSig,
                      m_localIndex,

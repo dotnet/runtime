@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+#nullable enable
 
 namespace System.Collections
 {
@@ -15,7 +15,7 @@ namespace System.Collections
         // Interfaces are not serializable
         // The Item property provides methods to read and edit entries 
         // in the Dictionary.
-        object this[object key]
+        object? this[object key] // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
         {
             get;
             set;
@@ -39,7 +39,7 @@ namespace System.Collections
 
         // Adds a key-value pair to the dictionary.
         // 
-        void Add(object key, object value);
+        void Add(object key, object? value);
 
         // Removes all pairs from the dictionary.
         void Clear();

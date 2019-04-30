@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 
 namespace System.Reflection
@@ -10,11 +11,11 @@ namespace System.Reflection
     {
         // This class can only be created from inside the EE.
         private RuntimeMethodBody() { }
-        
-        private byte[] _IL;
-        private ExceptionHandlingClause[] _exceptionHandlingClauses;
-        private LocalVariableInfo[] _localVariables;
-        internal MethodBase _methodBase;
+
+        private byte[] _IL = null!;
+        private ExceptionHandlingClause[] _exceptionHandlingClauses = null!;
+        private LocalVariableInfo[] _localVariables = null!;
+        internal MethodBase _methodBase = null!;
         private int _localSignatureMetadataToken;
         private int _maxStackSize;
         private bool _initLocals;

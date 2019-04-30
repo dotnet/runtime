@@ -117,7 +117,7 @@ namespace System
                     if (Data["__RestrictedErrorObject"] is __RestrictedErrorObject restrictedObject)
                         restrictedErrorObject = restrictedObject.RealErrorObject;
                 }
-                return (bool)Data["__HasRestrictedLanguageErrorObject"];
+                return (bool)Data["__HasRestrictedLanguageErrorObject"]!;
             }
 
             return false;

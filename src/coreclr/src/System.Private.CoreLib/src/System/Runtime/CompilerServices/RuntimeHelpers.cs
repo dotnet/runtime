@@ -82,7 +82,7 @@ namespace System.Runtime.CompilerServices
             unsafe
             {
                 int length;
-                IntPtr[] instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out length);
+                IntPtr[]? instantiationHandles = RuntimeTypeHandle.CopyRuntimeTypeHandles(instantiation, out length);
                 fixed (IntPtr* pInstantiation = instantiationHandles)
                 {
                     _PrepareMethod(method.GetMethodInfo(), pInstantiation, length);

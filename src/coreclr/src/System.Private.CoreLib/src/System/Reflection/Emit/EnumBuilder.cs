@@ -13,17 +13,14 @@
 ** 
 ===========================================================*/
 
+#nullable enable
+using CultureInfo = System.Globalization.CultureInfo;
+
 namespace System.Reflection.Emit
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Runtime.InteropServices;
-    using CultureInfo = System.Globalization.CultureInfo;
-
     sealed public class EnumBuilder : TypeInfo
     {
-        public override bool IsAssignableFrom(System.Reflection.TypeInfo typeInfo)
+        public override bool IsAssignableFrom(TypeInfo? typeInfo)
         {
             if (typeInfo == null) return false;
             return IsAssignableFrom(typeInfo.AsType());
@@ -31,7 +28,7 @@ namespace System.Reflection.Emit
 
         // Define literal for enum
 
-        public FieldBuilder DefineLiteral(string literalName, object literalValue)
+        public FieldBuilder DefineLiteral(string literalName, object? literalValue)
         {
             // Define the underlying field for the enum. It will be a non-static, private field with special name bit set. 
             FieldBuilder fieldBuilder = m_typeBuilder.DefineField(
@@ -42,13 +39,13 @@ namespace System.Reflection.Emit
             return fieldBuilder;
         }
 
-        public TypeInfo CreateTypeInfo()
+        public TypeInfo? CreateTypeInfo()
         {
             return m_typeBuilder.CreateTypeInfo();
         }
 
         // CreateType cause EnumBuilder to be baked.
-        public Type CreateType()
+        public Type? CreateType()
         {
             return m_typeBuilder.CreateType();
         }
@@ -82,15 +79,15 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override object InvokeMember(
+        public override object? InvokeMember(
             string name,
             BindingFlags invokeAttr,
-            Binder binder,
-            object target,
-            object[] args,
-            ParameterModifier[] modifiers,
-            CultureInfo culture,
-            string[] namedParameters)
+            Binder? binder,
+            object? target,
+            object[]? args,
+            ParameterModifier[]? modifiers,
+            CultureInfo? culture,
+            string[]? namedParameters)
         {
             return m_typeBuilder.InvokeMember(name, invokeAttr, binder, target, args, modifiers, culture, namedParameters);
         }
@@ -110,12 +107,12 @@ namespace System.Reflection.Emit
             get { return m_typeBuilder.TypeHandle; }
         }
 
-        public override string FullName
+        public override string? FullName
         {
             get { return m_typeBuilder.FullName; }
         }
 
-        public override string AssemblyQualifiedName
+        public override string? AssemblyQualifiedName
         {
             get
             {
@@ -123,18 +120,18 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override string Namespace
+        public override string? Namespace
         {
             get { return m_typeBuilder.Namespace; }
         }
 
-        public override Type BaseType
+        public override Type? BaseType
         {
             get { return m_typeBuilder.BaseType; }
         }
 
-        protected override ConstructorInfo GetConstructorImpl(BindingFlags bindingAttr, Binder binder,
-                CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override ConstructorInfo? GetConstructorImpl(BindingFlags bindingAttr, Binder? binder,
+                CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
             return m_typeBuilder.GetConstructor(bindingAttr, binder, callConvention,
                             types, modifiers);
@@ -145,8 +142,8 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetConstructors(bindingAttr);
         }
 
-        protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder,
-                CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
+                CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
             if (types == null)
                 return m_typeBuilder.GetMethod(name, bindingAttr);
@@ -159,7 +156,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetMethods(bindingAttr);
         }
 
-        public override FieldInfo GetField(string name, BindingFlags bindingAttr)
+        public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetField(name, bindingAttr);
         }
@@ -169,7 +166,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetFields(bindingAttr);
         }
 
-        public override Type GetInterface(string name, bool ignoreCase)
+        public override Type? GetInterface(string name, bool ignoreCase)
         {
             return m_typeBuilder.GetInterface(name, ignoreCase);
         }
@@ -179,7 +176,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetInterfaces();
         }
 
-        public override EventInfo GetEvent(string name, BindingFlags bindingAttr)
+        public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetEvent(name, bindingAttr);
         }
@@ -189,8 +186,8 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetEvents();
         }
 
-        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder binder,
-                Type returnType, Type[] types, ParameterModifier[] modifiers)
+        protected override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder,
+                Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
@@ -205,7 +202,7 @@ namespace System.Reflection.Emit
             return m_typeBuilder.GetNestedTypes(bindingAttr);
         }
 
-        public override Type GetNestedType(string name, BindingFlags bindingAttr)
+        public override Type? GetNestedType(string name, BindingFlags bindingAttr)
         {
             return m_typeBuilder.GetNestedType(name, bindingAttr);
         }
@@ -276,7 +273,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type GetElementType()
+        public override Type? GetElementType()
         {
             return m_typeBuilder.GetElementType();
         }
@@ -326,14 +323,14 @@ namespace System.Reflection.Emit
         }
 
         // Return the class that declared this Field.
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get { return m_typeBuilder.DeclaringType; }
         }
 
         // Return the class that was used to obtain this field.
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get { return m_typeBuilder.ReflectedType; }
         }
@@ -353,17 +350,17 @@ namespace System.Reflection.Emit
 
         public override Type MakePointerType()
         {
-            return SymbolType.FormCompoundType("*", this, 0);
+            return SymbolType.FormCompoundType("*", this, 0)!;
         }
 
         public override Type MakeByRefType()
         {
-            return SymbolType.FormCompoundType("&", this, 0);
+            return SymbolType.FormCompoundType("&", this, 0)!;
         }
 
         public override Type MakeArrayType()
         {
-            return SymbolType.FormCompoundType("[]", this, 0);
+            return SymbolType.FormCompoundType("[]", this, 0)!;
         }
 
         public override Type MakeArrayType(int rank)
@@ -383,7 +380,7 @@ namespace System.Reflection.Emit
             }
 
             string s = string.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
-            return SymbolType.FormCompoundType(s, this, 0);
+            return SymbolType.FormCompoundType(s, this, 0)!;
         }
 
 

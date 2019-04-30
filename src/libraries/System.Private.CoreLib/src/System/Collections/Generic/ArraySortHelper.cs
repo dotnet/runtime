@@ -13,6 +13,7 @@
 ** 
 ===========================================================*/
 
+#nullable enable
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -38,7 +39,7 @@ namespace System.Collections.Generic
             return result;
         }
 
-        internal static void ThrowOrIgnoreBadComparer(object comparer)
+        internal static void ThrowOrIgnoreBadComparer(object? comparer)
         {
             throw new ArgumentException(SR.Format(SR.Arg_BogusIComparer, comparer));
         }
@@ -48,7 +49,7 @@ namespace System.Collections.Generic
     {
         #region IArraySortHelper<T> Members
 
-        public void Sort(T[] keys, int index, int length, IComparer<T> comparer)
+        public void Sort(T[] keys, int index, int length, IComparer<T>? comparer)
         {
             Debug.Assert(keys != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
@@ -74,7 +75,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T> comparer)
+        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
         {
             try
             {
@@ -335,7 +336,7 @@ namespace System.Collections.Generic
 
         #region IArraySortHelper<T> Members
 
-        public void Sort(T[] keys, int index, int length, IComparer<T> comparer)
+        public void Sort(T[] keys, int index, int length, IComparer<T>? comparer)
         {
             Debug.Assert(keys != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
@@ -361,7 +362,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T> comparer)
+        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
         {
             Debug.Assert(array != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
@@ -624,7 +625,7 @@ namespace System.Collections.Generic
 
     internal partial class ArraySortHelper<TKey, TValue>
     {
-        public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer)
+        public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey>? comparer)
         {
             Debug.Assert(keys != null, "Check the arguments in the caller!");  // Precondition on interface method
             Debug.Assert(values != null, "Check the arguments in the caller!");
@@ -871,7 +872,7 @@ namespace System.Collections.Generic
     internal partial class GenericArraySortHelper<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer)
+        public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey>? comparer)
         {
             Debug.Assert(keys != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");

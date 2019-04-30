@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using Interlocked = System.Threading.Interlocked;
@@ -26,7 +27,7 @@ namespace System.Diagnostics.Tracing
     {
         internal readonly TraceLoggingTypeInfo[] typeInfos;
 #if FEATURE_PERFTRACING
-        internal readonly string[] paramNames;
+        internal readonly string[]? paramNames;
 #endif
         internal readonly string name;
         internal readonly EventTags tags;
@@ -60,7 +61,6 @@ namespace System.Diagnostics.Tracing
             params Type[] types)
             : this(tags, name, MakeArray(types))
         {
-            return;
         }
 
         /// <summary>
@@ -87,7 +87,6 @@ namespace System.Diagnostics.Tracing
             params TraceLoggingTypeInfo[] typeInfos)
             : this(tags, name, MakeArray(typeInfos))
         {
-            return;
         }
 
         internal TraceLoggingEventTypes(
@@ -116,7 +115,7 @@ namespace System.Diagnostics.Tracing
                 this.opcode = Statics.Combine((int)typeInfo.Opcode, this.opcode);
                 this.keywords |= typeInfo.Keywords;
                 var paramName = paramInfos[i].Name;
-                if (Statics.ShouldOverrideFieldName(paramName))
+                if (Statics.ShouldOverrideFieldName(paramName!))
                 {
                     paramName = typeInfo.Name;
                 }
@@ -262,7 +261,7 @@ namespace System.Diagnostics.Tracing
             string[] paramNames = new string[paramInfos.Length];
             for (int i = 0; i < paramNames.Length; i++)
             {
-                paramNames[i] = paramInfos[i].Name;
+                paramNames[i] = paramInfos[i].Name!;
             }
 
             return paramNames;

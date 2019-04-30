@@ -526,7 +526,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 object? target = removeMethod.Target;
                 Debug.Assert(target == null || Marshal.IsComObject(target), "Must be null or a RCW");
                 if (target == null)
-                    return removeMethod.Method.DeclaringType;
+                    return removeMethod.Method.DeclaringType!;
 
                 // Need the "Raw" IUnknown pointer for the RCW that is not bound to the current context
                 return (object)Marshal.GetRawIUnknownForComObjectNoAddRef(target);

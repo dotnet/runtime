@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Resources;
 using System.Runtime.InteropServices;
@@ -35,7 +36,7 @@ namespace System.Diagnostics.Tracing
         private byte* scratch;
         private EventSource.EventData* datas;
         private GCHandle* pins;
-        private byte[] buffer;
+        private byte[]? buffer;
         private int bufferPos;
         private int bufferNesting;          // We may merge many fields int a single blob.   If we are doing this we increment this. 
         private bool writingScalars;
@@ -102,6 +103,8 @@ namespace System.Diagnostics.Tracing
                 var oldPos = this.bufferPos;
                 this.bufferPos = checked(this.bufferPos + size);
                 this.EnsureBuffer();
+                Debug.Assert(buffer != null);
+
                 for (int i = 0; i != size; i++, oldPos++)
                 {
                     this.buffer[oldPos] = pb[i];
@@ -109,7 +112,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal void AddBinary(string value, int size)
+        internal void AddBinary(string? value, int size)
         {
             if (size > ushort.MaxValue)
             {
@@ -135,6 +138,8 @@ namespace System.Diagnostics.Tracing
                     var oldPos = this.bufferPos;
                     this.bufferPos = checked(this.bufferPos + size);
                     this.EnsureBuffer();
+                    Debug.Assert(buffer != null);
+
                     fixed (void* p = value)
                     {
                         Marshal.Copy((IntPtr)p, buffer, oldPos, size);
@@ -143,7 +148,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        internal unsafe void AddNullTerminatedString(string value)
+        internal unsafe void AddNullTerminatedString(string? value)
         {
             // Treat null strings as empty strings.
             if (value == null)
@@ -175,6 +180,8 @@ namespace System.Diagnostics.Tracing
                 var oldPos = this.bufferPos;
                 this.bufferPos = checked(this.bufferPos + size);
                 this.EnsureBuffer();
+                Debug.Assert(buffer != null);
+
                 fixed (void* p = value)
                 {
                     Marshal.Copy((IntPtr)p, buffer, oldPos, size);
@@ -187,7 +194,7 @@ namespace System.Diagnostics.Tracing
             this.AddArray(value, size, 1);
         }
 
-        internal void AddArray(Array value, int length, int itemSize)
+        internal void AddArray(Array? value, int length, int itemSize)
         {
             if (length > ushort.MaxValue)
             {
@@ -214,6 +221,7 @@ namespace System.Diagnostics.Tracing
                     var oldPos = this.bufferPos;
                     this.bufferPos = checked(this.bufferPos + size);
                     this.EnsureBuffer();
+                    Debug.Assert(value != null && buffer != null);
                     Buffer.BlockCopy(value, 0, this.buffer, oldPos, size);
                 }
             }
@@ -238,6 +246,7 @@ namespace System.Diagnostics.Tracing
         internal void EndBufferedArray(int bookmark, int count)
         {
             this.EnsureBuffer();
+            Debug.Assert(buffer != null);
             this.buffer[bookmark - 2] = unchecked((byte)count);
             this.buffer[bookmark - 1] = unchecked((byte)(count >> 8));
             this.EndBuffered();
@@ -270,6 +279,7 @@ namespace System.Diagnostics.Tracing
                 */
 
                 this.EnsureBuffer();
+                Debug.Assert(buffer != null);
                 this.PinArray(this.buffer, this.bufferPos);
                 this.buffer = null;
                 this.bufferPos = 0;
@@ -307,7 +317,7 @@ namespace System.Diagnostics.Tracing
             Array.Resize(ref this.buffer, newSize);
         }
 
-        private void PinArray(object value, int size)
+        private void PinArray(object? value, int size)
         {
             var pinsTemp = this.pins;
             if (this.pinsEnd <= pinsTemp)
