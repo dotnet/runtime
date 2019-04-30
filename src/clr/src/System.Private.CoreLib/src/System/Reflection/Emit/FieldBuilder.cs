@@ -2,15 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
+#nullable enable
+using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
 {
-    using System.Runtime.InteropServices;
-    using System;
-    using CultureInfo = System.Globalization.CultureInfo;
-    using System.Reflection;
-
     public sealed class FieldBuilder : FieldInfo
     {
         #region Private Data Members
@@ -24,7 +20,7 @@ namespace System.Reflection.Emit
 
         #region Constructor
         internal FieldBuilder(TypeBuilder typeBuilder, string fieldName, Type type,
-            Type[] requiredCustomModifiers, Type[] optionalCustomModifiers, FieldAttributes attributes)
+            Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
             if (fieldName == null)
                 throw new ArgumentNullException(nameof(fieldName));
@@ -61,7 +57,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Internal Members
-        internal void SetData(byte[] data, int size)
+        internal void SetData(byte[]? data, int size)
         {
             ModuleBuilder.SetFieldRVAContent(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), m_tkField.Token, data, size);
         }
@@ -83,7 +79,7 @@ namespace System.Reflection.Emit
             get { return m_fieldName; }
         }
 
-        public override Type DeclaringType
+        public override Type? DeclaringType
         {
             get
             {
@@ -94,7 +90,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type ReflectedType
+        public override Type? ReflectedType
         {
             get
             {
@@ -113,7 +109,7 @@ namespace System.Reflection.Emit
             get { return m_fieldType; }
         }
 
-        public override object GetValue(object obj)
+        public override object? GetValue(object? obj)
         {
             // NOTE!!  If this is implemented, make sure that this throws 
             // a NotSupportedException for Save-only dynamic assemblies.
@@ -122,7 +118,7 @@ namespace System.Reflection.Emit
             throw new NotSupportedException(SR.NotSupported_DynamicModule);
         }
 
-        public override void SetValue(object obj, object val, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+        public override void SetValue(object? obj, object? val, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             // NOTE!!  If this is implemented, make sure that this throws 
             // a NotSupportedException for Save-only dynamic assemblies.
@@ -174,7 +170,7 @@ namespace System.Reflection.Emit
             TypeBuilder.SetFieldLayoutOffset(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), GetToken().Token, iOffset);
         }
 
-        public void SetConstant(object defaultValue)
+        public void SetConstant(object? defaultValue)
         {
             m_typeBuilder.ThrowIfCreated();
 
@@ -197,7 +193,7 @@ namespace System.Reflection.Emit
             if (binaryAttribute == null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
 
-            ModuleBuilder module = m_typeBuilder.Module as ModuleBuilder;
+            ModuleBuilder module = (m_typeBuilder.Module as ModuleBuilder)!;
 
             m_typeBuilder.ThrowIfCreated();
 
@@ -212,9 +208,9 @@ namespace System.Reflection.Emit
 
             m_typeBuilder.ThrowIfCreated();
 
-            ModuleBuilder module = m_typeBuilder.Module as ModuleBuilder;
+            ModuleBuilder? module = m_typeBuilder.Module as ModuleBuilder;
 
-            customBuilder.CreateCustomAttribute(module, m_tkField.Token);
+            customBuilder.CreateCustomAttribute(module!, m_tkField.Token);
         }
 
         #endregion

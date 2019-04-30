@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
 namespace System.Reflection
@@ -17,8 +17,8 @@ namespace System.Reflection
         private IntPtr m_fieldHandle;
         private FieldAttributes m_fieldAttributes;
         // lazy caching
-        private string m_name;
-        private RuntimeType m_fieldType;
+        private string? m_name;
+        private RuntimeType? m_fieldType;
         private INVOCATION_FLAGS m_invocationFlags;
 
         internal INVOCATION_FLAGS InvocationFlags
@@ -34,7 +34,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.NoInlining)]
         private INVOCATION_FLAGS InitializeInvocationFlags()
         {
-            Type declaringType = DeclaringType;
+            Type? declaringType = DeclaringType;
 
             INVOCATION_FLAGS invocationFlags = 0;
 
@@ -88,7 +88,7 @@ namespace System.Reflection
 
         #region Internal Members
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void CheckConsistency(object target)
+        internal void CheckConsistency(object? target)
         {
             // only test instance fields
             if ((m_fieldAttributes & FieldAttributes.Static) != FieldAttributes.Static)
@@ -109,11 +109,11 @@ namespace System.Reflection
             }
         }
 
-        internal override bool CacheEquals(object o)
+        internal override bool CacheEquals(object? o)
         {
-            RtFieldInfo m = o as RtFieldInfo;
+            RtFieldInfo? m = o as RtFieldInfo;
 
-            if ((object)m == null)
+            if (m is null)
                 return false;
 
             return m.m_fieldHandle == m_fieldHandle;
@@ -137,7 +137,7 @@ namespace System.Reflection
         {
             get
             {
-                return DeclaringType.FullName + "." + Name;
+                return DeclaringType!.FullName + "." + Name;
             }
         }
 
@@ -156,14 +156,14 @@ namespace System.Reflection
         #region FieldInfo Overrides
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override object GetValue(object obj)
+        public override object? GetValue(object? obj)
         {
             INVOCATION_FLAGS invocationFlags = InvocationFlags;
-            RuntimeType declaringType = DeclaringType as RuntimeType;
+            RuntimeType? declaringType = DeclaringType as RuntimeType;
 
             if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
             {
-                if (declaringType != null && DeclaringType.ContainsGenericParameters)
+                if (declaringType != null && DeclaringType!.ContainsGenericParameters)
                     throw new InvalidOperationException(SR.Arg_UnboundGenField);
 
                 throw new FieldAccessException();
@@ -181,7 +181,7 @@ namespace System.Reflection
             else
             {
                 domainInitialized = declaringType.DomainInitialized;
-                object retVal = RuntimeFieldHandle.GetValue(this, obj, fieldType, declaringType, ref domainInitialized);
+                object? retVal = RuntimeFieldHandle.GetValue(this, obj, fieldType, declaringType, ref domainInitialized);
                 declaringType.DomainInitialized = domainInitialized;
                 return retVal;
             }
@@ -191,7 +191,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override object GetValueDirect(TypedReference obj)
+        public override object? GetValueDirect(TypedReference obj)
         {
             if (obj.IsNull)
                 throw new ArgumentException(SR.Arg_TypedReference_Null);
@@ -199,16 +199,16 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
-                return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType)DeclaringType);
+                return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
             }
         }
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, CultureInfo culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture)
         {
             INVOCATION_FLAGS invocationFlags = InvocationFlags;
-            RuntimeType declaringType = DeclaringType as RuntimeType;
+            RuntimeType? declaringType = DeclaringType as RuntimeType;
 
             if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
             {
@@ -246,7 +246,7 @@ namespace System.Reflection
             unsafe
             {
                 // Passing TypedReference by reference is easier to make correct in native code
-                RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType)DeclaringType);
+                RuntimeFieldHandle.SetValueDirect(this, (RuntimeType)FieldType, &obj, value, (RuntimeType?)DeclaringType);
             }
         }
 

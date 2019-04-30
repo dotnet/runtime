@@ -220,9 +220,9 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     // For creating instances of Windows Runtime's IReference<T> and IReferenceArray<T>.
     internal static class IReferenceFactory
     {
-        internal static readonly Type s_pointType = Type.GetType("Windows.Foundation.Point, System.Runtime.WindowsRuntime");
-        internal static readonly Type s_rectType = Type.GetType("Windows.Foundation.Rect, System.Runtime.WindowsRuntime");
-        internal static readonly Type s_sizeType = Type.GetType("Windows.Foundation.Size, System.Runtime.WindowsRuntime");
+        internal static readonly Type s_pointType = Type.GetType("Windows.Foundation.Point, System.Runtime.WindowsRuntime")!;
+        internal static readonly Type s_rectType = Type.GetType("Windows.Foundation.Rect, System.Runtime.WindowsRuntime")!;
+        internal static readonly Type s_sizeType = Type.GetType("Windows.Foundation.Size, System.Runtime.WindowsRuntime")!;
 
         internal static object CreateIReference(object obj)
         {
@@ -304,7 +304,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             Debug.Assert(obj != null);
             Debug.Assert(obj.GetType().IsArray);
 
-            Type type = obj.GetType().GetElementType();
+            Type type = obj.GetType().GetElementType()!;
 
             Debug.Assert(obj.Rank == 1 && obj.GetLowerBound(0) == 0 && !type.IsArray);
 

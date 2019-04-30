@@ -13,7 +13,7 @@
 ** 
 ===========================================================*/
 
-
+#nullable enable
 using System.Buffers.Binary;
 using System.IO;
 using System.Text;
@@ -92,7 +92,7 @@ namespace System.Reflection.Emit
             {
                 if (t.GetArrayRank() != 1)
                     return false;
-                return ValidateType(t.GetElementType());
+                return ValidateType(t.GetElementType()!);
             }
             return t == typeof(object);
         }
@@ -199,7 +199,7 @@ namespace System.Reflection.Emit
                 // Property has to be from the same class or base class as ConstructorInfo.
                 if (property.DeclaringType != con.DeclaringType
                     && (!(con.DeclaringType is TypeBuilderInstantiation))
-                    && !con.DeclaringType.IsSubclassOf(property.DeclaringType))
+                    && !con.DeclaringType!.IsSubclassOf(property.DeclaringType!))
                 {
                     // Might have failed check because one type is a XXXBuilder
                     // and the other is not. Deal with these special cases
@@ -253,7 +253,7 @@ namespace System.Reflection.Emit
                 // Field has to be from the same class or base class as ConstructorInfo.
                 if (namedField.DeclaringType != con.DeclaringType
                     && (!(con.DeclaringType is TypeBuilderInstantiation))
-                    && !con.DeclaringType.IsSubclassOf(namedField.DeclaringType))
+                    && !con.DeclaringType!.IsSubclassOf(namedField.DeclaringType!))
                 {
                     // Might have failed check because one type is a XXXBuilder
                     // and the other is not. Deal with these special cases
@@ -265,7 +265,7 @@ namespace System.Reflection.Emit
                         // to deal with the case where the field's declaring
                         // type is one.
                         if (!(namedField.DeclaringType is TypeBuilder) ||
-                            !con.DeclaringType.IsSubclassOf(((TypeBuilder)namedFields[i].DeclaringType).BakedRuntimeType))
+                            !con.DeclaringType.IsSubclassOf(((TypeBuilder)namedFields[i].DeclaringType!).BakedRuntimeType))
                             throw new ArgumentException(SR.Argument_BadFieldForConstructorBuilder);
                     }
                 }
@@ -352,7 +352,7 @@ namespace System.Reflection.Emit
             else if (type.IsEnum)
             {
                 writer.Write((byte)CustomAttributeEncoding.Enum);
-                EmitString(writer, type.AssemblyQualifiedName);
+                EmitString(writer, type.AssemblyQualifiedName!);
             }
             else if (type == typeof(string))
             {
@@ -365,7 +365,7 @@ namespace System.Reflection.Emit
             else if (type.IsArray)
             {
                 writer.Write((byte)CustomAttributeEncoding.Array);
-                EmitType(writer, type.GetElementType());
+                EmitType(writer, type.GetElementType()!);
             }
             else
             {
@@ -394,35 +394,35 @@ namespace System.Reflection.Emit
             writer.Write(utf8Str);
         }
 
-        private static void EmitValue(BinaryWriter writer, Type type, object value)
+        private static void EmitValue(BinaryWriter writer, Type type, object? value)
         {
             if (type.IsEnum)
             {
                 switch (Type.GetTypeCode(Enum.GetUnderlyingType(type)))
                 {
                     case TypeCode.SByte:
-                        writer.Write((sbyte)value);
+                        writer.Write((sbyte)value!);
                         break;
                     case TypeCode.Byte:
-                        writer.Write((byte)value);
+                        writer.Write((byte)value!);
                         break;
                     case TypeCode.Int16:
-                        writer.Write((short)value);
+                        writer.Write((short)value!);
                         break;
                     case TypeCode.UInt16:
-                        writer.Write((ushort)value);
+                        writer.Write((ushort)value!);
                         break;
                     case TypeCode.Int32:
-                        writer.Write((int)value);
+                        writer.Write((int)value!);
                         break;
                     case TypeCode.UInt32:
-                        writer.Write((uint)value);
+                        writer.Write((uint)value!);
                         break;
                     case TypeCode.Int64:
-                        writer.Write((long)value);
+                        writer.Write((long)value!);
                         break;
                     case TypeCode.UInt64:
-                        writer.Write((ulong)value);
+                        writer.Write((ulong)value!);
                         break;
                     default:
                         Debug.Fail("Invalid enum base type");
@@ -442,7 +442,7 @@ namespace System.Reflection.Emit
                     writer.Write((byte)0xff);
                 else
                 {
-                    string typeName = TypeNameBuilder.ToString((Type)value, TypeNameBuilder.Format.AssemblyQualifiedName);
+                    string? typeName = TypeNameBuilder.ToString((Type)value, TypeNameBuilder.Format.AssemblyQualifiedName);
                     if (typeName == null)
                         throw new ArgumentException(SR.Format(SR.Argument_InvalidTypeForCA, value.GetType()));
                     EmitString(writer, typeName);
@@ -455,7 +455,7 @@ namespace System.Reflection.Emit
                 else
                 {
                     Array a = (Array)value;
-                    Type et = type.GetElementType();
+                    Type et = type.GetElementType()!;
                     writer.Write(a.Length);
                     for (int i = 0; i < a.Length; i++)
                         EmitValue(writer, et, a.GetValue(i));
@@ -466,40 +466,40 @@ namespace System.Reflection.Emit
                 switch (Type.GetTypeCode(type))
                 {
                     case TypeCode.SByte:
-                        writer.Write((sbyte)value);
+                        writer.Write((sbyte)value!);
                         break;
                     case TypeCode.Byte:
-                        writer.Write((byte)value);
+                        writer.Write((byte)value!);
                         break;
                     case TypeCode.Char:
-                        writer.Write(Convert.ToUInt16((char)value));
+                        writer.Write(Convert.ToUInt16((char)value!));
                         break;
                     case TypeCode.Boolean:
-                        writer.Write((byte)((bool)value ? 1 : 0));
+                        writer.Write((byte)((bool)value! ? 1 : 0));
                         break;
                     case TypeCode.Int16:
-                        writer.Write((short)value);
+                        writer.Write((short)value!);
                         break;
                     case TypeCode.UInt16:
-                        writer.Write((ushort)value);
+                        writer.Write((ushort)value!);
                         break;
                     case TypeCode.Int32:
-                        writer.Write((int)value);
+                        writer.Write((int)value!);
                         break;
                     case TypeCode.UInt32:
-                        writer.Write((uint)value);
+                        writer.Write((uint)value!);
                         break;
                     case TypeCode.Int64:
-                        writer.Write((long)value);
+                        writer.Write((long)value!);
                         break;
                     case TypeCode.UInt64:
-                        writer.Write((ulong)value);
+                        writer.Write((ulong)value!);
                         break;
                     case TypeCode.Single:
-                        writer.Write((float)value);
+                        writer.Write((float)value!);
                         break;
                     case TypeCode.Double:
-                        writer.Write((double)value);
+                        writer.Write((double)value!);
                         break;
                     default:
                         Debug.Fail("Invalid primitive type");
@@ -551,8 +551,8 @@ namespace System.Reflection.Emit
                                                       typeof(System.Diagnostics.DebuggableAttribute) == m_con.DeclaringType);
         }
 
-        internal ConstructorInfo m_con;
-        internal object[] m_constructorArgs;
-        internal byte[] m_blob;
+        internal ConstructorInfo m_con = null!;
+        internal object[] m_constructorArgs = null!;
+        internal byte[] m_blob = null!;
     }
 }

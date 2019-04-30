@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -112,7 +113,7 @@ namespace System.Diagnostics.Tracing
         /// This is useful for a two pass approach where you figure out how big to
         /// make the array, and then you fill it in.   
         /// </summary>
-        public static void EncodeTags(int tags, ref int pos, byte[] metadata)
+        public static void EncodeTags(int tags, ref int pos, byte[]? metadata)
         {
             // We transmit the low 28 bits of tags, high bits first, 7 bits at a time.
             var tagsLeft = tags & 0xfffffff;
@@ -172,7 +173,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        public static void CheckName(string name)
+        public static void CheckName(string? name)
         {
             if (name != null && 0 <= name.IndexOf('\0'))
             {
@@ -363,7 +364,7 @@ namespace System.Diagnostics.Tracing
         kinds of reflection operations are being done.
         */
 
-        public static object CreateInstance(Type type, params object[] parameters)
+        public static object? CreateInstance(Type type, params object?[]? parameters)
         {
             return Activator.CreateInstance(type, parameters);
         }
@@ -386,15 +387,15 @@ namespace System.Diagnostics.Tracing
             return result;
         }
 
-        public static MethodInfo GetGetMethod(PropertyInfo propInfo)
+        public static MethodInfo? GetGetMethod(PropertyInfo propInfo)
         {
-            MethodInfo result = propInfo.GetGetMethod();
+            MethodInfo? result = propInfo.GetGetMethod();
             return result;
         }
 
-        public static MethodInfo GetDeclaredStaticMethod(Type declaringType, string name)
+        public static MethodInfo? GetDeclaredStaticMethod(Type declaringType, string name)
         {
-            MethodInfo result;
+            MethodInfo? result;
 #if (ES_BUILD_PCL || ES_BUILD_PN)
             result = declaringType.GetTypeInfo().GetDeclaredMethod(name);
 #else
@@ -422,9 +423,9 @@ namespace System.Diagnostics.Tracing
         }
 
         public static AttributeType GetCustomAttribute<AttributeType>(PropertyInfo propInfo)
-            where AttributeType : Attribute
+            where AttributeType : Attribute?
         {
-            AttributeType result = null;
+            AttributeType result = null!; // TODO-NULLABLE-GENERIC: re-review
 #if (ES_BUILD_PCL || ES_BUILD_PN)
             foreach (var attrib in propInfo.GetCustomAttributes<AttributeType>(false))
             {
@@ -442,9 +443,9 @@ namespace System.Diagnostics.Tracing
         }
 
         public static AttributeType GetCustomAttribute<AttributeType>(Type type)
-            where AttributeType : Attribute
+            where AttributeType : Attribute?
         {
-            AttributeType result = null;
+            AttributeType result = null!; // TODO-NULLABLE-GENERIC: re-review
 #if (ES_BUILD_PCL || ES_BUILD_PN)
             foreach (var attrib in type.GetTypeInfo().GetCustomAttributes<AttributeType>(false))
             {
@@ -466,9 +467,9 @@ namespace System.Diagnostics.Tracing
             return type.GetGenericArguments();
         }
 
-        public static Type FindEnumerableElementType(Type type)
+        public static Type? FindEnumerableElementType(Type type)
         {
-            Type elementType = null;
+            Type? elementType = null;
 
             if (IsGenericMatch(type, typeof(IEnumerable<>)))
             {
@@ -505,9 +506,9 @@ namespace System.Diagnostics.Tracing
             return elementType;
         }
 
-        public static bool IsGenericMatch(Type type, object openType)
+        public static bool IsGenericMatch(Type type, object? openType)
         {
-            return type.IsGenericType() && type.GetGenericTypeDefinition() == (Type)openType;
+            return type.IsGenericType() && type.GetGenericTypeDefinition() == (Type?)openType;
         }
 
         public static Delegate CreateDelegate(Type delegateType, MethodInfo methodInfo)
@@ -537,9 +538,9 @@ namespace System.Diagnostics.Tracing
 
             recursionCheck.Add(dataType);
 
-            var eventAttrib = Statics.GetCustomAttribute<EventDataAttribute>(dataType);
+            var eventAttrib = Statics.GetCustomAttribute<EventDataAttribute?>(dataType);
             if (eventAttrib != null ||
-                Statics.GetCustomAttribute<CompilerGeneratedAttribute>(dataType) != null ||
+                Statics.GetCustomAttribute<CompilerGeneratedAttribute?>(dataType) != null ||
                 IsGenericMatch(dataType, typeof(KeyValuePair<,>)))
             {
                 var analysis = new TypeAnalysis(dataType, eventAttrib, recursionCheck);
@@ -547,7 +548,7 @@ namespace System.Diagnostics.Tracing
             }
             else if (dataType.IsArray)
             {
-                var elementType = dataType.GetElementType();
+                Type elementType = dataType.GetElementType()!;
                 if (elementType == typeof(bool))
                 {
                     result = ScalarArrayTypeInfo.Boolean();

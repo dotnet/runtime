@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 
@@ -13,8 +14,8 @@ namespace System.Reflection
 
         public virtual ParameterAttributes Attributes => AttrsImpl;
         public virtual MemberInfo Member => MemberImpl;
-        public virtual string Name => NameImpl;
-        public virtual Type ParameterType => ClassImpl;
+        public virtual string? Name => NameImpl;
+        public virtual Type ParameterType => ClassImpl!;
         public virtual int Position => PositionImpl;
 
         public bool IsIn => (Attributes & ParameterAttributes.In) != 0;
@@ -23,8 +24,8 @@ namespace System.Reflection
         public bool IsOut => (Attributes & ParameterAttributes.Out) != 0;
         public bool IsRetval => (Attributes & ParameterAttributes.Retval) != 0;
 
-        public virtual object DefaultValue { get { throw NotImplemented.ByDesign; } }
-        public virtual object RawDefaultValue { get { throw NotImplemented.ByDesign; } }
+        public virtual object? DefaultValue { get { throw NotImplemented.ByDesign; } }
+        public virtual object? RawDefaultValue { get { throw NotImplemented.ByDesign; } }
         public virtual bool HasDefaultValue { get { throw NotImplemented.ByDesign; } }
 
         public virtual bool IsDefined(Type attributeType, bool inherit)
@@ -60,7 +61,7 @@ namespace System.Reflection
             if (MemberImpl == null)
                 throw new SerializationException(SR.Serialization_InsufficientState);
 
-            ParameterInfo[] args = null;
+            ParameterInfo[]? args = null;
 
             switch (MemberImpl.MemberType)
             {
@@ -69,7 +70,7 @@ namespace System.Reflection
                     if (PositionImpl == -1)
                     {
                         if (MemberImpl.MemberType == MemberTypes.Method)
-                            return ((MethodInfo)MemberImpl).ReturnParameter;
+                            return ((MethodInfo)MemberImpl).ReturnParameter!;
                         else
                             throw new SerializationException(SR.Serialization_BadParameterInfo);
                     }
@@ -99,10 +100,10 @@ namespace System.Reflection
         public override string ToString() => ParameterType.FormatTypeName() + " " + Name;
 
         protected ParameterAttributes AttrsImpl;
-        protected Type ClassImpl;
-        protected object DefaultValueImpl;
-        protected MemberInfo MemberImpl;
-        protected string NameImpl;
+        protected Type? ClassImpl;
+        protected object? DefaultValueImpl;
+        protected MemberInfo MemberImpl = null!;
+        protected string? NameImpl;
         protected int PositionImpl;
 
         private const int MetadataToken_ParamDef = 0x08000000;
