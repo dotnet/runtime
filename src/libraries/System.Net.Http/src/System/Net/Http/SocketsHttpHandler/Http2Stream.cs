@@ -599,12 +599,10 @@ namespace System.Net.Http
                 public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
                 {
                     Http2Stream http2Stream = _http2Stream;
-                    if (http2Stream == null)
-                    {
-                        return new ValueTask(Task.FromException(new ObjectDisposedException(nameof(Http2WriteStream))));
-                    }
-
-                    return new ValueTask(http2Stream.SendDataAsync(buffer, cancellationToken));
+                    Task t = http2Stream != null ?
+                        http2Stream.SendDataAsync(buffer, cancellationToken) :
+                        Task.FromException(new ObjectDisposedException(nameof(Http2WriteStream)));
+                    return new ValueTask(t);
                 }
             }
         }
