@@ -59,10 +59,10 @@ namespace System.Numerics
             [Intrinsic]
             get
             {
-                return s_count;
+                ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+                return Unsafe.SizeOf<Vector<T>>() / Unsafe.SizeOf<T>();
             }
         }
-        private static readonly int s_count = InitializeCount();
 
         /// <summary>
         /// Returns a vector containing all zeroes.
@@ -100,71 +100,6 @@ namespace System.Numerics
         }
         private static readonly Vector<T> s_allOnes = new Vector<T>(GetAllBitsSetValue());
         #endregion Static Members
-
-        #region Static Initialization
-        private struct VectorSizeHelper
-        {
-            internal Vector<T> _placeholder;
-            internal byte _byte;
-        }
-
-        // Calculates the size of this struct in bytes, by computing the offset of a field in a structure
-        private static unsafe int InitializeCount()
-        {
-            VectorSizeHelper vsh;
-            byte* vectorBase = &vsh._placeholder.register.byte_0;
-            byte* byteBase = &vsh._byte;
-            int vectorSizeInBytes = (int)(byteBase - vectorBase);
-
-            int typeSizeInBytes = -1;
-            if (typeof(T) == typeof(byte))
-            {
-                typeSizeInBytes = sizeof(byte);
-            }
-            else if (typeof(T) == typeof(sbyte))
-            {
-                typeSizeInBytes = sizeof(sbyte);
-            }
-            else if (typeof(T) == typeof(ushort))
-            {
-                typeSizeInBytes = sizeof(ushort);
-            }
-            else if (typeof(T) == typeof(short))
-            {
-                typeSizeInBytes = sizeof(short);
-            }
-            else if (typeof(T) == typeof(uint))
-            {
-                typeSizeInBytes = sizeof(uint);
-            }
-            else if (typeof(T) == typeof(int))
-            {
-                typeSizeInBytes = sizeof(int);
-            }
-            else if (typeof(T) == typeof(ulong))
-            {
-                typeSizeInBytes = sizeof(ulong);
-            }
-            else if (typeof(T) == typeof(long))
-            {
-                typeSizeInBytes = sizeof(long);
-            }
-            else if (typeof(T) == typeof(float))
-            {
-                typeSizeInBytes = sizeof(float);
-            }
-            else if (typeof(T) == typeof(double))
-            {
-                typeSizeInBytes = sizeof(double);
-            }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
-
-            return vectorSizeInBytes / typeSizeInBytes;
-        }
-        #endregion Static Initialization
 
         #region Constructors
         /// <summary>
@@ -779,37 +714,81 @@ namespace System.Numerics
 
 #if netcoreapp
         /// <summary>
-        /// Constructs a vector from the given span. The span must contain at least Vector'T.Count elements.
+        /// Constructs a vector from the given <see cref="ReadOnlySpan{Byte}"/>. The span must contain at least <see cref="Vector{Byte}.Count"/> elements.
         /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector(ReadOnlySpan<byte> values)
+            : this()
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            if (values.Length < Vector<byte>.Count)
+            {
+                Vector.ThrowInsufficientNumberOfElementsException(Vector<byte>.Count);
+            }
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(values));
+        }
+        
+        /// <summary>
+        /// Constructs a vector from the given <see cref="ReadOnlySpan{T}"/>. The span must contain at least <see cref="Vector{T}.Count"/> elements.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector(ReadOnlySpan<T> values)
+            : this()
+        {
+            if (values.Length < Count)
+            {
+                Vector.ThrowInsufficientNumberOfElementsException(Vector<T>.Count);
+            }
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+        }
+
+        /// <summary>
+        /// Constructs a vector from the given <see cref="Span{T}"/>. The span must contain at least <see cref="Vector{T}.Count"/> elements.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector(Span<T> values)
             : this()
         {
-            if ((typeof(T) == typeof(byte))
-                || (typeof(T) == typeof(sbyte))
-                || (typeof(T) == typeof(ushort))
-                || (typeof(T) == typeof(short))
-                || (typeof(T) == typeof(uint))
-                || (typeof(T) == typeof(int))
-                || (typeof(T) == typeof(ulong))
-                || (typeof(T) == typeof(long))
-                || (typeof(T) == typeof(float))
-                || (typeof(T) == typeof(double)))
+            if (values.Length < Count)
             {
-                if (values.Length < Count)
-                {
-                    throw new IndexOutOfRangeException(SR.Format(SR.Arg_InsufficientNumberOfElements, Vector<T>.Count, nameof(values)));
-                }
-                this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
+                Vector.ThrowInsufficientNumberOfElementsException(Vector<T>.Count);
             }
-            else
-            {
-                throw new NotSupportedException(SR.Arg_TypeNotSupported);
-            }
+            this = Unsafe.ReadUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(values)));
         }
 #endif
         #endregion Constructors
 
         #region Public Instance Methods
+        /// <summary>
+        /// Copies the vector to the given <see cref="Span{Byte}"/>. The destination span must be at least size <see cref="Vector{Byte}.Count"/>.
+        /// </summary>
+        /// <param name="destination">The destination span which the values are copied into</param>
+        /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
+        public void CopyTo(Span<byte> destination)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            if ((uint)destination.Length < (uint)Vector<byte>.Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+            Unsafe.WriteUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(destination), this);
+        }
+
+        /// <summary>
+        /// Copies the vector to the given <see cref="Span{T}"/>. The destination span must be at least size <see cref="Vector{T}.Count"/>.
+        /// </summary>
+        /// <param name="destination">The destination span which the values are copied into</param>
+        /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination span</exception>
+        public void CopyTo(Span<T> destination)
+        {
+            if ((uint)destination.Length < (uint)Count)
+            {
+                ThrowHelper.ThrowArgumentException_DestinationTooShort();
+            }
+
+            Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
+        }
+
         /// <summary>
         /// Copies the vector to the given destination array. The destination array must be at least size Vector'T.Count.
         /// </summary>
@@ -817,7 +796,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentNullException">If the destination array is null</exception>
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
         [Intrinsic]
-        public unsafe void CopyTo(T[] destination)
+        public unsafe readonly void CopyTo(T[] destination)
         {
             CopyTo(destination, 0);
         }
@@ -831,7 +810,7 @@ namespace System.Numerics
         /// <exception cref="ArgumentOutOfRangeException">If index is greater than end of the array or index is less than zero</exception>
         /// <exception cref="ArgumentException">If number of elements in source vector is greater than those available in destination array</exception>
         [Intrinsic]
-        public unsafe void CopyTo(T[] destination, int startIndex)
+        public unsafe readonly void CopyTo(T[] destination, int startIndex)
         {
             if (destination == null)
             {
@@ -1104,7 +1083,7 @@ namespace System.Numerics
         /// <summary>
         /// Returns the element at the given index.
         /// </summary>
-        public unsafe T this[int index]
+        public unsafe readonly T this[int index]
         {
             [Intrinsic]
             get
@@ -1196,7 +1175,7 @@ namespace System.Numerics
         /// <param name="obj">The Object to compare against.</param>
         /// <returns>True if the Object is equal to this vector; False otherwise.</returns>
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public override bool Equals(object? obj)
+        public override readonly bool Equals(object? obj)
         {
             if (!(obj is Vector<T>))
             {
@@ -1211,7 +1190,7 @@ namespace System.Numerics
         /// <param name="other">The vector to compare this instance to.</param>
         /// <returns>True if the other vector is equal to this instance; False otherwise.</returns>
         [Intrinsic]
-        public bool Equals(Vector<T> other)
+        public readonly bool Equals(Vector<T> other)
         {
             if (Vector.IsHardwareAccelerated)
             {
@@ -1343,7 +1322,7 @@ namespace System.Numerics
         /// Returns the hash code for this instance.
         /// </summary>
         /// <returns>The hash code.</returns>
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             int hash = 0;
 
@@ -1553,7 +1532,7 @@ namespace System.Numerics
         /// Returns a String representing this vector.
         /// </summary>
         /// <returns>The string representation.</returns>
-        public override string ToString()
+        public override readonly string ToString()
         {
             return ToString("G", CultureInfo.CurrentCulture);
         }
@@ -1563,7 +1542,7 @@ namespace System.Numerics
         /// </summary>
         /// <param name="format">The format of individual elements.</param>
         /// <returns>The string representation.</returns>
-        public string ToString(string? format)
+        public readonly string ToString(string? format)
         {
             return ToString(format, CultureInfo.CurrentCulture);
         }
@@ -1575,7 +1554,7 @@ namespace System.Numerics
         /// <param name="format">The format of individual elements.</param>
         /// <param name="formatProvider">The format provider to use when formatting elements.</param>
         /// <returns>The string representation.</returns>
-        public string ToString(string? format, IFormatProvider? formatProvider)
+        public readonly string ToString(string? format, IFormatProvider? formatProvider)
         {
             StringBuilder sb = new StringBuilder();
             string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
@@ -1590,6 +1569,41 @@ namespace System.Numerics
             sb.Append(((IFormattable)this[Count - 1]).ToString(format, formatProvider));
             sb.Append('>');
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Attempts to copy the vector to the given <see cref="Span{Byte}"/>. The destination span must be at least size <see cref="Vector{Byte}.Count"/>.
+        /// </summary>
+        /// <param name="destination">The destination span which the values are copied into</param>
+        /// <returns>True if the source vector was successfully copied to <paramref name="destination"/>. False if
+        /// <paramref name="destination"/> is not large enough to hold the source vector.</returns>
+        public bool TryCopyTo(Span<byte> destination)
+        {
+            ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+            if ((uint)destination.Length < (uint)Vector<byte>.Count)
+            {
+                return false;
+            }
+
+            Unsafe.WriteUnaligned<Vector<T>>(ref MemoryMarshal.GetReference(destination), this);
+            return true;
+        }
+
+        /// <summary>
+        /// Attempts to copy the vector to the given <see cref="Span{T}"/>. The destination span must be at least size <see cref="Vector{T}.Count"/>.
+        /// </summary>
+        /// <param name="destination">The destination span which the values are copied into</param>
+        /// <returns>True if the source vector was successfully copied to <paramref name="destination"/>. False if
+        /// <paramref name="destination"/> is not large enough to hold the source vector.</returns>
+        public bool TryCopyTo(Span<T> destination)
+        {
+            if ((uint)destination.Length < (uint)Count)
+            {
+                return false;
+            }
+
+            Unsafe.WriteUnaligned<Vector<T>>(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetReference(destination)), this);
+            return true;
         }
         #endregion Public Instance Methods
 
@@ -5335,5 +5349,12 @@ namespace System.Numerics
         }
 
         #endregion Same-Size Conversion
+
+        #region Throw Helpers
+        internal static void ThrowInsufficientNumberOfElementsException(int requiredElementCount)
+        {
+            throw new IndexOutOfRangeException(SR.Format(SR.Arg_InsufficientNumberOfElements, requiredElementCount, "values"));
+        }
+        #endregion
     }
 }
