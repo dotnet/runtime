@@ -16,8 +16,8 @@ namespace System.Tests
             yield return new object[] {new TimeSpan(14, 2, 30, 0), 192.0, TimeSpan.FromDays(2708)};
             yield return new object[] {TimeSpan.FromDays(366), Math.PI, new TimeSpan(993446995288779)};
             yield return new object[] {TimeSpan.FromDays(366), -Math.E, new TimeSpan(-859585952922633)};
-            yield return new object[] {TimeSpan.FromDays(29.530587981), 13.0, TimeSpan.FromDays(383.897643819444)};
-            yield return new object[] {TimeSpan.FromDays(-29.530587981), -12.0, TimeSpan.FromDays(354.367055833333)};
+            yield return new object[] {TimeSpan.FromDays(29.530587981), 13.0, TimeSpan.FromDays(29.530587981 * 13.0) };
+            yield return new object[] {TimeSpan.FromDays(-29.530587981), -12.0, TimeSpan.FromDays(-29.530587981 * -12.0) };
             yield return new object[] {TimeSpan.FromDays(-29.530587981), 0.0, TimeSpan.Zero};
             yield return new object[] {TimeSpan.MaxValue, 0.5, TimeSpan.FromTicks((long)(long.MaxValue * 0.5))};
         }
@@ -312,6 +312,17 @@ namespace System.Tests
         {
             char[] dst = new char[1];
             Assert.Throws<FormatException>(() => new TimeSpan().TryFormat(dst.AsSpan(), out int charsWritten, invalidFormat, null));
+        }
+
+        [Fact]
+        public static void ConvertToTimeSpanPrecisionTest()
+        {
+            Assert.Equal(12345, TimeSpan.FromMilliseconds(1.23456).Ticks);
+            Assert.Equal(12345, TimeSpan.FromMilliseconds(1.234567).Ticks);
+
+            Assert.Equal(12345600, TimeSpan.FromSeconds(1.23456).Ticks);
+
+            Assert.Equal(1.23456 * 60 * 10_000_000, TimeSpan.FromMinutes(1.23456).Ticks);
         }
     }
 }
