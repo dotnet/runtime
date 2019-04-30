@@ -397,7 +397,7 @@ private:
     static EventPipeFile *s_pFile;
     static EventPipeEventSource *s_pEventSource;
     static HANDLE s_fileSwitchTimerHandle;
-    static ULONGLONG s_lastFlushSwitchTime;
+    static ULONGLONG s_lastFlushTime;
 };
 
 struct EventPipeProviderConfiguration
