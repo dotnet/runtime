@@ -6836,6 +6836,7 @@ HRESULT ProfToEEInterfaceImpl::GetObjectReferences(ObjectID objectId, ULONG32 cN
     {
         if (cNumReferences == 0)
         {
+            *pcNumReferences = 0;
             GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &CountContainedObjectRef, (void*)pcNumReferences);
         }
         else

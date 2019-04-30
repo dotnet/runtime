@@ -404,6 +404,9 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(argName);
         }
 
+        // Throws if 'T' is disallowed in Vector<T> / Vector128<T> / other related types in the
+        // Numerics or Intrinsics namespaces. If 'T' is allowed, no-ops. JIT will elide the method
+        // entirely if 'T' is supported and we're on an optimized release build.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ThrowForUnsupportedVectorBaseType<T>() where T : struct
         {

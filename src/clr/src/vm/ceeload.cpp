@@ -74,7 +74,6 @@
 #include "peimagelayout.inl"
 #include "ildbsymlib.h"
 
-
 #if defined(PROFILING_SUPPORTED)
 #include "profilermetadataemitvalidator.h"
 #endif
@@ -11653,6 +11652,91 @@ static bool GetBasename(LPCWSTR _src, __out_ecount(dstlen) __out_z LPWSTR _dst, 
     return true;
 }
 
+static LPCWSTR s_pCommandLine = NULL;
+
+// Rerieve the full command line for the current process.
+LPCWSTR GetManagedCommandLine()
+{
+    LIMITED_METHOD_CONTRACT;
+    return s_pCommandLine;
+}
+
+void Append_Next_Item(LPWSTR* ppCursor, SIZE_T* pRemainingLen, LPCWSTR pItem, bool addSpace)
+{
+    // read the writeback args and setup pCursor and remainingLen
+    LPWSTR pCursor      = *ppCursor;
+    SIZE_T remainingLen = *pRemainingLen;
+
+    // Calculate the length of pItem
+    SIZE_T itemLen = wcslen(pItem);
+
+    // Append pItem at pCursor
+    wcscpy_s(pCursor, remainingLen, pItem);
+    pCursor      += itemLen;
+    remainingLen -= itemLen;
+
+    // Also append a space after pItem, if requested
+    if (addSpace)
+    {
+        // Append a space at pCursor
+        wcscpy_s(pCursor, remainingLen, W(" "));
+        pCursor      += 1;
+        remainingLen -= 1;
+    }
+
+    // writeback and update ppCursor and pRemainingLen
+    *ppCursor      = pCursor;
+    *pRemainingLen = remainingLen;
+}
+
+void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // Get the command line.
+    LPCWSTR osCommandLine = GetCommandLineW();
+
+#ifndef FEATURE_PAL
+    // On Windows, osCommandLine contains the executable and all arguments.
+    s_pCommandLine = osCommandLine;
+#else
+    // On UNIX, the PAL doesn't have the command line arguments, so we must build the command line.
+    // osCommandLine contains the full path to the executable.
+    SIZE_T  commandLineLen = (wcslen(osCommandLine) + 1);
+
+    // We will append pwzAssemblyPath to the 'corerun' osCommandLine
+    commandLineLen += (wcslen(pwzAssemblyPath) + 1);
+    
+    for (int i = 0; i < argc; i++)
+    {
+        commandLineLen += (wcslen(argv[i]) + 1);
+    }
+    commandLineLen++;  // Add 1 for the null-termination
+
+    // Allocate a new string for the command line.
+    LPWSTR pNewCommandLine = new WCHAR[commandLineLen];
+    SIZE_T remainingLen    = commandLineLen;
+    LPWSTR pCursor         = pNewCommandLine;
+
+    Append_Next_Item(&pCursor, &remainingLen, osCommandLine,   true);
+    Append_Next_Item(&pCursor, &remainingLen, pwzAssemblyPath, true);
+
+    for (int i = 0; i < argc; i++)
+    {
+        bool moreArgs = (i < (argc-1));
+        Append_Next_Item(&pCursor, &remainingLen, argv[i], moreArgs);
+    }
+
+    s_pCommandLine = pNewCommandLine;
+#endif 
+}
+
 static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR scopeName, GUID* pMvid)
 {
     CONTRACTL
@@ -11681,7 +11765,16 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
     // Allocate and initialize the scenario header section
     //
     {
-        LPCWSTR  pCmdLine    = GetCommandLineW();
+        // Get the managed command line.
+        LPCWSTR pCmdLine = GetManagedCommandLine();
+
+        // If this process started as a service we won't havre a managed command line
+        if (pCmdLine == nullptr)
+        {
+            // Use the result from GetCommandLineW() instead
+            pCmdLine = GetCommandLineW();
+        }
+
         S_SIZE_T cCmdLine = S_SIZE_T(wcslen(pCmdLine));
         cCmdLine += 1;
         if (cCmdLine.IsOverflow())
