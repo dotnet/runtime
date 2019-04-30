@@ -1207,7 +1207,7 @@ namespace System
 
         // CanChangePrimitive
         // This will determine if the source can be converted to the target type
-        internal static bool CanChangePrimitive(Type source, Type target)
+        internal static bool CanChangePrimitive(Type? source, Type? target)
         {
             if ((source == typeof(IntPtr) && target == typeof(IntPtr)) ||
                 (source == typeof(UIntPtr) && target == typeof(UIntPtr)))
