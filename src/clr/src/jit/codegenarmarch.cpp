@@ -3864,7 +3864,10 @@ void CodeGen::genStructReturn(GenTree* treeNode)
 //      This is done before anything has been pushed. The previous frame might have a large outgoing argument
 //      space that has been allocated, but the lowest addresses have not been touched. Our frame setup might
 //      not touch up to the first 504 bytes. This means we could miss a guard page. On Windows, however,
-//      there are always three guard pages, so we will not miss them all.
+//      there are always three guard pages, so we will not miss them all. On Linux, there is only one guard
+//      page by default, so we need to be more careful. We do an extra probe if we might not have probed
+//      recently enough. That is, if a call and prolog establishment might lead to missing a page. We do this
+//      on Windows as well just to be consistent, even though it should not be necessary.
 //
 //      On ARM32, the first instruction of the prolog is always a push (which touches the lowest address
 //      of the stack), either of the LR register or of some argument registers, e.g., in the case of
@@ -3884,19 +3887,32 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
     const target_size_t pageSize = compiler->eeGetPageSize();
 
+#ifdef _TARGET_ARM64_
+    // What offset from the final SP was the last probe? If we haven't probed almost a complete page, and
+    // if the next action on the stack might subtract from SP first, before touching the current SP, then
+    // we do one more probe at the very bottom. This can happen if we call a function on arm64 that does
+    // a "STP fp, lr, [sp-504]!", that is, pre-decrement SP then store. Note that we probe here for arm64,
+    // but we don't alter SP.
+    target_size_t lastTouchDelta = 0;
+#endif // _TARGET_ARM64_
+
     assert(!compiler->info.compPublishStubParam || (REG_SECRET_STUB_PARAM != initReg));
 
     if (frameSize < pageSize)
     {
 #ifdef _TARGET_ARM_
-        // Frame size is (0x0000..0x1000). No probing necessary.
         inst_RV_IV(INS_sub, REG_SPBASE, frameSize, EA_PTRSIZE);
 #endif // _TARGET_ARM_
+
+#ifdef _TARGET_ARM64_
+        lastTouchDelta = frameSize;
+#endif // _TARGET_ARM64_
     }
     else if (frameSize < compiler->getVeryLargeFrameSize())
     {
 #if defined(_TARGET_ARM64_)
         regNumber rTemp = REG_ZR; // We don't need a register for the target of the dummy load
+        lastTouchDelta  = frameSize;
 #else
         regNumber rTemp = initReg;
 #endif
@@ -3911,9 +3927,14 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
             getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, rTemp, REG_SPBASE, initReg);
             regSet.verifyRegUsed(initReg);
             *pInitRegZeroed = false; // The initReg does not contain zero
+
+#ifdef _TARGET_ARM64_
+            lastTouchDelta -= pageSize;
+#endif // _TARGET_ARM64_
         }
 
 #ifdef _TARGET_ARM64_
+        assert(lastTouchDelta == frameSize % pageSize);
         compiler->unwindPadding();
 #else  // !_TARGET_ARM64_
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, frameSize);
@@ -3923,7 +3944,6 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
     }
     else
     {
-        // Frame size >= 0x3000
         assert(frameSize >= compiler->getVeryLargeFrameSize());
 
         // Emit the following sequence to 'tickle' the pages. Note it is important that stack pointer not change
@@ -4004,10 +4024,27 @@ void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pIni
 
         compiler->unwindPadding();
 
+#ifdef _TARGET_ARM64_
+        lastTouchDelta = frameSize % pageSize;
+#endif // _TARGET_ARM64_
+
 #ifdef _TARGET_ARM_
         inst_RV_RV(INS_add, REG_SPBASE, rLimit, TYP_I_IMPL);
 #endif // _TARGET_ARM_
     }
+
+#ifdef _TARGET_ARM64_
+    if (lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
+    {
+        assert(lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES < 2 * pageSize);
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, -(ssize_t)frameSize);
+        getEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, initReg);
+        compiler->unwindPadding();
+
+        regSet.verifyRegUsed(initReg);
+        *pInitRegZeroed = false; // The initReg does not contain zero
+    }
+#endif // _TARGET_ARM64_
 
 #ifdef _TARGET_ARM_
     compiler->unwindAllocStack(frameSize);
