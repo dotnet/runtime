@@ -23,7 +23,7 @@ void print_strarr(const char* prefix, const strarr_t& arr)
         return;
     }
 
-    for (int i = 0; i < arr.len; i++)
+    for (size_t i = 0; i < arr.len; i++)
     {
         std::cout << prefix << tostr(arr.arr[i]).data() << std::endl;
     }
@@ -43,7 +43,7 @@ SHARED_API int corehost_load(host_interface_t* init)
     }
     else
     {
-        for (int i = 0; i < init->config_keys.len; i++)
+        for (size_t i = 0; i < init->config_keys.len; i++)
         {
             std::cout << "mock config: " << tostr(init->config_keys.arr[i]).data() << "=" << tostr(init->config_values.arr[i]).data() << std::endl;
         }
@@ -72,7 +72,7 @@ SHARED_API int corehost_load(host_interface_t* init)
     }
     else
     {
-        for (int i = 0; i < init->fx_names.len; i++)
+        for (size_t i = 0; i < init->fx_names.len; i++)
         {
             std::cout << "mock frameworks: " 
                 << tostr(init->fx_names.arr[i]).data() << " " 

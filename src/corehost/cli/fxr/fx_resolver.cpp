@@ -190,14 +190,14 @@ namespace
         const pal::string_t & oldest_requested_version,
         const pal::string_t & dotnet_dir)
     {
-#if DEBUG
+#if defined(DEBUG)
         assert(!fx_ref.get_fx_name().empty());
         assert(!fx_ref.get_fx_version().empty());
 
         fx_ver_t _debug_ver;
         assert(fx_ver_t::parse(fx_ref.get_fx_version(), &_debug_ver, false));
         assert(_debug_ver == fx_ref.get_fx_version_number());
-#endif // DEBUG
+#endif // defined(DEBUG)
 
         trace::verbose(_X("--- Resolving FX directory, name '%s' version '%s'"),
             fx_ref.get_fx_name().c_str(), fx_ref.get_fx_version().c_str());

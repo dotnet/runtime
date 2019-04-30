@@ -62,13 +62,13 @@ int main(const int argc, const pal::char_t *argv[])
         pal::string_t fxr_path;
         size_t len = fxr_path.size();
         int res = get_hostfxr_path(nullptr, &len, assembly_path);
-        if (res == StatusCode::HostApiBufferTooSmall)
+        if (static_cast<StatusCode>(res) == StatusCode::HostApiBufferTooSmall)
         {
             fxr_path.resize(len);
             res = get_hostfxr_path(&fxr_path[0], &len, assembly_path);
         }
 
-        if (res == StatusCode::Success)
+        if (static_cast<StatusCode>(res) == StatusCode::Success)
         {
             std::cout << "get_hostfxr_path succeeded" << std::endl;
             std::cout << "hostfxr_path: " << tostr(pal::to_lower(fxr_path)).data() << std::endl;

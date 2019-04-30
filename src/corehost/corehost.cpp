@@ -10,7 +10,7 @@
 #include "trace.h"
 #include "utils.h"
 
-#if FEATURE_APPHOST
+#if defined(FEATURE_APPHOST)
 #include "cli/apphost/bundle/bundle_runner.h"
 
 #define CURHOST_TYPE    _X("apphost")
@@ -72,7 +72,7 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     trace::info(_X("The managed DLL bound to this executable is: '%s'"), app_dll->c_str());
     return true;
 }
-#elif !FEATURE_LIBHOST
+#elif !defined(FEATURE_LIBHOST)
 #define CURHOST_TYPE    _X("dotnet")
 #define CUREXE_PKG_VER  HOST_PKG_VER
 #define CURHOST_EXE
@@ -93,7 +93,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     pal::string_t app_root;
     bool requires_v2_hostfxr_interface = false;
     
-#if FEATURE_APPHOST
+#if defined(FEATURE_APPHOST)
     pal::string_t embedded_app_name;
     if (!is_exe_enabled_for_execution(&embedded_app_name))
     {
@@ -195,7 +195,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
     // Obtain the entrypoints.
     int rc;
-    hostfxr_main_startupinfo_fn main_fn_v2 = (hostfxr_main_startupinfo_fn)pal::get_symbol(fxr, "hostfxr_main_startupinfo");
+    hostfxr_main_startupinfo_fn main_fn_v2 = reinterpret_cast<hostfxr_main_startupinfo_fn>(pal::get_symbol(fxr, "hostfxr_main_startupinfo"));
     if (main_fn_v2 != nullptr)
     {
         const pal::char_t* host_path_cstr = host_path.c_str();
@@ -207,7 +207,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         trace::info(_X("Dotnet path: [%s]"), dotnet_root.c_str());
         trace::info(_X("App path: [%s]"), app_path.c_str());
 
-        hostfxr_set_error_writer_fn set_error_writer_fn = (hostfxr_set_error_writer_fn)pal::get_symbol(fxr, "hostfxr_set_error_writer");
+        hostfxr_set_error_writer_fn set_error_writer_fn = reinterpret_cast<hostfxr_set_error_writer_fn>(pal::get_symbol(fxr, "hostfxr_set_error_writer"));
 
         {
             propagate_error_writer_t propagate_error_writer_to_hostfxr(set_error_writer_fn);
@@ -231,7 +231,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
             // For compat, use the v1 interface. This requires additional file I\O to re-parse parameters and
             // for apphost, does not support DOTNET_ROOT or dll with different name for exe.
-            hostfxr_main_fn main_fn_v1 = (hostfxr_main_fn)pal::get_symbol(fxr, "hostfxr_main");
+            hostfxr_main_fn main_fn_v1 = reinterpret_cast<hostfxr_main_fn>(pal::get_symbol(fxr, "hostfxr_main"));
             if (main_fn_v1 != nullptr)
             {
                 rc = main_fn_v1(argc, argv);

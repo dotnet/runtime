@@ -143,12 +143,12 @@ pal::string_t get_directory(const pal::string_t& path)
         return ret + DIR_SEPARATOR;
     }
 
-    int pos = (int) path_sep;
+    int pos = static_cast<int>(path_sep);
     while (pos >= 0 && ret[pos] == DIR_SEPARATOR)
     {
         pos--;
     }
-    return ret.substr(0, (size_t)pos + 1) + DIR_SEPARATOR;
+    return ret.substr(0, static_cast<size_t>(pos) + 1) + DIR_SEPARATOR;
 }
 
 void remove_trailing_dir_seperator(pal::string_t* dir)
@@ -161,7 +161,7 @@ void remove_trailing_dir_seperator(pal::string_t* dir)
 
 void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
 {
-	int pos = 0;
+	size_t pos = 0;
     while ((pos = path->find(match, pos)) != pal::string_t::npos)
     {
         (*path)[pos] = repl;
@@ -170,7 +170,7 @@ void replace_char(pal::string_t* path, pal::char_t match, pal::char_t repl)
 
 pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pal::char_t repl)
 {
-	int pos = path.find(match);
+	size_t pos = path.find(match);
     if (pos == pal::string_t::npos)
     {
         return path;
@@ -187,13 +187,13 @@ pal::string_t get_replaced_char(const pal::string_t& path, pal::char_t match, pa
 
 const pal::char_t* get_arch()
 {
-#if _TARGET_AMD64_
+#if defined(_TARGET_AMD64_)
     return _X("x64");
-#elif _TARGET_X86_
+#elif defined(_TARGET_X86_)
     return _X("x86");
-#elif _TARGET_ARM_
+#elif defined(_TARGET_ARM_)
     return _X("arm");
-#elif _TARGET_ARM64_
+#elif defined(_TARGET_ARM64_)
     return _X("arm64");
 #else
 #error "Unknown target"
@@ -268,7 +268,7 @@ bool skip_utf8_bom(pal::istream_t* stream)
     }
 
     unsigned char bytes[3];
-    stream->read((char*) bytes, 3);
+    stream->read(reinterpret_cast<char*>(bytes), 3);
     if ((stream->gcount() < 3) ||
             (bytes[1] != 0xBB) || 
             (bytes[2] != 0xBF))
@@ -404,7 +404,7 @@ bool try_stou(const pal::string_t& str, unsigned* num)
     {
         return false;
     }
-    *num = (unsigned)std::stoul(str);
+    *num = std::stoul(str);
     return true;
 }
 

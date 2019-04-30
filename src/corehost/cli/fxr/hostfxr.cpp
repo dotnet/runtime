@@ -113,11 +113,12 @@ SHARED_API int32_t hostfxr_resolve_sdk(
         return 0;
     }
 
-    if (cli_sdk.size() < buffer_size)
+    unsigned long non_negative_buffer_size = static_cast<unsigned long>(buffer_size);
+    if (cli_sdk.size() < non_negative_buffer_size)
     {
-        size_t length = cli_sdk.copy(buffer, buffer_size - 1);
+        size_t length = cli_sdk.copy(buffer, non_negative_buffer_size - 1);
         assert(length == cli_sdk.size());
-        assert(length < buffer_size);
+        assert(length < non_negative_buffer_size);
         buffer[length] = 0;
     }
     else

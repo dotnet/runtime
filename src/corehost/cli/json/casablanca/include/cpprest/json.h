@@ -345,7 +345,7 @@ public:
         /// Is the current value a null value?
         /// </summary>
         /// <returns><c>true</c> if the value is a null value, <c>false</c> otherwise</returns>
-        bool is_null() const { return type() == Null; };
+        bool is_null() const { return type() == Null; }
 
         /// <summary>
         /// Is the current value a number value?
@@ -1470,6 +1470,8 @@ public:
 
         protected:
             _Value() {}
+
+            _Value(const _Value& other) {}
 
             virtual void format(std::basic_string<char>& stream) const
             {

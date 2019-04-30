@@ -152,7 +152,7 @@ int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const a
     bool set_app_paths = false;
 
     // Runtime options config properties.
-    for (int i = 0; i < hostpolicy_init.cfg_keys.size(); ++i)
+    for (size_t i = 0; i < hostpolicy_init.cfg_keys.size(); ++i)
     {
         // Provide opt-in compatible behavior by using the switch to set APP_PATHS
         const pal::char_t *key = hostpolicy_init.cfg_keys[i].c_str();

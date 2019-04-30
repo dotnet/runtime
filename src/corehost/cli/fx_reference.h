@@ -47,7 +47,7 @@ public:
         return fx_version_number;
     }
 
-    const bool get_apply_patches() const
+    bool get_apply_patches() const
     {
         return apply_patches;
     }
@@ -56,7 +56,7 @@ public:
         apply_patches = value;
     }
 
-    const roll_forward_option get_roll_forward() const
+    roll_forward_option get_roll_forward() const
     {
         return roll_forward;
     }
@@ -65,7 +65,7 @@ public:
         roll_forward = value;
     }
 
-    const bool get_prefer_release() const
+    bool get_prefer_release() const
     {
         return prefer_release;
     }

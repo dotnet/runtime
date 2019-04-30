@@ -24,8 +24,8 @@ arguments_t::arguments_t()
  *  o %DOTNET_SHARED_STORE% -- multiple delimited paths
  *  o dotnet.exe relative shared store\<arch>\<tfm>
  *  o Global location
- *      Windows: C:\Program Files (x86) or
- *      Unix: directory of dotnet on the path.\<arch>\<tfm>
+ *      Windows: global default location (Program Files) or globally registered location (registry) + store\<arch>\<tfm>
+ *      Linux/macOS: none (no global locations are considered)
  */
 void setup_shared_store_paths(const pal::string_t& tfm, host_mode_t host_mode,const pal::string_t& own_dir, arguments_t* args)
 {
