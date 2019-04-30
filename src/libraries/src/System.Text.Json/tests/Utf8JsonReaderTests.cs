@@ -20,11 +20,12 @@ namespace System.Text.Json.Tests
             Utf8JsonReader json = default;
 
             Assert.Equal(0, json.BytesConsumed);
+            Assert.Equal(0, json.TokenStartIndex);
             Assert.Equal(0, json.CurrentDepth);
             Assert.Equal(JsonTokenType.None, json.TokenType);
             Assert.Equal(default, json.Position);
-            Assert.True(json.ValueSpan.SequenceEqual(default));
             Assert.False(json.HasValueSequence);
+            Assert.True(json.ValueSpan.SequenceEqual(default));
             Assert.True(json.ValueSequence.IsEmpty);
 
             Assert.Equal(0, json.CurrentState.BytesConsumed);
@@ -86,6 +87,92 @@ namespace System.Text.Json.Tests
 
             json = default;
             JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetBoolean());
+        }
+
+        [Fact]
+        public static void InitialState()
+        {
+            var json = new Utf8JsonReader(Encoding.UTF8.GetBytes("1"), isFinalBlock: true, state: default);
+
+            Assert.Equal(0, json.BytesConsumed);
+            Assert.Equal(0, json.TokenStartIndex);
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.Equal(JsonTokenType.None, json.TokenType);
+            Assert.Equal(default, json.Position);
+            Assert.False(json.HasValueSequence);
+            Assert.True(json.ValueSpan.SequenceEqual(default));
+            Assert.True(json.ValueSequence.IsEmpty);
+
+            Assert.Equal(0, json.CurrentState.BytesConsumed);
+            Assert.Equal(default, json.CurrentState.Position);
+            Assert.Equal(64, json.CurrentState.Options.MaxDepth);
+            Assert.False(json.CurrentState.Options.AllowTrailingCommas);
+            Assert.Equal(JsonCommentHandling.Disallow, json.CurrentState.Options.CommentHandling);
+
+            Assert.True(json.Read());
+            Assert.False(json.Read());
+        }
+
+        [Fact]
+        public static void StateRecovery()
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes("[1]");
+            var json = new Utf8JsonReader(utf8, isFinalBlock: false, state: default);
+
+            Assert.Equal(0, json.BytesConsumed);
+            Assert.Equal(0, json.TokenStartIndex);
+            Assert.Equal(0, json.CurrentDepth);
+            Assert.Equal(JsonTokenType.None, json.TokenType);
+            Assert.Equal(default, json.Position);
+            Assert.False(json.HasValueSequence);
+            Assert.True(json.ValueSpan.SequenceEqual(default));
+            Assert.True(json.ValueSequence.IsEmpty);
+
+            Assert.Equal(0, json.CurrentState.BytesConsumed);
+            Assert.Equal(default, json.CurrentState.Position);
+            Assert.Equal(64, json.CurrentState.Options.MaxDepth);
+            Assert.False(json.CurrentState.Options.AllowTrailingCommas);
+            Assert.Equal(JsonCommentHandling.Disallow, json.CurrentState.Options.CommentHandling);
+
+            Assert.True(json.Read());
+            Assert.True(json.Read());
+
+            Assert.Equal(2, json.BytesConsumed);
+            Assert.Equal(1, json.TokenStartIndex);
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.Equal(JsonTokenType.Number, json.TokenType);
+            Assert.Equal(default, json.Position);
+            Assert.False(json.HasValueSequence);
+            Assert.True(json.ValueSpan.SequenceEqual(new byte[] { (byte)'1'}));
+            Assert.True(json.ValueSequence.IsEmpty);
+
+            Assert.Equal(2, json.CurrentState.BytesConsumed);
+            Assert.Equal(default, json.CurrentState.Position);
+            Assert.Equal(64, json.CurrentState.Options.MaxDepth);
+            Assert.False(json.CurrentState.Options.AllowTrailingCommas);
+            Assert.Equal(JsonCommentHandling.Disallow, json.CurrentState.Options.CommentHandling);
+
+            JsonReaderState state = json.CurrentState;
+
+            json = new Utf8JsonReader(utf8.AsSpan((int)json.BytesConsumed), isFinalBlock: true, state);
+
+            Assert.Equal(0, json.BytesConsumed);    // Not retained
+            Assert.Equal(0, json.TokenStartIndex);  // Not retained
+            Assert.Equal(1, json.CurrentDepth);
+            Assert.Equal(JsonTokenType.Number, json.TokenType);
+            Assert.Equal(default, json.Position);
+            Assert.False(json.HasValueSequence);
+            Assert.True(json.ValueSpan.SequenceEqual(default));
+            Assert.True(json.ValueSequence.IsEmpty);
+
+            Assert.Equal(0, json.CurrentState.BytesConsumed);
+            Assert.Equal(default, json.CurrentState.Position);
+            Assert.Equal(64, json.CurrentState.Options.MaxDepth);
+            Assert.False(json.CurrentState.Options.AllowTrailingCommas);
+            Assert.Equal(JsonCommentHandling.Disallow, json.CurrentState.Options.CommentHandling);
+
+            Assert.True(json.Read());
+            Assert.False(json.Read());
         }
 
         // TestCaseType is only used to give the json strings a descriptive name.
@@ -286,6 +373,7 @@ namespace System.Text.Json.Tests
                 long consumed = json.BytesConsumed;
                 Assert.Equal(consumed, json.CurrentState.BytesConsumed);
                 Assert.Equal(default, json.Position);
+                Assert.Equal(0, json.TokenStartIndex);
 
                 for (long j = consumed; j < dataUtf8.Length - consumed; j++)
                 {
@@ -313,6 +401,7 @@ namespace System.Text.Json.Tests
                     Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
                     Assert.Equal(default, json.Position);
                     Assert.Equal(default, json.CurrentState.Position);
+                    Assert.Equal(0, json.TokenStartIndex);
 
                     Assert.Equal(outputSpan.Length, written);
                     string actualStr = Encoding.UTF8.GetString(outputArray);
@@ -847,6 +936,7 @@ namespace System.Text.Json.Tests
                         // Check if the TokenType is a primitive "value", i.e. String, Number, True, False, and Null
                         Assert.True(json.TokenType >= JsonTokenType.String && json.TokenType <= JsonTokenType.Null);
                         Assert.Equal(expectedString, Encoding.UTF8.GetString(json.ValueSpan.ToArray()));
+                        Assert.Equal(2, json.TokenStartIndex);
                     }
 
                     long consumed = json.BytesConsumed;
@@ -858,6 +948,10 @@ namespace System.Text.Json.Tests
                         // Check if the TokenType is a primitive "value", i.e. String, Number, True, False, and Null
                         Assert.True(json.TokenType >= JsonTokenType.String && json.TokenType <= JsonTokenType.Null);
                         Assert.Equal(expectedString, Encoding.UTF8.GetString(json.ValueSpan.ToArray()));
+                        if (consumed <= 2)
+                        {
+                            Assert.Equal(2 - consumed, json.TokenStartIndex);
+                        }
                     }
                     Assert.Equal(dataUtf8.Length - consumed, json.BytesConsumed);
                     Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
@@ -1856,6 +1950,7 @@ namespace System.Text.Json.Tests
             {
                 Assert.True(json.Read());
                 Assert.True(json.TokenType == JsonTokenType.StartArray);
+                Assert.Equal(0, json.TokenStartIndex);
             }
 
             if (json.Read())
@@ -1891,12 +1986,14 @@ namespace System.Text.Json.Tests
                         Assert.Equal(expectedString, boolValue.ToString(CultureInfo.InvariantCulture));
                         break;
                 }
+                Assert.Equal(insideArray ? 1688894 : 1688894 - 1, json.TokenStartIndex);
             }
 
             if (insideArray)
             {
                 Assert.True(json.Read());
                 Assert.True(json.TokenType == JsonTokenType.EndArray);
+                Assert.Equal(dataUtf8.Length - 1, json.TokenStartIndex);
             }
 
             Assert.False(json.Read());
@@ -1973,9 +2070,19 @@ namespace System.Text.Json.Tests
                         foundPrimitiveValue = true;
                         break;
                 }
+                if (isTokenPrimitive)
+                {
+                    Assert.Equal(insideArray ? 1688894 : 1688894 - 1, json.TokenStartIndex);
+                }
             }
             Assert.True(foundPrimitiveValue);
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
+
+            if (insideArray)
+            {
+                Assert.True(json.TokenType == JsonTokenType.EndArray);
+                Assert.Equal(dataUtf8.Length - 1, json.TokenStartIndex);
+            }
         }
 
         private static void VerifyReadLoop(ref Utf8JsonReader json, string expected)
@@ -2348,6 +2455,203 @@ namespace System.Text.Json.Tests
                 ;
         }
 
+        [Theory]
+        [MemberData(nameof(SingleJsonTokenStartIndex))]
+        public static void TestTokenStartIndex_SingleValue(string jsonString, int expectedIndex)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = false });
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+
+                state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = true });
+                reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleJsonWithCommentsAllowTokenStartIndex))]
+        public static void TestTokenStartIndex_SingleValueCommentsAllow(string jsonString, int expectedIndex)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow, AllowTrailingCommas = false });
+            var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+            Assert.True(reader.Read());
+            Assert.Equal(expectedIndex, reader.TokenStartIndex);
+
+            state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow, AllowTrailingCommas = true });
+            reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+            Assert.True(reader.Read());
+            Assert.Equal(expectedIndex, reader.TokenStartIndex);
+        }
+
+        [Theory]
+        [MemberData(nameof(SingleJsonWithCommentsTokenStartIndex))]
+        public static void TestTokenStartIndex_SingleValueWithComments(string jsonString, int expectedIndex)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                if (commentHandling == JsonCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = false });
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                if (commentHandling == JsonCommentHandling.Allow)
+                {
+                    Assert.Equal(JsonTokenType.Comment, reader.TokenType);
+                    Assert.True(reader.Read());
+                }
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+
+                state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = true });
+                reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                if (commentHandling == JsonCommentHandling.Allow)
+                {
+                    Assert.Equal(JsonTokenType.Comment, reader.TokenType);
+                    Assert.True(reader.Read());
+                }
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ComplexArrayJsonTokenStartIndex))]
+        public static void TestTokenStartIndex_ComplexArrayValue(string jsonString, int expectedIndex)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = false });
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.StartArray, reader.TokenType);
+                Assert.True(reader.Read());
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+
+                state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = true });
+                reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.StartArray, reader.TokenType);
+                Assert.True(reader.Read());
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndex, reader.TokenStartIndex);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ComplexObjectJsonTokenStartIndex))]
+        public static void TestTokenStartIndex_ComplexObjectValue(string jsonString, int expectedIndexProperty, int expectedIndexValue)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = false });
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndexProperty, reader.TokenStartIndex);
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndexValue, reader.TokenStartIndex);
+
+                state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = true });
+                reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndexProperty, reader.TokenStartIndex);
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndexValue, reader.TokenStartIndex);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ComplexObjectSeveralJsonTokenStartIndex))]
+        public static void TestTokenStartIndex_ComplexObjectManyValues(string jsonString, int expectedIndexProperty, int expectedIndexValue)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = false });
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+                Assert.True(reader.Read());
+                Assert.True(reader.Read());
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndexProperty, reader.TokenStartIndex);
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndexValue, reader.TokenStartIndex);
+
+                state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = true });
+                reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                Assert.True(reader.Read());
+                Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+                Assert.True(reader.Read());
+                Assert.True(reader.Read());
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndexProperty, reader.TokenStartIndex);
+                Assert.True(reader.Read());
+                Assert.Equal(expectedIndexValue, reader.TokenStartIndex);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonWithValidTrailingCommas))]
+        public static void TestTokenStartIndex_WithTrailingCommas(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = true });
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                while (reader.Read())
+                { }
+
+                Assert.Equal(utf8.Length - 1, reader.TokenStartIndex);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonWithValidTrailingCommasAndComments))]
+        public static void TestTokenStartIndex_WithTrailingCommasAndComments(string jsonString)
+        {
+            byte[] utf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                if (commentHandling == JsonCommentHandling.Disallow)
+                {
+                    continue;
+                }
+
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling, AllowTrailingCommas = true });
+                var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
+                while (reader.Read())
+                { }
+
+                Assert.Equal(utf8.Length - 1, reader.TokenStartIndex);
+            }
+        }
+
         public static IEnumerable<object[]> TestCases
         {
             get
@@ -2679,6 +2983,244 @@ namespace System.Text.Json.Tests
                     new object[] {"[/*comment*/,/*comment*/]"},
                     new object[] {"[1/*comment*/,/*comment*/,/*comment*/]"},
                     new object[] {"[1,/*comment*/,2,]"},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> SingleJsonTokenStartIndex
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"[]", 0},
+                    new object[] {"{}", 0},
+                    new object[] {"12345", 0},
+                    new object[] {"1", 0},
+                    new object[] {"true", 0},
+                    new object[] {"false", 0},
+                    new object[] {"null", 0},
+                    new object[] {"\"hello\"", 0},
+                    new object[] {"\"\"", 0},
+
+                    new object[] {"  []", 2},
+                    new object[] {"  {}", 2},
+                    new object[] {"  12345", 2},
+                    new object[] {"  1", 2},
+                    new object[] {"  true", 2},
+                    new object[] {"  false", 2},
+                    new object[] {"  null", 2},
+                    new object[] {"  \"hello\"", 2},
+                    new object[] {"  \"\"", 2},
+
+                    new object[] {"  []  ", 2},
+                    new object[] {"  {}  ", 2},
+                    new object[] {"  12345  ", 2},
+                    new object[] {"  1  ", 2},
+                    new object[] {"  true  ", 2},
+                    new object[] {"  false  ", 2},
+                    new object[] {"  null  ", 2},
+                    new object[] {"  \"hello\"  ", 2},
+                    new object[] {"  \"\"  ", 2},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> SingleJsonWithCommentsAllowTokenStartIndex
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"/*comment*/", 0},
+                    new object[] {"//comment\n", 0},
+                    new object[] {"/*comment*//*comment*/", 0},
+                    new object[] {"/*comment*///comment\n", 0},
+                    new object[] {"//comment\n/*comment*/", 0},
+                    new object[] {"//comment\n//comment\n", 0},
+
+                    new object[] {"  /*comment*/", 2},
+                    new object[] {"  //comment\n", 2},
+                    new object[] {"  /*comment*//*comment*/", 2},
+                    new object[] {"  /*comment*///comment\n", 2},
+                    new object[] {"  //comment\n/*comment*/", 2},
+                    new object[] {"  //comment\n//comment\n", 2},
+
+                    new object[] {"  /*comment*/  ", 2},
+                    new object[] {"  //comment\n  ", 2},
+                    new object[] {"  /*comment*//*comment*/  ", 2},
+                    new object[] {"  /*comment*///comment\n  ", 2},
+                    new object[] {"  //comment\n/*comment*/  ", 2},
+                    new object[] {"  //comment\n//comment\n  ", 2},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> SingleJsonWithCommentsTokenStartIndex
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"/*comment*/[]", 11},
+                    new object[] {"/*comment*/{}", 11},
+                    new object[] {"/*comment*/12345", 11},
+                    new object[] {"/*comment*/12345  ", 11},
+                    new object[] {"/*comment*/12345/*comment*/", 11},
+                    new object[] {"/*comment*/12345  /*comment*/", 11},
+                    new object[] {"/*comment*/12345  /*comment*/  ", 11},
+                    new object[] {"/*comment*/1", 11},
+                    new object[] {"/*comment*/true", 11},
+                    new object[] {"/*comment*/false", 11},
+                    new object[] {"/*comment*/null", 11},
+                    new object[] {"/*comment*/\"hello\"", 11},
+                    new object[] {"/*comment*/\"\"", 11},
+
+                    new object[] {"  /*comment*/  []", 15},
+                    new object[] {"  /*comment*/  {}", 15},
+                    new object[] {"  /*comment*/  12345", 15},
+                    new object[] { "  /*comment*/  12345  ", 15},
+                    new object[] { "  /*comment*/  12345/*comment*/", 15},
+                    new object[] { "  /*comment*/  12345  /*comment*/", 15},
+                    new object[] { "  /*comment*/  12345  /*comment*/  ", 15},
+                    new object[] {"  /*comment*/  1", 15},
+                    new object[] {"  /*comment*/  true", 15},
+                    new object[] {"  /*comment*/  false", 15},
+                    new object[] {"  /*comment*/  null", 15},
+                    new object[] {"  /*comment*/  \"hello\"", 15},
+                    new object[] {"  /*comment*/  \"\"", 15},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> ComplexArrayJsonTokenStartIndex
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"[1,2]", 3},
+                    new object[] {"[1,  2]", 5},
+                    new object[] {"[1  ,2]", 5},
+                    new object[] {"[1  ,  2]", 7},
+                    new object[] {"[1  ,  2  ]", 7},
+
+                    new object[] {"[1,\"string\"]", 3},
+                    new object[] {"[1,  \"string\"]", 5},
+                    new object[] {"[1  ,\"string\"]", 5},
+                    new object[] {"[1  ,  \"string\"]", 7},
+                    new object[] {"[1  ,  \"string\"  ]", 7},
+
+                    new object[] {"[{}]", 2},
+                    new object[] {"[[]]", 2},
+                    new object[] {"[123,{}]", 5},
+                    new object[] {"[123,[]]", 5},
+                    new object[] {"[  {}]", 4},
+                    new object[] {"[  []]", 4},
+                    new object[] {"[123,  {}]", 7},
+                    new object[] {"[123,  []]", 7},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> ComplexObjectJsonTokenStartIndex
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"{\"propertyName\":\"value\"}", 1, 16},
+                    new object[] {"{  \"propertyName\":\"value\"}", 3, 18},
+                    new object[] {"{\"propertyName\"  :\"value\"}", 1, 18},
+                    new object[] {"{\"propertyName\":  \"value\"}", 1, 18},
+                    new object[] {"{\"propertyName\":\"value\"  }", 1, 16},
+                    new object[] {"  {\"propertyName\":\"value\"}", 3, 18},
+                    new object[] {"{\"propertyName\":\"value\"}  ", 1, 16},
+
+                    new object[] {"{  \"propertyName\"  :\"value\"}", 3, 20},
+                    new object[] {"{  \"propertyName\":  \"value\"}", 3, 20},
+                    new object[] {"{  \"propertyName\":\"value\"  }", 3, 18},
+                    new object[] {"  {  \"propertyName\":\"value\"}", 5, 20},
+                    new object[] {"{  \"propertyName\":\"value\"}   ", 3, 18},
+
+                    new object[] {"{\"propertyName\"  :  \"value\"}", 1, 20},
+                    new object[] {"{\"propertyName\":  \"value\"  }", 1, 18},
+                    new object[] {"  {\"propertyName\":  \"value\"}", 3, 20},
+                    new object[] {"{\"propertyName\":  \"value\"}  ", 1, 18},
+
+                    new object[] {"{\"propertyName\"  :\"value\"  }", 1, 18},
+                    new object[] {"  {\"propertyName\"  :\"value\"}", 3, 20},
+                    new object[] {"{\"propertyName\"  :\"value\"}  ", 1, 18},
+
+                    new object[] {"  {\"propertyName\":\"value\"  }", 3, 18},
+                    new object[] {"{\"propertyName\":\"value\"  }  ", 1, 16},
+
+                    new object[] {"{\"propertyName\":123}", 1, 16},
+                    new object[] {"{  \"propertyName\":123}", 3, 18},
+                    new object[] {"{\"propertyName\"  :123}", 1, 18},
+                    new object[] {"{\"propertyName\":  123}", 1, 18},
+                    new object[] {"{\"propertyName\":123  }", 1, 16},
+                    new object[] {"  {\"propertyName\":123}", 3, 18},
+                    new object[] {"{\"propertyName\":123}   ", 1, 16},
+
+                    new object[] {"{  \"propertyName\"  :123}", 3, 20},
+                    new object[] {"{  \"propertyName\":  123}", 3, 20},
+                    new object[] {"{  \"propertyName\":123  }", 3, 18},
+                    new object[] {"  {  \"propertyName\":123}", 5, 20},
+                    new object[] {"{  \"propertyName\":123}  ", 3, 18},
+
+                    new object[] {"{\"propertyName\"  :  123}", 1, 20},
+                    new object[] {"{\"propertyName\":  123  }", 1, 18},
+                    new object[] {"  {\"propertyName\":  123}", 3, 20},
+                    new object[] {"{\"propertyName\":  123}  ", 1, 18},
+
+                    new object[] {"{\"propertyName\"  :123  }", 1, 18},
+                    new object[] {"  {\"propertyName\"  :123}", 3, 20},
+                    new object[] {"{\"propertyName\"  :123}  ", 1, 18},
+
+                    new object[] {"  {\"propertyName\":123  }", 3, 18},
+                    new object[] {"{\"propertyName\":123  }  ", 1, 16},
+
+                    new object[] {"{\"propertyName\":[]}", 1, 16},
+                    new object[] {"{  \"propertyName\":[]}", 3, 18},
+                    new object[] {"{\"propertyName\"  :[]}", 1, 18},
+                    new object[] {"{\"propertyName\":  []}", 1, 18},
+                    new object[] {"{\"propertyName\":[]  }", 1, 16},
+                    new object[] {"  {\"propertyName\":[]}", 3, 18},
+                    new object[] {"{\"propertyName\":[]}  ", 1, 16},
+
+                    new object[] {"{\"propertyName\":{}}", 1, 16},
+                    new object[] {"{  \"propertyName\":{}}", 3, 18},
+                    new object[] {"{\"propertyName\"  :{}}", 1, 18},
+                    new object[] {"{\"propertyName\":  {}}", 1, 18},
+                    new object[] {"{\"propertyName\":{}  }", 1, 16},
+                    new object[] {"  {\"propertyName\":{}}", 3, 18},
+                    new object[] {"{\"propertyName\":{}}  ", 1, 16},
+                };
+            }
+        }
+
+        public static IEnumerable<object[]> ComplexObjectSeveralJsonTokenStartIndex
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] {"{\"\":\"\", \"propertyName\":[]}", 8, 23},
+                    new object[] {"{\"\":\"\",   \"propertyName\":[]}", 10, 25},
+                    new object[] {"{\"\":\"\", \"propertyName\"  :[]}", 8, 25},
+                    new object[] {"{\"\":\"\", \"propertyName\":  []}", 8, 25},
+                    new object[] {"{\"\":\"\", \"propertyName\":[]  }", 8, 23},
+                    new object[] {"  {\"\":\"\", \"propertyName\":[]}", 10, 25},
+                    new object[] {"{\"\":\"\", \"propertyName\":[]}  ", 8, 23},
+
+                    new object[] {"{\"\":\"\", \"propertyName\":{}}", 8, 23},
+                    new object[] {"{\"\":\"\",   \"propertyName\":{}}", 10, 25},
+                    new object[] {"{\"\":\"\", \"propertyName\"  :{}}", 8, 25},
+                    new object[] {"{\"\":\"\", \"propertyName\":  {}}", 8, 25},
+                    new object[] {"{\"\":\"\", \"propertyName\":{}  }", 8, 23},
+                    new object[] {"{  \"\":\"\", \"propertyName\":{}}", 10, 25},
+                    new object[] {"{\"\":\"\", \"propertyName\":{}}  ", 8, 23},
                 };
             }
         }

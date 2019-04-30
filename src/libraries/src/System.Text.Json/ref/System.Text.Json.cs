@@ -174,6 +174,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonReaderState CurrentState { get { throw null; } }
         public bool HasValueSequence { get { throw null; } }
         public System.SequencePosition Position { get { throw null; } }
+        public long TokenStartIndex { get { throw null; } }
         public System.Text.Json.JsonTokenType TokenType { get { throw null; } }
         public System.Buffers.ReadOnlySequence<byte> ValueSequence { get { throw null; } }
         public System.ReadOnlySpan<byte> ValueSpan { get { throw null; } }
