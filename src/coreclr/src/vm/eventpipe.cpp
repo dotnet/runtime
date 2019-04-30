@@ -891,6 +891,7 @@ EventPipeEventInstance *EventPipe::GetNextEvent()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(!GetLock()->OwnedByCurrentThread());
     }
     CONTRACTL_END;
 
