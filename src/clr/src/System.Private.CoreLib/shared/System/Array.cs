@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
 #nullable enable
@@ -1016,24 +1017,40 @@ namespace System
 
             // Hits a code generation bug on ProjectN
 #if !PROJECTN
-            if (typeof(T) == typeof(byte))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                int result = SpanHelpers.IndexOf(
-                    ref Unsafe.Add(ref array.GetRawSzArrayData(), startIndex),
-                    Unsafe.As<T, byte>(ref value),
-                    count);
-
-                return (result >= 0 ? startIndex : 0) + result;
-            }
-
-            if (typeof(T) == typeof(char))
-            {
-                int result = SpanHelpers.IndexOf(
-                    ref Unsafe.Add(ref Unsafe.As<byte, char>(ref array.GetRawSzArrayData()), startIndex),
-                    Unsafe.As<T, char>(ref value),
-                    count);
-
-                return (result >= 0 ? startIndex : 0) + result;
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    int result = SpanHelpers.IndexOf(
+                        ref Unsafe.Add(ref array.GetRawSzArrayData(), startIndex),
+                        Unsafe.As<T, byte>(ref value),
+                        count);
+                    return (result >= 0 ? startIndex : 0) + result;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                {
+                    int result = SpanHelpers.IndexOf(
+                        ref Unsafe.Add(ref Unsafe.As<byte, char>(ref array.GetRawSzArrayData()), startIndex),
+                        Unsafe.As<T, char>(ref value),
+                        count);
+                    return (result >= 0 ? startIndex : 0) + result;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    int result = SpanHelpers.IndexOf(
+                        ref Unsafe.Add(ref Unsafe.As<byte, int>(ref array.GetRawSzArrayData()), startIndex),
+                        Unsafe.As<T, int>(ref value),
+                        count);
+                    return (result >= 0 ? startIndex : 0) + result;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    int result = SpanHelpers.IndexOf(
+                        ref Unsafe.Add(ref Unsafe.As<byte, long>(ref array.GetRawSzArrayData()), startIndex),
+                        Unsafe.As<T, long>(ref value),
+                        count);
+                    return (result >= 0 ? startIndex : 0) + result;
+                }
             }
 #endif
 
@@ -1204,27 +1221,50 @@ namespace System
 
             // Hits a code generation bug on ProjectN
 #if !PROJECTN
-            if (typeof(T) == typeof(byte))
+            if (RuntimeHelpers.IsBitwiseEquatable<T>())
             {
-                int endIndex = startIndex - count + 1;
-                int result = SpanHelpers.LastIndexOf(
-                    ref Unsafe.Add(ref array.GetRawSzArrayData(), endIndex),
-                    Unsafe.As<T, byte>(ref value),
-                    count);
+                if (Unsafe.SizeOf<T>() == sizeof(byte))
+                {
+                    int endIndex = startIndex - count + 1;
+                    int result = SpanHelpers.LastIndexOf(
+                        ref Unsafe.Add(ref array.GetRawSzArrayData(), endIndex),
+                        Unsafe.As<T, byte>(ref value),
+                        count);
 
-                return (result >= 0 ? endIndex : 0) + result;
+                    return (result >= 0 ? endIndex : 0) + result;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(char))
+                {
+                    int endIndex = startIndex - count + 1;
+                    int result = SpanHelpers.LastIndexOf(
+                        ref Unsafe.Add(ref Unsafe.As<byte, char>(ref array.GetRawSzArrayData()), endIndex),
+                        Unsafe.As<T, char>(ref value),
+                        count);
+
+                    return (result >= 0 ? endIndex : 0) + result;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(int))
+                {
+                    int endIndex = startIndex - count + 1;
+                    int result = SpanHelpers.LastIndexOf(
+                        ref Unsafe.Add(ref Unsafe.As<byte, int>(ref array.GetRawSzArrayData()), endIndex),
+                        Unsafe.As<T, int>(ref value),
+                        count);
+
+                    return (result >= 0 ? endIndex : 0) + result;
+                }
+                else if (Unsafe.SizeOf<T>() == sizeof(long))
+                {
+                    int endIndex = startIndex - count + 1;
+                    int result = SpanHelpers.LastIndexOf(
+                        ref Unsafe.Add(ref Unsafe.As<byte, long>(ref array.GetRawSzArrayData()), endIndex),
+                        Unsafe.As<T, long>(ref value),
+                        count);
+
+                    return (result >= 0 ? endIndex : 0) + result;
+                }
             }
-
-            if (typeof(T) == typeof(char))
-            {
-                int endIndex = startIndex - count + 1;
-                int result = SpanHelpers.LastIndexOf(
-                    ref Unsafe.Add(ref Unsafe.As<byte, char>(ref array.GetRawSzArrayData()), endIndex),
-                    Unsafe.As<T, char>(ref value),
-                    count);
-
-                return (result >= 0 ? endIndex : 0) + result;
-            }
+            
 #endif
 
 #if CORECLR
