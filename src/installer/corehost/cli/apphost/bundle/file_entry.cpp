@@ -13,7 +13,7 @@ using namespace bundle;
 bool file_entry_t::is_valid()
 {
     return m_data.offset > 0 && m_data.size > 0 &&
-        (file_type_t)m_data.type < file_type_t::__last;
+        static_cast<file_type_t>(m_data.type) < file_type_t::__last;
 }
 
 file_entry_t* file_entry_t::read(FILE* stream)

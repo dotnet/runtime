@@ -62,10 +62,10 @@ namespace
             return false;
         }
 
-        coreclr_initialize = (coreclr_initialize_fn)pal::get_symbol(g_coreclr, "coreclr_initialize");
-        coreclr_shutdown = (coreclr_shutdown_fn)pal::get_symbol(g_coreclr, "coreclr_shutdown_2");
-        coreclr_execute_assembly = (coreclr_execute_assembly_fn)pal::get_symbol(g_coreclr, "coreclr_execute_assembly");
-        coreclr_create_delegate = (coreclr_create_delegate_fn)pal::get_symbol(g_coreclr, "coreclr_create_delegate");
+        coreclr_initialize = reinterpret_cast<coreclr_initialize_fn>(pal::get_symbol(g_coreclr, "coreclr_initialize"));
+        coreclr_shutdown = reinterpret_cast<coreclr_shutdown_fn>(pal::get_symbol(g_coreclr, "coreclr_shutdown_2"));
+        coreclr_execute_assembly = reinterpret_cast<coreclr_execute_assembly_fn>(pal::get_symbol(g_coreclr, "coreclr_execute_assembly"));
+        coreclr_create_delegate = reinterpret_cast<coreclr_create_delegate_fn>(pal::get_symbol(g_coreclr, "coreclr_create_delegate"));
 
         assert(coreclr_initialize != nullptr
             && coreclr_shutdown != nullptr

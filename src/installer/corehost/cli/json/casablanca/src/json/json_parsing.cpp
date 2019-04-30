@@ -34,7 +34,7 @@ using namespace web::json;
 using namespace utility;
 using namespace utility::conversions;
 
-std::array<signed char,128> _hexval = {{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+static std::array<signed char,128> _hexval = {{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                                          -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                                          -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                                           0,  1,  2,  3,  4,  5,  6,  7,  8,  9, -1, -1, -1, -1, -1, -1,
@@ -82,6 +82,8 @@ public:
           m_currentColumn(1),
           m_currentParsingDepth(0)
     { }
+
+    virtual ~JSON_Parser() { }
 
     struct Location
     {
@@ -375,7 +377,7 @@ inline bool JSON_Parser<CharType>::ParseInt64(CharType first, uint64_t& value)
     auto ch = PeekCharacter();
     while (ch >= '0' && ch <= '9')
     {
-        unsigned int next_digit = (unsigned int)(ch - '0');
+        unsigned int next_digit = static_cast<unsigned int>(ch - '0');
         if (value > (ULLONG_MAX / 10) || (value == ULLONG_MAX/10 && next_digit > ULLONG_MAX%10))
             return false;
 
@@ -410,19 +412,19 @@ namespace
         return _wcstod_l(str, nullptr, utility::details::scoped_c_thread_locale::c_locale());
     }
 #else
-    static int __attribute__((__unused__)) print_llu(char* ptr, size_t n, unsigned long long val64)
+    static int print_llu(char* ptr, size_t n, unsigned long long val64)
     {
         return snprintf(ptr, n, "%llu", val64);
     }
-    static int __attribute__((__unused__)) print_llu(char* ptr, size_t n, unsigned long val64)
+    static int print_llu(char* ptr, size_t n, unsigned long val64)
     {
         return snprintf(ptr, n, "%lu", val64);
     }
-    static double __attribute__((__unused__)) anystod(const char* str)
+    static double anystod(const char* str)
     {
         return strtod(str, nullptr);
     }
-    static double __attribute__((__unused__)) anystod(const wchar_t* str)
+    static double anystod(const wchar_t* str)
     {
         return wcstod(str, nullptr);
     }
@@ -491,7 +493,7 @@ bool JSON_Parser<CharType>::CompleteNumberLiteral(CharType first, Token &token)
     ::std::vector<CharType> buf(::std::numeric_limits<uint64_t>::digits10 + 5);
     int count = print_llu(buf.data(), buf.size(), val64);
     _ASSERTE(count >= 0);
-    _ASSERTE((size_t)count < buf.size());
+    _ASSERTE(static_cast<size_t>(count) < buf.size());
     // Resize to cut off the null terminator
     buf.resize(count);
 
@@ -574,7 +576,7 @@ bool JSON_Parser<CharType>::CompleteNumberLiteral(CharType first, Token &token)
             // Not expected number character?
             break;
         }
-    };
+    }
 
     buf.push_back('\0');
     token.double_val = anystod(buf.data());
@@ -895,7 +897,7 @@ try_again:
     case '}':
     case ']':
         {
-            if((signed int)(--m_currentParsingDepth) < 0)
+            if(static_cast<signed int>(--m_currentParsingDepth) < 0)
             {
                 SetErrorCode(result, json_error::mismatched_brances);
                 break;

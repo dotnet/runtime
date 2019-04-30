@@ -52,7 +52,7 @@ int host_startup_info_t::parse(
     return 0;
 }
 
-const bool host_startup_info_t::is_valid(host_mode_t mode) const
+bool host_startup_info_t::is_valid(host_mode_t mode) const
 {
     if (mode == host_mode_t::libhost)
     {

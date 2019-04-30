@@ -630,7 +630,7 @@ enum SafeIntError
 #if defined SAFEINT_REMOVE_NOTHROW
 #define SAFEINT_NOTHROW
 #else
-#define SAFEINT_NOTHROW throw()
+#define SAFEINT_NOTHROW noexcept
 #endif
 
 namespace msl
@@ -5592,6 +5592,11 @@ public:
     {
         C_ASSERT( NumericType< T >::isInt );
         *this = SafeInt< T, E >( (U)u );
+    }
+
+    SafeInt(const SafeInt< T, E >& u) SAFEINT_NOTHROW
+    {
+        *this = u;
     }
 
     template < typename U >

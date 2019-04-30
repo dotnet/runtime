@@ -20,7 +20,7 @@ struct host_startup_info_t
         int argc,
         const pal::char_t* argv[]);
 
-    const bool is_valid(host_mode_t mode) const;
+    bool is_valid(host_mode_t mode) const;
 
     const pal::string_t get_app_name() const;
 

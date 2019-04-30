@@ -244,7 +244,7 @@ void deps_resolver_t::setup_probe_config(
     m_probes.push_back(probe_config_t::published_deps_dir());
 
     // The framework locations, starting with highest level framework.
-    for (int i = 1; i < m_fx_definitions.size(); ++i)
+    for (size_t i = 1; i < m_fx_definitions.size(); ++i)
     {
         if (pal::directory_exists(m_fx_definitions[i]->get_dir()))
         {
@@ -549,7 +549,7 @@ bool deps_resolver_t::resolve_tpa_list(
     }
 
     // Probe FX deps entries after app assemblies are added.
-    for (int i = 1; i < m_fx_definitions.size(); ++i)
+    for (size_t i = 1; i < m_fx_definitions.size(); ++i)
     {
         const auto& deps_entries = m_is_framework_dependent ? m_fx_definitions[i]->get_deps().get_entries(deps_entry_t::asset_types::runtime) : empty;
         for (const auto& entry : deps_entries)
@@ -648,7 +648,7 @@ void deps_resolver_t::resolve_additional_deps(const arguments_t& args, const dep
         }
         else
         {
-            for (int i = 1; i < m_fx_definitions.size(); ++i)
+            for (size_t i = 1; i < m_fx_definitions.size(); ++i)
             {
                 fx_ver_t most_compatible_deps_folder_version;
                 fx_ver_t framework_found_version;
@@ -833,7 +833,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     for (const auto& additional_deps : m_additional_deps)
     {
         const auto additional_deps_entries = additional_deps->get_entries(asset_type);
-        for (const auto entry : additional_deps_entries)
+        for (const auto& entry : additional_deps_entries)
         {
             if (!add_package_cache_entry(entry, m_app_dir, 0))
             {
@@ -843,7 +843,7 @@ bool deps_resolver_t::resolve_probe_dirs(
     }
 
     // Add fx package locations to fx_dir
-    for (int i = 1; i < m_fx_definitions.size(); ++i)
+    for (size_t i = 1; i < m_fx_definitions.size(); ++i)
     {
         const auto& fx_entries = m_fx_definitions[i]->get_deps().get_entries(asset_type);
 

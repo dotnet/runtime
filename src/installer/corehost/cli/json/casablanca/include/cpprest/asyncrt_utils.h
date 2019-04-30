@@ -341,7 +341,7 @@ _ASYNCRTIMP const std::error_category & __cdecl platform_category();
 /// </summary>
 inline std::system_error __cdecl create_system_error(unsigned long errorCode)
 {
-    std::error_code code((int)errorCode, platform_category());
+    std::error_code code(static_cast<int>(errorCode), platform_category());
     return std::system_error(code, code.message());
 }
 
@@ -350,7 +350,7 @@ inline std::system_error __cdecl create_system_error(unsigned long errorCode)
 /// </summary>
 inline std::error_code __cdecl create_error_code(unsigned long errorCode)
 {
-    return std::error_code((int)errorCode, platform_category());
+    return std::error_code(static_cast<int>(errorCode), platform_category());
 }
 
 /// <summary>

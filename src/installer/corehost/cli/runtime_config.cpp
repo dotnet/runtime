@@ -461,6 +461,6 @@ bool runtime_config_t::mark_specified_setting(specified_setting setting)
         return false;
     }
 
-    m_specified_settings = (specified_setting)(m_specified_settings | setting);
+    m_specified_settings = static_cast<specified_setting>(m_specified_settings | setting);
     return true;
 }

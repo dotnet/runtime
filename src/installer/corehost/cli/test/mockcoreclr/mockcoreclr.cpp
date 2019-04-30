@@ -35,7 +35,7 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_initialize(
 
     if (hostHandle != nullptr)
     {
-        *hostHandle = (coreclr_t::host_handle_t*)(size_t) 0xdeadbeef;
+        *hostHandle = reinterpret_cast<coreclr_t::host_handle_t>(0xdeadbeef);
     }
 
     return StatusCode::Success;
@@ -139,7 +139,7 @@ typedef void (*CoreClrDelegate)();
 
 const int MaxDelegates = 16;
 
-MockCoreClrDelegate DelegateState[MaxDelegates];
+static MockCoreClrDelegate DelegateState[MaxDelegates];
 
 #define DelegateFunction(index)\
 void Delegate_ ## index() { DelegateState[index].Echo(); }
@@ -213,7 +213,7 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_create_delegate(
 
     DelegateState[delegateIndex] = delegateState;
 
-    *delegate = (void*) delegates[delegateIndex];
+    *delegate = reinterpret_cast<void*>(delegates[delegateIndex]);
 
     return StatusCode::Success;
 }

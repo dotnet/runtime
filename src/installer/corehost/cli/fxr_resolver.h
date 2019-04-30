@@ -56,7 +56,7 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostNameToAppNameCall
 
     // Leak fxr
 
-    auto get_delegate_from_hostfxr = (hostfxr_get_delegate_fn)pal::get_symbol(fxr, "hostfxr_get_runtime_delegate");
+    auto get_delegate_from_hostfxr = reinterpret_cast<hostfxr_get_delegate_fn>(pal::get_symbol(fxr, "hostfxr_get_runtime_delegate"));
     if (get_delegate_from_hostfxr == nullptr)
         return StatusCode::CoreHostEntryPointFailure;
 
@@ -71,7 +71,7 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostNameToAppNameCall
         return status;
     }
 
-    return get_delegate_from_hostfxr(host_path.c_str(), dotnet_root.c_str(), app_path_to_use->c_str(), type, (void**)delegate);
+    return get_delegate_from_hostfxr(host_path.c_str(), dotnet_root.c_str(), app_path_to_use->c_str(), type, reinterpret_cast<void**>(delegate));
 }
 
 #endif //_COREHOST_CLI_FXR_RESOLVER_H_
