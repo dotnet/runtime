@@ -255,6 +255,7 @@ namespace System.Net.Http.Functional.Tests
             }, options);
         }
 
+        [ActiveIssue(37336)]
         [ActiveIssue(30056, TargetFrameworkMonikers.Uap)]
         [Theory]
         [InlineData(ClientCertificateOption.Manual)]
