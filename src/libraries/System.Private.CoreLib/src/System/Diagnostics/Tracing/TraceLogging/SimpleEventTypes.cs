@@ -4,6 +4,7 @@
 
 #nullable enable
 using System;
+using System.Diagnostics;
 using Interlocked = System.Threading.Interlocked;
 
 #if ES_BUILD_STANDALONE
