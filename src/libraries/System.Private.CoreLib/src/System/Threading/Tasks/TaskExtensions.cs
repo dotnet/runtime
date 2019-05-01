@@ -49,10 +49,13 @@ namespace System.Threading.Tasks
                 Task.FromCanceled<TResult>(new CancellationToken(true));
         }
 
+        // TODO: Remove the below three methods once corefx has consumed a build with them in their new TaskAsyncEnumerableExtensions location.
+
         /// <summary>Configures how awaits on the tasks returned from an async disposable will be performed.</summary>
         /// <param name="source">The source async disposable.</param>
         /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
         /// <returns>The configured async disposable.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static ConfiguredAsyncDisposable ConfigureAwait(this IAsyncDisposable source, bool continueOnCapturedContext) =>
             new ConfiguredAsyncDisposable(source, continueOnCapturedContext);
 
@@ -61,6 +64,7 @@ namespace System.Threading.Tasks
         /// <param name="source">The source enumerable being iterated.</param>
         /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
         /// <returns>The configured enumerable.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static ConfiguredCancelableAsyncEnumerable<T> ConfigureAwait<T>(
             this IAsyncEnumerable<T> source, bool continueOnCapturedContext) =>
             new ConfiguredCancelableAsyncEnumerable<T>(source, continueOnCapturedContext, cancellationToken: default);
@@ -70,6 +74,7 @@ namespace System.Threading.Tasks
         /// <param name="source">The source enumerable being iterated.</param>
         /// <param name="cancellationToken">The <see cref="CancellationToken"/> to use.</param>
         /// <returns>The configured enumerable.</returns>
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static ConfiguredCancelableAsyncEnumerable<T> WithCancellation<T>(
             this IAsyncEnumerable<T> source, CancellationToken cancellationToken) =>
             new ConfiguredCancelableAsyncEnumerable<T>(source, continueOnCapturedContext: true, cancellationToken);
