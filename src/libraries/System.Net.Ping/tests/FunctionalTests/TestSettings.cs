@@ -18,21 +18,33 @@ namespace System.Net.NetworkInformation.Tests
 
         public static readonly byte[] PayloadAsBytesShort = Encoding.UTF8.GetBytes("ABCDEF0123456789");
 
-        public static IPAddress GetLocalIPAddress(AddressFamily addressFamily = AddressFamily.Unspecified)
+        public static IPAddress[] GetLocalIPAddresses()
         {
             IPHostEntry hostEntry = Dns.GetHostEntry(LocalHost);
-            return GetIPAddressForHost(hostEntry, addressFamily);
+            return hostEntry.AddressList;
+        }
+
+        public static async Task<IPAddress[]> GetLocalIPAddressesAsync()
+        {
+            IPHostEntry hostEntry = await Dns.GetHostEntryAsync(LocalHost);
+            return hostEntry.AddressList;
+        }
+
+        public static IPAddress GetLocalIPAddress(AddressFamily addressFamily = AddressFamily.Unspecified)
+        {
+            IPAddress[] addressList = GetLocalIPAddresses();
+            return GetIPAddressForHost(addressList, addressFamily);
         }
 
         public static async Task<IPAddress> GetLocalIPAddressAsync(AddressFamily addressFamily = AddressFamily.Unspecified)
         {
-            IPHostEntry hostEntry = await Dns.GetHostEntryAsync(LocalHost);
-            return GetIPAddressForHost(hostEntry, addressFamily);
+            IPAddress[] addressList = await GetLocalIPAddressesAsync();
+            return GetIPAddressForHost(addressList, addressFamily);
         }
 
-        private static IPAddress GetIPAddressForHost(IPHostEntry hostEntry, AddressFamily addressFamily = AddressFamily.Unspecified)
+        private static IPAddress GetIPAddressForHost(IPAddress[] addressList, AddressFamily addressFamily = AddressFamily.Unspecified)
         {
-            foreach (IPAddress address in hostEntry.AddressList)
+            foreach (IPAddress address in addressList)
             {
                 if (address.AddressFamily == addressFamily || (addressFamily == AddressFamily.Unspecified && address.AddressFamily == AddressFamily.InterNetworkV6))
                 {
@@ -43,9 +55,9 @@ namespace System.Net.NetworkInformation.Tests
             // If there's no IPv6 addresses, just take the first (IPv4) address.
             if (addressFamily == AddressFamily.Unspecified)
             {
-                if (hostEntry.AddressList.Length > 0)
+                if (addressList.Length > 0)
                 {
-                    return hostEntry.AddressList[0];
+                    return addressList[0];
                 }
 
                 throw new InvalidOperationException("Unable to discover any addresses for the local host.");
