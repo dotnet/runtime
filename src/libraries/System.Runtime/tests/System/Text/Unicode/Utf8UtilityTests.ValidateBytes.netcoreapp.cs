@@ -118,6 +118,7 @@ namespace System.Text.Unicode.Tests
         [InlineData("3031" + "E1C080" + EURO_SYMBOL + EURO_SYMBOL, 2, 2, 0)] // Improperly terminated 3-byte sequence at start of DWORD
         [InlineData("3031" + "EDA080" + EURO_SYMBOL + EURO_SYMBOL, 2, 2, 0)] // Surrogate 3-byte sequence at start of DWORD
         [InlineData("3031" + "E69C88" + "E59B" + "E69C88", 5, 3, 0)] // Incomplete 3-byte sequence surrounded by valid 3-byte sequences
+        [InlineData("E78B80" + "80", 3, 1, 0)] // Valid 3-byte sequence followed by standalone continuation byte
         [InlineData("3031" + "F5808080", 2, 2, 0)] // [ F5 ] is always invalid
         [InlineData("3031" + "F6808080", 2, 2, 0)] // [ F6 ] is always invalid
         [InlineData("3031" + "F7808080", 2, 2, 0)] // [ F7 ] is always invalid
