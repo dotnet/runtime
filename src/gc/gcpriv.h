@@ -3155,7 +3155,7 @@ public:
 
     // This is if large pages should be used.
     PER_HEAP_ISOLATED
-    size_t use_large_pages_p;
+    bool use_large_pages_p;
 
     PER_HEAP_ISOLATED
     size_t last_gc_index;
