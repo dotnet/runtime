@@ -331,6 +331,7 @@
 
     <!-- Warnings -->
     <NoWarn>$(NoWarn);BCL0020</NoWarn> <!-- TODO: Remove BCL0020 once https://github.com/dotnet/arcade/pull/2158 is consumed. -->
+    <NoWarn>$(NoWarn);CS8609</NoWarn> <!-- TODO: Remove CS8609 once https://github.com/dotnet/roslyn/issues/23268 is consumed. -->
   </PropertyGroup>
 
   <!-- Set up some common paths -->
