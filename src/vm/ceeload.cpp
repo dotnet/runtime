@@ -11654,7 +11654,7 @@ static bool GetBasename(LPCWSTR _src, __out_ecount(dstlen) __out_z LPWSTR _dst, 
 
 static LPCWSTR s_pCommandLine = NULL;
 
-// Rerieve the full command line for the current process.
+// Retrieve the full command line for the current process.
 LPCWSTR GetManagedCommandLine()
 {
     LIMITED_METHOD_CONTRACT;
@@ -11725,7 +11725,7 @@ void SaveManagedCommandLine(LPCWSTR pwzAssemblyPath, int argc, LPCWSTR *argv)
     LPWSTR pCursor         = pNewCommandLine;
 
     Append_Next_Item(&pCursor, &remainingLen, osCommandLine,   true);
-    Append_Next_Item(&pCursor, &remainingLen, pwzAssemblyPath, true);
+    Append_Next_Item(&pCursor, &remainingLen, pwzAssemblyPath, (argc > 0));
 
     for (int i = 0; i < argc; i++)
     {
@@ -11768,7 +11768,7 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
         // Get the managed command line.
         LPCWSTR pCmdLine = GetManagedCommandLine();
 
-        // If this process started as a service we won't havre a managed command line
+        // If this process started as a service we won't have a managed command line
         if (pCmdLine == nullptr)
         {
             // Use the result from GetCommandLineW() instead
