@@ -1471,6 +1471,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(37325)]
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]  // Expected process HandleCounts differs on OSX
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Handle count change is not reliable, but seems less robust on NETFX")]
