@@ -1117,7 +1117,8 @@ arch_init (MonoAotCompile *acfg)
 	if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "darwin")) {
 		g_string_append (acfg->llc_args, "-mattr=+v6");
 	} else {
-		g_string_append (acfg->llc_args, " -march=arm");
+		if (!(acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "thumb")))
+			g_string_append (acfg->llc_args, " -march=arm");
 
 		if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "ios"))
 			g_string_append (acfg->llc_args, " -mattr=+v7");
