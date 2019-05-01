@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
+  <PropertyGroup>
+    <ProjectGuid>{96A7CE75-B5E8-421B-BDF0-C4651D97D8CA}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netstandard'">true</IsPartialFacadeAssembly>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)\CoreLib\System\Collections\Generic\IAsyncEnumerable.cs">
+      <Link>ProductionCode\Common\CoreLib\System\Collections\Generic\IAsyncEnumerable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Collections\Generic\IAsyncEnumerator.cs">
+      <Link>ProductionCode\Common\CoreLib\System\Collections\Generic\IAsyncEnumerator.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\IAsyncDisposable.cs">
+      <Link>ProductionCode\Common\CoreLib\System\IAsyncDisposable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs">
+      <Link>ProductionCode\Common\CoreLib\System\Runtime\CompilerServices\AsyncIteratorStateMachineAttribute.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\ConfiguredAsyncDisposable.cs">
+      <Link>ProductionCode\Common\CoreLib\System\Runtime\CompilerServices\ConfiguredAsyncDisposable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs">
+      <Link>ProductionCode\Common\CoreLib\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+    <Reference Include="System.Threading.Tasks" />
+  </ItemGroup>
+</Project>
