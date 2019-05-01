@@ -97,6 +97,32 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
+        [Theory]
+        [InlineData("Content-Security-Policy", 4618)]
+        [InlineData("RandomCustomHeader", 12345)]
+        public async Task GetAsync_LargeHeader_Success(string headerName, int headerValueLength)
+        {
+            var rand = new Random(42);
+            string headerValue = new string(Enumerable.Range(0, headerValueLength).Select(_ => (char)('A' + rand.Next(26))).ToArray());
+
+            const string ContentString = "hello world";
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (var client = CreateHttpClient())
+                using (HttpResponseMessage resp = await client.GetAsync(uri))
+                {
+                    Assert.Equal(headerValue, resp.Headers.GetValues(headerName).Single());
+                    Assert.Equal(ContentString, await resp.Content.ReadAsStringAsync());
+                }
+            },
+            async server =>
+            {
+                var headers = new List<HttpHeaderData>();
+                headers.Add(new HttpHeaderData(headerName, headerValue));
+                await server.HandleRequestAsync(HttpStatusCode.OK, headers: headers, content: ContentString);
+            });
+        }
+
         [Fact]
         public async Task GetAsync_EmptyResponseHeader_Success()
         {
