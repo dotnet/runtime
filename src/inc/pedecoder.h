@@ -106,6 +106,10 @@ inline CHECK CheckOverflow(RVA value1, COUNT_T value2)
 
 typedef DPTR(class PEDecoder) PTR_PEDecoder;
 
+typedef bool (*PEDecoder_ResourceTypesCallbackFunction)(LPCWSTR lpType, void* context);
+typedef bool (*PEDecoder_ResourceNamesCallbackFunction)(LPCWSTR lpName, LPCWSTR lpType, void* context);
+typedef bool (*PEDecoder_ResourceCallbackFunction)(LPCWSTR lpName, LPCWSTR lpType, DWORD langid, BYTE* data, COUNT_T cbData, void* context);
+
 class PEDecoder
 {
   public:
@@ -253,9 +257,9 @@ class PEDecoder
 
     // Win32 resources
     void *GetWin32Resource(LPCWSTR lpName, LPCWSTR lpType, COUNT_T *pSize = NULL) const;
-  private:
-    DWORD ReadResourceDictionary(DWORD rvaOfResourceSection, DWORD rva, LPCWSTR name, BOOL *pIsDictionary) const;
-    DWORD ReadResourceDataEntry(DWORD rva, COUNT_T *pSize) const;
+    bool EnumerateWin32ResourceTypes(PEDecoder_ResourceTypesCallbackFunction callback, void* context) const;
+    bool EnumerateWin32ResourceNames(LPCWSTR lpType, PEDecoder_ResourceNamesCallbackFunction callback, void* context) const;
+    bool EnumerateWin32Resources(LPCWSTR lpName, LPCWSTR lpType, PEDecoder_ResourceCallbackFunction callback, void* context) const;
   public:
 
     // COR header fields
