@@ -5,6 +5,8 @@
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netstandard'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
+    <Compile Include="System\Runtime\CompilerServices\AsyncIteratorMethodBuilder.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Collections\Generic\IAsyncEnumerable.cs">
       <Link>ProductionCode\Common\CoreLib\System\Collections\Generic\IAsyncEnumerable.cs</Link>
     </Compile>
@@ -26,7 +28,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
     <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>

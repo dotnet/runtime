@@ -169,6 +169,7 @@ namespace System.Threading.Tasks.Sources.Tests
             Assert.Same(e, Assert.Throws<OperationCanceledException>(() => mrvts.GetResult(0)));
         }
 
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -192,6 +193,7 @@ namespace System.Threading.Tasks.Sources.Tests
             mres.Wait();
         }
 
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.Netcoreapp)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -399,43 +401,55 @@ namespace System.Threading.Tasks.Sources.Tests
             protected override IEnumerable<Task> GetScheduledTasks() => null;
         }
 
-        [Fact]
-        public async Task AsyncEnumerable_Success()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task AsyncEnumerable_Success(bool awaitForeach, bool asyncIterator)
         {
-            // Equivalent to:
-            //   int total = 0;
-            //   foreach async(int i in CountAsync(20))
-            //   {
-            //       total += i;
-            //   }
-            //   Assert.Equal(190, i);
+            IAsyncEnumerable<int> enumerable = asyncIterator ?
+                CountCompilerAsync(20) :
+                CountManualAsync(20);
 
-            IAsyncEnumerator<int> enumerator = CountAsync(20).GetAsyncEnumerator();
-            try
+            if (awaitForeach)
             {
                 int total = 0;
-                while (await enumerator.MoveNextAsync())
+                await foreach (int i in enumerable)
                 {
-                    total += enumerator.Current;
+                    total += i;
                 }
                 Assert.Equal(190, total);
             }
-            finally
+            else
             {
-                await enumerator.DisposeAsync();
+                IAsyncEnumerator<int> enumerator = enumerable.GetAsyncEnumerator();
+                try
+                {
+                    int total = 0;
+                    while (await enumerator.MoveNextAsync())
+                    {
+                        total += enumerator.Current;
+                    }
+                    Assert.Equal(190, total);
+                }
+                finally
+                {
+                    await enumerator.DisposeAsync();
+                }
             }
         }
 
-        // Approximate compiler-generated code for:
-        //     internal static AsyncEnumerable<int> CountAsync(int items)
-        //     {
-        //         for (int i = 0; i < items; i++)
-        //         {
-        //             await Task.Delay(i).ConfigureAwait(false);
-        //             yield return i;
-        //         }
-        //     }
-        internal static IAsyncEnumerable<int> CountAsync(int items) =>
+        internal static async IAsyncEnumerable<int> CountCompilerAsync(int items)
+        {
+            for (int i = 0; i < items; i++)
+            {
+                await Task.Delay(i).ConfigureAwait(false);
+                yield return i;
+            }
+        }
+
+        internal static IAsyncEnumerable<int> CountManualAsync(int items) =>
             new CountAsyncEnumerable(items);
 
         private sealed class CountAsyncEnumerable :

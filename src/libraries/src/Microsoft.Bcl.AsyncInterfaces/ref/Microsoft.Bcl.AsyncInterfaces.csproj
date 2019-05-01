@@ -13,5 +13,6 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>
