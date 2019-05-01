@@ -3,12 +3,10 @@
     <ProjectGuid>{53134B0C-0D57-481B-B84E-D1991E8D54FF}</ProjectGuid>
     <RootNamespace>System.Numerics</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetsNetCoreAppOrUap Condition="'$(TargetsNetCoreApp)'=='true' OR '$(TargetsUap)' == 'true'">true</TargetsNetCoreAppOrUap>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)'=='true' OR '$(TargetsNetCoreAppOrUap)'=='true'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <HasIntrinsics Condition="'$(TargetsNetCoreApp)'=='true'">true</HasIntrinsics>
     <DefineConstants Condition="'$(HasIntrinsics)'=='true'">$(DefineConstants);HAS_INTRINSICS</DefineConstants>
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.0'">netstandard1.0;portable-net45+win8+wp8+wpa81</PackageTargetFramework>
-    <Configurations>net46-Debug;net46-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <!-- Shared -->
   <ItemGroup>
@@ -19,38 +17,8 @@
       <Link>System\Runtime\CompilerServices\IntrinsicAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- On .NET Core, Vector<T> is in System.Private.CoreLib -->
-  <ItemGroup Condition="'$(TargetsNetCoreAppOrUap)' != 'true'">
-    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\ConstantHelper.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>ConstantHelper.tt</DependentUpon>
-      <Link>System\Numerics\ConstantHelper.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Register.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Register.tt</DependentUpon>
-      <Link>System\Numerics\Register.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Vector.tt</DependentUpon>
-      <Link>System\Numerics\Vector.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Vector_Operations.cs">
-      <Link>System\Numerics\Vector_Operations.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <!-- Carry a copy of MathF where not available -->
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true' OR $(TargetGroup.StartsWith('netstandard'))">
-    <Compile Include="$(CommonPath)\System\MathF.netstandard.cs">
-      <Link>System\MathF.netstandard.cs</Link>
-    </Compile>
-  </ItemGroup>
   <!-- Portable version only -->
-  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+  <ItemGroup>
     <Compile Include="System\Numerics\Matrix3x2.cs" />
     <Compile Include="System\Numerics\Matrix4x4.cs" />
     <Compile Include="System\Numerics\Plane.cs" />
@@ -64,10 +32,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(HasIntrinsics)' == 'true'">
     <Compile Include="System\Numerics\VectorMath.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(CommonPath)\CoreLib\System\Numerics\GenerationConfig.ttinclude">
@@ -89,15 +53,8 @@
       <Link>System\Numerics\Vector.tt</Link>
     </Content>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreAppOrUap)' == 'true'">
+  <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetCoreAppOrUap)' != 'true'">
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.Globalization" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{99E1E564-0EF4-4E33-BECE-8ABE64771349}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
@@ -25,11 +25,8 @@
     <Compile Include="Matrix4x4Tests.cs" />
     <Compile Include="PlaneTests.cs" />
     <Compile Include="QuaternionTests.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'netfx' OR '$(TargetGroup)' == 'netstandard'" Include="..\..\Common\src\System\MathF.netstandard.cs">
-      <Link>System\MathF.netstandard.cs</Link>
-    </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
+  <ItemGroup>
     <Compile Include="GenericVectorTests.netcoreapp.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -50,7 +47,7 @@
       <LastGenOutput>GenericVectorTests.cs</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup>
     <Content Include="GenericVectorTests.netcoreapp.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>GenericVectorTests.netcoreapp.cs</LastGenOutput>

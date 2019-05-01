@@ -1,17 +1,10 @@
 ﻿<Project>
   <PropertyGroup>
-    <PackageConfigurations>
-      netstandard1.0;
-      netstandard;
-      net46;
-    </PackageConfigurations>
     <BuildConfigurations>
-      uapaot-Windows_NT;
-      uap-Windows_NT;
-      netfx-Windows_NT;
-      netcoreapp-Windows_NT;
       netcoreapp-Unix;
-      $(PackageConfigurations)
+      netcoreapp-Windows_NT;
+      uap-Windows_NT;
+      uapaot-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
