@@ -1133,8 +1133,9 @@ typedef JIT_DEBUG_INFO JIT_DEBUG_INFO32, *LPJIT_DEBUG_INFO32;
 typedef JIT_DEBUG_INFO JIT_DEBUG_INFO64, *LPJIT_DEBUG_INFO64;
 
 /******************* resources ***************************************/
-
+#define IS_INTRESOURCE(_r) ((((ULONG_PTR)(_r)) >> 16) == 0)
 #define MAKEINTRESOURCEW(i) ((LPWSTR)((ULONG_PTR)((WORD)(i))))
+#define MAKEINTRESOURCE(i) ((LPWSTR)((ULONG_PTR)((WORD)(i))))
 #define RT_RCDATA           MAKEINTRESOURCE(10)
 #define RT_VERSION          MAKEINTRESOURCE(16)
 

@@ -19,6 +19,9 @@
 #include "zapmetadata.h"
 #include "zapimport.h"
 
+#include <clr_std/vector>
+#include <clr_std/algorithm>
+
 //
 // IMAGE_COR20_HEADER
 //
@@ -190,54 +193,252 @@ void ZapImage::SaveCodeManagerEntry()
 // Needed for RT_VERSION.
 #define MAKEINTRESOURCE(v) MAKEINTRESOURCEW(v)
 
-void ZapVersionResource::Save(ZapWriter * pZapWriter)
+void ZapWin32ResourceDirectory::Save(ZapWriter * pZapWriter)
 {
-    // Resources are binary-sorted tree structure. Since we are saving just one resource
-    // the binary structure is degenerated link list. By convention, Windows uses three levels
-    // for resources: Type, Name, Language.
+    //
+    // The IMAGE_RESOURCE_DIRECTORY resource data structure is followed by a number of IMAGE_RESOURCE_DIRECTORY_ENTRY entries, which can either 
+    // point to other resource directories (RVAs to other ZapWin32ResourceDirectory nodes), or point to actual resource data (RVAs to a number 
+    // of IMAGE_RESOURCE_DATA_ENTRY entries that immediately follow the IMAGE_RESOURCE_DIRECTORY_ENTRY entries).
+    //
 
-    // See vctools\link\doc\pecoff.doc for detailed documentation of PE format.
+    //
+    // Sorting for resources is done in the following way accoring to the PE format specifications:
+    //   1) First, all the IMAGE_RESOURCE_DIRECTORY_ENTRY entries where the ID is a name string, sorted by names
+    //   2) Second, all the IMAGE_RESOURCE_DIRECTORY_ENTRY entries with non-string IDs, sorted by IDs.
+    //
+    struct ResourceSorter
+    {
+        bool operator() (DataOrSubDirectoryEntry& a, DataOrSubDirectoryEntry& b)
+        {
+            if (a.m_nameOrIdIsString && !b.m_nameOrIdIsString)
+                return true;
+            if (!a.m_nameOrIdIsString && b.m_nameOrIdIsString)
+                return false;
+            if (a.m_nameOrIdIsString)
+                return wcscmp(((ZapWin32ResourceString*)(a.m_pNameOrId))->GetString(), ((ZapWin32ResourceString*)(b.m_pNameOrId))->GetString()) < 0;
+            else
+                return a.m_pNameOrId < b.m_pNameOrId;
+        }
+    } resourceSorter;
+    std::sort(m_entries.begin(), m_entries.end(), resourceSorter);
 
-    VersionResourceHeader header;
 
-    ZeroMemory(&header, sizeof(header));
+    IMAGE_RESOURCE_DIRECTORY directory;
+    ZeroMemory(&directory, sizeof(IMAGE_RESOURCE_DIRECTORY));
 
-    header.TypeDir.NumberOfIdEntries = 1;
-    header.TypeEntry.Id = (USHORT)((ULONG_PTR)RT_VERSION);
-    header.TypeEntry.OffsetToDirectory = offsetof(VersionResourceHeader, NameDir);
-    header.TypeEntry.DataIsDirectory = 1;
+    for (auto& entry : m_entries)
+    {
+        if (entry.m_nameOrIdIsString)
+            directory.NumberOfNamedEntries++;
+        else
+            directory.NumberOfIdEntries++;
+    }
+    pZapWriter->Write(&directory, sizeof(IMAGE_RESOURCE_DIRECTORY));
 
-    header.NameDir.NumberOfIdEntries = 1;
-    header.NameEntry.Id = 1;
-    header.NameEntry.OffsetToDirectory = offsetof(VersionResourceHeader, LangDir);
-    header.NameEntry.DataIsDirectory = 1;
+    // Offsets are based from the begining of the resources blob (see PE format documentation)
+    DWORD dataEntryRVA = this->GetRVA() - m_pWin32ResourceSection->GetRVA()
+        + sizeof(IMAGE_RESOURCE_DIRECTORY) + 
+        (DWORD)m_entries.size() * sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY);
 
-    header.LangDir.NumberOfIdEntries = 1;
-    header.LangEntry.OffsetToDirectory = offsetof(VersionResourceHeader, DataEntry);
+    for (auto& entry : m_entries)
+    {
+        IMAGE_RESOURCE_DIRECTORY_ENTRY dirEntry;
+        ZeroMemory(&dirEntry, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
 
-    header.DataEntry.OffsetToData = m_pVersionData->GetRVA();
-    header.DataEntry.Size = m_pVersionData->GetSize();
+        if (entry.m_nameOrIdIsString)
+        {
+            // Offsets are based from the begining of the resources blob (see PE format documentation)
+            dirEntry.NameOffset = ((ZapWin32ResourceString*)(entry.m_pNameOrId))->GetRVA() - m_pWin32ResourceSection->GetRVA();
+            dirEntry.NameIsString = true;
+        }
+        else
+        {
+            _ASSERT(IS_INTRESOURCE(entry.m_pNameOrId));
+            dirEntry.Id = (WORD)((ULONG_PTR)entry.m_pNameOrId & 0xffff);
+        }
 
-    pZapWriter->Write(&header, sizeof(header));
+        if (entry.m_dataIsSubDirectory)
+        {
+            // Offsets are based from the begining of the resources blob (see PE format documentation)
+            dirEntry.OffsetToDirectory = entry.m_pDataOrSubDirectory->GetRVA() - m_pWin32ResourceSection->GetRVA();
+            dirEntry.DataIsDirectory = true;
+        }
+        else
+        {
+            dirEntry.OffsetToData = dataEntryRVA;
+            dataEntryRVA += sizeof(IMAGE_RESOURCE_DATA_ENTRY);
+        }
+
+        pZapWriter->Write(&dirEntry, sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
+    }
+
+    for (auto& entry : m_entries)
+    {
+        if (entry.m_dataIsSubDirectory)
+            continue;
+
+        IMAGE_RESOURCE_DATA_ENTRY dataEntry;
+        ZeroMemory(&dataEntry, sizeof(IMAGE_RESOURCE_DATA_ENTRY));
+
+        dataEntry.OffsetToData = entry.m_pDataOrSubDirectory->GetRVA();
+        dataEntry.Size = entry.m_pDataOrSubDirectory->GetSize();
+
+        pZapWriter->Write(&dataEntry, sizeof(IMAGE_RESOURCE_DATA_ENTRY));
+    }
 }
 
-void ZapImage::CopyWin32VersionResource()
+void ZapImage::CopyWin32Resources()
 {
-    // Copy the version resource over so it is easy to see in the dumps where the ngened module came from
-    COUNT_T cbResourceData;
-    PVOID pResourceData = m_ModuleDecoder.GetWin32Resource(MAKEINTRESOURCE(1), RT_VERSION, &cbResourceData);
+#ifdef FEATURE_PREJIT
+    if (!IsReadyToRunCompilation())
+    {
+        // When compiling a fragile NGEN image, in order to avoid the risk of regression, only copy the RT_VERSION resource over so it 
+        // is easy to see in the dumps where the ngened module came from. For R2R, we copy all resources (new behavior).
+        COUNT_T cbResourceData;
+        PVOID pResourceData = m_ModuleDecoder.GetWin32Resource(MAKEINTRESOURCE(1), RT_VERSION, &cbResourceData);
 
-    if (!pResourceData || !cbResourceData)
+        if (!pResourceData || !cbResourceData)
+            return;
+
+        ZapBlob * pVersionData = new (GetHeap()) ZapBlobPtr(pResourceData, cbResourceData);
+
+        ZapWin32ResourceDirectory* pTypeDirectory = new (GetHeap()) ZapWin32ResourceDirectory(m_pWin32ResourceSection);
+        ZapWin32ResourceDirectory* pNameDirectory = new (GetHeap()) ZapWin32ResourceDirectory(m_pWin32ResourceSection);
+        ZapWin32ResourceDirectory* pLanguageDirectory = new (GetHeap()) ZapWin32ResourceDirectory(m_pWin32ResourceSection);
+
+        pTypeDirectory->AddEntry(RT_VERSION, false, pNameDirectory, true);
+        pNameDirectory->AddEntry(MAKEINTRESOURCE(1), false, pLanguageDirectory, true);
+        pLanguageDirectory->AddEntry(MAKEINTRESOURCE(0), false, pVersionData, false);
+
+        pTypeDirectory->PlaceNodeAndDependencies(m_pWin32ResourceSection);
+
+        m_pWin32ResourceSection->Place(pVersionData);
+
+        SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE, m_pWin32ResourceSection);
+
         return;
+    }
+#endif
 
-    ZapBlob * pVersionData = new (GetHeap()) ZapBlobPtr(pResourceData, cbResourceData);
+    class ResourceEnumerationCallback
+    {
+        ZapImage* m_pZapImage;
+        PEDecoder* m_pModuleDecoder;
 
-    ZapVersionResource * pVersionResource = new (GetHeap()) ZapVersionResource(pVersionData);
+        std::vector<ZapNode*> m_dataEntries;
+        std::vector<ZapBlob*> m_stringEntries;
 
-    m_pWin32ResourceSection->Place(pVersionResource);
-    m_pWin32ResourceSection->Place(pVersionData);
+        ZapWin32ResourceDirectory* m_pRootDirectory;
+        ZapWin32ResourceDirectory* m_pCurrentTypesDirectory;
+        ZapWin32ResourceDirectory* m_pCurrentNamesDirectory;
 
-    SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE, m_pWin32ResourceSection);
+        bool AddResource(LPCWSTR lpszResourceName, LPCWSTR lpszResourceType, DWORD langID, BYTE* pResourceData, COUNT_T cbResourceData)
+        {
+            ZapBlob* pDataBlob = new (m_pZapImage->GetHeap()) ZapBlobPtr(pResourceData, cbResourceData);
+            m_dataEntries.push_back(pDataBlob);
+
+            m_pCurrentNamesDirectory->AddEntry((PVOID)(ULONG_PTR)langID, false, pDataBlob, false);
+
+            return true;
+        }
+
+        ZapWin32ResourceDirectory* CreateResourceSubDirectory(ZapWin32ResourceDirectory* pRootDir, LPCWSTR pNameOrId)
+        {
+            bool nameIsString = !IS_INTRESOURCE(pNameOrId);
+
+            PVOID pIdOrNameZapNode = (PVOID)pNameOrId;
+            if (nameIsString)
+            {
+                pIdOrNameZapNode = new (m_pZapImage->GetHeap()) ZapWin32ResourceString(pNameOrId);
+                m_stringEntries.push_back((ZapBlob*)pIdOrNameZapNode);
+            }
+
+            ZapWin32ResourceDirectory* pResult = new (m_pZapImage->GetHeap()) ZapWin32ResourceDirectory(m_pZapImage->m_pWin32ResourceSection);
+            pRootDir->AddEntry(pIdOrNameZapNode, nameIsString, pResult, true);
+
+            return pResult;
+        }
+
+    public:
+        ResourceEnumerationCallback(PEDecoder* pModuleDecoder, ZapImage* pZapImage)
+            : m_pZapImage(pZapImage), m_pModuleDecoder(pModuleDecoder)
+        {
+            m_pRootDirectory = new (pZapImage->GetHeap()) ZapWin32ResourceDirectory(pZapImage->m_pWin32ResourceSection);
+            m_pCurrentTypesDirectory = m_pCurrentNamesDirectory = NULL;
+        }
+
+        static bool EnumResourcesCallback(LPCWSTR lpszResourceName, LPCWSTR lpszResourceType, DWORD langID, BYTE* data, COUNT_T cbData, void *context)
+        {
+            ResourceEnumerationCallback* pCallback = (ResourceEnumerationCallback*)context;
+            // Third level in the enumeration: resources by langid for each name/type. 
+
+            // Note that this callback is not equivalent to the Windows enumeration apis as this api provides the resource data
+            // itself, and the resources are guaranteed to be present directly in the associated binary. This does not exactly
+            // match the Windows api, but it is exactly what we want when copying all resource data.
+
+            return pCallback->AddResource(lpszResourceName, lpszResourceType, langID, data, cbData);
+        }
+
+        static bool EnumResourceNamesCallback(LPCWSTR lpszResourceName, LPCWSTR lpszResourceType, void *context)
+        {
+            // Second level in the enumeration: resources by names for each resource type
+
+            ResourceEnumerationCallback* pCallback = (ResourceEnumerationCallback*)context;
+            pCallback->m_pCurrentNamesDirectory = pCallback->CreateResourceSubDirectory(pCallback->m_pCurrentTypesDirectory, lpszResourceName);
+            
+            return pCallback->m_pModuleDecoder->EnumerateWin32Resources(lpszResourceName, lpszResourceType, ResourceEnumerationCallback::EnumResourcesCallback, context);
+        }
+
+        static bool EnumResourceTypesCallback(LPCWSTR lpszType, void *context)
+        {
+            // First level in the enumeration: resources by types
+
+            // Skip IBC resources
+            if (!IS_INTRESOURCE(lpszType) && (wcscmp(lpszType, W("IBC")) == 0))
+                return true;
+
+            ResourceEnumerationCallback* pCallback = (ResourceEnumerationCallback*)context;
+            pCallback->m_pCurrentTypesDirectory = pCallback->CreateResourceSubDirectory(pCallback->m_pRootDirectory, lpszType);
+
+            return pCallback->m_pModuleDecoder->EnumerateWin32ResourceNames(lpszType, ResourceEnumerationCallback::EnumResourceNamesCallback, context);
+        }
+
+        void PlaceResourceNodes(ZapVirtualSection* pWin32ResourceSection)
+        {
+            m_pRootDirectory->PlaceNodeAndDependencies(pWin32ResourceSection);
+
+            //
+            // These strings are stored together after the last Resource Directory entry and before the first Resource Data entry. This 
+            // minimizes the impact of these variable-length strings on the alignment of the fixed-size directory entries
+            //
+            for (auto& entry : m_stringEntries)
+                pWin32ResourceSection->Place(entry);
+
+            for (auto& entry : m_dataEntries)
+                pWin32ResourceSection->Place(entry);
+        }
+    };
+
+    ResourceEnumerationCallback callbacks(&m_ModuleDecoder, this);
+
+    HMODULE hModule = (HMODULE)dac_cast<TADDR>(m_ModuleDecoder.GetBase());
+
+    //
+    // Resources are binary-sorted tree structure. By convention, Windows uses three levels
+    // for resources: Type, Name, Language. To reduces the overall complexity, we'll copy and store resources in the
+    // "neutral" language only.
+    //
+
+    if (!m_ModuleDecoder.EnumerateWin32ResourceTypes(ResourceEnumerationCallback::EnumResourceTypesCallback, &callbacks))
+    {
+        ThrowHR(E_FAIL);
+    }
+    else
+    {
+        callbacks.PlaceResourceNodes(m_pWin32ResourceSection);
+
+        SetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_RESOURCE, m_pWin32ResourceSection);
+    }
 }
 #undef MAKEINTRESOURCE
 

@@ -1496,7 +1496,7 @@ void ZapImage::OutputTables()
     }
 
     CopyDebugDirEntry();
-    CopyWin32VersionResource();
+    CopyWin32Resources();
 
     if (m_pILMetaData != NULL)
     {

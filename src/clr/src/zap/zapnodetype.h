@@ -35,7 +35,7 @@ enum ZapNodeType {
     ZapNodeType_CodeManagerEntry,
     ZapNodeType_MetaData,
     ZapNodeType_DebugDirectory,
-    ZapNodeType_VersionResource,
+    ZapNodeType_Win32Resources,
 
 // PlaceHolders
 
