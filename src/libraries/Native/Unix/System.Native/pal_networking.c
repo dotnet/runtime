@@ -1268,7 +1268,12 @@ int32_t SystemNative_SendMessage(intptr_t socket, MessageHeader* messageHeader, 
     ConvertMessageHeaderToMsghdr(&header, messageHeader, fd);
 
     ssize_t res;
+#if defined(__APPLE__) && __APPLE__
+    // possible OSX kernel bug:  #31927
+    while ((res = sendmsg(fd, &header, socketFlags)) < 0 && (errno == EINTR || errno == EPROTOTYPE));
+#else
     while ((res = sendmsg(fd, &header, socketFlags)) < 0 && errno == EINTR);
+#endif
     if (res != -1)
     {
         *sent = res;
