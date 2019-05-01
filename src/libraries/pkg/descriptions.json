@@ -1246,21 +1246,6 @@
     ]
   },
   {
-    "Name": "System.Numerics.Vectors",
-    "Description": "Provides hardware-accelerated numeric types, suitable for high-performance processing and graphics applications.",
-    "CommonTypes": [
-      "System.Numerics.Matrix3x2",
-      "System.Numerics.Matrix4x4",
-      "System.Numerics.Plane",
-      "System.Numerics.Quaternion",
-      "System.Numerics.Vector2",
-      "System.Numerics.Vector3",
-      "System.Numerics.Vector4",
-      "System.Numerics.Vector",
-      "System.Numerics.Vector<T>"
-    ]
-  },
-  {
     "Name": "System.Numerics.Vectors.WindowsRuntime",
     "Description": "Provides extension methods for converting between System.Numerics.Vector2 and Windows.Foundation.Point and Size.",
     "CommonTypes": [
