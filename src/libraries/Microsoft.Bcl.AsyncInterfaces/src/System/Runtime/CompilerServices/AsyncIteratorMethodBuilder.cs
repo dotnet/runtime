@@ -2,7 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
+// NOTE: This is a copy of
+// https://github.com/dotnet/coreclr/blame/07b3afc27304800f00975c8fd4836b319aaa8820/src/System.Private.CoreLib/shared/System/Runtime/CompilerServices/AsyncIteratorMethodBuilder.cs
+// modified to be compilable against .NET Standard 2.0.  Key differences:
+// - Uses the wrapped AsyncTaskMethodBuilder for Create and MoveNext.
+// - Uses a custom object for the debugger identity.
+// - Nullable annotations removed.
+
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -12,41 +18,20 @@ namespace System.Runtime.CompilerServices
     [StructLayout(LayoutKind.Auto)]
     public struct AsyncIteratorMethodBuilder
     {
-        // AsyncIteratorMethodBuilder is used by the language compiler as part of generating
-        // async iterators. For now, the implementation just wraps AsyncTaskMethodBuilder, as
-        // most of the logic is shared.  However, in the future this could be changed and
-        // optimized.  For example, we do need to allocate an object (once) to flow state like
-        // ExecutionContext, which AsyncTaskMethodBuilder handles, but it handles it by
-        // allocating a Task-derived object.  We could optimize this further by removing
-        // the Task from the hierarchy, but in doing so we'd also lose a variety of optimizations
-        // related to it, so we'd need to replicate all of those optimizations (e.g. storing
-        // that box object directly into a Task's continuation field).
-
         private AsyncTaskMethodBuilder _methodBuilder; // mutable struct; do not make it readonly
+        private object _id;
 
         /// <summary>Creates an instance of the <see cref="AsyncIteratorMethodBuilder"/> struct.</summary>
         /// <returns>The initialized instance.</returns>
         public static AsyncIteratorMethodBuilder Create() =>
-#if PROJECTN
-            // ProjectN's AsyncTaskMethodBuilder.Create() currently does additional debugger-related
-            // work, so we need to delegate to it.
             new AsyncIteratorMethodBuilder() { _methodBuilder = AsyncTaskMethodBuilder.Create() };
-#else
-            // _methodBuilder should be initialized to AsyncTaskMethodBuilder.Create(), but on coreclr
-            // that Create() is a nop, so we can just return the default here.
-            default; 
-#endif
 
         /// <summary>Invokes <see cref="IAsyncStateMachine.MoveNext"/> on the state machine while guarding the <see cref="ExecutionContext"/>.</summary>
         /// <typeparam name="TStateMachine">The type of the state machine.</typeparam>
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MoveNext<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine =>
-#if CORERT || MICROSOFT_BCL_ASYNCINTERFACES_PACKAGE
             _methodBuilder.Start(ref stateMachine);
-#else
-            AsyncMethodBuilderCore.Start(ref stateMachine);
-#endif
 
         /// <summary>Schedules the state machine to proceed to the next action when the specified awaiter completes.</summary>
         /// <typeparam name="TAwaiter">The type of the awaiter.</typeparam>
@@ -71,9 +56,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Marks iteration as being completed, whether successfully or otherwise.</summary>
         public void Complete() => _methodBuilder.SetResult();
 
-#if !MICROSOFT_BCL_ASYNCINTERFACES_PACKAGE
         /// <summary>Gets an object that may be used to uniquely identify this builder to the debugger.</summary>
-        internal object ObjectIdForDebugger => _methodBuilder.ObjectIdForDebugger;
-#endif
+        internal object ObjectIdForDebugger => _id ?? Interlocked.CompareExchange(ref _id, new object(), null) ?? _id; 
     }
 }
