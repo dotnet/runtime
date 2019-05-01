@@ -42,7 +42,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="stateMachine">The state machine instance, passed by reference.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void MoveNext<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine =>
-#if CORERT
+#if CORERT || MICROSOFT_BCL_ASYNCINTERFACES_PACKAGE
             _methodBuilder.Start(ref stateMachine);
 #else
             AsyncMethodBuilderCore.Start(ref stateMachine);
@@ -71,7 +71,9 @@ namespace System.Runtime.CompilerServices
         /// <summary>Marks iteration as being completed, whether successfully or otherwise.</summary>
         public void Complete() => _methodBuilder.SetResult();
 
+#if !MICROSOFT_BCL_ASYNCINTERFACES_PACKAGE
         /// <summary>Gets an object that may be used to uniquely identify this builder to the debugger.</summary>
         internal object ObjectIdForDebugger => _methodBuilder.ObjectIdForDebugger;
+#endif
     }
 }
