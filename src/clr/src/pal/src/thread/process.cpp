@@ -2413,10 +2413,10 @@ GetProcessTimes(
 {
     BOOL retval = FALSE;
     struct rusage resUsage;
-    __int64 calcTime;
-    const __int64 SECS_TO_NS = 1000000000; /* 10^9 */
-    const __int64 USECS_TO_NS = 1000;      /* 10^3 */
-
+    UINT64 calcTime;
+    const UINT64 SECS_TO_100NS = 10000000ULL;  // 10^7 
+    const UINT64 USECS_TO_100NS = 10ULL;       // 10
+    const UINT64 EPOCH_DIFF = 11644473600ULL;  // number of seconds from 1 Jan. 1601 00:00 to 1 Jan 1970 00:00 UTC
 
     PERF_ENTRY(GetProcessTimes);
     ENTRY("GetProcessTimes(hProcess=%p, lpExitTime=%p, lpKernelTime=%p,"
@@ -2448,12 +2448,46 @@ GetProcessTimes(
            resUsage.ru_utime.tv_sec, resUsage.ru_utime.tv_usec,
            resUsage.ru_stime.tv_sec, resUsage.ru_stime.tv_usec);
 
+    if (lpCreationTime)
+    {
+        // The IBC profile data uses this, instead of the actual
+        // process creation time we just return the current time
+
+        struct timeval tv;
+        if (gettimeofday(&tv, NULL) == -1)
+        {
+            ASSERT("gettimeofday() failed; errno is %d (%s)\n", errno, strerror(errno));
+
+            // Assign zero to lpCreationTime
+            lpCreationTime->dwLowDateTime = 0;
+            lpCreationTime->dwHighDateTime = 0;
+        }
+        else
+        {
+            calcTime = EPOCH_DIFF;
+            calcTime += (UINT64)tv.tv_sec;
+            calcTime *= SECS_TO_100NS;
+            calcTime += ((UINT64)tv.tv_usec * USECS_TO_100NS);
+            
+            // Assign the time into lpCreationTime
+            lpCreationTime->dwLowDateTime = (DWORD)calcTime;
+            lpCreationTime->dwHighDateTime = (DWORD)(calcTime >> 32);
+        }
+    }
+
+    if (lpExitTime)
+    {
+        // Assign zero to lpExitTime
+        lpExitTime->dwLowDateTime = 0;
+        lpExitTime->dwHighDateTime = 0;
+    }
+
     if (lpUserTime)
     {
         /* Get the time of user mode execution, in 100s of nanoseconds */
-        calcTime = (__int64)resUsage.ru_utime.tv_sec * SECS_TO_NS;
-        calcTime += (__int64)resUsage.ru_utime.tv_usec * USECS_TO_NS;
-        calcTime /= 100; /* Produce the time in 100s of ns */
+        calcTime = (UINT64)resUsage.ru_utime.tv_sec * SECS_TO_100NS;
+        calcTime += (UINT64)resUsage.ru_utime.tv_usec * USECS_TO_100NS;
+
         /* Assign the time into lpUserTime */
         lpUserTime->dwLowDateTime = (DWORD)calcTime;
         lpUserTime->dwHighDateTime = (DWORD)(calcTime >> 32);
@@ -2462,9 +2496,9 @@ GetProcessTimes(
     if (lpKernelTime)
     {
         /* Get the time of kernel mode execution, in 100s of nanoseconds */
-        calcTime = (__int64)resUsage.ru_stime.tv_sec * SECS_TO_NS;
-        calcTime += (__int64)resUsage.ru_stime.tv_usec * USECS_TO_NS;
-        calcTime /= 100; /* Produce the time in 100s of ns */
+        calcTime = (UINT64)resUsage.ru_stime.tv_sec * SECS_TO_100NS;
+        calcTime += (UINT64)resUsage.ru_stime.tv_usec * USECS_TO_100NS;
+
         /* Assign the time into lpUserTime */
         lpKernelTime->dwLowDateTime = (DWORD)calcTime;
         lpKernelTime->dwHighDateTime = (DWORD)(calcTime >> 32);
