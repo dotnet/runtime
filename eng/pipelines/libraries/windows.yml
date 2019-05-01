@@ -167,8 +167,6 @@ jobs:
 
         submitToHelix: true
         buildExtraArguments: /p:RuntimeOS=win10
-        # azure pipelines reporter only supports xunit results based tests.
-        enableAzurePipelinesReporter: false
 
         variables:
           - _outerloop: false

@@ -65,6 +65,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue(31609, TargetFrameworkMonikers.Uap)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: dotnet/corefx #29929
         public async Task MulticastInterface_Set_AnyInterface_Succeeds()
         {
@@ -129,6 +130,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue(31609, TargetFrameworkMonikers.Uap)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // Skip on Nano: dotnet/corefx #29929
         [PlatformSpecific(~TestPlatforms.OSX)]
         public async Task MulticastInterface_Set_IPv6_AnyInterface_Succeeds()

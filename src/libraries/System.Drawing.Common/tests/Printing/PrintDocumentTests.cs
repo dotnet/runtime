@@ -169,6 +169,7 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ActiveIssue(30223)]
         [ConditionalFact(Helpers.AnyInstalledPrinters, Helpers.IsDrawingSupported)]
         public void EndPrint_SetValue_ReturnsExpected()
         {
