@@ -599,7 +599,7 @@ private:
     void OutputManifestMetadataForReadyToRun();
 
     void CopyDebugDirEntry();
-    void CopyWin32VersionResource();
+    void CopyWin32Resources();
 
     void OutputManifestMetadata();
     void OutputTables();
