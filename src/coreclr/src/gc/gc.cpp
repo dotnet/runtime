@@ -2819,7 +2819,7 @@ GCSpinLock gc_heap::gc_lock;
 
 size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
-size_t        gc_heap::use_large_pages_p = 0;
+bool          gc_heap::use_large_pages_p = 0;
 size_t        gc_heap::last_gc_index = 0;
 #ifdef SEG_MAPPING_TABLE
 size_t        gc_heap::min_segment_size = 0;
@@ -10014,12 +10014,9 @@ HRESULT gc_heap::initialize_gc (size_t segment_size,
     block_count = 1;
 #endif //MULTIPLE_HEAPS
 
-    use_large_pages_p = false;
-
     if (heap_hard_limit)
     {
         check_commit_cs.Initialize();
-        use_large_pages_p = GCConfig::GetGCLargePages();
     }
 
     if (!reserve_initial_memory(segment_size,heap_size,block_count,use_large_pages_p))
@@ -34197,7 +34194,8 @@ HRESULT GCHeap::Initialize()
     {
         seg_size = gc_heap::get_segment_size_hard_limit (&nhp, (nhp_from_config == 0));
         gc_heap::soh_segment_size = seg_size;
-        large_seg_size = seg_size * 2;
+        gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
+        large_seg_size = gc_heap::use_large_pages_p ? seg_size : seg_size * 2;
     }
     else
     {
