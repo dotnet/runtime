@@ -735,6 +735,24 @@ wasm_invoke_viffff (void *target_func, InterpMethodArguments *margs)
 }
 
 static void
+wasm_invoke_vifffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, float arg_1, float arg_2, float arg_3, float arg_4, float arg_5);
+	T func = (T)target_func;
+	func ((int)margs->iargs [0], *(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)]);
+
+}
+
+static void
+wasm_invoke_viffffff (void *target_func, InterpMethodArguments *margs)
+{
+	typedef void (*T)(int arg_0, float arg_1, float arg_2, float arg_3, float arg_4, float arg_5, float arg_6);
+	T func = (T)target_func;
+	func ((int)margs->iargs [0], *(float*)&margs->fargs [FIDX (0)], *(float*)&margs->fargs [FIDX (1)], *(float*)&margs->fargs [FIDX (2)], *(float*)&margs->fargs [FIDX (3)], *(float*)&margs->fargs [FIDX (4)], *(float*)&margs->fargs [FIDX (5)]);
+
+}
+
+static void
 wasm_invoke_vifffffi (void *target_func, InterpMethodArguments *margs)
 {
 	typedef void (*T)(int arg_0, float arg_1, float arg_2, float arg_3, float arg_4, float arg_5, int arg_6);
