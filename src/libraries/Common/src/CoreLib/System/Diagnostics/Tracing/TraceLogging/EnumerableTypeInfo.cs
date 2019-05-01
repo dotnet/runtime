@@ -6,6 +6,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 #if ES_BUILD_STANDALONE
 namespace Microsoft.Diagnostics.Tracing
