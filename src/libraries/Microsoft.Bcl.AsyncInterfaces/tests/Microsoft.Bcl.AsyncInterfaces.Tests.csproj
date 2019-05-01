@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{72E21903-0FBA-444E-9855-3B4F05DFC1F9}</ProjectGuid>
+    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Common\tests\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs">
+      <Link>Common\tests\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs</Link>
+    </Compile>
+    <Compile Include="..\..\System.Threading.Tasks.Extensions\tests\ManualResetValueTaskSourceTests.cs">
+      <Link>System.Threading.Tasks.Extensions\tests\ManualResetValueTaskSourceTests.cs</Link>
+    </Compile>
+  </ItemGroup>
+</Project>
