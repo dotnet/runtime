@@ -327,7 +327,7 @@ namespace System.Net.Sockets
             IPEndPoint ipEndPoint = null;
             if (hostname != null && port != 0)
             {
-                IPAddress[] addresses = Dns.GetHostAddressesAsync(hostname).GetAwaiter().GetResult();
+                IPAddress[] addresses = Dns.GetHostAddresses(hostname);
 
                 int i = 0;
                 for (; i < addresses.Length && !IsAddressFamilyCompatible(addresses[i].AddressFamily); i++)
