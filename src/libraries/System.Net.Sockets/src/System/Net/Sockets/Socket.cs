@@ -899,7 +899,7 @@ namespace System.Net.Sockets
             }
             else
             {
-                IPAddress[] addresses = Dns.GetHostAddressesAsync(host).GetAwaiter().GetResult();
+                IPAddress[] addresses = Dns.GetHostAddresses(host);
                 Connect(addresses, port);
             }
 
