@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Xunit;
@@ -115,6 +116,28 @@ namespace System.Text.Unicode.Tests
 
             chars[16] = 'x'; // ASCII char (remember.. chars[15] is a high surrogate char)
             GetIndexOfFirstInvalidUtf16Sequence_Test_Core(chars, 15, expectedRuneCount: 13, expectedUtf8ByteCount: 20);
+        }
+
+        [Fact]
+        public void GetIndexOfFirstInvalidUtf16Sequence_WithStandaloneLowSurrogateCharAtStart()
+        {
+            // The input stream will be a vector's worth of ASCII chars, followed by a single standalone low
+            // surrogate char, then padded with U+0000 until it's a multiple of the vector size.
+            // Using Vector<ushort>.Count here as a stand-in for Vector<char>.Count.
+
+            char[] chars = new char[Vector<ushort>.Count * 2];
+            for (int i = 0; i < Vector<ushort>.Count; i++)
+            {
+                chars[i] = 'x'; // ASCII char
+            }
+
+            chars[Vector<ushort>.Count] = '\uDEAD'; // standalone low surrogate char
+
+            for (int i = 0; i <= Vector<ushort>.Count; i++)
+            {
+                // Expect all ASCII chars to be consumed, low surrogate char to be marked invalid.
+                GetIndexOfFirstInvalidUtf16Sequence_Test_Core(chars[(Vector<ushort>.Count - i)..], i, i, i);
+            }
         }
 
         private static void GetIndexOfFirstInvalidUtf16Sequence_Test_Core(string unprocessedInput, int expectedIdxOfFirstInvalidChar, int expectedRuneCount, long expectedUtf8ByteCount)
