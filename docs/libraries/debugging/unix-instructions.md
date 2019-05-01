@@ -33,7 +33,6 @@ It is also possible to debug .NET Core crash dumps using lldb and SOS. In order 
 - Matching coreclr/corefx runtime bits from the crash. To get these, you should either:
   - Download the matching Jenkins archive onto your repro machine.
   - Check out the coreclr and corefx repositories at the appropriate commit and re-build the necessary portions.
-  - You can also download the matching "symbols" nuget package from myget.org. There is a "Download Symbols" button in the myget UI for this purpose.
 - lldb version 3.9. The SOS plugin (i.e. libsosplugin.so) provided is now built for lldb 3.9. In order to install lldb 3.9 just run the following commands:
 ```
 ~$ echo "deb http://llvm.org/apt/trusty/ llvm-toolchain-trusty-3.9 main" | sudo tee /etc/apt/sources.list.d/llvm.list
