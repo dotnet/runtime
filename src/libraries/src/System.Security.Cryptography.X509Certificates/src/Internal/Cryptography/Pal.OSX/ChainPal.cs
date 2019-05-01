@@ -212,11 +212,14 @@ namespace Internal.Cryptography.Pal
 
             if (!IsPolicyMatch(elements, applicationPolicy, certificatePolicy))
             {
-                Tuple<X509Certificate2, int> currentValue = elements[0];
+                for (int i = 0; i < elements.Length; i++)
+                {
+                    Tuple<X509Certificate2, int> currentValue = elements[i];
 
-                elements[0] = Tuple.Create(
-                    currentValue.Item1,
-                    currentValue.Item2 | (int)X509ChainStatusFlags.NotValidForUsage);
+                    elements[i] = Tuple.Create(
+                        currentValue.Item1,
+                        currentValue.Item2 | (int)X509ChainStatusFlags.NotValidForUsage);
+                }
             }
 
             FixupRevocationStatus(elements, revocationFlag);
