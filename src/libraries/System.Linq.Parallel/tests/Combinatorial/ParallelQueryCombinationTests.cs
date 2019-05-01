@@ -12,7 +12,7 @@ namespace System.Linq.Parallel.Tests
     public static partial class ParallelQueryCombinationTests
     {
         // on ARM platforms many available cores makes this unbearably slow: #36494
-        static public bool RunSlowTests => PlatformDetection.IsNotArmNorArm64Process || Environment.ProcessorCount <= 8;
+        public static bool RunSlowTests => PlatformDetection.IsNotArmNorArm64Process || Environment.ProcessorCount <= 8;
 
         [Theory]
         [MemberData(nameof(UnaryOperations))]
