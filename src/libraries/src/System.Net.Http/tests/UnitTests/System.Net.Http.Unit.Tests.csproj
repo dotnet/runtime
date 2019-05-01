@@ -390,6 +390,9 @@
     <Compile Include="HttpEnvironmentProxyTest.cs" />
     <Compile Include="HttpSystemProxyTest.cs" />
     <Compile Include="SystemProxyInfoTest.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs">
+      <Link>ProductionCode\System\Net\Http\HttpNoProxy.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpSystemProxy.cs">
       <Link>ProductionCode\System\Net\Http\HttpSystemProxy.cs</Link>
     </Compile>

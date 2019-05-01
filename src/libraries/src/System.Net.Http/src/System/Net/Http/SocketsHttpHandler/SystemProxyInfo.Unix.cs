@@ -6,10 +6,12 @@ namespace System.Net.Http
 {
     internal static class SystemProxyInfo
     {
-        // On Unix (except for OSX) we get default proxy configuration from environment variables.
+        // On Unix (except for OSX) we get default proxy configuration from environment variables. If the
+        // environment variables are not defined, we return an IWebProxy object that effectively is
+        // the "no proxy" object.
         public static IWebProxy ConstructSystemProxy()
         {
-            return HttpEnvironmentProxy.TryCreate(out IWebProxy proxy) ? proxy : null;
+            return HttpEnvironmentProxy.TryCreate(out IWebProxy proxy) ? proxy : new HttpNoProxy();
         }
     }
 }
