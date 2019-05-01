@@ -47,7 +47,7 @@ To install additional .NET Core runtimes or SDKs:
 4. Our nightly builds are uploaded to MyGet, not NuGet - so ensure the .NET Core MyGet feed is in your nuget configuration in case you need other packages from .NET Core that aren't included in the download. For example, on Windows you could edit `%userprofile%\appdata\roaming\nuget\nuget.config` or on Linux edit `~/.nuget/NuGet/NuGet.Config` to add this line:
 ```xml
 <packageSources>
-    <add key="myget.dotnetcore" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+    <add key="dotnetcore-feed" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
     ...
 </packageSources>    
 ```
@@ -118,7 +118,7 @@ make it self-contained
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <!-- modify build in this line with version reported by `dotnet --info` as above under ".NET Core runtimes installed" -> Microsoft.NETCore.App -->
-    <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://dotnet.myget.org/feed/dotnet-core/package/nuget/Microsoft.NETCore.App -->
+    <!-- moreover, this can be any valid Microsoft.NETCore.App package version from https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json -->
     <RuntimeFrameworkVersion>3.0.0-preview-27218-01</RuntimeFrameworkVersion>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier> <!-- make self-contained -->
   </PropertyGroup>
@@ -167,13 +167,13 @@ Note these instructions above were only about updates to the binaries that are p
 
 By default the dogfooding dotnet SDK will create a Nuget.Config file next to your project, if it doesn't
 you can create one. Your config file will need a source for your local corefx package directory as well
-as a reference to our nightly dotnet-core feed on myget. The Nuget.Config file content should be:
+as a reference to our nightly dotnet-core blob feed. The Nuget.Config file content should be:
 
 ```xml
 <configuration>
   <packageSources>
     <add key="local coreclr" value="D:\git\corefx\artifacts\packages\Debug" /> <!-- Change this to your own output path -->
-    <add key="dotnet-core" value="https://dotnet.myget.org/F/dotnet-core/api/v3/index.json" />
+    <add key="dotnetcore-feed" value="https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json" />
   </packageSources>
 </configuration>
 ```
