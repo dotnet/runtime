@@ -9,14 +9,14 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.WinHttpHandlerUnitTests
 {
-    public class HttpSystemProxyTest
+    public class HttpWindowsProxyTest
     {
         private const string ManualSettingsProxyHost = "myproxy.local";
         private const string ManualSettingsProxyBypassList = "localhost;*.local";
 
         private readonly ITestOutputHelper _output;
 
-        public HttpSystemProxyTest(ITestOutputHelper output)
+        public HttpWindowsProxyTest(ITestOutputHelper output)
         {
             _output = output;
             TestControl.ResetAll();
@@ -32,7 +32,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         [Fact]
         public void TryCreate_WinInetProxySettingsAllOff_ReturnsFalse()
         {
-            Assert.False(HttpSystemProxy.TryCreate(out IWebProxy webProxy));
+            Assert.False(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
         }
 
         [Theory]
@@ -45,13 +45,13 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             FakeRegistry.WinInetProxySettings.ProxyBypass = ManualSettingsProxyBypassList;
             TestControl.PACFileNotDetectedOnNetwork = true;
 
-            Assert.True(HttpSystemProxy.TryCreate(out IWebProxy webProxy));
+            Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
             
             // The first GetProxy() call will try using WinInetProxyHelper (and thus WinHTTP) since AutoDetect is on.
             Uri proxyUri1 = webProxy.GetProxy(destination);
             
             // The second GetProxy call will skip using WinHTTP since AutoDetect is on but
-            // there was a recent AutoDetect failure. This tests the codepath in HttpSystemProxy
+            // there was a recent AutoDetect failure. This tests the codepath in HttpWindowsProxy
             // which queries WinInetProxyHelper.RecentAutoDetectionFailure.
             Uri proxyUri2 = webProxy.GetProxy(destination);
 
@@ -75,7 +75,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             FakeRegistry.WinInetProxySettings.Proxy = ManualSettingsProxyHost;
             FakeRegistry.WinInetProxySettings.ProxyBypass = ManualSettingsProxyBypassList;
 
-            Assert.True(HttpSystemProxy.TryCreate(out IWebProxy webProxy));
+            Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
             Uri proxyUri = webProxy.GetProxy(destination);
             if (bypassProxy)
             {
@@ -91,7 +91,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
         public void IsBypassed_ReturnsFalse()
         {
             FakeRegistry.WinInetProxySettings.AutoDetect = true;
-            Assert.True(HttpSystemProxy.TryCreate(out IWebProxy webProxy));
+            Assert.True(HttpWindowsProxy.TryCreate(out IWebProxy webProxy));
             Assert.False(webProxy.IsBypassed(new Uri("http://www.microsoft.com/")));
         }
     }

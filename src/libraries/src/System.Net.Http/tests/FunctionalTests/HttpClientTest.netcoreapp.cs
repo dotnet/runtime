@@ -4,13 +4,39 @@
 
 using System.Threading;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Http.Functional.Tests
 {
     public sealed partial class HttpClientTest
     {
+        [Fact]
+        public void DefaultProxy_SetNull_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => HttpClient.DefaultProxy = null );
+        }
+
+        [Fact]
+        public void DefaultProxy_Get_ReturnsNotNull()
+        {
+            IWebProxy proxy = HttpClient.DefaultProxy;
+            Assert.NotNull(proxy);
+        }
+
+        [Fact]
+        public void DefaultProxy_SetGet_Roundtrips()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                IWebProxy proxy = new WebProxy("http://localhost:3128/");
+                HttpClient.DefaultProxy = proxy;
+                Assert.True(Object.ReferenceEquals(proxy, HttpClient.DefaultProxy));
+
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
         [Fact]
         public async Task PatchAsync_Canceled_Throws()
         {

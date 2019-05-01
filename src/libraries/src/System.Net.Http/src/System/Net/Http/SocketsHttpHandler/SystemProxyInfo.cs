@@ -6,11 +6,8 @@ namespace System.Net.Http
 {
     internal static partial class SystemProxyInfo
     {
-        // On OSX we get default proxy configuration from either environment variables or the OSX system proxy.
-        public static IWebProxy ConstructSystemProxy()
-        {
-            return HttpEnvironmentProxy.TryCreate(out IWebProxy proxy) ? proxy : new MacProxy();
-        }
+        public static IWebProxy Proxy => s_proxy.Value;
+
+        private static readonly Lazy<IWebProxy> s_proxy = new Lazy<IWebProxy>(ConstructSystemProxy);
     }
 }
-
