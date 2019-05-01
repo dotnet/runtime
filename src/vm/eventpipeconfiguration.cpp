@@ -20,7 +20,6 @@ EventPipeConfiguration::EventPipeConfiguration()
 
     m_enabled = false;
     m_rundownEnabled = false;
-    m_pRundownThread = NULL;
     m_pConfigProvider = NULL;
     m_pSession = NULL;
     m_pProviderList = new SList<SListElem<EventPipeProvider *>>();
@@ -435,7 +434,6 @@ void EventPipeConfiguration::Disable(EventPipeSession *pSession, EventPipeProvid
 
     m_enabled = false;
     m_rundownEnabled = false;
-    m_pRundownThread = NULL;
     m_pSession = NULL;
 }
 
@@ -467,10 +465,7 @@ void EventPipeConfiguration::EnableRundown(EventPipeSession *pSession, EventPipe
     // Build the rundown configuration.
     _ASSERTE(m_pSession == NULL);
 
-    // Enable rundown and keep track of the rundown thread.
-    // TODO: Move this into EventPipeSession once Enable takes an EventPipeSession object.
-    m_pRundownThread = GetThread();
-    _ASSERTE(m_pRundownThread != NULL);
+    // Enable rundown
     m_rundownEnabled = true;
 
     // Enable tracing.
