@@ -233,6 +233,7 @@ namespace System.IO.Pipelines.Tests
             pipe.Reader.Complete();
         }
 
+        [ActiveIssue(37239)]
         [Fact]
         public async Task CompleteWithLargeWriteThrows()
         {

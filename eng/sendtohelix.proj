@@ -32,19 +32,7 @@
     <TestRunNamePrefix>$(BuildConfiguration)-</TestRunNamePrefix>
     <TestRunNamePrefix Condition="'$(IsPackageTesting)' == 'true'">PackageTests-$(ConfigurationGroup)-$(ArchGroup)</TestRunNamePrefix>
 
-    <MaxRetryCount Condition="'$(MaxRetryCount)' == ''">4</MaxRetryCount>
-  </PropertyGroup>
-
-  <!-- If mission control reports a test failure then fail the build whenever helix wait runs. -->
-  <PropertyGroup Condition="'$(FailOnMissionControlTestFailure)' == ''">
-    <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
-    <FailOnMissionControlTestFailure Condition="'$(OfficialBuildId)' != ''">false</FailOnMissionControlTestFailure>
-  </PropertyGroup>
-
-  <!-- If mission control reports a test crash (fireball) then fail the build on helix wait -->
-  <PropertyGroup Condition="'$(FailOnWorkItemFailure)' == ''">
-    <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
-    <FailOnWorkItemFailure Condition="'$(OfficialBuildId)' != ''">false</FailOnWorkItemFailure>
+    <FailOnTestFailure Condition="'$(WaitForWorkItemCompletion)' != ''">$(WaitForWorkItemCompletion)</FailOnTestFailure>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixType)' == ''">

@@ -8,11 +8,20 @@ trigger:
     include:
     - master
     - release/3.0
+  paths:
+    exclude:
+    - Documentation/*
+    - /*.md
 
-# TODO: add paths to exclude CI when modifying docs or stuff not affecting the build
 pr:
-- master
-- release/3.0
+  branches:
+    include:
+    - master
+    - release/3.0
+  paths:
+    exclude:
+    - Documentation/*
+    - /*.md
 
 resources:
   containers:
