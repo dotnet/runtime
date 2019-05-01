@@ -752,15 +752,11 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
     }
     else if (s_pConfig->RundownEnabled())
     {
-        // It is possible that some events that are enabled on rundown can be emitted from other threads.
-        // We're not interested in these events and they can cause corrupted trace files because rundown
-        // events are written synchronously and not under lock.
-        // If we encounter an event that did not originate on the thread that is doing rundown, ignore it.
-        if (pThread == NULL || !s_pConfig->IsRundownThread(pThread))
+        if (pThread == nullptr)
         {
             return;
         }
-
+        
         BYTE *pData = payload.GetFlatData();
         if (pData != NULL)
         {
