@@ -46,7 +46,7 @@ mono_dl_get_system_dir (void)
 void*
 mono_dl_lookup_symbol (MonoDl *module, const char *name)
 {
-	return dlsym (module->handle, name);
+	return NULL;
 }
 
 char*
@@ -71,18 +71,13 @@ mono_dl_convert_flags (int flags)
 void *
 mono_dl_open_file (const char *file, int flags)
 {
-	// issue https://github.com/emscripten-core/emscripten/issues/8511
-	if (strstr (file, "System.Native")) {
-		return NULL;
-	}
-
-	return dlopen (file, flags);
+	// Actual dlopen is done in driver.c:wasm_dl_load()
+	return NULL;
 }
 
 void
 mono_dl_close_handle (MonoDl *module)
 {
-	dlclose (module->handle);
 }
 
 #endif
