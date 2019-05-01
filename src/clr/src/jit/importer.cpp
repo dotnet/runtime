@@ -4347,10 +4347,13 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #else // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
 #error Unsupported platform
 #endif // !defined(_TARGET_XARCH_) && !defined(_TARGET_ARM64_)
+        else if (strcmp(methodName, "get_IsSupported") == 0)
+        {
+            return NI_IsSupported_False;
+        }
         else
         {
-            assert(strcmp(methodName, "get_IsSupported") == 0);
-            return NI_IsSupported_False;
+            return gtIsRecursiveCall(method) ? NI_Throw_PlatformNotSupportedException : NI_Illegal;
         }
     }
 #endif // FEATURE_HW_INTRINSICS
