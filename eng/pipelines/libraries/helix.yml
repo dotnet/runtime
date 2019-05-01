@@ -12,6 +12,7 @@ parameters:
   officialBuildId: ''
   enableAzurePipelinesReporter: '' # true | false
   outerloop: '' # true | false
+  condition: always()
 
 steps:
   - script: ${{ parameters.msbuildScript }}
@@ -32,5 +33,6 @@ steps:
             /p:EnableAzurePipelinesReporter=${{ parameters.enableAzurePipelinesReporter }}
             /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
     displayName: Send to Helix
+    condition: ${{ parameters.condition }}
     env:
       SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
