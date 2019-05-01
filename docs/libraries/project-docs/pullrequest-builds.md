@@ -15,7 +15,7 @@ As part of our Pull Requests we have some validation builds where we build the p
 | Linux arm64_Release | netcoreapp | X | X |
 | Linux arm_Release | netcoreapp | X |   |
 | Linux musl_x64_Debug | netcoreapp | X |   |
-| MacOS x64_Debug | netcoreapp | X |   |
+| MacOS x64_Debug | netcoreapp | X | X |
 | Packaging All Configurations x64_Debug | all | X | X |
 
 Our build definitions are defined by some `.yml` files with the following structure:
@@ -58,12 +58,7 @@ Once in the build UI you can look at a specific job, or step log, by clicking on
 
 ## How to look at a test failure
 
-Currently, our test results are exposed by https://mc.dot.net/ as we wait for new features by Azure DevOps to use their text explorer. In order to get to the test results, you need to click on the `Send to Helix` step on a job, and within its logs, there will be a text containing the test results URL, which you can `CTRL+Click` to open. It will look like the following:
-```
-Results will be available from https://mc.dot.net/#/user/dotnet-bot/pr~2Fdotnet~2Fcorefx~2Frefs~2Fpull~2F35667~2Fmerge/test~2Ffunctional~2Fcli~2F/20190228.23
-```
-
-Then on Mission Control, you can just navigate through the results and look at stack traces, and detailed logs.
+Use the Azure DevOps Test Explorer which lists all tests grouped by the different build configurations. You can filter and navigate through the results and look at stack traces, and detailed logs.
 
 ## How to rerun builds
 
