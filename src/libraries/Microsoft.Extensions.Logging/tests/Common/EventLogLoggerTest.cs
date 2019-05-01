@@ -23,7 +23,8 @@ namespace Microsoft.Extensions.Logging
             var logger = new EventLogLogger("Test", new EventLogSettings()
             {
                 Filter = (s, level) => level >= LogLevel.Warning
-            });
+            },
+            new LoggerExternalScopeProvider());
 
             // Assert
             Assert.False(logger.IsEnabled(LogLevel.None));
@@ -39,7 +40,7 @@ namespace Microsoft.Extensions.Logging
         public void CallingBeginScopeOnLogger_ReturnsNonNullableInstance()
         {
             // Arrange
-            var logger = new EventLogLogger("Test", new EventLogSettings());
+            var logger = new EventLogLogger("Test", new EventLogSettings(), new LoggerExternalScopeProvider());
 
             // Act
             var disposable = logger.BeginScope("Scope1");
@@ -70,12 +71,12 @@ namespace Microsoft.Extensions.Logging
         public void Constructor_CreatesWindowsEventLog_WithExpectedInformation()
         {
             // Arrange & Act
-            var eventLogLogger = new EventLogLogger("Test", new EventLogSettings());
+            var eventLogLogger = new EventLogLogger("Test", new EventLogSettings(), new LoggerExternalScopeProvider());
 
             // Assert
             var windowsEventLog = Assert.IsType<WindowsEventLog>(eventLogLogger.EventLog);
             Assert.Equal("Application", windowsEventLog.DiagnosticsEventLog.Log);
-            Assert.Equal("Application", windowsEventLog.DiagnosticsEventLog.Source);
+            Assert.Equal(".NET Runtime", windowsEventLog.DiagnosticsEventLog.Source);
             Assert.Equal(".", windowsEventLog.DiagnosticsEventLog.MachineName);
         }
 
@@ -92,7 +93,7 @@ namespace Microsoft.Extensions.Logging
             };
 
             // Act
-            var eventLogLogger = new EventLogLogger("Test", settings);
+            var eventLogLogger = new EventLogLogger("Test", settings, new LoggerExternalScopeProvider());
 
             // Assert
             var windowsEventLog = Assert.IsType<WindowsEventLog>(eventLogLogger.EventLog);
@@ -128,13 +129,16 @@ namespace Microsoft.Extensions.Logging
         [InlineData(36)]
         public void MessageWithinMaxSize_WritesFullMessage(int messageSize)
         {
+            var headerLength = "EventId: 0".Length + "Category: ".Length;
             // Arrange
             var loggerName = "Test";
-            var maxMessageSize = 50 + loggerName.Length + Environment.NewLine.Length;
+            var maxMessageSize = 50 + headerLength + loggerName.Length + Environment.NewLine.Length * 4;
             var message = new string('a', messageSize);
-            var expectedMessage = loggerName + Environment.NewLine + message;
+            var expectedMessage = "Category: " + loggerName + Environment.NewLine +
+                                  "EventId: 0" + Environment.NewLine + Environment.NewLine +
+                                  message + Environment.NewLine;
             var testEventLog = new TestEventLog(maxMessageSize);
-            var logger = new EventLogLogger(loggerName, new EventLogSettings() { EventLog = testEventLog });
+            var logger = new EventLogLogger(loggerName, new EventLogSettings() { EventLog = testEventLog }, new LoggerExternalScopeProvider());
 
             // Act
             logger.LogInformation(message);
@@ -150,13 +154,13 @@ namespace Microsoft.Extensions.Logging
         {
             // Arrange
             var loggerName = "Test";
-            var maxMessageSize = 50 + loggerName.Length + Environment.NewLine.Length;
-            var expectedMessage = loggerName + Environment.NewLine +
-                                  "Message" + Environment.NewLine +
+            var expectedMessage = "Category: " + loggerName + Environment.NewLine +
+                                  "EventId: 0" + Environment.NewLine +
                                   "Outer Scope" + Environment.NewLine +
-                                  "Inner Scope";
-            var testEventLog = new TestEventLog(maxMessageSize);
-            var logger = new EventLogLogger(loggerName, new EventLogSettings() { EventLog = testEventLog });
+                                  "Inner Scope" + Environment.NewLine + Environment.NewLine +
+                                  "Message" + Environment.NewLine;
+            var testEventLog = new TestEventLog(expectedMessage.Length);
+            var logger = new EventLogLogger(loggerName, new EventLogSettings() { EventLog = testEventLog }, new LoggerExternalScopeProvider());
 
             // Act
             using (logger.BeginScope("Outer Scope"))
@@ -170,47 +174,102 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal(expectedMessage, testEventLog.Messages[0]);
         }
 
+        [ConditionalFact]
+        public void MessageWrittenToEventLogContainsEventId()
+        {
+            // Arrange
+            var loggerName = "Test";
+            var expectedMessage = "Category: " + loggerName + Environment.NewLine +
+                                  "EventId: 1" + Environment.NewLine + Environment.NewLine +
+                                  "Message" + Environment.NewLine;
+
+            var testEventLog = new TestEventLog(expectedMessage.Length);
+            var logger = new EventLogLogger(loggerName, new EventLogSettings() { EventLog = testEventLog }, new LoggerExternalScopeProvider());
+
+            // Act
+            logger.LogInformation(new EventId(1, "FooEvent"), "Message");
+
+            // Assert
+            Assert.Single(testEventLog.Messages);
+            Assert.Equal(expectedMessage, testEventLog.Messages[0]);
+            Assert.Equal(1, testEventLog.Entries[0].EventId);
+        }
+
+        [ConditionalFact]
+        public void EventIdWrittenToEventLogUsesDefaultIfSpecified()
+        {
+            // Arrange
+            var loggerName = "Test";
+            var expectedMessage = "Category: " + loggerName + Environment.NewLine +
+                                  "EventId: 1" + Environment.NewLine + Environment.NewLine +
+                                  "Message" + Environment.NewLine;
+
+            var testEventLog = new TestEventLog(expectedMessage.Length)
+            {
+                DefaultEventId = 1034
+            };
+            var logger = new EventLogLogger(loggerName, new EventLogSettings() { EventLog = testEventLog }, new LoggerExternalScopeProvider());
+
+            // Act
+            logger.LogInformation(new EventId(1, "FooEvent"), "Message");
+
+            // Assert
+            Assert.Single(testEventLog.Messages);
+            Assert.Equal(expectedMessage, testEventLog.Messages[0]);
+            Assert.Equal(1034, testEventLog.Entries[0].EventId);
+        }
+
+        [ConditionalFact]
+        public void NullCategoryNameThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => new EventLogLogger(null, new EventLogSettings() { }, new LoggerExternalScopeProvider()));
+        }
+
+        [ConditionalFact]
+        public void NullEventSettingsThrows()
+        {
+            Assert.Throws<ArgumentNullException>(() => new EventLogLogger("Something", settings: null, new LoggerExternalScopeProvider()));
+        }
+
         public static TheoryData<int, string[]> WritesSplitMessagesData
         {
             get
             {
-                var loggerName = "Test";
-
                 return new TheoryData<int, string[]>
                 {
-                    // loggername + newline combined length is 7
                     {
-                        1,
-                        new[]
+                        10,
+                        new []
                         {
-                            loggerName + Environment.NewLine + "a"
+                            "Category: Test\r\nEventId: 0\r...",
+                            "...\n\r\naaaaaaaaaa\r\n",
                         }
                     },
                     {
-                        5,
-                        new[]
+                        20,
+                        new []
                         {
-                            loggerName + Environment.NewLine + "a...",
-                            "...aaaa"
+                            "Category: Test\r\nEventId: 0\r...",
+                            "...\n\r\naaaaaaaaaaaaaaaaaaaa\r\n",
                         }
                     },
                     {
-                        10, // equaling the max message size
-                        new[]
+                        30, // equaling the max message size
+                        new []
                         {
-                            loggerName + Environment.NewLine + "a...",
-                            "...aaaa...",
-                            "...aaaaa"
+                            "Category: Test\r\nEventId: 0\r...",
+                            "...\n\r\naaaaaaaaaaaaaaaaaaaaa...",
+                            "...aaaaaaaaa\r\n",
                         }
+
                     },
                     {
-                        15,
-                        new[]
+                        40,
+                        new []
                         {
-                            loggerName + Environment.NewLine + "a...",
-                            "...aaaa...",
-                            "...aaaa...",
-                            "...aaaaaa"
+                            "Category: Test\r\nEventId: 0\r...",
+                            "...\n\r\naaaaaaaaaaaaaaaaaaaaa...",
+                            "...aaaaaaaaaaaaaaaaaaa\r\n",
                         }
                     }
                 };
@@ -222,11 +281,12 @@ namespace Microsoft.Extensions.Logging
         public void MessageExceedingMaxSize_WritesSplitMessages(int messageSize, string[] expectedMessages)
         {
             // Arrange
+            var headerLength = "EventId: 0".Length + "Category: ".Length;
             var loggerName = "Test";
-            var maxMessageSize = 10;
+            var maxMessageSize = headerLength + loggerName.Length + Environment.NewLine.Length * 3;
             var message = new string('a', messageSize);
             var testEventLog = new TestEventLog(maxMessageSize);
-            var logger = new EventLogLogger(loggerName, new EventLogSettings() { EventLog = testEventLog });
+            var logger = new EventLogLogger(loggerName, new EventLogSettings() { EventLog = testEventLog }, new LoggerExternalScopeProvider());
 
             // Act
             logger.LogInformation(message);
@@ -242,15 +302,21 @@ namespace Microsoft.Extensions.Logging
             {
                 MaxMessageSize = maxMessageSize;
                 Messages = new List<string>();
+                Entries = new List<(string Message, EventLogEntryType Type, int EventId, short Category)>();
             }
 
             public int MaxMessageSize { get; }
 
             public List<string> Messages { get; }
 
+            public List<(string Message, EventLogEntryType Type, int EventId, short Category)> Entries { get; }
+
+            public int? DefaultEventId { get; set; }
+
             public void WriteEntry(string message, EventLogEntryType type, int eventID, short category)
             {
                 Messages.Add(message);
+                Entries.Add((message, type, eventID, category));
             }
         }
     }
