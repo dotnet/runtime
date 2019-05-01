@@ -14,7 +14,7 @@ namespace System.Net.Http
                 HttpSystemProxy.TryCreate(out proxy);
             }
 
-            return proxy;
+            return proxy ?? new HttpNoProxy();
         }
     }
 }

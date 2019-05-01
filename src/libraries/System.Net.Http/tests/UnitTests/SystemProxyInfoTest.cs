@@ -38,6 +38,8 @@ namespace System.Net.Http.Tests
             RemoteExecutor.Invoke(() =>
             {
                 IWebProxy proxy = SystemProxyInfo.ConstructSystemProxy();
+                Assert.NotNull(proxy);
+
                 HttpEnvironmentProxy envProxy = proxy as HttpEnvironmentProxy;
                 Assert.Null(envProxy);
 
