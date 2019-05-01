@@ -93,6 +93,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
@@ -308,7 +309,7 @@
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpEnvironmentProxy.Windows.cs" />
     <Compile Include="System\Net\Http\SocketsHttpHandler\HttpNoProxy.cs" />
-    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpSystemProxy.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\HttpWindowsProxy.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs">
       <Link>Common\Interop\Windows\SChannel\Interop.SecPkgContext_ApplicationProtocol.cs</Link>
     </Compile>
@@ -657,6 +658,7 @@
     <Compile Include="uap\System\Net\CookieHelper.cs" />
     <Compile Include="uap\System\Net\HttpHandlerToFilter.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.Core.cs" />
+    <Compile Include="System\Net\Http\SocketsHttpHandler\SystemProxyInfo.uap.cs" />
     <Compile Include="uap\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">

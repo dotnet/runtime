@@ -14,6 +14,7 @@ namespace System.Net.Http
     {
         #region Fields
 
+        private static IWebProxy s_defaultProxy;
         private static readonly TimeSpan s_defaultTimeout = TimeSpan.FromSeconds(100);
         private static readonly TimeSpan s_maxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
         private static readonly TimeSpan s_infiniteTimeout = Threading.Timeout.InfiniteTimeSpan;
@@ -32,6 +33,15 @@ namespace System.Net.Http
         #endregion Fields
 
         #region Properties
+        public static IWebProxy DefaultProxy
+        {
+            get => LazyInitializer.EnsureInitialized(ref s_defaultProxy, () => SystemProxyInfo.Proxy);
+
+            set
+            {
+                s_defaultProxy = value ?? throw new ArgumentNullException(nameof(value));
+            }
+        }
 
         public HttpRequestHeaders DefaultRequestHeaders
         {

@@ -4,7 +4,7 @@
 
 namespace System.Net.Http
 {
-    internal static class SystemProxyInfo
+    internal static partial class SystemProxyInfo
     {
         // On Unix (except for OSX) we get default proxy configuration from environment variables. If the
         // environment variables are not defined, we return an IWebProxy object that effectively is

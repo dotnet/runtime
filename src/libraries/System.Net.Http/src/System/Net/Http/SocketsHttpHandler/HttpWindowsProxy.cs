@@ -11,7 +11,7 @@ using SafeWinHttpHandle = Interop.WinHttp.SafeWinHttpHandle;
 
 namespace System.Net.Http
 {
-    internal sealed class HttpSystemProxy : IWebProxy, IDisposable
+    internal sealed class HttpWindowsProxy : IWebProxy, IDisposable
     {
         private readonly Uri _insecureProxyUri;         // URI of the http system proxy if set
         private readonly Uri _secureProxyUri;         // URI of the https system proxy if set
@@ -55,11 +55,11 @@ namespace System.Net.Http
                 }
             }
 
-            proxy  = new HttpSystemProxy(proxyHelper, sessionHandle);
+            proxy  = new HttpWindowsProxy(proxyHelper, sessionHandle);
             return true;
         }
 
-        private HttpSystemProxy(WinInetProxyHelper proxyHelper, SafeWinHttpHandle sessionHandle)
+        private HttpWindowsProxy(WinInetProxyHelper proxyHelper, SafeWinHttpHandle sessionHandle)
         {
             _proxyHelper = proxyHelper;
             _sessionHandle = sessionHandle;
