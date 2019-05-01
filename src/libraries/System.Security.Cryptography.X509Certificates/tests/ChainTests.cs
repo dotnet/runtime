@@ -417,6 +417,50 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [ConditionalFact(nameof(TrustsMicrosoftDotComRoot))]
+        public static void BuildChain_FailOnlyApplicationPolicy()
+        {
+            using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))
+            using (var microsoftDotComRoot = new X509Certificate2(TestData.MicrosoftDotComRootBytes))
+            using (ChainHolder holder = new ChainHolder())
+            {
+                holder.Chain.ChainPolicy.ApplicationPolicy.Add(new Oid("0.1.2.3.4", null));
+                holder.Chain.ChainPolicy.VerificationTime = microsoftDotCom.NotBefore.AddDays(1);
+                holder.Chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+
+                Assert.False(holder.Chain.Build(microsoftDotCom));
+
+                Assert.Equal(
+                    X509ChainStatusFlags.NotValidForUsage,
+                    holder.Chain.ChainStatus.Aggregate(
+                        X509ChainStatusFlags.NoError,
+                        (a, status) => a | status.Status));
+
+                Assert.Equal(3, holder.Chain.ChainElements.Count);
+
+                Assert.Equal(microsoftDotCom.RawData, holder.Chain.ChainElements[0].Certificate.RawData);
+                Assert.Equal(microsoftDotComRoot.RawData, holder.Chain.ChainElements[2].Certificate.RawData);
+
+                Assert.Equal(
+                    X509ChainStatusFlags.NotValidForUsage,
+                    holder.Chain.ChainElements[0].ChainElementStatus.Aggregate(
+                        X509ChainStatusFlags.NoError,
+                        (a, status) => a | status.Status));
+
+                Assert.Equal(
+                    X509ChainStatusFlags.NotValidForUsage,
+                    holder.Chain.ChainElements[1].ChainElementStatus.Aggregate(
+                        X509ChainStatusFlags.NoError,
+                        (a, status) => a | status.Status));
+
+                Assert.Equal(
+                    X509ChainStatusFlags.NotValidForUsage,
+                    holder.Chain.ChainElements[2].ChainElementStatus.Aggregate(
+                        X509ChainStatusFlags.NoError,
+                        (a, status) => a | status.Status));
+            }
+        }
+
         [ConditionalFact(nameof(TrustsMicrosoftDotComRoot), nameof(CanModifyStores))]
         [OuterLoop(/* Modifies user certificate store */)]
         public static void BuildChain_MicrosoftDotCom_WithRootCertInUserAndSystemRootCertStores()
