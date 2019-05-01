@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System.Net.Http.HPack
 {
     internal class Huffman
@@ -302,10 +304,13 @@ namespace System.Net.Http.HPack
         /// Decodes a Huffman encoded string from a byte array.
         /// </summary>
         /// <param name="src">The source byte array containing the encoded data.</param>
-        /// <param name="dst">The destination byte array to store the decoded data.</param>
+        /// <param name="dstArray">The destination byte array to store the decoded data.  This may grow if its size is insufficient.</param>
         /// <returns>The number of decoded symbols.</returns>
-        public static int Decode(ReadOnlySpan<byte> src, Span<byte> dst)
+        public static int Decode(ReadOnlySpan<byte> src, ref byte[] dstArray)
         {
+            Span<byte> dst = dstArray;
+            Debug.Assert(dst != null && dst.Length > 0);
+
             int i = 0;
             int j = 0;
             int lastDecodedBits = 0;
@@ -351,8 +356,8 @@ namespace System.Net.Http.HPack
 
                 if (j == dst.Length)
                 {
-                    // Destination is too small.
-                    throw new HuffmanDecodingException();
+                    Array.Resize(ref dstArray, dst.Length * 2);
+                    dst = dstArray;
                 }
 
                 dst[j++] = (byte)ch;

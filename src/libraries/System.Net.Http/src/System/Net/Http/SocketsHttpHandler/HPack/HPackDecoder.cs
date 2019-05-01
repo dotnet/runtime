@@ -26,9 +26,7 @@ namespace System.Net.Http.HPack
         }
 
         public const int DefaultHeaderTableSize = 4096;
-
-        // TODO: add new configurable limit
-        public const int MaxStringOctets = 4096;
+        public const int DefaultStringOctetsSize = 4096;
 
         // http://httpwg.org/specs/rfc7541.html#rfc.section.6.1
         //   0   1   2   3   4   5   6   7
@@ -87,9 +85,9 @@ namespace System.Net.Http.HPack
         private readonly int _maxDynamicTableSize;
         private readonly DynamicTable _dynamicTable;
         private readonly IntegerDecoder _integerDecoder = new IntegerDecoder();
-        private readonly byte[] _stringOctets = new byte[MaxStringOctets];
-        private readonly byte[] _headerNameOctets = new byte[MaxStringOctets];
-        private readonly byte[] _headerValueOctets = new byte[MaxStringOctets];
+        private byte[] _stringOctets = new byte[DefaultStringOctetsSize];
+        private byte[] _headerNameOctets = new byte[DefaultStringOctetsSize];
+        private byte[] _headerValueOctets = new byte[DefaultStringOctetsSize];
 
         private State _state = State.Ready;
         private byte[] _headerName;
@@ -347,8 +345,7 @@ namespace System.Net.Http.HPack
         {
             if (length > _stringOctets.Length)
             {
-                // String length too large.
-                throw new HPackDecodingException();
+                _stringOctets = new byte[Math.Max(length, _stringOctets.Length * 2)];
             }
 
             _stringLength = length;
@@ -358,14 +355,19 @@ namespace System.Net.Http.HPack
 
         private void OnString(State nextState)
         {
-            int Decode(byte[] dst)
+            int Decode(ref byte[] dst)
             {
                 if (_huffman)
                 {
-                    return Huffman.Decode(new ReadOnlySpan<byte>(_stringOctets, 0, _stringLength), dst);
+                    return Huffman.Decode(new ReadOnlySpan<byte>(_stringOctets, 0, _stringLength), ref dst);
                 }
                 else
                 {
+                    if (dst.Length < _stringLength)
+                    {
+                        dst = new byte[Math.Max(_stringLength, dst.Length * 2)];
+                    }
+
                     Buffer.BlockCopy(_stringOctets, 0, dst, 0, _stringLength);
                     return _stringLength;
                 }
@@ -375,12 +377,12 @@ namespace System.Net.Http.HPack
             {
                 if (_state == State.HeaderName)
                 {
+                    _headerNameLength = Decode(ref _headerNameOctets);
                     _headerName = _headerNameOctets;
-                    _headerNameLength = Decode(_headerNameOctets);
                 }
                 else
                 {
-                    _headerValueLength = Decode(_headerValueOctets);
+                    _headerValueLength = Decode(ref _headerValueOctets);
                 }
             }
             catch (HuffmanDecodingException)
