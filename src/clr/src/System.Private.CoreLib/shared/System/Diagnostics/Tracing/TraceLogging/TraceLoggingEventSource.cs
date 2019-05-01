@@ -21,6 +21,7 @@ using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
 #endif
 
 using System;
+using System.Diagnostics;
 using System.Resources;
 using System.Runtime.InteropServices;
 using System.Security;
