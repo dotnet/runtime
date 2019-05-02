@@ -102,7 +102,7 @@ link-mono:
 prepare: $(ASPNETCORESDK_FILE) $(NETCORESDK_FILE) update-corefx update-roslyn link-mono
 
 nupkg:
-	nuget pack runtime.nuspec -properties VERSION=$(VERSION)$(VERSTUB)\;RID=$(RID)\;PLATFORM_AOT_SUFFIX=$(PLATFORM_AOT_SUFFIX)\;COREARCH=$(COREARCH)
+	nuget pack runtime.nuspec -properties VERSION=$(VERSION)$(VERSTUB)\;RID=$(RID)\;PLATFORM_AOT_SUFFIX=$(PLATFORM_AOT_SUFFIX)\;COREARCH=$(COREARCH) -OutputDirectory ../artifacts/
 
 clean:
 	rm -rf sdk shared host dotnet tests obj corefx roslyn LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE) $(ASPNETCORESDK_FILE)
