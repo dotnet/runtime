@@ -14,6 +14,7 @@
     <Compile Include="System\Text\Json\BitStack.cs" />
     <Compile Include="System\Text\Json\JsonCommentHandling.cs" />
     <Compile Include="System\Text\Json\JsonConstants.cs" />
+    <Compile Include="System\Text\Json\JsonEncodedText.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.cs" />
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />

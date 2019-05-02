@@ -10,6 +10,31 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         /// <summary>
+        /// Writes the pre-encoded property name and the JSON literal "null" as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <remarks>
+        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        public void WriteNull(JsonEncodedText propertyName)
+        {
+            WriteLiteralHelper(propertyName.EncodedUtf8Bytes, JsonConstants.NullValue);
+            _tokenType = JsonTokenType.Null;
+        }
+
+        private void WriteLiteralHelper(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> value)
+        {
+            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxTokenSize);
+
+            WriteLiteralByOptions(utf8PropertyName, value);
+
+            SetFlagToAddListSeparatorBeforeNextItem();
+        }
+
+        /// <summary>
         /// Writes the property name and the JSON literal "null" as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
@@ -73,6 +98,31 @@ namespace System.Text.Json
 
             SetFlagToAddListSeparatorBeforeNextItem();
             _tokenType = JsonTokenType.Null;
+        }
+
+        /// <summary>
+        /// Writes the pre-encoded property name and <see cref="bool"/> value (as a JSON literal "true" or "false") as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="value">The value to be written as a JSON literal "true" or "false" as part of the name/value pair.</param>
+        /// <remarks>
+        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        public void WriteBoolean(JsonEncodedText propertyName, bool value)
+        {
+            if (value)
+            {
+                WriteLiteralHelper(propertyName.EncodedUtf8Bytes, JsonConstants.TrueValue);
+                _tokenType = JsonTokenType.True;
+            }
+            else
+            {
+                WriteLiteralHelper(propertyName.EncodedUtf8Bytes, JsonConstants.FalseValue);
+                _tokenType = JsonTokenType.False;
+            }
         }
 
         /// <summary>

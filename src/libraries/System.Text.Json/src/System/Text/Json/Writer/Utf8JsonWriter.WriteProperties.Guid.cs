@@ -11,6 +11,33 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         /// <summary>
+        /// Writes the pre-encoded property name and <see cref="Guid"/> value (as a JSON string) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="value">The value to be written as a JSON string as part of the name/value pair.</param>
+        /// <remarks>
+        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="Guid"/> using the default <see cref="StandardFormat"/> (i.e. 'D'), as the form: nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn.
+        /// </remarks>
+        public void WriteString(JsonEncodedText propertyName, Guid value)
+            => WriteStringHelper(propertyName.EncodedUtf8Bytes, value);
+
+        private void WriteStringHelper(ReadOnlySpan<byte> utf8PropertyName, Guid value)
+        {
+            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxTokenSize);
+
+            WriteStringByOptions(utf8PropertyName, value);
+
+            SetFlagToAddListSeparatorBeforeNextItem();
+            _tokenType = JsonTokenType.String;
+        }
+
+        /// <summary>
         /// Writes the property name and <see cref="Guid"/> value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
