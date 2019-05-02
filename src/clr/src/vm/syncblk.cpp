@@ -2250,7 +2250,7 @@ SyncBlock *ObjHeader::GetSyncBlock()
 
                 SyncTableEntry::GetSyncTableEntry() [indx].m_SyncBlock = syncBlock;
 
-                // in order to avoid a race where some thread tries to get the AD index and we've already nuked it,
+                // in order to avoid a race where some thread tries to get the AD index and we've already zapped it,
                 // make sure the syncblock etc is all setup with the AD index prior to replacing the index
                 // in the header
                 if (GetHeaderSyncBlockIndex() == 0)

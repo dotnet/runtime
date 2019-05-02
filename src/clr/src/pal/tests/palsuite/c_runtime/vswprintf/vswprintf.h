@@ -14,7 +14,7 @@
 #ifndef __vswprintf_H__
 #define __vswprintf_H__
 
-/* These functions leaks memory like crazy. C'est la vie. */
+/* These functions leaks memory a lot. C'est la vie. */
 int testvswp(wchar_t* buf, size_t buffSize, const wchar_t* format, ...)
 {
 	int retVal = 0;

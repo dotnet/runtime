@@ -147,7 +147,7 @@ MethodDesc* InstMethodHashTable::FindMethodDesc(TypeHandle declaringType,
 
         // We temporarily disable IBC logging here
         // because the pMD that we search through may not be restored
-        // and ComputePrefferedZapModule will assert on finding an
+        // and ComputePreferredZapModule will assert on finding an
         // encode fixup pointer
         // 
         IBCLoggingDisabler disableIbcLogging;

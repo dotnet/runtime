@@ -12821,7 +12821,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wsz
 //
 // - Can be called with gc enabled or disabled.
 //   This allows a catch-all error path to post a generic catchall error
-//   message w/out bonking more specific error messages posted by inner functions.
+//   message w/out overwriting more specific error messages posted by inner functions.
 //==========================================================================
 VOID DECLSPEC_NORETURN ThrowTypeLoadException(LPCWSTR pFullTypeName,
                                               LPCWSTR pAssemblyName,
@@ -12960,7 +12960,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowArgumentException(LPCWSTR argName, LPCWST
 //
 // - Can be called with gc enabled or disabled.
 //   This allows a catch-all error path to post a generic catchall error
-//   message w/out bonking more specific error messages posted by inner functions.
+//   message w/out overwriting more specific error messages posted by inner functions.
 //==========================================================================
 VOID DECLSPEC_NORETURN ThrowTypeLoadException(LPCUTF8 pszNameSpace,
                                               LPCUTF8 pTypeName,

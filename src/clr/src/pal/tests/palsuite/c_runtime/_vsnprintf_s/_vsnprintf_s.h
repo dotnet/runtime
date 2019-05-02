@@ -14,7 +14,7 @@
 #ifndef __STRINGTEST_H__
 #define __STRINGTEST_H__
 
-/* These functions leaks memory like crazy. C'est la vie. */
+/* These functions leaks memory a lot. C'est la vie. */
 int Testvsnprintf(char* buf, size_t count, const char* format, ...)
 {
     int retVal;

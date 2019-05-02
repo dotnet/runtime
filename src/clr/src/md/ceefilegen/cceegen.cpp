@@ -513,7 +513,7 @@ HRESULT CCeeGen::getSectionCreate (const char *name, DWORD flags, CeeSection **s
     HRESULT hr = m_peSectionMan->getSectionCreate(name, flags, &pewSect);
     TESTANDRETURNHR(hr);
     CeeSection *newSect = new CeeSection(*this, *pewSect);
-    // if this fails, the PESection will get nuked in the destructor for CCeeGen
+    // if this fails, the PESection will get zapped in the destructor for CCeeGen
     if (newSect == NULL)
     {
         return E_OUTOFMEMORY;
