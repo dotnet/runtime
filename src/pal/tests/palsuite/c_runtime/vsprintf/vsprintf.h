@@ -13,7 +13,7 @@
 #ifndef __VSPRINTF_H__
 #define __VSPRINTF_H__
 
-/* These functions leaks memory like crazy. C'est la vie. */
+/* These functions leaks memory a lot. C'est la vie. */
 int testvsp(char* buf, size_t buffSize, const char* format, ...)
 {
     int retVal;

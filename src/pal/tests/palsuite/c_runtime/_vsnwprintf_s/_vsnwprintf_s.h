@@ -14,7 +14,7 @@
 #ifndef ___VSNWPRINTF_H__
 #define ___VSNWPRINTF_H__
 
-/* These functions leaks memory like crazy. C'est la vie. */
+/* These functions leaks memory a lot. C'est la vie. */
 int TestVsnwprintf_s(wchar_t* buf, size_t count, const wchar_t* format, ...)
 {
     int retVal = 0;

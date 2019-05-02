@@ -467,7 +467,7 @@ STDAPI_(LPWSTR) PathCombineW(LPWSTR lpszDest, LPCWSTR lpszDir, LPCWSTR lpszFile)
                 {
                     // Skip the backslash when copying
                     // Note: We don't support strings longer than 4GB, but that's
-                    // okay because we already barf at MAX_PATH
+                    // okay because we already fail at MAX_PATH
                     int iRemaining = (int)(ARRAYSIZE(szTemp) - (pszT - szTemp));
                     StringCchCopyNW(pszT, iRemaining, lpszFile+1, iRemaining);
                 }

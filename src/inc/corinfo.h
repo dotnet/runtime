@@ -330,7 +330,7 @@ struct SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR
     //     returns true if we the eightbyte at index slotIndex is of SSE type.
     // 
     // Follows the rules of the AMD64 System V ABI specification at www.x86-64.org/documentation/abi.pdf.
-    // Please reffer to it for definitions/examples.
+    // Please refer to it for definitions/examples.
     //
     bool IsSseSlot(unsigned slotIndex) const
     {

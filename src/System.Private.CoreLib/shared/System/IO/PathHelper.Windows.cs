@@ -130,7 +130,7 @@ namespace System.IO
         internal static string TryExpandShortFileName(ref ValueStringBuilder outputBuilder, string? originalPath)
         {
             // We guarantee we'll expand short names for paths that only partially exist. As such, we need to find the part of the path that actually does exist. To
-            // avoid allocating like crazy we'll create only one input array and modify the contents with embedded nulls.
+            // avoid allocating a lot we'll create only one input array and modify the contents with embedded nulls.
 
             Debug.Assert(!PathInternal.IsPartiallyQualified(outputBuilder.AsSpan()), "should have resolved by now");
 

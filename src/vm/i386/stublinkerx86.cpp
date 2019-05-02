@@ -5840,7 +5840,7 @@ static void EncodeOneGCOffset(CPUSTUBLINKER *pSl, ULONG delta, BOOL maybeInterio
     // by shifting and gaining a free high-bit.
     ULONG encodedDelta = delta >> 1;
 #else
-    // For 32-bit, we just limit our frame size to <2GB. (I know, such a bummer!)
+    // For 32-bit, we just limit our frame size to <2GB.
     ULONG encodedDelta = delta;
 #endif
     _ASSERTE((encodedDelta & 0x80000003) == 0);

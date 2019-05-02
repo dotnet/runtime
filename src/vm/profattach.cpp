@@ -391,7 +391,7 @@ static HRESULT GetIntegritySidString(__out LPWSTR * pwszIntegritySidString)
     //         "security feature". It's mainly useful as defense-in-depth or to protect
     //         IE users and admins from themselves in most cases.
     //     * It's impossible to spawn a system integrity trigger process outside of
-    //         session 0 services. So profiling ASP.NET would be crazy hard without this
+    //         session 0 services. So profiling ASP.NET would be really hard without this
     //         policy.
     DWORD * pdwIntegrityLevel = SecurityUtil::GetIntegrityLevelFromMandatorySID(ptml->Label.Sid);
     if (*pdwIntegrityLevel > SECURITY_MANDATORY_HIGH_RID)
