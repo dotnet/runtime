@@ -357,25 +357,39 @@ namespace System.Buffers.Tests
         [Fact]
         public void MultipleCallsToGetSpan()
         {
-            var output = new ArrayBufferWriter<T>(300);
-            int previousAvailable = output.FreeCapacity;
-            Assert.True(previousAvailable >= 300);
-            Assert.True(output.Capacity >= 300);
-            Assert.Equal(previousAvailable, output.Capacity);
-            Span<T> span = output.GetSpan();
-            Assert.True(span.Length >= previousAvailable);
-            Assert.True(span.Length >= 256);
-            Span<T> newSpan = output.GetSpan();
-            Assert.Equal(span.Length, newSpan.Length);
-
-            unsafe
+            if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
-                void* pNewSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(newSpan));
-                Assert.Equal((IntPtr)pSpan, (IntPtr)pNewSpan);
+                return;
             }
 
-            Assert.Equal(span.Length, output.GetSpan().Length);
+            var output = new ArrayBufferWriter<T>(300);
+            Assert.True(MemoryMarshal.TryGetArray(output.GetMemory(), out ArraySegment<T> array));
+            GCHandle pinnedArray = GCHandle.Alloc(array.Array, GCHandleType.Pinned);
+            try
+            {
+                int previousAvailable = output.FreeCapacity;
+                Assert.True(previousAvailable >= 300);
+                Assert.True(output.Capacity >= 300);
+                Assert.Equal(previousAvailable, output.Capacity);
+                Span<T> span = output.GetSpan();
+                Assert.True(span.Length >= previousAvailable);
+                Assert.True(span.Length >= 256);
+                Span<T> newSpan = output.GetSpan();
+                Assert.Equal(span.Length, newSpan.Length);
+
+                unsafe
+                {
+                    void* pSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(span));
+                    void* pNewSpan = Unsafe.AsPointer(ref MemoryMarshal.GetReference(newSpan));
+                    Assert.Equal((IntPtr)pSpan, (IntPtr)pNewSpan);
+                }
+
+                Assert.Equal(span.Length, output.GetSpan().Length);
+            }
+            finally
+            {
+                pinnedArray.Free();
+            }
         }
 
         public abstract void WriteData(IBufferWriter<T> bufferWriter, int numBytes);
