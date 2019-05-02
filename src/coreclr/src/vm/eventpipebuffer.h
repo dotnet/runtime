@@ -149,8 +149,8 @@ public:
     // Get the next event from the buffer, but don't mark it read.
     EventPipeEventInstance* PeekNext(LARGE_INTEGER beforeTimeStamp);
 
-    // Get the next event from the buffer and mark it as read.
-    EventPipeEventInstance* PopNext(LARGE_INTEGER beforeTimeStamp);
+    // TODO
+    void PopNext(EventPipeEventInstance *pEvent);
 
     // Check the state of the buffer
     EventPipeBufferState GetVolatileState();
