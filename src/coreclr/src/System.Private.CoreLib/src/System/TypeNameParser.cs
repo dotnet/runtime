@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -57,10 +58,10 @@ namespace System
         #endregion
 
         #region Static Members
-        internal static Type GetType(
+        internal static Type? GetType(
             string typeName,
-            Func<AssemblyName, Assembly> assemblyResolver,
-            Func<Assembly, string, bool, Type> typeResolver,
+            Func<AssemblyName, Assembly?>? assemblyResolver,
+            Func<Assembly?, string, bool, Type?>? typeResolver,
             bool throwOnError,
             bool ignoreCase,
             ref StackCrawlMark stackMark)
@@ -70,9 +71,9 @@ namespace System
             if (typeName.Length > 0 && typeName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
 
-            Type ret = null;
+            Type? ret = null;
 
-            SafeTypeNameParserHandle handle = CreateTypeNameParser(typeName, throwOnError);
+            SafeTypeNameParserHandle? handle = CreateTypeNameParser(typeName, throwOnError);
 
             if (handle != null)
             {
@@ -106,15 +107,15 @@ namespace System
         #endregion
 
         #region private Members
-        private unsafe Type ConstructType(
-            Func<AssemblyName, Assembly> assemblyResolver,
-            Func<Assembly, string, bool, Type> typeResolver,
+        private unsafe Type? ConstructType(
+            Func<AssemblyName, Assembly?>? assemblyResolver,
+            Func<Assembly?, string, bool, Type?>? typeResolver,
             bool throwOnError,
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
             // assembly name
-            Assembly assembly = null;
+            Assembly? assembly = null;
             string asmName = GetAssemblyName();
 
             // GetAssemblyName never returns null
@@ -131,7 +132,7 @@ namespace System
                 }
             }
 
-            string[] names = GetNames();
+            string[]? names = GetNames();
             if (names == null)
             {
                 // This can only happen if the type name is an empty string or if the first char is '\0'
@@ -141,7 +142,7 @@ namespace System
                 return null;
             }
 
-            Type baseType = ResolveType(assembly, names, typeResolver, throwOnError, ignoreCase, ref stackMark);
+            Type? baseType = ResolveType(assembly, names, typeResolver, throwOnError, ignoreCase, ref stackMark);
 
             if (baseType == null)
             {
@@ -150,9 +151,9 @@ namespace System
                 return null;
             }
 
-            SafeTypeNameParserHandle[] typeArguments = GetTypeArguments();
+            SafeTypeNameParserHandle[]? typeArguments = GetTypeArguments();
 
-            Type[] types = null;
+            Type?[]? types = null;
             if (typeArguments != null)
             {
                 types = new Type[typeArguments.Length];
@@ -174,20 +175,20 @@ namespace System
                 }
             }
 
-            int[] modifiers = GetModifiers();
+            int[]? modifiers = GetModifiers();
 
             fixed (int* ptr = modifiers)
             {
                 IntPtr intPtr = new IntPtr(ptr);
-                return RuntimeTypeHandle.GetTypeHelper(baseType, types, intPtr, modifiers == null ? 0 : modifiers.Length);
+                return RuntimeTypeHandle.GetTypeHelper(baseType, types!, intPtr, modifiers == null ? 0 : modifiers.Length);
             }
         }
 
-        private static Assembly ResolveAssembly(string asmName, Func<AssemblyName, Assembly> assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)
+        private static Assembly? ResolveAssembly(string asmName, Func<AssemblyName, Assembly?>? assemblyResolver, bool throwOnError, ref StackCrawlMark stackMark)
         {
             Debug.Assert(asmName != null && asmName.Length > 0);
 
-            Assembly assembly = null;
+            Assembly? assembly = null;
 
             if (assemblyResolver == null)
             {
@@ -221,11 +222,11 @@ namespace System
             return assembly;
         }
 
-        private static Type ResolveType(Assembly assembly, string[] names, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
+        private static Type? ResolveType(Assembly? assembly, string[] names, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
             Debug.Assert(names != null && names.Length > 0);
 
-            Type type = null;
+            Type? type = null;
 
             // both the customer provided and the default type resolvers accept escaped type names
             string OuterMostTypeName = EscapeTypeName(names[0]);
@@ -297,33 +298,33 @@ namespace System
             return StringBuilderCache.GetStringAndRelease(sb);
         }
 
-        private static SafeTypeNameParserHandle CreateTypeNameParser(string typeName, bool throwOnError)
+        private static SafeTypeNameParserHandle? CreateTypeNameParser(string typeName, bool throwOnError)
         {
-            SafeTypeNameParserHandle retHandle = null;
+            SafeTypeNameParserHandle? retHandle = null;
             _CreateTypeNameParser(typeName, JitHelpers.GetObjectHandleOnStack(ref retHandle), throwOnError);
 
             return retHandle;
         }
 
-        private string[] GetNames()
+        private string[]? GetNames()
         {
-            string[] names = null;
+            string[]? names = null;
             _GetNames(m_NativeParser, JitHelpers.GetObjectHandleOnStack(ref names));
 
             return names;
         }
 
-        private SafeTypeNameParserHandle[] GetTypeArguments()
+        private SafeTypeNameParserHandle[]? GetTypeArguments()
         {
-            SafeTypeNameParserHandle[] arguments = null;
+            SafeTypeNameParserHandle[]? arguments = null;
             _GetTypeArguments(m_NativeParser, JitHelpers.GetObjectHandleOnStack(ref arguments));
 
             return arguments;
         }
 
-        private int[] GetModifiers()
+        private int[]? GetModifiers()
         {
-            int[] modifiers = null;
+            int[]? modifiers = null;
             _GetModifiers(m_NativeParser, JitHelpers.GetObjectHandleOnStack(ref modifiers));
 
             return modifiers;
@@ -331,10 +332,10 @@ namespace System
 
         private string GetAssemblyName()
         {
-            string assemblyName = null;
+            string? assemblyName = null;
             _GetAssemblyName(m_NativeParser, JitHelpers.GetStringHandleOnStack(ref assemblyName));
 
-            return assemblyName;
+            return assemblyName!;
         }
         #endregion
     }
