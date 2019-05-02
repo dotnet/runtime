@@ -5,7 +5,7 @@ include ../mcs/build/config.make
 #
 
 # Extracted MicrosoftPrivateCoreFxNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L12
-NETCORETESTS_VERSION := 4.6.0-preview5.19217.2
+NETCORETESTS_VERSION := 4.6.0-preview6.19229.1
 
 # Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L14
 NETCOREAPP_VERSION := 3.0.0-preview5-27620-01
@@ -127,7 +127,7 @@ xtest-%: prepare update-corefx-tests
 	cd corefx/tests/extracted/$* && \
 	COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet --fx-version "$(NETCOREAPP_VERSION)" xunit.console.dll $*.dll \
 		-notrait category=outerloop -notrait category=nonosxtests -notrait category=failing \
-		-notrait category=nonnetcoreapptests \
+		-notrait category=nonnetcoreapptests -notrait category=nonmonotests \
 		-html ../../TestResult-$*.html -nunit ../../TestResult-$*-netcore-xunit.xml \
 		$(shell if [ -a $(CURDIR)/excludes-$*.rsp ]; then grep -v '^#\|^$$' $(CURDIR)/excludes-$*.rsp; fi;) \
 		$(FIXTURE) || true

@@ -55,9 +55,23 @@ static void
 fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 {
 	ERROR_DECL (error);
+	MonoObject *exc;
+
+#if ENABLE_NETCORE
+	MonoClass *appcontext_class;
+	MonoMethod *procexit_method;
+
+	appcontext_class = mono_class_try_load_from_name (mono_defaults.corlib, "System", "AppContext");
+	g_assert (appcontext_class);
+	
+	procexit_method = mono_class_get_method_from_name_checked (appcontext_class, "OnProcessExit", 0, 0, error);
+	g_assert (procexit_method);
+	
+	mono_runtime_try_invoke (procexit_method, NULL, NULL, &exc, error);
+#else
 	MonoClassField *field;
 	gpointer pa [2];
-	MonoObject *delegate, *exc;
+	MonoObject *delegate;
 
 	field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "ProcessExit", NULL);
 	g_assert (field);
@@ -70,6 +84,7 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	pa [1] = NULL;
 	mono_runtime_delegate_try_invoke (delegate, pa, &exc, error);
 	mono_error_cleanup (error);
+#endif
 }
 
 static void

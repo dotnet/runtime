@@ -4112,7 +4112,11 @@ ves_icall_System_Enum_GetEnumValuesAndNames (MonoReflectionTypeHandle type, Mono
 	return_val_if_nok (error, FALSE);
 
 	if (!m_class_is_enumtype (enumc)) {
+#if ENABLE_NETCORE
+		mono_error_set_argument (error, NULL, "Type provided must be an Enum.");
+#else
 		mono_error_set_argument (error, "enumType", "Type provided must be an Enum.");
+#endif
 		return TRUE;
 	}
 

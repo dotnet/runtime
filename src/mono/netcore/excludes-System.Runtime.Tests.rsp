@@ -1,38 +1,21 @@
-# Not sure why these are not supported by coreclr
--nomethod *IndexOf_ArrayOfPointers_ThrowsNotSupportedException
--nomethod *Reverse_ArrayOfPointers_ThrowsNotSupportedException
 
--nomethod System.Tests.EnumTests.GetName_Invalid
+# Mono for some reason returns true for `(Array)(new int*[0]) is object[]` while .NET Core returns false
+-nomethod System.Tests.ArrayTests.LastIndexOf_ArrayOfPointers_ThrowsNotSupportedException
+-nomethod System.Tests.ArrayTests.Reverse_ArrayOfPointers_ThrowsNotSupportedException
+-nomethod System.Tests.ArrayTests.IndexOf_ArrayOfPointers_ThrowsNotSupportedException
 
-# Depends on coreclr behavior
--nomethod System.Tests.GCTests.GetTotalMemoryTest_ForceCollection
-# Not supported
--nomethod System.Tests.GCTests.LargeObjectHeapCompactionModeRoundTrips
--nomethod System.Tests.GCTests.GetAllocatedBytesForCurrentThread
--nomethod System.Tests.GCTests.LatencyRoundtrips
-
-# Works, but leads to a SIGSEGV under lldb even with explicit-null-checks
--nomethod *Append_CharPointer_Null_ThrowsNullReferenceException
-
+# https://github.com/mono/mono/issues/14291 incorrect line numbers
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineSameMethod
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineOtherMethod
 
--nomethod *Copy_PointerArrayToNonPointerArray_ThrowsArrayTypeMismatchException
--nomethod *ActivatorTests.CreateInstance_PrimitiveWidening_ThrowsInvalidCastException
--nomethod System.Tests.ActivatorTests.CreateInstance_DesignatedOptionalParameters_ThrowsMissingMemberException
--nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
--nomethod System.Tests.StringTests.NormalizationTest
+# RuntimeAssembly.IsCollectible is not implemented yet
+-nomethod System.Reflection.Tests.IsCollectibleTests.MemberInfoGeneric_IsCollectibleFalse_WhenUsingAssemblyLoad
+-nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleTrue_WhenUsingTestAssemblyLoadContext
+-nomethod System.Reflection.Tests.IsCollectibleTests.MemberInfo_IsCollectibleFalse_WhenUsingAssemblyLoad
+-nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoad
+-nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext
 
--nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetValue
--nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.Add
--nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetOrCreateValue
-
--nomethod *IsCollectibleTests*
--nomethod System.Tests.GCTests.GetAllocatedBytesForCurrentThread
--nomethod System.Tests.GCTests.KeepAlive_Null
--nomethod System.Tests.GCTests.Collect_CallsFinalizer
--nomethod System.Tests.GCTests.KeepAlive
-
+# Mono ignores attributes defined on parameters in delegates
 -nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DecimalParameterWithMissingValue
 -nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_ReferenceTypeParameterWithMissingValue
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue
@@ -47,42 +30,54 @@
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter_WithMissingValue
 -nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
 
+# mono doesn't support termination signals, the test kills a process via libc's kill(pid)
+# and expects it to trigger domain.ProcessExit event
 -nomethod System.Tests.ExitCodeTests.SigTermExitCode
 
+# crashes runtime
 -nomethod System.Tests.ArgIteratorTests.ArgIterator_Throws_PlatformNotSupportedException
 
--nomethod System.Tests.ArrayTests.CreateInstance_NotSupportedType_ThrowsNotSupportedException
-
--nomethod System.Reflection.Tests.PointerTests.PointerFieldGetValue
--nomethod System.Reflection.Tests.PointerTests.IntPtrFieldSetValue
--nomethod System.Reflection.Tests.PointerTests.PointerFieldSetValue
--nomethod System.Reflection.Tests.PointerTests.PointerPropertyGetValue
--nomethod System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter
--nomethod System.Reflection.Tests.PointerTests.PointerMethodParameter
--nomethod System.Reflection.Tests.PointerTests.PointerPropertySetValue
-
 # causes 'error: Return type can't be a byref type Parameter name: returnType':
+# while the test passes, xunit fails in the end if it's enabled
 -nomethod System.Tests.Types.VoidTests.IsByRef_Get_ReturnsExpected
 
-# crashes runtime (Assertion at method-to-ir.c:12303, condition `load_opcode != OP_LOADV_MEMBASE' not met)
--nomethod System.Text.Unicode.Tests.Utf16UtilityTests.GetIndexOfFirstInvalidUtf16Sequence_WithSmallValidBuffers
--nomethod System.Text.Unicode.Tests.Utf16UtilityTests.GetIndexOfFirstInvalidUtf16Sequence_WithSmallInvalidBuffers
--nomethod System.Text.Unicode.Tests.Utf8Tests.ToChars_ValidBuffers
--nomethod System.Text.Unicode.Tests.Utf8Tests.ToBytes_WithLargeValidBuffers
-
-# TODO: Incorrectly wrapped exceptions
--nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke
--nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnOfPointer
--nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestNullRefReturnInvoke2
--nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensBeforeBindingFlagChecks
-
-# TODO: float- and double- backed enums
+# float- and double- backed enums
 -nomethod System.Tests.EnumTests.Parse
 -nomethod System.Tests.EnumTests.Parse_NetCoreApp11
 
-# TODO
+# Implement more checks
 -nomethod System.Tests.ArrayTests.SetValue_Casting_Invalid
 -nomethod System.Tests.ArrayTests.Copy_SZArray
--nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
+-nomethod System.Tests.ArrayTests.CreateInstance_NotSupportedType_ThrowsNotSupportedException
+
+# Missing exceptions
 -nomethod System.Tests.ActivatorTests.CreateInstance_PublicOnlyValueTypeWithPrivateDefaultConstructor_ThrowsMissingMethodException
--nomethod System.Tests.BufferTests.BlockCopy_Invalid
+-nomethod System.Tests.ActivatorTests.CreateInstance_PrimitiveWidening_ThrowsInvalidCastException
+-nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
+
+# `private new T Foo` doesn't hide members from Type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+-nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensBeforeBindingFlagChecks
+
+# IEEE rounding issues
+-nomethod System.Tests.TimeSpanTests.FromMilliseconds
+-nomethod System.Tests.TimeSpanTests.FromMilliseconds_Invalid
+-nomethod System.Tests.TimeSpanTests.Multiplication
+-nomethod System.Tests.TimeSpanTests.NamedMultiplication
+-nomethod System.Tests.TimeSpanTests.Division
+-nomethod System.Tests.TimeSpanTests.NamedDivision
+
+# TODO: ignore in CoreFX for mono runtime:
+-nomethod System.Reflection.Tests.PointerTests.*
+-nomethod System.Tests.StringTests.NormalizationTest
+-nomethod System.Tests.GCTests.KeepAlive
+-nomethod System.Tests.GCTests.LargeObjectHeapCompactionModeRoundTrips
+-nomethod System.Tests.GCTests.GetGCMemoryInfo
+-nomethod System.Tests.GCTests.Collect_CallsFinalizer
+-nomethod System.Tests.GCTests.GetAllocatedBytesForCurrentThread
+-nomethod System.Tests.GCTests.GetTotalMemoryTest_ForceCollection
+-nomethod System.Tests.GCTests.LatencyRoundtrips    
+-nomethod System.Tests.GCTests.KeepAlive_Null
+-nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetOrCreateValue
+-nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.Add
+-nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetValue
+-nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
