@@ -276,21 +276,24 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentNullException>(() => JsonEncodedText.Encode((string)null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(Environment), nameof(Environment.Is64BitProcess))]
         [OuterLoop]
         public static void InvalidLargeEncode()
         {
-            char[] largeValue = new char[400_000_000];
+            try
+            {
+                var largeValueString = new string('a', 400_000_000);
+                var utf8Value = new byte[400_000_000];
+                utf8Value.AsSpan().Fill((byte)'a');
 
-            Span<char> largeValueSpan = largeValue.AsSpan();
-            largeValueSpan.Fill('a');
-
-            var largeValueString = new string(largeValue);
-            byte[] utf8Value = Encoding.UTF8.GetBytes(largeValue);
-
-            Assert.Throws<ArgumentException>(() => JsonEncodedText.Encode(largeValueString));
-            Assert.Throws<ArgumentException>(() => JsonEncodedText.Encode(largeValue));
-            Assert.Throws<ArgumentException>(() => JsonEncodedText.Encode(utf8Value));
+                Assert.Throws<ArgumentException>(() => JsonEncodedText.Encode(largeValueString));
+                Assert.Throws<ArgumentException>(() => JsonEncodedText.Encode(largeValueString.AsSpan()));
+                Assert.Throws<ArgumentException>(() => JsonEncodedText.Encode(utf8Value));
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
         }
 
         public static IEnumerable<object[]> InvalidUTF8Strings
