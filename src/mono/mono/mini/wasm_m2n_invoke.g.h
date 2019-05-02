@@ -886,362 +886,171 @@ wasm_invoke_vil (void *target_func, InterpMethodArguments *margs)
 static void
 icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodArguments *margs)
 {
-	if (cookie[0] == 'D') {
-		if (cookie[1] == 'D') {
-			if (cookie[2] == '\0') {
-				// found: DD depth 3
-				wasm_invoke_dd(target_func, margs);
-				return;
-			}
-			else if (cookie[2] == 'D') {
-				if (cookie[3] == '\0') {
-					// found: DDD depth 5
-					wasm_invoke_ddd(target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'I') {
-				if (cookie[3] == '\0') {
-					// found: DDI depth 6
-					wasm_invoke_ddi(target_func, margs);
-					return;
-				}
-			}
-		}
-		else if (cookie[1] == 'I') {
-			if (cookie[2] == '\0') {
-				// found: DI depth 4
-				wasm_invoke_di(target_func, margs);
-				return;
-			}
-			else if (cookie[2] == 'D') {
-				if (cookie[3] == '\0') {
-					// found: DID depth 6
-					wasm_invoke_did(target_func, margs);
-					return;
-				}
-				else if (cookie[3] == 'D') {
-					if (cookie[4] == '\0') {
-						// found: DIDD depth 8
-						wasm_invoke_didd(target_func, margs);
-						return;
-					}
-				}
-			}
-		}
-	}
-	else if (cookie[0] == 'F') {
-		if (cookie[1] == 'F') {
-			if (cookie[2] == '\0') {
-				// found: FF depth 4
-				wasm_invoke_ff(target_func, margs);
-				return;
-			}
-			else if (cookie[2] == 'F') {
-				if (cookie[3] == '\0') {
-					// found: FFF depth 6
-					wasm_invoke_fff(target_func, margs);
-					return;
-				}
-			}
-		}
-		else if (cookie[1] == 'I') {
-			if (cookie[2] == '\0') {
-				// found: FI depth 5
-				wasm_invoke_fi(target_func, margs);
-				return;
-			}
-			else if (cookie[2] == 'F') {
-				if (cookie[3] == '\0') {
-					// found: FIF depth 7
-					wasm_invoke_fif(target_func, margs);
-					return;
-				}
-				else if (cookie[3] == 'F') {
-					if (cookie[4] == '\0') {
-						// found: FIFF depth 9
-						wasm_invoke_fiff(target_func, margs);
-						return;
-					}
-				}
-			}
-		}
-	}
-	else if (cookie[0] == 'I') {
-		if (cookie[1] == '\0') {
-			// found: I depth 4
-			wasm_invoke_i(target_func, margs);
-			return;
-		}
-		else if (cookie[1] == 'D') {
+	if (cookie[0] == 'I') {
+		if (cookie[1] == 'I') {
 			if (cookie[2] == 'I') {
-				if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IDIII depth 9
-							wasm_invoke_idiii(target_func, margs);
-							return;
-						}
-					}
-				}
-			}
-		}
-		else if (cookie[1] == 'F') {
-			if (cookie[2] == 'F') {
 				if (cookie[3] == 'F') {
 					if (cookie[4] == 'F') {
 						if (cookie[5] == 'F') {
 							if (cookie[6] == 'F') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: IFFFFFFI depth 13
-										wasm_invoke_iffffffi(target_func, margs);
-										return;
-									}
-								}
-							}
-						}
-					}
-				}
-				else if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IFFII depth 11
-							wasm_invoke_iffii(target_func, margs);
-							return;
-						}
-					}
-				}
-			}
-		}
-		else if (cookie[1] == 'I') {
-			if (cookie[2] == '\0') {
-				// found: II depth 8
-				wasm_invoke_ii(target_func, margs);
-				return;
-			}
-			else if (cookie[2] == 'F') {
-				if (cookie[3] == '\0') {
-					// found: IIF depth 10
-					wasm_invoke_iif(target_func, margs);
-					return;
-				}
-				else if (cookie[3] == 'F') {
-					if (cookie[4] == '\0') {
-						// found: IIFF depth 12
-						wasm_invoke_iiff(target_func, margs);
-						return;
-					}
-					else if (cookie[4] == 'F') {
-						if (cookie[5] == '\0') {
-							// found: IIFFF depth 14
-							wasm_invoke_iifff(target_func, margs);
-							return;
-						}
-						else if (cookie[5] == 'F') {
-							if (cookie[6] == 'F') {
 								if (cookie[7] == 'F') {
-									if (cookie[8] == '\0') {
-										// found: IIFFFFFF depth 18
-										wasm_invoke_iiffffff(target_func, margs);
-										return;
-									}
-									else if (cookie[8] == 'F') {
+									if (cookie[8] == 'F') {
 										if (cookie[9] == 'F') {
-											if (cookie[10] == '\0') {
-												// found: IIFFFFFFFF depth 21
-												wasm_invoke_iiffffffff(target_func, margs);
-												return;
-											}
-										}
-									}
-								}
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: IIFFFFI depth 18
-									wasm_invoke_iiffffi(target_func, margs);
-									return;
-								}
-								else if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: IIFFFFII depth 20
-										wasm_invoke_iiffffii(target_func, margs);
-										return;
-									}
-								}
-							}
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == '\0') {
-								// found: IIFFFI depth 17
-								wasm_invoke_iifffi(target_func, margs);
-								return;
-							}
-						}
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IIFFI depth 15
-							wasm_invoke_iiffi(target_func, margs);
-							return;
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == '\0') {
-								// found: IIFFII depth 17
-								wasm_invoke_iiffii(target_func, margs);
-								return;
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: IIFFIII depth 19
-									wasm_invoke_iiffiii(target_func, margs);
-									return;
-								}
-							}
-						}
-					}
-				}
-				else if (cookie[3] == 'I') {
-					if (cookie[4] == '\0') {
-						// found: IIFI depth 13
-						wasm_invoke_iifi(target_func, margs);
-						return;
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IIFII depth 15
-							wasm_invoke_iifii(target_func, margs);
-							return;
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == '\0') {
-								// found: IIFIII depth 17
-								wasm_invoke_iifiii(target_func, margs);
-								return;
-							}
-						}
-					}
-				}
-			}
-			else if (cookie[2] == 'I') {
-				if (cookie[3] == '\0') {
-					// found: III depth 11
-					wasm_invoke_iii(target_func, margs);
-					return;
-				}
-				else if (cookie[3] == 'F') {
-					if (cookie[4] == '\0') {
-						// found: IIIF depth 13
-						wasm_invoke_iiif(target_func, margs);
-						return;
-					}
-					else if (cookie[4] == 'F') {
-						if (cookie[5] == 'F') {
-							if (cookie[6] == 'F') {
-								if (cookie[7] == '\0') {
-									// found: IIIFFFF depth 17
-									wasm_invoke_iiiffff(target_func, margs);
-									return;
-								}
-								else if (cookie[7] == 'F') {
-									if (cookie[8] == '\0') {
-										// found: IIIFFFFF depth 19
-										wasm_invoke_iiifffff(target_func, margs);
-										return;
-									}
-									else if (cookie[8] == 'F') {
-										if (cookie[9] == '\0') {
-											// found: IIIFFFFFF depth 21
-											wasm_invoke_iiiffffff(target_func, margs);
-											return;
-										}
-										else if (cookie[9] == 'F') {
 											if (cookie[10] == 'F') {
-												if (cookie[11] == '\0') {
-													// found: IIIFFFFFFFF depth 24
-													wasm_invoke_iiiffffffff(target_func, margs);
-													return;
-												}
-												else if (cookie[11] == 'I') {
+												if (cookie[11] == 'I') {
 													if (cookie[12] == 'I') {
 														if (cookie[13] == 'I') {
 															if (cookie[14] == '\0') {
-																// found: IIIFFFFFFFFIII depth 28
-																wasm_invoke_iiiffffffffiii(target_func, margs);
+																// found: IIIFFFFFFFFIII depth 15
+																wasm_invoke_iiiffffffffiii (target_func, margs);
 																return;
 															}
 														}
 													}
 												}
+												else if (cookie[11] == '\0') {
+													// found: IIIFFFFFFFF depth 13
+													wasm_invoke_iiiffffffff (target_func, margs);
+													return;
+												}
 											}
+										}
+										else if (cookie[9] == '\0') {
+											// found: IIIFFFFFF depth 11
+											wasm_invoke_iiiffffff (target_func, margs);
+											return;
+										}
+									}
+									else if (cookie[8] == '\0') {
+										// found: IIIFFFFF depth 10
+										wasm_invoke_iiifffff (target_func, margs);
+										return;
+									}
+								}
+								else if (cookie[7] == '\0') {
+									// found: IIIFFFF depth 9
+									wasm_invoke_iiiffff (target_func, margs);
+									return;
+								}
+							}
+						}
+					}
+					else if (cookie[4] == 'I') {
+						if (cookie[5] == 'I') {
+							if (cookie[6] == 'I') {
+								if (cookie[7] == '\0') {
+									// found: IIIFIII depth 9
+									wasm_invoke_iiifiii (target_func, margs);
+									return;
+								}
+							}
+							else if (cookie[6] == '\0') {
+								// found: IIIFII depth 9
+								wasm_invoke_iiifii (target_func, margs);
+								return;
+							}
+						}
+						else if (cookie[5] == '\0') {
+							// found: IIIFI depth 8
+							wasm_invoke_iiifi (target_func, margs);
+							return;
+						}
+					}
+					else if (cookie[4] == '\0') {
+						// found: IIIF depth 7
+						wasm_invoke_iiif (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == 'I') {
+					if (cookie[4] == 'I') {
+						if (cookie[5] == 'I') {
+							if (cookie[6] == 'I') {
+								if (cookie[7] == 'I') {
+									if (cookie[8] == 'I') {
+										if (cookie[9] == 'I') {
+											if (cookie[10] == 'I') {
+												if (cookie[11] == 'I') {
+													if (cookie[12] == 'I') {
+														if (cookie[13] == 'I') {
+															if (cookie[14] == '\0') {
+																// found: IIIIIIIIIIIIII depth 16
+																wasm_invoke_iiiiiiiiiiiiii (target_func, margs);
+																return;
+															}
+														}
+														else if (cookie[13] == '\0') {
+															// found: IIIIIIIIIIIII depth 16
+															wasm_invoke_iiiiiiiiiiiii (target_func, margs);
+															return;
+														}
+													}
+													else if (cookie[12] == '\0') {
+														// found: IIIIIIIIIIII depth 15
+														wasm_invoke_iiiiiiiiiiii (target_func, margs);
+														return;
+													}
+												}
+												else if (cookie[11] == '\0') {
+													// found: IIIIIIIIIII depth 14
+													wasm_invoke_iiiiiiiiiii (target_func, margs);
+													return;
+												}
+											}
+											else if (cookie[10] == '\0') {
+												// found: IIIIIIIIII depth 13
+												wasm_invoke_iiiiiiiiii (target_func, margs);
+												return;
+											}
+										}
+										else if (cookie[9] == '\0') {
+											// found: IIIIIIIII depth 12
+											wasm_invoke_iiiiiiiii (target_func, margs);
+											return;
+										}
+									}
+									else if (cookie[8] == '\0') {
+										// found: IIIIIIII depth 11
+										wasm_invoke_iiiiiiii (target_func, margs);
+										return;
+									}
+								}
+								else if (cookie[7] == 'F') {
+									if (cookie[8] == 'F') {
+										if (cookie[9] == '\0') {
+											// found: IIIIIIIFF depth 12
+											wasm_invoke_iiiiiiiff (target_func, margs);
+											return;
+										}
+									}
+									else if (cookie[8] == '\0') {
+										// found: IIIIIIIF depth 12
+										wasm_invoke_iiiiiiif (target_func, margs);
+										return;
+									}
+								}
+								else if (cookie[7] == '\0') {
+									// found: IIIIIII depth 11
+									wasm_invoke_iiiiiii (target_func, margs);
+									return;
+								}
+							}
+							else if (cookie[6] == 'F') {
+								if (cookie[7] == 'I') {
+									if (cookie[8] == 'I') {
+										if (cookie[9] == '\0') {
+											// found: IIIIIIFII depth 12
+											wasm_invoke_iiiiiifii (target_func, margs);
+											return;
 										}
 									}
 								}
 							}
-						}
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IIIFI depth 16
-							wasm_invoke_iiifi(target_func, margs);
-							return;
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == '\0') {
-								// found: IIIFII depth 18
-								wasm_invoke_iiifii(target_func, margs);
+							else if (cookie[6] == '\0') {
+								// found: IIIIII depth 10
+								wasm_invoke_iiiiii (target_func, margs);
 								return;
 							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: IIIFIII depth 20
-									wasm_invoke_iiifiii(target_func, margs);
-									return;
-								}
-							}
-						}
-					}
-				}
-				else if (cookie[3] == 'I') {
-					if (cookie[4] == '\0') {
-						// found: IIII depth 14
-						wasm_invoke_iiii(target_func, margs);
-						return;
-					}
-					else if (cookie[4] == 'F') {
-						if (cookie[5] == '\0') {
-							// found: IIIIF depth 16
-							wasm_invoke_iiiif(target_func, margs);
-							return;
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == '\0') {
-								// found: IIIIFI depth 18
-								wasm_invoke_iiiifi(target_func, margs);
-								return;
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: IIIIFII depth 20
-									wasm_invoke_iiiifii(target_func, margs);
-									return;
-								}
-								else if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: IIIIFIII depth 22
-										wasm_invoke_iiiifiii(target_func, margs);
-										return;
-									}
-								}
-							}
-						}
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: IIIII depth 17
-							wasm_invoke_iiiii(target_func, margs);
-							return;
 						}
 						else if (cookie[5] == 'F') {
 							if (cookie[6] == 'F') {
@@ -1252,8 +1061,8 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 												if (cookie[11] == 'I') {
 													if (cookie[12] == 'I') {
 														if (cookie[13] == '\0') {
-															// found: IIIIIFFFFIIII depth 26
-															wasm_invoke_iiiiiffffiiii(target_func, margs);
+															// found: IIIIIFFFFIIII depth 16
+															wasm_invoke_iiiiiffffiiii (target_func, margs);
 															return;
 														}
 													}
@@ -1261,132 +1070,237 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 											}
 										}
 									}
+								}
+							}
+						}
+						else if (cookie[5] == '\0') {
+							// found: IIIII depth 9
+							wasm_invoke_iiiii (target_func, margs);
+							return;
+						}
+					}
+					else if (cookie[4] == 'F') {
+						if (cookie[5] == 'I') {
+							if (cookie[6] == 'I') {
+								if (cookie[7] == 'I') {
+									if (cookie[8] == '\0') {
+										// found: IIIIFIII depth 11
+										wasm_invoke_iiiifiii (target_func, margs);
+										return;
+									}
+								}
+								else if (cookie[7] == '\0') {
+									// found: IIIIFII depth 11
+									wasm_invoke_iiiifii (target_func, margs);
+									return;
+								}
+							}
+							else if (cookie[6] == '\0') {
+								// found: IIIIFI depth 10
+								wasm_invoke_iiiifi (target_func, margs);
+								return;
+							}
+						}
+						else if (cookie[5] == '\0') {
+							// found: IIIIF depth 9
+							wasm_invoke_iiiif (target_func, margs);
+							return;
+						}
+					}
+					else if (cookie[4] == '\0') {
+						// found: IIII depth 8
+						wasm_invoke_iiii (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: III depth 6
+					wasm_invoke_iii (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == 'F') {
+				if (cookie[3] == 'F') {
+					if (cookie[4] == 'F') {
+						if (cookie[5] == 'F') {
+							if (cookie[6] == 'F') {
+								if (cookie[7] == 'F') {
+									if (cookie[8] == 'F') {
+										if (cookie[9] == 'F') {
+											if (cookie[10] == '\0') {
+												// found: IIFFFFFFFF depth 12
+												wasm_invoke_iiffffffff (target_func, margs);
+												return;
+											}
+										}
+									}
+									else if (cookie[8] == '\0') {
+										// found: IIFFFFFF depth 11
+										wasm_invoke_iiffffff (target_func, margs);
+										return;
+									}
+								}
+							}
+							else if (cookie[6] == 'I') {
+								if (cookie[7] == 'I') {
+									if (cookie[8] == '\0') {
+										// found: IIFFFFII depth 11
+										wasm_invoke_iiffffii (target_func, margs);
+										return;
+									}
+								}
+								else if (cookie[7] == '\0') {
+									// found: IIFFFFI depth 11
+									wasm_invoke_iiffffi (target_func, margs);
+									return;
 								}
 							}
 						}
 						else if (cookie[5] == 'I') {
 							if (cookie[6] == '\0') {
-								// found: IIIIII depth 20
-								wasm_invoke_iiiiii(target_func, margs);
+								// found: IIFFFI depth 9
+								wasm_invoke_iifffi (target_func, margs);
 								return;
 							}
-							else if (cookie[6] == 'F') {
-								if (cookie[7] == 'I') {
-									if (cookie[8] == 'I') {
-										if (cookie[9] == '\0') {
-											// found: IIIIIIFII depth 24
-											wasm_invoke_iiiiiifii(target_func, margs);
-											return;
-										}
-									}
-								}
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: IIIIIII depth 23
-									wasm_invoke_iiiiiii(target_func, margs);
-									return;
-								}
-								else if (cookie[7] == 'F') {
-									if (cookie[8] == '\0') {
-										// found: IIIIIIIF depth 25
-										wasm_invoke_iiiiiiif(target_func, margs);
-										return;
-									}
-									else if (cookie[8] == 'F') {
-										if (cookie[9] == '\0') {
-											// found: IIIIIIIFF depth 27
-											wasm_invoke_iiiiiiiff(target_func, margs);
-											return;
-										}
-									}
-								}
-								else if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: IIIIIIII depth 26
-										wasm_invoke_iiiiiiii(target_func, margs);
-										return;
-									}
-									else if (cookie[8] == 'I') {
-										if (cookie[9] == '\0') {
-											// found: IIIIIIIII depth 28
-											wasm_invoke_iiiiiiiii(target_func, margs);
-											return;
-										}
-										else if (cookie[9] == 'I') {
-											if (cookie[10] == '\0') {
-												// found: IIIIIIIIII depth 30
-												wasm_invoke_iiiiiiiiii(target_func, margs);
-												return;
-											}
-											else if (cookie[10] == 'I') {
-												if (cookie[11] == '\0') {
-													// found: IIIIIIIIIII depth 32
-													wasm_invoke_iiiiiiiiiii(target_func, margs);
-													return;
-												}
-												else if (cookie[11] == 'I') {
-													if (cookie[12] == '\0') {
-														// found: IIIIIIIIIIII depth 34
-														wasm_invoke_iiiiiiiiiiii(target_func, margs);
-														return;
-													}
-													else if (cookie[12] == 'I') {
-														if (cookie[13] == '\0') {
-															// found: IIIIIIIIIIIII depth 36
-															wasm_invoke_iiiiiiiiiiiii(target_func, margs);
-															return;
-														}
-														else if (cookie[13] == 'I') {
-															if (cookie[14] == '\0') {
-																// found: IIIIIIIIIIIIII depth 38
-																wasm_invoke_iiiiiiiiiiiiii(target_func, margs);
-																return;
-															}
-														}
-													}
-												}
-											}
-										}
-									}
-								}
-							}
 						}
-					}
-				}
-			}
-			else if (cookie[2] == 'L') {
-				if (cookie[3] == '\0') {
-					// found: IIL depth 12
-					wasm_invoke_iil(target_func, margs);
-					return;
-				}
-				else if (cookie[3] == 'I') {
-					if (cookie[4] == '\0') {
-						// found: IILI depth 14
-						wasm_invoke_iili(target_func, margs);
-						return;
+						else if (cookie[5] == '\0') {
+							// found: IIFFF depth 9
+							wasm_invoke_iifff (target_func, margs);
+							return;
+						}
 					}
 					else if (cookie[4] == 'I') {
 						if (cookie[5] == 'I') {
 							if (cookie[6] == 'I') {
 								if (cookie[7] == '\0') {
-									// found: IILIIII depth 18
-									wasm_invoke_iiliiii(target_func, margs);
+									// found: IIFFIII depth 10
+									wasm_invoke_iiffiii (target_func, margs);
+									return;
+								}
+							}
+							else if (cookie[6] == '\0') {
+								// found: IIFFII depth 10
+								wasm_invoke_iiffii (target_func, margs);
+								return;
+							}
+						}
+						else if (cookie[5] == '\0') {
+							// found: IIFFI depth 9
+							wasm_invoke_iiffi (target_func, margs);
+							return;
+						}
+					}
+					else if (cookie[4] == '\0') {
+						// found: IIFF depth 8
+						wasm_invoke_iiff (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == 'I') {
+					if (cookie[4] == 'I') {
+						if (cookie[5] == 'I') {
+							if (cookie[6] == '\0') {
+								// found: IIFIII depth 9
+								wasm_invoke_iifiii (target_func, margs);
+								return;
+							}
+						}
+						else if (cookie[5] == '\0') {
+							// found: IIFII depth 9
+							wasm_invoke_iifii (target_func, margs);
+							return;
+						}
+					}
+					else if (cookie[4] == '\0') {
+						// found: IIFI depth 8
+						wasm_invoke_iifi (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: IIF depth 7
+					wasm_invoke_iif (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == 'L') {
+				if (cookie[3] == 'I') {
+					if (cookie[4] == 'I') {
+						if (cookie[5] == 'I') {
+							if (cookie[6] == 'I') {
+								if (cookie[7] == '\0') {
+									// found: IILIIII depth 10
+									wasm_invoke_iiliiii (target_func, margs);
 									return;
 								}
 							}
 						}
+					}
+					else if (cookie[4] == '\0') {
+						// found: IILI depth 8
+						wasm_invoke_iili (target_func, margs);
+						return;
 					}
 				}
 				else if (cookie[3] == 'L') {
 					if (cookie[4] == 'L') {
 						if (cookie[5] == 'I') {
 							if (cookie[6] == '\0') {
-								// found: IILLLI depth 17
-								wasm_invoke_iillli(target_func, margs);
+								// found: IILLLI depth 10
+								wasm_invoke_iillli (target_func, margs);
 								return;
 							}
+						}
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: IIL depth 8
+					wasm_invoke_iil (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: II depth 6
+				wasm_invoke_ii (target_func, margs);
+				return;
+			}
+		}
+		else if (cookie[1] == 'F') {
+			if (cookie[2] == 'F') {
+				if (cookie[3] == 'F') {
+					if (cookie[4] == 'F') {
+						if (cookie[5] == 'F') {
+							if (cookie[6] == 'F') {
+								if (cookie[7] == 'I') {
+									if (cookie[8] == '\0') {
+										// found: IFFFFFFI depth 10
+										wasm_invoke_iffffffi (target_func, margs);
+										return;
+									}
+								}
+							}
+						}
+					}
+				}
+				else if (cookie[3] == 'I') {
+					if (cookie[4] == 'I') {
+						if (cookie[5] == '\0') {
+							// found: IFFII depth 8
+							wasm_invoke_iffii (target_func, margs);
+							return;
+						}
+					}
+				}
+			}
+		}
+		else if (cookie[1] == 'D') {
+			if (cookie[2] == 'I') {
+				if (cookie[3] == 'I') {
+					if (cookie[4] == 'I') {
+						if (cookie[5] == '\0') {
+							// found: IDIII depth 8
+							wasm_invoke_idiii (target_func, margs);
+							return;
 						}
 					}
 				}
@@ -1395,207 +1309,292 @@ icall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodAr
 		else if (cookie[1] == 'L') {
 			if (cookie[2] == 'I') {
 				if (cookie[3] == '\0') {
-					// found: ILI depth 10
-					wasm_invoke_ili(target_func, margs);
+					// found: ILI depth 7
+					wasm_invoke_ili (target_func, margs);
 					return;
 				}
 			}
 		}
-	}
-	else if (cookie[0] == 'L') {
-		if (cookie[1] == '\0') {
-			// found: L depth 5
-			wasm_invoke_l(target_func, margs);
+		else if (cookie[1] == '\0') {
+			// found: I depth 6
+			wasm_invoke_i (target_func, margs);
 			return;
-		}
-		else if (cookie[1] == 'I') {
-			if (cookie[2] == '\0') {
-				// found: LI depth 7
-				wasm_invoke_li(target_func, margs);
-				return;
-			}
-			else if (cookie[2] == 'I') {
-				if (cookie[3] == '\0') {
-					// found: LII depth 9
-					wasm_invoke_lii(target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'L') {
-				if (cookie[3] == '\0') {
-					// found: LIL depth 10
-					wasm_invoke_lil(target_func, margs);
-					return;
-				}
-				else if (cookie[3] == 'I') {
-					if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: LILII depth 13
-							wasm_invoke_lilii(target_func, margs);
-							return;
-						}
-					}
-				}
-				else if (cookie[3] == 'L') {
-					if (cookie[4] == '\0') {
-						// found: LILL depth 13
-						wasm_invoke_lill(target_func, margs);
-						return;
-					}
-				}
-			}
-		}
-		else if (cookie[1] == 'L') {
-			if (cookie[2] == '\0') {
-				// found: LL depth 8
-				wasm_invoke_ll(target_func, margs);
-				return;
-			}
 		}
 	}
 	else if (cookie[0] == 'V') {
-		if (cookie[1] == '\0') {
-			// found: V depth 6
-			wasm_invoke_v(target_func, margs);
-			return;
-		}
-		else if (cookie[1] == 'I') {
-			if (cookie[2] == '\0') {
-				// found: VI depth 8
-				wasm_invoke_vi(target_func, margs);
-				return;
-			}
-			else if (cookie[2] == 'D') {
-				if (cookie[3] == '\0') {
-					// found: VID depth 10
-					wasm_invoke_vid(target_func, margs);
-					return;
-				}
-			}
-			else if (cookie[2] == 'F') {
-				if (cookie[3] == '\0') {
-					// found: VIF depth 11
-					wasm_invoke_vif(target_func, margs);
-					return;
-				}
-				else if (cookie[3] == 'F') {
-					if (cookie[4] == '\0') {
-						// found: VIFF depth 13
-						wasm_invoke_viff(target_func, margs);
-						return;
-					}
-					else if (cookie[4] == 'F') {
-						if (cookie[5] == 'F') {
-							if (cookie[6] == '\0') {
-								// found: VIFFFF depth 16
-								wasm_invoke_viffff(target_func, margs);
-								return;
-							}
-							else if (cookie[6] == 'F') {
+		if (cookie[1] == 'I') {
+			if (cookie[2] == 'I') {
+				if (cookie[3] == 'I') {
+					if (cookie[4] == 'I') {
+						if (cookie[5] == 'I') {
+							if (cookie[6] == 'I') {
 								if (cookie[7] == 'I') {
-									if (cookie[8] == '\0') {
-										// found: VIFFFFFI depth 19
-										wasm_invoke_vifffffi(target_func, margs);
+									if (cookie[8] == 'I') {
+										if (cookie[9] == 'I') {
+											if (cookie[10] == 'I') {
+												if (cookie[11] == '\0') {
+													// found: VIIIIIIIIII depth 13
+													wasm_invoke_viiiiiiiiii (target_func, margs);
+													return;
+												}
+											}
+											else if (cookie[10] == '\0') {
+												// found: VIIIIIIIII depth 13
+												wasm_invoke_viiiiiiiii (target_func, margs);
+												return;
+											}
+										}
+										else if (cookie[9] == '\0') {
+											// found: VIIIIIIII depth 12
+											wasm_invoke_viiiiiiii (target_func, margs);
+											return;
+										}
+									}
+									else if (cookie[8] == '\0') {
+										// found: VIIIIIII depth 11
+										wasm_invoke_viiiiiii (target_func, margs);
 										return;
 									}
 								}
+								else if (cookie[7] == '\0') {
+									// found: VIIIIII depth 10
+									wasm_invoke_viiiiii (target_func, margs);
+									return;
+								}
+							}
+							else if (cookie[6] == '\0') {
+								// found: VIIIII depth 9
+								wasm_invoke_viiiii (target_func, margs);
+								return;
 							}
 						}
+						else if (cookie[5] == '\0') {
+							// found: VIIII depth 8
+							wasm_invoke_viiii (target_func, margs);
+							return;
+						}
 					}
-				}
-			}
-			else if (cookie[2] == 'I') {
-				if (cookie[3] == '\0') {
-					// found: VII depth 12
-					wasm_invoke_vii(target_func, margs);
-					return;
+					else if (cookie[4] == '\0') {
+						// found: VIII depth 7
+						wasm_invoke_viii (target_func, margs);
+						return;
+					}
 				}
 				else if (cookie[3] == 'F') {
 					if (cookie[4] == 'F') {
 						if (cookie[5] == 'I') {
 							if (cookie[6] == '\0') {
-								// found: VIIFFI depth 16
-								wasm_invoke_viiffi(target_func, margs);
+								// found: VIIFFI depth 9
+								wasm_invoke_viiffi (target_func, margs);
 								return;
 							}
 						}
 					}
 				}
-				else if (cookie[3] == 'I') {
-					if (cookie[4] == '\0') {
-						// found: VIII depth 15
-						wasm_invoke_viii(target_func, margs);
-						return;
-					}
-					else if (cookie[4] == 'I') {
-						if (cookie[5] == '\0') {
-							// found: VIIII depth 17
-							wasm_invoke_viiii(target_func, margs);
-							return;
-						}
-						else if (cookie[5] == 'I') {
-							if (cookie[6] == '\0') {
-								// found: VIIIII depth 19
-								wasm_invoke_viiiii(target_func, margs);
-								return;
-							}
-							else if (cookie[6] == 'I') {
-								if (cookie[7] == '\0') {
-									// found: VIIIIII depth 21
-									wasm_invoke_viiiiii(target_func, margs);
-									return;
-								}
-								else if (cookie[7] == 'I') {
+				else if (cookie[3] == '\0') {
+					// found: VII depth 7
+					wasm_invoke_vii (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == 'F') {
+				if (cookie[3] == 'F') {
+					if (cookie[4] == 'F') {
+						if (cookie[5] == 'F') {
+							if (cookie[6] == 'F') {
+								if (cookie[7] == 'I') {
 									if (cookie[8] == '\0') {
-										// found: VIIIIIII depth 23
-										wasm_invoke_viiiiiii(target_func, margs);
+										// found: VIFFFFFI depth 11
+										wasm_invoke_vifffffi (target_func, margs);
 										return;
 									}
-									else if (cookie[8] == 'I') {
-										if (cookie[9] == '\0') {
-											// found: VIIIIIIII depth 25
-											wasm_invoke_viiiiiiii(target_func, margs);
-											return;
-										}
-										else if (cookie[9] == 'I') {
-											if (cookie[10] == '\0') {
-												// found: VIIIIIIIII depth 27
-												wasm_invoke_viiiiiiiii(target_func, margs);
-												return;
-											}
-											else if (cookie[10] == 'I') {
-												if (cookie[11] == '\0') {
-													// found: VIIIIIIIIII depth 29
-													wasm_invoke_viiiiiiiiii(target_func, margs);
-													return;
-												}
-											}
-										}
-									}
 								}
+							}
+							else if (cookie[6] == '\0') {
+								// found: VIFFFF depth 10
+								wasm_invoke_viffff (target_func, margs);
+								return;
 							}
 						}
 					}
+					else if (cookie[4] == '\0') {
+						// found: VIFF depth 8
+						wasm_invoke_viff (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: VIF depth 7
+					wasm_invoke_vif (target_func, margs);
+					return;
 				}
 			}
 			else if (cookie[2] == 'L') {
-				if (cookie[3] == '\0') {
-					// found: VIL depth 13
-					wasm_invoke_vil(target_func, margs);
-					return;
-				}
-				else if (cookie[3] == 'L') {
+				if (cookie[3] == 'L') {
 					if (cookie[4] == 'I') {
 						if (cookie[5] == '\0') {
-							// found: VILLI depth 16
-							wasm_invoke_villi(target_func, margs);
+							// found: VILLI depth 9
+							wasm_invoke_villi (target_func, margs);
 							return;
 						}
 					}
 				}
+				else if (cookie[3] == '\0') {
+					// found: VIL depth 8
+					wasm_invoke_vil (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == 'D') {
+				if (cookie[3] == '\0') {
+					// found: VID depth 8
+					wasm_invoke_vid (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: VI depth 8
+				wasm_invoke_vi (target_func, margs);
+				return;
+			}
+		}
+		else if (cookie[1] == '\0') {
+			// found: V depth 4
+			wasm_invoke_v (target_func, margs);
+			return;
+		}
+	}
+	else if (cookie[0] == 'L') {
+		if (cookie[1] == 'I') {
+			if (cookie[2] == 'L') {
+				if (cookie[3] == 'I') {
+					if (cookie[4] == 'I') {
+						if (cookie[5] == '\0') {
+							// found: LILII depth 8
+							wasm_invoke_lilii (target_func, margs);
+							return;
+						}
+					}
+				}
+				else if (cookie[3] == 'L') {
+					if (cookie[4] == '\0') {
+						// found: LILL depth 8
+						wasm_invoke_lill (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: LIL depth 8
+					wasm_invoke_lil (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == 'I') {
+				if (cookie[3] == '\0') {
+					// found: LII depth 7
+					wasm_invoke_lii (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: LI depth 7
+				wasm_invoke_li (target_func, margs);
+				return;
+			}
+		}
+		else if (cookie[1] == 'L') {
+			if (cookie[2] == '\0') {
+				// found: LL depth 6
+				wasm_invoke_ll (target_func, margs);
+				return;
+			}
+		}
+		else if (cookie[1] == '\0') {
+			// found: L depth 6
+			wasm_invoke_l (target_func, margs);
+			return;
+		}
+	}
+	else if (cookie[0] == 'D') {
+		if (cookie[1] == 'I') {
+			if (cookie[2] == 'D') {
+				if (cookie[3] == 'D') {
+					if (cookie[4] == '\0') {
+						// found: DIDD depth 8
+						wasm_invoke_didd (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: DID depth 8
+					wasm_invoke_did (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: DI depth 7
+				wasm_invoke_di (target_func, margs);
+				return;
+			}
+		}
+		else if (cookie[1] == 'D') {
+			if (cookie[2] == 'D') {
+				if (cookie[3] == '\0') {
+					// found: DDD depth 8
+					wasm_invoke_ddd (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == 'I') {
+				if (cookie[3] == '\0') {
+					// found: DDI depth 9
+					wasm_invoke_ddi (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: DD depth 9
+				wasm_invoke_dd (target_func, margs);
+				return;
 			}
 		}
 	}
-	printf ("CANNOT HANDLE COOKIE %s\n", cookie);
-	g_assert (0);
+	else if (cookie[0] == 'F') {
+		if (cookie[1] == 'I') {
+			if (cookie[2] == 'F') {
+				if (cookie[3] == 'F') {
+					if (cookie[4] == '\0') {
+						// found: FIFF depth 9
+						wasm_invoke_fiff (target_func, margs);
+						return;
+					}
+				}
+				else if (cookie[3] == '\0') {
+					// found: FIF depth 9
+					wasm_invoke_fif (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: FI depth 8
+				wasm_invoke_fi (target_func, margs);
+				return;
+			}
+		}
+		else if (cookie[1] == 'F') {
+			if (cookie[2] == 'F') {
+				if (cookie[3] == '\0') {
+					// found: FFF depth 9
+					wasm_invoke_fff (target_func, margs);
+					return;
+				}
+			}
+			else if (cookie[2] == '\0') {
+				// found: FF depth 9
+				wasm_invoke_ff (target_func, margs);
+				return;
+			}
+		}
+	}
+	g_error ("CANNOT HANDLE COOKIE %s\n", cookie);
 }
