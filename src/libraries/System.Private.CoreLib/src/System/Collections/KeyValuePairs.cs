@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 /*============================================================
 **
 ** Class:  KeyValuePairs
@@ -22,9 +23,9 @@ namespace System.Collections
         private readonly object _key;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private readonly object _value;
+        private readonly object? _value;
 
-        public KeyValuePairs(object key, object value)
+        public KeyValuePairs(object key, object? value)
         {
             _value = value;
             _key = key;

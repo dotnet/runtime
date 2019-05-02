@@ -138,7 +138,7 @@ namespace System
             return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
         }
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -237,7 +237,7 @@ namespace System
             return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
         }
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -351,7 +351,7 @@ namespace System
             return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
         }
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -476,7 +476,7 @@ namespace System
             return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
         }
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -612,7 +612,7 @@ namespace System
             return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
         }
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -759,7 +759,7 @@ namespace System
             return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
         }
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -917,7 +917,7 @@ namespace System
             return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
         }
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
@@ -1091,7 +1091,7 @@ namespace System
             return ((IStructuralComparable)this).CompareTo(obj, Comparer<object>.Default);
         }
 
-        int IStructuralComparable.CompareTo(object other, IComparer comparer)
+        int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
             if (other == null) return 1;
 
