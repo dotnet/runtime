@@ -12225,7 +12225,7 @@ Reaction CordbProcess::TriageExcep1stChanceAndInit(CordbUnmanagedThread * pUnman
     LOG((LF_CORDB, LL_INFO1000, "CP::TE1stCAI: Enter\n"));
 
 #ifdef _DEBUG
-    // Some Interop bugs involve threads that land at a crazy IP. Since we're interop-debugging, we can't
+    // Some Interop bugs involve threads that land at a bad IP. Since we're interop-debugging, we can't
     // attach a debugger to the LS. So we have some debug mode where we enable the SS flag and thus
     // produce a trace of where a thread is going.
     if (pUnmanagedThread->IsDEBUGTrace() && (dwExCode == STATUS_SINGLE_STEP))
@@ -12784,7 +12784,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
         STRESS_LOG1(LF_CORDB, LL_INFO1000, "W32ET::W32EL: Thread 0x%x is suspended\n", pEvent->dwThreadId);
     }
 
-    // For debugging crazy races in retail, we'll keep a rolling queue of win32 debug events.
+    // For debugging races in retail, we'll keep a rolling queue of win32 debug events.
     this->DebugRecordWin32Event(pEvent, pUnmanagedThread);
 
 
@@ -13390,7 +13390,7 @@ DWORD GetDbgContinueFlag()
 }
 
 
-// Some Interop bugs involve threads that land at a crazy IP. Since we're interop-debugging, we can't
+// Some Interop bugs involve threads that land at a bad IP. Since we're interop-debugging, we can't
 // attach a debugger to the LS. So we have some debug mode where we enable the SS flag and thus
 // produce a trace of where a thread is going.
 #ifdef _DEBUG

@@ -705,7 +705,7 @@ namespace System.Reflection.Emit
 
                 // If we have more than 128 variables, we can't just set the length, we need 
                 // to compress it.  Unfortunately, this means that we need to copy the entire 
-                // array.  Bummer, eh?
+                // array.
                 SetNumberOfSignatureElements(false);
             }
 

@@ -12,7 +12,7 @@ Note: Use of the name “windbg” in this document is meant to actually indicat
 ### What’s checked in - suboptimal
 
 For MQ, SOS activates mscordbi.dll via the “typical” mechanism of calling into mscoree.dll to get the ICLRDebugging interface, on which SOS calls OpenVirtualProcess.
-Although this works, it sucks. 
+Although this works, it is not ideal.
 It assumes the CLR you want to debug has been formally installed onto the debugging machine (complete with mscoree.dll in your system32 / syswow64 directory).
 
 ### Recommendation
