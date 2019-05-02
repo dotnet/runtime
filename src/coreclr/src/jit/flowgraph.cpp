@@ -4253,6 +4253,94 @@ private:
 };
 
 //------------------------------------------------------------------------
+// fgCanSwitchToTier1: Determines if conditions are met to allow switching the opt level to tier 1
+//
+// Return Value:
+//    True if the opt level may be switched to tier 1, false otherwise
+//
+// Assumptions:
+//    - compInitOptions() has been called
+//    - compSetOptimizationLevel() has not been called
+//
+// Notes:
+//    This method is to be called at some point before compSetOptimizationLevel() to determine if the opt level may be
+//    changed based on information gathered in early phases.
+
+bool Compiler::fgCanSwitchToTier1()
+{
+    bool result = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) &&
+                  !opts.compDbgCode && !compIsForInlining();
+    if (result)
+    {
+        // Ensure that it would be safe to change the opt level
+        assert(opts.compFlags == CLFLG_MINOPT);
+        assert(!opts.IsMinOptsSet());
+    }
+
+    return result;
+}
+
+//------------------------------------------------------------------------
+// fgSwitchToTier1: Switch the opt level to tier 1
+//
+// Assumptions:
+//    - fgCanSwitchToTier1() is true
+//    - compSetOptimizationLevel() has not been called
+//
+// Notes:
+//    This method is to be called at some point before compSetOptimizationLevel() to switch the opt level to tier 1
+//    based on information gathered in early phases.
+
+void Compiler::fgSwitchToTier1()
+{
+    assert(fgCanSwitchToTier1());
+
+    // Switch to tier 1 and re-init options
+    assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
+    opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
+    opts.jitFlags->Set(JitFlags::JIT_FLAG_TIER1);
+    compInitOptions(opts.jitFlags);
+
+    // Notify the VM of the change
+    info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_TIER1);
+}
+
+//------------------------------------------------------------------------
+// fgMayExplicitTailCall: Estimates conservatively for an explicit tail call, if the importer may actually use a tail
+// call.
+//
+// Return Value:
+//    - False if a tail call will not be generated
+//    - True if a tail call *may* be generated
+//
+// Assumptions:
+//    - compInitOptions() has been called
+//    - info.compIsVarArgs has been initialized
+//    - An explicit tail call has been seen
+//    - compSetOptimizationLevel() has not been called
+
+bool Compiler::fgMayExplicitTailCall()
+{
+    assert(!compIsForInlining());
+
+    if (info.compFlags & CORINFO_FLG_SYNCH)
+    {
+        // Caller is synchronized
+        return false;
+    }
+
+#if !FEATURE_FIXED_OUT_ARGS
+    if (info.compIsVarArgs)
+    {
+        // Caller is varargs
+        return false;
+    }
+#endif // FEATURE_FIXED_OUT_ARGS
+
+    return true;
+}
+
+//------------------------------------------------------------------------
 // fgFindJumpTargets: walk the IL stream, determining jump target offsets
 //
 // Arguments:
@@ -5137,6 +5225,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* startBlock, BasicBlock* endBlock)
         if ((block->bbFlags & BBF_BACKWARD_JUMP) == 0)
         {
             block->bbFlags |= BBF_BACKWARD_JUMP;
+            fgHasBackwardJump = true;
         }
     }
 }
@@ -5514,6 +5603,14 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 #else
                         BADCODE3("tail call not followed by ret", " at offset %04X", (IL_OFFSET)(codeAddr - codeBegp));
 #endif // !FEATURE_CORECLR && _TARGET_AMD64_
+                    }
+
+                    if (fgCanSwitchToTier1() && fgMayExplicitTailCall())
+                    {
+                        // Method has an explicit tail call that may run like a loop or may not be generated as a tail
+                        // call in tier 0, switch to tier 1 to avoid spending too much time running slower code and to
+                        // avoid stack overflow from recursion
+                        fgSwitchToTier1();
                     }
 
 #if !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_)
