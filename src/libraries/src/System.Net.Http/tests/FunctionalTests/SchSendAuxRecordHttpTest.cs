@@ -26,7 +26,7 @@ namespace System.Net.Http.Functional.Tests
 
             using (var server = new HttpsTestServer(options))
             using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 server.Start();

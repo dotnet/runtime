@@ -74,7 +74,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_MaxLimited_ConcurrentCallsStillSucceed(int maxConnections, int numRequests, bool secure)
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.MaxConnectionsPerServer = maxConnections;
                 await Task.WhenAll(
@@ -96,7 +96,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.MaxConnectionsPerServer = 1;
 

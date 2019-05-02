@@ -132,12 +132,12 @@ namespace System.Net.Test.Common
             if (_ignoreSettingsAck && header.Type == FrameType.Settings && header.Flags == FrameFlags.Ack)
             {
                 _ignoreSettingsAck = false;
-                return await ReadFrameAsync(timeout);
+                return await ReadFrameAsync(timeout).ConfigureAwait(false);
             }
 
             if (_ignoreWindowUpdates && header.Type == FrameType.WindowUpdate)
             {
-                return await ReadFrameAsync(timeout);
+                return await ReadFrameAsync(timeout).ConfigureAwait(false);
             }
 
             // Construct the correct frame type and return it.
@@ -234,16 +234,16 @@ namespace System.Net.Test.Common
         // Accept connection and handle connection setup
         public async Task EstablishConnectionAsync(params SettingsEntry[] settingsEntries)
         {
-            await AcceptConnectionAsync();
+            await AcceptConnectionAsync().ConfigureAwait(false);
 
             // Receive the initial client settings frame.
-            Frame receivedFrame = await ReadFrameAsync(Timeout);
+            Frame receivedFrame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
             Assert.Equal(FrameType.Settings, receivedFrame.Type);
             Assert.Equal(FrameFlags.None, receivedFrame.Flags);
             Assert.Equal(0, receivedFrame.StreamId);
 
             // Receive the initial client window update frame.
-            receivedFrame = await ReadFrameAsync(Timeout);
+            receivedFrame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
             Assert.Equal(FrameType.WindowUpdate, receivedFrame.Type);
             Assert.Equal(FrameFlags.None, receivedFrame.Flags);
             Assert.Equal(0, receivedFrame.StreamId);
@@ -293,7 +293,7 @@ namespace System.Net.Test.Common
         public async Task<int> ReadRequestHeaderAsync()
         {
             // Receive HEADERS frame for request.
-            Frame frame = await ReadFrameAsync(Timeout);
+            Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
             if (frame == null)
             {
                 throw new IOException("Failed to read Headers frame.");
@@ -693,7 +693,7 @@ namespace System.Net.Test.Common
     {
         public static readonly Http2LoopbackServerFactory Singleton = new Http2LoopbackServerFactory();
 
-        public static async Task CreateServerAsync(Func<Http2LoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 30_000)
+        public static async Task CreateServerAsync(Func<Http2LoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000)
         {
             using (var server = Http2LoopbackServer.CreateServer())
             {
@@ -701,7 +701,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 30_000)
+        public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000)
         {
             using (var server = Http2LoopbackServer.CreateServer())
             {

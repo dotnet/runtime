@@ -30,7 +30,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(
                 async url =>
                 {
-                    using (var client = CreateHttpClient())
+                    using (HttpClient client = CreateHttpClient())
                     {
                         HttpResponseMessage response1 = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                         ValidateResponseHeaders(response1, simpleContent.Length, mode);
@@ -101,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
 
-                    using (var client = new HttpClient(handler))
+                    using (HttpClient client = CreateHttpClient(handler))
                     { 
                         HttpResponseMessage response1 = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                         ValidateResponseHeaders(response1, totalSize, mode);
@@ -173,7 +173,7 @@ namespace System.Net.Http.Functional.Tests
                     // Set MaxConnectionsPerServer to 1.  This will ensure we will wait for the previous request to drain (or fail to)
                     handler.MaxConnectionsPerServer = 1;
 
-                    using (var client = new HttpClient(handler))
+                    using (HttpClient client = CreateHttpClient(handler))
                     {
                         HttpResponseMessage response1 = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                         ValidateResponseHeaders(response1, totalSize, mode);

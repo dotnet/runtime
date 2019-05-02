@@ -48,7 +48,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task SetAfterUse_Throws()
         {
             using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.MaxResponseHeadersLength = 1;
                 (await client.GetStreamAsync(Configuration.Http.RemoteEchoServer)).Dispose();
@@ -70,7 +70,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getAsync = client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
                     await server.AcceptConnectionAsync(async connection =>
@@ -112,7 +112,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     if (maxResponseHeadersLength.HasValue)
                     {

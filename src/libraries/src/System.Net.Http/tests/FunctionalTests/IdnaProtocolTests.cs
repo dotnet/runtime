@@ -36,7 +36,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.UseProxy = true;
                 handler.Proxy = new WebProxy(serverUrl.ToString());
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(uri);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
@@ -66,9 +66,9 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateServerAsync(async (server, serverUrl) =>
             {
-                using (HttpClient client = new HttpClient(CreateHttpClientHandler()))
+                using (HttpClient client = CreateHttpClient())
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, serverUrl);
+                    var request = new HttpRequestMessage(HttpMethod.Get, serverUrl) { Version = VersionFromUseHttp2 };
                     request.Headers.Host = hostname;
                     request.Headers.Referrer = uri;
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
@@ -101,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.AllowAutoRedirect = false;
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(serverUrl);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(

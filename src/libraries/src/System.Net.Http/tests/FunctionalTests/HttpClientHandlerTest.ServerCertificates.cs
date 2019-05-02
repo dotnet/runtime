@@ -75,7 +75,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task NoCallback_ValidCertificate_SuccessAndExpectedPropertyBehavior()
         {
             HttpClientHandler handler = CreateHttpClientHandler();
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
                 {
@@ -87,6 +87,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(37250)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP won't send requests through a custom proxy")]
         [OuterLoop("Uses external server")]
         [Fact]
@@ -110,7 +111,7 @@ namespace System.Net.Http.Functional.Tests
             using (LoopbackProxyServer proxyServer = LoopbackProxyServer.Create(options))
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = delegate { return true; };
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.Proxy = new WebProxy(proxyServer.Uri)
                 {
                     Credentials = new NetworkCredential("rightusername", "rightpassword")
@@ -118,7 +119,7 @@ namespace System.Net.Http.Functional.Tests
 
                 const string content = "This is a test";
 
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 using (HttpResponseMessage response = await client.PostAsync(
                         Configuration.Http.SecureRemoteEchoServer,
                         new StringContent(content)))
@@ -154,8 +155,8 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.Proxy = new WebProxy(proxyServer.Uri);
-                handler.ServerCertificateCustomValidationCallback = delegate { return true; };
-                using (var client = new HttpClient(handler))
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+                using (HttpClient client = CreateHttpClient(handler))
                 using (HttpResponseMessage response = await client.PostAsync(
                     Configuration.Http.SecureRemoteEchoServer,
                     new StringContent("This is a test")))
@@ -176,7 +177,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 bool callbackCalled = false;
                 handler.ServerCertificateCustomValidationCallback = delegate { callbackCalled = true; return true; };
@@ -217,7 +218,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 bool callbackCalled = false;
                 handler.CheckCertificateRevocationList = checkRevocation;
@@ -265,7 +266,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ServerCertificateCustomValidationCallback = delegate { return false; };
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
@@ -283,7 +284,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 var e = new DivideByZeroException();
                 handler.ServerCertificateCustomValidationCallback = delegate { throw e; };
@@ -346,7 +347,7 @@ namespace System.Net.Http.Functional.Tests
 
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.CheckCertificateRevocationList = true;
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Configuration.Http.RevokedCertRemoteServer));
             }
@@ -359,7 +360,7 @@ namespace System.Net.Http.Functional.Tests
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer , SslPolicyErrors.RemoteCertificateNameMismatch},
         };
 
-        private async Task UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(string url, bool useSocketsHttpHandler, SslPolicyErrors expectedErrors)
+        private async Task UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(string url, string useSocketsHttpHandlerString, string useHttp2String, SslPolicyErrors expectedErrors)
         {
             if (!BackendSupportsCustomCertificateHandling)
             {
@@ -367,8 +368,8 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandler);
-            using (var client = new HttpClient(handler))
+            HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
+            using (HttpClient client = CreateHttpClient(handler, useHttp2String))
             {
                 bool callbackCalled = false;
 
@@ -411,19 +412,20 @@ namespace System.Net.Http.Functional.Tests
                     // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
                     // the same process as the other tests. Each test needs to be isolated to its own process.
                     // See dicussion: https://github.com/dotnet/corefx/issues/21945
-                    RemoteExecutor.Invoke((remoteUrl, remoteExpectedErrors, useSocketsHttpHandlerString) =>
+                    RemoteExecutor.Invoke((remoteUrl, remoteExpectedErrors, useSocketsHttpHandlerString, useHttp2String) =>
                     {
                         UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(
                             remoteUrl,
-                            bool.Parse(useSocketsHttpHandlerString),
+                            useSocketsHttpHandlerString,
+                            useHttp2String,
                             (SslPolicyErrors)Enum.Parse(typeof(SslPolicyErrors), remoteExpectedErrors)).Wait();
 
                         return RemoteExecutor.SuccessExitCode;
-                    }, url, expectedErrors.ToString(), UseSocketsHttpHandler.ToString()).Dispose();
+                    }, url, expectedErrors.ToString(), UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
                 }
                 else
                 {
-                    await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, UseSocketsHttpHandler, expectedErrors);
+                    await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, UseSocketsHttpHandler.ToString(), UseHttp2.ToString(), expectedErrors);
                 }
             }
             catch (HttpRequestException e) when (e.InnerException?.GetType().Name == "WinHttpException" &&
@@ -445,8 +447,8 @@ namespace System.Net.Http.Functional.Tests
             }
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = delegate { return true; };
-            using (var client = new HttpClient(handler))
+            handler.ServerCertificateCustomValidationCallback = delegate { return true; }; // Do not use TestHelper.AllowAllCertificates / HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
             }
@@ -465,7 +467,7 @@ namespace System.Net.Http.Functional.Tests
 
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.CheckCertificateRevocationList = true;
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
             }

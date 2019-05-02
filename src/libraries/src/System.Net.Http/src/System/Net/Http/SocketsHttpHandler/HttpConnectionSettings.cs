@@ -106,6 +106,9 @@ namespace System.Net.Http
         {
             get
             {
+                // Default to allowing HTTP/2, but enable that to be overridden by an
+                // AppContext switch, or by an environment variable being set to false/0.
+
                 // First check for the AppContext switch, giving it priority over the environment variable.
                 if (AppContext.TryGetSwitch(Http2SupportAppCtxSettingName, out bool allowHttp2))
                 {
@@ -114,14 +117,14 @@ namespace System.Net.Http
 
                 // AppContext switch wasn't used. Check the environment variable.
                 string envVar = Environment.GetEnvironmentVariable(Http2SupportEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("true", StringComparison.OrdinalIgnoreCase) || envVar.Equals("1")))
+                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
                 {
-                    // Allow HTTP/2.0 protocol.
-                    return true;
+                    // Disallow HTTP/2 protocol.
+                    return false;
                 }
 
-                // Default to a maximum of HTTP/1.1.
-                return false;
+                // Default to a maximum of HTTP/2.
+                return true;
             }
         }
 
@@ -129,6 +132,9 @@ namespace System.Net.Http
         {
             get
             {
+                // Default to not allowing unencrypted HTTP/2, but enable that to be overridden
+                // by an AppContext switch, or by an environment variable being to to true/1.
+
                 // First check for the AppContext switch, giving it priority over the environment variable.
                 if (AppContext.TryGetSwitch(Http2UnencryptedSupportAppCtxSettingName, out bool allowHttp2))
                 {

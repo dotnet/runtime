@@ -80,7 +80,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.ClientCertificateOptions = ClientCertificateOption.Automatic;
                 await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
@@ -98,7 +98,7 @@ namespace System.Net.Http.Functional.Tests
 
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ClientCertificates.Add(Configuration.Certificates.GetClientCertificate());
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
             }
@@ -126,7 +126,7 @@ namespace System.Net.Http.Functional.Tests
             // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
             // the same process as the other tests. Each test needs to be isolated to its own process.
             // See dicussion: https://github.com/dotnet/corefx/issues/21945
-            RemoteExecutor.Invoke(async (certIndexString, expectedStatusCodeString, useSocketsHttpHandlerString) =>
+            RemoteExecutor.Invoke((certIndexString, expectedStatusCodeString, useSocketsHttpHandlerString, useHttp2String) =>
             {
                 X509Certificate2 clientCert = null;
 
@@ -151,21 +151,21 @@ namespace System.Net.Http.Functional.Tests
                 Assert.NotNull(clientCert);
 
                 var statusCode = (HttpStatusCode)Enum.Parse(typeof(HttpStatusCode), expectedStatusCodeString);
-                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString);
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.ClientCertificates.Add(clientCert);
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler, useHttp2String))
                 {
                     var request = new HttpRequestMessage();
                     request.RequestUri = new Uri(Configuration.Http.EchoClientCertificateRemoteServer);
 
                     // Issue #35239. Force HTTP/1.1.
                     request.Version = new Version(1,1);
-                    HttpResponseMessage response = await client.SendAsync(request);
+                    HttpResponseMessage response = client.SendAsync(request).GetAwaiter().GetResult(); // need a 4-arg overload of RemoteInvoke that returns a Task
                     Assert.Equal(statusCode, response.StatusCode);
 
                     if (statusCode == HttpStatusCode.OK)
                     {
-                        string body = await response.Content.ReadAsStringAsync();
+                        string body = response.Content.ReadAsStringAsync().GetAwaiter().GetResult(); // need a 4-arg overload of RemoteInvoke that returns a Task
                         byte[] bytes = Convert.FromBase64String(body);
                         var receivedCert = new X509Certificate2(bytes);
                         Assert.Equal(clientCert, receivedCert);
@@ -173,7 +173,7 @@ namespace System.Net.Http.Functional.Tests
 
                     return RemoteExecutor.SuccessExitCode;
                 }
-            }, certIndex.ToString(), expectedStatusCode.ToString(), UseSocketsHttpHandler.ToString()).Dispose();
+            }, certIndex.ToString(), expectedStatusCode.ToString(), UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
         [ActiveIssue(30056, TargetFrameworkMonikers.Uap)]
@@ -193,16 +193,16 @@ namespace System.Net.Http.Functional.Tests
 
             var options = new LoopbackServer.Options { UseSsl = true };
 
-            Func<X509Certificate2, HttpClient> createClient = (cert) =>
+            HttpClient CreateClient(X509Certificate2 cert)
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
-                handler.ServerCertificateCustomValidationCallback = delegate { return true; };
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.ClientCertificates.Add(cert);
                 Assert.True(handler.ClientCertificates.Contains(cert));
-                return new HttpClient(handler);
-            };
+                return CreateHttpClient(handler);
+            }
 
-            Func<HttpClient, LoopbackServer, Uri, X509Certificate2, Task> makeAndValidateRequest = async (client, server, url, cert) =>
+            async Task MakeAndValidateRequest(HttpClient client, LoopbackServer server, Uri url, X509Certificate2 cert)
             {
                 await TestHelper.WhenAllCompletedOrAnyFailed(
                     client.GetStringAsync(url),
@@ -227,11 +227,11 @@ namespace System.Net.Http.Functional.Tests
                 {
                     if (reuseClient)
                     {
-                        using (HttpClient client = createClient(cert))
+                        using (HttpClient client = CreateClient(cert))
                         {
                             for (int i = 0; i < numberOfRequests; i++)
                             {
-                                await makeAndValidateRequest(client, server, url, cert);
+                                await MakeAndValidateRequest(client, server, url, cert);
 
                                 GC.Collect();
                                 GC.WaitForPendingFinalizers();
@@ -242,9 +242,9 @@ namespace System.Net.Http.Functional.Tests
                     {
                         for (int i = 0; i < numberOfRequests; i++)
                         {
-                            using (HttpClient client = createClient(cert))
+                            using (HttpClient client = CreateClient(cert))
                             {
-                                await makeAndValidateRequest(client, server, url, cert);
+                                await MakeAndValidateRequest(client, server, url, cert);
                             }
 
                             GC.Collect();
@@ -270,9 +270,9 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.ServerCertificateCustomValidationCallback = delegate { return true; };
+                handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
                 handler.ClientCertificateOptions = mode;
 
                 await LoopbackServer.CreateServerAsync(async server =>
