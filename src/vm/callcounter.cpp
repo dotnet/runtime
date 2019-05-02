@@ -39,7 +39,7 @@ bool CallCounter::IsEligibleForTier0CallCounting(MethodDesc* pMethodDesc)
     _ASSERTE(pMethodDesc != NULL);
     _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
 
-    return g_pConfig->TieredCompilation_StartupTier_CallCounting() && !pMethodDesc->RequestedAggressiveOptimization();
+    return g_pConfig->TieredCompilation_CallCounting() && !pMethodDesc->RequestedAggressiveOptimization();
 }
 
 bool CallCounter::IsTier0CallCountingEnabled(MethodDesc* pMethodDesc)
@@ -131,7 +131,7 @@ void CallCounter::OnMethodCalled(
         if (pEntry == NULL)
         {
             isFirstTier0Call = true;
-            tier0CallCountLimit = (int)g_pConfig->TieredCompilation_StartupTier_CallCountThreshold() - 1;
+            tier0CallCountLimit = (int)g_pConfig->TieredCompilation_CallCountThreshold() - 1;
             _ASSERTE(tier0CallCountLimit >= 0);
             m_methodToCallCount.Add(CallCounterEntry(pMethodDesc, tier0CallCountLimit));
         }
