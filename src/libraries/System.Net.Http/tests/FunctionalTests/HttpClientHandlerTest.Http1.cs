@@ -16,7 +16,6 @@ namespace System.Net.Http.Functional.Tests
     public class HttpClientHandlerTest_Http1 : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
-        protected override bool UseHttp2LoopbackServer => false;
 
         public HttpClientHandlerTest_Http1(ITestOutputHelper output) : base(output) { }
 
@@ -28,7 +27,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url);
+                    HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, url) { Version = HttpVersion.Version11 };
                     request.Headers.Add("X-foo", "bar");
 
                     Task sendTask = client.SendAsync(request);

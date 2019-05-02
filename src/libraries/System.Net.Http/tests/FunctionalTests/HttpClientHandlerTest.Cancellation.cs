@@ -41,7 +41,8 @@ namespace System.Net.Http.Functional.Tests
 
                         var waitToSend = new TaskCompletionSource<bool>();
                         var contentSending = new TaskCompletionSource<bool>();
-                        var req = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending) };
+                        var req = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
+                        req.Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending);
                         req.Headers.TransferEncodingChunked = chunkedTransfer;
 
                         Task<HttpResponseMessage> resp = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
@@ -83,7 +84,7 @@ namespace System.Net.Http.Functional.Tests
 
                     await ValidateClientCancellationAsync(async () =>
                     {
-                        var req = new HttpRequestMessage(HttpMethod.Get, url);
+                        var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
                         req.Headers.ConnectionClose = connectionClose;
 
                         Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
@@ -131,7 +132,7 @@ namespace System.Net.Http.Functional.Tests
 
                     await ValidateClientCancellationAsync(async () =>
                     {
-                        var req = new HttpRequestMessage(HttpMethod.Get, url);
+                        var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
                         req.Headers.ConnectionClose = connectionClose;
 
                         Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token);
@@ -181,7 +182,7 @@ namespace System.Net.Http.Functional.Tests
                         await clientFinished.Task;
                     });
 
-                    var req = new HttpRequestMessage(HttpMethod.Get, url);
+                    var req = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
                     req.Headers.ConnectionClose = connectionClose;
                     Task<HttpResponseMessage> getResponse = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await ValidateClientCancellationAsync(async () =>
@@ -304,7 +305,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (HttpClient client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.MaxConnectionsPerServer = 1;
                 client.Timeout = Timeout.InfiniteTimeSpan;

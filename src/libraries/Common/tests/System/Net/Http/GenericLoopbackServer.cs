@@ -13,21 +13,21 @@ namespace System.Net.Test.Common
 
     public abstract class LoopbackServerFactory
     {
-        public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 30_000);
+        public abstract Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60_000);
 
         public abstract bool IsHttp11 { get; }
         public abstract bool IsHttp2 { get; }
 
         // Common helper methods
 
-        public Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = 30_000)
+        public Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<GenericLoopbackServer, Task> serverFunc, int millisecondsTimeout = 60_000)
         {
             return CreateServerAsync(async (server, uri) =>
             {
                 Task clientTask = clientFunc(uri);
                 Task serverTask = serverFunc(server);
 
-                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed();
+                await new Task[] { clientTask, serverTask }.WhenAllOrAnyFailed().ConfigureAwait(false);
             }).TimeoutAfter(millisecondsTimeout);
         }
     }

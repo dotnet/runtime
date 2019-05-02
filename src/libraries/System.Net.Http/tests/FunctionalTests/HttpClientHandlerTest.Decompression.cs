@@ -62,7 +62,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.AutomaticDecompression = methods;
                     Assert.Equal<byte>(expectedContent, await client.GetByteArrayAsync(uri));
@@ -128,7 +128,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.AutomaticDecompression = methods;
                     Assert.Equal<byte>(compressedContent, await client.GetByteArrayAsync(uri));
@@ -150,7 +150,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 using (HttpResponseMessage response = await client.GetAsync(server))
                 {
@@ -172,7 +172,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(server, HttpCompletionOption.ResponseHeadersRead))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -222,7 +222,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.AutomaticDecompression = methods;
 
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     if (!string.IsNullOrEmpty(manualAcceptEncodingHeaderValues))
                     {

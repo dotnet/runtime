@@ -26,16 +26,16 @@ namespace System.Net.Http.Functional.Tests
         private static readonly NetworkCredential s_credentials = new NetworkCredential(Username, Password, Domain);
         private static readonly NetworkCredential s_credentialsNoDomain = new NetworkCredential(Username, Password);
 
-        private static readonly Func<HttpClientHandler, Uri, HttpStatusCode, ICredentials, Task> s_createAndValidateRequest = async (handler, url, expectedStatusCode, credentials) =>
+        private async Task CreateAndValidateRequest(HttpClientHandler handler, Uri url, HttpStatusCode expectedStatusCode, ICredentials credentials)
         {
             handler.Credentials = credentials;
 
-            using (HttpClient client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(url))
             {
                 Assert.Equal(expectedStatusCode, response.StatusCode);
             }
-        };
+        }
 
         public HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
 
@@ -64,7 +64,7 @@ namespace System.Net.Http.Functional.Tests
                     server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized, serverAuthenticateHeader);
 
                 await TestHelper.WhenAllCompletedOrAnyFailedWithTimeout(TestHelper.PassingTestTimeoutMilliseconds,
-                    s_createAndValidateRequest(handler, url, result ? HttpStatusCode.OK : HttpStatusCode.Unauthorized, credentials), serverTask);
+                    CreateAndValidateRequest(handler, url, result ? HttpStatusCode.OK : HttpStatusCode.Unauthorized, credentials), serverTask);
             }, options);
         }
 
@@ -100,7 +100,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 Task serverTask = server.AcceptConnectionPerformAuthenticationAndCloseAsync(authenticateHeader);
-                await TestHelper.WhenAllCompletedOrAnyFailed(s_createAndValidateRequest(handler, url, HttpStatusCode.OK, s_credentials), serverTask);
+                await TestHelper.WhenAllCompletedOrAnyFailed(CreateAndValidateRequest(handler, url, HttpStatusCode.OK, s_credentials), serverTask);
             }, options);
         }
 
@@ -126,7 +126,7 @@ namespace System.Net.Http.Functional.Tests
                 credentials.Add(url, unsupportedAuth, new NetworkCredential(Username, Password, Domain));
 
                 Task serverTask = server.AcceptConnectionPerformAuthenticationAndCloseAsync(authenticateHeader);
-                await TestHelper.WhenAllCompletedOrAnyFailed(s_createAndValidateRequest(handler, url, HttpStatusCode.OK, credentials), serverTask);
+                await TestHelper.WhenAllCompletedOrAnyFailed(CreateAndValidateRequest(handler, url, HttpStatusCode.OK, credentials), serverTask);
             }, options);
         }
 
@@ -140,7 +140,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 Task serverTask = server.AcceptConnectionPerformAuthenticationAndCloseAsync(authenticateHeader);
-                await TestHelper.WhenAllCompletedOrAnyFailed(s_createAndValidateRequest(handler, url, HttpStatusCode.Unauthorized, new NetworkCredential("wronguser", "wrongpassword")), serverTask);
+                await TestHelper.WhenAllCompletedOrAnyFailed(CreateAndValidateRequest(handler, url, HttpStatusCode.Unauthorized, new NetworkCredential("wronguser", "wrongpassword")), serverTask);
             }, options);
         }
 
@@ -187,7 +187,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
@@ -235,7 +235,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
@@ -330,7 +330,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
@@ -374,7 +374,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
@@ -410,7 +410,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
@@ -468,7 +468,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // for simplicity of not needing to know every handler's pooling policy
                     handler.PreAuthenticate = true;
@@ -528,7 +528,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.Credentials = new NetworkCredential(
                     Configuration.Security.ActiveDirectoryUserName,
@@ -563,7 +563,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 handler.Credentials = new NetworkCredential(
                     Configuration.Security.WindowsServerUserName,
@@ -600,7 +600,7 @@ namespace System.Net.Http.Functional.Tests
                 async uri =>
                 {
                     using (HttpClientHandler handler = CreateHttpClientHandler())
-                    using (var client = new HttpClient(handler))
+                    using (HttpClient client = CreateHttpClient(handler))
                     {
                         handler.Credentials = new NetworkCredential("username", "password");
                         await client.GetAsync(uri);

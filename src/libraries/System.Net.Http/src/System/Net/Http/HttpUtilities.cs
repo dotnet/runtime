@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
-using System.Net.Http.Headers;
 
 namespace System.Net.Http
 {
     internal static class HttpUtilities
     {
-        internal static Version DefaultRequestVersion => HttpVersion.Version20;
+        internal static Version DefaultRequestVersion =>
+#if uap
+            HttpVersion.Version20;
+#else
+            HttpVersion.Version11;
+#endif
 
         internal static Version DefaultResponseVersion => HttpVersion.Version11;
 

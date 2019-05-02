@@ -72,5 +72,75 @@ namespace System.Net.Http.Functional.Tests
 
             Assert.Throws<ObjectDisposedException>(() => { client.PatchAsync(CreateFakeUri(), new ByteArrayContent(new byte[1])); });
         }
+
+        [Fact]
+        public void DefaultRequestVersion_InitialValueExpected()
+        {
+            using (var client = new HttpClient())
+            {
+                Assert.Equal(PlatformDetection.IsUap ? new Version(2, 0) : new Version(1, 1), client.DefaultRequestVersion);
+                Assert.Same(client.DefaultRequestVersion, client.DefaultRequestVersion);
+            }
+        }
+
+        [Fact]
+        public void DefaultRequestVersion_Roundtrips()
+        {
+            using (var client = new HttpClient())
+            {
+                for (int i = 3; i < 5; i++)
+                {
+                    var newVersion = new Version(i, i, i, i);
+                    client.DefaultRequestVersion = newVersion;
+                    Assert.Same(newVersion, client.DefaultRequestVersion);
+                }
+            }
+        }
+
+        [Fact]
+        public void DefaultRequestVersion_InvalidArgument_Throws()
+        {
+            using (var client = new HttpClient())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("value", () => client.DefaultRequestVersion = null);
+                client.DefaultRequestVersion = new Version(1, 0); // still usable after
+                Assert.Equal(new Version(1, 0), client.DefaultRequestVersion);
+            }
+        }
+
+        [Fact]
+        public async Task DefaultRequestVersion_SetAfterUse_Throws()
+        {
+            var handler = new StoreMessageHttpMessageInvoker();
+            using (var client = new HttpClient(handler))
+            {
+                await client.GetAsync("http://doesntmatter", HttpCompletionOption.ResponseHeadersRead);
+                Assert.Throws<InvalidOperationException>(() => client.DefaultRequestVersion = new Version(1, 1));
+            }
+        }
+
+        [Fact]
+        public async Task DefaultRequestVersion_UsedInCreatedMessages()
+        {
+            var handler = new StoreMessageHttpMessageInvoker();
+            using (var client = new HttpClient(handler))
+            {
+                var version = new Version(1, 2, 3, 4);
+                client.DefaultRequestVersion = version;
+                await client.GetAsync("http://doesntmatter", HttpCompletionOption.ResponseHeadersRead);
+                Assert.Same(version, handler.Message.Version);
+            }
+        }
+
+        private sealed class StoreMessageHttpMessageInvoker : HttpMessageHandler
+        {
+            public HttpRequestMessage Message;
+
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                Message = request;
+                return Task.FromResult(new HttpResponseMessage());
+            }
+        }
     }
 }

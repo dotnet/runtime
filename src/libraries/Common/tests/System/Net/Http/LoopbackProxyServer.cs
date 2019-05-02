@@ -67,12 +67,12 @@ namespace System.Net.Test.Common
                 {
                     while (true)
                     {
-                        Socket s = await _listener.AcceptAsync();
+                        Socket s = await _listener.AcceptAsync().ConfigureAwait(false);
                         var ignored = Task.Run(async () =>
                         {
                             try
                             {
-                                await ProcessConnection(s);
+                                await ProcessConnection(s).ConfigureAwait(false);
                             }
                             catch (Exception)
                             {
@@ -100,7 +100,7 @@ namespace System.Net.Test.Common
             {
                 while(true)
                 {
-                    if (!(await ProcessRequest(reader, writer)))
+                    if (!(await ProcessRequest(reader, writer).ConfigureAwait(false)))
                     {
                         break;
                     }
@@ -160,7 +160,7 @@ namespace System.Net.Test.Common
                 int remotePort = int.Parse(tokens[1]);
 
                 Send200Response(writer);
-                await ProcessConnectMethod((NetworkStream)reader.BaseStream, remoteHost, remotePort);
+                await ProcessConnectMethod((NetworkStream)reader.BaseStream, remoteHost, remotePort).ConfigureAwait(false);
 
                 return false; // connection can't be used for any more requests
             }
@@ -183,8 +183,7 @@ namespace System.Net.Test.Common
 
             var handler = new HttpClientHandler() { UseProxy = false };
             using (HttpClient outboundClient = new HttpClient(handler))
-            using (HttpResponseMessage response =
-                await outboundClient.SendAsync(requestMessage))
+            using (HttpResponseMessage response = await outboundClient.SendAsync(requestMessage).ConfigureAwait(false))
             {
                 // Transfer the response headers from the server to the client.
                 var sb = new StringBuilder($"HTTP/{response.Version.ToString(2)} {(int)response.StatusCode} {response.ReasonPhrase}\r\n");
@@ -200,7 +199,7 @@ namespace System.Net.Test.Common
                 writer.Write(sb.ToString());
 
                 // Forward the response body from the server to the client.
-                string responseBody = await response.Content.ReadAsStringAsync();
+                string responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 writer.Write(responseBody);
 
                 return true;
@@ -211,7 +210,7 @@ namespace System.Net.Test.Common
         {
             // Open connection to destination server.
             Socket serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            await serverSocket.ConnectAsync(remoteHost, remotePort);
+            await serverSocket.ConnectAsync(remoteHost, remotePort).ConfigureAwait(false);
             NetworkStream serverStream = new NetworkStream(serverSocket);
 
             // Relay traffic to/from client and destination server.
@@ -221,9 +220,9 @@ namespace System.Net.Test.Common
                 {
                     byte[] buffer = new byte[8000];
                     int bytesRead;
-                    while ((bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    while ((bytesRead = await clientStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
                     {
-                        await serverStream.WriteAsync(buffer, 0, bytesRead);
+                        await serverStream.WriteAsync(buffer, 0, bytesRead).ConfigureAwait(false);
                     }
                     serverStream.Flush();
                     serverSocket.Shutdown(SocketShutdown.Send);
@@ -239,9 +238,9 @@ namespace System.Net.Test.Common
                 {
                     byte[] buffer = new byte[8000];
                     int bytesRead;
-                    while ((bytesRead = await serverStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    while ((bytesRead = await serverStream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false)) > 0)
                     {
-                        await clientStream.WriteAsync(buffer, 0, bytesRead);
+                        await clientStream.WriteAsync(buffer, 0, bytesRead).ConfigureAwait(false);
                     }
                     clientStream.Flush();
                 }
@@ -251,7 +250,7 @@ namespace System.Net.Test.Common
                 }
             });
 
-            Task.WhenAny(new[] { clientCopyTask, serverCopyTask }).Wait();
+            await Task.WhenAny(new[] { clientCopyTask, serverCopyTask }).ConfigureAwait(false);
         }
 
         private void Send200Response(StreamWriter writer)

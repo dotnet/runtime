@@ -23,7 +23,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public void Authentication_UseStreamContent_Throws()
         {
-            RemoteExecutor.Invoke(async useSocketsHttpHandlerString =>
+            RemoteExecutor.Invoke(async (useSocketsHttpHandlerString, useHttp2String) =>
             {
                 // This test validates the current limitation of CoreFx's NetFxToWinRtStreamAdapter
                 // which throws exceptions when trying to rewind a .NET Stream when it needs to be
@@ -31,10 +31,10 @@ namespace System.Net.Http.Functional.Tests
                 string username = "testuser";
                 string password = "password";
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);
-                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString);
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler, useHttp2String))
                 {
                     byte[] postData = Encoding.UTF8.GetBytes("This is data to post.");
                     var stream = new MemoryStream(postData, false);
@@ -44,21 +44,21 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, UseSocketsHttpHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
         [Fact]
         public void Authentication_UseMultiInterfaceNonRewindableStreamContent_Throws()
         {
-            RemoteExecutor.Invoke(async useSocketsHttpHandlerString =>
+            RemoteExecutor.Invoke(async (useSocketsHttpHandlerString, useHttp2String) =>
             {
                 string username = "testuser";
                 string password = "password";
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
-                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString);
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler, useHttp2String))
                 {
                     byte[] postData = Encoding.UTF8.GetBytes("This is data to post.");
                     var stream = new MultiInterfaceNonRewindableReadOnlyStream(postData);
@@ -68,21 +68,21 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, UseSocketsHttpHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
         [Fact]
         public void Authentication_UseMultiInterfaceStreamContent_Success()
         {
-            RemoteExecutor.Invoke(async useSocketsHttpHandlerString =>
+            RemoteExecutor.Invoke(async (useSocketsHttpHandlerString, useHttp2String) =>
             {
                 string username = "testuser";
                 string password = "password";
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
-                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString);
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler, useHttp2String))
                 {
                     byte[] postData = Encoding.UTF8.GetBytes("This is data to post.");
                     var stream = new MultiInterfaceReadOnlyStream(postData);
@@ -96,21 +96,21 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, UseSocketsHttpHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
         [Fact]
         public void Authentication_UseMemoryStreamVisibleBufferContent_Success()
         {
-            RemoteExecutor.Invoke(async useSocketsHttpHandlerString =>
+            RemoteExecutor.Invoke(async (useSocketsHttpHandlerString, useHttp2String) =>
             {
                 string username = "testuser";
                 string password = "password";
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
-                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString);
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler, useHttp2String))
                 {
                     byte[] postData = Encoding.UTF8.GetBytes("This is data to post.");
                     var stream = new MemoryStream(postData, 0, postData.Length, false, true);
@@ -124,21 +124,21 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, UseSocketsHttpHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
         [Fact]
         public void Authentication_UseMemoryStreamNotVisibleBufferContent_Success()
         {
-            RemoteExecutor.Invoke(async useSocketsHttpHandlerString =>
+            RemoteExecutor.Invoke(async (useSocketsHttpHandlerString, useHttp2String) =>
             {
                 string username = "testuser";
                 string password = "password";
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
-                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString);
+                HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler, useHttp2String))
                 {
                     byte[] postData = Encoding.UTF8.GetBytes("This is data to post.");
                     var stream = new MemoryStream(postData, 0, postData.Length, false, false);
@@ -152,7 +152,7 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, UseSocketsHttpHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
     }
 }

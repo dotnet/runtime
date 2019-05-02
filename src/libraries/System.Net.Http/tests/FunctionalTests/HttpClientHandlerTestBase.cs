@@ -8,6 +8,8 @@ using System.Reflection;
 using System.Net.Test.Common;
 
 using Xunit.Abstractions;
+using System.Collections.Generic;
+using System.Text;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -16,7 +18,7 @@ namespace System.Net.Http.Functional.Tests
         public readonly ITestOutputHelper _output;
 
         protected virtual bool UseSocketsHttpHandler => true;
-        protected virtual bool UseHttp2LoopbackServer => false;
+        protected virtual bool UseHttp2 => false;
 
         protected bool IsWinHttpHandler => !UseSocketsHttpHandler && PlatformDetection.IsWindows && !PlatformDetection.IsUap && !PlatformDetection.IsFullFramework;
         protected bool IsCurlHandler => !UseSocketsHttpHandler && !PlatformDetection.IsWindows;
@@ -28,15 +30,40 @@ namespace System.Net.Http.Functional.Tests
             _output = output;
         }
 
-        protected HttpClient CreateHttpClient() => new HttpClient(CreateHttpClientHandler());
+        protected Version VersionFromUseHttp2 => GetVersion(UseHttp2);
 
-        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseSocketsHttpHandler, UseHttp2LoopbackServer);
+        private static Version GetVersion(bool http2) => http2 ? new Version(2, 0) : HttpVersion.Version11;
 
-        protected static HttpClient CreateHttpClient(string useSocketsHttpHandlerBoolString) =>
-            new HttpClient(CreateHttpClientHandler(useSocketsHttpHandlerBoolString));
+        protected HttpClient CreateHttpClient() => CreateHttpClient(CreateHttpClientHandler());
 
-        protected static HttpClientHandler CreateHttpClientHandler(string useSocketsHttpHandlerBoolString) =>
-            CreateHttpClientHandler(bool.Parse(useSocketsHttpHandlerBoolString));
+        protected HttpClient CreateHttpClient(HttpMessageHandler handler)
+        {
+            var client = new HttpClient(handler);
+            SetDefaultRequestVersion(client, VersionFromUseHttp2);
+            return client;
+        }
+
+        protected static HttpClient CreateHttpClient(string useSocketsHttpHandlerBoolString, string useHttp2String) =>
+            CreateHttpClient(CreateHttpClientHandler(useSocketsHttpHandlerBoolString, useHttp2String), useHttp2String);
+
+        protected static HttpClient CreateHttpClient(HttpMessageHandler handler, string useHttp2String)
+        {
+            var client = new HttpClient(handler);
+            SetDefaultRequestVersion(client, GetVersion(bool.Parse(useHttp2String)));
+            return client;
+        }
+
+        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseSocketsHttpHandler, UseHttp2);
+
+        protected static HttpClientHandler CreateHttpClientHandler(string useSocketsHttpHandlerBoolString, string useHttp2LoopbackServerString) =>
+            CreateHttpClientHandler(bool.Parse(useSocketsHttpHandlerBoolString), bool.Parse(useHttp2LoopbackServerString));
+
+        protected static void SetDefaultRequestVersion(HttpClient client, Version version)
+        {
+            PropertyInfo pi = client.GetType().GetProperty("DefaultRequestVersion", BindingFlags.Public | BindingFlags.Instance);
+            Debug.Assert(pi != null || !PlatformDetection.IsNetCore);
+            pi?.SetValue(client, version);
+        }
 
         protected static HttpClientHandler CreateHttpClientHandler(bool useSocketsHttpHandler, bool useHttp2LoopbackServer = false)
         {
@@ -56,10 +83,9 @@ namespace System.Net.Http.Functional.Tests
                 Debug.Assert(useSocketsHttpHandler == IsSocketsHttpHandler(handler), "Unexpected handler.");
             }
 
-            TestHelper.EnsureHttp2Feature(handler, useHttp2LoopbackServer);
-
             if (useHttp2LoopbackServer)
             {
+                TestHelper.EnableUnencryptedHttp2IfNecessary(handler);
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
 
@@ -75,12 +101,11 @@ namespace System.Net.Http.Functional.Tests
             return field?.GetValue(handler);
         }
 
+        protected LoopbackServerFactory LoopbackServerFactory =>
 #if netcoreapp
-        protected LoopbackServerFactory LoopbackServerFactory => UseHttp2LoopbackServer ? 
-                                                                (LoopbackServerFactory)Http2LoopbackServerFactory.Singleton : 
-                                                                (LoopbackServerFactory)Http11LoopbackServerFactory.Singleton;
-#else
-        protected LoopbackServerFactory LoopbackServerFactory => Http11LoopbackServerFactory.Singleton;
+            UseHttp2 ?
+                (LoopbackServerFactory)Http2LoopbackServerFactory.Singleton :
 #endif
+                Http11LoopbackServerFactory.Singleton;
     }
 }
