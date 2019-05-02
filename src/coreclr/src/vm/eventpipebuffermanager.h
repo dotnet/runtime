@@ -178,10 +178,6 @@ private:
     // The number of buffers in the list.
     unsigned int m_bufferCount;
 
-    // Check pNewReadBuffer to see if it has events in the right time-range and convert it to a readable
-    // state if needed
-    EventPipeBuffer* TryGetReadBuffer(LARGE_INTEGER beforeTimeStamp, EventPipeBuffer* pNewReadBuffer);
-
 public:
 
     EventPipeBufferList(EventPipeBufferManager *pManager, EventPipeThread* pThread);
@@ -201,11 +197,8 @@ public:
     // Get the count of buffers in the list.
     unsigned int GetCount() const;
 
-    // Get the next event as long as it is before the specified timestamp.
-    EventPipeEventInstance* PeekNextEvent(LARGE_INTEGER beforeTimeStamp, EventPipeBuffer **pContainingBuffer);
-
-    // Get the next event as long as it is before the specified timestamp, and also mark it as read.
-    EventPipeEventInstance* PopNextEvent(LARGE_INTEGER beforeTimeStamp);
+    // TODO
+    void PopNextEvent(EventPipeBuffer *pContainingBuffer, EventPipeEventInstance *pNext);
 
     // Get the thread associated with this list.
     EventPipeThread* GetThread();
