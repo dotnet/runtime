@@ -319,6 +319,11 @@ namespace R2RDump
         private readonly EcmaMetadataReader _ecmaReader;
 
         /// <summary>
+        /// ECMA reader representing the top-level signature context.
+        /// </summary>
+        private readonly EcmaMetadataReader _contextReader;
+
+        /// <summary>
         /// Dump options are used to specify details of signature formatting.
         /// </summary>
         private readonly DumpOptions _options;
@@ -350,6 +355,7 @@ namespace R2RDump
             _options = options;
             _image = ecmaReader.Image;
             _offset = offset;
+            _contextReader = ecmaReader;
         }
 
         /// <summary>
@@ -359,12 +365,14 @@ namespace R2RDump
         /// <param name="ecmaReader">Metadata reader for the R2R image</param>
         /// <param name="signature">Signature to parse</param>
         /// <param name="offset">Signature offset within the signature byte array</param>
-        public SignatureDecoder(DumpOptions options, EcmaMetadataReader ecmaReader, byte[] signature, int offset)
+        /// <param name="contextReader">Top-level signature context reader</param>
+        public SignatureDecoder(DumpOptions options, EcmaMetadataReader ecmaReader, byte[] signature, int offset, EcmaMetadataReader contextReader)
         {
             _ecmaReader = ecmaReader;
             _options = options;
             _image = signature;
             _offset = offset;
+            _contextReader = contextReader;
         }
 
         /// <summary>
@@ -501,8 +509,8 @@ namespace R2RDump
             {
                 fixupType &= ~(uint)CORCOMPILE_FIXUP_BLOB_KIND.ENCODE_MODULE_OVERRIDE;
                 int moduleIndex = (int)ReadUInt();
-                EcmaMetadataReader refAsmEcmaReader = _ecmaReader.OpenReferenceAssembly(moduleIndex);
-                moduleDecoder = new SignatureDecoder(_options, refAsmEcmaReader, _image, _offset);
+                EcmaMetadataReader refAsmEcmaReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                moduleDecoder = new SignatureDecoder(_options, refAsmEcmaReader, _image, _offset, _contextReader);
             }
 
             moduleDecoder.ParseSignature((ReadyToRunFixupKind)fixupType, builder);
@@ -923,8 +931,8 @@ namespace R2RDump
                 case CorElementType.ELEMENT_TYPE_MODULE_ZAPSIG:
                     {
                         int moduleIndex = (int)ReadUInt();
-                        EcmaMetadataReader refAsmReader = _ecmaReader.OpenReferenceAssembly(moduleIndex);
-                        SignatureDecoder refAsmDecoder = new SignatureDecoder(_options, refAsmReader, _image, _offset);
+                        EcmaMetadataReader refAsmReader = _contextReader.OpenReferenceAssembly(moduleIndex);
+                        SignatureDecoder refAsmDecoder = new SignatureDecoder(_options, refAsmReader, _image, _offset, _contextReader);
                         refAsmDecoder.ParseType(builder);
                         _offset = refAsmDecoder.Offset;
                     }
@@ -976,7 +984,7 @@ namespace R2RDump
             string owningTypeOverride = null;
             if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
             {
-                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_options, _ecmaReader, _image, _offset);
+                SignatureDecoder owningTypeDecoder = new SignatureDecoder(_options, _ecmaReader, _image, _offset, _contextReader);
                 owningTypeOverride = owningTypeDecoder.ReadTypeSignature();
                 _offset = owningTypeDecoder._offset;
             }
