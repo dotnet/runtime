@@ -1,0 +1,579 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ADP_CollectionIndexInt32" xml:space="preserve">
+    <value>Invalid index {0} for this {1} with Count={2}.</value>
+  </data>
+  <data name="ADP_CollectionIndexString" xml:space="preserve">
+    <value>An {0} with {1} '{2}' is not contained by this {3}.</value>
+  </data>
+  <data name="ADP_CollectionInvalidType" xml:space="preserve">
+    <value>The {0} only accepts non-null {1} type objects, not {2} objects.</value>
+  </data>
+  <data name="ADP_CollectionIsNotParent" xml:space="preserve">
+    <value>The {0} is already contained by another {1}.</value>
+  </data>
+  <data name="ADP_CollectionNullValue" xml:space="preserve">
+    <value>The {0} only accepts non-null {1} type objects.</value>
+  </data>
+  <data name="ADP_CollectionRemoveInvalidObject" xml:space="preserve">
+    <value>Attempted to remove an {0} that is not contained by this {1}.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_Closed" xml:space="preserve">
+    <value>The connection's current state is closed.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_Connecting" xml:space="preserve">
+    <value>The connection's current state is connecting.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_Open" xml:space="preserve">
+    <value>The connection's current state is open.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_OpenExecuting" xml:space="preserve">
+    <value>The connection's current state is executing.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg_OpenFetching" xml:space="preserve">
+    <value>The connection's current state is fetching.</value>
+  </data>
+  <data name="ADP_ConnectionStateMsg" xml:space="preserve">
+    <value>The connection's current state: {0}.</value>
+  </data>
+  <data name="ADP_ConnectionStringSyntax" xml:space="preserve">
+    <value>Format of the initialization string does not conform to specification starting at index {0}.</value>
+  </data>
+  <data name="ADP_DataReaderClosed" xml:space="preserve">
+    <value>Invalid attempt to call {0} when reader is closed.</value>
+  </data>
+  <data name="ADP_InvalidEnumerationValue" xml:space="preserve">
+    <value>The {0} enumeration value, {1}, is invalid.</value>
+  </data>
+  <data name="SqlConvert_ConvertFailed" xml:space="preserve">
+    <value>Cannot convert object of type '{0}' to object of type '{1}'.</value>
+  </data>
+  <data name="ADP_InvalidConnectionOptionValue" xml:space="preserve">
+    <value>Invalid value for key '{0}'.</value>
+  </data>
+  <data name="ADP_KeywordNotSupported" xml:space="preserve">
+    <value>Keyword not supported: '{0}'.</value>
+  </data>
+  <data name="ADP_InternalProviderError" xml:space="preserve">
+    <value>Internal data provider error {0}.</value>
+  </data>
+  <data name="ADP_InvalidMultipartName" xml:space="preserve">
+    <value>{0} "{1}".</value>
+  </data>
+  <data name="ADP_InvalidMultipartNameQuoteUsage" xml:space="preserve">
+    <value>{0} "{1}", incorrect usage of quotes.</value>
+  </data>
+  <data name="ADP_InvalidMultipartNameToManyParts" xml:space="preserve">
+    <value>{0} "{1}", the current limit of "{2}" is insufficient.</value>
+  </data>
+  <data name="OLEDB_OLEDBCommandText" xml:space="preserve">
+    <value>OleDbCommandBuilder.DeriveParameters failed because the OleDbCommandBuilder.CommandText property value is an invalid multipart name</value>
+  </data>
+  <data name="ADP_InvalidSourceBufferIndex" xml:space="preserve">
+    <value>Invalid source buffer (size of {0}) offset: {1}</value>
+  </data>
+  <data name="ADP_InvalidDestinationBufferIndex" xml:space="preserve">
+    <value>Invalid destination buffer (size of {0}) offset: {1}</value>
+  </data>
+  <data name="OleDb_SchemaRowsetsNotSupported" xml:space="preserve">
+    <value>'{0}' interface is not supported by the '{1}' provider.  GetOleDbSchemaTable is unavailable with the current provider.</value>
+  </data>
+  <data name="OleDb_NoErrorInformation2" xml:space="preserve">
+    <value>'{0}' failed with no error message available, result code: {1}.</value>
+  </data>
+  <data name="OleDb_NoErrorInformation" xml:space="preserve">
+    <value>No error message available, result code: {0}.</value>
+  </data>
+  <data name="OleDb_MDACNotAvailable" xml:space="preserve">
+    <value>The data providers require Microsoft Data Access Components (MDAC).  Please install Microsoft Data Access Components (MDAC) version 2.6 or later.</value>
+  </data>
+  <data name="OleDb_MSDASQLNotSupported" xml:space="preserve">
+    <value>The data provider for OLEDB (System.Data.OleDb) does not support the Microsoft OLEDB Provider for ODBC Drivers (MSDASQL). Use the data provider for ODBC (System.Data.Odbc).</value>
+  </data>
+  <data name="OleDb_PossiblePromptNotUserInteractive" xml:space="preserve">
+    <value>The data provider for OLEDB will not allow the OLEDB Provider to prompt the user in a non-interactive environment.</value>
+  </data>
+  <data name="OleDb_ProviderUnavailable" xml:space="preserve">
+    <value>The '{0}' provider is not registered on the local machine.</value>
+  </data>
+  <data name="OleDb_CommandTextNotSupported" xml:space="preserve">
+    <value>The ICommandText interface is not supported by the '{0}' provider. Use CommandType.TableDirect instead.</value>
+  </data>
+  <data name="OleDb_TransactionsNotSupported" xml:space="preserve">
+    <value>The ITransactionLocal interface is not supported by the '{0}' provider.  Local transactions are unavailable with the current provider.</value>
+  </data>
+  <data name="OleDb_AsynchronousNotSupported" xml:space="preserve">
+    <value>'Asynchronous Processing' is not a supported feature of the Data OLEDB Provider (System.Data.OleDb).</value>
+  </data>
+  <data name="OleDb_NoProviderSpecified" xml:space="preserve">
+    <value>An OLEDB Provider was not specified in the ConnectionString.  An example would be, 'Provider=SQLOLEDB;'.</value>
+  </data>
+  <data name="OleDb_InvalidProviderSpecified" xml:space="preserve">
+    <value>The OLEDB Provider specified in the ConnectionString is too long.</value>
+  </data>
+  <data name="OleDb_InvalidRestrictionsDbInfoKeywords" xml:space="preserve">
+    <value>No restrictions are expected for the DbInfoKeywords OleDbSchemaGuid.</value>
+  </data>
+  <data name="OleDb_InvalidRestrictionsDbInfoLiteral" xml:space="preserve">
+    <value>No restrictions are expected for the DbInfoLiterals OleDbSchemaGuid.</value>
+  </data>
+  <data name="OleDb_InvalidRestrictionsSchemaGuids" xml:space="preserve">
+    <value>No restrictions are expected for the schema guid OleDbSchemaGuid.</value>
+  </data>
+  <data name="OleDb_NotSupportedSchemaTable" xml:space="preserve">
+    <value>The {0} OleDbSchemaGuid is not a supported schema by the '{1}' provider.</value>
+  </data>
+  <data name="OleDb_CommandParameterBadAccessor" xml:space="preserve">
+    <value>Command parameter[{0}] '{1}' is invalid.</value>
+  </data>
+  <data name="OleDb_CommandParameterCantConvertValue" xml:space="preserve">
+    <value>Command parameter[{0}] '{1}' data value could not be converted for reasons other than sign mismatch or data overflow.</value>
+  </data>
+  <data name="OleDb_CommandParameterSignMismatch" xml:space="preserve">
+    <value>Conversion failed for command parameter[{0}] '{1}' because the data value was signed and the type used by the provider was unsigned.</value>
+  </data>
+  <data name="OleDb_CommandParameterDataOverflow" xml:space="preserve">
+    <value>Conversion failed for command parameter[{0}] '{1}' because the data value overflowed the type used by the provider.</value>
+  </data>
+  <data name="OleDb_CommandParameterUnavailable" xml:space="preserve">
+    <value>Provider encountered an error while sending command parameter[{0}] '{1}' value and stopped processing.</value>
+  </data>
+  <data name="OleDb_CommandParameterDefault" xml:space="preserve">
+    <value>Parameter[{0}] '{1}' has no default value.</value>
+  </data>
+  <data name="OleDb_CommandParameterError" xml:space="preserve">
+    <value>Error occurred with parameter[{0}]: {1}.</value>
+  </data>
+  <data name="OleDb_BadStatus_ParamAcc" xml:space="preserve">
+    <value>System.Data.OleDb.OleDbDataAdapter internal error: invalid parameter accessor: {0} {1}.</value>
+  </data>
+  <data name="OleDb_UninitializedParameters" xml:space="preserve">
+    <value>Parameter[{0}]: the OleDbType property is uninitialized: OleDbType.{1}.</value>
+  </data>
+  <data name="OleDb_NoProviderSupportForParameters" xml:space="preserve">
+    <value>The ICommandWithParameters interface is not supported by the '{0}' provider.  Command parameters are unsupported with the current provider.</value>
+  </data>
+  <data name="OleDb_NoProviderSupportForSProcResetParameters" xml:space="preserve">
+    <value>Retrieving procedure parameter information is not supported by the '{0}' provider.</value>
+  </data>
+  <data name="OleDb_Fill_NotADODB" xml:space="preserve">
+    <value>Object is not an ADODB.RecordSet or an ADODB.Record.</value>
+  </data>
+  <data name="OleDb_Fill_EmptyRecordSet" xml:space="preserve">
+    <value>Unable to retrieve the '{0}' interface from the ADODB.RecordSet object.</value>
+  </data>
+  <data name="OleDb_Fill_EmptyRecord" xml:space="preserve">
+    <value>Unable to retrieve the IRow interface from the ADODB.Record object.</value>
+  </data>
+  <data name="OleDb_ISourcesRowsetNotSupported" xml:space="preserve">
+    <value>Type does not support the OLEDB interface ISourcesRowset</value>
+  </data>
+  <data name="OleDb_IDBInfoNotSupported" xml:space="preserve">
+    <value>Cannot construct the ReservedWords schema collection because the provider does not support IDBInfo.</value>
+  </data>
+  <data name="OleDb_PropertyNotSupported" xml:space="preserve">
+    <value>The property's value was not set because the provider did not support the '{0}' property, or the consumer attempted to get or set values of properties not in the Initialization property group and the data source object is uninitialized.</value>
+  </data>
+  <data name="OleDb_PropertyBadValue" xml:space="preserve">
+    <value>Failed to initialize the '{0}' property for one of the following reasons:
+  The value data type was not the data type of the property or was not null. For example, the property was DBPROP_MEMORYUSAGE, which has a data type of Int32, and the data type was Int64.
+  The value was not a valid value. For example, the property was DBPROP_MEMORYUSAGE and the value was negative.
+  The value was a valid value for the property and the provider supports the property as a settable property, but the provider does not support the value specified. This includes the case where the value was added to the property in OLEDB after the provider was written.</value>
+  </data>
+  <data name="OleDb_PropertyBadOption" xml:space="preserve">
+    <value>The value of Options was invalid.</value>
+  </data>
+  <data name="OleDb_PropertyBadColumn" xml:space="preserve">
+    <value>The ColumnID element was invalid.</value>
+  </data>
+  <data name="OleDb_PropertyNotAllSettable" xml:space="preserve">
+    <value>A '{0}' property was specified to be applied to all columns but could not be applied to one or more of them.</value>
+  </data>
+  <data name="OleDb_PropertyNotSettable" xml:space="preserve">
+    <value>The '{0}' property was read-only, or the consumer attempted to set values of properties in the Initialization property group after the data source object was initialized. Consumers can set the value of a read-only property to its current value. This status is also returned if a settable column property could not be set for the particular column.</value>
+  </data>
+  <data name="OleDb_PropertyNotSet" xml:space="preserve">
+    <value>The optional '{0}' property's value was not set to the specified value and setting the property to the specified value was not possible.</value>
+  </data>
+  <data name="OleDb_PropertyConflicting" xml:space="preserve">
+    <value>The '{0}'property's value was not set because doing so would have conflicted with an existing property.</value>
+  </data>
+  <data name="OleDb_PropertyNotAvailable" xml:space="preserve">
+    <value>(Reserved).</value>
+  </data>
+  <data name="OleDb_PropertyStatusUnknown" xml:space="preserve">
+    <value>The provider returned an unknown DBPROPSTATUS_ value '{0}'.</value>
+  </data>
+  <data name="OleDb_BadAccessor" xml:space="preserve">
+    <value>Accessor validation was deferred and was performed while the method returned data. The binding was invalid for this column or parameter.</value>
+  </data>
+  <data name="OleDb_BadStatusRowAccessor" xml:space="preserve">
+    <value>OleDbDataAdapter internal error: invalid row set accessor: Ordinal={0} Status={1}.</value>
+  </data>
+  <data name="OleDb_CantConvertValue" xml:space="preserve">
+    <value>The data value could not be converted for reasons other than sign mismatch or data overflow. For example, the data was corrupted in the data store but the row was still retrievable.</value>
+  </data>
+  <data name="OleDb_CantCreate" xml:space="preserve">
+    <value>The provider could not allocate memory in which to return {0} data.</value>
+  </data>
+  <data name="OleDb_DataOverflow" xml:space="preserve">
+    <value>Conversion failed because the {0} data value overflowed the type specified for the {0} value part in the consumer's buffer.</value>
+  </data>
+  <data name="OleDb_GVtUnknown" xml:space="preserve">
+    <value>OleDbDataAdapter internal error: [get] Unknown OLEDB data type: 0x{0} ({1}).</value>
+  </data>
+  <data name="OleDb_SignMismatch" xml:space="preserve">
+    <value>Conversion failed because the {0} data value was signed and the type specified for the {0} value part in the consumer's buffer was unsigned.</value>
+  </data>
+  <data name="OleDb_SVtUnknown" xml:space="preserve">
+    <value>OleDbDataAdapter internal error: [set] Unknown OLEDB data type: 0x{0} ({1}).</value>
+  </data>
+  <data name="OleDb_Unavailable" xml:space="preserve">
+    <value>The provider could not determine the {0} value. For example, the row was just created, the default for the {0} column was not available, and the consumer had not yet set a new {0} value.</value>
+  </data>
+  <data name="OleDb_UnexpectedStatusValue" xml:space="preserve">
+    <value>OLEDB Provider returned an unexpected status value of {0}.</value>
+  </data>
+  <data name="OleDb_ThreadApartmentState" xml:space="preserve">
+    <value>The OleDbDataReader.Read must be used from the same thread on which is was created if that thread's ApartmentState was not ApartmentState.MTA.</value>
+  </data>
+  <data name="OleDb_NoErrorMessage" xml:space="preserve">
+    <value>Unspecified error: {0}</value>
+  </data>
+  <data name="OleDb_FailedGetDescription" xml:space="preserve">
+    <value>IErrorInfo.GetDescription failed with {0}.</value>
+  </data>
+  <data name="OleDb_FailedGetSource" xml:space="preserve">
+    <value>IErrorInfo.GetSource failed with {0}.</value>
+  </data>
+  <data name="OleDb_DBBindingGetVector" xml:space="preserve">
+    <value>DBTYPE_VECTOR data is not supported by the Data OLEDB Provider (System.Data.OleDb).</value>
+  </data>
+  <data name="SQL_InvalidDataLength" xml:space="preserve">
+    <value>Data length '{0}' is less than 0.</value>
+  </data>
+  <data name="PlatformNotSupported_OleDb" xml:space="preserve">
+    <value>System.Data.OleDb is not supported on this platform.</value>
+  </data>
+  <data name="PlatformNotSupported_GetIDispatchForObject" xml:space="preserve">
+    <value>Marshal.GetIDispatchForObject API not available on this plaTform</value>
+  </data>
+  <data name="ADP_EmptyString" xml:space="preserve">
+    <value>Expecting non-empty string for '{0}' parameter.</value>
+  </data>
+  <data name="ADP_UdlFileError" xml:space="preserve">
+    <value>Unable to load the UDL file.</value>
+  </data>
+  <data name="ADP_InvalidUDL" xml:space="preserve">
+    <value>Invalid UDL file.</value>
+  </data>
+  <data name="ADP_InvalidDataDirectory" xml:space="preserve">
+    <value>The DataDirectory substitute is not a string.</value>
+  </data>
+  <data name="ADP_InvalidKey" xml:space="preserve">
+    <value>Invalid keyword, contain one or more of 'no characters', 'control characters', 'leading or trailing whitespace' or 'leading semicolons'.</value>
+  </data>
+  <data name="ADP_InvalidValue" xml:space="preserve">
+    <value>The value contains embedded nulls (\\u0000).</value>
+  </data>
+  <data name="ADP_NoConnectionString" xml:space="preserve">
+    <value>The ConnectionString property has not been initialized.</value>
+  </data>
+  <data name="OleDb_ConfigUnableToLoadXmlMetaDataFile" xml:space="preserve">
+    <value>Unable to load the XML file specified in configuration setting '{0}'.</value>
+  </data>
+  <data name="OleDb_ConfigWrongNumberOfValues" xml:space="preserve">
+    <value>The '{0}' configuration setting has the wrong number of values.</value>
+  </data>
+  <data name="ADP_PooledOpenTimeout" xml:space="preserve">
+    <value>Timeout expired.  The timeout period elapsed prior to obtaining a connection from the pool.  This may have occurred because all pooled connections were in use and max pool size was reached.</value>
+  </data>
+  <data name="ADP_NonPooledOpenTimeout" xml:space="preserve">
+    <value>Timeout attempting to open the connection.  The time period elapsed prior to attempting to open the connection has been exceeded.</value>
+  </data>
+  <data name="ADP_TransactionConnectionMismatch" xml:space="preserve">
+    <value>The transaction is either not associated with the current connection or has been completed.</value>
+  </data>
+  <data name="ADP_TransactionRequired" xml:space="preserve">
+    <value>{0} requires the command to have a transaction when the connection assigned to the command is in a pending local transaction.  The Transaction property of the command has not been initialized.</value>
+  </data>
+  <data name="ADP_CommandTextRequired" xml:space="preserve">
+    <value>{0}: CommandText property has not been initialized</value>
+  </data>
+  <data name="ADP_ConnectionRequired" xml:space="preserve">
+    <value>{0}: Connection property has not been initialized.</value>
+  </data>
+  <data name="ADP_OpenConnectionRequired" xml:space="preserve">
+    <value>{0} requires an open and available Connection. {1}</value>
+  </data>
+  <data name="ADP_NoStoredProcedureExists" xml:space="preserve">
+    <value>The stored procedure '{0}' doesn't exist.</value>
+  </data>
+  <data name="ADP_OpenReaderExists" xml:space="preserve">
+    <value>There is already an open DataReader associated with this Command which must be closed first.</value>
+  </data>
+  <data name="ADP_TransactionCompleted" xml:space="preserve">
+    <value>The transaction assigned to this command must be the most nested pending local transaction.</value>
+  </data>
+  <data name="ADP_NonSeqByteAccess" xml:space="preserve">
+    <value>Invalid {2} attempt at dataIndex '{0}'.  With CommandBehavior.SequentialAccess, you may only read from dataIndex '{1}' or greater.</value>
+  </data>
+  <data name="ADP_NumericToDecimalOverflow" xml:space="preserve">
+    <value>The numerical value is too large to fit into a 96 bit decimal.</value>
+  </data>
+  <data name="ADP_NonSequentialColumnAccess" xml:space="preserve">
+    <value>Invalid attempt to read from column ordinal '{0}'.  With CommandBehavior.SequentialAccess, you may only read from column ordinal '{1}' or greater.</value>
+  </data>
+  <data name="ADP_FillRequiresSourceTableName" xml:space="preserve">
+    <value>Fill: expected a non-empty string for the SourceTable name.</value>
+  </data>
+  <data name="ADP_InvalidCommandTimeout" xml:space="preserve">
+    <value>Invalid CommandTimeout value {0}; the value must be >= 0.</value>
+  </data>
+  <data name="ADP_DeriveParametersNotSupported" xml:space="preserve">
+    <value>{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType.{1}.</value>
+  </data>
+  <data name="ADP_UninitializedParameterSize" xml:space="preserve">
+    <value>{1}[{0}]: the Size property has an invalid size of 0.</value>
+  </data>
+  <data name="ADP_PrepareParameterType" xml:space="preserve">
+    <value>{0}.Prepare method requires all parameters to have an explicitly set type.</value>
+  </data>
+  <data name="ADP_PrepareParameterSize" xml:space="preserve">
+    <value>{0}.Prepare method requires all variable length parameters to have an explicitly set non-zero Size.</value>
+  </data>
+  <data name="ADP_PrepareParameterScale" xml:space="preserve">
+    <value>{0}.Prepare method requires parameters of type '{1}' have an explicitly set Precision and Scale.</value>
+  </data>
+  <data name="ADP_ClosedConnectionError" xml:space="preserve">
+    <value>Invalid operation. The connection is closed.</value>
+  </data>
+  <data name="ADP_ConnectionAlreadyOpen" xml:space="preserve">
+    <value>The connection was not closed. {0}</value>
+  </data>
+  <data name="ADP_TransactionPresent" xml:space="preserve">
+    <value>Connection currently has transaction enlisted.  Finish current transaction and retry.</value>
+  </data>
+  <data name="ADP_LocalTransactionPresent" xml:space="preserve">
+    <value>Cannot enlist in the transaction because a local transaction is in progress on the connection.  Finish local transaction and retry.</value>
+  </data>
+  <data name="ADP_OpenConnectionPropertySet" xml:space="preserve">
+    <value>Not allowed to change the '{0}' property. {1}</value>
+  </data>
+  <data name="ADP_EmptyDatabaseName" xml:space="preserve">
+    <value>Database cannot be null, the empty string, or string of only whitespace.</value>
+  </data>
+  <data name="ADP_InternalConnectionError" xml:space="preserve">
+    <value>Internal DbConnection Error: {0}</value>
+  </data>
+  <data name="ADP_InvalidConnectTimeoutValue" xml:space="preserve">
+    <value>Invalid 'Connect Timeout' value which must be an integer >= 0.</value>
+  </data>
+  <data name="ADP_DataReaderNoData" xml:space="preserve">
+    <value>No data exists for the row/column.</value>
+  </data>
+  <data name="ADP_InvalidDataType" xml:space="preserve">
+    <value>The parameter data type of {0} is invalid.</value>
+  </data>
+  <data name="ADP_DbTypeNotSupported" xml:space="preserve">
+    <value>No mapping exists from DbType {0} to a known {1}.</value>
+  </data>
+  <data name="ADP_UnknownDataTypeCode" xml:space="preserve">
+    <value>Unable to handle an unknown TypeCode {0} returned by Type {1}.</value>
+  </data>
+  <data name="ADP_InvalidOffsetValue" xml:space="preserve">
+    <value>Invalid parameter Offset value '{0}'. The value must be greater than or equal to 0.</value>
+  </data>
+  <data name="ADP_InvalidSizeValue" xml:space="preserve">
+    <value>Invalid parameter Size value '{0}'. The value must be greater than or equal to 0.</value>
+  </data>
+  <data name="ADP_ParameterConversionFailed" xml:space="preserve">
+    <value>Failed to convert parameter value from a {0} to a {1}.</value>
+  </data>
+  <data name="ADP_ParallelTransactionsNotSupported" xml:space="preserve">
+    <value>{0} does not support parallel transactions.</value>
+  </data>
+  <data name="ADP_TransactionZombied" xml:space="preserve">
+    <value>This {0} has completed; it is no longer usable.</value>
+  </data>
+  <data name="MDF_AmbigousCollectionName" xml:space="preserve">
+    <value>The collection name '{0}' matches at least two collections with the same name but with different case, but does not match any of them exactly.</value>
+  </data>
+  <data name="MDF_CollectionNameISNotUnique" xml:space="preserve">
+    <value>There are multiple collections named '{0}'.</value>
+  </data>
+  <data name="MDF_DataTableDoesNotExist" xml:space="preserve">
+    <value>The collection '{0}' is missing from the metadata XML.</value>
+  </data>
+  <data name="MDF_IncorrectNumberOfDataSourceInformationRows" xml:space="preserve">
+    <value>The DataSourceInformation table must contain exactly one row.</value>
+  </data>
+  <data name="MDF_InvalidRestrictionValue" xml:space="preserve">
+    <value>'{2}' is not a valid value for the '{1}' restriction of the '{0}' schema collection.</value>
+  </data>
+  <data name="MDF_InvalidXml" xml:space="preserve">
+    <value>The metadata XML is invalid.</value>
+  </data>
+  <data name="MDF_InvalidXmlMissingColumn" xml:space="preserve">
+    <value>The metadata XML is invalid. The {0} collection must contain a {1} column and it must be a string column.</value>
+  </data>
+  <data name="MDF_InvalidXmlInvalidValue" xml:space="preserve">
+    <value>The metadata XML is invalid. The {1} column of the {0} collection must contain a non-empty string.</value>
+  </data>
+  <data name="MDF_MissingDataSourceInformationColumn" xml:space="preserve">
+    <value>One of the required DataSourceInformation tables columns is missing.</value>
+  </data>
+  <data name="MDF_MissingRestrictionColumn" xml:space="preserve">
+    <value>One or more of the required columns of the restrictions collection is missing.</value>
+  </data>
+  <data name="MDF_MissingRestrictionRow" xml:space="preserve">
+    <value>A restriction exists for which there is no matching row in the restrictions collection.</value>
+  </data>
+  <data name="MDF_NoColumns" xml:space="preserve">
+    <value>The schema table contains no columns.</value>
+  </data>
+  <data name="MDF_QueryFailed" xml:space="preserve">
+    <value>Unable to build the '{0}' collection because execution of the SQL query failed. See the inner exception for details.</value>
+  </data>
+  <data name="MDF_TooManyRestrictions" xml:space="preserve">
+    <value>More restrictions were provided than the requested schema ('{0}') supports.</value>
+  </data>
+  <data name="MDF_UnableToBuildCollection" xml:space="preserve">
+    <value>Unable to build schema collection '{0}';</value>
+  </data>
+  <data name="MDF_UndefinedCollection" xml:space="preserve">
+    <value>The requested collection ({0}) is not defined.</value>
+  </data>
+  <data name="MDF_UndefinedPopulationMechanism" xml:space="preserve">
+    <value>The population mechanism '{0}' is not defined.</value>
+  </data>
+  <data name="MDF_UnsupportedVersion" xml:space="preserve">
+    <value>The requested collection ({0}) is not supported by this version of the provider.</value>
+  </data>
+  <data name="ADP_QuotePrefixNotSet" xml:space="preserve">
+    <value>{0} requires open connection when the quote prefix has not been set.</value>
+  </data>
+  <data name="Odbc_MDACWrongVersion" xml:space="preserve">
+    <value>The Odbc Data Provider requires Microsoft Data Access Components (MDAC) version 2.6 or later. Version {0} was found currently installed.</value>
+  </data>
+  <data name="OleDb_MDACWrongVersion" xml:space="preserve">
+    <value>The OLEDB Data Provider requires Microsoft Data Access Components (MDAC) version 2.6 or later. Version {0} was found currently installed.</value>
+  </data>
+</root>

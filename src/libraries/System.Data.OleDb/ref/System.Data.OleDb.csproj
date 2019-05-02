@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{EF4F0844-7AAD-4B0C-A29C-37E1F92D2D78}</ProjectGuid>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
+    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="System.Data.OleDb.cs" />
+    <Compile Condition="'$(TargetsNetFx)' != 'true'" Include="System.Data.OleDb.Manual.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Transactions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
+    <ProjectReference Include="..\..\System.IO.FileSystem.AccessControl\ref\System.IO.FileSystem.AccessControl.csproj" />
+    <ProjectReference Include="..\..\System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
+    <ProjectReference Include="..\..\System.Security.Permissions\ref\System.Security.Permissions.csproj" />
+    <ProjectReference Include="..\..\System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
+  </ItemGroup>
+</Project>

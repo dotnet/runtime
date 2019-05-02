@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <ProjectGuid>{73C7A14F-C3C5-44EA-AB02-05BFBA55722C}</ProjectGuid>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Helpers.cs" />
+    <Compile Include="OleDbTestBase.cs" />
+    <Compile Include="OleDbCommandBuilderTests.cs" />
+    <Compile Include="OleDbCommandTests.cs" />
+    <Compile Include="OleDbConnectionTests.cs" />
+    <Compile Include="OleDbDataAdapterTests.cs" />
+    <Compile Include="OleDbDataReaderTests.cs" />
+    <Compile Include="OleDbParameterTests.cs" />
+  </ItemGroup>
+</Project>
