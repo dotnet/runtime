@@ -927,6 +927,8 @@ EventPipeBuffer* EventPipeBufferList::TryGetBuffer(LARGE_INTEGER beforeTimeStamp
      * 4.) The head buffer is read completely.
      *     This case requires special attention because it is possible that the next buffer in the list contain the oldest event. Fortunately, it is 
      *     already read so it is safe to read it to determine this case.
+     *
+     * In any case, if the desired buffer is created after beforeTimeStamp, then we can stop.
      */
 
     if (this->m_pHeadBuffer == nullptr)
@@ -934,30 +936,35 @@ EventPipeBuffer* EventPipeBufferList::TryGetBuffer(LARGE_INTEGER beforeTimeStamp
         // Case 1
         return nullptr;
     }
-    if (this->m_pHeadBuffer->GetCreationTimeStamp().QuadPart >= beforeTimeStamp.QuadPart)
-    {
-        // If the oldest buffer is still newer than the beforeTimeStamp, we can stop.
-        return nullptr;
-    }
+    
+    EventPipeBuffer* candidate = nullptr;
     EventPipeBufferState bufferState = this->m_pHeadBuffer->GetVolatileState();
     if (bufferState != EventPipeBufferState::READ_ONLY)
     {
         // Case 2 (2.1 or 2.2)
-        return this->m_pHeadBuffer;
+        candidate = this->m_pHeadBuffer;
     }
     else
     {
         if (this->m_pHeadBuffer->PeekNext(beforeTimeStamp))
         {
             // Case 3
-            return this->m_pHeadBuffer;
+            candidate = this->m_pHeadBuffer;
         }
         else
         {
             // Case 4
-            return this->m_pHeadBuffer->GetNext();
+            candidate = this->m_pHeadBuffer->GetNext();
         }
     }
+
+    if (candidate == nullptr || candidate->GetCreationTimeStamp().QuadPart >= beforeTimeStamp.QuadPart)
+    {
+        // If the oldest buffer is still newer than the beforeTimeStamp, we can stop.
+        return nullptr;
+    }
+
+    return candidate;
 }
 
 void EventPipeBufferList::ConvertBufferToReadOnly(EventPipeBuffer* pNewReadBuffer)
