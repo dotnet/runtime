@@ -69,15 +69,15 @@ namespace System.Collections.Generic
         private const string ComparerName = "Comparer"; // Do not rename (binary serialization)
         private const string VersionName = "Version"; // Do not rename (binary serialization)
 
-        private int[] _buckets;
-        private Slot[] _slots;
+        private int[]? _buckets;
+        private Slot[] _slots = default!; // TODO-NULLABLE: This should be Slot[]?, but the resulting annotations causes GenPartialFacadeSource to blow up: error : Unable to cast object of type 'Microsoft.CodeAnalysis.CSharp.Syntax.CompilationUnitSyntax' to type 'Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeDeclarationSyntax'
         private int _count;
         private int _lastIndex;
         private int _freeList;
-        private IEqualityComparer<T> _comparer;
+        private IEqualityComparer<T> _comparer = default!;
         private int _version;
 
-        private SerializationInfo _siInfo; // temporary variable needed during deserialization
+        private SerializationInfo? _siInfo; // temporary variable needed during deserialization
 
         #region Constructors
 
@@ -85,7 +85,7 @@ namespace System.Collections.Generic
             : this(EqualityComparer<T>.Default)
         { }
 
-        public HashSet(IEqualityComparer<T> comparer)
+        public HashSet(IEqualityComparer<T>? comparer)
         {
             if (comparer == null)
             {
@@ -114,7 +114,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="collection"></param>
         /// <param name="comparer"></param>
-        public HashSet(IEnumerable<T> collection, IEqualityComparer<T> comparer)
+        public HashSet(IEnumerable<T> collection, IEqualityComparer<T>? comparer)
             : this(comparer)
         {
             if (collection == null)
@@ -132,7 +132,7 @@ namespace System.Collections.Generic
                 // to avoid excess resizes, first set size based on collection's count. Collection
                 // may contain duplicates, so call TrimExcess if resulting hashset is larger than
                 // threshold
-                ICollection<T> coll = collection as ICollection<T>;
+                ICollection<T>? coll = collection as ICollection<T>;
                 int suggestedCapacity = coll == null ? 0 : coll.Count;
                 Initialize(suggestedCapacity);
 
@@ -167,7 +167,7 @@ namespace System.Collections.Generic
                 return;
             }
 
-            int capacity = source._buckets.Length;
+            int capacity = source._buckets!.Length;
             int threshold = HashHelpers.ExpandPrime(count + 1);
 
             if (threshold >= capacity)
@@ -321,7 +321,7 @@ namespace System.Collections.Generic
                         slots[i].hashCode = -1;
                         if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                         {
-                            slots[i].value = default(T);
+                            slots[i].value = default!;
                         }
                         slots[i].next = _freeList;
 
@@ -424,7 +424,7 @@ namespace System.Collections.Generic
             }
 
             int capacity = _siInfo.GetInt32(CapacityName);
-            _comparer = (IEqualityComparer<T>)_siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>));
+            _comparer = (IEqualityComparer<T>)_siInfo.GetValue(ComparerName, typeof(IEqualityComparer<T>))!;
             _freeList = -1;
 
             if (capacity != 0)
@@ -432,7 +432,7 @@ namespace System.Collections.Generic
                 _buckets = new int[capacity];
                 _slots = new Slot[capacity];
 
-                T[] array = (T[])_siInfo.GetValue(ElementsName, typeof(T[]));
+                T[]? array = (T[]?)_siInfo.GetValue(ElementsName, typeof(T[]));
 
                 if (array == null)
                 {
@@ -481,7 +481,7 @@ namespace System.Collections.Generic
         /// a value that has more complete data than the value you currently have, although their
         /// comparer functions indicate they are equal.
         /// </remarks>
-        public bool TryGetValue(T equalValue, out T actualValue)
+        public bool TryGetValue(T equalValue, out T actualValue) // TODO-NULLABLE-GENERIC
         {
             if (_buckets != null)
             {
@@ -492,7 +492,7 @@ namespace System.Collections.Generic
                     return true;
                 }
             }
-            actualValue = default(T);
+            actualValue = default!; // TODO-NULLABLE-GENERIC
             return false;
         }
 
@@ -552,7 +552,7 @@ namespace System.Collections.Generic
 
             // if other is empty, intersection is empty set; remove all elements and we're done
             // can only figure this out if implements ICollection<T>. (IEnumerable<T> has no count)
-            ICollection<T> otherAsCollection = other as ICollection<T>;
+            ICollection<T>? otherAsCollection = other as ICollection<T>;
             if (otherAsCollection != null)
             {
                 if (otherAsCollection.Count == 0)
@@ -561,7 +561,7 @@ namespace System.Collections.Generic
                     return;
                 }
 
-                HashSet<T> otherAsSet = other as HashSet<T>;
+                HashSet<T>? otherAsSet = other as HashSet<T>;
                 // faster if other is a hashset using same equality comparer; so check 
                 // that other is a hashset using the same equality comparer.
                 if (otherAsSet != null && AreEqualityComparersEqual(this, otherAsSet))
@@ -630,7 +630,7 @@ namespace System.Collections.Generic
                 return;
             }
 
-            HashSet<T> otherAsSet = other as HashSet<T>;
+            HashSet<T>? otherAsSet = other as HashSet<T>;
             // If other is a HashSet, it has unique elements according to its equality comparer,
             // but if they're using different equality comparers, then assumption of uniqueness
             // will fail. So first check if other is a hashset using the same equality comparer;
@@ -679,7 +679,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            HashSet<T> otherAsSet = other as HashSet<T>;
+            HashSet<T>? otherAsSet = other as HashSet<T>;
             // faster if other has unique elements according to this equality comparer; so check 
             // that other is a hashset using the same equality comparer.
             if (otherAsSet != null && AreEqualityComparersEqual(this, otherAsSet))
@@ -729,7 +729,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            ICollection<T> otherAsCollection = other as ICollection<T>;
+            ICollection<T>? otherAsCollection = other as ICollection<T>;
             if (otherAsCollection != null)
             {
                 // no set is a proper subset of an empty set
@@ -743,7 +743,7 @@ namespace System.Collections.Generic
                 {
                     return otherAsCollection.Count > 0;
                 }
-                HashSet<T> otherAsSet = other as HashSet<T>;
+                HashSet<T>? otherAsSet = other as HashSet<T>;
                 // faster if other is a hashset (and we're using same equality comparer)
                 if (otherAsSet != null && AreEqualityComparersEqual(this, otherAsSet))
                 {
@@ -788,7 +788,7 @@ namespace System.Collections.Generic
             }
 
             // try to fall out early based on counts
-            ICollection<T> otherAsCollection = other as ICollection<T>;
+            ICollection<T>? otherAsCollection = other as ICollection<T>;
             if (otherAsCollection != null)
             {
                 // if other is the empty set then this is a superset
@@ -796,7 +796,7 @@ namespace System.Collections.Generic
                 {
                     return true;
                 }
-                HashSet<T> otherAsSet = other as HashSet<T>;
+                HashSet<T>? otherAsSet = other as HashSet<T>;
                 // try to compare based on counts alone if other is a hashset with
                 // same equality comparer
                 if (otherAsSet != null && AreEqualityComparersEqual(this, otherAsSet))
@@ -850,7 +850,7 @@ namespace System.Collections.Generic
                 return false;
             }
 
-            ICollection<T> otherAsCollection = other as ICollection<T>;
+            ICollection<T>? otherAsCollection = other as ICollection<T>;
             if (otherAsCollection != null)
             {
                 // if other is the empty set then this is a superset
@@ -859,7 +859,7 @@ namespace System.Collections.Generic
                     // note that this has at least one element, based on above check
                     return true;
                 }
-                HashSet<T> otherAsSet = other as HashSet<T>;
+                HashSet<T>? otherAsSet = other as HashSet<T>;
                 // faster if other is a hashset with the same equality comparer
                 if (otherAsSet != null && AreEqualityComparersEqual(this, otherAsSet))
                 {
@@ -928,7 +928,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            HashSet<T> otherAsSet = other as HashSet<T>;
+            HashSet<T>? otherAsSet = other as HashSet<T>;
             // faster if other is a hashset and we're using same equality comparer
             if (otherAsSet != null && AreEqualityComparersEqual(this, otherAsSet))
             {
@@ -945,7 +945,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                ICollection<T> otherAsCollection = other as ICollection<T>;
+                ICollection<T>? otherAsCollection = other as ICollection<T>;
                 if (otherAsCollection != null)
                 {
                     // if this count is 0 but other contains at least one element, they can't be equal
@@ -1083,7 +1083,7 @@ namespace System.Collections.Generic
             {
                 // if count is zero, clear references
                 _buckets = null;
-                _slots = null;
+                _slots = null!;
                 _version++;
             }
             else
@@ -1213,7 +1213,7 @@ namespace System.Collections.Generic
             }
 
             int hashCode = InternalGetHashCode(value);
-            int bucket = hashCode % _buckets.Length;
+            int bucket = hashCode % _buckets!.Length;
             int collisionCount = 0;
             Slot[] slots = _slots;
             for (int i = _buckets[bucket] - 1; i >= 0; i = slots[i].next)
@@ -1263,7 +1263,7 @@ namespace System.Collections.Generic
         // when constructing from another HashSet.
         private void AddValue(int index, int hashCode, T value)
         {
-            int bucket = hashCode % _buckets.Length;
+            int bucket = hashCode % _buckets!.Length;
 
 #if DEBUG
             Debug.Assert(InternalGetHashCode(value) == hashCode);
@@ -1662,7 +1662,7 @@ namespace System.Collections.Generic
         /// <param name="set2"></param>
         /// <param name="comparer"></param>
         /// <returns></returns>
-        internal static bool HashSetEquals(HashSet<T> set1, HashSet<T> set2, IEqualityComparer<T> comparer)
+        internal static bool HashSetEquals(HashSet<T>? set1, HashSet<T>? set2, IEqualityComparer<T> comparer)
         {
             // handle null cases first
             if (set1 == null)
@@ -1769,7 +1769,7 @@ namespace System.Collections.Generic
                 _set = set;
                 _index = 0;
                 _version = set._version;
-                _current = default(T);
+                _current = default!; // TODO-NULLABLE-GENERIC
             }
 
             public void Dispose()
@@ -1794,7 +1794,7 @@ namespace System.Collections.Generic
                     _index++;
                 }
                 _index = _set._lastIndex + 1;
-                _current = default(T);
+                _current = default!; // TODO-NULLABLE-GENERIC
                 return false;
             }
 
@@ -1806,7 +1806,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get
                 {
@@ -1826,7 +1826,7 @@ namespace System.Collections.Generic
                 }
 
                 _index = 0;
-                _current = default(T);
+                _current = default!; // TODO-NULLABLE-GENERIC
             }
         }
     }
