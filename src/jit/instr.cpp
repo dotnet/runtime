@@ -1100,12 +1100,6 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
                 {
                     varNum = addr->AsLclVarCommon()->GetLclNum();
                     offset = 0;
-
-                    // Ensure that all the GenTreeIndir values are set to their defaults.
-                    assert(!memIndir->HasIndex());
-                    assert(memIndir->Scale() == 1);
-                    assert(memIndir->Offset() == 0);
-
                     break;
                 }
 
