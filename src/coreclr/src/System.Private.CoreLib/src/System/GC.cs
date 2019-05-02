@@ -17,6 +17,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace System
 {
@@ -507,6 +508,140 @@ namespace System
         public static void EndNoGCRegion()
         {
             EndNoGCRegionWorker();
+        }
+
+        private readonly struct MemoryLoadChangeNotification
+        {
+            public float LowMemoryPercent { get; }
+            public float HighMemoryPercent { get; }
+            public Action Notification { get; }
+
+            public MemoryLoadChangeNotification(float lowMemoryPercent, float highMemoryPercent, Action notification)
+            {
+                LowMemoryPercent = lowMemoryPercent;
+                HighMemoryPercent = highMemoryPercent;
+                Notification = notification;
+            }
+        }
+
+        private static readonly List<MemoryLoadChangeNotification> s_notifications = new List<MemoryLoadChangeNotification>();
+        private static float s_previousMemoryLoad = float.MaxValue;
+
+        private static float GetMemoryLoad()
+        {
+            GetMemoryInfo(out uint _,
+                          out ulong _,
+                          out uint lastRecordedMemLoad,
+                          out UIntPtr _,
+                          out UIntPtr _);
+
+            return (float)lastRecordedMemLoad / 100;
+        }
+
+        private static bool InvokeMemoryLoadChangeNotifications()
+        {
+            float currentMemoryLoad = GetMemoryLoad();
+
+            lock (s_notifications)
+            {
+                if (s_previousMemoryLoad == float.MaxValue)
+                {
+                    s_previousMemoryLoad = currentMemoryLoad;
+                    return true;
+                }
+
+                // We need to take a snapshot of s_notifications.Count, so that in the case that s_notifications[i].Notification() registers new notifications,
+                // we neither get rid of them nor iterate over them
+                int count = s_notifications.Count;
+
+                // If there is no existing notifications, we won't be iterating over any and we won't be adding any new one. Also, there wasn't any added since
+                // we last invoked this method so it's safe to assume we can reset s_previousMemoryLoad.
+                if (count == 0)
+                {
+                    s_previousMemoryLoad = float.MaxValue;
+                    return false;
+                }
+
+                int last = 0;
+                for (int i = 0; i < count; ++i)
+                {
+                    // If s_notifications[i] changes from within s_previousMemoryLoad bound to outside s_previousMemoryLoad, we trigger the notification
+                    if (s_notifications[i].LowMemoryPercent <= s_previousMemoryLoad && s_previousMemoryLoad <= s_notifications[i].HighMemoryPercent
+                         && !(s_notifications[i].LowMemoryPercent <= currentMemoryLoad && currentMemoryLoad <= s_notifications[i].HighMemoryPercent))
+                    {
+                        s_notifications[i].Notification();
+                        // it will then be overwritten or removed
+                    }
+                    else
+                    {
+                        s_notifications[last++] = s_notifications[i];
+                    }
+                }
+
+                if (last < count)
+                {
+                    s_notifications.RemoveRange(last, count - last);
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Register a notification to occur *AFTER* a GC occurs in which the memory load changes from within the bound specified
+        /// to outside of the bound specified. This notification will occur once. If repeated notifications are required, the notification
+        /// must be reregistered. The notification will occur on a thread which should not be blocked. Complex processing in the notification should defer work to the threadpool.
+        /// </summary>
+        /// <param name="lowMemoryPercent">percent of HighMemoryLoadThreshold to use as lower bound. Must be a number >= 0 or an ArgumentOutOfRangeException will be thrown.</param>
+        /// <param name="highMemoryPercent">percent of HighMemoryLoadThreshold use to use as lower bound. Must be a number > lowMemory or an ArgumentOutOfRangeException will be thrown. </param>
+        /// <param name="notification">delegate to invoke when operation occurs</param>s
+        internal static void RegisterMemoryLoadChangeNotification(float lowMemoryPercent, float highMemoryPercent, Action notification)
+        {
+            if (highMemoryPercent < 0 || highMemoryPercent > 1.0 || highMemoryPercent <= lowMemoryPercent)
+            {
+                throw new ArgumentOutOfRangeException(nameof(highMemoryPercent));
+            }
+            if (lowMemoryPercent < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(lowMemoryPercent));
+            }
+            if (notification == null)
+            {
+                throw new ArgumentNullException(nameof(notification));
+            }
+
+            lock (s_notifications)
+            {
+                s_notifications.Add (new MemoryLoadChangeNotification(lowMemoryPercent, highMemoryPercent, notification));
+
+                if (s_notifications.Count == 1)
+                {
+                    Gen2GcCallback.Register(InvokeMemoryLoadChangeNotifications);
+                }
+            }
+        }
+
+        internal static void UnregisterMemoryLoadChangeNotification(Action notification)
+        {
+            if (notification == null)
+            {
+                throw new ArgumentNullException(nameof(notification));
+            }
+
+            lock (s_notifications)
+            {
+                for (int i = 0; i < s_notifications.Count; ++i)
+                {
+                    if (s_notifications[i].Notification == notification)
+                    {
+                        s_notifications.RemoveAt(i);
+                        break;
+                    }
+                }
+
+                // We only register the callback from the runtime in InvokeMemoryLoadChangeNotifications, so to avoid race conditions between
+                // UnregisterMemoryLoadChangeNotification and InvokeMemoryLoadChangeNotifications in native.
+            }
         }
     }
 }
