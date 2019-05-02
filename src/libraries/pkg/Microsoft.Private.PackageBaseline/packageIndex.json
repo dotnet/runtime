@@ -1274,6 +1274,12 @@
         "4.0.1.0": "4.6.0"
       }
     },
+    "System.Data.OleDb": {
+      "InboxOn": {},
+      "AssemblyVersionInPackageVersion": {
+        "4.0.0.0": "4.6.0"
+      }
+    },
     "System.Data.OracleClient": {
       "InboxOn": {
         "net45": "4.0.0.0"

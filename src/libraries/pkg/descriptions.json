@@ -541,6 +541,20 @@
     ]
   },
   {
+    "Name": "System.Data.OleDb",
+    "Description": "Provides a collection of classes for OLEDB.",
+    "CommonTypes": [
+        "System.Data.OleDb.OleDbCommand",
+        "System.Data.OleDb.OleDbCommandBuilder",
+        "System.Data.OleDb.OleDbConnection",
+        "System.Data.OleDb.OleDbDataAdapter",
+        "System.Data.OleDb.OleDbDataReader",
+        "System.Data.OleDb.OleDbParameter",
+        "System.Data.OleDb.OleDbParameterCollection",
+        "System.Data.OleDb.OleDbTransaction"
+    ]
+  },
+  {
     "Name": "System.Data.SqlClient",
     "Description": "Provides the data provider for SQL Server. These classes provide access to versions of SQL Server and encapsulate database-specific protocols, including tabular data stream (TDS)",
     "CommonTypes": [
