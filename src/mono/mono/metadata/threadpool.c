@@ -798,24 +798,3 @@ ves_icall_System_Threading_ThreadPool_RequestWorkerThread (MonoError *error)
 	mono_refcount_dec (&threadpool);
 	return TRUE;
 }
-
-MonoBoolean G_GNUC_UNUSED
-ves_icall_System_Threading_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped, MonoError *error)
-{
-	/* This copy the behavior of the current Mono implementation */
-	mono_error_set_not_implemented (error, "");
-	return FALSE;
-}
-
-MonoBoolean G_GNUC_UNUSED
-ves_icall_System_Threading_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle, MonoError *error)
-{
-	/* This copy the behavior of the current Mono implementation */
-	return TRUE;
-}
-
-MonoBoolean G_GNUC_UNUSED
-ves_icall_System_Threading_ThreadPool_IsThreadPoolHosted (MonoError *error)
-{
-	return FALSE;
-}

@@ -12,8 +12,6 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/icalls.h>
 
-typedef struct _MonoNativeOverlapped MonoNativeOverlapped;
-
 void
 mono_threadpool_cleanup (void);
 

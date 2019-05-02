@@ -53,7 +53,6 @@ typedef MonoClassField *MonoClassField_ptr;
 typedef MonoEvent *MonoEvent_ptr;
 typedef MonoImage *MonoImage_ptr;
 typedef MonoMethod *MonoMethod_ptr;
-typedef MonoNativeOverlapped *MonoNativeOverlapped_ptr;
 typedef MonoProperty *MonoProperty_ptr;
 typedef MonoPropertyInfo *MonoPropertyInfo_ref;
 typedef MonoType *MonoType_ptr;
@@ -80,7 +79,6 @@ typedef MonoEvent *MonoEvent_ref;
 typedef MonoEventInfo *MonoEventInfo_ref;
 typedef MonoMethod *MonoMethod_ref;
 typedef MonoMethodInfo *MonoMethodInfo_ref;
-typedef MonoNativeOverlapped *MonoNativeOverlapped_ref;
 typedef MonoResolveTokenError *MonoResolveTokenError_ref;
 typedef MonoType *MonoType_ref;
 typedef MonoTypedRef *MonoTypedRef_ref;
@@ -155,7 +153,6 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoEventInfo_ref		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoMethod_ref 		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoMethodInfo_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
-#define MONO_HANDLE_TYPE_WRAP_MonoNativeOverlapped_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoPropertyInfo_ref	ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoType_ref  		ICALL_HANDLES_WRAP_VALUETYPE_REF
 #define MONO_HANDLE_TYPE_WRAP_MonoTypedRef_ref 		ICALL_HANDLES_WRAP_VALUETYPE_REF
@@ -178,7 +175,6 @@ typedef MonoReflectionModuleHandle MonoReflectionModuleOutHandle;
 #define MONO_HANDLE_TYPE_WRAP_MonoEvent_ptr		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoGenericParamInfo_ptr	ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoMethod_ptr 		ICALL_HANDLES_WRAP_NONE
-#define MONO_HANDLE_TYPE_WRAP_MonoNativeOverlapped_ptr	ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoType_ptr  		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoTypedRef_ptr 		ICALL_HANDLES_WRAP_NONE
 #define MONO_HANDLE_TYPE_WRAP_MonoStackCrawlMark_ptr  	ICALL_HANDLES_WRAP_NONE
