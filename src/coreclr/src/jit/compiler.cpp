@@ -5814,6 +5814,8 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     info.compTotalHotCodeSize  = 0;
     info.compTotalColdCodeSize = 0;
 
+    fgHasBackwardJump = false;
+
 #ifdef DEBUG
     compCurBB = nullptr;
     lvaTable  = nullptr;
@@ -5944,6 +5946,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     if (compDonotInline())
     {
         goto _Next;
+    }
+
+    if (fgHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToTier1())
+    {
+        // Method likely has a loop, switch to the OptimizedTier to avoid spending too much time running slower code
+        fgSwitchToTier1();
     }
 
     compSetOptimizationLevel();

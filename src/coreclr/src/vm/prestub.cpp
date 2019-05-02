@@ -998,6 +998,21 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
         return pOtherCode;
     }
 
+#ifdef FEATURE_TIERED_COMPILATION
+    if (pFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_TIER0))
+    {
+        MethodDesc *methodDesc = pConfig->GetMethodDesc();
+        _ASSERTE(methodDesc->IsEligibleForTieredCompilation());
+
+        // Update the tier in the code version. The JIT may have decided to switch from tier 0 to tier 1, in which case call
+        // counting would have been disabled for the method.
+        if (!methodDesc->GetCallCounter()->IsTier0CallCountingEnabled(methodDesc))
+        {
+            pConfig->GetCodeVersion().SetOptimizationTier(NativeCodeVersion::OptimizationTier1);
+        }
+    }
+#endif
+
 #if defined(FEATURE_JIT_PITCHING)
     SavePitchingCandidate(this, *pSizeOfCode);
 #endif
