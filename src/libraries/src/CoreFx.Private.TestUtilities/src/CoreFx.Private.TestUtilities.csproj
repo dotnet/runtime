@@ -34,6 +34,7 @@
       <Link>Common\CoreLib\System\PasteArguments.cs</Link>
     </Compile>
     <Compile Include="System\AssertExtensions.cs" />
+    <Compile Include="System\RetryHelper.cs" />
     <Compile Include="System\TheoryExtensions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
