@@ -206,7 +206,7 @@ namespace System.Data.Tests
             }
             catch (ArgumentException e)
             {
-                // LAMESPEC: MSDN says this exception is InvalidCastException
+                // MSDN says this exception is InvalidCastException
                 //				Assert.Equal (typeof (ArgumentException), e.GetType ());
             }
 

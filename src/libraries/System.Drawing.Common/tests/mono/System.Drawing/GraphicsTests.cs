@@ -1921,7 +1921,7 @@ namespace MonoTests.System.Drawing
                 Assert.Equal(size2.Height, size.Height);
 
                 Assert.Equal(1, lines);
-                // LAMESPEC: documentation seems to suggest chars is total length
+                // documentation seems to suggest chars is total length
                 Assert.True(chars < s.Length);
             }
         }

@@ -305,7 +305,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (_typeSrc is NullType)
                     {
                         // If we have the constant null, generate it as a default value of T?.  If we have
-                        // some crazy expression which has been determined to be always null, like (null??null)
+                        // some wacky expression which has been determined to be always null, like (null??null)
                         // keep it in its expression form and transform it in the nullable rewrite pass.
                         if (_needsExprDest)
                         {

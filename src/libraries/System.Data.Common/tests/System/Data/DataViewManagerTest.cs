@@ -69,7 +69,7 @@ namespace System.Data.Tests
             // text node is not rejected (ignored).
             // RowFilter is not examined.
             m.DataViewSettingCollectionString = "<DataViewSettingCollectionString>blah<table2-1 RowFilter='a=b' ApplyDefaultSort='true' /></DataViewSettingCollectionString>";
-            // LAMESPEC: MS.NET ignores ApplyDefaultSort.
+            // MS.NET ignores ApplyDefaultSort.
             //			Assert.Equal (@"<DataViewSettingCollectionString><table2-1 Sort="""" RowFilter=""a=b"" RowStateFilter=""Deleted""/></DataViewSettingCollectionString>", m.DataViewSettingCollectionString);
         }
 

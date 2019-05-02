@@ -457,7 +457,7 @@ namespace System.Buffers.Text.Tests
                 yield return "0.6666666666666666666666666666666666666666666666665";
                 yield return "0.9999999999999999999999999999999999999999999999999";
 
-                // Crazy case that's expected to yield "Decimal.MaxValue / 10" 
+                // Wacky case that's expected to yield "Decimal.MaxValue / 10" 
                 // ( = 7922816251426433759354395034m (= High = 0x19999999, Mid = 0x99999999, Low = 0x9999999A))
                 // and does thanks to a special overflow code path inside the Number->Decimal converter.
                 yield return "0.79228162514264337593543950335" + "5" + "E28";
