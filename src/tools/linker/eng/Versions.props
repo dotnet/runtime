@@ -6,6 +6,10 @@
   </PropertyGroup>
   <PropertyGroup>
     <MicrosoftNetCoreIlasmPackageVersion>3.0.0-preview4-27520-71</MicrosoftNetCoreIlasmPackageVersion>
+    <!-- These should match the SDK version at https://github.com/dotnet/sdk/blob/master/eng/Versions.props -->
+    <SystemReflectionMetadataVersion>1.5.0</SystemReflectionMetadataVersion>
+    <MicrosoftBuildFrameworkVersion>15.4.8</MicrosoftBuildFrameworkVersion>
+    <MicrosoftBuildUtilitiesCoreVersion>15.4.8</MicrosoftBuildUtilitiesCoreVersion>
   </PropertyGroup>
   <PropertyGroup>
     <RestoreSources>
