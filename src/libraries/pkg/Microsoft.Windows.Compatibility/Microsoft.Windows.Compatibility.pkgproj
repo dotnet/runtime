@@ -24,6 +24,7 @@
     <PrereleaseLibraryPackage Include="System.ComponentModel.Composition" />
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
+    <PrereleaseLibraryPackage Include="System.Data.OleDb" />
     <PrereleaseLibraryPackage Include="System.Data.SqlClient">
       <!-- SQL client defines its own version, higher than rest of master -->
       <Version>4.7.0</Version>
