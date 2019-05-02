@@ -367,35 +367,31 @@ delegate_hash_table_new (void) {
 static void 
 delegate_hash_table_remove (MonoDelegate *d)
 {
-	guint32 gchandle = 0;
+	if (mono_gc_is_moving ())
+		return;
 
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
-	if (mono_gc_is_moving ())
-		gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, d->delegate_trampoline));
 	g_hash_table_remove (delegate_hash_table, d->delegate_trampoline);
 	mono_marshal_unlock ();
-	if (gchandle && mono_gc_is_moving ())
-		mono_gchandle_free_internal (gchandle);
 }
 
 static void
 delegate_hash_table_add (MonoDelegateHandle d)
 {
-	guint32 gchandle;
-	guint32 old_gchandle;
-
 	mono_marshal_lock ();
 	if (delegate_hash_table == NULL)
 		delegate_hash_table = delegate_hash_table_new ();
 	gpointer delegate_trampoline = MONO_HANDLE_GETVAL (d, delegate_trampoline);
 	if (mono_gc_is_moving ()) {
-		gchandle = mono_gchandle_new_weakref_from_handle (MONO_HANDLE_CAST (MonoObject, d));
-		old_gchandle = GPOINTER_TO_UINT (g_hash_table_lookup (delegate_hash_table, delegate_trampoline));
-		g_hash_table_insert (delegate_hash_table, delegate_trampoline, GUINT_TO_POINTER (gchandle));
-		if (old_gchandle)
-			mono_gchandle_free_internal (old_gchandle);
+		if (g_hash_table_lookup (delegate_hash_table, delegate_trampoline) == NULL) {
+			guint32 gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, d), FALSE);
+			// This delegate will always be associated with its delegate_trampoline in the table.
+			// We don't free this delegate object because it is too expensive to keep track of these
+			// pairs and avoid races with the delegate finalization.
+			g_hash_table_insert (delegate_hash_table, delegate_trampoline, GUINT_TO_POINTER (gchandle));
+		}
 	} else {
 		g_hash_table_insert (delegate_hash_table, delegate_trampoline, MONO_HANDLE_RAW (d));
 	}
