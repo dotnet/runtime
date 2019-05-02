@@ -305,13 +305,16 @@ namespace System.Net.Test.Common
         }
 
         public static string GetHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null, bool connectionClose = false) =>
+            GetHttpResponseHeaders(statusCode, additionalHeaders, content, connectionClose) +
+            content;
+
+        public static string GetHttpResponseHeaders(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null, bool connectionClose = false) =>
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
             (connectionClose ? "Connection: close\r\n" : "") +
             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
             $"Content-Length: {(content == null ? 0 : content.Length)}\r\n" +
             additionalHeaders +
-            "\r\n" +
-            content;
+            "\r\n";
 
         public static string GetSingleChunkHttpResponse(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null, bool connectionClose = false) =>
             $"HTTP/1.1 {(int)statusCode} {GetStatusDescription(statusCode)}\r\n" +
@@ -571,9 +574,14 @@ namespace System.Net.Test.Common
                 return lines;
             }
 
+            public async Task SendResponseAsync(string response)
+            {
+                await _writer.WriteAsync(response).ConfigureAwait(false);
+            }
+
             public async Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, string additionalHeaders = null, string content = null)
             {
-                await _writer.WriteAsync(GetHttpResponse(statusCode, additionalHeaders, content)).ConfigureAwait(false);
+                await SendResponseAsync(GetHttpResponse(statusCode, additionalHeaders, content)).ConfigureAwait(false);
             }
 
             public async Task<List<string>> ReadRequestHeaderAndSendCustomResponseAsync(string response)

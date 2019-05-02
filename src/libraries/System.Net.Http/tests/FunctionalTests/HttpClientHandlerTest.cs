@@ -2064,30 +2064,36 @@ namespace System.Net.Http.Functional.Tests
             if (IsCurlHandler) return;
 
             var clientFinished = new TaskCompletionSource<bool>();
-            const string TestString = "test";
+            const string RequestString = "request";
+            const string ResponseString = "response";
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
                 {
                     HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
-                    initialMessage.Content = new StringContent(TestString);
+                    initialMessage.Content = new StringContent(RequestString);
                     initialMessage.Headers.ExpectContinue = true;
-                    HttpResponseMessage response = await client.SendAsync(initialMessage);
+                    using (HttpResponseMessage response = await client.SendAsync(initialMessage))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.Equal(ResponseString, await response.Content.ReadAsStringAsync());
+                    }
 
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     clientFinished.SetResult(true);
                 }
             }, async server =>
             {
                 await server.AcceptConnectionAsync(async connection =>
                 {
-                    // Send final status code 200.
-                    await connection.ReadRequestHeaderAndSendResponseAsync();
+                    await connection.ReadRequestHeaderAsync();
+                    await connection.SendResponseAsync(LoopbackServer.GetHttpResponseHeaders(HttpStatusCode.OK, content: ResponseString));
 
-                    var result = new char[TestString.Length];
-                    await connection.ReadBlockAsync(result, 0, TestString.Length);
-                    Assert.Equal(TestString, new string(result));
+                    var result = new char[RequestString.Length];
+                    await connection.ReadBlockAsync(result, 0, RequestString.Length);
+                    Assert.Equal(RequestString, new string(result));
+
+                    await connection.SendResponseAsync(ResponseString);
 
                     await clientFinished.Task;
                 });
