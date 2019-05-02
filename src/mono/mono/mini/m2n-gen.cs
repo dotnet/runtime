@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Collections.Generic;
 
 class EmitCtx
 {
@@ -174,7 +176,58 @@ class Driver {
 
 			Console.WriteLine ("\n}\n");
 		}
+		WriteDispatch (cookies);
+	}
 
+	static void WriteDispatch (string [] items)
+	{
+		Array.Sort (items);
+		Console.WriteLine ("static void\nicall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodArguments *margs)");
+		Console.WriteLine ("{");
+		Partition (items, 0);
+		Console.WriteLine ("\tprintf (\"CANNOT HANDLE COOKIE %s\\n\", cookie);");
+		Console.WriteLine ("\tg_assert (0);");
+		Console.WriteLine ("}");
+	}
+	
+	static void Partition (IEnumerable<string> set, int pos, int depth = 0) {
+		const string Indent = "\t";
+		var prefix = Indent;
+		for (var c = 0; c < pos; c++)
+			prefix += Indent;
+
+		var checks = 0;
+		
+		var hits = set.Where (s => s.Length == pos);
+		if (hits.Any ()) {
+			Console.WriteLine ($"{prefix}{Elif (checks++)} (cookie[{pos}] == '\\0') {{");
+
+			var h = hits.First ();
+			Console.WriteLine ($"{prefix}{Indent}// found: {h} depth {pos + checks + depth}");
+			Console.WriteLine ($"{prefix}{Indent}wasm_invoke_{h.ToLower ()}(target_func, margs);");
+			Console.WriteLine ($"{prefix}{Indent}return;");
+			Console.WriteLine ($"{prefix}}}");
+		}
+
+		var groups = set.Where (s => s.Length > pos).GroupBy (s => s.Skip(pos).First().ToString());
+
+		if (!groups.Any ())
+			return;
+
+		foreach (var g in groups) {
+			Console.WriteLine ($"{prefix}{Elif (checks)} (cookie[{pos}] == '{g.Key}') {{");
+			Partition (g.ToList (), pos + 1, checks + depth);
+			Console.WriteLine ($"{prefix}}}");
+			checks++;
+		}
+
+		string Elif (int c)
+		{
+			return c == 0 ? "if" : "else if";
+		}
+	}
+
+	static void WriteFlat () {
 		Console.WriteLine ("static void\nicall_trampoline_dispatch (const char *cookie, void *target_func, InterpMethodArguments *margs)");
 		Console.WriteLine ("{");
 		for (int i = 0; i < cookies.Length; ++i) {
