@@ -20,11 +20,13 @@ namespace System.Net.NameResolution.Tests
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
+        [ActiveIssue(37362, TestPlatforms.OSX)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
         public Task Dns_GetHostEntry_HostString_Ok(string hostName) => TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
 
+        [ActiveIssue(37362, TestPlatforms.OSX)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
