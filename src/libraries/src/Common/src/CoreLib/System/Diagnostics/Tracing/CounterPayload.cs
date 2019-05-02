@@ -37,6 +37,10 @@ namespace System.Diagnostics.Tracing
 
         public float IntervalSec { get; internal set; }
 
+        public string? Series { get; set; }
+
+        public string? CounterType { get; set; }
+
         public string? Metadata { get; set; }
 
         #region Implementation of the IEnumerable interface
@@ -86,6 +90,10 @@ namespace System.Diagnostics.Tracing
         public float IntervalSec { get; internal set; }
 
         public string? Metadata { get; set; }
+
+        public string? Series { get; set; }
+
+        public string? CounterType { get; set; }
 
         #region Implementation of the IEnumerable interface
 
