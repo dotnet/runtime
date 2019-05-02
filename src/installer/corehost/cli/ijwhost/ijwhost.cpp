@@ -25,13 +25,19 @@ pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_m
 {
     return load_fxr_and_get_delegate(
         hostfxr_delegate_type::load_in_memory_assembly,
-        [handle](const pal::string_t& host_path, pal::string_t* app_path_out)
+        [handle](const pal::string_t& host_path, pal::string_t* config_path_out)
         {
-            if (!pal::get_module_path(handle, app_path_out))
+            pal::string_t mod_path;
+            if (!pal::get_module_path(handle, &mod_path))
             {
                 trace::error(_X("Failed to resolve full path of the current mixed-mode module [%s]"), host_path.c_str());
                 return StatusCode::LibHostCurExeFindFailure;
             }
+
+            pal::string_t config_path_local { strip_file_ext(mod_path) };
+            config_path_local.append(_X(".runtimeconfig.json"));
+            *config_path_out = std::move(config_path_local);
+
             return StatusCode::Success;
         },
         delegate

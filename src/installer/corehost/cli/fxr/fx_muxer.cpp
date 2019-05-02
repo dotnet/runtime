@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include <atomic>
 #include <cassert>
+#include <condition_variable>
 #include <mutex>
 #include <error_codes.h>
 #include <pal.h>
@@ -10,6 +12,7 @@
 #include <utils.h>
 
 #include <cpprest/json.h>
+#include <corehost_context_contract.h>
 #include "corehost_init.h"
 #include "deps_format.h"
 #include "framework_info.h"
@@ -26,20 +29,56 @@
 #include "roll_fwd_on_no_candidate_fx_option.h"
 
 using corehost_main_fn = int(*) (const int argc, const pal::char_t* argv[]);
-using corehost_get_delegate_fn = int(*)(coreclr_delegate_type type, void** delegate);
 using corehost_main_with_output_buffer_fn = int(*) (const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size);
+
+namespace
+{
+    // hostfxr tracks the context used to load hostpolicy and coreclr as the active host context. This is the first
+    // context that is successfully created and used to load the runtime. There can only be one active context.
+    // Secondary contexts can only be created once the first context has fully initialized and been used to load the
+    // runtime. Any calls to initialize another context while the runtime has not yet been loaded by the first context
+    // will block until the first context loads the runtime (or fails).
+    std::mutex g_context_lock;
+
+    // Tracks the active host context. This is the context that was used to load and initialize hostpolicy and coreclr.
+    // It will only be set once both hostpolicy and coreclr are loaded and initialized. Once set, it should not be changed.
+    // This will remain set even if the context is closed through hostfxr_close. Since the context represents the active
+    // CoreCLR runtime and the active runtime cannot be unloaded, the active context is never unset.
+    std::unique_ptr<const host_context_t> g_active_host_context;
+
+    // Tracks whether the first host context is initializing (from creation of the first context to loading the runtime).
+    // Initialization of other contexts should block if the first context is initializing (i.e. this is true).
+    // The condition variable is used to block on and signal changes to this state.
+    std::atomic<bool> g_context_initializing(false);
+    std::condition_variable g_context_initializing_cv;
+
+    void handle_initialize_failure_or_abort(const hostpolicy_contract_t *hostpolicy_contract = nullptr)
+    {
+        {
+            std::lock_guard<std::mutex> lock{ g_context_lock };
+            assert(g_context_initializing.load());
+            assert(g_active_host_context == nullptr);
+            g_context_initializing.store(false);
+        }
+
+        if (hostpolicy_contract != nullptr && hostpolicy_contract->unload != nullptr)
+            hostpolicy_contract->unload();
+
+        g_context_initializing_cv.notify_all();
+    }
+}
 
 template<typename T>
 int load_hostpolicy(
     const pal::string_t& lib_dir,
     pal::dll_t* h_host,
-    hostpolicy_contract &host_contract,
+    hostpolicy_contract_t &hostpolicy_contract,
     const char *main_entry_symbol,
     T* main_fn)
 {
     assert(main_entry_symbol != nullptr && main_fn != nullptr);
 
-    int rc = hostpolicy_resolver::load(lib_dir, h_host, host_contract);
+    int rc = hostpolicy_resolver::load(lib_dir, h_host, hostpolicy_contract);
     if (rc != StatusCode::Success)
     {
         trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, lib_dir.c_str());
@@ -60,22 +99,53 @@ static int execute_app(
     const int argc,
     const pal::char_t* argv[])
 {
-    pal::dll_t corehost;
-    hostpolicy_contract host_contract{};
+    {
+        std::unique_lock<std::mutex> lock{ g_context_lock };
+        g_context_initializing_cv.wait(lock, [] { return !g_context_initializing.load(); });
+
+        if (g_active_host_context != nullptr)
+        {
+            trace::error(_X("Hosting components are already initialized. Re-initialization to execute an app is not allowed."));
+            return StatusCode::HostInvalidState;
+        }
+
+        g_context_initializing.store(true);
+    }
+
+    pal::dll_t hostpolicy_dll;
+    hostpolicy_contract_t hostpolicy_contract{};
     corehost_main_fn host_main = nullptr;
 
-    int code = load_hostpolicy(impl_dll_dir, &corehost, host_contract, "corehost_main", &host_main);
+    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract, "corehost_main", &host_main);
     if (code != StatusCode::Success)
+    {
+        handle_initialize_failure_or_abort();
         return code;
+    }
+
+    // Leak hostpolicy - just as we do not unload coreclr, we do not unload hostpolicy
 
     {
-        propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
+        // Track an empty 'active' context so that host context-based APIs can work properly when
+        // the runtime is loaded through non-host context-based APIs. Once set, the context is never
+        // unset. This means that if any error occurs after this point (e.g. with loading the runtime),
+        // the process will be in a corrupted state and loading the runtime again will not be allowed.
+        std::lock_guard<std::mutex> lock{ g_context_lock };
+        assert(g_active_host_context == nullptr);
+        g_active_host_context.reset(new host_context_t(host_context_type::empty, hostpolicy_contract, {}));
+        g_context_initializing.store(false);
+    }
+
+    g_context_initializing_cv.notify_all();
+
+    {
+        propagate_error_writer_t propagate_error_writer_to_corehost(hostpolicy_contract.set_error_writer);
 
         const host_interface_t& intf = init->get_host_init_data();
-        if ((code = host_contract.load(&intf)) == StatusCode::Success)
+        if ((code = hostpolicy_contract.load(&intf)) == StatusCode::Success)
         {
             code = host_main(argc, argv);
-            (void)host_contract.unload();
+            (void)hostpolicy_contract.unload();
         }
     }
 
@@ -91,22 +161,24 @@ static int execute_host_command(
     int32_t buffer_size,
     int32_t* required_buffer_size)
 {
-    pal::dll_t corehost;
-    hostpolicy_contract host_contract{};
+    pal::dll_t hostpolicy_dll;
+    hostpolicy_contract_t hostpolicy_contract{};
     corehost_main_with_output_buffer_fn host_main = nullptr;
 
-    int code = load_hostpolicy(impl_dll_dir, &corehost, host_contract, "corehost_main_with_output_buffer", &host_main);
+    int code = load_hostpolicy(impl_dll_dir, &hostpolicy_dll, hostpolicy_contract, "corehost_main_with_output_buffer", &host_main);
     if (code != StatusCode::Success)
         return code;
 
+    // Leak hostpolicy - just as we do not unload coreclr, we do not unload hostpolicy
+
     {
-        propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
+        propagate_error_writer_t propagate_error_writer_to_corehost(hostpolicy_contract.set_error_writer);
 
         const host_interface_t& intf = init->get_host_init_data();
-        if ((code = host_contract.load(&intf)) == StatusCode::Success)
+        if ((code = hostpolicy_contract.load(&intf)) == StatusCode::Success)
         {
             code = host_main(argc, argv, result_buffer, buffer_size, required_buffer_size);
-            (void)host_contract.unload();
+            (void)hostpolicy_contract.unload();
         }
     }
 
@@ -458,8 +530,8 @@ namespace
         const pal::string_t &app_candidate,
         const opt_map_t &opts,
         host_mode_t mode,
-        pal::string_t &impl_dir,
-        std::unique_ptr<corehost_init_t> &init)
+        /*out*/ pal::string_t &hostpolicy_dir,
+        /*out*/ std::unique_ptr<corehost_init_t> &init)
     {
         pal::string_t opts_fx_version = _X("--fx-version");
         pal::string_t opts_roll_forward = _X("--roll-forward");
@@ -480,7 +552,7 @@ namespace
 
         runtime_config_t::settings_t override_settings;
 
-        // `Roll forward` is set to Minor (2) (roll_forward_option::Minor) by default. 
+        // `Roll forward` is set to Minor (2) (roll_forward_option::Minor) by default.
         // For backward compatibility there are two settings:
         //  - rollForward (the new one) which has more possible values
         //  - rollForwardOnNoCandidateFx (the old one) with only 0-Off, 1-Minor, 2-Major
@@ -572,7 +644,7 @@ namespace
         trace::verbose(_X("Executing as a %s app as per config file [%s]"),
             (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
 
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &impl_dir))
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, app_candidate, deps_file, probe_realpaths, &hostpolicy_dir))
         {
             return CoreHostLibMissingFailure;
         }
@@ -595,7 +667,7 @@ int fx_muxer_t::read_config_and_execute(
     int32_t buffer_size,
     int32_t* required_buffer_size)
 {
-    pal::string_t impl_dir;
+    pal::string_t hostpolicy_dir;
     std::unique_ptr<corehost_init_t> init;
     int rc = get_init_info_for_app(
         host_command,
@@ -603,18 +675,18 @@ int fx_muxer_t::read_config_and_execute(
         app_candidate,
         opts,
         mode,
-        impl_dir,
+        hostpolicy_dir,
         init);
     if (rc != StatusCode::Success)
         return rc;
 
     if (host_command.size() == 0)
     {
-        rc = execute_app(impl_dir, init.get(), new_argc, new_argv);
+        rc = execute_app(hostpolicy_dir, init.get(), new_argc, new_argv);
     }
     else
     {
-        rc = execute_host_command(impl_dir, init.get(), new_argc, new_argv, out_buffer, buffer_size, required_buffer_size);
+        rc = execute_host_command(hostpolicy_dir, init.get(), new_argc, new_argv, out_buffer, buffer_size, required_buffer_size);
     }
 
     return rc;
@@ -702,100 +774,320 @@ int fx_muxer_t::execute(
 
 namespace
 {
-    int get_delegate_from_runtime(
-        const pal::string_t& impl_dll_dir,
-        corehost_init_t* init,
-        coreclr_delegate_type type,
-        void** delegate)
-    {
-        pal::dll_t corehost;
-        hostpolicy_contract host_contract{};
-        corehost_get_delegate_fn coreclr_delegate = nullptr;
-
-        int code = load_hostpolicy(impl_dll_dir, &corehost, host_contract, "corehost_get_coreclr_delegate", &coreclr_delegate);
-        if (code != StatusCode::Success)
-        {
-            trace::error(_X("This component must target .NET Core 3.0 or a higher version."));
-            return code;
-        }
-
-        {
-            propagate_error_writer_t propagate_error_writer_to_corehost(host_contract.set_error_writer);
-
-            const host_interface_t& intf = init->get_host_init_data();
-
-            if ((code = host_contract.load(&intf)) == StatusCode::Success)
-            {
-                code = coreclr_delegate(type, delegate);
-            }
-        }
-
-        return code;
-    }
-
     int get_init_info_for_component(
         const host_startup_info_t &host_info,
         host_mode_t mode,
         pal::string_t &runtime_config_path,
-        pal::string_t &impl_dir,
-        std::unique_ptr<corehost_init_t> &init)
+        /*out*/ pal::string_t &hostpolicy_dir,
+        /*out*/ std::unique_ptr<corehost_init_t> &init)
     {
         // Read config
         fx_definition_vector_t fx_definitions;
         auto app = new fx_definition_t();
         fx_definitions.push_back(std::unique_ptr<fx_definition_t>(app));
 
-        runtime_config_t::settings_t override_settings;
+        const runtime_config_t::settings_t override_settings;
         int rc = read_config(*app, host_info.app_path, runtime_config_path, override_settings);
         if (rc != StatusCode::Success)
             return rc;
 
-        runtime_config_t app_config = app->get_runtime_config();
-        bool is_framework_dependent = app_config.get_is_framework_dependent();
-        if (is_framework_dependent)
+        const runtime_config_t app_config = app->get_runtime_config();
+        if (!app_config.get_is_framework_dependent())
         {
-            rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
-            if (rc != StatusCode::Success)
-            {
-                return rc;
-            }
+            trace::error(_X("Initialization for self-contained components is not supported"));
+            return StatusCode::InvalidConfigFile;
         }
 
-        std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, std::vector<pal::string_t>() /* specified_probing_paths */);
+        rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+        if (rc != StatusCode::Success)
+            return rc;
 
-        trace::verbose(_X("Libhost loading occurring as a %s app as per config file [%s]"),
-            (is_framework_dependent ? _X("framework-dependent") : _X("self-contained")), app_config.get_path().c_str());
+        const std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, std::vector<pal::string_t>() /* specified_probing_paths */);
 
-        pal::string_t deps_file;
-        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_realpaths, &impl_dir))
+        trace::verbose(_X("Libhost loading occurring for a framework-dependent component per config file [%s]"), app_config.get_path().c_str());
+
+        const pal::string_t deps_file;
+        if (!hostpolicy_resolver::try_get_dir(mode, host_info.dotnet_root, fx_definitions, host_info.app_path, deps_file, probe_realpaths, &hostpolicy_dir))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
 
-        pal::string_t additional_deps_serialized;
+        const pal::string_t additional_deps_serialized;
         init.reset(new corehost_init_t(pal::string_t{}, host_info, deps_file, additional_deps_serialized, probe_realpaths, mode, fx_definitions));
 
         return StatusCode::Success;
     }
+
+    int get_init_info_for_secondary_component(
+        const host_startup_info_t &host_info,
+        host_mode_t mode,
+        pal::string_t &runtime_config_path,
+        const host_context_t *existing_context,
+        /*out*/ std::unordered_map<pal::string_t, pal::string_t> &config_properties)
+    {
+        // Read config
+        fx_definition_t app;
+        const runtime_config_t::settings_t override_settings;
+        int rc = read_config(app, host_info.app_path, runtime_config_path, override_settings);
+        if (rc != StatusCode::Success)
+            return rc;
+
+        const runtime_config_t app_config = app.get_runtime_config();
+        if (!app_config.get_is_framework_dependent())
+        {
+            trace::error(_X("Initialization for self-contained components is not supported"));
+            return StatusCode::InvalidConfigFile;
+        }
+
+        // [TODO] Validate the current context is acceptable for this request (frameworks)
+
+        app_config.combine_properties(config_properties);
+        return StatusCode::Success;
+    }
+
+    int initialize_context(
+        const pal::string_t hostpolicy_dir,
+        corehost_init_t &init,
+        int32_t initialize_options,
+        /*out*/ std::unique_ptr<host_context_t> &context)
+    {
+        pal::dll_t hostpolicy_dll;
+        hostpolicy_contract_t hostpolicy_contract{};
+        int rc = hostpolicy_resolver::load(hostpolicy_dir, &hostpolicy_dll, hostpolicy_contract);
+        if (rc != StatusCode::Success)
+        {
+            trace::error(_X("An error occurred while loading required library %s from [%s]"), LIBHOSTPOLICY_NAME, hostpolicy_dir.c_str());
+        }
+        else
+        {
+            rc = host_context_t::create(hostpolicy_contract, init, initialize_options, context);
+        }
+
+        // Leak hostpolicy - just as we do not unload coreclr, we do not unload hostpolicy
+
+        if (rc != StatusCode::Success)
+            handle_initialize_failure_or_abort(&hostpolicy_contract);
+
+        return rc;
+    }
 }
 
-int fx_muxer_t::load_runtime_and_get_delegate(
-    const host_startup_info_t& host_info,
-    host_mode_t mode,
-    coreclr_delegate_type delegate_type,
-    void** delegate)
+int fx_muxer_t::initialize_for_app(
+    const host_startup_info_t &host_info,
+    int argc,
+    const pal::char_t* argv[],
+    hostfxr_handle *host_context_handle)
 {
-    assert(host_info.is_valid(mode));
+    {
+        std::unique_lock<std::mutex> lock{ g_context_lock };
+        g_context_initializing_cv.wait(lock, [] { return !g_context_initializing.load(); });
 
-    pal::string_t runtime_config = _X("");
-    pal::string_t impl_dir;
+        if (g_active_host_context != nullptr)
+        {
+            trace::error(_X("Hosting components are already initialized. Re-initialization for an app is not allowed."));
+            return StatusCode::HostInvalidState;
+        }
+
+        g_context_initializing.store(true);
+    }
+
+    host_mode_t mode = host_mode_t::apphost;
+    opt_map_t opts;
+    pal::string_t hostpolicy_dir;
     std::unique_ptr<corehost_init_t> init;
-    int rc = get_init_info_for_component(host_info, mode, runtime_config, impl_dir, init);
+    int rc = get_init_info_for_app(
+        pal::string_t{} /*host_command*/,
+        host_info,
+        host_info.app_path,
+        opts,
+        mode,
+        hostpolicy_dir,
+        init);
     if (rc != StatusCode::Success)
+    {
+        handle_initialize_failure_or_abort();
         return rc;
+    }
 
-    rc = get_delegate_from_runtime(impl_dir, init.get(), delegate_type, delegate);
+    std::unique_ptr<host_context_t> context;
+    rc = initialize_context(hostpolicy_dir, *init, intialization_options_t::none, context);
+    if (rc != StatusCode::Success)
+    {
+        trace::error(_X("Failed to initialize context for app: %s. Error code: 0x%x"), host_info.app_path.c_str(), rc);
+        return rc;
+    }
+
+    context->is_app = true;
+    for (int i = 0; i < argc; ++i)
+        context->argv.push_back(argv[i]);
+
+    trace::verbose(_X("Initialized context for app: %s"), host_info.app_path.c_str());
+    *host_context_handle = context.release();
     return rc;
+}
+
+int fx_muxer_t::initialize_for_runtime_config(
+    const host_startup_info_t &host_info,
+    const pal::char_t *runtime_config_path,
+    hostfxr_handle *host_context_handle)
+{
+    int32_t initialization_options = intialization_options_t::none;
+    const host_context_t *existing_context;
+    {
+        std::unique_lock<std::mutex> lock{ g_context_lock };
+        g_context_initializing_cv.wait(lock, [] { return !g_context_initializing.load(); });
+
+        existing_context = g_active_host_context.get();
+        if (existing_context == nullptr)
+        {
+            g_context_initializing.store(true);
+        }
+        else if (existing_context->type == host_context_type::invalid)
+        {
+            return StatusCode::HostInvalidState;
+        }
+        else if (existing_context->type == host_context_type::empty)
+        {
+            initialization_options |= intialization_options_t::wait_for_initialized;
+        }
+    }
+
+    bool already_initialized = existing_context != nullptr;
+
+    int rc;
+    host_mode_t mode = host_mode_t::libhost;
+    pal::string_t runtime_config = runtime_config_path;
+    std::unique_ptr<host_context_t> context;
+    if (already_initialized)
+    {
+        std::unordered_map<pal::string_t, pal::string_t> config_properties;
+        rc = get_init_info_for_secondary_component(host_info, mode, runtime_config, existing_context, config_properties);
+        if (rc != StatusCode::Success)
+            return rc;
+
+        rc = host_context_t::create_secondary(existing_context->hostpolicy_contract, config_properties, initialization_options, context);
+    }
+    else
+    {
+        pal::string_t hostpolicy_dir;
+        std::unique_ptr<corehost_init_t> init;
+        rc = get_init_info_for_component(host_info, mode, runtime_config, hostpolicy_dir, init);
+        if (rc != StatusCode::Success)
+        {
+            handle_initialize_failure_or_abort();
+            return rc;
+        }
+
+        rc = initialize_context(hostpolicy_dir, *init, initialization_options, context);
+    }
+
+    if (rc != StatusCode::Success && rc != StatusCode::CoreHostAlreadyInitialized)
+    {
+        trace::error(_X("Failed to initialize context for config: %s. Error code: 0x%x"), runtime_config_path, rc);
+        return rc;
+    }
+
+    context->is_app = false;
+
+    trace::verbose(_X("Initialized %s for config: %s"), already_initialized ? _X("secondary context") : _X("context"), runtime_config_path);
+    *host_context_handle = context.release();
+    return rc;
+}
+
+namespace
+{
+    int load_runtime(host_context_t *context)
+    {
+        assert(context->type == host_context_type::initialized || context->type == host_context_type::active);
+        if (context->type == host_context_type::active)
+            return StatusCode::Success;
+
+        const corehost_context_contract &contract = context->hostpolicy_context_contract;
+        int rc = contract.load_runtime();
+
+        // Mark the context as active or invalid
+        context->type = rc == StatusCode::Success ? host_context_type::active : host_context_type::invalid;
+
+        {
+            std::lock_guard<std::mutex> lock{ g_context_lock };
+            assert(g_active_host_context == nullptr);
+            g_active_host_context.reset(context);
+            g_context_initializing.store(false);
+        }
+
+        g_context_initializing_cv.notify_all();
+        return rc;
+    }
+}
+
+int fx_muxer_t::run_app(host_context_t *context)
+{
+    if (!context->is_app)
+        return StatusCode::InvalidArgFailure;
+
+    int argc = context->argv.size();
+    std::vector<const pal::char_t*> argv;
+    argv.reserve(argc);
+    for (const auto& str : context->argv)
+        argv.push_back(str.c_str());
+
+    const corehost_context_contract &contract = context->hostpolicy_context_contract;
+    {
+        propagate_error_writer_t propagate_error_writer_to_corehost(context->hostpolicy_contract.set_error_writer);
+
+        int rc = load_runtime(context);
+        if (rc != StatusCode::Success)
+            return rc;
+
+        return contract.run_app(argc, argv.data());
+    }
+}
+
+int fx_muxer_t::get_runtime_delegate(host_context_t *context, coreclr_delegate_type type, void **delegate)
+{
+    if (context->is_app)
+        return StatusCode::InvalidArgFailure;
+
+    const corehost_context_contract &contract = context->hostpolicy_context_contract;
+    {
+        propagate_error_writer_t propagate_error_writer_to_corehost(context->hostpolicy_contract.set_error_writer);
+
+        if (context->type != host_context_type::secondary)
+        {
+            int rc = load_runtime(context);
+            if (rc != StatusCode::Success)
+                return rc;
+        }
+
+        return contract.get_runtime_delegate(type, delegate);
+    }
+}
+
+const host_context_t* fx_muxer_t::get_active_host_context()
+{
+    std::lock_guard<std::mutex> lock{ g_context_lock };
+    return g_active_host_context.get();
+}
+
+int fx_muxer_t::close_host_context(host_context_t *context)
+{
+    if (context->type == host_context_type::initialized)
+    {
+        // The first context is being closed without being used to start the runtime
+        assert(g_active_host_context == nullptr);
+        handle_initialize_failure_or_abort(&context->hostpolicy_contract);
+    }
+
+    context->close();
+
+    // Do not delete the active context.
+    {
+        std::lock_guard<std::mutex> lock{ g_context_lock };
+        if (context != g_active_host_context.get())
+            delete context;
+    }
+
+    return StatusCode::Success;
 }
 
 int fx_muxer_t::handle_exec(

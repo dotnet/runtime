@@ -139,14 +139,3 @@ bool fxr_resolver::try_get_existing_fxr(pal::dll_t *out_fxr, pal::string_t *out_
     trace::verbose(_X("Found previously loaded library %s [%s]."), LIBFXR_NAME, out_fxr_path->c_str());
     return true;
 }
-
-pal::string_t fxr_resolver::dotnet_root_from_fxr_path(const pal::string_t &fxr_path)
-{
-    // If coreclr exists next to hostfxr, assume everything is local (e.g. self-contained)
-    if (coreclr_exists_in_dir(fxr_path))
-        return get_directory(fxr_path);
-
-    // Path to hostfxr is: <dotnet_root>/host/fxr/<version>/<hostfxr_file>
-    pal::string_t fxr_root = get_directory(get_directory(fxr_path));
-    return get_directory(get_directory(fxr_root));
-}

@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public AndConstraint<CommandResultAssertions> NotHaveStdOutContaining(string pattern)
         {
-            Execute.Assertion.ForCondition(!_commandResult.StdErr.Contains(pattern))
+            Execute.Assertion.ForCondition(!_commandResult.StdOut.Contains(pattern))
                 .FailWith("The command output contained a result it should not have contained: {0}{1}", pattern, GetDiagnosticsInfo());
             return new AndConstraint<CommandResultAssertions>(this);
         }

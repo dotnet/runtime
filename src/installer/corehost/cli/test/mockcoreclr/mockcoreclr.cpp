@@ -3,12 +3,29 @@
 // See the LICENSE file in the project root for more information.
 
 #include "mockcoreclr.h"
+#include <chrono>
 #include <iostream>
+#include <thread>
 #include "trace.h"
 
-#define MockLog(string) std::cout << "mock " << string << std::endl;
-#define MockLogArg(arg) std::cout << "mock " << #arg << ":" << arg << std::endl;
-#define MockLogEntry(dict, key, value) std::cout << "mock " << dict << "[" << key << "] = " << value << std::endl;
+#define MockLog(string)\
+{\
+    std::stringstream ss;\
+    ss << "mock " << string << std::endl;\
+    std::cout << ss.str();\
+}
+#define MockLogArg(arg)\
+{\
+    std::stringstream ss;\
+    ss << "mock " << #arg << ":" << arg << std::endl;\
+    std::cout << ss.str();\
+}
+#define MockLogEntry(dict, key, value)\
+{\
+    std::stringstream ss;\
+    ss << "mock " << dict << "[" << key << "] = " << value << std::endl;\
+    std::cout << ss.str();\
+}
 
 SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_initialize(
     const char* exePath,
@@ -79,6 +96,15 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_execute_assembly(
     for (int i = 0; i < argc; ++i)
     {
         MockLogEntry("argv", i, argv[i]);
+    }
+
+    pal::string_t path;
+    if (pal::getenv(_X("TEST_BLOCK_MOCK_EXECUTE_ASSEMBLY"), &path))
+    {
+        while (pal::file_exists(path))
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 
     if (exitCode != nullptr)

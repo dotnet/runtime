@@ -18,6 +18,7 @@ endif()
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../../nethost)
 
 set(SOURCES
+    ./host_context_test.cpp
     ./nativehost.cpp
 )
 

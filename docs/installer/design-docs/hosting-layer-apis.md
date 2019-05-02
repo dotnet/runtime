@@ -20,7 +20,9 @@ int hostfxr_main(const int argc, const char_t *argv[])
 Run an application.
 * `argc` / `argv` - command-line arguments
 
-This function does not return until the application completes execution.
+This function does not return until the application completes execution. It will shutdown CoreCLR after the application executes.
+
+If the application is successfully executed, this value will return the exit code of the application. Otherwise, it will return an error code indicating the failure.
 
 ### .NET Core 2.0+
 
@@ -51,7 +53,9 @@ Run an application.
 * `dotnet_root` - path to the .NET Core installation root
 * `app_path` - path to the application to run
 
-This function does not return until the application completes execution.
+This function does not return until the application completes execution. It will shutdown CoreCLR after the application executes.
+
+If the application is successfully executed, this value will return the exit code of the application. Otherwise, it will return an error code indicating the failure.
 
 ``` C
 enum hostfxr_resolve_sdk2_flags_t
@@ -138,6 +142,112 @@ The error writer is registered per-thread. On each thread, only one callback can
 If `hostfxr` invokes functions in `hostpolicy` as part of its operation, the error writer will be propagated to `hostpolicy` for the duration of the call. This means that errors from both `hostfxr` and `hostpolicy` will be reported through the same error writer.
 
 
+``` C
+int hostfxr_initialize_for_app(
+    int argc,
+    const char_t *argv[],
+    const char_t *app_path,
+    const hostfxr_initialize_parameters *parameters,
+    hostfxr_handle * host_context_handle
+);
+```
+Initialize the hosting components for running a managed application.
+* `argc` / `argv` - command-line arguments
+* `app_path` - path to the application to run
+* `parameters` - optional additional parameters
+* `host_context_handle` - if initialization is successful, this receives an opaque value which identifies the initialized host context.
+
+See [Native hosting](native-hosting.md#initialize-host-context)
+
+``` C
+int hostfxr_initialize_for_runtime_config(
+    const char_t *runtime_config_path,
+    const hostfxr_initialize_parameters *parameters,
+    hostfxr_handle *host_context_handle
+);
+```
+Initialize the  hosting components for a runtime configuration (`.runtimeconfig.json`).
+* `runtime_config_path` - path to the `.runtimeconfig.json` file to process
+* `parameters` - optional additional parameters
+* `host_context_handle` - if initialization is successful, this receives an opaque value which identifies the initialized host context.
+
+See [Native hosting](native-hosting.md#initialize-host-context)
+
+``` C
+int hostfxr_get_runtime_property_value(
+    const hostfxr_handle host_context_handle,
+    const char_t *name,
+    const char_t **value);
+```
+
+Get the value of a runtime property specified by its name.
+* `host_context_handle` - initialized host context. If set to `nullptr` the function will operate on the first host context in the process.
+* `name` - name of the runtime property to get
+* `value` - returns a pointer to a buffer with the property value
+
+See [Native hosting](native-hosting.md#runtime-properties)
+
+``` C
+int hostfxr_set_runtime_property_value(
+    const hostfxr_handle host_context_handle,
+    const char_t *name,
+    const char_t *value);
+```
+
+Set the value of a property.
+* `host_context_handle` - initialized host context
+* `name` - name of the runtime property to set
+* `value` - value of the property to set. If the property already has a value in the host context, this function will overwrite it. When set to `nullptr` and if the property already has a value then the property is removed.
+
+See [Native hosting](native-hosting.md#runtime-properties)
+
+``` C
+int hostfxr_get_runtime_properties(
+    const hostfxr_handle host_context_handle,
+    size_t * count,
+    const char_t **keys,
+    const char_t **values);
+```
+Get all runtime properties for the specified host context.
+* `host_context_handle` - initialized host context. If set to `nullptr` the function will operate on the first host context in the process.
+* `count` - in/out parameter which must not be `nullptr`. On input it specifies the size of the the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned.
+* `keys` - buffer which acts as an array of pointers to buffers with keys for the runtime properties.
+* `values` - buffer which acts as an array of pointer to buffers with values for the runtime properties.
+
+If `count` is less than the minimum required buffer size or `keys` or `values` is `nullptr`, this function will return `HostApiBufferTooSmall` and `keys` and `values` will be unchanged.
+
+See [Native hosting](native-hosting.md#runtime-properties)
+
+``` C
+int hostfxr_run_app(const hostfxr_handle host_context_handle);
+```
+Run the application specified by `hostfxr_initialize_for_app`.
+* `host_context_handle` - handle to the initialized host context.
+
+This function does not return until the application completes execution. It will shutdown CoreCLR after the application executes.
+
+If the application is successfully executed, this value will return the exit code of the application. Otherwise, it will return an error code indicating the failure.
+
+See [Native hosting](native-hosting.md#runtime-properties)
+
+``` C
+int hostfxr_get_runtime_delegate(const hostfxr_handle host_context_handle, hostfxr_delegate_type type, void ** delegate);
+```
+Start the runtime and get a function pointer to specified functionality of the runtime.
+* `host_context_handle` - initialized host context
+* `type` - type of runtime functionality requested
+* `delegate` - on success, this is populated with the native function pointer to the requested runtime functionality
+
+See [Native hosting](native-hosting.md#getting-a-delegate-for-runtime-functionality)
+
+``` C
+int hostfxr_close(const hostfxr_handle host_context_handle);
+```
+Close a host context.
+* `host_context_handle` - initialized host context to close.
+
+See [Native hosting](native-hosting.md#cleanup)
+
 ## Host Policy
 
 All exported functions and function pointers in the `hostpolicy` library use the `__cdecl` calling convention on the x86 platform.
@@ -161,6 +271,8 @@ Run an application.
 * `argc` / `argv` - command-line arguments
 
 This function does not return until the application completes execution. It will shutdown CoreCLR after the application executes.
+
+If the application is successfully executed, this value will return the exit code of the application. Otherwise, it will return an error code indicating the failure.
 
 ``` C
 int corehost_unload()
@@ -187,14 +299,6 @@ Run a host command and return the output. `corehost_load(init)` should have been
 If `buffer_size` is less than the minimum required buffer size, this function will return `HostApiBufferTooSmall` and `buffer` will be unchanged.
 
 ### .NET Core 3.0+
-
-``` C
-int corehost_get_coreclr_delegate(coreclr_delegate_type type, void **delegate)
-```
-
-Get a delegate for CoreCLR functionality
-* `type` - requested type of runtime functionality
-* `delegate` - function pointer to the requested runtime functionality
 
 ``` C
 typedef void(*corehost_resolve_component_dependencies_result_fn)(
@@ -226,14 +330,6 @@ The return value is the previouly registered callback (which is now unregistered
 
 The error writer is registered per-thread. On each thread, only one callback can be registered. Subsequent registrations overwrite the previous ones.
 
-### [Proposed] .NET Core 3.0+
-
-#### Removal
-
-`corehost_get_coreclr_delegate` will be removed and the equivalent functionality provided through the proposed additions below. Since this function is new in 3.0, it should not be required for backwards compatibility.
-
-#### Addition
-
 ``` C
 typedef void* context_handle;
 
@@ -242,18 +338,16 @@ struct corehost_context_contract
     size_t version;
     context_handle instance;
     int (*get_property_value)(
-        context_handle instance,
         const char_t *key,
         const char_t **value);
     int (*set_property_value)(
-        context_handle instance,
         const char_t *key,
         const char_t *value);
     int (*get_properties)(
-        context_handle instance,
         size_t *count,
         const char_t **keys,
         const char_t **values);
+    int (*load_runtime)();
     int (*run_app)(
         const context_handle instance,
         const int argc,
@@ -265,7 +359,7 @@ struct corehost_context_contract
 };
 ```
 
-Contract for performing operations on an initialized host context.
+Contract for performing operations on an initialized hostpolicy.
 * `version` - version of the struct.
 * `instance` - opaque handle to the `corehost_context_contract` state.
 * `get_property_value` - function pointer for getting a property on the host context.
@@ -278,6 +372,7 @@ Contract for performing operations on an initialized host context.
   * `count` - size of `keys` and `values`. If the size is too small, it will be populated with the required size. Otherwise, it will be populated with the size used.
   * `keys` - buffer to populate with the property keys.
   * `values` - buffer to populate with the property values.
+* `load_runtime` - function pointer for loading CoreCLR
 * `run_app` - function pointer for running an application.
   * `argc` / `argv` - command-line arguments.
 * `get_runtime_delegate` - function pointer for getting a delegate for CoreCLR functionality
@@ -285,16 +380,17 @@ Contract for performing operations on an initialized host context.
   * `delegate` - function pointer to the requested runtime functionality
 
 ``` C
-int corehost_initialize_context(const host_interface_t *init, corehost_context_contract *context_contract)
+enum intialization_options_t
+{
+    none = 0x0,
+    wait_for_initialized = 0x1,
+};
+
+int corehost_initialize(const corehost_initialize_request_t *init_request, int32_t options, corehost_context_contract *context_contract)
 ```
 
 Initializes the host context. This calculates everything required to start CoreCLR (but does not actually do so).
-* `init` - struct defining how the host context should be initialized. If the host context is already initialized, this function will check if `init` is compatible with the active context.
+* `init_request` - struct containing information about the initialization request. If hostpolicy is not yet initialized, this is expected to be nullptr. If hostpolicy is already initialized, this should not be nullptr and this function will use the struct to check for compatibility with the way in which hostpolicy was previously initialized.
+* `options` - initialization options
+  * `wait_for_initialized` - wait until initialization through a different request is completed
 * `context_contract` - if initialization is successful, this is populated with the contract for operating on the initialized host context.
-
-``` C
-int corehost_close_context(corehost_context_contract *context_contract)
-```
-
-Closes the host context.
-* `context_contract` - contract of the context to close.

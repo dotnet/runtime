@@ -86,8 +86,8 @@ public:
     bool add(common_property key, const pal::char_t *value);
     bool add(const pal::char_t *key, const pal::char_t *value);
 
-    bool try_get(common_property key, const pal::char_t **value);
-    bool try_get(const pal::char_t *key, const pal::char_t **value);
+    bool try_get(common_property key, const pal::char_t **value) const;
+    bool try_get(const pal::char_t *key, const pal::char_t **value) const;
 
     void remove(const pal::char_t *key);
 
