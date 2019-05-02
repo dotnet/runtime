@@ -647,7 +647,7 @@ void EventPipeBufferManager::SuspendWriteEvent()
 
     _ASSERTE(EnsureConsistency());
 
-    // All calls to this method must not be synchronized by our caller
+    // All calls to this method must be synchronized by our caller
     _ASSERTE(EventPipe::IsLockOwnedByCurrentThread());
 
     CQuickArrayList<EventPipeThread*> threadList;
