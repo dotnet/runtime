@@ -154,12 +154,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             public SharedTestState()
             {
-                // Copy nethost next to native host
-                string nethostName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost");
-                File.Copy(
-                    Path.Combine(RepoDirectories.CorehostPackages, nethostName),
-                    Path.Combine(Path.GetDirectoryName(NativeHostPath), nethostName));
-
                 InvalidInstallRoot = Path.Combine(BaseDirectory, "invalid");
                 Directory.CreateDirectory(InvalidInstallRoot);
 

@@ -252,7 +252,7 @@ bool coreclr_property_bag_t::add(const pal::char_t *key, const pal::char_t *valu
     }
 }
 
-bool coreclr_property_bag_t::try_get(common_property key, const pal::char_t **value)
+bool coreclr_property_bag_t::try_get(common_property key, const pal::char_t **value) const
 {
     int idx = static_cast<int>(key);
     assert(0 <= idx && idx < static_cast<int>(common_property::Last));
@@ -260,7 +260,7 @@ bool coreclr_property_bag_t::try_get(common_property key, const pal::char_t **va
     return try_get(PropertyNameMapping[idx], value);
 }
 
-bool coreclr_property_bag_t::try_get(const pal::char_t *key, const pal::char_t **value)
+bool coreclr_property_bag_t::try_get(const pal::char_t *key, const pal::char_t **value) const
 {
     assert(key != nullptr && value != nullptr);
     auto iter = _properties.find(key);
@@ -280,6 +280,7 @@ void coreclr_property_bag_t::remove(const pal::char_t *key)
     if (iter == _properties.cend())
         return;
 
+    trace::verbose(_X("Removing property %s. Old value: '%s'."), key, (*iter).second.c_str());
     _properties.erase(iter);
 }
 

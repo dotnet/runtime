@@ -20,6 +20,7 @@ namespace
 int hostpolicy_context_t::initialize(hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
 {
     application = args.managed_application;
+    host_mode = hostpolicy_init.host_mode;
     host_path = args.host_path;
     breadcrumbs_enabled = enable_breadcrumbs;
 

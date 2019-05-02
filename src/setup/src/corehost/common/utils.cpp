@@ -270,7 +270,7 @@ bool skip_utf8_bom(pal::istream_t* stream)
     unsigned char bytes[3];
     stream->read(reinterpret_cast<char*>(bytes), 3);
     if ((stream->gcount() < 3) ||
-            (bytes[1] != 0xBB) || 
+            (bytes[1] != 0xBB) ||
             (bytes[2] != 0xBF))
     {
         // Reset to 0 if returning false.
@@ -450,4 +450,16 @@ void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& na
     dev_cfg->assign(dev_json_path);
 
     trace::verbose(_X("Runtime config is cfg=%s dev=%s"), json_path.c_str(), dev_json_path.c_str());
+}
+
+pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path)
+{
+    // If coreclr exists next to hostfxr, assume everything is local (e.g. self-contained)
+    pal::string_t fxr_dir = get_directory(fxr_path);
+    if (coreclr_exists_in_dir(fxr_dir))
+        return fxr_dir;
+
+    // Path to hostfxr is: <dotnet_root>/host/fxr/<version>/<hostfxr_file>
+    pal::string_t fxr_root = get_directory(fxr_dir);
+    return get_directory(get_directory(fxr_root));
 }

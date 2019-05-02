@@ -35,21 +35,23 @@ namespace
     {
         return load_fxr_and_get_delegate(
             hostfxr_delegate_type::winrt_activation,
-            [](const pal::string_t& host_path, pal::string_t* app_path_out)
+            [app_path](const pal::string_t& host_path, pal::string_t* config_path_out)
             {
-                pal::string_t app_path_local{ host_path };
-
-                // Change the extension to get the 'app'
-                size_t idx = app_path_local.rfind(_X(".dll"));
+                // Change the extension to get the 'app' and config
+                size_t idx = host_path.rfind(_X(".dll"));
                 assert(idx != pal::string_t::npos);
-                app_path_local.replace(app_path_local.begin() + idx, app_path_local.end(), _X(".winmd"));
 
-                *app_path_out = std::move(app_path_local);
+                pal::string_t app_path_local{ host_path };
+                app_path_local.replace(app_path_local.begin() + idx, app_path_local.end(), _X(".winmd"));
+                *app_path = std::move(app_path_local);
+
+                pal::string_t config_path_local { host_path };
+                config_path_local.replace(config_path_local.begin() + idx, config_path_local.end(), _X(".runtimeconfig.json"));
+                *config_path_out = std::move(config_path_local);
 
                 return StatusCode::Success;
             },
-            delegate,
-            app_path
+            delegate
         );
     }
 }

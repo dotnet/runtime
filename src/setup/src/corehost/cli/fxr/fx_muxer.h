@@ -4,22 +4,16 @@
 
 class corehost_init_t;
 class runtime_config_t;
-class fx_definition_t; 
+class fx_definition_t;
 struct fx_ver_t;
 struct host_startup_info_t;
 
+#include <corehost_context_contract.h>
+#include "error_codes.h"
 #include "fx_definition.h"
+#include "host_context.h"
 #include "host_interface.h"
 #include "host_startup_info.h"
-#include "error_codes.h"
-
-enum class coreclr_delegate_type
-{
-    invalid,
-    com_activation,
-    load_in_memory_assembly,
-    winrt_activation
-};
 
 class fx_muxer_t
 {
@@ -32,11 +26,22 @@ public:
         pal::char_t result_buffer[],
         int32_t buffer_size,
         int32_t* required_buffer_size);
-    static int load_runtime_and_get_delegate(
+    static int initialize_for_app(
         const host_startup_info_t& host_info,
-        host_mode_t mode,
+        int argc,
+        const pal::char_t* argv[],
+        hostfxr_handle *host_context_handle);
+    static int initialize_for_runtime_config(
+        const host_startup_info_t& host_info,
+        const pal::char_t * runtime_config_path,
+        hostfxr_handle *host_context_handle);
+    static int run_app(host_context_t *context);
+    static int get_runtime_delegate(
+        host_context_t *context,
         coreclr_delegate_type delegate_type,
         void** delegate);
+    static const host_context_t* get_active_host_context();
+    static int close_host_context(host_context_t *context);
 private:
     static int parse_args(
         const host_startup_info_t& host_info,
