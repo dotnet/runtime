@@ -229,7 +229,7 @@ EventPipeEventInstance* EventPipeBuffer::PeekNext(LARGE_INTEGER beforeTimeStamp)
     return GetNext(m_pLastPoppedEvent, beforeTimeStamp);
 }
 
-EventPipeEventInstance* EventPipeBuffer::PopNext(LARGE_INTEGER beforeTimeStamp)
+void EventPipeBuffer::PopNext(EventPipeEventInstance *pNext)
 {
     CONTRACTL
     {
@@ -241,14 +241,10 @@ EventPipeEventInstance* EventPipeBuffer::PopNext(LARGE_INTEGER beforeTimeStamp)
 
     _ASSERTE(m_state == READ_ONLY);
 
-    // Get the next event using the last popped event as a marker.
-    EventPipeEventInstance *pNext = PeekNext(beforeTimeStamp);
     if(pNext != NULL)
     {
         m_pLastPoppedEvent = pNext;
     }
-
-    return pNext;
 }
 
 EventPipeBufferState EventPipeBuffer::GetVolatileState()

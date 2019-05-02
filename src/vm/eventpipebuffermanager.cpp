@@ -542,7 +542,7 @@ void EventPipeBufferManager::WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_I
         {
             SpinLockHolder _slh(&m_lock);
             // Pop the event from the buffer.
-            pOldestContainingList->PopNextEvent(stopTimeStamp);
+            pOldestContainingList->PopNextEvent(pOldestContainingBuffer, pOldestInstance);
         }
     }
 
@@ -628,7 +628,7 @@ EventPipeEventInstance* EventPipeBufferManager::GetNextEvent()
     {
         SpinLockHolder _slh(&m_lock);
         // Pop the event from the buffer.
-        pOldestContainingList->PopNextEvent(stopTimeStamp);
+        pOldestContainingList->PopNextEvent(pOldestContainingBuffer, pOldestInstance);
     }
     
     // Return the oldest event that hasn't yet been processed.
@@ -974,34 +974,7 @@ void EventPipeBufferList::ConvertBufferToReadOnly(EventPipeBuffer* pNewReadBuffe
     }
 }
 
-EventPipeBuffer* EventPipeBufferList::TryGetReadBuffer(LARGE_INTEGER beforeTimeStamp, EventPipeBuffer* pNewReadBuffer)
-{
-    LIMITED_METHOD_CONTRACT;
-    _ASSERTE(EventPipe::IsBufferManagerLockOwnedByCurrentThread());
-
-    // is it possible that the read buffer has events that occur before 'beforeTimeStamp'?
-    if (pNewReadBuffer == NULL || pNewReadBuffer->GetCreationTimeStamp().QuadPart >= beforeTimeStamp.QuadPart)
-    {
-        return NULL;
-    }
-
-    // we can't read from a buffer while it is being simultaneously being written, we need to preempt the writer.
-    if (pNewReadBuffer->GetVolatileState() == EventPipeBufferState::WRITABLE)
-    {
-        {
-            SpinLockHolder _slh(m_pThread->GetLock());
-            if (m_pThread->GetWriteBuffer() == pNewReadBuffer)
-            {
-                m_pThread->SetWriteBuffer(nullptr);
-            }
-        }
-        _ASSERTE(pNewReadBuffer->GetVolatileState() == EventPipeBufferState::READ_ONLY);
-    }
-
-    return pNewReadBuffer;
-}
-
-EventPipeEventInstance* EventPipeBufferList::PeekNextEvent(LARGE_INTEGER beforeTimeStamp, EventPipeBuffer **pContainingBuffer)
+void EventPipeBufferList::PopNextEvent(EventPipeBuffer *pContainingBuffer, EventPipeEventInstance *pNext)
 {
     CONTRACTL
     {
@@ -1010,52 +983,6 @@ EventPipeEventInstance* EventPipeBufferList::PeekNextEvent(LARGE_INTEGER beforeT
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    EventPipeBuffer* pReadBuffer = TryGetReadBuffer(beforeTimeStamp, m_pHeadBuffer);
-
-    // If the read buffer is still NULL, then this list contains no buffers with events in the time range we care about.
-    if(pReadBuffer == NULL)
-    {
-        return NULL;
-    }
-
-    // Get the next event in the buffer.
-    EventPipeEventInstance *pNext = pReadBuffer->PeekNext(beforeTimeStamp);
-
-    // If the next event is NULL, then go to the next buffer.
-    if(pNext == NULL)
-    {
-        pReadBuffer = TryGetReadBuffer(beforeTimeStamp, pReadBuffer->GetNext());
-        if(pReadBuffer != NULL)
-        {
-            pNext = pReadBuffer->PeekNext(beforeTimeStamp);
-        }
-    }
-
-    // Set the containing buffer.
-    if(pNext != NULL && pContainingBuffer != NULL)
-    {
-        *pContainingBuffer = pReadBuffer;
-    }
-
-    // Make sure pContainingBuffer is properly set.
-    _ASSERTE((pNext == NULL) || (pNext != NULL && pContainingBuffer == NULL) || (pNext != NULL && *pContainingBuffer == pReadBuffer));
-    return pNext;
-}
-
-EventPipeEventInstance* EventPipeBufferList::PopNextEvent(LARGE_INTEGER beforeTimeStamp)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    // Get the next event.
-    EventPipeBuffer *pContainingBuffer = NULL;
-    EventPipeEventInstance *pNext = PeekNextEvent(beforeTimeStamp, &pContainingBuffer);
 
     // Check to see if we need to clean-up the buffer that contained the previously popped event.
     if(pContainingBuffer->GetPrevious() != NULL)
@@ -1072,10 +999,8 @@ EventPipeEventInstance* EventPipeBufferList::PopNextEvent(LARGE_INTEGER beforeTi
     // If the event is non-NULL, pop it.
     if(pNext != NULL && pContainingBuffer != NULL)
     {
-        pContainingBuffer->PopNext(beforeTimeStamp);
+        pContainingBuffer->PopNext(pNext);
     }
-
-    return pNext;
 }
 
 EventPipeThread* EventPipeBufferList::GetThread()
