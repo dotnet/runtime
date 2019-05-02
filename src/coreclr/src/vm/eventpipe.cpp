@@ -341,6 +341,8 @@ void EventPipe::Disable(EventPipeSessionID id)
     }
     CONTRACTL_END;
 
+    SetupThread();
+
     // Only perform the disable operation if the session ID
     // matches the current active session.
     if (id != (EventPipeSessionID)s_pSession)
@@ -752,11 +754,7 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
     }
     else if (s_pConfig->RundownEnabled())
     {
-        if (pThread == nullptr)
-        {
-            return;
-        }
-        
+        _ASSERTE(pThread != nullptr);
         BYTE *pData = payload.GetFlatData();
         if (pData != NULL)
         {
