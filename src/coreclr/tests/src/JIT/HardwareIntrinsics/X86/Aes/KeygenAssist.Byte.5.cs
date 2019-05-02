@@ -21,7 +21,7 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void KeygenAssistByte5()
         {
-            var test = new ImmUnaryOpTest__KeygenAssistByte5();
+            var test = new AesImmOpTest__KeygenAssistByte5();
 
             if (test.IsSupported)
             {
@@ -52,6 +52,12 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
+                if (Aes.IsSupported)
+                {
+                    // Validates passing a static member works, using pinning and Load
+                    test.RunClsVarScenario_Load();
+                }
+
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -67,14 +73,38 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local class works
                 test.RunClassLclFldScenario();
 
+                if (Aes.IsSupported)
+                {
+                    // Validates passing the field of a local class works, using pinning and Load
+                    test.RunClassLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
+
+                if (Aes.IsSupported)
+                {
+                    // Validates passing an instance member of a class works, using pinning and Load
+                    test.RunClassFldScenario_Load();
+                }
 
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
+                if (Aes.IsSupported)
+                {
+                    // Validates passing the field of a local struct works, using pinning and Load
+                    test.RunStructLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                if (Aes.IsSupported)
+                {
+                    // Validates passing an instance member of a struct works, using pinning and Load
+                    test.RunStructFldScenario_Load();
+                }
             }
             else
             {
@@ -89,7 +119,7 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class ImmUnaryOpTest__KeygenAssistByte5
+    public sealed unsafe class AesImmOpTest__KeygenAssistByte5
     {
         private struct TestStruct
         {
@@ -104,12 +134,26 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario(ImmUnaryOpTest__KeygenAssistByte5 testClass)
+            public void RunStructFldScenario(AesImmOpTest__KeygenAssistByte5 testClass)
             {
                 var result = Aes.KeygenAssist(_fld, 5);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(testClass._dataTable.outArrayPtr);
+            }
+
+            public void RunStructFldScenario_Load(AesImmOpTest__KeygenAssistByte5 testClass)
+            {
+                fixed (Vector128<Byte>* pFld = &_fld)
+                {
+                    var result = Aes.KeygenAssist(
+                        Aes.LoadVector128((Byte*)(pFld)),
+                        5
+                    );
+
+                    Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                    testClass.ValidateResult(testClass._dataTable.outArrayPtr);
+                }
             }
         }
 
@@ -126,13 +170,13 @@ namespace JIT.HardwareIntrinsics.X86
 
         private SimpleUnaryOpTest__DataTable<Byte, Byte> _dataTable;
 
-        static ImmUnaryOpTest__KeygenAssistByte5()
+        static AesImmOpTest__KeygenAssistByte5()
         {
 
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Byte>, byte>(ref _clsVar), ref Unsafe.As<Byte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<Byte>>());
         }
 
-        public ImmUnaryOpTest__KeygenAssistByte5()
+        public AesImmOpTest__KeygenAssistByte5()
         {
             Succeeded = true;
 
@@ -240,6 +284,22 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_dataTable.outArrayPtr);
         }
 
+        public void RunClsVarScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
+
+            fixed (Vector128<Byte>* pClsVar = &_clsVar)
+            {
+                var result = Aes.KeygenAssist(
+                    Aes.LoadVector128((Byte*)(pClsVar)),
+                    5
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_dataTable.outArrayPtr);
+            }
+        }
+
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -277,11 +337,29 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new ImmUnaryOpTest__KeygenAssistByte5();
+            var test = new AesImmOpTest__KeygenAssistByte5();
             var result = Aes.KeygenAssist(test._fld, 5);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.outArrayPtr);
+        }
+
+        public void RunClassLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
+
+            var test = new AesImmOpTest__KeygenAssistByte5();
+
+            fixed (Vector128<Byte>* pFld = &test._fld)
+            {
+                var result = Aes.KeygenAssist(
+                    Aes.LoadVector128((Byte*)(pFld)),
+                    5
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_dataTable.outArrayPtr);
+            }
         }
 
         public void RunClassFldScenario()
@@ -292,6 +370,22 @@ namespace JIT.HardwareIntrinsics.X86
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
+
+            fixed (Vector128<Byte>* pFld = &_fld)
+            {
+                var result = Aes.KeygenAssist(
+                    Aes.LoadVector128((Byte*)(pFld)),
+                    5
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_dataTable.outArrayPtr);
+            }
         }
 
         public void RunStructLclFldScenario()
@@ -305,12 +399,34 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_dataTable.outArrayPtr);
         }
 
+        public void RunStructLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
+
+            var test = TestStruct.Create();
+            var result = Aes.KeygenAssist(
+                Aes.LoadVector128((Byte*)(&test._fld)),
+                5
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.outArrayPtr);
+        }
+
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunStructFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()
