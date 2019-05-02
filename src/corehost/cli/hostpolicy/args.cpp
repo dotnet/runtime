@@ -57,7 +57,7 @@ void setup_shared_store_paths(const pal::string_t& tfm, host_mode_t host_mode,co
 
 bool parse_arguments(
     const hostpolicy_init_t& init,
-    const int argc, const pal::char_t* argv[], 
+    const int argc, const pal::char_t* argv[],
     arguments_t& args)
 {
     pal::string_t managed_application_path;
@@ -116,7 +116,7 @@ bool init_arguments(
     args.additional_deps_serialized = additional_deps_serialized;
 
     args.managed_application = managed_application_path;
-    if (!pal::realpath(&args.managed_application))
+    if (!args.managed_application.empty() && !pal::realpath(&args.managed_application))
     {
         trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
         return false;

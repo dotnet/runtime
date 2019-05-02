@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#include <atomic>
+#include <condition_variable>
 #include <mutex>
 #include <pal.h>
 #include "args.h"
@@ -14,109 +16,146 @@
 #include <error_codes.h>
 #include "breadcrumbs.h"
 #include <host_startup_info.h>
+#include <corehost_context_contract.h>
 #include "hostpolicy_context.h"
 
 namespace
 {
+    // Initialization information set through corehost_load. All other entry points assume this has already
+    // been set and use it to perform the requested operation. Note that this being initialized does not
+    // indicate that the runtime is loaded or that the runtime will be loaded (e.g. host commands).
     std::mutex g_init_lock;
     bool g_init_done;
     hostpolicy_init_t g_init;
 
-    std::shared_ptr<coreclr_t> g_coreclr;
+    // hostpolicy tracks the context used to load and initialize coreclr. This is the first context that
+    // is successfully created and used to load the runtime. There can only be one hostpolicy context.
+    std::mutex g_context_lock;
 
-    std::mutex g_lib_lock;
-    std::weak_ptr<coreclr_t> g_lib_coreclr;
+    // Tracks the hostpolicy context. This is the one and only hostpolicy context. It represents the information
+    // that hostpolicy will use or has already used to load and initialize coreclr. It will be set once a context
+    // is initialized and updated to hold coreclr once the runtime is loaded.
+    std::unique_ptr<hostpolicy_context_t> g_context;
 
-    int create_coreclr(const hostpolicy_context_t &context, host_mode_t mode, std::unique_ptr<coreclr_t> &coreclr)
+    // Tracks whether the hostpolicy context is initializing (from start of creation of the first context
+    // to loading coreclr). It will be false before initialization starts and after it succeeds or fails.
+    // Attempts to get/create a context should block if the first context is initializing (i.e. this is true).
+    // The condition variable is used to block on and signal changes to this state.
+    std::atomic<bool> g_context_initializing(false);
+    std::condition_variable g_context_initializing_cv;
+
+    int create_coreclr()
     {
-        // Verbose logging
-        if (trace::is_enabled())
+        int rc;
         {
-            context.coreclr_properties.log_properties();
+            std::lock_guard<std::mutex> context_lock { g_context_lock };
+            if (g_context == nullptr)
+            {
+                trace::error(_X("Hostpolicy has not been initialized"));
+                return StatusCode::HostInvalidState;
+            }
+
+            if (g_context->coreclr != nullptr)
+            {
+                trace::error(_X("CoreClr has already been loaded"));
+                return StatusCode::HostInvalidState;
+            }
+
+            // Verbose logging
+            if (trace::is_enabled())
+                g_context->coreclr_properties.log_properties();
+
+            std::vector<char> host_path;
+            pal::pal_clrstring(g_context->host_path, &host_path);
+            const char *app_domain_friendly_name = g_context->host_mode == host_mode_t::libhost ? "clr_libhost" : "clrhost";
+
+            // Create a CoreCLR instance
+            trace::verbose(_X("CoreCLR path = '%s', CoreCLR dir = '%s'"), g_context->clr_path.c_str(), g_context->clr_dir.c_str());
+            auto hr = coreclr_t::create(
+                g_context->clr_dir,
+                host_path.data(),
+                app_domain_friendly_name,
+                g_context->coreclr_properties,
+                g_context->coreclr);
+
+            if (!SUCCEEDED(hr))
+            {
+                trace::error(_X("Failed to create CoreCLR, HRESULT: 0x%X"), hr);
+                rc = StatusCode::CoreClrInitFailure;
+            }
+            else
+            {
+                rc = StatusCode::Success;
+            }
+
+            g_context_initializing.store(false);
         }
 
-        std::vector<char> host_path;
-        pal::pal_clrstring(context.host_path, &host_path);
-
-        const char *app_domain_friendly_name = mode == host_mode_t::libhost ? "clr_libhost" : "clrhost";
-
-        // Create a CoreCLR instance
-        trace::verbose(_X("CoreCLR path = '%s', CoreCLR dir = '%s'"), context.clr_path.c_str(), context.clr_dir.c_str());
-        auto hr = coreclr_t::create(
-            context.clr_dir,
-            host_path.data(),
-            app_domain_friendly_name,
-            context.coreclr_properties,
-            coreclr);
-
-        if (!SUCCEEDED(hr))
-        {
-            trace::error(_X("Failed to create CoreCLR, HRESULT: 0x%X"), hr);
-            return StatusCode::CoreClrInitFailure;
-        }
-
-        return StatusCode::Success;
+        g_context_initializing_cv.notify_all();
+        return rc;
     }
 
     int create_hostpolicy_context(
         hostpolicy_init_t &hostpolicy_init,
         const arguments_t &args,
-        bool breadcrumbs_enabled,
-        std::shared_ptr<hostpolicy_context_t> &context)
+        bool breadcrumbs_enabled)
     {
+        {
+            std::unique_lock<std::mutex> lock{ g_context_lock };
+            g_context_initializing_cv.wait(lock, [] { return !g_context_initializing.load(); });
+
+            const hostpolicy_context_t *existing_context = g_context.get();
+            if (existing_context != nullptr)
+            {
+                trace::info(_X("Host context has already been initialized"));
+                assert(existing_context->coreclr != nullptr);
+                return StatusCode::CoreHostAlreadyInitialized;
+            }
+
+            g_context_initializing.store(true);
+        }
+
+        g_context_initializing_cv.notify_all();
 
         std::unique_ptr<hostpolicy_context_t> context_local(new hostpolicy_context_t());
         int rc = context_local->initialize(hostpolicy_init, args, breadcrumbs_enabled);
         if (rc != StatusCode::Success)
-            return rc;
-
-        context = std::move(context_local);
-
-        return StatusCode::Success;
-    }
-}
-
-int get_or_create_coreclr(
-    hostpolicy_init_t &hostpolicy_init,
-    const arguments_t &args,
-    host_mode_t mode,
-    std::shared_ptr<coreclr_t> &coreclr)
-{
-    coreclr = g_lib_coreclr.lock();
-    if (coreclr != nullptr)
-    {
-        // [TODO] Validate the current CLR instance is acceptable for this request
-
-        trace::info(_X("Using existing CoreClr instance"));
-        return StatusCode::Success;
-    }
-
-    {
-        std::lock_guard<std::mutex> lock{ g_lib_lock };
-        coreclr = g_lib_coreclr.lock();
-        if (coreclr != nullptr)
         {
-            trace::info(_X("Using existing CoreClr instance"));
-            return StatusCode::Success;
+            {
+                std::lock_guard<std::mutex> lock{ g_context_lock };
+                g_context_initializing.store(false);
+            }
+
+            g_context_initializing_cv.notify_all();
+            return rc;
         }
 
-        hostpolicy_context_t context {};
-        int rc = context.initialize(hostpolicy_init, args, false /* enable_breadcrumbs */);
-        if (rc != StatusCode::Success)
-            return rc;
+        {
+            std::lock_guard<std::mutex> lock{ g_context_lock };
+            g_context.reset(context_local.release());
+        }
 
-        std::unique_ptr<coreclr_t> coreclr_local;
-        rc = create_coreclr(context, mode, coreclr_local);
-        if (rc != StatusCode::Success)
-            return rc;
-
-        assert(g_coreclr == nullptr);
-        g_coreclr = std::move(coreclr_local);
-        g_lib_coreclr = g_coreclr;
+        return StatusCode::Success;
     }
 
-    coreclr = g_coreclr;
-    return StatusCode::Success;
+    const hostpolicy_context_t* get_hostpolicy_context(bool require_runtime)
+    {
+        std::lock_guard<std::mutex> lock{ g_context_lock };
+        const hostpolicy_context_t *existing_context = g_context.get();
+        if (existing_context == nullptr)
+        {
+            trace::error(_X("Hostpolicy context has not been created"));
+            return nullptr;
+        }
+
+        if (require_runtime && existing_context->coreclr == nullptr)
+        {
+            trace::error(_X("Runtime has not been loaded and initialized"));
+            return nullptr;
+        }
+
+        return existing_context;
+    }
 }
 
 int run_host_command(
@@ -151,12 +190,13 @@ int run_host_command(
     return StatusCode::InvalidArgFailure;
 }
 
-int run_as_app(
-    const std::shared_ptr<coreclr_t> &coreclr,
+int run_app_for_context(
     const hostpolicy_context_t &context,
     int argc,
     const pal::char_t **argv)
 {
+    assert(context.coreclr != nullptr);
+
     // Initialize clr strings for arguments
     std::vector<std::vector<char>> argv_strs(argc);
     std::vector<const char*> argv_local(argc);
@@ -192,7 +232,7 @@ int run_as_app(
 
     // Execute the application
     unsigned int exit_code;
-    auto hr = g_coreclr->execute_assembly(
+    auto hr = context.coreclr->execute_assembly(
         argv_local.size(),
         argv_local.data(),
         managed_app.data(),
@@ -207,7 +247,7 @@ int run_as_app(
     trace::info(_X("Execute managed assembly exit code: 0x%X"), exit_code);
 
     // Shut down the CoreCLR
-    hr = g_coreclr->shutdown(reinterpret_cast<int*>(&exit_code));
+    hr = context.coreclr->shutdown(reinterpret_cast<int*>(&exit_code));
     if (!SUCCEEDED(hr))
     {
         trace::warning(_X("Failed to shut down CoreCLR, HRESULT: 0x%X"), hr);
@@ -216,6 +256,15 @@ int run_as_app(
     return exit_code;
 
     // The breadcrumb destructor will join to the background thread to finish writing
+}
+
+int run_app(const int argc, const pal::char_t *argv[])
+{
+    const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ true);
+    if (context == nullptr)
+        return StatusCode::HostInvalidState;
+
+    return run_app_for_context(*context, argc, argv);
 }
 
 void trace_hostpolicy_entrypoint_invocation(const pal::string_t& entryPointName)
@@ -264,7 +313,7 @@ SHARED_API int corehost_load(host_interface_t* init)
 }
 
 int corehost_init(
-    hostpolicy_init_t &hostpolicy_init,
+    const hostpolicy_init_t &hostpolicy_init,
     const int argc,
     const pal::char_t* argv[],
     const pal::string_t& location,
@@ -320,26 +369,16 @@ SHARED_API int corehost_main(const int argc, const pal::char_t* argv[])
     if (rc != StatusCode::Success)
         return rc;
 
-    std::shared_ptr<hostpolicy_context_t> context;
-    rc = create_hostpolicy_context(g_init, args, true /* breadcrumbs_enabled */, context);
+    assert(g_context == nullptr);
+    rc = create_hostpolicy_context(g_init, args, true /* breadcrumbs_enabled */);
     if (rc != StatusCode::Success)
         return rc;
 
-    std::unique_ptr<coreclr_t> coreclr;
-    rc = create_coreclr(*context, g_init.host_mode, coreclr);
+    rc = create_coreclr();
     if (rc != StatusCode::Success)
         return rc;
 
-    assert(g_coreclr == nullptr);
-    g_coreclr = std::move(coreclr);
-
-    {
-        std::lock_guard<std::mutex> lock{ g_lib_lock };
-        g_lib_coreclr = g_coreclr;
-    }
-
-    rc = run_as_app(g_coreclr, *context, args.app_argc, args.app_argv);
-    return rc;
+    return run_app(args.app_argc, args.app_argv);
 }
 
 SHARED_API int corehost_main_with_output_buffer(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size)
@@ -382,7 +421,7 @@ SHARED_API int corehost_main_with_output_buffer(const int argc, const pal::char_
     return rc;
 }
 
-int corehost_libhost_init(hostpolicy_init_t &hostpolicy_init, const pal::string_t& location, arguments_t& args)
+int corehost_libhost_init(const hostpolicy_init_t &hostpolicy_init, const pal::string_t& location, arguments_t& args)
 {
     // Host info should always be valid in the delegate scenario
     assert(hostpolicy_init.host_info.is_valid(host_mode_t::libhost));
@@ -392,8 +431,16 @@ int corehost_libhost_init(hostpolicy_init_t &hostpolicy_init, const pal::string_
 
 namespace
 {
-    int get_coreclr_delegate(const std::shared_ptr<coreclr_t> &coreclr, coreclr_delegate_type type, void** delegate)
+    int get_delegate(coreclr_delegate_type type, void **delegate)
     {
+        if (delegate == nullptr)
+            return StatusCode::InvalidArgFailure;
+
+        const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ true);
+        if (context == nullptr)
+            return StatusCode::HostInvalidState;
+
+        coreclr_t *coreclr = context->coreclr.get();
         switch (type)
         {
         case coreclr_delegate_type::com_activation:
@@ -418,26 +465,208 @@ namespace
             return StatusCode::LibHostInvalidArgs;
         }
     }
+
+    int get_property(const pal::char_t *key, const pal::char_t **value)
+    {
+        if (key == nullptr)
+            return StatusCode::InvalidArgFailure;
+
+        const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ false);
+        if (context == nullptr)
+            return StatusCode::HostInvalidState;
+
+        if (!context->coreclr_properties.try_get(key, value))
+            return StatusCode::HostPropertyNotFound;
+
+        return StatusCode::Success;
+    }
+
+    int set_property(const pal::char_t *key, const pal::char_t *value)
+    {
+        if (key == nullptr)
+            return StatusCode::InvalidArgFailure;
+
+        std::lock_guard<std::mutex> lock{ g_context_lock };
+        if (g_context == nullptr || g_context->coreclr != nullptr)
+        {
+            trace::error(_X("Setting properties is only allowed before runtime has been loaded and initialized"));
+            return HostInvalidState;
+        }
+
+        if (value != nullptr)
+        {
+            g_context->coreclr_properties.add(key, value);
+        }
+        else
+        {
+            g_context->coreclr_properties.remove(key);
+        }
+
+        return StatusCode::Success;
+    }
+
+    int get_properties(size_t * count, const pal::char_t **keys, const pal::char_t **values)
+    {
+        if (count == nullptr)
+            return StatusCode::InvalidArgFailure;
+
+        const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ false);
+        if (context == nullptr)
+            return StatusCode::HostInvalidState;
+
+        size_t actualCount = context->coreclr_properties.count();
+        size_t input_count = *count;
+        *count = actualCount;
+        if (input_count < actualCount || keys == nullptr || values == nullptr)
+            return StatusCode::HostApiBufferTooSmall;
+
+        int index = 0;
+        std::function<void (const pal::string_t &,const pal::string_t &)> callback = [&] (const pal::string_t& key, const pal::string_t& value)
+        {
+            keys[index] = key.data();
+            values[index] = value.data();
+            ++index;
+        };
+        context->coreclr_properties.enumerate(callback);
+
+        return StatusCode::Success;
+    }
 }
 
-SHARED_API int corehost_get_coreclr_delegate(coreclr_delegate_type type, void** delegate)
+// Initializes hostpolicy. Calculates everything required to start the runtime and creates a context to track
+// that information
+//
+// Parameters:
+//    init_request
+//      struct containing information about the initialization request. If hostpolicy is not yet initialized,
+//      this is expected to be nullptr. If hostpolicy is already initialized, this should not be nullptr and
+//      this function will use the struct to check for compatibility with the way in which hostpolicy was
+//      previously initialized.
+//    options
+//      initialization options
+//    context_contract
+//      [out] if initialization is successful, populated with a contract for performing operations on hostpolicy
+//
+// Return value:
+//    Success                     - Initialization was succesful
+//    CoreHostAlreadyInitialized  - Request is compatible with already initialized hostpolicy
+// [TODO]
+//    CoreHostDifferentProperties - Request has runtime properties that differ from already initialized hostpolicy
+//
+// This function does not load the runtime
+//
+// If a previous request to initialize hostpolicy was made, but the runtime was not yet loaded, this function will
+// block until the runtime is loaded.
+//
+// This function assumes corehost_load has already been called. It uses the init information set through that
+// call - not the struct passed into this function - to create a context.
+//
+SHARED_API int __cdecl corehost_initialize(const corehost_initialize_request_t *init_request, int32_t options, /*out*/ corehost_context_contract *context_contract)
 {
+    if (context_contract == nullptr)
+        return StatusCode::InvalidArgFailure;
+
+    bool wait_for_initialized = (options & intialization_options_t::wait_for_initialized) != 0;
+
+    {
+        std::unique_lock<std::mutex> lock { g_context_lock };
+        bool already_initializing = g_context_initializing.load();
+        bool already_initialized = g_context.get() != nullptr;
+
+        if (wait_for_initialized)
+        {
+            trace::verbose(_X("Initialization option to wait for initialize request is set"));
+            if (init_request == nullptr)
+            {
+                trace::error(_X("Initialization request is expected to be non-null when waiting for initialize request option is set"));
+                return StatusCode::InvalidArgFailure;
+            }
+
+            // If we are not already initializing or done initializing, wait until another context initialization has started
+            if (!already_initialized && !already_initializing)
+            {
+                trace::info(_X("Waiting for another request to initialize hostpolicy"));
+                g_context_initializing_cv.wait(lock, [&] { return g_context_initializing.load(); });
+            }
+        }
+        else
+        {
+            if (init_request != nullptr && !already_initialized && !already_initializing)
+            {
+                trace::error(_X("Initialization request is expected to be null for the first initialization request"));
+                return StatusCode::InvalidArgFailure;
+            }
+
+            if (init_request == nullptr && (already_initializing || already_initialized))
+            {
+                trace::error(_X("Initialization request is expected to be non-null for requests other than the first one"));
+                return StatusCode::InvalidArgFailure;
+            }
+        }
+    }
+
+    // Trace entry point information and initialize args using previously set init information.
+    // This function does not modify any global state.
     arguments_t args;
-
-    int rc = corehost_libhost_init(g_init, _X("corehost_get_coreclr_delegate"), args);
+    int rc = corehost_libhost_init(g_init, _X("corehost_initialize"), args);
     if (rc != StatusCode::Success)
         return rc;
 
-    std::shared_ptr<coreclr_t> coreclr;
-    rc = get_or_create_coreclr(g_init, args, g_init.host_mode, coreclr);
-    if (rc != StatusCode::Success)
-        return rc;
+    if (wait_for_initialized)
+    {
+        // Wait for context initialization to complete
+        std::unique_lock<std::mutex> lock{ g_context_lock };
+        g_context_initializing_cv.wait(lock, [] { return !g_context_initializing.load(); });
 
-    return get_coreclr_delegate(coreclr, type, delegate);
+        const hostpolicy_context_t *existing_context = g_context.get();
+        if (existing_context == nullptr || existing_context->coreclr == nullptr)
+        {
+            trace::info(_X("Option to wait for initialize request was set, but that request did not result in initialization"));
+            return StatusCode::HostInvalidState;
+        }
+
+        rc = StatusCode::CoreHostAlreadyInitialized;
+    }
+    else
+    {
+        rc = create_hostpolicy_context(g_init, args, g_init.host_mode != host_mode_t::libhost);
+        if (rc != StatusCode::Success && rc != StatusCode::CoreHostAlreadyInitialized)
+            return rc;
+    }
+
+    if (rc == StatusCode::CoreHostAlreadyInitialized)
+    {
+        // [TODO] Compare the current context with this request (properties)
+    }
+
+    context_contract->version = sizeof(corehost_context_contract);
+    context_contract->get_property_value = get_property;
+    context_contract->set_property_value = set_property;
+    context_contract->get_properties = get_properties;
+    context_contract->load_runtime = create_coreclr;
+    context_contract->run_app = run_app;
+    context_contract->get_runtime_delegate = get_delegate;
+
+    return rc;
 }
 
 SHARED_API int corehost_unload()
 {
+    {
+        std::lock_guard<std::mutex> lock{ g_context_lock };
+        if (g_context != nullptr && g_context->coreclr != nullptr)
+            return StatusCode::Success;
+
+        // Allow re-initializing if runtime has not been loaded
+        g_context.reset();
+        g_context_initializing.store(false);
+    }
+
+    g_context_initializing_cv.notify_all();
+
+    std::lock_guard<std::mutex> init_lock{ g_init_lock };
+    g_init_done = false;
+
     return StatusCode::Success;
 }
 

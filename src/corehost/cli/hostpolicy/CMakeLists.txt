@@ -42,6 +42,7 @@ set(HEADERS
     ./deps_resolver.h
     ./hostpolicy_context.h
     ./hostpolicy_init.h
+    ../corehost_context_contract.h
     ../runtime_config.h
     ../json/casablanca/include/cpprest/json.h
     ../fxr/fx_ver.h
