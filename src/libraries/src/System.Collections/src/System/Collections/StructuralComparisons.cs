@@ -8,14 +8,14 @@ namespace System.Collections
 {
     public static class StructuralComparisons
     {
-        private static volatile IComparer s_StructuralComparer;
-        private static volatile IEqualityComparer s_StructuralEqualityComparer;
+        private static volatile IComparer? s_StructuralComparer;
+        private static volatile IEqualityComparer? s_StructuralEqualityComparer;
 
         public static IComparer StructuralComparer
         {
             get
             {
-                IComparer comparer = s_StructuralComparer;
+                IComparer? comparer = s_StructuralComparer;
                 if (comparer == null)
                 {
                     comparer = new StructuralComparer();
@@ -29,7 +29,7 @@ namespace System.Collections
         {
             get
             {
-                IEqualityComparer comparer = s_StructuralEqualityComparer;
+                IEqualityComparer? comparer = s_StructuralEqualityComparer;
                 if (comparer == null)
                 {
                     comparer = new StructuralEqualityComparer();
@@ -42,11 +42,11 @@ namespace System.Collections
 
     internal sealed class StructuralEqualityComparer : IEqualityComparer
     {
-        public new bool Equals(object x, object y)
+        public new bool Equals(object? x, object? y)
         {
             if (x != null)
             {
-                IStructuralEquatable seObj = x as IStructuralEquatable;
+                IStructuralEquatable? seObj = x as IStructuralEquatable;
 
                 if (seObj != null)
                 {
@@ -70,7 +70,7 @@ namespace System.Collections
         {
             if (obj == null) return 0;
 
-            IStructuralEquatable seObj = obj as IStructuralEquatable;
+            IStructuralEquatable? seObj = obj as IStructuralEquatable;
 
             if (seObj != null)
             {
@@ -83,12 +83,12 @@ namespace System.Collections
 
     internal sealed class StructuralComparer : IComparer
     {
-        public int Compare(object x, object y)
+        public int Compare(object? x, object? y)
         {
             if (x == null) return y == null ? 0 : -1;
             if (y == null) return 1;
 
-            IStructuralComparable scX = x as IStructuralComparable;
+            IStructuralComparable? scX = x as IStructuralComparable;
 
             if (scX != null)
             {

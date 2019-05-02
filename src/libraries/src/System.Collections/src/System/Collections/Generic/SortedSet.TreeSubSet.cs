@@ -125,8 +125,8 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    Node current = root;
-                    T result = default(T);
+                    Node? current = root;
+                    T result = default(T)!;
 
                     while (current != null)
                     {
@@ -155,8 +155,8 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    Node current = root;
-                    T result = default(T);
+                    Node? current = root;
+                    T result = default(T)!;
 
                     while (current != null)
                     {
@@ -192,7 +192,7 @@ namespace System.Collections.Generic
                 // The maximum height of a red-black tree is 2*lg(n+1).
                 // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
                 Stack<Node> stack = new Stack<Node>(2 * (int)SortedSet<T>.Log2(count + 1)); // this is not exactly right if count is out of date, but the stack can grow
-                Node current = root;
+                Node? current = root;
                 while (current != null)
                 {
                     if (IsWithinRange(current.Item))
@@ -218,7 +218,7 @@ namespace System.Collections.Generic
                         return false;
                     }
 
-                    Node node = current.Right;
+                    Node? node = current.Right;
                     while (node != null)
                     {
                         if (IsWithinRange(node.Item))
@@ -271,7 +271,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            internal override SortedSet<T>.Node FindNode(T item)
+            internal override SortedSet<T>.Node? FindNode(T item)
             {
                 if (!IsWithinRange(item))
                 {
