@@ -11,6 +11,33 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         /// <summary>
+        /// Writes the pre-encoded property name and <see cref="DateTimeOffset"/> value (as a JSON string) as part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="value">The value to be written as a JSON string as part of the name/value pair.</param>
+        /// <remarks>
+        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        /// <remarks>
+        /// Writes the <see cref="DateTimeOffset"/> using the round-trippable ('O') <see cref="StandardFormat"/> , for example: 2017-06-12T05:30:45.7680000-07:00.
+        /// </remarks>
+        public void WriteString(JsonEncodedText propertyName, DateTimeOffset value)
+            => WriteStringHelper(propertyName.EncodedUtf8Bytes, value);
+
+        private void WriteStringHelper(ReadOnlySpan<byte> utf8PropertyName, DateTimeOffset value)
+        {
+            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxTokenSize);
+
+            WriteStringByOptions(utf8PropertyName, value);
+
+            SetFlagToAddListSeparatorBeforeNextItem();
+            _tokenType = JsonTokenType.String;
+        }
+
+        /// <summary>
         /// Writes the property name and <see cref="DateTimeOffset"/> value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>

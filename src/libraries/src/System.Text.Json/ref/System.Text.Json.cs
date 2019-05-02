@@ -101,6 +101,18 @@ namespace System.Text.Json
             System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         }
     }
+    public readonly partial struct JsonEncodedText : System.IEquatable<System.Text.Json.JsonEncodedText>
+    {
+        private readonly object _dummy;
+        public System.ReadOnlySpan<byte> EncodedUtf8Bytes { get { throw null; } }
+        public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<byte> utf8Value) { throw null; }
+        public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<char> value) { throw null; }
+        public static System.Text.Json.JsonEncodedText Encode(string value) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.Text.Json.JsonEncodedText other) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public override string ToString() { throw null; }
+    }
     public readonly partial struct JsonProperty
     {
         private readonly object _dummy;
@@ -225,6 +237,7 @@ namespace System.Text.Json
         public void WriteBoolean(System.ReadOnlySpan<byte> utf8PropertyName, bool value) { }
         public void WriteBoolean(System.ReadOnlySpan<char> propertyName, bool value) { }
         public void WriteBoolean(string propertyName, bool value) { }
+        public void WriteBoolean(System.Text.Json.JsonEncodedText propertyName, bool value) { }
         public void WriteBooleanValue(bool value) { }
         public void WriteCommentValue(System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteCommentValue(System.ReadOnlySpan<char> value) { }
@@ -234,6 +247,7 @@ namespace System.Text.Json
         public void WriteNull(System.ReadOnlySpan<byte> utf8PropertyName) { }
         public void WriteNull(System.ReadOnlySpan<char> propertyName) { }
         public void WriteNull(string propertyName) { }
+        public void WriteNull(System.Text.Json.JsonEncodedText propertyName) { }
         public void WriteNullValue() { }
         public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, decimal value) { }
         public void WriteNumber(System.ReadOnlySpan<byte> utf8PropertyName, double value) { }
@@ -262,6 +276,15 @@ namespace System.Text.Json
         public void WriteNumber(string propertyName, uint value) { }
         [System.CLSCompliantAttribute(false)]
         public void WriteNumber(string propertyName, ulong value) { }
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, decimal value) { }
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, double value) { }
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, int value) { }
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, long value) { }
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, float value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, uint value) { }
+        [System.CLSCompliantAttribute(false)]
+        public void WriteNumber(System.Text.Json.JsonEncodedText propertyName, ulong value) { }
         public void WriteNumberValue(decimal value) { }
         public void WriteNumberValue(double value) { }
         public void WriteNumberValue(int value) { }
@@ -275,34 +298,47 @@ namespace System.Text.Json
         public void WriteStartArray(System.ReadOnlySpan<byte> utf8PropertyName) { }
         public void WriteStartArray(System.ReadOnlySpan<char> propertyName) { }
         public void WriteStartArray(string propertyName) { }
+        public void WriteStartArray(System.Text.Json.JsonEncodedText propertyName) { }
         public void WriteStartObject() { }
         public void WriteStartObject(System.ReadOnlySpan<byte> utf8PropertyName) { }
         public void WriteStartObject(System.ReadOnlySpan<char> propertyName) { }
         public void WriteStartObject(string propertyName) { }
+        public void WriteStartObject(System.Text.Json.JsonEncodedText propertyName) { }
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.DateTime value) { }
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.DateTimeOffset value) { }
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.Guid value) { }
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.ReadOnlySpan<char> value) { }
         public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, string value) { }
+        public void WriteString(System.ReadOnlySpan<byte> utf8PropertyName, System.Text.Json.JsonEncodedText value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.DateTime value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.DateTimeOffset value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.Guid value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, System.ReadOnlySpan<char> value) { }
         public void WriteString(System.ReadOnlySpan<char> propertyName, string value) { }
+        public void WriteString(System.ReadOnlySpan<char> propertyName, System.Text.Json.JsonEncodedText value) { }
         public void WriteString(string propertyName, System.DateTime value) { }
         public void WriteString(string propertyName, System.DateTimeOffset value) { }
         public void WriteString(string propertyName, System.Guid value) { }
         public void WriteString(string propertyName, System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteString(string propertyName, System.ReadOnlySpan<char> value) { }
         public void WriteString(string propertyName, string value) { }
+        public void WriteString(string propertyName, System.Text.Json.JsonEncodedText value) { }
+        public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.DateTime value) { }
+        public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.DateTimeOffset value) { }
+        public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.Guid value) { }
+        public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.ReadOnlySpan<byte> utf8Value) { }
+        public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.ReadOnlySpan<char> value) { }
+        public void WriteString(System.Text.Json.JsonEncodedText propertyName, string value) { }
+        public void WriteString(System.Text.Json.JsonEncodedText propertyName, System.Text.Json.JsonEncodedText value) { }
         public void WriteStringValue(System.DateTime value) { }
         public void WriteStringValue(System.DateTimeOffset value) { }
         public void WriteStringValue(System.Guid value) { }
         public void WriteStringValue(System.ReadOnlySpan<byte> utf8Value) { }
         public void WriteStringValue(System.ReadOnlySpan<char> value) { }
         public void WriteStringValue(string value) { }
+        public void WriteStringValue(System.Text.Json.JsonEncodedText value) { }
     }
 }
 namespace System.Text.Json.Serialization

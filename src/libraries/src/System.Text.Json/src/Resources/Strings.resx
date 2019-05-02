@@ -138,11 +138,14 @@
   <data name="CannotTranscodeInvalidUtf8" xml:space="preserve">
     <value>Cannot transcode invalid UTF-8 JSON text to UTF-16 string.</value>
   </data>
-  <data name="CannotWriteInvalidUTF16" xml:space="preserve">
-    <value>Cannot write invalid UTF-16 text as JSON. Invalid surrogate value: '{0}'.</value>
+  <data name="CannotTranscodeInvalidUtf16" xml:space="preserve">
+    <value>Cannot transcode invalid UTF-16 string to UTF-8 JSON text.</value>
   </data>
-  <data name="CannotWriteInvalidUTF8" xml:space="preserve">
-    <value>Cannot write invalid UTF-8 text as JSON. Invalid input: '{0}'.</value>
+  <data name="CannotEncodeInvalidUTF16" xml:space="preserve">
+    <value>Cannot encode invalid UTF-16 text as JSON. Invalid surrogate value: '{0}'.</value>
+  </data>
+  <data name="CannotEncodeInvalidUTF8" xml:space="preserve">
+    <value>Cannot encode invalid UTF-8 text as JSON. Invalid input: '{0}'.</value>
   </data>
   <data name="CannotWritePropertyWithinArray" xml:space="preserve">
     <value>Cannot write a JSON property within an array or as the first JSON token. Current token type is '{0}'.</value>
@@ -238,7 +241,7 @@
     <value>The maximum configured depth of {0} has been exceeded. Cannot read next JSON object.</value>
   </data>
   <data name="PropertyNameTooLarge" xml:space="preserve">
-    <value>The JSON property name of length {0} is too large and not supported by the JSON writer.</value>
+    <value>The JSON property name of length {0} is too large and not supported.</value>
   </data>
   <data name="FormatDecimal" xml:space="preserve">
     <value>The JSON value is either too large or too small for a Decimal.</value>
@@ -274,7 +277,7 @@
     <value>.NET number values such as positive and negative infinity cannot be written as valid JSON.</value>
   </data>
   <data name="ValueTooLarge" xml:space="preserve">
-    <value>The JSON value of length {0} is too large and not supported by the JSON writer.</value>
+    <value>The JSON value of length {0} is too large and not supported.</value>
   </data>
   <data name="ZeroDepthAtEnd" xml:space="preserve">
     <value>Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed.</value>
