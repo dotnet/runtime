@@ -736,7 +736,7 @@ void ConfigMethodRange::InitRanges(const wchar_t* rangeStr, unsigned capacity)
     assert(m_ranges == nullptr);
     assert(m_lastRange == 0);
 
-    // Flag any crazy-looking requests
+    // Flag any strange-looking requests
     assert(capacity < 100000);
 
     if (rangeStr == nullptr)

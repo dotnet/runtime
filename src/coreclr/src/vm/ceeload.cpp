@@ -1519,7 +1519,7 @@ PTR_Module Module::ComputePreferredZapModule(Module * pDefinitionModule,
 }
 
 //
-// Is pModule likely a dependency of pOtherModule? Heuristic used by preffered zap module algorithm.
+// Is pModule likely a dependency of pOtherModule? Heuristic used by preferred zap module algorithm.
 // It can return both false positives and negatives.
 //
 static bool IsLikelyDependencyOf(Module * pModule, Module * pOtherModule)

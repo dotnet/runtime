@@ -189,7 +189,7 @@ HRESULT ProfilingAPIAttachClient::AttachProfiler(
 
     HRESULT hr;
 
-    // Is cbClientData just crazy-sick-overflow big?
+    // Is cbClientData just huge?
     if (cbClientData >= 0xFFFFffffUL - sizeof(AttachRequestMessage))
     {
         return E_OUTOFMEMORY;
