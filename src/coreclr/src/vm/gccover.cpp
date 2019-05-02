@@ -1692,22 +1692,38 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
     FrameWithCookie<GCFrame> gcFrame;
-    DWORD_PTR retVal = 0;
+
+    OBJECTREF* retPointer = 0;
+    UINT numObjRefs = 1;
+#if defined(UNIX_AMD64_ABI) || defined(_TARGET_ARM64_)
+    // Multireg return.
+    DWORD_PTR retValArray[2];
+    retPointer = (OBJECTREF*)retValArray;
+#else // ARM32, x86, AMD64 Windows.
+    DWORD_PTR retVal;
+    retPointer = (OBJECTREF*)&retVal;
+#endif
 
     if (afterCallProtect)   // Do I need to protect return value?
-    {         
-#ifdef _TARGET_AMD64_
+    {
+#if defined(UNIX_AMD64_ABI)
+        numObjRefs = 2;
+        retValArray[0] = regs->Rax;
+        retValArray[1] = regs->Rdx;
+#elif defined(_TARGET_AMD64_)
         retVal = regs->Rax;
 #elif defined(_TARGET_X86_)
         retVal = regs->Eax;
 #elif defined(_TARGET_ARM_)
         retVal = regs->R0;
 #elif defined(_TARGET_ARM64_)
-        retVal = regs->X0;
+        numObjRefs = 2;
+        retValArray[0] = regs->X0;
+        retValArray[1] = regs->X1;
 #else
         PORTABILITY_ASSERT("DoGCStress - return register");
 #endif
-        gcFrame.Init(pThread, (OBJECTREF*) &retVal, 1, TRUE);
+        gcFrame.Init(pThread, retPointer, numObjRefs, TRUE);
     }
 #endif // _TARGET_*
 
@@ -1743,23 +1759,25 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
 
     CONSISTENCY_CHECK(!pThread->HasPendingGCStressInstructionUpdate());
 
-#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_) || defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
     if (afterCallProtect) 
     {
-#ifdef _TARGET_AMD64_
+#if defined(UNIX_AMD64_ABI)
+        regs->Rax = retValArray[0];
+        regs->Rdx = retValArray[1];
+#elif  _TARGET_AMD64_
         regs->Rax = retVal;
 #elif defined(_TARGET_X86_)
         regs->Eax = retVal;
 #elif defined(_TARGET_ARM_)
         regs->R0 = retVal;
 #elif defined(_TARGET_ARM64_)
-        regs->X[0] = retVal;
+        regs->X0 = retValArray[0];
+        regs->X1 = retValArray[1];
 #else
         PORTABILITY_ASSERT("DoGCStress - return register");
 #endif
         gcFrame.Pop();
     }
-#endif // _TARGET_*
 
 #if !defined(USE_REDIRECT_FOR_GCSTRESS)
     frame.Pop(pThread);
