@@ -22,7 +22,9 @@ namespace System.Text.Json.Serialization
             }
 
             // Determine if we are done enumerating properties.
-            if (state.Current.PropertyIndex != classInfo.PropertyCount)
+            // If the ClassType is unknown, there will be a policy property applied. There is probably
+            // a better way to identify policy properties- maybe not put them in the normal property bag?
+            if (classInfo.ClassType != ClassType.Unknown && state.Current.PropertyIndex != classInfo.PropertyCount)
             {
                 HandleObject(options, writer, ref state);
                 return false;

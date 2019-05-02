@@ -29,7 +29,11 @@ namespace System.Text.Json.Serialization
                 return;
             }
 
-            if (jsonPropertyInfo == null || state.Current.JsonClassInfo.ClassType == ClassType.Unknown)
+            if (jsonPropertyInfo == null)
+            {
+                jsonPropertyInfo = state.Current.JsonClassInfo.CreateRootObject(options);
+            }
+            else if (state.Current.JsonClassInfo.ClassType == ClassType.Unknown)
             {
                 jsonPropertyInfo = state.Current.JsonClassInfo.CreatePolymorphicProperty(jsonPropertyInfo, typeof(object), options);
             }
