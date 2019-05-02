@@ -129,7 +129,7 @@ public:
 
     // From the time this function returns until ResumeWriteEvent() is called a suspended state will 
     // be in effect that blocks all WriteEvent activity. All existing buffers will be in the 
-    // PENDING_FLUSH state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to 
+    // READ_ONLY state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to 
     // WriteEvent that start during the suspension period or were in progress but hadn't yet recorded 
     // their event into a buffer before the start of the suspension period will return false and the 
     // event will not be recorded. Any events that not recorded as a result of this suspension will be 
@@ -197,7 +197,8 @@ public:
     // Get the count of buffers in the list.
     unsigned int GetCount() const;
 
-    // TODO
+    // Pop the event from the buffer, and potentially clean-up the previous buffer
+    // pNext is expected to be the last event returned from TryGetBuffer()->PeekNext()
     void PopNextEvent(EventPipeBuffer *pContainingBuffer, EventPipeEventInstance *pNext);
 
     // Get the thread associated with this list.

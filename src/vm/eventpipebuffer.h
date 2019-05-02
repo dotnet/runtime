@@ -146,10 +146,11 @@ public:
     // Input of NULL gets the first event.
     EventPipeEventInstance* GetNext(EventPipeEventInstance *pEvent, LARGE_INTEGER beforeTimeStamp);
 
-    // Get the next event from the buffer, but don't mark it read.
+    // Get the next event from the buffer
     EventPipeEventInstance* PeekNext(LARGE_INTEGER beforeTimeStamp);
 
-    // TODO
+    // Advance the buffer to the next event
+    // pEvent is expected to be the last event returned from PeekNext()
     void PopNext(EventPipeEventInstance *pEvent);
 
     // Check the state of the buffer
