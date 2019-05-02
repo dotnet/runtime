@@ -237,7 +237,7 @@ namespace Microsoft.Reflection
         public static bool IsSealed(this Type type) { return type.GetTypeInfo().IsSealed; }
         public static bool IsValueType(this Type type) { return type.GetTypeInfo().IsValueType; }
         public static bool IsGenericType(this Type type) { return type.IsConstructedGenericType; }
-        public static Type BaseType(this Type type) { return type.GetTypeInfo().BaseType; }
+        public static Type? BaseType(this Type type) { return type.GetTypeInfo().BaseType; }
         public static Assembly Assembly(this Type type) { return type.GetTypeInfo().Assembly; }
         public static IEnumerable<PropertyInfo> GetProperties(this Type type)
         {
@@ -247,7 +247,7 @@ namespace Microsoft.Reflection
             return type.GetRuntimeProperties();
 #endif
         }
-        public static MethodInfo GetGetMethod(this PropertyInfo propInfo) { return propInfo.GetMethod; }
+        public static MethodInfo? GetGetMethod(this PropertyInfo propInfo) { return propInfo.GetMethod; }
         public static Type[] GetGenericArguments(this Type type) { return type.GenericTypeArguments; }
         
         public static MethodInfo[] GetMethods(this Type type, BindingFlags flags)
@@ -344,7 +344,7 @@ namespace Microsoft.Reflection
         //
         // FieldInfo extension methods
         //
-        public static object GetRawConstantValue(this FieldInfo fi)
+        public static object? GetRawConstantValue(this FieldInfo fi)
         { return fi.GetValue(null); }
 
         //
