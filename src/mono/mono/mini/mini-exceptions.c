@@ -1283,7 +1283,7 @@ mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx, MonoDomain 
 			if (func (&frame, NULL, user_data))
 				break;
 		}
-		g_free (ips);
+		g_slist_free (ips);
 		return;
 	}
 #endif

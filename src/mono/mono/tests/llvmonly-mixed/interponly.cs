@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Runtime.CompilerServices;
+using System.IO;
+using System.IO.IsolatedStorage;
 
 //
 // This assembly is not AOT-ed, so all calls into it transition to the interpreter
@@ -66,6 +68,24 @@ public class InterpOnly : InterpOnlyIFace
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static int entry_sig (byte b1, byte b2, byte b3, byte b4, byte b5, byte b6) {
 		return b1 + b2 + b3 + b4 + b5 + b6;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static void try_after_jitonly_call () {
+		JitOnly.throw_ovf_ex ();
+		try {
+			throw new Exception ();
+		} catch {
+			throw new InvalidOperationException ();
+		}
+	}
+
+	// Check that exceptions thrown from jitted code are not caught by the try block after the call
+	public static void test_0_try_after_jitonly_call () {
+		try {
+			try_after_jitonly_call ();
+		} catch (OverflowException) {
+		}
 	}
 }
 

@@ -1828,8 +1828,12 @@ interp_entry (InterpEntryData *data)
 	if (rmethod->needs_thread_attach)
 		mono_threads_detach_coop (orig_domain, &attach_cookie);
 
-	// FIXME:
-	g_assert (frame.ex == NULL);
+	if (mono_llvm_only) {
+		if (frame.ex)
+			mono_llvm_reraise_exception (frame.ex);
+	} else {
+		g_assert (frame.ex == NULL);
+	}
 
 	type = rmethod->rtype;
 	switch (type->type) {
@@ -3308,12 +3312,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			InterpMethod *rmethod = (InterpMethod*)imethod->data_items [* (guint16 *)(ip + 1)];
 			ERROR_DECL (error);
 			frame->ip = ip;
-			ip += 2;
 			sp = do_jit_call (sp, vt_sp, context, frame, rmethod, error);
 			if (!is_ok (error)) {
 				MonoException *ex = mono_error_convert_to_exception (error);
 				THROW_EX (ex, ip);
 			}
+			ip += 2;
 
 			CHECK_RESUME_STATE (context);
 
