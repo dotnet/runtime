@@ -69,7 +69,7 @@ namespace System.Net.Http.Functional.Tests
                     handler.CookieContainer = CreateSingleCookieContainer(uri, cookieName, cookieValue);
                     handler.UseCookies = useCookies;
 
-                    using (HttpClient client = new HttpClient(handler))
+                    using (HttpClient client = CreateHttpClient(handler))
                     {
                         await client.GetAsync(uri);
                     }
@@ -109,7 +109,7 @@ namespace System.Net.Http.Functional.Tests
                     }
                     handler.CookieContainer = cookieContainer;
 
-                    using (HttpClient client = new HttpClient(handler))
+                    using (HttpClient client = CreateHttpClient(handler))
                     {
                         await client.GetAsync(uri);
                     }
@@ -129,10 +129,9 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    HttpClientHandler handler = CreateHttpClientHandler();
-                    using (HttpClient client = new HttpClient(handler))
+                    using (HttpClient client = CreateHttpClient())
                     {
-                        HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
                         requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
                         await client.SendAsync(requestMessage);
@@ -153,10 +152,9 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    HttpClientHandler handler = CreateHttpClientHandler();
-                    using (HttpClient client = new HttpClient(handler))
+                    using (HttpClient client = CreateHttpClient())
                     {
-                        HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, uri);
+                        var requestMessage = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
                         requestMessage.Headers.Add("Cookie", "A=1");
                         requestMessage.Headers.Add("Cookie", "B=2");
                         requestMessage.Headers.Add("Cookie", "C=3");
@@ -224,9 +222,9 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = CreateSingleCookieContainer(url);
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
-                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+                    var requestMessage = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
                     requestMessage.Headers.Add("Cookie", s_customCookieHeaderValue);
 
                     Task<HttpResponseMessage> getResponseTask = client.SendAsync(requestMessage);
@@ -260,9 +258,9 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = CreateSingleCookieContainer(url);
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
-                    HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+                    var requestMessage = new HttpRequestMessage(HttpMethod.Get, url) { Version = VersionFromUseHttp2 };
                     requestMessage.Headers.Add("Cookie", "A=1");
                     requestMessage.Headers.Add("Cookie", "B=2");
 
@@ -321,7 +319,7 @@ namespace System.Net.Http.Functional.Tests
                 handler.CookieContainer.Add(url2, new Cookie("cookie2", "value2"));
                 handler.CookieContainer.Add(unusedUrl, new Cookie("cookie3", "value3"));
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
                     await client.GetAsync(url1);
@@ -350,7 +348,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.UseCookies = useCookies;
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync(
@@ -380,7 +378,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync(
@@ -418,7 +416,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = CreateSingleCookieContainer(url);
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync(
@@ -444,7 +442,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.CookieContainer = CreateSingleCookieContainer(url);
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync(
@@ -473,7 +471,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<HttpRequestData> serverTask = server.HandleRequestAsync(
@@ -512,7 +510,7 @@ namespace System.Net.Http.Functional.Tests
 
                 HttpClientHandler handler = CreateHttpClientHandler();
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     client.DefaultRequestHeaders.ConnectionClose = true; // to avoid issues with connection pooling
                     await client.GetAsync(url1);
@@ -569,7 +567,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.Credentials = new NetworkCredential("user", "pass");
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     await client.GetAsync(url);
 
@@ -682,7 +680,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
 
-                using (HttpClient client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(

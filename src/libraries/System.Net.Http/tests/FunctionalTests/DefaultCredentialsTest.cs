@@ -46,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
 
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
             {
                 Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -62,7 +62,7 @@ namespace System.Net.Http.Functional.Tests
             handler.UseProxy = useProxy;
             handler.UseDefaultCredentials = false;
 
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
             {
                 Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -78,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
             handler.UseProxy = useProxy;
             handler.UseDefaultCredentials = true;
 
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -102,7 +102,7 @@ namespace System.Net.Http.Functional.Tests
                 InnerCredentials = CredentialCache.DefaultCredentials
             };
 
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -123,7 +123,7 @@ namespace System.Net.Http.Functional.Tests
             handler.UseProxy = useProxy;
             handler.Credentials = new NetworkCredential("notarealuser", "123456");
 
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(uri))
             {
                 Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -142,7 +142,7 @@ namespace System.Net.Http.Functional.Tests
             handler.UseDefaultCredentials = false;
             handler.Credentials = _specificCredential;
 
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(s_authenticatedServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -160,7 +160,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Proxy = new AuthenticatedProxy(null);
 
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, response.StatusCode);
@@ -175,7 +175,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Proxy = new AuthenticatedProxy(CredentialCache.DefaultCredentials);
 
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -194,7 +194,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Proxy = new AuthenticatedProxy(wrappedCreds);
 
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);

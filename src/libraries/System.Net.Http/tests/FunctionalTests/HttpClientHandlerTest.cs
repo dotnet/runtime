@@ -192,7 +192,7 @@ namespace System.Net.Http.Functional.Tests
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
             handler.UseDefaultCredentials = false;
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 Uri uri = Configuration.Http.NegotiateAuthUriForDefaultCreds(secure: false);
                 _output.WriteLine("Uri: {0}", uri);
@@ -340,7 +340,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
                     try { await client.GetAsync(ipv6Address); } catch { }
@@ -369,7 +369,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
                     try { await client.GetAsync(uri); } catch { }
@@ -404,7 +404,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
                     try { await client.GetAsync(addressUri); } catch { }
@@ -432,7 +432,7 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
@@ -466,7 +466,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 host = $"{url.Host}:{url.Port}";
                 using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     if (useSsl)
                     {
@@ -491,7 +491,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = CredentialCache.DefaultCredentials;
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: Username, password: Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -507,7 +507,7 @@ namespace System.Net.Http.Functional.Tests
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = _credential;
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: Username, password: Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -524,9 +524,9 @@ namespace System.Net.Http.Functional.Tests
             // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
             // the same process as the other tests. Each test needs to be isolated to its own process.
             // See dicussion: https://github.com/dotnet/corefx/issues/21945
-            RemoteExecutor.Invoke(async useSocketsHttpHandlerString =>
+            RemoteExecutor.Invoke(async (useSocketsHttpHandlerString, useHttp2String) =>
             {
-                using (var client = CreateHttpClient(useSocketsHttpHandlerString))
+                using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString, useHttp2String))
                 {
                     Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: Username, password: Password);
                     using (HttpResponseMessage response = await client.GetAsync(uri))
@@ -536,7 +536,7 @@ namespace System.Net.Http.Functional.Tests
 
                     return RemoteExecutor.SuccessExitCode;
                 }
-            }, UseSocketsHttpHandler.ToString()).Dispose();
+            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
         }
 
         [Theory]
@@ -548,7 +548,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 HttpClientHandler handler = CreateHttpClientHandler();
                 handler.Credentials = new NetworkCredential("unused", "unused");
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.Unauthorized);
@@ -693,7 +693,7 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                using (var client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClient())
                 {
                     await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStringAsync(uri));
                 }
@@ -720,10 +720,10 @@ namespace System.Net.Http.Functional.Tests
             // Exercises all exposed request.Headers and request.Content.Headers strongly-typed properties
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
-                using (var client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClient())
                 {
                     byte[] contentArray = Encoding.ASCII.GetBytes(content);
-                    var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteArrayContent(contentArray) };
+                    var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new ByteArrayContent(contentArray), Version = VersionFromUseHttp2 };
 
                     request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
                     request.Headers.AcceptCharset.Add(new StringWithQualityHeaderValue("utf-8"));
@@ -903,7 +903,7 @@ namespace System.Net.Http.Functional.Tests
             // Exercises all exposed response.Headers and response.Content.Headers strongly-typed properties
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                using (var client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClient())
                 using (HttpResponseMessage resp = await client.GetAsync(uri))
                 {
                     Assert.Equal("1.1", resp.Version.ToString());
@@ -1027,8 +1027,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
-                using (HttpClientHandler handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient())
                 {
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     await TestHelper.WhenAllCompletedOrAnyFailed(
@@ -1160,7 +1159,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_TransferEncodingSetButNoRequestContent_Throws()
         {
-            var req = new HttpRequestMessage(HttpMethod.Post, "http://bing.com");
+            var req = new HttpRequestMessage(HttpMethod.Post, "http://bing.com") { Version = VersionFromUseHttp2 };
             req.Headers.TransferEncodingChunked = true;
             using (HttpClient c = CreateHttpClient())
             {
@@ -1198,7 +1197,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK()
         {
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer);
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = VersionFromUseHttp2 };
             using (HttpClient client = CreateHttpClient())
             {
                 using (HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
@@ -1257,7 +1256,7 @@ namespace System.Net.Http.Functional.Tests
         {
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
                 using (HttpResponseMessage response = await client.SendAsync(request, CancellationToken.None))
                 {
@@ -1402,7 +1401,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (var client = new HttpMessageInvoker(CreateHttpClientHandler()))
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, uri);
+                    var request = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
 
                     using (HttpResponseMessage response = await client.SendAsync(request, CancellationToken.None))
                     using (Stream responseStream = await response.Content.ReadAsStreamAsync())
@@ -1591,8 +1590,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient())
             {
                 // international version of the Starbucks website
                 // punycode: xn--oy2b35ckwhba574atvuzkc.com                
@@ -1846,10 +1844,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer)
                 {
-                    Content = new StringContent("Test String", Encoding.UTF8)
+                    Content = new StringContent("Test String", Encoding.UTF8),
+                    Version = new Version(version)
                 };
                 req.Headers.ExpectContinue = expectContinue;
-                req.Version = new Version(version);
 
                 using (HttpResponseMessage response = await client.SendAsync(req))
                 {
@@ -1879,7 +1877,7 @@ namespace System.Net.Http.Functional.Tests
             var clientCompleted = new TaskCompletionSource<bool>();
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                using (var client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClient())
                 {
                     client.DefaultRequestHeaders.ExpectContinue = true;
                     Assert.Equal(ExpectedContent, await client.GetStringAsync(uri));
@@ -1934,9 +1932,9 @@ namespace System.Net.Http.Functional.Tests
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (var handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient(handler))
                 {
-                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
                     initialMessage.Content = new StringContent(TestString);
                     initialMessage.Headers.ExpectContinue = true;
                     HttpResponseMessage response = await client.SendAsync(initialMessage);
@@ -1987,10 +1985,9 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                using (var handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
                     initialMessage.Content = new StringContent(TestString);
                     // No ExpectContinue header.
                     initialMessage.Headers.ExpectContinue = false;
@@ -2028,10 +2025,9 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                using (var handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
                     initialMessage.Content = new StringContent(TestString);
                     initialMessage.Headers.ExpectContinue = true;
                     HttpResponseMessage response = await client.SendAsync(initialMessage);
@@ -2072,10 +2068,9 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                using (var handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient())
                 {
-                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri);
+                    HttpRequestMessage initialMessage = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
                     initialMessage.Content = new StringContent(TestString);
                     initialMessage.Headers.ExpectContinue = true;
                     HttpResponseMessage response = await client.SendAsync(initialMessage);
@@ -2110,8 +2105,7 @@ namespace System.Net.Http.Functional.Tests
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                using (var handler = CreateHttpClientHandler())
-                using (var client = new HttpClient(handler))
+                using (HttpClient client = CreateHttpClient())
                 {
                     HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
                     Assert.Equal(HttpStatusCode.SwitchingProtocols, response.StatusCode);
@@ -2143,7 +2137,7 @@ namespace System.Net.Http.Functional.Tests
                     while (await connection.Socket.ReceiveAsync(new ArraySegment<byte>(buffer, 0, buffer.Length), SocketFlags.None) != 0);
                 });
 
-                using (var client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClient())
                 {
                     Exception error = new FormatException();
                     var content = new StreamContent(new DelegateStream(
@@ -2306,7 +2300,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
-                    secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer);
+                    secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer) { Version = VersionFromUseHttp2 };
 
                 if (PlatformDetection.IsUap && method == "TRACE")
                 {
@@ -2341,7 +2335,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
-                    secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer);
+                    secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer) { Version = VersionFromUseHttp2 };
                 request.Content = new StringContent(ExpectedContent);
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
@@ -2373,7 +2367,7 @@ namespace System.Net.Http.Functional.Tests
                 var content = new MemoryStream();
                 content.Write(byteContent, 0, byteContent.Length);
                 content.Position = startingPosition;
-                var request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer) { Content = new StreamContent(content) };
+                var request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer) { Content = new StreamContent(content), Version = VersionFromUseHttp2 };
 
                 for (int iter = 0; iter < 2; iter++)
                 {
@@ -2422,7 +2416,8 @@ namespace System.Net.Http.Functional.Tests
                     new HttpMethod(method),
                     secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer)
                 {
-                    Content = new StringContent(ExpectedContent)
+                    Content = new StringContent(ExpectedContent),
+                    Version = VersionFromUseHttp2
                 };
 
                 using (HttpResponseMessage response = await client.SendAsync(request))
@@ -2492,14 +2487,12 @@ namespace System.Net.Http.Functional.Tests
                 // Skip this test if running on Windows but on a release prior to Windows 10 Creators Update.
                 throw new SkipTestException("Skipping test due to Windows 10 version prior to Version 1703.");
             }
-
             // We don't currently have a good way to test whether HTTP/2 is supported without
             // using the same mechanism we're trying to test, so for now we allow both 2.0 and 1.1 responses.
             var request = new HttpRequestMessage(HttpMethod.Get, server);
             request.Version = new Version(2, 0);
 
-            using (HttpClientHandler handler = CreateHttpClientHandler())
-            using (var client = new HttpClient(handler, false))
+            using (HttpClient client = CreateHttpClient())
             {
                 // It is generally expected that the test hosts will be trusted, so we don't register a validation
                 // callback in the usual case.
@@ -2541,8 +2534,7 @@ namespace System.Net.Http.Functional.Tests
             var request = new HttpRequestMessage(HttpMethod.Get, server);
             request.Version = new Version(2, 0);
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient())
             {
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
@@ -2602,12 +2594,10 @@ namespace System.Net.Http.Functional.Tests
             {
                 var uri = new Uri($"http://{rootUrl.Host}:{rootUrl.Port}/test[]");
                 _output.WriteLine(uri.AbsoluteUri.ToString());
-                var request = new HttpRequestMessage(HttpMethod.Get, uri);
-                string statusLine = string.Empty;
 
                 using (HttpClient client = CreateHttpClient())
                 {
-                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(uri);
                     Task<List<string>> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);

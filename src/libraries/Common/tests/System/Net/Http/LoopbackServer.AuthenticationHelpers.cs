@@ -25,13 +25,13 @@ namespace System.Net.Test.Common
             await AcceptConnectionAsync(async connection =>
             {
                 string headerName = _options.IsProxy ? "Proxy-Authorization" : "Authorization";
-                lines = await connection.ReadRequestHeaderAsync();
+                lines = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
                 if (GetRequestHeaderValue(lines, headerName) == null)
                 {
                     await connection.SendResponseAsync( _options.IsProxy ?
-                                    HttpStatusCode.ProxyAuthenticationRequired : HttpStatusCode.Unauthorized, authenticateHeaders);
+                                    HttpStatusCode.ProxyAuthenticationRequired : HttpStatusCode.Unauthorized, authenticateHeaders).ConfigureAwait(false);
 
-                    lines = await connection.ReadRequestHeaderAsync();
+                    lines = await connection.ReadRequestHeaderAsync().ConfigureAwait(false);
                 }
                 Debug.Assert(lines.Count > 0);
 
@@ -78,13 +78,13 @@ namespace System.Net.Test.Common
 
                 if (success)
                 {
-                    await connection.SendResponseAsync(additionalHeaders: "Connection: close\r\n");
+                    await connection.SendResponseAsync(additionalHeaders: "Connection: close\r\n").ConfigureAwait(false);
                 }
                 else
                 {
-                    await connection.SendResponseAsync(HttpStatusCode.Unauthorized, "Connection: close\r\n" + authenticateHeaders);
+                    await connection.SendResponseAsync(HttpStatusCode.Unauthorized, "Connection: close\r\n" + authenticateHeaders).ConfigureAwait(false);
                 }
-            });
+            }).ConfigureAwait(false);
 
             return lines;
         }

@@ -294,6 +294,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(37198)]
         [Theory, InlineData("vi")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [OuterLoop("Opens program")]

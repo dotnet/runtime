@@ -12,10 +12,10 @@ namespace System.Net.Http.Tests
     public class HttpContentTest
     {
         [Fact]
-        public void Dispose_BufferContentThenDisposeContent_BufferedStreamGetsDisposed()
+        public async Task Dispose_BufferContentThenDisposeContent_BufferedStreamGetsDisposed()
         {
             MockContent content = new MockContent();
-            content.LoadIntoBufferAsync().Wait();
+            await content.LoadIntoBufferAsync();
 
             Type type = typeof(HttpContent);
             TypeInfo typeInfo = type.GetTypeInfo();

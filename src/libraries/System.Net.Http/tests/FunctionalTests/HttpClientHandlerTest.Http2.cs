@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
     public abstract class HttpClientHandlerTest_Http2 : HttpClientHandlerTestBase
     {
         protected override bool UseSocketsHttpHandler => true;
-        protected override bool UseHttp2LoopbackServer => true;
+        protected override bool UseHttp2 => true;
 
         public static bool SupportsAlpn => PlatformDetection.SupportsAlpn;
 
@@ -58,7 +58,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_ClientPreface_Sent()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -72,7 +72,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_InitialSettings_SentAndAcked()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -104,7 +104,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_DataSentBeforeServerPreface_ProtocolError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -122,7 +122,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_NoResponseBody_Success()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -142,7 +142,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_ZeroLengthResponseBody_Success()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -166,7 +166,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_ServerSendsValidSettingsValues_Success()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -208,7 +208,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -230,7 +230,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -249,7 +249,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_StreamResetByServerAfterHeadersSent_RequestFails()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -271,7 +271,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_StreamResetByServerAfterPartialBodySent_RequestFails()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -298,7 +298,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task DataFrame_NoStream_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -330,7 +330,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -362,7 +362,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -399,7 +399,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ResponseStreamFrames_ContinuationBeforeHeaders_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
                 await server.EstablishConnectionAsync();
@@ -419,7 +419,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ResponseStreamFrames_DataBeforeHeaders_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
                 await server.EstablishConnectionAsync();
@@ -439,7 +439,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ResponseStreamFrames_HeadersAfterHeadersWithoutEndHeaders_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
                 await server.EstablishConnectionAsync();
@@ -460,7 +460,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ResponseStreamFrames_HeadersAfterHeadersAndContinuationWithoutEndHeaders_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
                 await server.EstablishConnectionAsync();
@@ -482,7 +482,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ResponseStreamFrames_DataAfterHeadersWithoutEndHeaders_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
                 await server.EstablishConnectionAsync();
@@ -503,7 +503,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ResponseStreamFrames_DataAfterHeadersAndContinuationWithoutEndHeaders_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
                 await server.EstablishConnectionAsync();
@@ -528,7 +528,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GoAwayFrame_NonzeroStream_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -551,7 +551,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task DataFrame_TooLong_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task sendTask = client.GetAsync(server.Address);
 
@@ -571,7 +571,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task CompletedResponse_FrameReceived_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -603,7 +603,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task EmptyResponse_FrameReceived_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -632,7 +632,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task CompletedResponse_WindowUpdateFrameReceived_Success()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -665,7 +665,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task ResetResponseStream_FrameReceived_ConnectionError(ProtocolErrors error)
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -712,7 +712,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GoAwayFrame_NoPendingStreams_ConnectionClosed()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 int streamId = await EstablishConnectionAndProcessOneRequestAsync(client, server);
 
@@ -732,7 +732,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GoAwayFrame_AllPendingStreamsValid_RequestsSucceedAndConnectionClosed()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 await EstablishConnectionAndProcessOneRequestAsync(client, server);
 
@@ -877,7 +877,7 @@ namespace System.Net.Http.Functional.Tests
             var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
 
@@ -981,7 +981,7 @@ namespace System.Net.Http.Functional.Tests
             var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content);
 
@@ -1100,7 +1100,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task Http2_MaxConcurrentStreams_LimitEnforced()
         {
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -1167,11 +1167,8 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_WaitingForStream_Cancellation()
         {
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient())
             {
                 Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
 
@@ -1227,12 +1224,11 @@ namespace System.Net.Http.Functional.Tests
 
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
 
             var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient(handler))
             {
                 var cts = new CancellationTokenSource();
                 Task<HttpResponseMessage> clientTask = client.PostAsync(server.Address, content, cts.Token);
@@ -1283,14 +1279,10 @@ namespace System.Net.Http.Functional.Tests
             const int InitialWindowSize = 65535;
             const int ContentSize = InitialWindowSize * 2; // Double the default TCP window size.
 
-            HttpClientHandler handler = CreateHttpClientHandler();
-            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-            TestHelper.EnsureHttp2Feature(handler);
-
             var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
 
             using (var server = Http2LoopbackServer.CreateServer())
-            using (var client = new HttpClient(handler))
+            using (HttpClient client = CreateHttpClient())
             {
                 var cts = new CancellationTokenSource();
 
