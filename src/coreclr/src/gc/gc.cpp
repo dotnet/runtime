@@ -11004,7 +11004,7 @@ BOOL gc_heap::grow_heap_segment (heap_segment* seg, uint8_t* high_address, bool*
 #endif //MARK_ARRAY
         heap_segment_committed (seg) += c_size;
 
-        STRESS_LOG1(LF_GC, LL_INFO10000, "New commit: %Ix",
+        STRESS_LOG1(LF_GC, LL_INFO10000, "New commit: %Ix\n",
                     (size_t)heap_segment_committed (seg));
 
         assert (heap_segment_committed (seg) <= heap_segment_reserved (seg));
