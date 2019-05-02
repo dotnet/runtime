@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Xml.Tests
             doc.LoadXml(bad);
 
             KeyInfoNode node1 = new KeyInfoNode();
-            // LAMESPEC: No ArgumentNullException is thrown if value == null
+            // No ArgumentNullException is thrown if value == null
             node1.LoadXml(null);
             Assert.Null(node1.Value);
         }

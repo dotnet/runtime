@@ -172,7 +172,7 @@ namespace System.Security.Cryptography.Xml.Tests
         public void LoadInputWithUnsupportedType()
         {
             byte[] bad = { 0xBA, 0xD };
-            // LAMESPEC: input MUST be one of InputType - but no exception is thrown (not documented)
+            // input MUST be one of InputType - but no exception is thrown (not documented)
             transform.LoadInput(bad);
         }
 

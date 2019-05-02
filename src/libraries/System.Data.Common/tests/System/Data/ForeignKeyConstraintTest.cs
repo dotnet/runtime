@@ -220,7 +220,7 @@ namespace System.Data.Tests
                 table2.Constraints.Add(fkc);
                 throw new ApplicationException("An Exception was expected");
             }
-            // LAMESPEC : spec says InvalidConstraintException but throws this
+            // spec says InvalidConstraintException but throws this
             catch (NullReferenceException)
             {
             }

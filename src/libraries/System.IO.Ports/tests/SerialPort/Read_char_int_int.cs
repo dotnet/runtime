@@ -812,7 +812,7 @@ namespace System.IO.Ports.Tests
             com2.Write(bytesToWrite, 0, bytesToWrite.Length);
             com1.ReadTimeout = 500;
 
-            //This is pretty lame but we will have to live with if for now becuase we can not 
+            //This is pretty silly but we will have to live with if for now becuase we can not 
             //gaurentee the number of bytes Write will add
             Thread.Sleep((int)(((bytesToWrite.Length * 10.0) / com1.BaudRate) * 1000) + 250);
 

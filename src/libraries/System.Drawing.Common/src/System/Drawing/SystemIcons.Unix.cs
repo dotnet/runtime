@@ -33,9 +33,6 @@
 
 namespace System.Drawing
 {
-
-    // LAME: I don't see why the "old" (win 2.x) names were exposed in the fx :|
-
     public static class SystemIcons
     {
 

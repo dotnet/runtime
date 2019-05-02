@@ -199,7 +199,7 @@ namespace System.Security.Cryptography.Xml.Tests
             // Get the XML representation of the signature.
             XmlElement xmlSignature = signedXml.GetXml();
 
-            // LAMESPEC: we must reload the signature or it won't work
+            // we must reload the signature or it won't work
             // MS framework throw a "malformed element"
             SignedXml vrfy = new SignedXml();
             vrfy.LoadXml(xmlSignature);
@@ -320,7 +320,7 @@ namespace System.Security.Cryptography.Xml.Tests
             // Get the XML representation of the signature.
             XmlElement xmlSignature = signedXml.GetXml();
 
-            // LAMESPEC: we must reload the signature or it won't work
+            // we must reload the signature or it won't work
             // MS framework throw a "malformed element"
             SignedXml vrfy = new SignedXml();
             vrfy.LoadXml(xmlSignature);
@@ -354,7 +354,7 @@ namespace System.Security.Cryptography.Xml.Tests
             // Get the XML representation of the signature.
             XmlElement xmlSignature = signedXml.GetXml();
 
-            // LAMESPEC: we must reload the signature or it won't work
+            // we must reload the signature or it won't work
             // MS framework throw a "malformed element"
             SignedXml vrfy = new SignedXml();
             vrfy.LoadXml(xmlSignature);
@@ -364,7 +364,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         // Using empty constructor
-        // LAMESPEC: The two other constructors don't seems to apply in verifying signatures
+        // The two other constructors don't seems to apply in verifying signatures
         [Fact]
         public void AsymmetricRSAVerify()
         {
@@ -388,7 +388,7 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         // Using empty constructor
-        // LAMESPEC: The two other constructors don't seems to apply in verifying signatures
+        // The two other constructors don't seems to apply in verifying signatures
         [Fact]
         public void AsymmetricDSAVerify()
         {

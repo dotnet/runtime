@@ -358,7 +358,7 @@ namespace System.Data.Tests
             DataColumn C = new DataColumn("test1");
             Cols.Add();
 
-            // LAMESPEC: MSDN says that if C doesn't belong to Cols
+            // MSDN says that if C doesn't belong to Cols
             // Exception is thrown.
             Assert.False(Cols.CanRemove(C));
 

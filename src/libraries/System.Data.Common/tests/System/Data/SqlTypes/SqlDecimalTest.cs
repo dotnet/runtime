@@ -420,7 +420,7 @@ Assert.False(true);
             }
 
             // ToSqlInt32 () 
-            // LAMESPEC: 6464.6464 --> 64646464 ??? with windows
+            // 6464.6464 --> 64646464 ??? with windows
             // MS.NET seems to return the first 32 bit integer (i.e. 
             // Data [0]) but we don't have to follow such stupidity.
             //			Assert.Equal ((int)64646464, Test1.ToSqlInt32 ().Value);
