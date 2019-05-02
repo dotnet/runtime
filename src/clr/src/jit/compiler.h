@@ -5296,6 +5296,13 @@ protected:
     void        fgInitBBLookup();
     BasicBlock* fgLookupBB(unsigned addr);
 
+    bool fgHasBackwardJump;
+
+    bool fgCanSwitchToTier1();
+    void fgSwitchToTier1();
+
+    bool fgMayExplicitTailCall();
+
     void fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, FixedBitVect* jumpTarget);
 
     void fgMarkBackwardJump(BasicBlock* startBlock, BasicBlock* endBlock);
