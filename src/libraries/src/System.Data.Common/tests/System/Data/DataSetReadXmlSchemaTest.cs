@@ -365,7 +365,7 @@ namespace System.Data.Tests
 </xs:schema>";
 
             // Constraints on DataSet element.
-            // Note that in xs:key xpath is crazy except for the last step
+            // Note that in xs:key xpath is unusual except for the last step
             string xs = string.Format(xsbase, constraints, string.Empty, string.Empty);
             var ds = new DataSet();
             ds.ReadXmlSchema(new StringReader(xs));

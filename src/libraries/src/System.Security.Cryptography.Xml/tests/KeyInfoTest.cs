@@ -367,7 +367,7 @@ namespace System.Security.Cryptography.Xml.Tests
             XmlDocument doc = new XmlDocument();
             doc.LoadXml(bad);
             info.LoadXml(doc.DocumentElement);
-            // LAMESPEC: no expection but Xml isn't loaded
+            // no expection but Xml isn't loaded
             Assert.Equal("<KeyInfo xmlns=\"http://www.w3.org/2000/09/xmldsig#\" />", (info.GetXml().OuterXml));
             Assert.Equal(0, info.Count);
         }

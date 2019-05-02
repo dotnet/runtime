@@ -699,7 +699,6 @@ namespace System.Data.Tests
 
             /*
 			try {
-				// FIXME: LAMESPEC: Why the exception is thrown why... why... 
 				Mom.Select ("Child.Name = 'Jack'");
 Assert.False(true);
 			} catch (Exception e) {
