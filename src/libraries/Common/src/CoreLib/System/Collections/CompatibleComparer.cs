@@ -2,28 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 #pragma warning disable 618 // obsolete types
 
 namespace System.Collections
 {
     internal sealed class CompatibleComparer : IEqualityComparer
     {
-        private readonly IHashCodeProvider _hcp;
-        private readonly IComparer _comparer;
+        private readonly IHashCodeProvider? _hcp;
+        private readonly IComparer? _comparer;
 
-        internal CompatibleComparer(IHashCodeProvider hashCodeProvider, IComparer comparer)
+        internal CompatibleComparer(IHashCodeProvider? hashCodeProvider, IComparer? comparer)
         {
             _hcp = hashCodeProvider;
             _comparer = comparer;
         }
 
-        internal IHashCodeProvider HashCodeProvider => _hcp;
+        internal IHashCodeProvider? HashCodeProvider => _hcp;
 
-        internal IComparer Comparer => _comparer;
+        internal IComparer? Comparer => _comparer;
 
-        public new bool Equals(object a, object b) => Compare(a, b) == 0;
+        public new bool Equals(object? a, object? b) => Compare(a, b) == 0;
 
-        public int Compare(object a, object b)
+        public int Compare(object? a, object? b)
         {
             if (a == b)
                 return 0;

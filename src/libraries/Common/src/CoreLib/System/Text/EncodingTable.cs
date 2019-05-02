@@ -34,7 +34,7 @@ namespace System.Text
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
 
-            object codePageObj;
+            object? codePageObj;
             codePageObj = s_nameToCodePage[name];
 
             if (codePageObj != null)
