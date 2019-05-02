@@ -124,7 +124,7 @@ namespace System.Security
 
                     for (int i = 0; i < iMax; i += 2)
                     {
-                        hashtable.Add(_attributes[i], _attributes[i + 1]);
+                        hashtable.Add(_attributes[i]!, _attributes[i + 1]);
                     }
 
                     return hashtable;
@@ -231,7 +231,7 @@ namespace System.Security
 
                 for (int i = 0; i < iMax; i += 2)
                 {
-                    string strAttrName = (string)_attributes[i];
+                    string? strAttrName = (string?)_attributes[i];
 
                     if (string.Equals(strAttrName, name))
                         throw new ArgumentException(SR.Argument_AttributeNamesMustBeUnique);
@@ -301,8 +301,8 @@ namespace System.Security
 
                 for (int i = 0; i < iMax; i++)
                 {
-                    string lhs = (string)_attributes[i];
-                    string rhs = (string)other._attributes[i];
+                    string? lhs = (string?)_attributes[i];
+                    string? rhs = (string?)other._attributes[i];
 
                     if (!string.Equals(lhs, rhs))
                         return false;
@@ -524,8 +524,8 @@ namespace System.Security
 
                 for (int i = 0; i < iMax; i += 2)
                 {
-                    string strAttrName = (string)_attributes[i];
-                    string strAttrValue = (string)_attributes[i + 1];
+                    string? strAttrName = (string?)_attributes[i];
+                    string? strAttrValue = (string?)_attributes[i + 1];
 
                     write(obj, strAttrName);
                     write(obj, "=\"");
@@ -562,7 +562,7 @@ namespace System.Security
 
                     for (int i = 0; i < _children.Count; ++i)
                     {
-                        ((SecurityElement)_children[i]).ToString(string.Empty, obj, write);
+                        ((SecurityElement)_children[i]!).ToString(string.Empty, obj, write);
                     }
                 }
 
@@ -591,11 +591,11 @@ namespace System.Security
 
             for (int i = 0; i < iMax; i += 2)
             {
-                string strAttrName = (string)_attributes[i];
+                string? strAttrName = (string?)_attributes[i];
 
                 if (string.Equals(strAttrName, name))
                 {
-                    string strAttrValue = (string)_attributes[i + 1];
+                    string? strAttrValue = (string?)_attributes[i + 1];
 
                     return Unescape(strAttrValue);
                 }
