@@ -30,7 +30,7 @@
     },
     
     "rpm_dependencies":[{
-        "package_name": "libopenssl1_0_0",
+        "package_name": "libopenssl1_1",
         "package_version": ""
     },
     {
