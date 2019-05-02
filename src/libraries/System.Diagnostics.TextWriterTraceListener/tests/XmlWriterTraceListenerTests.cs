@@ -103,6 +103,15 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         [Fact]
         public void ListenerWithFilter()
         {
+            int processId;
+            using (Process p = Process.GetCurrentProcess())
+            {
+                processId = p.Id;
+            }
+
+            // Ensure we use an arbitrary ID that doesn't match the process ID.
+            int traceTransferId = processId + 1;
+
             string file = GetTestFilePath();
             Guid guid = Guid.NewGuid();
             using (var listener = new XmlWriterTraceListener(file))
@@ -119,7 +128,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
                 listener.TraceData(null, "Trace", TraceEventType.Error, 1, "ghost", "not", "here");
                 listener.TraceData(null, "Trace", TraceEventType.Critical, 1, "existent", ".net", "code");
 
-                listener.TraceTransfer(null, "Transfer", 2304, "this is a transfer", guid);
+                listener.TraceTransfer(null, "Transfer", traceTransferId, "this is a transfer", guid);
             }
 
             string text = File.ReadAllText(file);
@@ -139,7 +148,7 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             {
                 // Desktop has a boolean to turn on filtering in TraceTransfer due to a bug.
                 // https://referencesource.microsoft.com/#System/compmod/system/diagnostics/XmlWriterTraceListener.cs,26
-                Assert.DoesNotContain("2304", text);
+                Assert.DoesNotContain('"' + traceTransferId.ToString(CultureInfo.InvariantCulture) + '"', text);
                 Assert.DoesNotContain("this is a transfer", text);
                 Assert.DoesNotContain("Transfer", text);
                 Assert.DoesNotContain(guid.ToString("B"), text);
