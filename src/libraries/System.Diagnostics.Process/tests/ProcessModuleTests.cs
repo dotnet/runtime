@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tests
         public void TestModuleProperties()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
-            Assert.True(modules.Count > 0);
+            Assert.InRange(modules.Count, 1, int.MaxValue);
 
             foreach (ProcessModule module in modules)
             {
