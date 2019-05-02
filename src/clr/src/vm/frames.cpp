@@ -967,15 +967,18 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
 
     PTR_PTR_Object pRefs = dac_cast<PTR_PTR_Object>(m_pObjRefs);
 
-    for (UINT i = 0;i < m_numObjRefs; i++)  {
-
-        LOG((LF_GC, INFO3, "GC Protection Frame Promoting" FMT_ADDR "to",
-             DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pObjRefs[i])) ));
+    for (UINT i = 0;i < m_numObjRefs; i++)
+    {
+        OBJECTREF fromAddress = m_pObjRefs[i];
         if (m_MaybeInterior)
             PromoteCarefully(fn, pRefs + i, sc, GC_CALL_INTERIOR|CHECK_APP_DOMAIN);
         else
             (*fn)(pRefs + i, sc, 0);
-        LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(m_pObjRefs[i])) ));
+
+        OBJECTREF toAdress = m_pObjRefs[i];
+        LOG((LF_GC, INFO3, "GC Protection Frame Promoting" FMT_ADDR "to" FMT_ADDR "\n",
+            DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(fromAddress)),
+            DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(toAdress))));
     }
 }
 
