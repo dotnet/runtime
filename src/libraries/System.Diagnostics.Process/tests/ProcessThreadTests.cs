@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
             CreateDefaultProcess();
 
             ProcessThreadCollection threadCollection = _process.Threads;
-            Assert.True(threadCollection.Count > 0);
+            Assert.InRange(threadCollection.Count, 1, int.MaxValue);
             ProcessThread thread = threadCollection[0];
             try
             {
@@ -29,12 +29,15 @@ namespace System.Diagnostics.Tests
                     // On OSX, thread id is a 64bit unsigned value. We truncate the ulong to int
                     // due to .NET API surface area. Hence, on overflow id can be negative while
                     // casting the ulong to int.
-                    Assert.True(thread.Id >= 0 || RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
+                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    {
+                        Assert.InRange(thread.Id, 0, int.MaxValue);
+                    }
                     Assert.Equal(_process.BasePriority, thread.BasePriority);
-                    Assert.True(thread.CurrentPriority >= 0);
-                    Assert.True(thread.PrivilegedProcessorTime.TotalSeconds >= 0);
-                    Assert.True(thread.UserProcessorTime.TotalSeconds >= 0);
-                    Assert.True(thread.TotalProcessorTime.TotalSeconds >= 0);
+                    Assert.InRange(thread.CurrentPriority, 0, int.MaxValue);
+                    Assert.InRange(thread.PrivilegedProcessorTime.TotalSeconds, 0, int.MaxValue);
+                    Assert.InRange(thread.UserProcessorTime.TotalSeconds, 0, int.MaxValue);
+                    Assert.InRange(thread.TotalProcessorTime.TotalSeconds, 0, int.MaxValue);
                 }
             }
             catch (Exception e) when (e is Win32Exception || e is InvalidOperationException)
@@ -120,7 +123,7 @@ namespace System.Diagnostics.Tests
                         // The thread may have gone away between our getting its info and attempting to access its StartTime
                     }
                 }
-                Assert.True(passed > 0, "Expected at least one thread to be valid for StartTime");
+                Assert.InRange(passed, 1, int.MaxValue);
 
                 // Now add a thread, and from that thread, while it's still alive, verify
                 // that there's at least one thread greater than the current time we previously grabbed.
