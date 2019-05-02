@@ -16,9 +16,6 @@
     <!-- Blocked on ILAsm supporting embedding resources. See https://github.com/dotnet/coreclr/issues/20819 -->
     <IlrtTestKind>BuildOnly</IlrtTestKind>
 
-    <!-- Blocked on CrossGen.exe supporting embedding resources. See https://github.com/dotnet/coreclr/issues/21006 -->
-    <CrossGenTest>false</CrossGenTest>
-
     <!-- Test unsupported outside of windows -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
