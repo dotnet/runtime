@@ -2472,7 +2472,7 @@ namespace System.Diagnostics.Tracing
                 this.TriggersActivityTracking = 0;
                 this.Name = name;
                 this.Message = message;
-                this.Parameters = null;
+                this.Parameters = null!;
                 this.TraceLoggingEventTypes = null;
                 this.ActivityOptions = EventActivityOptions.None;
                 this.ParameterTypes = parameterTypes;
@@ -2609,7 +2609,7 @@ namespace System.Diagnostics.Tracing
                     return typeof(string);
                 default:
                     // TODO: should I throw an exception here?
-                    return null;
+                    return null!;
             }
         }
 #endif
