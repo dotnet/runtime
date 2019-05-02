@@ -182,7 +182,7 @@ namespace System.Diagnostics.Tracing
 
                     foreach (var counter in _counters)
                     {
-                        counter.WritePayload((float)elapsed.TotalSeconds);
+                        counter.WritePayload((float)elapsed.TotalSeconds, _pollingIntervalInMilliseconds);
                     }
                     _timeStampSinceCollectionStarted = now;
                 }

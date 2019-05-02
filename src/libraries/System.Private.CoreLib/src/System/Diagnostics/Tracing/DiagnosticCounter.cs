@@ -87,7 +87,7 @@ namespace System.Diagnostics.Tracing
         private CounterGroup _group;
         private Dictionary<string, string>? _metadata;
 
-        internal abstract void WritePayload(float intervalSec);
+        internal abstract void WritePayload(float intervalSec, int pollingIntervalMillisec);
 
         // arbitrarily we use name as the lock object.  
         internal object MyLock { get { return Name; } }
