@@ -14,9 +14,7 @@ using Console = Internal.Console;
 [assembly: DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
 public class CallbackStressTest
 {
-    static volatile bool s_RunGC = true;
-    
-    static int s_LoopCounter = 25;
+    static int s_LoopCounter = 10;
     static int s_FinallyCalled = 0;
     static int s_CatchCalled = 0;
     static int s_OtherExceptionCatchCalled = 0;
@@ -24,10 +22,6 @@ public class CallbackStressTest
     static int s_WrongPInvokesExecuted = 0;
     static int s_PInvokesExecuted = 0;
     
-    public static void Collector()
-    {
-        while(s_RunGC) GC.Collect();
-    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void SetResolve()
@@ -115,7 +109,7 @@ public class CallbackStressTest
         {
             RaiseException(5, 0, 0, IntPtr.Zero);
         }
-        catch(SEHException ex) { s_SEHExceptionCatchCalled++; }
+        catch(SEHException ex) { GC.Collect(); s_SEHExceptionCatchCalled++; }
 #else
         // TODO: test on Unix when implementing pinvoke inlining
         s_SEHExceptionCatchCalled++;
@@ -124,8 +118,6 @@ public class CallbackStressTest
 
     public static int Main()
     {
-        new Thread(Collector).Start();
-       
         for(int i = 0; i < s_LoopCounter; i++)
         {
             try
@@ -133,22 +125,22 @@ public class CallbackStressTest
                 NativeSum(10, 10);
                 s_WrongPInvokesExecuted++;
             }
-            catch (DllNotFoundException) { s_CatchCalled++; }
+            catch (DllNotFoundException) { GC.Collect(); s_CatchCalled++; }
             
             try { DoCall(); }
-            catch (DllNotFoundException) { s_CatchCalled++; }
+            catch (DllNotFoundException) { GC.Collect(); s_CatchCalled++; }
             
             try { DoCallTryFinally(); }
-            catch (DllNotFoundException) { s_CatchCalled++; }
+            catch (DllNotFoundException) { GC.Collect(); s_CatchCalled++; }
             
             try { DoCallTryCatch(true); }
-            catch (ArgumentException) { s_OtherExceptionCatchCalled++; }
+            catch (ArgumentException) { GC.Collect(); s_OtherExceptionCatchCalled++; }
 
             try { DoCallTryRethrowInCatch(); }
-            catch (DllNotFoundException) { s_CatchCalled++; }
+            catch (DllNotFoundException) { GC.Collect(); s_CatchCalled++; }
 
             try { DoCallTryRethrowDifferentExceptionInCatch(); }
-            catch (InvalidOperationException) { s_OtherExceptionCatchCalled++; }
+            catch (InvalidOperationException) { GC.Collect(); s_OtherExceptionCatchCalled++; }
             
             ManualRaiseException();
         }
@@ -162,13 +154,11 @@ public class CallbackStressTest
             s_PInvokesExecuted += (a == b && a == 20)? 2 : 0;
 
             try { DoCallTryCatch(false); }
-            catch (ArgumentException) { s_OtherExceptionCatchCalled++; }
+            catch (ArgumentException) { GC.Collect(); s_OtherExceptionCatchCalled++; }
             
             ManualRaiseException();
         }
         
-        s_RunGC = false;
-
         if (s_FinallyCalled == s_LoopCounter && 
             s_CatchCalled == (s_LoopCounter * 7) &&
             s_OtherExceptionCatchCalled == (s_LoopCounter * 3) &&
