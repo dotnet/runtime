@@ -7,6 +7,7 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
 {
+    [DebuggerDisplay("Current: ClassType.{Current.JsonClassInfo.ClassType} {Current.JsonClassInfo.Type.Name}")]
     internal struct ReadStack
     {
         // A fields is used instead of a property to avoid value semantics.

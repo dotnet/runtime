@@ -3,30 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Linq;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
-    public class SimpleTestClassWithObject : ITestClass
+    public class SimpleTestClassWithObject : SimpleTestClassWithSimpleObject
     {
-        public object MyInt16 { get; set; }
-        public object MyInt32 { get; set; }
-        public object MyInt64 { get; set; }
-        public object MyUInt16 { get; set; }
-        public object MyUInt32 { get; set; }
-        public object MyUInt64 { get; set; }
-        public object MyByte { get; set; }
-        public object MySByte { get; set; }
-        public object MyChar { get; set; }
-        public object MyString { get; set; }
-        public object MyDecimal { get; set; }
-        public object MyBooleanTrue { get; set; }
-        public object MyBooleanFalse { get; set; }
-        public object MySingle { get; set; }
-        public object MyDouble { get; set; }
-        public object MyDateTime { get; set; }
-        public object MyEnum { get; set; }
         public object MyInt16Array { get; set; }
         public object MyInt32Array { get; set; }
         public object MyInt64Array { get; set; }
@@ -54,7 +36,7 @@ namespace System.Text.Json.Serialization.Tests
         public object MyStringToStringIDict { get; set; }
         public object MyStringToStringIReadOnlyDict { get; set; }
 
-        public static readonly string s_json =
+        public new static readonly string s_json =
                 @"{" +
                 @"""MyInt16"" : 1," +
                 @"""MyInt32"" : 2," +
@@ -101,27 +83,11 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyStringToStringIReadOnlyDict"" : {""key"" : ""value""}" +
                 @"}";
 
-        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+        public new static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
-        public void Initialize()
+        public override void Initialize()
         {
-            MyInt16 = (short)1;
-            MyInt32 = (int)2;
-            MyInt64 = (long)3;
-            MyUInt16 = (ushort)4;
-            MyUInt32 = (uint)5;
-            MyUInt64 = (ulong)6;
-            MyByte = (byte)7;
-            MySByte = (sbyte)8;
-            MyChar = 'a';
-            MyString = "Hello";
-            MyBooleanTrue = true;
-            MyBooleanFalse = false;
-            MySingle = 1.1f;
-            MyDouble = 2.2d;
-            MyDecimal = 3.3m;
-            MyDateTime = new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc);
-            MyEnum = SampleEnum.Two;
+            base.Initialize();
 
             MyInt16Array = new short[] { 1 };
             MyInt32Array = new int[] { 2 };
@@ -153,25 +119,9 @@ namespace System.Text.Json.Serialization.Tests
             MyStringToStringIReadOnlyDict = new Dictionary<string, string> { { "key", "value" } };
         }
 
-        public void Verify()
+        public override void Verify()
         {
-            Assert.Equal((short)1, MyInt16);
-            Assert.Equal((int)2, MyInt32);
-            Assert.Equal((long)3, MyInt64);
-            Assert.Equal((ushort)4, MyUInt16);
-            Assert.Equal((uint)5, MyUInt32);
-            Assert.Equal((ulong)6, MyUInt64);
-            Assert.Equal((byte)7, MyByte);
-            Assert.Equal((sbyte)8, MySByte);
-            Assert.Equal('a', MyChar);
-            Assert.Equal("Hello", MyString);
-            Assert.Equal(3.3m, MyDecimal);
-            Assert.Equal(false, MyBooleanFalse);
-            Assert.Equal(true, MyBooleanTrue);
-            Assert.Equal(1.1f, MySingle);
-            Assert.Equal(2.2d, MyDouble);
-            Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTime);
-            Assert.Equal(SampleEnum.Two, MyEnum);
+            base.Verify();
 
             Assert.Equal((short)1, ((short[])MyInt16Array)[0]);
             Assert.Equal((int)2, ((int[])MyInt32Array)[0]);
@@ -190,17 +140,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2.2d, ((double[])MyDoubleArray)[0]);
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), ((DateTime[])MyDateTimeArray)[0]);
             Assert.Equal(SampleEnum.Two, ((SampleEnum[])MyEnumArray)[0]);
-
-            Assert.Equal("Hello", ((List<string>)MyStringList)[0]);
-            Assert.Equal("Hello", ((IEnumerable<string>)MyStringIEnumerableT).First());
-            Assert.Equal("Hello", ((IList<string>)MyStringIListT)[0]);
-            Assert.Equal("Hello", ((ICollection<string>)MyStringICollectionT).First());
-            Assert.Equal("Hello", ((IReadOnlyCollection<string>)MyStringIReadOnlyCollectionT).First());
-            Assert.Equal("Hello", ((IReadOnlyList<string>)MyStringIReadOnlyListT)[0]);
-
-            Assert.Equal("value", ((Dictionary<string, string>)MyStringToStringDict)["key"]);
-            Assert.Equal("value", ((IDictionary<string, string>)MyStringToStringIDict)["key"]);
-            Assert.Equal("value", ((IReadOnlyDictionary<string, string>)MyStringToStringIReadOnlyDict)["key"]);
         }
     }
 }

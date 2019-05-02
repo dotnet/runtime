@@ -51,11 +51,13 @@ namespace System.Text.Json.Serialization
         internal JsonPropertyInfo CreateProperty(Type declaredPropertyType, Type runtimePropertyType, PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
         {
             Type collectionElementType = null;
-            ClassType propertyClassType = GetClassType(runtimePropertyType);
-            if (propertyClassType == ClassType.Enumerable || propertyClassType == ClassType.Dictionary)
+            switch (GetClassType(runtimePropertyType))
             {
-                collectionElementType = GetElementType(runtimePropertyType);
-                // todo: if collectionElementType is object, create loosely-typed collection (JsonArray).
+                case ClassType.Enumerable:
+                case ClassType.Dictionary:
+                case ClassType.Unknown:
+                    collectionElementType = GetElementType(runtimePropertyType);
+                    break;
             }
 
             // Create the JsonPropertyInfo<TType, TProperty>
@@ -80,14 +82,13 @@ namespace System.Text.Json.Serialization
             return jsonInfo;
         }
 
+        internal JsonPropertyInfo CreateRootObject(JsonSerializerOptions options)
+        {
+            return CreateProperty(Type, Type, null, Type, options);
+        }
+
         internal JsonPropertyInfo CreatePolymorphicProperty(JsonPropertyInfo property, Type runtimePropertyType, JsonSerializerOptions options)
         {
-            if (property == null)
-            {
-                // Used with root objects which are not really a property.
-                return CreateProperty(runtimePropertyType, runtimePropertyType, null, runtimePropertyType, options);
-            }
-
             JsonPropertyInfo runtimeProperty = CreateProperty(property.DeclaredPropertyType, runtimePropertyType, property?.PropertyInfo, Type, options);
             property.CopyRuntimeSettingsTo(runtimeProperty);
 

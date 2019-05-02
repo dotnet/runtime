@@ -40,5 +40,18 @@ namespace System.Text.Json.Serialization.Tests
                 return TestData.WriteSuccessCases;
             }
         }
+
+        [Fact]
+        public static void WriteObjectAsObject()
+        {
+            var obj = new ObjectObject { Object = new object() };
+            string json = JsonSerializer.ToString(obj);
+            Assert.Equal(@"{""Object"":{}}", json);
+        }
+
+        public class ObjectObject
+        {
+            public object Object { get; set; }
+        }
     }
 }

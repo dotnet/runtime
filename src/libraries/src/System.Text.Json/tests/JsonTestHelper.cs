@@ -6,12 +6,14 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text.Json.Tests;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using Xunit.Sdk;
 
-namespace System.Text.Json.Tests
+namespace System.Text.Json
 {
     internal static class JsonTestHelper
     {
@@ -636,5 +638,10 @@ namespace System.Text.Json.Tests
                 throw new ThrowsException(typeof(E), ex);
             }
         }
+
+        private static readonly Regex s_stripWhitespace = new Regex(@"\s+", RegexOptions.Compiled);
+
+        public static string StripWhitespace(this string value)
+            => s_stripWhitespace.Replace(value, string.Empty);
     }
 }
