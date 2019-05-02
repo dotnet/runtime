@@ -26,6 +26,13 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ValidateDepth()
+        {
+            if (CurrentDepth >= JsonConstants.MaxWriterDepth)
+                ThrowHelper.ThrowInvalidOperationException(_currentDepth);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateWritingProperty()
         {
             if (!Options.SkipValidation)

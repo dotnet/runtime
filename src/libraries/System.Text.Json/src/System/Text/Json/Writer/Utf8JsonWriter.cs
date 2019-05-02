@@ -549,6 +549,53 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Writes the beginning of a JSON array with a pre-encoded property name as the key.
+        /// </summary>
+        /// <param name="propertyName">The JSON encoded property name of the JSON array to be transcoded and written as UTF-8.</param>
+        /// <remarks>
+        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        public void WriteStartArray(JsonEncodedText propertyName)
+        {
+            WriteStartHelper(propertyName.EncodedUtf8Bytes, JsonConstants.OpenBracket);
+            _tokenType = JsonTokenType.StartArray;
+        }
+
+        /// <summary>
+        /// Writes the beginning of a JSON object with a pre-encoded property name as the key.
+        /// </summary>
+        /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <remarks>
+        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
+        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        public void WriteStartObject(JsonEncodedText propertyName)
+        {
+            WriteStartHelper(propertyName.EncodedUtf8Bytes, JsonConstants.OpenBrace);
+            _tokenType = JsonTokenType.StartObject;
+        }
+
+        private void WriteStartHelper(ReadOnlySpan<byte> utf8PropertyName, byte token)
+        {
+            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxTokenSize);
+
+            ValidateDepth();
+
+            WriteStartByOptions(utf8PropertyName, token);
+
+            _currentDepth &= JsonConstants.RemoveFlagsBitMask;
+            _currentDepth++;
+            _isNotPrimitive = true;
+        }
+
+        /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.
         /// </summary>
         /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON array to be written.</param>

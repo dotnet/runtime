@@ -140,39 +140,83 @@ namespace System.Text.Json
 
         internal static int GetUtf8ByteCount(ReadOnlySpan<char> text)
         {
+            try
+            {
 #if BUILDING_INBOX_LIBRARY
-            return s_utf8Encoding.GetByteCount(text);
+                return s_utf8Encoding.GetByteCount(text);
 #else
-            if (text.IsEmpty)
-            {
-                return 0;
-            }
-            unsafe
-            {
-                fixed (char* charPtr = text)
+                if (text.IsEmpty)
                 {
-                    return s_utf8Encoding.GetByteCount(charPtr, text.Length);
+                    return 0;
                 }
-            }
+                unsafe
+                {
+                    fixed (char* charPtr = text)
+                    {
+                        return s_utf8Encoding.GetByteCount(charPtr, text.Length);
+                    }
+                }
 #endif
+            }
+            catch (EncoderFallbackException ex)
+            {
+                // We want to be consistent with the exception being thrown
+                // so the user only has to catch a single exception.
+                // Since we already throw ArgumentException when validating other arguments,
+                // using that exception for failure to encode invalid UTF-16 chars as well.
+                // Therefore, wrapping the EncoderFallbackException around an ArgumentException.
+                throw ThrowHelper.GetArgumentException_ReadInvalidUTF16(ex);
+            }
         }
 
         internal static int GetUtf8FromText(ReadOnlySpan<char> text, Span<byte> dest)
         {
-#if BUILDING_INBOX_LIBRARY
-            return s_utf8Encoding.GetBytes(text, dest);
-#else
-            if (text.IsEmpty)
+            try
             {
-                return 0;
+#if BUILDING_INBOX_LIBRARY
+                return s_utf8Encoding.GetBytes(text, dest);
+#else
+                if (text.IsEmpty)
+                {
+                    return 0;
+                }
+
+                unsafe
+                {
+                    fixed (char* charPtr = text)
+                    fixed (byte* destPtr = dest)
+                    {
+                        return s_utf8Encoding.GetBytes(charPtr, text.Length, destPtr, dest.Length);
+                    }
+                }
+#endif
+            }
+            catch (EncoderFallbackException ex)
+            {
+                // We want to be consistent with the exception being thrown
+                // so the user only has to catch a single exception.
+                // Since we already throw ArgumentException when validating other arguments,
+                // using that exception for failure to encode invalid UTF-16 chars as well.
+                // Therefore, wrapping the EncoderFallbackException around an ArgumentException.
+                throw ThrowHelper.GetArgumentException_ReadInvalidUTF16(ex);
+            }
+        }
+
+        internal static string GetTextFromUtf8(ReadOnlySpan<byte> utf8Text)
+        {
+#if BUILDING_INBOX_LIBRARY
+            return s_utf8Encoding.GetString(utf8Text);
+#else
+            if (utf8Text.IsEmpty)
+            {
+                return string.Empty;
             }
 
             unsafe
             {
-                fixed (char* charPtr = text)
-                fixed (byte* destPtr = dest)
+                fixed (byte* bytePtr = utf8Text)
                 {
-                    return s_utf8Encoding.GetBytes(charPtr, text.Length, destPtr, dest.Length);
+                    return s_utf8Encoding.GetString(bytePtr, utf8Text.Length);
                 }
             }
 #endif

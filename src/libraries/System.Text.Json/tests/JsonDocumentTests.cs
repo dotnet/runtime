@@ -1437,7 +1437,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void CheckInvalidString()
         {
-            Assert.Throws<EncoderFallbackException>(() => JsonDocument.Parse("{ \"unpaired\uDFFE\": true }"));
+            Assert.Throws<ArgumentException>(() => JsonDocument.Parse("{ \"unpaired\uDFFE\": true }"));
         }
 
         [Theory]
@@ -1750,6 +1750,17 @@ namespace System.Text.Json.Tests
                 AssertExtensions.Throws<ArgumentNullException>(
                     "propertyName",
                     () => doc.RootElement.TryGetProperty((string)null, out _));
+            }
+        }
+
+        [Fact]
+        public static void GetPropertyInvalidUtf16()
+        {
+            using (JsonDocument doc = JsonDocument.Parse("{\"name\":\"value\"}"))
+            {
+                Assert.Throws<ArgumentException>(() => doc.RootElement.GetProperty("unpaired\uDFFE"));
+
+                Assert.Throws<ArgumentException>(() => doc.RootElement.TryGetProperty("unpaired\uDFFE", out _));
             }
         }
 

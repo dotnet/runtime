@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization
         {
             Debug.Assert(type != null || value == null);
 
-            var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
+            using var writer = new Utf8JsonWriter(output, options.GetWriterOptions());
 
             if (value == null)
             {
