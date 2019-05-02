@@ -173,13 +173,13 @@ namespace System.Text.Json
         private static bool IsAsciiValue(byte value) => value < 0x80;
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is a UTF-8 continuation byte.
+        /// Returns <see langword="true"/> if <paramref name="value"/> is a UTF-8 continuation byte.
         /// A UTF-8 continuation byte is a byte whose value is in the range 0x80-0xBF, inclusive.
         /// </summary>
         private static bool IsUtf8ContinuationByte(byte value) => (value & 0xC0) == 0x80;
 
         /// <summary>
-        /// Returns <see langword="true"/> iff the low word of <paramref name="char"/> is a UTF-16 surrogate.
+        /// Returns <see langword="true"/> if the low word of <paramref name="char"/> is a UTF-16 surrogate.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsLowWordSurrogate(uint @char)

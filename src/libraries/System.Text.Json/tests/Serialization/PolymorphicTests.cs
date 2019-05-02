@@ -49,9 +49,19 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ParseUntyped()
         {
-            // Not supported until we are able to deserialize into JsonElement.
-            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<object>(@"""hello"""));
-            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<object>(@"true"));
+            object obj = JsonSerializer.Parse<object>(@"""hello""");
+            Assert.IsType<JsonElement>(obj);
+            JsonElement element = (JsonElement)obj;
+            Assert.Equal(JsonValueType.String, element.Type);
+            Assert.Equal("hello", element.GetString());
+
+            obj = JsonSerializer.Parse<object>(@"true");
+            element = (JsonElement)obj;
+            Assert.Equal(JsonValueType.True, element.Type);
+            Assert.Equal(true, element.GetBoolean());
+
+            obj = JsonSerializer.Parse<object>(@"null");
+            Assert.Null(obj);
         }
 
         [Fact]

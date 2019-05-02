@@ -5,9 +5,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization
 {
+    [DebuggerDisplay("ClassType.{JsonClassInfo.ClassType} {JsonClassInfo.Type.Name}")]
     internal struct ReadStackFrame
     {
         // The object (POCO or IEnumerable) that is being populated
@@ -39,6 +41,21 @@ namespace System.Text.Json.Serialization
         public bool IsProcessingEnumerableOrDictionary => IsProcessingEnumerable || IsDictionary;
         public bool IsProcessingEnumerable => IsEnumerable || IsPropertyEnumerable;
         public bool IsPropertyEnumerable => JsonPropertyInfo != null ? JsonPropertyInfo.ClassType == ClassType.Enumerable : false;
+
+        public bool IsProcessingProperty
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (JsonPropertyInfo == null || Skip())
+                {
+                    return false;
+                }
+
+                ClassType type = JsonPropertyInfo.ClassType;
+                return type == ClassType.Value || type == ClassType.Unknown;
+            }
+        }
 
         public void Initialize(Type type, JsonSerializerOptions options)
         {

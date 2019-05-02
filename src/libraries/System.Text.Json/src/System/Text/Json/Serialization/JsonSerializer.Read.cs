@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
@@ -75,7 +74,14 @@ namespace System.Text.Json.Serialization
                 }
                 else if (tokenType == JsonTokenType.StartObject)
                 {
-                    HandleStartObject(options, ref reader, ref state);
+                    if (!state.Current.IsProcessingProperty)
+                    {
+                        HandleStartObject(options, ref reader, ref state);
+                    }
+                    else if (HandleValue(tokenType, options, ref reader, ref state))
+                    {
+                        return;
+                    }
                 }
                 else if (tokenType == JsonTokenType.EndObject)
                 {
@@ -86,7 +92,14 @@ namespace System.Text.Json.Serialization
                 }
                 else if (tokenType == JsonTokenType.StartArray)
                 {
-                    HandleStartArray(options, ref reader, ref state);
+                    if (!state.Current.IsProcessingProperty)
+                    {
+                        HandleStartArray(options, ref reader, ref state);
+                    }
+                    else if (HandleValue(tokenType, options, ref reader, ref state))
+                    {
+                        return;
+                    }
                 }
                 else if (tokenType == JsonTokenType.EndArray)
                 {

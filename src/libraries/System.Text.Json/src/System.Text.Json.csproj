@@ -59,6 +59,8 @@
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt16.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt32.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt64.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterJsonElement.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterObject.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterSByte.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterSingle.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterString.cs" />

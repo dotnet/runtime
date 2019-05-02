@@ -15,6 +15,8 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { typeof(SimpleTestClass), SimpleTestClass.s_data };
                 yield return new object[] { typeof(SimpleTestClassWithNullables), SimpleTestClassWithNullables.s_data };
                 yield return new object[] { typeof(SimpleTestClassWithNulls), SimpleTestClassWithNulls.s_data };
+                yield return new object[] { typeof(SimpleTestClassWithSimpleObject), SimpleTestClassWithSimpleObject.s_data };
+                yield return new object[] { typeof(SimpleTestClassWithObjectArrays), SimpleTestClassWithObjectArrays.s_data };
                 yield return new object[] { typeof(BasicPerson), BasicPerson.s_data };
                 yield return new object[] { typeof(BasicCompany), BasicCompany.s_data };
                 yield return new object[] { typeof(TestClassWithNestedObjectInner), TestClassWithNestedObjectInner.s_data };
@@ -32,6 +34,9 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { typeof(TestClassWithGenericICollectionT), TestClassWithGenericICollectionT.s_data };
                 yield return new object[] { typeof(TestClassWithGenericIReadOnlyCollectionT), TestClassWithGenericIReadOnlyCollectionT.s_data };
                 yield return new object[] { typeof(TestClassWithGenericIReadOnlyListT), TestClassWithGenericIReadOnlyListT.s_data };
+                yield return new object[] { typeof(JsonElementTests.JsonElementClass), JsonElementTests.JsonElementClass.s_data };
+                yield return new object[] { typeof(JsonElementTests.JsonElementArrayClass), JsonElementTests.JsonElementArrayClass.s_data };
+                yield return new object[] { typeof(ClassWithComplexObjects), ClassWithComplexObjects.s_data };
             }
         }
         public static IEnumerable<object[]> WriteSuccessCases
@@ -41,6 +46,8 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { new SimpleTestClass() };
                 yield return new object[] { new SimpleTestClassWithNullables() };
                 yield return new object[] { new SimpleTestClassWithNulls() };
+                yield return new object[] { new SimpleTestClassWithSimpleObject() };
+                yield return new object[] { new SimpleTestClassWithObjectArrays() };
                 yield return new object[] { new BasicPerson() };
                 yield return new object[] { new BasicCompany() };
                 yield return new object[] { new TestClassWithNestedObjectInner() };
@@ -58,6 +65,9 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { new TestClassWithGenericICollectionT() };
                 yield return new object[] { new TestClassWithGenericIReadOnlyCollectionT() };
                 yield return new object[] { new TestClassWithGenericIReadOnlyListT() };
+                yield return new object[] { new JsonElementTests.JsonElementClass() };
+                yield return new object[] { new JsonElementTests.JsonElementArrayClass() };
+                yield return new object[] { new ClassWithComplexObjects() };
             }
         }
     }

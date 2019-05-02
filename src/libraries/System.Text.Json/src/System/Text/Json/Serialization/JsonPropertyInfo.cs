@@ -11,6 +11,7 @@ using System.Text.Json.Serialization.Policies;
 
 namespace System.Text.Json.Serialization
 {
+    [DebuggerDisplay("{PropertyInfo}")]
     internal abstract class JsonPropertyInfo
     {
         // Cache the converters so they don't get created for every enumerable property.

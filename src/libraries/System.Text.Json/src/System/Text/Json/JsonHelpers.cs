@@ -9,7 +9,7 @@ namespace System.Text.Json
     internal static partial class JsonHelpers
     {
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is a valid Unicode scalar
+        /// Returns <see langword="true"/> if <paramref name="value"/> is a valid Unicode scalar
         /// value, i.e., is in [ U+0000..U+D7FF ], inclusive; or [ U+E000..U+10FFFF ], inclusive.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -24,7 +24,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
+        /// Returns <see langword="true"/> if <paramref name="value"/> is between
         /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,7 +32,7 @@ namespace System.Text.Json
             => (value - lowerBound) <= (upperBound - lowerBound);
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
+        /// Returns <see langword="true"/> if <paramref name="value"/> is between
         /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -40,7 +40,7 @@ namespace System.Text.Json
             => ((byte)(value - lowerBound) <= (byte)(upperBound - lowerBound));
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
+        /// Returns <see langword="true"/> if <paramref name="value"/> is between
         /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -48,7 +48,7 @@ namespace System.Text.Json
             => (uint)(value - lowerBound) <= (uint)(upperBound - lowerBound);
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
+        /// Returns <see langword="true"/> if <paramref name="value"/> is between
         /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -56,7 +56,7 @@ namespace System.Text.Json
             => (ulong)(value - lowerBound) <= (ulong)(upperBound - lowerBound);
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
+        /// Returns <see langword="true"/> if <paramref name="value"/> is between
         /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -65,7 +65,7 @@ namespace System.Text.Json
             => (value >= lowerBound) && (value <= upperBound);
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is between
+        /// Returns <see langword="true"/> if <paramref name="value"/> is between
         /// <paramref name="lowerBound"/> and <paramref name="upperBound"/>, inclusive.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -73,7 +73,7 @@ namespace System.Text.Json
             => (value - lowerBound) <= (upperBound - lowerBound);
 
         /// <summary>
-        /// Returns <see langword="true"/> iff <paramref name="value"/> is in the range [0..9].
+        /// Returns <see langword="true"/> if <paramref name="value"/> is in the range [0..9].
         /// Otherwise, returns <see langword="false"/>.
         /// </summary>
         public static bool IsDigit(byte value) => (uint)(value - '0') <= '9' - '0';
