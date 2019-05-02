@@ -181,7 +181,7 @@ namespace System.Collections.Generic
             int threshold = (int)(((double)_array.Length) * 0.9);
             if (_size < threshold)
             {
-                Array.Resize(ref _array, _size);
+                Array.Resize(ref _array!, _size); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 _version++;
             }
         }
@@ -201,14 +201,14 @@ namespace System.Collections.Generic
             return array[size];
         }
 
-        public bool TryPeek(out T result)
+        public bool TryPeek(out T result) // TODO-NULLABLE-GENERIC
         {
             int size = _size - 1;
             T[] array = _array;
 
             if ((uint)size >= (uint)array.Length)
             {
-                result = default;
+                result = default!; // TODO-NULLABLE-GENERIC
                 return false;
             }
             result = array[size];
@@ -235,19 +235,19 @@ namespace System.Collections.Generic
             T item = array[size];
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                array[size] = default;     // Free memory quicker.
+                array[size] = default!;     // Free memory quicker.
             }
             return item;
         }
 
-        public bool TryPop(out T result)
+        public bool TryPop(out T result) // TODO-NULLABLE-GENERIC
         {
             int size = _size - 1;
             T[] array = _array;
 
             if ((uint)size >= (uint)array.Length)
             {
-                result = default;
+                result = default!; // TODO-NULLABLE-GENERIC
                 return false;
             }
 
@@ -256,7 +256,7 @@ namespace System.Collections.Generic
             result = array[size];
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                array[size] = default;     // Free memory quicker.
+                array[size] = default!; // Free memory quicker.
             }
             return true;
         }
@@ -283,7 +283,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void PushWithResize(T item)
         {
-            Array.Resize(ref _array, (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length);
+            Array.Resize(ref _array!, (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             _array[_size] = item;
             _version++;
             _size++;
@@ -324,7 +324,7 @@ namespace System.Collections.Generic
                 _stack = stack;
                 _version = stack._version;
                 _index = -2;
-                _currentElement = default(T);
+                _currentElement = default!; // TODO-NULLABLE-GENERIC
             }
 
             public void Dispose()
@@ -353,7 +353,7 @@ namespace System.Collections.Generic
                 if (retval)
                     _currentElement = _stack._array[_index];
                 else
-                    _currentElement = default(T);
+                    _currentElement = default!; // TODO-NULLABLE-GENERIC
                 return retval;
             }
 
@@ -373,7 +373,7 @@ namespace System.Collections.Generic
                 throw new InvalidOperationException(_index == -2 ? SR.InvalidOperation_EnumNotStarted : SR.InvalidOperation_EnumEnded);
             }
             
-            object System.Collections.IEnumerator.Current
+            object? System.Collections.IEnumerator.Current
             {
                 get { return Current; }
             }
@@ -382,7 +382,7 @@ namespace System.Collections.Generic
             {
                 if (_version != _stack._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = -2;
-                _currentElement = default(T);
+                _currentElement = default!; // TODO-NULLABLE-GENERIC
             }
         }
     }

@@ -15,10 +15,10 @@ namespace System.Collections.Generic
     public class LinkedList<T> : ICollection<T>, ICollection, IReadOnlyCollection<T>, ISerializable, IDeserializationCallback
     {
         // This LinkedList is a doubly-Linked circular list.
-        internal LinkedListNode<T> head;
+        internal LinkedListNode<T>? head;
         internal int count;
         internal int version;
-        private SerializationInfo _siInfo; //A temporary variable which we need during deserialization.  
+        private SerializationInfo? _siInfo; //A temporary variable which we need during deserialization.  
 
         // names for serialization
         private const string VersionName = "Version"; // Do not rename (binary serialization)
@@ -52,12 +52,12 @@ namespace System.Collections.Generic
             get { return count; }
         }
 
-        public LinkedListNode<T> First
+        public LinkedListNode<T>? First
         {
             get { return head; }
         }
 
-        public LinkedListNode<T> Last
+        public LinkedListNode<T>? Last
         {
             get { return head == null ? null : head.prev; }
         }
@@ -75,8 +75,8 @@ namespace System.Collections.Generic
         public LinkedListNode<T> AddAfter(LinkedListNode<T> node, T value)
         {
             ValidateNode(node);
-            LinkedListNode<T> result = new LinkedListNode<T>(node.list, value);
-            InternalInsertNodeBefore(node.next, result);
+            LinkedListNode<T> result = new LinkedListNode<T>(node.list!, value);
+            InternalInsertNodeBefore(node.next!, result);
             return result;
         }
 
@@ -84,14 +84,14 @@ namespace System.Collections.Generic
         {
             ValidateNode(node);
             ValidateNewNode(newNode);
-            InternalInsertNodeBefore(node.next, newNode);
+            InternalInsertNodeBefore(node.next!, newNode);
             newNode.list = this;
         }
 
         public LinkedListNode<T> AddBefore(LinkedListNode<T> node, T value)
         {
             ValidateNode(node);
-            LinkedListNode<T> result = new LinkedListNode<T>(node.list, value);
+            LinkedListNode<T> result = new LinkedListNode<T>(node.list!, value);
             InternalInsertNodeBefore(node, result);
             if (node == head)
             {
@@ -174,7 +174,7 @@ namespace System.Collections.Generic
 
         public void Clear()
         {
-            LinkedListNode<T> current = head;
+            LinkedListNode<T>? current = head;
             while (current != null)
             {
                 LinkedListNode<T> temp = current;
@@ -214,20 +214,20 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_InsufficientSpace);
             }
 
-            LinkedListNode<T> node = head;
+            LinkedListNode<T>? node = head;
             if (node != null)
             {
                 do
                 {
-                    array[index++] = node.item;
+                    array[index++] = node!.item;
                     node = node.next;
                 } while (node != head);
             }
         }
 
-        public LinkedListNode<T> Find(T value)
+        public LinkedListNode<T>? Find(T value)
         {
-            LinkedListNode<T> node = head;
+            LinkedListNode<T>? node = head;
             EqualityComparer<T> c = EqualityComparer<T>.Default;
             if (node != null)
             {
@@ -235,7 +235,7 @@ namespace System.Collections.Generic
                 {
                     do
                     {
-                        if (c.Equals(node.item, value))
+                        if (c.Equals(node!.item, value))
                         {
                             return node;
                         }
@@ -246,7 +246,7 @@ namespace System.Collections.Generic
                 {
                     do
                     {
-                        if (node.item == null)
+                        if (node!.item == null)
                         {
                             return node;
                         }
@@ -257,12 +257,12 @@ namespace System.Collections.Generic
             return null;
         }
 
-        public LinkedListNode<T> FindLast(T value)
+        public LinkedListNode<T>? FindLast(T value)
         {
             if (head == null) return null;
 
-            LinkedListNode<T> last = head.prev;
-            LinkedListNode<T> node = last;
+            LinkedListNode<T>? last = head.prev;
+            LinkedListNode<T>? node = last;
             EqualityComparer<T> c = EqualityComparer<T>.Default;
             if (node != null)
             {
@@ -270,7 +270,7 @@ namespace System.Collections.Generic
                 {
                     do
                     {
-                        if (c.Equals(node.item, value))
+                        if (c.Equals(node!.item, value))
                         {
                             return node;
                         }
@@ -282,7 +282,7 @@ namespace System.Collections.Generic
                 {
                     do
                     {
-                        if (node.item == null)
+                        if (node!.item == null)
                         {
                             return node;
                         }
@@ -305,7 +305,7 @@ namespace System.Collections.Generic
 
         public bool Remove(T value)
         {
-            LinkedListNode<T> node = Find(value);
+            LinkedListNode<T>? node = Find(value);
             if (node != null)
             {
                 InternalRemoveNode(node);
@@ -329,7 +329,7 @@ namespace System.Collections.Generic
         public void RemoveLast()
         {
             if (head == null) { throw new InvalidOperationException(SR.LinkedListEmpty); }
-            InternalRemoveNode(head.prev);
+            InternalRemoveNode(head.prev!);
         }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -365,7 +365,7 @@ namespace System.Collections.Generic
 
             if (count != 0)
             {
-                T[] array = (T[])_siInfo.GetValue(ValuesName, typeof(T[]));
+                T[]? array = (T[]?)_siInfo.GetValue(ValuesName, typeof(T[]));
 
                 if (array == null)
                 {
@@ -389,7 +389,7 @@ namespace System.Collections.Generic
         {
             newNode.next = node;
             newNode.prev = node.prev;
-            node.prev.next = newNode;
+            node.prev!.next = newNode;
             node.prev = newNode;
             version++;
             count++;
@@ -416,8 +416,8 @@ namespace System.Collections.Generic
             }
             else
             {
-                node.next.prev = node.prev;
-                node.prev.next = node.next;
+                node.next!.prev = node.prev;
+                node.prev!.next = node.next;
                 if (head == node)
                 {
                     head = node.next;
@@ -488,7 +488,7 @@ namespace System.Collections.Generic
                 throw new ArgumentException(SR.Arg_InsufficientSpace);
             }
 
-            T[] tArray = array as T[];
+            T[]? tArray = array as T[];
             if (tArray != null)
             {
                 CopyTo(tArray, index);
@@ -497,19 +497,19 @@ namespace System.Collections.Generic
             {
                 // No need to use reflection to verify that the types are compatible because it isn't 100% correct and we can rely 
                 // on the runtime validation during the cast that happens below (i.e. we will get an ArrayTypeMismatchException).
-                object[] objects = array as object[];
+                object?[]? objects = array as object[];
                 if (objects == null)
                 {
                     throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
-                LinkedListNode<T> node = head;
+                LinkedListNode<T>? node = head;
                 try
                 {
                     if (node != null)
                     {
                         do
                         {
-                            objects[index++] = node.item;
+                            objects[index++] = node!.item;
                             node = node.next;
                         } while (node != head);
                     }
@@ -530,7 +530,7 @@ namespace System.Collections.Generic
         public struct Enumerator : IEnumerator<T>, IEnumerator, ISerializable, IDeserializationCallback
         {
             private LinkedList<T> _list;
-            private LinkedListNode<T> _node;
+            private LinkedListNode<T>? _node;
             private int _version;
             private T _current;
             private int _index;
@@ -545,7 +545,7 @@ namespace System.Collections.Generic
                 _list = list;
                 _version = list.version;
                 _node = list.head;
-                _current = default(T);
+                _current = default!; // TODO-NULLABLE-GENERIC
                 _index = 0;
             }
 
@@ -554,7 +554,7 @@ namespace System.Collections.Generic
                 get { return _current; }
             }
 
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get
                 {
@@ -597,7 +597,7 @@ namespace System.Collections.Generic
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
 
-                _current = default(T);
+                _current = default!; // TODO-NULLABLE-GENERIC
                 _node = _list.head;
                 _index = 0;
             }
@@ -621,9 +621,9 @@ namespace System.Collections.Generic
     // Note following class is not serializable since we customized the serialization of LinkedList. 
     public sealed class LinkedListNode<T>
     {
-        internal LinkedList<T> list;
-        internal LinkedListNode<T> next;
-        internal LinkedListNode<T> prev;
+        internal LinkedList<T>? list;
+        internal LinkedListNode<T>? next;
+        internal LinkedListNode<T>? prev;
         internal T item;
 
         public LinkedListNode(T value)
@@ -637,19 +637,19 @@ namespace System.Collections.Generic
             item = value;
         }
 
-        public LinkedList<T> List
+        public LinkedList<T>? List
         {
             get { return list; }
         }
 
-        public LinkedListNode<T> Next
+        public LinkedListNode<T>? Next
         {
-            get { return next == null || next == list.head ? null : next; }
+            get { return next == null || next == list!.head ? null : next; }
         }
 
-        public LinkedListNode<T> Previous
+        public LinkedListNode<T>? Previous
         {
-            get { return prev == null || this == list.head ? null : prev; }
+            get { return prev == null || this == list!.head ? null : prev; }
         }
 
         public T Value

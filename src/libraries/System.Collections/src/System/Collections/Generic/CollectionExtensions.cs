@@ -6,12 +6,12 @@ namespace System.Collections.Generic
 {
     public static class CollectionExtensions
     {
-        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key)
+        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) where TKey : object
         {
-            return dictionary.GetValueOrDefault(key, default(TValue));
+            return dictionary.GetValueOrDefault(key, default(TValue)!); // TODO-NULLABLE-GENERIC
         }
 
-        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue)
+        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) where TKey : object
         {
             if (dictionary == null)
             {
@@ -22,7 +22,7 @@ namespace System.Collections.Generic
             return dictionary.TryGetValue(key, out value) ? value : defaultValue;
         }
 
-        public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        public static bool TryAdd<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, TValue value) where TKey : object
         {
             if (dictionary == null)
             {
@@ -38,7 +38,7 @@ namespace System.Collections.Generic
             return false;
         }
 
-        public static bool Remove<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, out TValue value)
+        public static bool Remove<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, out TValue value) where TKey : object // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
         {
             if (dictionary == null)
             {
@@ -51,7 +51,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            value = default(TValue);
+            value = default(TValue)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
             return false;
         }
     }
