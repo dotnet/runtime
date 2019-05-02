@@ -207,7 +207,7 @@ namespace System
                 }
             }
 
-            return (DaylightTime)m_CachedDaylightChanges[objYear];
+            return (DaylightTime)m_CachedDaylightChanges[objYear]!;
         }
 
         // The per-year information is cached in this instance value. As a result it can
