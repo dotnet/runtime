@@ -5,9 +5,7 @@ Option Explicit On
 Option Strict On
 
 Imports System
-Imports System.Diagnostics
 Imports System.Runtime.InteropServices
-Imports Microsoft.Win32.SafeHandles
 
 Namespace Microsoft.VisualBasic.CompilerServices
 
@@ -38,28 +36,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
                 Dispose()
                 MyBase.Finalize()
             End Sub
-        End Class
-
-        ''' <summary>
-        ''' Inherits SafeHandleZeroOrMinusOneIsInvalid, with additional InitialSetHandle method.
-        ''' This is required because call to constructor of SafeHandle is not allowed in constrained region.
-        ''' </summary>
-        ''' <remarks>VSWhidbey 544308</remarks>
-        Friend NotInheritable Class LateInitSafeHandleZeroOrMinusOneIsInvalid
-            Inherits SafeHandleZeroOrMinusOneIsInvalid
-
-            Friend Sub New()
-                MyBase.New(True)
-            End Sub
-
-            Friend Sub InitialSetHandle(ByVal h As IntPtr)
-                Debug.Assert(MyBase.IsInvalid, "Safe handle should only be set once.")
-                MyBase.SetHandle(h)
-            End Sub
-
-            Protected Overrides Function ReleaseHandle() As Boolean
-                Return NativeMethods.CloseHandle(Me.handle) <> 0
-            End Function
         End Class
 
         ''' <summary>

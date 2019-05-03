@@ -31,6 +31,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\ApplicationBase.vb" />
+    <Compile Include="Microsoft\VisualBasic\ApplicationServices\AssemblyInfo.vb" />
+    <Compile Include="Microsoft\VisualBasic\ApplicationServices\ConsoleApplicationBase.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupNextInstanceEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\UnhandledExceptionEventArgs.vb" />

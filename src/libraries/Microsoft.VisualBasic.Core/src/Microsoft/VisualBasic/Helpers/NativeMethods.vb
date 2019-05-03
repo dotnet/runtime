@@ -129,7 +129,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
 
         ''' <summary>
         ''' Contains information that the SHFileOperation function uses to perform file operations
-        ''' on 64-bit platforms, where the structure is unpacked. VSWhidbey 421265,
+        ''' on 64-bit platforms, where the structure is unpacked.
         ''' </summary>
         <StructLayout(LayoutKind.Sequential, CharSet:=CharSet.Auto)>
         Private Structure SHFILEOPSTRUCT64
@@ -236,6 +236,47 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ' The dwItem1 and dwItem2 parameters are DWORD values.
             SHCNF_DWORD = &H3
         End Enum
+
+        ''' <summary>
+        ''' Contains information about the current state of both physical and virtual memory, including extended memory.
+        ''' </summary>
+        <StructLayout(LayoutKind.Sequential)>
+        Friend Structure MEMORYSTATUSEX
+            'typedef struct _MEMORYSTATUSEX {  
+            '   DWORD dwLength;                     Size of the structure. Must set before calling GlobalMemoryStatusEx.
+            '   DWORD dwMemoryLoad;                 Number between 0 and 100 on current memory utilization.
+            '   DWORDLONG ullTotalPhys;             Total size of physical memory.
+            '   DWORDLONG ullAvailPhys;             Total size of available physical memory.
+            '   DWORDLONG ullTotalPageFile;         Size of committed memory limit.
+            '   DWORDLONG ullAvailPageFile;         Size of available memory to committed (ullTotalPageFile max).
+            '   DWORDLONG ullTotalVirtual;          Total size of user potion of virtual address space of calling process.
+            '   DWORDLONG ullAvailVirtual;          Total size of unreserved and uncommitted memory in virtual address space.
+            '   DWORDLONG ullAvailExtendedVirtual;  Total size of unreserved and uncommitted memory in extended portion of virual address.
+            '} MEMORYSTATUSEX, *LPMEMORYSTATUSEX;
+
+            Friend dwLength As UInt32
+            Friend dwMemoryLoad As UInt32
+            Friend ullTotalPhys As UInt64
+            Friend ullAvailPhys As UInt64
+            Friend ullTotalPageFile As UInt64
+            Friend ullAvailPageFile As UInt64
+            Friend ullTotalVirtual As UInt64
+            Friend ullAvailVirtual As UInt64
+            Friend ullAvailExtendedVirtual As UInt64
+
+            Friend Sub Init()
+                dwLength = CType(Marshal.SizeOf(GetType(MEMORYSTATUSEX)), UInt32)
+            End Sub
+        End Structure
+
+        ''' <summary>
+        ''' Obtains information about the system's current usage of both physical and virtual memory.
+        ''' </summary>
+        ''' <param name="lpBuffer">Pointer to a MEMORYSTATUSEX structure.</param>
+        ''' <returns>True if the function succeeds. Otherwise, False.</returns>
+        <DllImport("Kernel32.dll", CharSet:=CharSet.Auto, SetLastError:=True)>
+        Friend Shared Function GlobalMemoryStatusEx(ByRef lpBuffer As MEMORYSTATUSEX) As <MarshalAsAttribute(UnmanagedType.Bool)> Boolean
+        End Function
 
         ''' <summary>
         ''' The MoveFileEx function moves an existing file or directory.
