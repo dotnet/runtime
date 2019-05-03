@@ -4800,10 +4800,18 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_LDSFLDA) {
-			MonoClassField *field = (MonoClassField*)imethod->data_items[*(guint16 *)(ip + 1)];
-			sp->data.p = mono_class_static_field_address (imethod->domain, field);
-			EXCEPTION_CHECKPOINT;
-			ip += 2;
+			MonoVTable *vtable = (MonoVTable*) imethod->data_items [*(guint16*)(ip + 1)];
+			INIT_VTABLE (vtable);
+			sp->data.p = imethod->data_items [*(guint16*)(ip + 2)];
+			ip += 3;
+			++sp;
+			MINT_IN_BREAK;
+		}
+
+		MINT_IN_CASE(MINT_LDSSFLDA) {
+			guint32 offset = READ32(ip + 1);
+			sp->data.p = mono_get_special_static_data (offset);
+			ip += 3;
 			++sp;
 			MINT_IN_BREAK;
 		}

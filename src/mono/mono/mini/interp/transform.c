@@ -2691,6 +2691,32 @@ interp_emit_stobj (TransformData *td, MonoClass *klass)
 }
 
 static void
+interp_emit_ldsflda (TransformData *td, MonoClassField *field, MonoError *error)
+{
+	MonoDomain *domain = td->rtm->domain;
+	// Initialize the offset for the field
+	MonoVTable *vtable = mono_class_vtable_checked (domain, field->parent, error);
+	return_if_nok (error);
+
+	if (mono_class_field_is_special_static (field)) {
+		guint32 offset;
+
+		mono_domain_lock (domain);
+		g_assert (domain->special_static_fields);
+		offset = GPOINTER_TO_UINT (g_hash_table_lookup (domain->special_static_fields, field));
+		mono_domain_unlock (domain);
+		g_assert (offset);
+
+		interp_add_ins (td, MINT_LDSSFLDA);
+		WRITE32_INS(td->last_ins, 0, &offset);
+	} else {
+		interp_add_ins (td, MINT_LDSFLDA);
+		td->last_ins->data [0] = get_data_item_index (td, vtable);
+		td->last_ins->data [1] = get_data_item_index (td, (char*)mono_vtable_get_static_field_data (vtable) + field->offset);
+	}
+}
+
+static void
 interp_emit_sfld_access (TransformData *td, MonoClassField *field, MonoClass *field_class, int mt, gboolean is_load, MonoError *error)
 {
 	MonoDomain *domain = td->rtm->domain;
@@ -4168,8 +4194,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				if (is_static) {
 					interp_add_ins (td, MINT_POP);
 					td->last_ins->data [0] = 0;
-					interp_add_ins (td, MINT_LDSFLDA);
-					td->last_ins->data [0] = get_data_item_index (td, field);
+					interp_emit_ldsflda (td, field, error);
+					goto_if_nok (error, exit);
 				} else {
 					if ((td->sp - 1)->type == STACK_TYPE_O) {
 						interp_add_ins (td, MINT_LDFLDA);
@@ -4311,9 +4337,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			token = read32 (td->ip + 1);
 			field = interp_field_from_token (method, token, &klass, generic_context, error);
 			goto_if_nok (error, exit);
-			mono_field_get_type_internal (field);
-			interp_add_ins (td, MINT_LDSFLDA);
-			td->last_ins->data [0] = get_data_item_index (td, field);
+			interp_emit_ldsflda (td, field, error);
+			goto_if_nok (error, exit);
 			td->ip += 5;
 			PUSH_SIMPLE_TYPE(td, STACK_TYPE_MP);
 			break;
