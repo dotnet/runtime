@@ -235,6 +235,18 @@ jobs:
       jobParameters:
         readyToRun: true
         testGroup: innerloop
+        displayNameArgs: R2R
+  # The CoreFX runs against CoreCLR
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: test-job.yml
+      buildConfig: release
+      platforms:
+      - Windows_NT_x64
+      jobParameters:
+        corefxTests: true
+        testGroup: innerloop
+        displayNameArgs: CoreFX
 
 # CI
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
@@ -263,6 +275,7 @@ jobs:
       jobParameters:
         readyToRun: true
         testGroup: outerloop
+        displayNameArgs: R2R
 
 #
 # Release test builds
@@ -295,6 +308,7 @@ jobs:
       jobParameters:
         testGroup: outerloop
         readyToRun: true
+        displayNameArgs: R2R
 
 
 # Publish build information to Build Assets Registry
