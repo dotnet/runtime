@@ -774,17 +774,15 @@ namespace System
 
         public bool IsNormalized(NormalizationForm normalizationForm)
         {
-#if CORECLR
-            if (this.IsFastSort())
+            if (this.IsAscii())
             {
-                // If its FastSort && one of the 4 main forms, then its already normalized
+                // If its ASCII && one of the 4 main forms, then its already normalized
                 if (normalizationForm == NormalizationForm.FormC ||
                     normalizationForm == NormalizationForm.FormKC ||
                     normalizationForm == NormalizationForm.FormD ||
                     normalizationForm == NormalizationForm.FormKD)
                     return true;
             }
-#endif
             return Normalization.IsNormalized(this, normalizationForm);
         }
 
@@ -795,18 +793,24 @@ namespace System
 
         public string Normalize(NormalizationForm normalizationForm)
         {
-#if CORECLR
             if (this.IsAscii())
             {
-                // If its FastSort && one of the 4 main forms, then its already normalized
+                // If its ASCII && one of the 4 main forms, then its already normalized
                 if (normalizationForm == NormalizationForm.FormC ||
                     normalizationForm == NormalizationForm.FormKC ||
                     normalizationForm == NormalizationForm.FormD ||
                     normalizationForm == NormalizationForm.FormKD)
                     return this;
             }
-#endif
             return Normalization.Normalize(this, normalizationForm);
+        }
+
+        private unsafe bool IsAscii()
+        {
+            fixed (char* str = &_firstChar)
+            {
+                return ASCIIUtility.GetIndexOfFirstNonAsciiChar(str, (uint)Length) == (uint)Length;
+            }
         }
     }
 }
