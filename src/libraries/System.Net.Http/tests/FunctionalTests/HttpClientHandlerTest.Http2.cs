@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Security;
 using System.Linq;
 using System.Net.Test.Common;
 using System.Text;
@@ -1308,6 +1309,48 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2_ProtocolMismatch_Throws()
+        {
+            HttpClientHandler handler = CreateHttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+
+            using (HttpClient client = CreateHttpClient())
+            {
+                // Create HTTP/1.1 loopback server and advertise HTTP2 via ALPN.
+                await LoopbackServer.CreateServerAsync(async (server, uri) =>
+                {
+                    // Convert http to https as we are going to negotiate TLS.
+                    Task<string> requestTask = client.GetStringAsync(uri.ToString().Replace("http://", "https://"));
+
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        // negotiate TLS with ALPN H/2
+                        var sslStream = new SslStream(connection.Stream, false, delegate { return true; });
+                        SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
+                        options.ServerCertificate = Net.Test.Common.Configuration.Certificates.GetServerCertificate();
+                        options.ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2 };
+                        options.ApplicationProtocols.Add(SslApplicationProtocol.Http2);
+                        // Negotiate TLS.
+                        await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None).ConfigureAwait(false);
+                        // Send back HTTP/1.1 response
+                        await sslStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 400 Unrecognized request\r\n\r\n"), CancellationToken.None);
+                    });
+
+                    try {
+                        await requestTask;
+                        throw new Exception("Should not be here");
+                    }
+                    catch (HttpRequestException e)
+                    {
+                        Assert.NotNull(e.InnerException);
+                        // TBD expect Http2ProtocolException when/if exposed
+                        Assert.False(e.InnerException is ObjectDisposedException);
+                    }
+                    //});
+                });
+        }
+        
         // rfc7540 8.1.2.3.
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2GetAsync_MultipleStatusHeaders_Throws()
