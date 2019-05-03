@@ -52,14 +52,14 @@ namespace System.Net.Http
                     // Start the asynchronous drain.
                     // It may complete synchronously, in which case the connection will be put back in the pool synchronously.
                     // Skip the call to base.Dispose -- it will be deferred until DrainOnDisposeAsync finishes.
-                    DrainOnDisposeAsync();
+                    _ = DrainOnDisposeAsync();
                     return;
                 }
 
                 base.Dispose(disposing);
             }
 
-            private async void DrainOnDisposeAsync()
+            private async Task DrainOnDisposeAsync()
             {
                 HttpConnection connection = _connection;        // Will be null after drain succeeds
 
