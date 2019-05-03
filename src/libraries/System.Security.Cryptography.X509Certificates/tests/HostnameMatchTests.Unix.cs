@@ -16,7 +16,20 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public static void MatchCN_NoWildcards(bool wantsWildcard, bool mixedCase)
+        public static void MatchCN_ThreeLabels(bool wantsWildcard, bool mixedCase)
+        {
+            string targetName = "LocalHost.loCAldoMaIn.exAmple";
+            string subjectCN = wantsWildcard ? "*.LOcaLdomain.exAMPle" : targetName;
+
+            RunTest(targetName, subjectCN, null, !mixedCase, true);
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public static void MatchCN_TwoLabels(bool wantsWildcard, bool mixedCase)
         {
             string targetName = "LocalHost.loCAldoMaIn";
             string subjectCN = wantsWildcard ? "*.LOcaLdomain" : targetName;
