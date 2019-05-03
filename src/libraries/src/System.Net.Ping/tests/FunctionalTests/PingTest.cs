@@ -52,11 +52,9 @@ namespace System.Net.NetworkInformation.Tests
 
         private void PingResultValidator(PingReply pingReply, IPAddress[] localIpAddresses)
         {
-            if (pingReply.Status == IPStatus.TimedOut)
+            if (pingReply.Status == IPStatus.TimedOut && pingReply.Address.AddressFamily == AddressFamily.InterNetworkV6 && PlatformDetection.IsOSX)
             {
                 // Workaround OSX ping6 bug, refer issue #15018
-                Assert.Equal(AddressFamily.InterNetworkV6, pingReply.Address.AddressFamily);
-                Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
                 return;
             }
 
