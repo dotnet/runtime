@@ -681,8 +681,32 @@ namespace Microsoft.VisualBasic.ApplicationServices
         public void ChangeCulture(string cultureName) { throw null; }
         public void ChangeUICulture(string cultureName) { throw null; }
         public System.Globalization.CultureInfo Culture { get { throw null; } }
-        public System.Globalization.CultureInfo UICulture { get { throw null; } }
         public string GetEnvironmentVariable(string name) { throw null; }
+        public AssemblyInfo Info { get { throw null; } }
+        public System.Globalization.CultureInfo UICulture { get { throw null; } }
+    }
+    public class AssemblyInfo
+    {
+        public AssemblyInfo(System.Reflection.Assembly currentAssembly) { }
+        public string AssemblyName { get { throw null; } }
+        public string CompanyName { get { throw null; } }
+        public string Copyright { get { throw null; } }
+        public string Description { get { throw null; } }
+        public string DirectoryPath { get { throw null; } }
+        public System.Collections.ObjectModel.ReadOnlyCollection<System.Reflection.Assembly> LoadedAssemblies { get { throw null; } }
+        public string ProductName { get { throw null; } }
+        public string StackTrace { get { throw null; } }
+        public string Title { get { throw null; } }
+        public string Trademark { get { throw null; } }
+        public System.Version Version { get { throw null; } }
+        public long WorkingSet { get { throw null; } }
+    }
+    public class ConsoleApplicationBase : ApplicationBase
+    {
+        public ConsoleApplicationBase() { }
+        public System.Collections.ObjectModel.ReadOnlyCollection<string> CommandLineArgs { get { throw null; } }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
+        protected System.Collections.ObjectModel.ReadOnlyCollection<string> InternalCommandLine { set { } }
     }
     public partial class StartupEventArgs : System.ComponentModel.CancelEventArgs
     {
@@ -1134,9 +1158,17 @@ namespace Microsoft.VisualBasic.Devices
     public partial class ComputerInfo
     {
         public ComputerInfo() { }
+        [System.CLSCompliant(false)]
+        public ulong AvailablePhysicalMemory { get { throw null; } }
+        [System.CLSCompliant(false)]
+        public ulong AvailableVirtualMemory { get { throw null; } }
         public System.Globalization.CultureInfo InstalledUICulture { get { throw null; } }
         public string OSPlatform { get { throw null; } }
         public string OSVersion { get { throw null; } }
+        [System.CLSCompliant(false)]
+        public ulong TotalPhysicalMemory { get { throw null; } }
+        [System.CLSCompliant(false)]
+        public ulong TotalVirtualMemory { get { throw null; } }
     }
     public partial class Keyboard
     {

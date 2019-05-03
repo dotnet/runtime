@@ -27,6 +27,8 @@
     <Compile Include="LikeOperatorTests.cs" />
     <Compile Include="LongTypeTests.cs" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\ApplicationBaseTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\ApplicationServices\AssemblyInfoTests.cs" />
+    <Compile Include="Microsoft\VisualBasic\ApplicationServices\ConsoleApplicationBaseTests.cs" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupEventArgsTests.cs" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupNextInstanceEventArgsTests.cs" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\UnhandledExceptionEventArgsTests.cs" />
