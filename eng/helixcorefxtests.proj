@@ -1,0 +1,116 @@
+<Project InitialTargets="BuildHelixWorkItems" Sdk="Microsoft.DotNet.Helix.Sdk">
+  <Import Project="$(NuGetPackageRoot)microsoft.dotnet.build.tasks.feed\$(MicrosoftDotNetBuildTasksFeedVersion)\build\Microsoft.DotNet.Build.Tasks.Feed.targets" />
+
+  <PropertyGroup>
+    <!-- Set the TargetFramework just to make the SDK happy -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Creator>$(_Creator)</Creator>
+    <HelixAccessToken>$(_HelixAccessToken)</HelixAccessToken>
+    <HelixBuild>$(_HelixBuild)</HelixBuild>
+    <HelixSource>$(_HelixSource)</HelixSource>
+    <HelixTargetQueues>$(_HelixTargetQueues)</HelixTargetQueues>
+    <HelixType>$(_HelixType)</HelixType>
+    <HelixArchitecture>$(__BuildArch)</HelixArchitecture>
+    <HelixConfiguration>$(__BuildType)</HelixConfiguration>
+
+    <!--
+      TODO: ProjectDir, RootBinDir, TestWorkingDir, and TargetsWindows are global properties set in dir.props, remove the property assignment here when we port to arcade.
+     -->
+    <ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)..\</ProjectDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
+    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(__BuildOS).$(__BuildArch).$(__BuildType)\</TestWorkingDir>
+    <TargetsWindows Condition="'$(__BuildOS)' == 'Windows_NT'">true</TargetsWindows>
+
+    <TestHostRootPath>$(TestWorkingDir)testhost\</TestHostRootPath>
+    <TestArchiveRuntimeRoot>$(TestWorkingDir)helix\</TestArchiveRuntimeRoot>
+    <TestArchiveRuntimeFile>$(TestArchiveRuntimeRoot)testhost-runtime.zip</TestArchiveRuntimeFile>
+    <HelixCorrelationPayload></HelixCorrelationPayload>
+
+    <EnableAzurePipelinesReporter>$(_PublishTestResults)</EnableAzurePipelinesReporter>
+    <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' == '' ">false</EnableAzurePipelinesReporter>
+    <EnableXUnitReporter>true</EnableXUnitReporter>
+    <FailOnMissionControlTestFailure>true</FailOnMissionControlTestFailure>
+    <FailOnWorkItemFailure>true</FailOnWorkItemFailure>
+
+    <TimeoutInSeconds Condition="'$(TimeoutInSeconds)' == ''">600</TimeoutInSeconds>
+    <CommandTimeoutSpan>$([System.TimeSpan]::FromSeconds($(TimeoutInSeconds)))</CommandTimeoutSpan>
+    <MaxRetryCount Condition="'$(MaxRetryCount)' == ''">4</MaxRetryCount>
+    <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!--
+      For windows we need to use call, since the command is going to be called from a bat script created by Helix
+      and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
+      if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
+      The arguments passed in to the run script in order are the runtime directory, the dotnet root directory (for
+      helix submissions same as the runtime directory) and the global tools directory.
+    -->
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd -r %HELIX_CORRELATION_PAYLOAD% -d %HELIX_CORRELATION_PAYLOAD% -g %HELIX_CORRELATION_PAYLOAD%\tools --rsp-file %HELIX_CORRELATION_PAYLOAD%\CoreFX.issues.rsp </HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh -r $HELIX_CORRELATION_PAYLOAD -d $HELIX_CORRELATION_PAYLOAD -g $HELIX_CORRELATION_PAYLOAD/tools --rsp-file $HELIX_CORRELATION_PAYLOAD/CoreFX.issues.rsp </HelixCommand>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TestArchiveRuntimeInputs Include="$(TestHostRootPath)**/*" />
+  </ItemGroup>
+
+  <Target Name="CopyRSPFile">
+    <Copy
+      SourceFiles="$(ProjectDir)\tests\CoreFX\CoreFX.issues.rsp"
+      DestinationFolder="$(TestHostRootPath)" />
+  </Target>
+
+  <Target Name="CompressRuntimeDirectory"
+          Inputs="@(TestArchiveRuntimeInputs)"
+          Outputs="$(TestArchiveRuntimeFile)"
+          DependsOnTargets="CopyRSPFile" >
+
+    <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
+
+    <ZipDirectory
+        SourceDirectory="$(TestHostRootPath)"
+        DestinationFile="$(TestArchiveRuntimeFile)"
+        Overwrite="true" />
+
+    <Message Importance="High" Text="Zipped correlation payload into $(TestArchiveRuntimeFile)" />
+  </Target>
+
+  <PropertyGroup>
+    <TestAssetBlobFeedUrl>https://dotnetfeed.blob.core.windows.net/dotnet-core</TestAssetBlobFeedUrl>
+  </PropertyGroup>
+
+  <Target Name="GetTestAssetManifest" 
+          Returns="@(TestAssetBlobInfos)">
+
+    <PropertyGroup>
+      <_TargetGroup>netcoreapp</_TargetGroup>
+      <_AssetManifestPath>$(TestAssetBlobFeedUrl)/corefx-tests/$(MicrosoftPrivateCoreFxNETCoreAppVersion)/$(__BuildOS).$(__BuildArch)/$(_TargetGroup)/corefx-test-assets.xml</_AssetManifestPath>
+    </PropertyGroup>
+
+    <ParseBuildManifest AssetManifestPath="$(_AssetManifestPath)">
+      <Output TaskParameter="BlobInfos" ItemName="TestAssetBlobInfos" />
+    </ParseBuildManifest>
+  </Target>
+
+  <Target Name="BuildHelixWorkItems"
+          Inputs="$(TestArchiveRuntimeFile);@(TestAssetBlobInfos)"
+          Outputs="@(HelixCorrelationPayload);@(HelixWorkItem)"
+          DependsOnTargets="CompressRuntimeDirectory;GetTestAssetManifest">
+
+    <ItemGroup>
+      <HelixCorrelationPayload 
+        Include="$(TestArchiveRuntimeFile)" />
+
+      <HelixWorkItem Include="@(TestAssetBlobInfos -> '%(FileName)')">
+        <PayloadUri>$(TestAssetBlobFeedUrl)/%(Identity)</PayloadUri>
+        <Command>$(HelixCommand)</Command>
+        <Timeout>$(CommandTimeoutSpan)</Timeout>
+      </HelixWorkItem>
+    </ItemGroup>
+
+    <Message Importance="High" Text="@(HelixWorkItem -> '%(PayloadUri)')" />
+  </Target>
+</Project>

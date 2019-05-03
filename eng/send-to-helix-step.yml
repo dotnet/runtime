@@ -15,10 +15,17 @@ parameters:
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
   runCrossGen: ''
+  helixProjectArguments: ''
 
 steps:
 - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-  - powershell: eng\common\msbuild.ps1 -ci tests\helixpublishwitharcade.proj /maxcpucount
+  # TODO: Remove and consolidate this when we move to arcade via init-tools.cmd.
+  - powershell: eng\common\build.ps1 /p:DotNetPublishToBlobFeed=true -ci -restore -projects $(Build.SourcesDirectory)\eng\empty.proj
+    displayName: Restore blob feed tasks
+    ${{ if ne(parameters.condition, '') }}:
+      condition: ${{ parameters.condition }}
+
+  - powershell: eng\common\msbuild.ps1 -ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/bin/Logs/SendToHelix.binlog
     displayName: ${{ parameters.displayName }}
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
@@ -39,9 +46,21 @@ steps:
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+      NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages 
 
 - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-  - script: ./eng/common/msbuild.sh --ci tests/helixpublishwitharcade.proj /maxcpucount
+  # TODO: Remove and consolidate this when we move to arcade via init-tools.sh.
+  - script: ./eng/common/build.sh /p:DotNetPublishToBlobFeed=true --ci --restore --projects $(Build.SourcesDirectory)/eng/empty.proj
+    displayName: Restore blob feed tasks
+    ${{ if ne(parameters.condition, '') }}:
+      condition: ${{ parameters.condition }}
+    ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
+      env:
+        # Arcade uses this SDK instead of trying to restore one.
+        DotNetCoreSdkDir: /usr/local/dotnet
+
+  - script: ./eng/common/msbuild.sh --ci ${{ parameters.helixProjectArguments }} /maxcpucount /bl:$(Build.SourcesDirectory)/bin/Logs/SendToHelix.binlog
     displayName: ${{ parameters.displayName }}
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
@@ -62,3 +81,5 @@ steps:
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
+      NUGET_PACKAGES: $(Build.SourcesDirectory)/.packages

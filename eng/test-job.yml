@@ -7,6 +7,9 @@ parameters:
   readyToRun: false
   helixQueues: ''
   crossrootfsDir: ''
+  # If true, run the corefx tests instead of the coreclr ones
+  corefxTests: false
+  displayNameArgs: ''
 
 ### Test job
 
@@ -23,19 +26,13 @@ jobs:
     helixType: 'build/tests/'
 
     # Compute job name from template parameters
-    ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.readyToRun, false)) }}:
-      name: ${{ format('testbuild_pri0_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('Test Pri0 {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-    ${{ if and(eq(parameters.testGroup, 'innerloop'), eq(parameters.readyToRun, true)) }}:
-      name: ${{ format('testbuild_pri0_r2r_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('Test Pri0 R2R {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    ${{ if eq(parameters.testGroup, 'innerloop') }}:
+      name: ${{ format('testbuild_pri0_{0}_{1}_{2}_{3}', parameters.displayNameArgs, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Test Pri0 {0} {1} {2}_{3}', parameters.displayNameArgs, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
-    ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.readyToRun, false)) }}:
-      name: ${{ format('testbuild_pri1_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('Test Pri1 {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-    ${{ if and(ne(parameters.testGroup, 'innerloop'), eq(parameters.readyToRun, true)) }}:
-      name: ${{ format('testbuild_pri1_r2r_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-      displayName: ${{ format('Test Pri1 R2R {0} {1} {2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+    ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      name: ${{ format('testbuild_pri1_{0}_{1}_{2}_{3}', parameters.displayNameArgs, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+      displayName: ${{ format('Test Pri1 {0} {1} {2} {3}', parameters.displayNameArgs, parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
 
@@ -68,6 +65,16 @@ jobs:
     - ${{ if and(eq(parameters.osIdentifier, 'Linux_musl'), eq(parameters.archType, 'arm64')) }}:
       - name: clangArg
         value: '-clang5.0'
+
+    - name: testhostArg
+      value: ''
+    - ${{ if eq(parameters.corefxTests, true) }}:
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - name: testhostArg
+          value: 'generatetesthostonly'
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - name: testhostArg
+          value: 'buildtesthostonly'
 
     # FreeBSD test jobs are disabled since we don't have any FreeBSD helix queues.
     ${{ if eq(parameters.osGroup, 'FreeBSD') }}:
@@ -115,10 +122,10 @@ jobs:
 
     # Build tests
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-test.sh $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(crossgenArg) $(clangArg)
+      - script: ./build-test.sh $(buildConfig) $(archType) $(crossArg) $(priorityArg) $(crossgenArg) $(clangArg) $(testhostArg)
         displayName: Build tests
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-test.cmd $(buildConfig) $(archType) $(priorityArg) $(crossgenArg)
+      - script: build-test.cmd $(buildConfig) $(archType) $(priorityArg) $(crossgenArg) $(testhostArg)
         displayName: Build tests
 
 
@@ -126,7 +133,7 @@ jobs:
     - template: /eng/send-to-helix-step.yml
       parameters:
         displayName: Send tests to Helix
-        buildConfig: ${{ parameters.buildConfig }}
+        buildConfig: $(buildConfigUpper)
         archType: ${{ parameters.archType }}
         osGroup: ${{ parameters.osGroup }}
 
@@ -171,6 +178,12 @@ jobs:
           # Access token variable for internal project from the
           # DotNet-HelixApi-Access variable group
           helixAccessToken: $(HelixApiAccessToken)
+
+        # Sets up the template to run the corefx tests
+        ${{ if eq(parameters.corefxTests, true) }}:
+          helixProjectArguments: 'eng/helixcorefxtests.proj /t:Test /p:ArcadeBuild=True'
+        ${{ if eq(parameters.corefxTests, false) }}:
+          helixProjectArguments: 'tests/helixpublishwitharcade.proj'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           scenarios:
