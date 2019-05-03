@@ -13,9 +13,9 @@ using System.Runtime.InteropServices;
 // and mixing the HVA parameters with non-HVA parameters.
 
 // This Test case covers all cases for
-//   Methods that take one HVA argument with between 1 and 9 Vectror64 or Vector128 elements
+//   Methods that take one HVA argument with between 1 and 5 Vector64 or Vector128 elements
 //   - Called normally or by using reflection
-//   Methods that return an HVA with between 1 and 9 Vectror64 or Vector128 elements
+//   Methods that return an HVA with between 1 and 5 Vector64 or Vector128 elements
 //   - Called normally or by using reflection
 
 // Remaining Test cases to do:
