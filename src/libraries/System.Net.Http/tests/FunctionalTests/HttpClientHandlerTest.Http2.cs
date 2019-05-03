@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Test.Common;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -1304,6 +1305,61 @@ namespace System.Net.Http.Functional.Tests
                 cts.Cancel();
 
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await clientTask);
+            }
+        }
+
+        // rfc7540 8.1.2.3.
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2GetAsync_MultipleStatusHeaders_Throws()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                IList<HttpHeaderData> headers = new HttpHeaderData[] { new HttpHeaderData(":status", "300"), new HttpHeaderData("x-test", "Http2GetAsync_MultipleStatusHeaders_Throws") };
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+                await server.SendResponseHeadersAsync(streamId, endStream : true, headers: headers);
+                await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
+            }
+        }
+
+        // rfc7540 8.1.2.3.
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2GetAsync_StatusHeaderNotFirst_Throws()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                IList<HttpHeaderData> headers = new HttpHeaderData[] { new HttpHeaderData("x-test", "Http2GetAsync_StatusHeaderNotFirst_Throws"), new HttpHeaderData(":status", "200") };
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+                await server.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader : true, headers: headers);
+
+                await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
+            }
+        }
+
+        // rfc7540 8.1.2.3.
+        [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task Http2GetAsync_TrailigPseudo_Throw()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                IList<HttpHeaderData> headers = new HttpHeaderData[] { new HttpHeaderData(":path", "http"), new HttpHeaderData("x-test", "Http2GetAsync_TrailigPseudo_Throw") };
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+
+                await server.EstablishConnectionAsync();
+                int streamId = await server.ReadRequestHeaderAsync();
+                await server.SendDefaultResponseHeadersAsync(streamId);
+                await server.SendResponseDataAsync(streamId, Encoding.ASCII.GetBytes("hello"), endStream: false);
+                await server.SendResponseHeadersAsync(streamId, endStream : true, isTrailingHeader : true, headers: headers);
+
+                await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
         }
     }
