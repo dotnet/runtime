@@ -57,6 +57,8 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
 {
     pal::string_t fxr_dir;
 #if defined(FEATURE_APPHOST) || defined(FEATURE_LIBHOST)
+    // For apphost and libhost, root_path is expected to be a directory.
+    // For libhost, it may be empty if app-local search is not desired (e.g. com/ijw/winrt hosts, nethost when no assembly path is specified)
     // If a hostfxr exists in root_path, then assume self-contained.
     if (root_path.length() > 0 && library_exists_in_dir(root_path, LIBFXR_NAME, out_fxr_path))
     {
@@ -110,6 +112,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         return false;
     }
 #else // !FEATURE_APPHOST && !FEATURE_LIBHOST
+    // For non-apphost and non-libhost (i.e. muxer), root_path is expected to be the full path to the host
     pal::string_t host_dir;
     host_dir.assign(get_directory(root_path));
 

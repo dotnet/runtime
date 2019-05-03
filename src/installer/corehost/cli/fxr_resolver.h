@@ -38,7 +38,8 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
     }
     else
     {
-        if (!fxr_resolver::try_get_path(get_directory(host_path), &dotnet_root, &fxr_path))
+        // Do not specify the root path. Getting a delegate does not support self-contained (app-local fxr)
+        if (!fxr_resolver::try_get_path(pal::string_t{}, &dotnet_root, &fxr_path))
         {
             return StatusCode::CoreHostLibMissingFailure;
         }
