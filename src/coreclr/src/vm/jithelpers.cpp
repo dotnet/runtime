@@ -2868,7 +2868,7 @@ HCIMPL1_RAW(StringObject*, UnframedAllocateString, DWORD stringLength)
     } CONTRACTL_END;
 
     STRINGREF result;
-    result = SlowAllocateString(stringLength);
+    result = AllocateString(stringLength);
     
     return((StringObject*) OBJECTREFToObject(result));
 }
@@ -2881,7 +2881,7 @@ HCIMPL1(StringObject*, FramedAllocateString, DWORD stringLength)
     STRINGREF result = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
-    result = SlowAllocateString(stringLength);
+    result = AllocateString(stringLength);
 
     HELPER_METHOD_FRAME_END();
     return((StringObject*) OBJECTREFToObject(result));
@@ -2896,7 +2896,7 @@ HCIMPL1(Utf8StringObject*, FramedAllocateUtf8String, DWORD stringLength)
     UTF8STRINGREF result = NULL;
     HELPER_METHOD_FRAME_BEGIN_RET_0();    // Set up a frame
 
-    result = SlowAllocateUtf8String(stringLength);
+    result = AllocateUtf8String(stringLength);
 
     HELPER_METHOD_FRAME_END();
     return((Utf8StringObject*) OBJECTREFToObject(result));
@@ -3136,62 +3136,13 @@ HCIMPL2(Object*, JIT_NewArr1, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size)
         EX_THROW(EEMessageException, (kOverflowException, IDS_EE_ARRAY_DIMENSIONS_EXCEEDED));
 #endif
 
-    //
-    // is this a primitive type?
-    //
-
-    CorElementType elemType = pArrayMT->GetArrayElementType();
-
-    if (CorTypeInfo::IsPrimitiveType(elemType)
-#ifdef FEATURE_64BIT_ALIGNMENT
-        // On platforms where 64-bit types require 64-bit alignment and don't obtain it naturally force us
-        // through the slow path where this will be handled.
-        && (elemType != ELEMENT_TYPE_I8)
-        && (elemType != ELEMENT_TYPE_U8)
-        && (elemType != ELEMENT_TYPE_R8)
-#endif
-        )
-    {
 #ifdef _DEBUG
-        if (g_pConfig->FastGCStressLevel()) {
-            GetThread()->DisableStressHeap();
-        }
+    if (g_pConfig->FastGCStressLevel()) {
+        GetThread()->DisableStressHeap();
+    }
 #endif // _DEBUG
 
-        // Disallow the creation of void[] (an array of System.Void)
-        if (elemType == ELEMENT_TYPE_VOID)
-            COMPlusThrow(kArgumentException);
-
-        BOOL bAllocateInLargeHeap = FALSE;
-#ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-        if ((elemType == ELEMENT_TYPE_R8) && 
-            (static_cast<DWORD>(size) >= g_pConfig->GetDoubleArrayToLargeObjectHeapThreshold()))
-        {
-            STRESS_LOG1(LF_GC, LL_INFO10, "Allocating double array of size %d to large object heap\n", size);
-            bAllocateInLargeHeap = TRUE;
-        }
-#endif
-
-        if (g_pPredefinedArrayTypes[elemType] == NULL)
-        {
-            TypeHandle elemTypeHnd = TypeHandle(MscorlibBinder::GetElementType(elemType));
-
-            g_pPredefinedArrayTypes[elemType] = ClassLoader::LoadArrayTypeThrowing(elemTypeHnd, ELEMENT_TYPE_SZARRAY, 0).AsArray();
-        }
-
-        newArray = FastAllocatePrimitiveArray(pArrayMT, static_cast<DWORD>(size), bAllocateInLargeHeap);
-    }
-    else
-    {
-#ifdef _DEBUG
-        if (g_pConfig->FastGCStressLevel()) {
-            GetThread()->DisableStressHeap();
-        }
-#endif // _DEBUG
-        INT32 size32 = (INT32)size;
-        newArray = AllocateArrayEx(pArrayMT, &size32, 1);
-    }
-
+    newArray = AllocateSzArray(pArrayMT, (INT32)size);
     HELPER_METHOD_FRAME_END();
 
     return(OBJECTREFToObject(newArray));
