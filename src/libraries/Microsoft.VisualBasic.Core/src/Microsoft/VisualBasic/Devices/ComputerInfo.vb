@@ -4,6 +4,7 @@
 
 Imports System
 Imports System.Diagnostics
+Imports Microsoft.VisualBasic.CompilerServices
 
 Namespace Microsoft.VisualBasic.Devices
 
@@ -26,6 +27,64 @@ Namespace Microsoft.VisualBasic.Devices
         ''' </summary>
         Sub New()
         End Sub
+
+        '''******************************************************************************
+        ''' ;TotalPhysicalMemory
+        ''' <summary>
+        ''' Gets the total size of physical memory on the machine.
+        ''' </summary>
+        ''' <value>A 64-bit unsigned integer containing the size of total physical memory on the machine, in bytes.</value>
+        ''' <exception cref="System.ComponentModel.Win32Exception">If we are unable to obtain the memory status.</exception>
+        <CLSCompliant(False)>
+        Public ReadOnly Property TotalPhysicalMemory() As UInt64
+            Get
+                Return MemoryStatus.TotalPhysicalMemory
+            End Get
+        End Property
+
+        '''******************************************************************************
+        ''' ;AvailablePhysicalMemory
+        ''' <summary>
+        ''' Gets the total size of free physical memory on the machine.
+        ''' </summary>
+        ''' <value>A 64-bit unsigned integer containing the size of free physical memory on the machine, in bytes.</value>
+        ''' <exception cref="System.ComponentModel.Win32Exception">If we are unable to obtain the memory status.</exception>
+        <CLSCompliant(False)>
+        Public ReadOnly Property AvailablePhysicalMemory() As UInt64
+            Get
+                Return MemoryStatus.AvailablePhysicalMemory
+            End Get
+        End Property
+
+        '''******************************************************************************
+        ''' ;TotalVirtualMemory
+        ''' <summary>
+        ''' Gets the total size of user potion of virtual address space for calling process.
+        ''' </summary>
+        ''' <value>A 64-bit unsigned integer containing the size of user potion of virtual address space for calling process, 
+        '''          in bytes.</value>
+        ''' <exception cref="System.ComponentModel.Win32Exception">If we are unable to obtain the memory status.</exception>
+        <CLSCompliant(False)>
+        Public ReadOnly Property TotalVirtualMemory() As UInt64
+            Get
+                Return MemoryStatus.TotalVirtualMemory
+            End Get
+        End Property
+
+        '''******************************************************************************
+        ''' ;AvailableVirtualMemory
+        ''' <summary>
+        ''' Gets the total size of free user potion of virtual address space for calling process.
+        ''' </summary>
+        ''' <value>A 64-bit unsigned integer containing the size of free user potion of virtual address space for calling process, 
+        '''          in bytes.</value>
+        ''' <exception cref="System.ComponentModel.Win32Exception">If we are unable to obtain the memory status.</exception>
+        <CLSCompliant(False)>
+        Public ReadOnly Property AvailableVirtualMemory() As UInt64
+            Get
+                Return MemoryStatus.AvailableVirtualMemory
+            End Get
+        End Property
 
         '''******************************************************************************
         ''' ;InstalledUICulture
@@ -80,6 +139,34 @@ Namespace Microsoft.VisualBasic.Devices
             End Sub
 
             <DebuggerBrowsable(DebuggerBrowsableState.RootHidden)>
+            Public ReadOnly Property TotalPhysicalMemory() As UInt64
+                Get
+                    Return m_InstanceBeingWatched.TotalPhysicalMemory
+                End Get
+            End Property
+
+            <DebuggerBrowsable(DebuggerBrowsableState.RootHidden)>
+            Public ReadOnly Property AvailablePhysicalMemory() As UInt64
+                Get
+                    Return m_InstanceBeingWatched.AvailablePhysicalMemory
+                End Get
+            End Property
+
+            <DebuggerBrowsable(DebuggerBrowsableState.RootHidden)>
+            Public ReadOnly Property TotalVirtualMemory() As UInt64
+                Get
+                    Return m_InstanceBeingWatched.TotalVirtualMemory
+                End Get
+            End Property
+
+            <DebuggerBrowsable(DebuggerBrowsableState.RootHidden)>
+            Public ReadOnly Property AvailableVirtualMemory() As UInt64
+                Get
+                    Return m_InstanceBeingWatched.AvailableVirtualMemory
+                End Get
+            End Property
+
+            <DebuggerBrowsable(DebuggerBrowsableState.RootHidden)>
             Public ReadOnly Property InstalledUICulture() As Globalization.CultureInfo
                 Get
                     Return m_InstanceBeingWatched.InstalledUICulture
@@ -103,6 +190,90 @@ Namespace Microsoft.VisualBasic.Devices
             <DebuggerBrowsable(DebuggerBrowsableState.Never)> Private m_InstanceBeingWatched As ComputerInfo
         End Class
 
+        '= PRIVATE ============================================================
+
+        '''******************************************************************************
+        ''' ;MemoryStatus
+        ''' <summary>
+        ''' Get the whole memory information details.
+        ''' </summary>
+        ''' <value>An InternalMemoryStatus class.</value>
+        Private ReadOnly Property MemoryStatus() As InternalMemoryStatus
+            Get
+                If m_InternalMemoryStatus Is Nothing Then
+                    m_InternalMemoryStatus = New InternalMemoryStatus
+                End If
+                Return m_InternalMemoryStatus
+            End Get
+        End Property
+
+        Private m_InternalMemoryStatus As InternalMemoryStatus = Nothing ' Cache our InternalMemoryStatus
+
+        '''******************************************************************************
+        ''' ;InternalMemoryStatus
+        ''' <summary>
+        ''' Calls GlobalMemoryStatusEx and returns the correct value.
+        ''' </summary>
+        Private Class InternalMemoryStatus
+            Friend Sub New()
+            End Sub
+
+            Friend ReadOnly Property TotalPhysicalMemory() As UInt64
+                Get
+#If PLATFORM_WINDOWS Then
+                    Refresh()
+                    Return m_MemoryStatusEx.ullTotalPhys
+#Else
+                    Throw New PlatformNotSupportedException()
+#End If
+                End Get
+            End Property
+
+            Friend ReadOnly Property AvailablePhysicalMemory() As UInt64
+                Get
+#If PLATFORM_WINDOWS Then
+                    Refresh()
+                    Return m_MemoryStatusEx.ullAvailPhys
+#Else
+                    Throw New PlatformNotSupportedException()
+#End If
+                End Get
+            End Property
+
+            Friend ReadOnly Property TotalVirtualMemory() As UInt64
+                Get
+#If PLATFORM_WINDOWS Then
+                    Refresh()
+                    Return m_MemoryStatusEx.ullTotalVirtual
+#Else
+                    Throw New PlatformNotSupportedException()
+#End If
+                End Get
+            End Property
+
+            Friend ReadOnly Property AvailableVirtualMemory() As UInt64
+                Get
+#If PLATFORM_WINDOWS Then
+                    Refresh()
+                    Return m_MemoryStatusEx.ullAvailVirtual
+#Else
+                    Throw New PlatformNotSupportedException()
+#End If
+                End Get
+            End Property
+
+#If PLATFORM_WINDOWS Then
+            Private Sub Refresh()
+                m_MemoryStatusEx = New NativeMethods.MEMORYSTATUSEX
+                m_MemoryStatusEx.Init()
+                If (Not NativeMethods.GlobalMemoryStatusEx(m_MemoryStatusEx)) Then
+                    Throw ExceptionUtils.GetWin32Exception(SR.DiagnosticInfo_Memory)
+                End If
+            End Sub
+
+            Private m_MemoryStatusEx As NativeMethods.MEMORYSTATUSEX
+#End If
+        End Class
     End Class
 
 End Namespace

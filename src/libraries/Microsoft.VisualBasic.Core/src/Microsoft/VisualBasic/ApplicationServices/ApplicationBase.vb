@@ -46,6 +46,25 @@ Namespace Microsoft.VisualBasic.ApplicationServices
             Return VariableValue
         End Function
 
+        '''**************************************************************************
+        ''' ;Info
+        ''' <summary>
+        ''' Returns the info about the application.  If we are executing in a DLL, we still return the info
+        ''' about the application, not the DLL.
+        ''' </summary>
+        Public ReadOnly Property Info() As AssemblyInfo
+            Get
+                If m_Info Is Nothing Then
+                    Dim Assembly As System.Reflection.Assembly = System.Reflection.Assembly.GetEntryAssembly()
+                    If Assembly Is Nothing Then 'It can be nothing if we are an add-in or a dll on the web
+                        Assembly = System.Reflection.Assembly.GetCallingAssembly()
+                    End If
+                    m_Info = New AssemblyInfo(Assembly)
+                End If
+                Return m_Info
+            End Get
+        End Property
+
         '**********************************************************************
         ';Culture
         '
@@ -115,5 +134,6 @@ Namespace Microsoft.VisualBasic.ApplicationServices
 
         '= PRIVATE ==========================================================
 
+        Private m_Info As AssemblyInfo ' The executing application (the EntryAssembly)
     End Class 'ApplicationBase
 End Namespace

@@ -56,5 +56,15 @@ namespace Microsoft.VisualBasic.ApplicationServices.Tests
                 break;
             }
         }
+
+        [Fact]
+        public void Info()
+        {
+            var app = new ApplicationBase();
+            var assembly = System.Reflection.Assembly.GetEntryAssembly() ?? System.Reflection.Assembly.GetCallingAssembly();
+            var assemblyName = assembly.GetName();
+            Assert.Equal(assemblyName.Name, app.Info.AssemblyName);
+            Assert.Equal(assemblyName.Version, app.Info.Version);
+        }
     }
 }
