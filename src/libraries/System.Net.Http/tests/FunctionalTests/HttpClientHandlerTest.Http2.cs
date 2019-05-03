@@ -1337,7 +1337,8 @@ namespace System.Net.Http.Functional.Tests
                         await sslStream.WriteAsync(Encoding.ASCII.GetBytes("HTTP/1.1 400 Unrecognized request\r\n\r\n"), CancellationToken.None);
                     });
 
-                    try {
+                    try
+                    {
                         await requestTask;
                         throw new Exception("Should not be here");
                     }
@@ -1347,8 +1348,8 @@ namespace System.Net.Http.Functional.Tests
                         // TBD expect Http2ProtocolException when/if exposed
                         Assert.False(e.InnerException is ObjectDisposedException);
                     }
-                    //});
                 });
+            }
         }
         
         // rfc7540 8.1.2.3.
