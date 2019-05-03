@@ -80,7 +80,7 @@ template <class TKey_, class TValue_>
 
     if (*pKeyValueStore == NULL)
     {
-        *pKeyValueStore = AllocatePrimitiveArray(ELEMENT_TYPE_I1, IsNull(value) ? sizeof(TKey) : sizeof(TKey) + sizeof(TValue), FALSE);
+        *pKeyValueStore = AllocatePrimitiveArray(ELEMENT_TYPE_I1, IsNull(value) ? sizeof(TKey) : sizeof(TKey) + sizeof(TValue));
         updatedKeyValueStore = true;
         TKey* pKeyLoc = (TKey*)((I1ARRAYREF)*pKeyValueStore)->GetDirectPointerToNonObjectElements();
         *pKeyLoc = key;
@@ -108,7 +108,7 @@ template <class TKey_, class TValue_>
                 COMPlusThrow(kOverflowException);
 
             // Allocate the new array.
-            I1ARRAYREF newKeyValueStore = (I1ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I1, newSize*sizeof(TValue) + sizeof(TKey), FALSE);
+            I1ARRAYREF newKeyValueStore = (I1ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_I1, newSize*sizeof(TValue) + sizeof(TKey));
 
             // Since, AllocatePrimitiveArray may have triggered a GC, recapture all data pointers from GC objects
             void* pStartOfNewArray = newKeyValueStore->GetDirectPointerToNonObjectElements();

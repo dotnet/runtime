@@ -4359,7 +4359,7 @@ FCIMPL4(void, MngdNativeArrayMarshaler::ConvertSpaceToManaged, MngdNativeArrayMa
         //
         // Allocate array
         //
-        SetObjectReference(pManagedHome, AllocateArrayEx(pThis->m_Array, &cElements, 1));
+        SetObjectReference(pManagedHome, AllocateSzArray(pThis->m_Array, cElements));
     }    
     HELPER_METHOD_FRAME_END();
 }
@@ -5392,7 +5392,7 @@ FCIMPL4(void, MngdHiddenLengthArrayMarshaler::ConvertSpaceToManaged, MngdHiddenL
     {
         TypeHandle elementType(pThis->m_pElementMT);
         TypeHandle arrayType = ClassLoader::LoadArrayTypeThrowing(elementType);
-        SetObjectReference(pManagedHome, AllocateArrayEx(arrayType, &cElements, 1));
+        SetObjectReference(pManagedHome, AllocateSzArray(arrayType, cElements));
     }
 
     HELPER_METHOD_FRAME_END();

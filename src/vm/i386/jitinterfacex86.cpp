@@ -45,7 +45,6 @@ public:
         OBJ_ARRAY    = 0x4,
         ALIGN8       = 0x8,     // insert a dummy object to insure 8 byte alignment (until the next GC)
         ALIGN8OBJ    = 0x10,
-        NO_FRAME     = 0x20,    // call is from unmanaged code - don't try to put up a frame
     };
 
     static void *GenAllocSFast(Flags flags);
@@ -767,47 +766,6 @@ void *JIT_TrialAlloc::GenBox(Flags flags)
     return (void *)pStub->GetEntryPoint();
 }
 
-
-HCIMPL2_RAW(Object*, UnframedAllocateObjectArray, MethodTable *pArrayMT, DWORD cElements)
-{
-    // This isn't _really_ an FCALL and therefore shouldn't have the 
-    // SO_TOLERANT part of the FCALL_CONTRACT b/c it is not entered
-    // from managed code.
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    return OBJECTREFToObject(AllocateArrayEx(pArrayMT,
-                           (INT32 *)(&cElements),
-                           1,
-                           FALSE));
-}
-HCIMPLEND_RAW
-
-
-HCIMPL2_RAW(Object*, UnframedAllocatePrimitiveArray, CorElementType type, DWORD cElements)
-{
-    // This isn't _really_ an FCALL and therefore shouldn't have the 
-    // SO_TOLERANT part of the FCALL_CONTRACT b/c it is not entered
-    // from managed code.
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    } CONTRACTL_END;
-
-    return OBJECTREFToObject( AllocatePrimitiveArray(type, cElements, FALSE) );
-}
-HCIMPLEND_RAW
-
-HCIMPL1_RAW(PTR_MethodTable, UnframedGetTemplateMethodTable, ArrayTypeDesc *arrayDesc)
-{
-    return arrayDesc->GetTemplateMethodTable();
-}
-HCIMPLEND_RAW
-
 void *JIT_TrialAlloc::GenAllocArray(Flags flags)
 {
     STANDARD_VM_CONTRACT;
@@ -831,29 +789,6 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
 
     // push edx
     sl.X86EmitPushReg(kEDX);
-
-    if (flags & NO_FRAME)
-    {
-        if ((flags & OBJ_ARRAY) == 0)
-        {
-            // mov ecx,[g_pPredefinedArrayTypes+ecx*4]
-            sl.Emit8(0x8b);
-            sl.Emit16(0x8d0c);
-            sl.Emit32((int)(size_t)&g_pPredefinedArrayTypes);
-
-            // test ecx,ecx
-            sl.Emit16(0xc985);
-
-            // je noLock
-            sl.X86EmitCondJump(noLock, X86CondCode::kJZ);
-
-            sl.X86EmitPushReg(kEDX);
-            sl.X86EmitCall(sl.NewExternalCodeLabel((LPVOID)UnframedGetTemplateMethodTable), 0);
-            sl.X86EmitPopReg(kEDX);
-
-            sl.X86EmitMovRegReg(kECX, kEAX);
-        }
-    }
 
     // Do a conservative check here.  This is to avoid doing overflow checks within this function.  We'll
     // still have to do a size check before running through the body of EmitCore.  The way we do the check
@@ -979,28 +914,9 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
     // pop ecx - array method table
     sl.X86EmitPopReg(kECX);
 
-    CodeLabel * target;
-    if (flags & NO_FRAME)
-    {
-        if (flags & OBJ_ARRAY)
-        {
-            // Jump to the unframed helper
-            target = sl.NewExternalCodeLabel((LPVOID)UnframedAllocateObjectArray);
-            _ASSERTE(target->e.m_pExternalAddress);
-        }
-        else
-        {
-            // Jump to the unframed helper
-            target = sl.NewExternalCodeLabel((LPVOID)UnframedAllocatePrimitiveArray);
-            _ASSERTE(target->e.m_pExternalAddress);
-        }
-    }
-    else
-    {
-        // Jump to the framed helper
-        target = sl.NewExternalCodeLabel((LPVOID)JIT_NewArr1);
-        _ASSERTE(target->e.m_pExternalAddress);
-    }
+    // Jump to the framed helper
+    CodeLabel * target = sl.NewExternalCodeLabel((LPVOID)JIT_NewArr1);
+    _ASSERTE(target->e.m_pExternalAddress);
     sl.X86EmitNearJump(target);
 
     Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
@@ -1087,31 +1003,14 @@ void *JIT_TrialAlloc::GenAllocString(Flags flags)
     // pop ecx - element count
     sl.X86EmitPopReg(kECX);
 
-    CodeLabel * target;
-    if (flags & NO_FRAME)
-    {
-        // Jump to the unframed helper
-        target = sl.NewExternalCodeLabel((LPVOID)UnframedAllocateString);
-    }
-    else
-    {
-        // Jump to the framed helper
-        target = sl.NewExternalCodeLabel((LPVOID)FramedAllocateString);
-    }
+    // Jump to the framed helper
+    CodeLabel * target = sl.NewExternalCodeLabel((LPVOID)FramedAllocateString);
     sl.X86EmitNearJump(target);
 
     Stub *pStub = sl.Link(SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap());
 
     return (void *)pStub->GetEntryPoint();
 }
-
-
-FastStringAllocatorFuncPtr fastStringAllocator = UnframedAllocateString;
-
-FastObjectArrayAllocatorFuncPtr fastObjectArrayAllocator = UnframedAllocateObjectArray;
-
-FastPrimitiveArrayAllocatorFuncPtr fastPrimitiveArrayAllocator = UnframedAllocatePrimitiveArray;
-
 // For this helper,
 // If bCCtorCheck == true
 //          ECX contains the domain neutral module ID
@@ -1350,16 +1249,9 @@ void InitJITHelpers1()
         pMethodAddresses[5] = JIT_TrialAlloc::GenAllocArray((JIT_TrialAlloc::Flags)(flags|JIT_TrialAlloc::ALIGN8));
         SetJitHelperFunction(CORINFO_HELP_NEWARR_1_ALIGN8, pMethodAddresses[5]);
 
-        fastObjectArrayAllocator = (FastObjectArrayAllocatorFuncPtr)JIT_TrialAlloc::GenAllocArray((JIT_TrialAlloc::Flags)(flags|JIT_TrialAlloc::NO_FRAME|JIT_TrialAlloc::OBJ_ARRAY));
-        fastPrimitiveArrayAllocator = (FastPrimitiveArrayAllocatorFuncPtr)JIT_TrialAlloc::GenAllocArray((JIT_TrialAlloc::Flags)(flags|JIT_TrialAlloc::NO_FRAME));
-
         // If allocation logging is on, then we divert calls to FastAllocateString to an Ecall method, not this
         // generated method. Find this workaround in Ecall::Init() in ecall.cpp.
         ECall::DynamicallyAssignFCallImpl((PCODE) JIT_TrialAlloc::GenAllocString(flags), ECall::FastAllocateString);
-
-        // generate another allocator for use from unmanaged code (won't need a frame)
-        fastStringAllocator = (FastStringAllocatorFuncPtr) JIT_TrialAlloc::GenAllocString((JIT_TrialAlloc::Flags)(flags|JIT_TrialAlloc::NO_FRAME));
-        //UnframedAllocateString;
     }
 
     // Replace static helpers with faster assembly versions

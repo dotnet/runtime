@@ -2826,7 +2826,7 @@ VOID FieldMarshaler_FixedArray::UpdateCLRImpl(const VOID *pNativeValue, OBJECTRE
     CONTRACTL_END;
 
     // Allocate the value class array.
-    *ppProtectedCLRValue = AllocateArrayEx(m_arrayType.GetValue(), (INT32*)&m_numElems, 1);
+    *ppProtectedCLRValue = AllocateSzArray(m_arrayType.GetValue(), (INT32)m_numElems);
 
     // Marshal the contents from the native array to the managed array.
     const OleVariant::Marshaler *pMarshaler = OleVariant::GetMarshalerForVarType(m_vt, TRUE);        

@@ -553,8 +553,8 @@ class ArrayBase : public Object
     friend class GCHeap;
     friend class CObjectHeader;
     friend class Object;
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap); 
-    friend OBJECTREF FastAllocatePrimitiveArray(MethodTable* arrayType, DWORD cElements, BOOL bAllocateInLargeHeap);
+    friend OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap);
+    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags, BOOL bAllocateInLargeHeap); 
     friend FCDECL2(Object*, JIT_NewArr1VC_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend FCDECL2(Object*, JIT_NewArr1OBJ_MP_FastPortable, CORINFO_CLASS_HANDLE arrayMT, INT_PTR size);
     friend class JIT_TrialAlloc;
@@ -721,7 +721,7 @@ class PtrArray : public ArrayBase
 {
     friend class GCHeap;
     friend class ClrDataAccess;
-    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap); 
+    friend OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, DWORD flags, BOOL bAllocateInLargeHeap); 
     friend class JIT_TrialAlloc;
     friend class CheckAsmOffsets;
 
