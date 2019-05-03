@@ -74,7 +74,7 @@ if(WIN32)
     add_subdirectory(PInvoke/SafeHandles/ReleaseHandle)
     add_subdirectory(PInvoke/SafeHandles/Interface)
     add_subdirectory(PInvoke/NativeCallManagedComVisible)
-    # This test doesn't necessarily need to be Windows-only, but the implementation is very tied to Windows APIs
+    # Windows-only due to bug (fixed as part of dotnet/coreclr#21415)
     add_subdirectory(PInvoke/DateTime)
     add_subdirectory(PInvoke/IEnumerator)
     add_subdirectory(PInvoke/CustomMarshalers)
