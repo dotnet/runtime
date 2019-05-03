@@ -975,10 +975,10 @@ void GCFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
         else
             (*fn)(pRefs + i, sc, 0);
 
-        OBJECTREF toAdress = m_pObjRefs[i];
-        LOG((LF_GC, INFO3, "GC Protection Frame Promoting" FMT_ADDR "to" FMT_ADDR "\n",
+        OBJECTREF toAddress = m_pObjRefs[i];
+        LOG((LF_GC, INFO3, "GC Protection Frame promoted" FMT_ADDR "to" FMT_ADDR "\n",
             DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(fromAddress)),
-            DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(toAdress))));
+            DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(toAddress))));
     }
 }
 
