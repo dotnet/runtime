@@ -44,6 +44,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ByVal vt As Int16)
         End Sub
 
+        <DllImport("kernel32", PreserveSig:=True, CharSet:=CharSet.Unicode, EntryPoint:="SetLocalTime", SetLastError:=True)>
+        Friend Shared Function SetLocalTime(ByVal systime As NativeTypes.SystemTime) As Integer
+        End Function
+
         <DllImport("kernel32", PreserveSig:=True, CharSet:=CharSet.Auto, EntryPoint:="MoveFile", BestFitMapping:=False, ThrowOnUnmappableChar:=True, SetLastError:=True)>
         Friend Shared Function MoveFile(<[In](), MarshalAs(UnmanagedType.LPTStr)> ByVal lpExistingFileName As String,
                 <[In](), MarshalAs(UnmanagedType.LPTStr)> ByVal lpNewFileName As String) As Integer

@@ -7,6 +7,15 @@
 
 namespace Microsoft.VisualBasic
 {
+    public enum AppWinStyle : short
+    {
+        Hide = 0,
+        MaximizedFocus = 3,
+        MinimizedFocus = 2,
+        MinimizedNoFocus = 6,
+        NormalFocus = 1,
+        NormalNoFocus = 4,
+    }
     public enum CallType
     {
         Method = 1,
@@ -65,44 +74,109 @@ namespace Microsoft.VisualBasic
     public sealed partial class Constants
     {
         internal Constants() { }
+        public const MsgBoxResult vbAbort = MsgBoxResult.Abort;
+        public const MsgBoxStyle vbAbortRetryIgnore = MsgBoxStyle.AbortRetryIgnore;
+        public const MsgBoxStyle vbApplicationModal = MsgBoxStyle.ApplicationModal;
         public const FileAttribute vbArchive = FileAttribute.Archive;
+        public const VariantType vbArray = VariantType.Array;
         public const string vbBack = "\b";
         public const Microsoft.VisualBasic.CompareMethod vbBinaryCompare = Microsoft.VisualBasic.CompareMethod.Binary;
+        public const VariantType vbBoolean = VariantType.Boolean;
+        public const VariantType vbByte = VariantType.Byte;
+        public const MsgBoxResult vbCancel = MsgBoxResult.Cancel;
         public const string vbCr = "\r";
+        public const MsgBoxStyle vbCritical = MsgBoxStyle.Critical;
         public const string vbCrLf = "\r\n";
+        public const VariantType vbCurrency = VariantType.Currency;
+        public const VariantType vbDate = VariantType.Date;
+        public const VariantType vbDecimal = VariantType.Decimal;
+        public const MsgBoxStyle vbDefaultButton1 = MsgBoxStyle.ApplicationModal;
+        public const MsgBoxStyle vbDefaultButton2 = MsgBoxStyle.DefaultButton2;
+        public const MsgBoxStyle vbDefaultButton3 = MsgBoxStyle.DefaultButton3;
         public const FileAttribute vbDirectory = FileAttribute.Directory;
+        public const VariantType vbDouble = VariantType.Double;
+        public const VariantType vbEmpty = VariantType.Empty;
+        public const MsgBoxStyle vbExclamation = MsgBoxStyle.Exclamation;
         public const TriState vbFalse = TriState.False;
+        public const FirstWeekOfYear vbFirstFourDays = FirstWeekOfYear.FirstFourDays;
+        public const FirstWeekOfYear vbFirstFullWeek = FirstWeekOfYear.FirstFullWeek;
+        public const FirstWeekOfYear vbFirstJan1 = FirstWeekOfYear.Jan1;
         public const string vbFormFeed = "\f";
+        public const FirstDayOfWeek vbFriday = FirstDayOfWeek.Friday;
         public const DateFormat vbGeneralDate = DateFormat.GeneralDate;
+        public const CallType vbGet = CallType.Get;
+        public const AppWinStyle vbHide = AppWinStyle.Hide;
         public const FileAttribute vbHidden = FileAttribute.Hidden;
         public const VbStrConv vbHiragana = VbStrConv.Hiragana;
+        public const MsgBoxStyle vbInformation = MsgBoxStyle.Information;
+        public const MsgBoxResult vbIgnore = MsgBoxResult.Ignore;
+        public const VariantType vbInteger = VariantType.Integer;
         public const VbStrConv vbKatakana = VbStrConv.Katakana;
+        public const CallType vbLet = CallType.Let;
         public const string vbLf = "\n";
         public const VbStrConv vbLinguisticCasing = VbStrConv.LinguisticCasing;
+        public const VariantType vbLong = VariantType.Long;
         public const DateFormat vbLongDate = DateFormat.LongDate;
         public const DateFormat vbLongTime = DateFormat.LongTime;
         public const VbStrConv vbLowerCase = VbStrConv.Lowercase;
+        public const CallType vbMethod = CallType.Method;
+        public const AppWinStyle vbMaximizedFocus = AppWinStyle.MaximizedFocus;
+        public const AppWinStyle vbMinimizedFocus = AppWinStyle.MinimizedFocus;
+        public const AppWinStyle vbMinimizedNoFocus = AppWinStyle.MinimizedNoFocus;
+        public const FirstDayOfWeek vbMonday = FirstDayOfWeek.Monday;
+        public const MsgBoxStyle vbMsgBoxHelp = MsgBoxStyle.MsgBoxHelp;
+        public const MsgBoxStyle vbMsgBoxRight = MsgBoxStyle.MsgBoxRight;
+        public const MsgBoxStyle vbMsgBoxRtlReading = MsgBoxStyle.MsgBoxRtlReading;
+        public const MsgBoxStyle vbMsgBoxSetForeground = MsgBoxStyle.MsgBoxSetForeground;
         [System.ObsoleteAttribute("For a carriage return and line feed, use vbCrLf.  For the current platform's newline, use System.Environment.NewLine.")]
         public const VbStrConv vbNarrow = VbStrConv.Narrow;
         public const string vbNewLine = "\r\n";
+        public const MsgBoxResult vbNo = MsgBoxResult.No;
         public const FileAttribute vbNormal = FileAttribute.Normal;
+        public const AppWinStyle vbNormalFocus = AppWinStyle.NormalFocus;
+        public const AppWinStyle vbNormalNoFocus = AppWinStyle.NormalNoFocus;
+        public const VariantType vbNull = VariantType.Null;
         public const string vbNullChar = "\0";
         public const string vbNullString = null;
+        public const VariantType vbObject = VariantType.Object;
+        public const int vbObjectError = unchecked((int)0x80040000);
+        public const MsgBoxResult vbOK = MsgBoxResult.Ok;
+        public const MsgBoxStyle vbOKCancel = MsgBoxStyle.OkCancel;
+        public const MsgBoxStyle vbOKOnly = MsgBoxStyle.ApplicationModal;
         public const VbStrConv vbProperCase = VbStrConv.ProperCase;
+        public const MsgBoxStyle vbQuestion = MsgBoxStyle.Question;
         public const FileAttribute vbReadOnly = FileAttribute.ReadOnly;
+        public const MsgBoxResult vbRetry = MsgBoxResult.Retry;
+        public const MsgBoxStyle vbRetryCancel = MsgBoxStyle.RetryCancel;
+        public const FirstDayOfWeek vbSaturday = FirstDayOfWeek.Saturday;
+        public const CallType vbSet = CallType.Set;
         public const DateFormat vbShortDate = DateFormat.ShortDate;
         public const DateFormat vbShortTime = DateFormat.ShortTime;
         public const VbStrConv vbSimplifiedChinese = VbStrConv.SimplifiedChinese;
+        public const VariantType vbSingle = VariantType.Single;
+        public const VariantType vbString = VariantType.String;
+        public const FirstDayOfWeek vbSunday = FirstDayOfWeek.Sunday;
         public const FileAttribute vbSystem = FileAttribute.System;
+        public const MsgBoxStyle vbSystemModal = MsgBoxStyle.SystemModal;
         public const string vbTab = "\t";
         public const Microsoft.VisualBasic.CompareMethod vbTextCompare = Microsoft.VisualBasic.CompareMethod.Text;
+        public const FirstDayOfWeek vbThursday = FirstDayOfWeek.Thursday;
         public const VbStrConv vbTraditionalChinese = VbStrConv.TraditionalChinese;
         public const TriState vbTrue = TriState.True;
+        public const FirstDayOfWeek vbTuesday = FirstDayOfWeek.Tuesday;
         public const VbStrConv vbUpperCase = VbStrConv.Uppercase;
         public const TriState vbUseDefault = TriState.UseDefault;
+        public const VariantType vbUserDefinedType = VariantType.UserDefinedType;
+        public const FirstWeekOfYear vbUseSystem = FirstWeekOfYear.System;
+        public const FirstDayOfWeek vbUseSystemDayOfWeek = FirstDayOfWeek.System;
+        public const VariantType vbVariant = VariantType.Variant;
         public const string vbVerticalTab = "\v";
         public const FileAttribute vbVolume = FileAttribute.Volume;
+        public const FirstDayOfWeek vbWednesday = FirstDayOfWeek.Wednesday;
         public const VbStrConv vbWide = VbStrConv.Wide;
+        public const MsgBoxResult vbYes = MsgBoxResult.Yes;
+        public const MsgBoxStyle vbYesNo = MsgBoxStyle.YesNo;
+        public const MsgBoxStyle vbYesNoCancel = MsgBoxStyle.YesNoCancel;
     }
     public sealed partial class ControlChars
     {
@@ -175,8 +249,31 @@ namespace Microsoft.VisualBasic
     public sealed partial class DateAndTime
     {
         internal DateAndTime() { }
+        public static System.DateTime DateAdd(DateInterval Interval, double Number, System.DateTime DateValue) { throw null; }
+        public static System.DateTime DateAdd(string Interval, double Number, object DateValue) { throw null; }
+        public static long DateDiff(DateInterval Interval, System.DateTime Date1, System.DateTime Date2, FirstDayOfWeek DayOfWeek = FirstDayOfWeek.Sunday, FirstWeekOfYear WeekOfYear = FirstWeekOfYear.Jan1) { throw null; }
+        public static long DateDiff(string Interval, object Date1, object Date2, FirstDayOfWeek DayOfWeek = FirstDayOfWeek.Sunday, FirstWeekOfYear WeekOfYear = FirstWeekOfYear.Jan1) { throw null; }
+        public static int DatePart(DateInterval Interval, System.DateTime DateValue, FirstDayOfWeek FirstDayOfWeekValue = FirstDayOfWeek.Sunday, FirstWeekOfYear FirstWeekOfYearValue = FirstWeekOfYear.Jan1) { throw null; }
+        public static int DatePart(string Interval, object DateValue, FirstDayOfWeek DayOfWeek = FirstDayOfWeek.Sunday, FirstWeekOfYear WeekOfYear = FirstWeekOfYear.Jan1) { throw null; }
+        public static System.DateTime DateSerial(int Year, int Month, int Day) { throw null; }
+        public static string DateString { get { throw null; } set { } }
+        public static System.DateTime DateValue(string StringDate) { throw null; }
+        public static int Day(System.DateTime DateValue) { throw null; }
+        public static int Hour(System.DateTime TimeValue) { throw null; }
+        public static int Minute(System.DateTime TimeValue) { throw null; }
+        public static int Month(System.DateTime DateValue) { throw null; }
+        public static string MonthName(int Month, bool Abbreviate = false) { throw null; }
         public static System.DateTime Now { get { throw null; } }
-        public static System.DateTime Today { get { throw null; } }
+        public static int Second(System.DateTime TimeValue) { throw null; }
+        public static System.DateTime TimeOfDay { get { throw null; } set { } }
+        public static double Timer { get { throw null; } }
+        public static System.DateTime TimeSerial(int Hour, int Minute, int Second) { throw null; }
+        public static string TimeString { get { throw null; } set { } }
+        public static System.DateTime TimeValue(string StringTime) { throw null; }
+        public static System.DateTime Today { get { throw null; } set { } }
+        public static int Weekday(System.DateTime DateValue, FirstDayOfWeek DayOfWeek = FirstDayOfWeek.Sunday) { throw null; }
+        public static string WeekdayName(int Weekday, bool Abbreviate = false, FirstDayOfWeek FirstDayOfWeekValue = FirstDayOfWeek.System) { throw null; }
+        public static int Year(System.DateTime DateValue) { throw null; }
     }
     public enum DateFormat
     {
@@ -185,6 +282,24 @@ namespace Microsoft.VisualBasic
         LongTime = 3,
         ShortDate = 2,
         ShortTime = 4,
+    }
+    public enum DateInterval
+    {
+        DayOfYear = 3,
+        Day = 4,
+        Hour = 7,
+        Minute = 8,
+        Month = 2,
+        Quarter = 1,
+        Second = 9,
+        Weekday = 6,
+        WeekOfYear = 5,
+        Year = 0,
+    }
+    public enum DueDate
+    {
+        BegOfPeriod = 1,
+        EndOfPeriod = 0,
     }
     public sealed partial class ErrObject
     {
@@ -297,6 +412,24 @@ namespace Microsoft.VisualBasic
         public static void Write(int FileNumber, params object[] Output) { }
         public static void WriteLine(int FileNumber, params object[] Output) { }
     }
+    public enum FirstDayOfWeek
+    {
+        Friday = 6,
+        Monday = 2,
+        Saturday = 7,
+        Sunday = 1,
+        System = 0,
+        Thursday = 5,
+        Tuesday = 3,
+        Wednesday = 4,
+    }
+    public enum FirstWeekOfYear
+    {
+        FirstFourDays = 2,
+        FirstFullWeek = 3,
+        Jan1 = 1,
+        System = 0,
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
     public sealed partial class HideModuleNameAttribute : System.Attribute
@@ -329,6 +462,39 @@ namespace Microsoft.VisualBasic
     {
         internal Interaction() { }
         public static object CallByName(object ObjectRef, string ProcName, CallType UseCallType, params object[] Args) { throw null; }
+    }
+    public enum MsgBoxResult
+    {
+        Abort = 3,
+        Cancel = 2,
+        Ignore = 5,
+        Ok = 1,
+        Retry = 4,
+        No = 7,
+        Yes = 6,
+    }
+    [System.FlagsAttribute]
+    public enum MsgBoxStyle
+    {
+        AbortRetryIgnore = 2,
+        ApplicationModal = 0,
+        Critical = 16,
+        DefaultButton1 = 0,
+        DefaultButton2 = 256,
+        DefaultButton3 = 512,
+        Exclamation = 48,
+        Information = 64,
+        MsgBoxHelp = 16384,
+        MsgBoxRight = 524288,
+        MsgBoxRtlReading = 1048576,
+        MsgBoxSetForeground = 65536,
+        OkCancel = 1,
+        OkOnly = 0,
+        Question = 32,
+        RetryCancel = 5,
+        SystemModal = 4096,
+        YesNo = 4,
+        YesNoCancel = 3,
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, AllowMultiple=false, Inherited=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
