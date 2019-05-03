@@ -16,6 +16,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     public static partial class GeneralTests
     {
         public static bool SupportsDiffieHellman { get; } = KeyAgreeRecipientInfoTests.SupportsDiffieHellman;
+        public static bool SupportsRsaOaepCerts => PlatformDetection.IsWindows;
 
         [Fact]
         public static void DecodeVersion0_RoundTrip()
@@ -286,6 +287,40 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             Assert.Equal<byte>(contentInfo.Content, ecms.ContentInfo.Content);
         }
 
+        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void RsaOaepCertificate_NullParameters_Throws()
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo);
+            using (X509Certificate2 cert = Certificates.RsaOaep2048_NullParameters.GetCertificate())
+            {
+                CmsRecipient recipient = new CmsRecipient(cert);
+                Assert.ThrowsAny<CryptographicException>(() => ecms.Encrypt(recipient));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void RoundTrip_RsaOaepCertificate_Sha1KeyParameters()
+        {
+            Assert_Certificate_Roundtrip(Certificates.RsaOaep2048_Sha1Parameters);
+        }
+
+        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void RoundTrip_RsaOaepCertificate_Sha256KeyParameters()
+        {
+            Assert_Certificate_Roundtrip(Certificates.RsaOaep2048_Sha256Parameters);
+        }
+
+        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        [OuterLoop(/* Leaks key on disk if interrupted */)]
+        public static void RoundTrip_RsaOaepCertificate_NoParameters()
+        {
+            Assert_Certificate_Roundtrip(Certificates.RsaOaep2048_NoParameters);
+        }
+
         [Fact]
         public static void Encrypt_Data_DoesNotIncreaseInSize()
         {
@@ -336,6 +371,32 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
             }
 
             Assert.Equal(expectedContent, ecms.ContentInfo.Content);
+        }
+
+        private static void Assert_Certificate_Roundtrip(CertLoader certificateLoader)
+        {
+            ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
+            EnvelopedCms ecms = new EnvelopedCms(contentInfo);
+            using (X509Certificate2 cert = certificateLoader.GetCertificate())
+            {
+                CmsRecipient recipient = new CmsRecipient(cert);
+                ecms.Encrypt(recipient);
+            }
+
+            byte[] encodedMessage = ecms.Encode();
+
+            ecms = new EnvelopedCms();
+            ecms.Decode(encodedMessage);
+
+            using (X509Certificate2 privateCert = certificateLoader.TryGetCertificateWithPrivateKey())
+            {
+                if (privateCert == null)
+                    return; // CertLoader can't load the private certificate.
+
+                ecms.Decrypt(new X509Certificate2Collection(privateCert));
+            }
+            Assert.Equal(contentInfo.ContentType.Value, ecms.ContentInfo.ContentType.Value);
+            Assert.Equal<byte>(contentInfo.Content, ecms.ContentInfo.Content);
         }
 
         private static X509Certificate2[] s_certs =

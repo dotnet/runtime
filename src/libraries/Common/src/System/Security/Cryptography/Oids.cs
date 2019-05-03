@@ -26,6 +26,8 @@ namespace System.Security.Cryptography
         internal const string RsaPkcs1Sha512 = "1.2.840.113549.1.1.13";
         internal const string Esdh = "1.2.840.113549.1.9.16.3.5";
         internal const string EcDiffieHellman = "1.3.132.1.12";
+        internal const string DiffieHellman = "1.2.840.10046.2.1";
+        internal const string DiffieHellmanPkcs3 = "1.2.840.113549.1.3.1";
 
         // Cryptographic Attribute Types
         internal const string SigningTime = "1.2.840.113549.1.9.5";

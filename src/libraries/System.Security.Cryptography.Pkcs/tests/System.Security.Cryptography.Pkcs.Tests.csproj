@@ -63,6 +63,9 @@
     <Compile Include="Pkcs8PrivateKeyInfoTests.cs" />
     <Compile Include="PrivateKeyHelpers.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)' == 'netfx'">
+    <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)'=='netcoreapp'">
     <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" />
   </ItemGroup>
