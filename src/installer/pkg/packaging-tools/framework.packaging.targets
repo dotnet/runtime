@@ -329,7 +329,7 @@
   <Target Name="GenerateSharedFramework"
           Condition="'$(GenerateSharedFramework)' == 'true'">
     <PropertyGroup>
-      <SharedFrameworkIntermediateOutputPath>$(IntermediateOutputPath)sharedFx/</SharedFrameworkIntermediateOutputPath>
+      <SharedFrameworkIntermediateOutputPath>$(IntermediateOutputPath)sfx/</SharedFrameworkIntermediateOutputPath>
     </PropertyGroup>
 
     <!-- Delete layout directory and sfx NuGet cache to ensure freshness. -->
