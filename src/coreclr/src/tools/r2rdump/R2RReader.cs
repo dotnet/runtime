@@ -474,7 +474,7 @@ namespace R2RDump
                 uint methodFlags = decoder.ReadUInt();
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_OwnerType) != 0)
                 {
-                    owningType = decoder.ReadTypeSignature();
+                    owningType = decoder.ReadTypeSignatureNoEmit();
                 }
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_SlotInsteadOfToken) != 0)
                 {
@@ -497,14 +497,14 @@ namespace R2RDump
                     methodTypeArgs = new string[typeArgCount];
                     for (int typeArgIndex = 0; typeArgIndex < typeArgCount; typeArgIndex++)
                     {
-                        methodTypeArgs[typeArgIndex] = decoder.ReadTypeSignature();
+                        methodTypeArgs[typeArgIndex] = decoder.ReadTypeSignatureNoEmit();
                     }
                 }
 
                 string constrainedType = null;
                 if ((methodFlags & (uint)ReadyToRunMethodSigFlags.READYTORUN_METHOD_SIG_Constrained) != 0)
                 {
-                    constrainedType = decoder.ReadTypeSignature();
+                    constrainedType = decoder.ReadTypeSignatureNoEmit();
                 }
 
                 int runtimeFunctionId;
