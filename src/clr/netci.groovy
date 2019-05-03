@@ -1993,7 +1993,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
 
     if (needsTrigger) {
         if (isArm64PrivateJob) {
-            if (isDefaultTrigger) {
+            // ignore isDefaultTrigger to disable Jenkins by default
+            if (false) {
                 Utilities.addDefaultPrivateGithubPRTriggerForBranch(job, branch, contextString, null, arm64Users)
             }
             else {
@@ -2001,7 +2002,8 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
         }
         else {
-            if (isDefaultTrigger) {
+            // ignore isDefaultTrigger to disable Jenkins by default
+            if (false) {
                 Utilities.addGithubPRTriggerForBranch(job, branch, contextString)
             }
             else {
