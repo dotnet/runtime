@@ -11,6 +11,11 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>a7a250e9c13147134543c35fef2fb81f19592edf</Sha>
     </Dependency>
+    <!-- This dependency should be added, but it causes the github PR legs to not launch. -->
+    <!-- Dependency Name="microsoft.dotnet.build.tasks.feed" Version="2.2.0-beta.19229.8">
+      <Uri>https://github.com/dotnet/arcade</Uri>
+      <Sha>a7a250e9c13147134543c35fef2fb81f19592edf</Sha>
+    </Dependency-->
     <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview6.19229.1">
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>173a2a165316af9a4e211ceab8c8d9692de8a528</Sha>
