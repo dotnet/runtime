@@ -3,13 +3,10 @@
 ' See the LICENSE file in the project root for more information.
 
 Imports System
-Imports System.Security
 Imports System.Text
 Imports System.Globalization
-Imports System.Runtime.InteropServices
 Imports System.Reflection
 Imports System.Diagnostics
-Imports Microsoft.VisualBasic.CompilerServices.ExceptionUtils
 Imports Microsoft.VisualBasic.CompilerServices.Symbols
 
 Namespace Microsoft.VisualBasic.CompilerServices
@@ -22,7 +19,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Friend Const FACILITY_RPC As Integer = &H10000I
         Friend Const FACILITY_ITF As Integer = &H40000I
         Friend Const SCODE_FACILITY As Integer = &H1FFF0000I
-        Private Const s_ERROR_INVALID_PARAMETER As Integer = 87
+        Private Const ERROR_INVALID_PARAMETER As Integer = 87
 
         Friend Const chPeriod As Char = "."c
         Friend Const chSpace As Char = ChrW(32)
