@@ -20,94 +20,28 @@
 //
 //========================================================================
 
-OBJECTREF AllocateValueSzArray(TypeHandle elementType, INT32 length);
-    // The main Array allocation routine, can do multi-dimensional
-OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap = FALSE);
-OBJECTREF AllocateArrayEx(TypeHandle arrayClass, INT32 *pArgs, DWORD dwNumArgs, BOOL bAllocateInLargeHeap = FALSE);
-    // Optimized verion of above
-OBJECTREF FastAllocatePrimitiveArray(MethodTable* arrayType, DWORD cElements, BOOL bAllocateInLargeHeap = FALSE);
+// Allocate single-dimensional array given array type
+OBJECTREF AllocateSzArray(MethodTable *pArrayMT, INT32 length, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS, BOOL bAllocateInLargeHeap = FALSE);
+OBJECTREF AllocateSzArray(TypeHandle  arrayType, INT32 length, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS, BOOL bAllocateInLargeHeap = FALSE);
 
+// The main Array allocation routine, can do multi-dimensional
+OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS, BOOL bAllocateInLargeHeap = FALSE);
+OBJECTREF AllocateArrayEx(TypeHandle  arrayType, INT32 *pArgs, DWORD dwNumArgs, GC_ALLOC_FLAGS flags = GC_ALLOC_NO_FLAGS, BOOL bAllocateInLargeHeap = FALSE);
 
-#if defined(_TARGET_X86_)
-
-    // for x86, we generate efficient allocators for some special cases
-    // these are called via inline wrappers that call the generated allocators
-    // via function pointers.
-
-
-    // Create a SD array of primitive types
-typedef HCCALL2_PTR(Object*, FastPrimitiveArrayAllocatorFuncPtr, CorElementType type, DWORD cElements);
-
-extern FastPrimitiveArrayAllocatorFuncPtr fastPrimitiveArrayAllocator;
-
-    // The fast version always allocates in the normal heap
+// Create a SD array of primitive types given an element type
 OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements);
 
-    // The slow version is distinguished via overloading by an additional parameter
-OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements, BOOL bAllocateInLargeHeap);
-
-
-// Allocate SD array of object pointers.
-typedef HCCALL2_PTR(Object*, FastObjectArrayAllocatorFuncPtr, MethodTable *pArrayMT, DWORD cElements);
-
-extern FastObjectArrayAllocatorFuncPtr fastObjectArrayAllocator;
-
-    // The fast version always allocates in the normal heap
-OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType);
-
-    // The slow version is distinguished via overloading by an additional parameter
-OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType, BOOL bAllocateInLargeHeap);
-
-
-    // Allocate string
-typedef HCCALL1_PTR(StringObject*, FastStringAllocatorFuncPtr, DWORD cchArrayLength);
-
-extern FastStringAllocatorFuncPtr fastStringAllocator;
-
-STRINGREF AllocateString( DWORD cchStringLength );
-
-    // The slow version, implemented in gcscan.cpp
-STRINGREF SlowAllocateString( DWORD cchStringLength );
-
-#ifdef FEATURE_UTF8STRING
-UTF8STRINGREF SlowAllocateUtf8String( DWORD cchStringLength );
-#endif // FEATURE_UTF8STRING
-
-#else
-
-// On other platforms, go to the (somewhat less efficient) implementations in gcscan.cpp
-
-    // Create a SD array of primitive types
-OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements, BOOL bAllocateInLargeHeap = FALSE);
-
-    // Allocate SD array of object pointers
+// Allocate SD array of object types given an element type
 OBJECTREF AllocateObjectArray(DWORD cElements, TypeHandle ElementType, BOOL bAllocateInLargeHeap = FALSE);
 
-STRINGREF SlowAllocateString( DWORD cchStringLength );
+// Allocate a string
+STRINGREF AllocateString( DWORD cchStringLength );
 
 #ifdef FEATURE_UTF8STRING
-UTF8STRINGREF SlowAllocateUtf8String( DWORD cchStringLength );
+UTF8STRINGREF AllocateUtf8String( DWORD cchStringLength );
 #endif // FEATURE_UTF8STRING
 
-inline STRINGREF AllocateString( DWORD cchStringLength )
-{
-    WRAPPER_NO_CONTRACT;
-
-    return SlowAllocateString( cchStringLength );
-}
-
-#endif
-
-#ifdef FEATURE_UTF8STRING
-inline UTF8STRINGREF AllocateUtf8String(DWORD cchStringLength)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return SlowAllocateUtf8String(cchStringLength);
-}
-#endif // FEATURE_UTF8STRING
-
-OBJECTREF DupArrayForCloning(BASEARRAYREF pRef, BOOL bAllocateInLargeHeap = FALSE);
+OBJECTREF DupArrayForCloning(BASEARRAYREF pRef);
 
 // The JIT requests the EE to specify an allocation helper to use at each new-site.
 // The EE makes this choice based on whether context boundaries may be involved,

@@ -764,7 +764,7 @@ PTRARRAYREF CopyRuntimeTypeHandles(TypeHandle * prgTH, FixupPointer<TypeHandle> 
     GCPROTECT_BEGIN(refArray);
     TypeHandle thRuntimeType = TypeHandle(MscorlibBinder::GetClass(arrayElemType));
     TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(thRuntimeType, ELEMENT_TYPE_SZARRAY);
-    refArray = (PTRARRAYREF)AllocateArrayEx(arrayHandle, &numTypeHandles, 1);
+    refArray = (PTRARRAYREF)AllocateSzArray(arrayHandle, numTypeHandles);
 
     for (INT32 i = 0; i < numTypeHandles; i++)
     {
@@ -852,7 +852,7 @@ FCIMPL1(PtrArray*, RuntimeTypeHandle::GetInterfaces, ReflectClassBaseObject *pTy
         if (ifaceCount > 0)
         {            
             TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pRuntimeTypeClass), ELEMENT_TYPE_SZARRAY);
-            refRetVal = (PTRARRAYREF)AllocateArrayEx(arrayHandle, &ifaceCount, 1);
+            refRetVal = (PTRARRAYREF)AllocateSzArray(arrayHandle, ifaceCount);
         
             // populate type array
             UINT i = 0;
@@ -1957,7 +1957,7 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiers, SignatureNative* pSignatu
         MethodTable *pMT = MscorlibBinder::GetClass(CLASS__TYPE);
         TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
 
-        gc.retVal = (PTRARRAYREF) AllocateArrayEx(arrayHandle, &cMods, 1);
+        gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cMods);
 
         while(cMods != 0)
         {
@@ -2107,7 +2107,7 @@ FCIMPL6(void, SignatureNative::GetSignature,
             INT32 nArgs = msig.NumFixedArgs();
             TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pRuntimeTypeClass), ELEMENT_TYPE_SZARRAY);
 
-            PTRARRAYREF ptrArrayarguments = (PTRARRAYREF) AllocateArrayEx(arrayHandle, &nArgs, 1);
+            PTRARRAYREF ptrArrayarguments = (PTRARRAYREF) AllocateSzArray(arrayHandle, nArgs);
             gc.pSig->SetArgumentArray(ptrArrayarguments);
 
             for (INT32 i = 0; i < nArgs; i++) 
@@ -2509,7 +2509,7 @@ FCIMPL2(RuntimeMethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodOb
             // Allocate the array of exception clauses.
             INT32 cEh = (INT32)header.EHCount();
             const COR_ILMETHOD_SECT_EH* ehInfo = header.EH;
-            gc.TempArray = (BASEARRAYREF) AllocateArrayEx(thEHClauseArray, &cEh, 1);
+            gc.TempArray = (BASEARRAYREF) AllocateSzArray(thEHClauseArray, cEh);
 
             SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->_exceptionClauses, gc.TempArray);
             
@@ -2545,7 +2545,7 @@ FCIMPL2(RuntimeMethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodOb
                                 &sigTypeContext, 
                                 MetaSig::sigLocalVars);
                 INT32 cLocals = metaSig.NumFixedArgs();
-                gc.TempArray  = (BASEARRAYREF) AllocateArrayEx(thLocalVariableArray, &cLocals, 1);
+                gc.TempArray  = (BASEARRAYREF) AllocateSzArray(thLocalVariableArray, cLocals);
                 SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->_localVariables, gc.TempArray);
 
                 for (INT32 i = 0; i < cLocals; i ++)
@@ -2570,7 +2570,7 @@ FCIMPL2(RuntimeMethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodOb
             else
             {
                 INT32 cLocals = 0;
-                gc.TempArray  = (BASEARRAYREF) AllocateArrayEx(thLocalVariableArray, &cLocals, 1);
+                gc.TempArray  = (BASEARRAYREF) AllocateSzArray(thLocalVariableArray, cLocals);
                 SetObjectReference((OBJECTREF*)&gc.MethodBodyObj->_localVariables, gc.TempArray);
             }
         }
