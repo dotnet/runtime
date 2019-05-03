@@ -45,6 +45,11 @@ namespace System.Net.Security
                     // like "all characters being within [a-z0-9.-]+"
                     string matchName = s_idnMapping.GetAscii(hostName);
                     hostNameMatch = Interop.Crypto.CheckX509Hostname(certHandle, matchName, matchName.Length);
+
+                    if (hostNameMatch < 0)
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
                 }
             }
 

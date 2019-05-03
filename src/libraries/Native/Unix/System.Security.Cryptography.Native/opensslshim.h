@@ -172,6 +172,9 @@ int32_t X509_up_ref(X509* x509);
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
 X509_STORE* X509_STORE_CTX_get0_store(X509_STORE_CTX* ctx);
+int32_t X509_check_host(X509* x509, const char* name, size_t namelen, unsigned int flags, char** peername);
+#define X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS 4
+
 #endif
 
 #if !HAVE_OPENSSL_ALPN
@@ -487,6 +490,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LEGACY_FUNCTION(SSLeay) \
     RENAMED_FUNCTION(TLS_method, SSLv23_method) \
     REQUIRED_FUNCTION(SSL_write) \
+    FALLBACK_FUNCTION(X509_check_host) \
     REQUIRED_FUNCTION(X509_check_issued) \
     REQUIRED_FUNCTION(X509_check_purpose) \
     REQUIRED_FUNCTION(X509_cmp_current_time) \
@@ -877,6 +881,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSLeay SSLeay_ptr
 #define SSL_write SSL_write_ptr
 #define TLS_method TLS_method_ptr
+#define X509_check_host X509_check_host_ptr
 #define X509_check_issued X509_check_issued_ptr
 #define X509_check_purpose X509_check_purpose_ptr
 #define X509_cmp_current_time X509_cmp_current_time_ptr
@@ -1034,6 +1039,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
 
+#define X509_check_host local_X509_check_host
 #define X509_STORE_CTX_get0_store local_X509_STORE_CTX_get0_store
 
 #endif

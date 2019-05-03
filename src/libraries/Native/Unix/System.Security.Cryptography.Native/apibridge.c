@@ -6,6 +6,9 @@
 #include "pal_crypto_types.h"
 #include "pal_types.h"
 
+#include "../Common/pal_safecrt.h"
+#include <assert.h>
+
 #ifdef NEED_OPENSSL_1_0
 
 #include "apibridge.h"
@@ -23,6 +26,8 @@
 
 #define SSL_ST_OK 3
 #endif
+
+c_static_assert(X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS == 4);
 
 const ASN1_TIME* local_X509_get0_notBefore(const X509* x509)
 {
@@ -477,6 +482,198 @@ int32_t local_RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* 
 int32_t local_SSL_is_init_finished(const SSL* ssl)
 {
     return SSL_state(ssl) == SSL_ST_OK;
+}
+
+/*
+Function:
+CheckX509HostnameMatch
+
+Checks if a particular ASN1_STRING represents the entry in a certificate which would match against
+the requested hostname.
+
+Parameter sanRules: 0 for match rules against the subject CN, 1 for match rules against a SAN entry
+
+Return values:
+1 if the hostname is a match
+0 if the hostname is not a match
+Any negative number indicates an error in the arguments.
+*/
+static int CheckX509HostnameMatch(ASN1_STRING* candidate, const char* hostname, int cchHostname, int typeMatch)
+{
+    assert(candidate != NULL);
+    assert(hostname != NULL);
+
+    if (!candidate->data || !candidate->length)
+    {
+        return 0;
+    }
+
+    // If the candidate is *.example.org then the smallest we would match is a.example.org, which is the same
+    // length. So anything longer than what we're matching against isn't valid.
+
+    // Since the IDNA punycode conversion was applied already this holds even
+    // in Unicode requests.
+    if (candidate->length > cchHostname)
+    {
+        return 0;
+    }
+
+    char* candidateStr;
+    int i;
+    int hostnameFirstDot = -1;
+
+    if (candidate->type != typeMatch)
+    {
+        return 0;
+    }
+
+    // Great, candidateStr is just candidate->data!
+    candidateStr = (char*)(candidate->data);
+
+    // First, verify that the string is alphanumeric, plus hyphens or periods and maybe starting with an asterisk.
+    for (i = 0; i < candidate->length; ++i)
+    {
+        char c = candidateStr[i];
+
+        if ((c < 'A' || c > 'Z') && (c < 'a' || c > 'z') && (c < '0' || c > '9') && (c != '.') && (c != '-') &&
+            (c != '*' || i != 0))
+        {
+            return 0;
+        }
+    }
+
+    if (candidateStr[0] != '*')
+    {
+        if (candidate->length != cchHostname)
+        {
+            return 0;
+        }
+
+        return !strncasecmp((const char*)candidateStr, hostname, (size_t)cchHostname);
+    }
+
+    for (i = 0; i < cchHostname; ++i)
+    {
+        if (hostname[i] == '.')
+        {
+            hostnameFirstDot = i;
+            break;
+        }
+    }
+
+    if (hostnameFirstDot < 0)
+    {
+        // It's possible that this should be considered a match if the entire SAN entry is '*',
+        // aka candidate->length == 1; but nothing talks about this case.
+        return 0;
+    }
+
+    int foundSecondDot = 0;
+
+    for (i = hostnameFirstDot + 1; i < cchHostname; ++i)
+    {
+        if (hostname[i] == '.')
+        {
+            foundSecondDot = 1;
+            break;
+        }
+    }
+
+    // OpenSSL requires two dots for their hostname match.
+    if (!foundSecondDot)
+    {
+        return 0;
+    }
+
+    {
+        // Determine how many characters exist after the portion the wildcard would match. For example,
+        // if hostname is 10 bytes long, and the '.' was at index 3, then we eliminate the first 3
+        // characters (www) from the match constraint.  This forces the wildcard to be the last
+        // character before the . in its match group.
+        int matchLength = cchHostname - hostnameFirstDot;
+
+        // If what's left over from hostname isn't as long as what's left over from the candidate
+        // after the first character was an asterisk, it can't match.
+        if (matchLength != (candidate->length - 1))
+        {
+            return 0;
+        }
+
+        return !strncasecmp(candidateStr + 1, hostname + hostnameFirstDot, (size_t)matchLength);
+    }
+}
+
+int32_t local_X509_check_host(X509* x509, const char* name, size_t namelen, unsigned int flags, char** peername)
+{
+    assert(peername == NULL);
+    assert(flags == X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+    (void)flags;
+    (void)peername;
+
+    GENERAL_NAMES* san = (GENERAL_NAMES*)(X509_get_ext_d2i(x509, NID_subject_alt_name, NULL, NULL));
+    int readSubject = 1;
+    int success = 0;
+
+    // RFC2818 says that if ANY dNSName alternative name field is present then
+    // we should ignore the subject common name.
+
+    if (san != NULL)
+    {
+        int count = sk_GENERAL_NAME_num(san);
+
+        for (int i = 0; i < count; ++i)
+        {
+            GENERAL_NAME* sanEntry = sk_GENERAL_NAME_value(san, i);
+
+            if (sanEntry->type != GEN_DNS)
+            {
+                continue;
+            }
+
+            readSubject = 0;
+
+            // A GEN_DNS name is supposed to be a V_ASN1_IA5STRING.
+            // If it isn't, we don't know how to read it.
+            if (CheckX509HostnameMatch(sanEntry->d.dNSName, name, (int)namelen, V_ASN1_IA5STRING))
+            {
+                success = 1;
+                break;
+            }
+        }
+
+        GENERAL_NAMES_free(san);
+    }
+
+    if (readSubject)
+    {
+        assert(success == 0);
+
+        // This is a shared/interor pointer, do not free!
+        X509_NAME* subject = X509_get_subject_name(x509);
+
+        if (subject != NULL)
+        {
+            int i = -1;
+
+            while ((i = X509_NAME_get_index_by_NID(subject, NID_commonName, i)) >= 0)
+            {
+                // Shared/interior pointers, do not free!
+                X509_NAME_ENTRY* nameEnt = X509_NAME_get_entry(subject, i);
+                ASN1_STRING* cn = X509_NAME_ENTRY_get_data(nameEnt);
+
+                // For compatibility with previous .NET Core builds, allow any type of
+                // string for CN, provided it ended up with a single-byte encoding (otherwise
+                // strncasecmp simply won't match).
+                if (CheckX509HostnameMatch(cn, name, (int)namelen, cn->type))
+                {
+                    success = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    return success;
 }
 
 X509Stack* local_X509_STORE_CTX_get0_chain(X509_STORE_CTX* ctx)
