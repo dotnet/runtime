@@ -31,17 +31,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 return;
             }
 
-            var fixture = sharedState.ComLibraryFixture
-                .Copy();
-
             string scenario = synchronous ? "synchronous" : "concurrent";
             string args = $"comhost {scenario} {count} {sharedState.ComHostPath} {sharedState.ClsidString}";
             CommandResult result = Command.Create(sharedState.NativeHostPath, args)
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("COREHOST_TRACE", "1")
-                .EnvironmentVariable("DOTNET_ROOT", fixture.BuiltDotnet.BinPath)
-                .EnvironmentVariable("DOTNET_ROOT(x86)", fixture.BuiltDotnet.BinPath)
+                .EnvironmentVariable("DOTNET_ROOT", sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", sharedState.ComLibraryFixture.BuiltDotnet.BinPath)
                 .Execute();
 
             result.Should().Pass()
@@ -51,6 +48,37 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             {
                 result.Should().HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded. {i} of {count}");
             }
+        }
+
+        [Fact]
+        public void ActivateClass_IgnoreAppLocalHostFxr()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // COM activation is only supported on Windows
+                return;
+            }
+
+            var fixture = sharedState.ComLibraryFixture.Copy();
+
+            File.WriteAllText(Path.Combine(fixture.TestProject.BuiltApp.Location, "hostfxr.dll"), string.Empty);
+            var comHostWithAppLocalFxr = Path.Combine(
+                fixture.TestProject.BuiltApp.Location,
+                $"{ fixture.TestProject.AssemblyName }.comhost.dll");
+
+            string args = $"comhost synchronous 1 {comHostWithAppLocalFxr} {sharedState.ClsidString}";
+            CommandResult result = Command.Create(sharedState.NativeHostPath, args)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable("DOTNET_ROOT", fixture.BuiltDotnet.BinPath)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", fixture.BuiltDotnet.BinPath)
+                .Execute();
+
+            result.Should().Pass()
+                .And.HaveStdOutContaining("New instance of Server created")
+                .And.HaveStdOutContaining($"Activation of {sharedState.ClsidString} succeeded.")
+                .And.HaveStdErrContaining("Using environment variable DOTNET_ROOT");
         }
 
         public class SharedTestState : SharedTestStateBase
