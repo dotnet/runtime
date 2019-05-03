@@ -31,8 +31,6 @@
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="ProcessTestBase.NonUap.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uap'" Include="ProcessTestBase.Uap.cs" />
     <Compile Include="ProcessTests.cs" />
-    <Compile Include="ProcessTests.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
-    <Compile Include="ProcessTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
@@ -45,12 +43,16 @@
   </ItemGroup>
   <!-- WINDOWS: Shared CoreCLR and .NET Native -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Compile Include="ProcessTests.Windows.cs" />
+    <Compile Include="ProcessThreadTests.Windows.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Windows.cs">
       <Link>Common\CoreLib\System\PasteArguments.Windows.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- UNIX -->
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
+    <Compile Include="ProcessTests.Unix.cs" />
+    <Compile Include="ProcessThreadTests.Unix.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.Unix.cs">
       <Link>Common\CoreLib\System\PasteArguments.Unix.cs</Link>
     </Compile>
