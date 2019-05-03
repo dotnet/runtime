@@ -1,48 +1,16 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Condition=" $(Configuration.StartsWith('illink')) ">
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition=" ! $(Configuration.StartsWith('illink')) ">
+    <TargetFramework>net40</TargetFramework>
+  </PropertyGroup>
+
   <PropertyGroup>
-    <ILLinkBuild Condition=" $(Configuration.StartsWith('illink')) ">true</ILLinkBuild>
-    <ILLinkBuild Condition=" '$(ILLinkBuild)' == '' ">false</ILLinkBuild>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props') And ! $(ILLinkBuild) " />
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" Condition=" $(ILLinkBuild) " />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2C26601F-3E2F-45B9-A02F-58EE9296E19E}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Mono.Linker.Tests.Cases.Expectations</RootNamespace>
-    <AssemblyName>Mono.Linker.Tests.Cases.Expectations</AssemblyName>
-    <TargetFramework Condition=" $(ILLinkBuild) ">netcoreapp3.0</TargetFramework>
-    <EnableDefaultCompileItems Condition=" $(ILLinkBuild) ">false</EnableDefaultCompileItems>
-    <TargetFrameworkVersion Condition=" ! $(ILLinkBuild) ">v4.0</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <ItemGroup Condition=" ! $(ILLinkBuild) ">
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="Assertions\BaseInAssemblyAttribute.cs" />
     <Compile Include="Assertions\ExpectBodyModifiedAttribute.cs" />
@@ -118,13 +86,5 @@
     <Compile Include="Assertions\AddedPseudoAttributeAttribute.cs" />
     <Compile Include="Support\PlatformAssemblies.cs" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" Condition=" ! $(ILLinkBuild) "/>
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" Condition=" $(ILLinkBuild) " />
+
 </Project>

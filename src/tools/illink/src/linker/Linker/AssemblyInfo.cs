@@ -30,14 +30,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle ("Mono.Linker")]
-[assembly: AssemblyDescription ("Mono CIL Linker")]
-[assembly: AssemblyConfiguration ("")]
-[assembly: AssemblyProduct ("")]
-[assembly: AssemblyCopyright ("(C) 2006, Jb Evain")]
 [assembly: AssemblyCulture ("")]
 
 [assembly: CLSCompliant (false)]
 [assembly: ComVisible (false)]
-
-[assembly: AssemblyVersion ("0.2.0.0")]

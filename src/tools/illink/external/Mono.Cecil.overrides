@@ -1,13 +1,27 @@
 <Project>
 
-  <PropertyGroup Condition=" '$(ArcadeBuild)' == 'true' ">
-    <NoWarn>$(NoWarn);0618</NoWarn>
-    <!-- Signing properties from cecil are overridden by Arcade
-         because cecil imports the .NET SDK (and hence Arcade) in a
-         nonstandard way, so set them again here. -->
-    <SignAssembly>true</SignAssembly>
+  <!-- Cecil's Directory.Build.Props imports this file if it
+       exists. We use it to import our own Directory.Build.props. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!-- Cecil sets PublicSign on windows, but we always want to
+         PublicSign. -->
     <PublicSign>true</PublicSign>
-    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)cecil/cecil.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(ArcadeBuild)' == 'true' ">
+    <!-- Work around
+         https://github.com/dotnet/arcade/issues/2321. This disables
+         arcade's selection of AssemblyOriginatorKeyFile based on the
+         StrongNameKeyId, since we want to use cecil's key file. -->
+    <StrongNameKeyId>CecilStrongNameKey</StrongNameKeyId>
+    <!-- PublicKey and PublicKeyToken are only consumed by arcade's
+         InternalsVisibleTo generator. We don't use this, but we set
+         these properties anyway to avoid hitting an arcade check. -->
+    <PublicKey>00240000048000009400000006020000002400005253413100040000010001002b5c9f7f04346c324a3176f8d3ee823bbf2d60efdbc35f86fd9e65ea3e6cd11bcdcba3a353e55133c8ac5c4caaba581b2c6dfff2cc2d0edc43959ddb86b973300a479a82419ef489c3225f1fe429a708507bd515835160e10bc743d20ca33ab9570cfd68d479fcf0bc797a763bec5d1000f0159ef619e709d915975e87beebaf</PublicKey>
+    <PublicKeyToken>50cebf1cceb9d05e</PublicKeyToken>
+    <NoWarn>$(NoWarn);0618</NoWarn>
   </PropertyGroup>
 
 </Project>

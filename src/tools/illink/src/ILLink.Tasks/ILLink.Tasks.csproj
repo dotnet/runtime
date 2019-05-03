@@ -80,49 +80,13 @@
   <ItemGroup>
     <ProjectReference Include="../linker/Mono.Linker.csproj"
                       PrivateAssets="All"
-                      Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-      <!-- SetConfiguration isn't required when the configuration is
-           already set in the solution. Setting it here allows packing
-           the tasks csproj on its own. This lets us avoid some of the
-           strange behavior that shows up when trying to build from a
-           .sln file.
-
-           There is a nuget bug that prevents this from working
-           properly during restore
-           (https://github.com/NuGet/Home/issues/4873). For the
-           moment, the linker has a workaround for this issue.
-
-           However, this still won't work properly because the build
-           target doesn't propagate this information properly either -
-           this is probably another bug. Building from the .csproj
-           would cause cecil to be built twice, once through the
-           linker with the netstandard configuration and once directly
-           from the tasks project in the default configuration info
-           (because some target gets its reference information from
-           the lock file, which doesn't have configuration info).
-      -->
-      <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>
-    </ProjectReference>
+                      Condition=" '$(TargetFramework)' == 'netcoreapp2.0' " />
     <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj"
                       PrivateAssets="All" />
-
     <ProjectReference Include="../ILLink.CustomSteps/ILLink.CustomSteps.csproj"
                       PrivateAssets="All"
-                      Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-      <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>
-    </ProjectReference>
+                      Condition=" '$(TargetFramework)' == 'netcoreapp2.0' " />
   </ItemGroup>
-
-  <!-- Workaround for the SetConfiguration issue described above. -->
-  <Target Name="SetCecilConfiguration"
-          AfterTargets="AssignProjectConfiguration">
-    <ItemGroup>
-      <ProjectReferenceWithConfiguration Condition=" '%(Filename)%(Extension)' == 'Mono.Cecil.csproj' Or '%(Filename)%(Extension)' == 'Mono.Cecil.Pdb.csproj' Or '%(Filename)%(Extension)' == 'Mono.Cecil.Mdb.csproj' ">
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'net46' ">Configuration=net_4_0_$(Configuration)</SetConfiguration>
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">Configuration=netstandard_$(Configuration)</SetConfiguration>
-      </ProjectReferenceWithConfiguration>
-    </ItemGroup>
-  </Target>
 
   <ItemGroup>
 
