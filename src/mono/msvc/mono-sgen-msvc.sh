@@ -37,7 +37,12 @@ function win32_format_path {
 
 MONO_SGEN_MSVC_SCRIPT_PATH=$(cd "$(dirname "$0")"; pwd)
 
-if [[ "$@" != *"--aot="* ]]; then
+MONO_AS_AOT_COMPILER=0
+if [[ "$@" =~ .*--aot[^-a-zA-Z0-9].*|.*--aot$ ]]; then
+    MONO_AS_AOT_COMPILER=1
+fi
+
+if [[ $MONO_AS_AOT_COMPILER = 0 ]]; then
     "$MONO_SGEN_MSVC_SCRIPT_PATH/mono-sgen.exe" "$@"
 else
     MONO_SGEN_MSVC_SCRIPT_PATH=$(win32_format_path "$MONO_SGEN_MSVC_SCRIPT_PATH/mono-sgen-msvc.bat")
@@ -46,5 +51,7 @@ else
     if [ ! -f $WINDOWS_CMD ]; then
         WINDOWS_CMD=$WINDIR/System32/cmd.exe
     fi
+
+    export MONO_AS_AOT_COMPILER
     "$WINDOWS_CMD" /c "$MONO_SGEN_MSVC_SCRIPT_PATH" "$@"
 fi
