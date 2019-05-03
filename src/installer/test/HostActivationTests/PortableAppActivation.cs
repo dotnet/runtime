@@ -7,17 +7,15 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-using System.Runtime.InteropServices;
-using Microsoft.Win32;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
     public class PortableAppActivation : IClassFixture<PortableAppActivation.SharedTestState>
     {
-        private SharedTestState sharedTestState;
+        private readonly SharedTestState sharedTestState;
 
-        public PortableAppActivation(PortableAppActivation.SharedTestState fixture)
+        public PortableAppActivation(SharedTestState fixture)
         {
             sharedTestState = fixture;
         }
@@ -74,7 +72,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Copy();
 
             var dotnet = fixture.BuiltDotnet;
-            var appDll = fixture.TestProject.AppDll.Replace(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar);
+            var appDll = fixture.TestProject.AppDll.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
             dotnet.Exec(appDll)
                 .CaptureStdErr()
@@ -93,11 +91,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             var dotnet = fixture.BuiltDotnet;
             var appDll = fixture.TestProject.AppDll;
-            
+
             dotnet.Exec("exec", "--runtimeconfig", runtimeConfig, appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail:true)
+                .Execute(fExpectedToFail: true)
                 .Should().Fail();
         }
 
@@ -174,7 +172,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
-            
+
         }
 
         [Fact]
@@ -235,7 +233,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             dotnet.Exec("exec", "--depsfile", depsJson, appDll)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Execute(fExpectedToFail:true)
+                .Execute(fExpectedToFail: true)
                 .Should().Fail();
         }
 
@@ -297,14 +295,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining($"Framework Version:{sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}");
         }
 
-        [Fact]
-        public void Framework_Dependent_AppHost_From_Global_Registry_Location_Succeeds()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Framework_Dependent_AppHost_From_Global_Location_Succeeds(bool useRegisteredLocation)
         {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                return;
-            }
-
             var fixture = sharedTestState.PortableAppFixture_Published
                 .Copy();
 
@@ -335,16 +330,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
 
-            using (var regKeyOverride = new RegisteredInstallKeyOverride())
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride())
             {
                 string architecture = fixture.CurrentRid.Split('-')[1];
-                regKeyOverride.SetInstallLocation(builtDotnet, architecture);
+                if (useRegisteredLocation)
+                {
+                    registeredInstallLocationOverride.SetInstallLocation(builtDotnet, architecture);
+                }
 
                 // Verify running with the default working directory
                 Command.Create(appExe)
                     .CaptureStdErr()
                     .CaptureStdOut()
-                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.RegistryPath, regKeyOverride.KeyPath)
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
@@ -352,10 +351,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 // Verify running from within the working directory
                 Command.Create(appExe)
-                    .WorkingDirectory(fixture.TestProject.OutputDirectory)
-                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.RegistryPath, regKeyOverride.KeyPath)
                     .CaptureStdErr()
                     .CaptureStdOut()
+                    .WorkingDirectory(fixture.TestProject.OutputDirectory)
+                    .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
+                    .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.DefaultInstallPath, useRegisteredLocation ? null : builtDotnet)
                     .Execute()
                     .Should().Pass()
                     .And.HaveStdOutContaining("Hello World")
@@ -428,8 +428,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Directory.CreateDirectory(storeoutputDirectory);
             }
 
-            testProjectFixture.StoreProject(outputDirectory :storeoutputDirectory);
-            
+            testProjectFixture.StoreProject(outputDirectory: storeoutputDirectory);
+
             return storeoutputDirectory;
         }
 

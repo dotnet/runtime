@@ -40,16 +40,6 @@ int main(const int argc, const pal::char_t *argv[])
         if (argc >= 3)
             assembly_path = argv[2];
 
-#if defined(_WIN32)
-        pal::string_t testOverride;
-        if (pal::getenv(_X("TEST_OVERRIDE_PROGRAMFILES"), &testOverride))
-        {
-            std::cout << tostr(testOverride).data() << std::endl;
-            ::SetEnvironmentVariableW(_X("ProgramFiles"), testOverride.c_str());
-            ::SetEnvironmentVariableW(_X("ProgramFiles(x86)"), testOverride.c_str());
-        }
-#endif
-
         if (argc >= 4)
         {
             pal::string_t to_load = argv[3];
