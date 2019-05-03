@@ -663,8 +663,8 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifdef FEATURE_PERFTRACING
         // Initialize the event pipe.
-        DiagnosticServer::Initialize();
         EventPipe::Initialize();
+        DiagnosticServer::Initialize();
 #endif // FEATURE_PERFTRACING
 
 #ifdef FEATURE_GDBJIT
