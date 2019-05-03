@@ -23,6 +23,7 @@
     <Compile Include="Microsoft\VisualBasic\FileIO\FileSystem.Windows.vb" />
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeMethods.vb" />
     <Compile Include="Microsoft\VisualBasic\Helpers\NativeTypes.vb" />
+    <Compile Include="Microsoft\VisualBasic\Helpers\SafeNativeMethods.vb" />
     <Compile Include="Microsoft\VisualBasic\Helpers\UnsafeNativeMethods.vb" />
   </ItemGroup>
     <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
@@ -34,7 +35,6 @@
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\StartupNextInstanceEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\UnhandledExceptionEventArgs.vb" />
     <Compile Include="Microsoft\VisualBasic\ApplicationServices\User.vb" />
-    <Compile Include="Microsoft\VisualBasic\CallType.vb" />
     <Compile Include="Microsoft\VisualBasic\Collection.vb" />
     <Compile Include="Microsoft\VisualBasic\ComClassAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\CompilerServices\BooleanType.vb" />
@@ -111,7 +111,6 @@
     <Compile Include="Microsoft\VisualBasic\MyServices\RegistryProxy.vb" />
     <Compile Include="Microsoft\VisualBasic\MyServices\SpecialDirectoriesProxy.vb" />
     <Compile Include="Microsoft\VisualBasic\Strings.vb" />
-    <Compile Include="Microsoft\VisualBasic\VariantType.vb" />
     <Compile Include="Microsoft\VisualBasic\VBFixedArrayAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\VBFixedStringAttribute.vb" />
     <Compile Include="Microsoft\VisualBasic\VBMath.vb" />

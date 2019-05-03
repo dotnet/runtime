@@ -4,10 +4,13 @@
 
 Imports System
 Imports System.Diagnostics
+Imports System.Globalization
 Imports System.Linq
 Imports System.Linq.Expressions
-Imports System.Text
 Imports System.Reflection
+Imports System.Runtime.InteropServices
+Imports System.Security
+Imports System.Text
 
 Namespace Global.Microsoft.VisualBasic.CompilerServices
     <Global.System.Diagnostics.DebuggerNonUserCode()>
@@ -15,6 +18,66 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
     Partial Public Class Utils
         Private Sub New()
         End Sub
+
+        <Diagnostics.DebuggerHiddenAttribute()>
+        Friend Shared Sub SetTime(ByVal dtTime As DateTime)
+#If PLATFORM_WINDOWS Then
+            Dim systime As New NativeTypes.SystemTime
+
+            SafeNativeMethods.GetLocalTime(systime)
+
+            systime.wHour = CShort(dtTime.Hour)
+            systime.wMinute = CShort(dtTime.Minute)
+            systime.wSecond = CShort(dtTime.Second)
+            systime.wMilliseconds = CShort(dtTime.Millisecond)
+
+            If UnsafeNativeMethods.SetLocalTime(systime) = 0 Then
+                If Marshal.GetLastWin32Error() = ERROR_INVALID_PARAMETER Then
+                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                Else
+                    Throw New SecurityException(GetResourceString(SR.SetLocalTimeFailure))
+                End If
+            End If
+#Else
+            Throw New PlatformNotSupportedException()
+#End If
+        End Sub
+
+        <Diagnostics.DebuggerHiddenAttribute()>
+        Friend Shared Sub SetDate(ByVal vDate As DateTime)
+#If PLATFORM_WINDOWS Then
+            Dim systime As New NativeTypes.SystemTime
+
+            SafeNativeMethods.GetLocalTime(systime)
+
+            systime.wYear = CShort(vDate.Year)
+            systime.wMonth = CShort(vDate.Month)
+            systime.wDay = CShort(vDate.Day)
+
+            If UnsafeNativeMethods.SetLocalTime(systime) = 0 Then
+                If Marshal.GetLastWin32Error() = ERROR_INVALID_PARAMETER Then
+                    Throw New ArgumentException(GetResourceString(SR.Argument_InvalidValue))
+                Else
+                    Throw New SecurityException(GetResourceString(SR.SetLocalDateFailure))
+                End If
+            End If
+#Else
+            Throw New PlatformNotSupportedException()
+#End If
+        End Sub
+
+        Friend Shared Function GetDateTimeFormatInfo() As DateTimeFormatInfo
+            Return System.Threading.Thread.CurrentThread.CurrentCulture.DateTimeFormat
+        End Function
+
+        Friend Shared Function GetFileIOEncoding() As Encoding
+            Return System.Text.Encoding.Default
+        End Function
+
+        Friend Shared Function GetLocaleCodePage() As Integer
+            Return System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ANSICodePage
+        End Function
+
         Public Shared Function CopyArray(arySrc As Global.System.Array, aryDest As Global.System.Array) As Global.System.Array
             If arySrc Is Nothing Then
                 Return aryDest
@@ -52,14 +115,6 @@ Namespace Global.Microsoft.VisualBasic.CompilerServices
                 Global.System.Array.Copy(arySrc, aryDest, lLength)
             End If
             Return aryDest
-        End Function
-
-        Friend Shared Function GetFileIOEncoding() As Encoding
-            Return System.Text.Encoding.Default
-        End Function
-
-        Friend Shared Function GetLocaleCodePage() As Integer
-            Return System.Threading.Thread.CurrentThread.CurrentCulture.TextInfo.ANSICodePage
         End Function
 
     End Class
