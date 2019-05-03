@@ -115,8 +115,17 @@ namespace System.Net.Test.Common
 
             // First read the frame headers, which should tell us how long the rest of the frame is.
             byte[] headerBytes = new byte[Frame.FrameHeaderLength];
-            if (!await FillBufferAsync(headerBytes, timeoutCts.Token).ConfigureAwait(false))
+
+            try
             {
+                if (!await FillBufferAsync(headerBytes, timeoutCts.Token).ConfigureAwait(false))
+                {
+                    return null;
+                }
+            }
+            catch (IOException)
+            {
+                // eat errors when client aborts connection and return null.
                 return null;
             }
 
