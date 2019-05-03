@@ -13,6 +13,10 @@
 #include "pal.h"
 #endif // FEATURE_PAL
 
+#ifdef FEATURE_AUTO_TRACE
+#include "autotrace.h"
+#endif
+
 #ifdef FEATURE_PERFTRACING
 
 IpcStream::DiagnosticsIpc *DiagnosticServer::s_pIpc = nullptr;
@@ -45,9 +49,12 @@ static DWORD WINAPI DiagnosticsServerThread(LPVOID lpThreadParameter)
         {
             // FIXME: Ideally this would be something like a std::shared_ptr
             IpcStream *pStream = pIpc->Accept(LoggingCallback);
+            
             if (pStream == nullptr)
                 continue;
-
+#ifdef FEATURE_AUTO_TRACE
+            auto_trace_signal();
+#endif
             DiagnosticsIpc::IpcMessage message;
             if (!message.Initialize(pStream))
             {
@@ -128,6 +135,10 @@ bool DiagnosticServer::Initialize()
 
         if (s_pIpc != nullptr)
         {
+#ifdef FEATURE_AUTO_TRACE
+            auto_trace_init();
+            auto_trace_launch();
+#endif
             DWORD dwThreadId = 0;
             HANDLE hThread = ::CreateThread( // TODO: Is it correct to have this "lower" level call here?
                 nullptr,                     // no security attribute
@@ -148,6 +159,9 @@ bool DiagnosticServer::Initialize()
             }
             else
             {
+#ifdef FEATURE_AUTO_TRACE
+                auto_trace_wait();
+#endif
                 // FIXME: Maybe hold on to the thread to abort/cleanup at exit?
                 ::CloseHandle(hThread);
 
