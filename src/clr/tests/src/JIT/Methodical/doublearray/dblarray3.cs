@@ -99,7 +99,7 @@ internal class DblArray3
     public static void f3()
     {
         Array arr = Array.CreateInstance(typeof(double), 1000);
-        if (GC.GetGeneration(arr) != 0)
+        if (GC.GetGeneration(arr) != s_LOH_GEN)
         {
             Console.WriteLine("Generation {0}", GC.GetGeneration(arr));
             throw new Exception();

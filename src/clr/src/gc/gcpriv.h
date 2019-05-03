@@ -1219,7 +1219,8 @@ public:
 
     PER_HEAP
     CObjectHeader* allocate (size_t jsize,
-                             alloc_context* acontext);
+                             alloc_context* acontext,
+                             uint32_t flags);
 
 #ifdef MULTIPLE_HEAPS
     static
@@ -1241,7 +1242,7 @@ public:
     // Note: This is an instance method, but the heap instance is only used for
     // lowest_address and highest_address, which are currently the same accross all heaps.
     PER_HEAP
-    CObjectHeader* allocate_large_object (size_t size, int64_t& alloc_bytes);
+    CObjectHeader* allocate_large_object (size_t size, uint32_t flags, int64_t& alloc_bytes);
 
 #ifdef FEATURE_STRUCTALIGN
     PER_HEAP
@@ -1449,13 +1450,13 @@ protected:
     void fire_etw_pin_object_event (uint8_t* object, uint8_t** ppObject);
 
     PER_HEAP
-    size_t limit_from_size (size_t size, size_t room, int gen_number,
+    size_t limit_from_size (size_t size, uint32_t flags, size_t room, int gen_number,
                             int align_const);
     PER_HEAP
-    allocation_state try_allocate_more_space (alloc_context* acontext, size_t jsize,
+    allocation_state try_allocate_more_space (alloc_context* acontext, size_t jsize, uint32_t flags, 
                                               int alloc_generation_number);
     PER_HEAP_ISOLATED
-    BOOL allocate_more_space (alloc_context* acontext, size_t jsize,
+    BOOL allocate_more_space (alloc_context* acontext, size_t jsize, uint32_t flags, 
                               int alloc_generation_number);
 
     PER_HEAP
@@ -1470,6 +1471,7 @@ protected:
     BOOL a_fit_free_list_p (int gen_number, 
                             size_t size, 
                             alloc_context* acontext,
+                            uint32_t flags,
                             int align_const);
 
 #ifdef BACKGROUND_GC
@@ -1483,6 +1485,7 @@ protected:
     void bgc_loh_alloc_clr (uint8_t* alloc_start,
                             size_t size, 
                             alloc_context* acontext,
+                            uint32_t flags, 
                             int align_const, 
                             int lock_index,
                             BOOL check_used_p,
@@ -1524,6 +1527,7 @@ protected:
     PER_HEAP
     BOOL a_fit_free_list_large_p (size_t size, 
                                   alloc_context* acontext,
+                                  uint32_t flags, 
                                   int align_const);
 
     PER_HEAP
@@ -1531,12 +1535,14 @@ protected:
                               heap_segment* seg,
                               size_t size, 
                               alloc_context* acontext,
+                              uint32_t flags, 
                               int align_const,
                               BOOL* commit_failed_p);
     PER_HEAP
     BOOL loh_a_fit_segment_end_p (int gen_number,
                                   size_t size, 
                                   alloc_context* acontext,
+                                  uint32_t flags,
                                   int align_const,
                                   BOOL* commit_failed_p,
                                   oom_reason* oom_r);
@@ -1570,6 +1576,7 @@ protected:
     BOOL soh_try_fit (int gen_number,
                       size_t size, 
                       alloc_context* acontext,
+                      uint32_t flags,
                       int align_const,
                       BOOL* commit_failed_p,
                       BOOL* short_seg_end_p);
@@ -1577,6 +1584,7 @@ protected:
     BOOL loh_try_fit (int gen_number,
                       size_t size, 
                       alloc_context* acontext,
+                      uint32_t flags, 
                       int align_const,
                       BOOL* commit_failed_p,
                       oom_reason* oom_r);
@@ -1585,6 +1593,7 @@ protected:
     allocation_state allocate_small (int gen_number,
                                      size_t size, 
                                      alloc_context* acontext,
+                                     uint32_t flags,
                                      int align_const);
 
 #ifdef RECORD_LOH_STATE
@@ -1607,6 +1616,7 @@ protected:
     allocation_state allocate_large (int gen_number,
                                      size_t size, 
                                      alloc_context* acontext,
+                                     uint32_t flags, 
                                      int align_const);
 
     PER_HEAP_ISOLATED
@@ -1853,8 +1863,8 @@ protected:
     void adjust_limit (uint8_t* start, size_t limit_size, generation* gen,
                        int gen_number);
     PER_HEAP
-    void adjust_limit_clr (uint8_t* start, size_t limit_size,
-                           alloc_context* acontext, heap_segment* seg,
+    void adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
+                           alloc_context* acontext, uint32_t flags, heap_segment* seg,
                            int align_const, int gen_number);
     PER_HEAP
     void  leave_allocation_segment (generation* gen);

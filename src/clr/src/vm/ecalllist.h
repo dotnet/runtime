@@ -782,6 +782,8 @@ FCFuncStart(gGCInterfaceFuncs)
 
     FCFuncElement("_GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
 
+    FCFuncElement("AllocateNewArray", GCInterface::AllocateNewArray)
+
 #ifdef FEATURE_BASICFREEZE
     QCFuncElement("_RegisterFrozenSegment", GCInterface::RegisterFrozenSegment)
     QCFuncElement("_UnregisterFrozenSegment", GCInterface::UnregisterFrozenSegment)

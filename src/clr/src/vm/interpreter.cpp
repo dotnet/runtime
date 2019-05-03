@@ -5995,7 +5995,7 @@ void Interpreter::NewArr()
         pArrayMT->CheckRunClassInitThrowing();
 
         INT32 size32 = (INT32)sz;
-        Object* newarray = OBJECTREFToObject(AllocateArrayEx(pArrayMT, &size32, 1));
+        Object* newarray = OBJECTREFToObject(AllocateSzArray(pArrayMT, size32));
 
         GCX_FORBID();
         OpStackTypeSet(stkInd, InterpreterType(CORINFO_TYPE_CLASS));

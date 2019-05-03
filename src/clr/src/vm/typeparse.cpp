@@ -1267,7 +1267,7 @@ TypeHandle TypeName::GetTypeFromAsm()
         if (cGenericArgs > 0)
         {
             TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(g_pRuntimeTypeClass), ELEMENT_TYPE_SZARRAY);
-            gc.refGenericArguments = (PTRARRAYREF)AllocateArrayEx(arrayHandle, &cGenericArgs, 1);
+            gc.refGenericArguments = (PTRARRAYREF)AllocateSzArray(arrayHandle, cGenericArgs);
         }
         // Instantiate generic arguments
         for (INT32 i = 0; i < cGenericArgs; i++)
