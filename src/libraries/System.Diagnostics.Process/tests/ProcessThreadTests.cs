@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace System.Diagnostics.Tests
 {
-    public class ProcessThreadTests : ProcessTestBase
+    public partial class ProcessThreadTests : ProcessTestBase
     {
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
@@ -153,50 +153,10 @@ namespace System.Diagnostics.Tests
                 Assert.NotNull(threads);
                 Assert.NotEmpty(threads);
 
-                IntPtr startAddress = threads[0].StartAddress; 
+                IntPtr startAddress = threads[0].StartAddress;
 
                 // There's nothing we can really validate about StartAddress, other than that we can get its value
                 // without throwing.  All values (even zero) are valid on all platforms.
-            }
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
-        public void TestPriorityLevelProperty()
-        {
-            CreateDefaultProcess();
-            ProcessThread thread = _process.Threads[0];
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel);
-                Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel = ThreadPriorityLevel.AboveNormal);
-                return;
-            }
-
-            ThreadPriorityLevel originalPriority = thread.PriorityLevel;
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel = ThreadPriorityLevel.AboveNormal);
-                return;
-            }
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")))
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => thread.PriorityLevel = ThreadPriorityLevel.AboveNormal);
-                return;
-            }
-
-            try
-            {
-                thread.PriorityLevel = ThreadPriorityLevel.AboveNormal;
-                Assert.Equal(ThreadPriorityLevel.AboveNormal, thread.PriorityLevel);
-            }
-            finally
-            {
-                thread.PriorityLevel = originalPriority;
-                Assert.Equal(originalPriority, thread.PriorityLevel);
             }
         }
 
