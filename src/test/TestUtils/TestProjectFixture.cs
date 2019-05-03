@@ -242,6 +242,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             DotNetCli dotnet = null,
             string runtime = null,
             string framework = null,
+            string selfContained = null,
             string outputDirectory = null)
         {
             dotnet = dotnet ?? SdkDotnet;
@@ -266,6 +267,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 publishArgs.Add("--framework");
                 publishArgs.Add(framework);
                 publishArgs.Add($"/p:NETCoreAppFramework={framework}");
+            }
+
+            if (selfContained != null)
+            {
+                publishArgs.Add("--self-contained");
+                publishArgs.Add(selfContained);
             }
 
             if (outputDirectory != null)

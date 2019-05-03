@@ -10,7 +10,8 @@
   <ItemGroup>
     <TestProjects Include="$(TestDir)/HostActivationTests/HostActivationTests.csproj" />
     <TestProjects Include="$(TestDir)/Microsoft.Extensions.DependencyModel.Tests/Microsoft.Extensions.DependencyModel.Tests.csproj" />
-    <TestProjects Include="$(TestDir)/Microsoft.NET.HostModel.Tests/Microsoft.NET.HostModel.Tests.csproj" />
+    <TestProjects Include="$(TestDir)/BundleTests/Microsoft.NET.HostModel.Bundle.Tests/Microsoft.NET.HostModel.Bundle.Tests.csproj" />
+    <TestProjects Include="$(TestDir)/BundleTests/AppHost.Bundle.Tests/AppHost.Bundle.Tests.csproj" />
   </ItemGroup>
   <ItemGroup>
     <RestoreTestFallbackSource Include="$(CoreHostOutputDir.TrimEnd('/').TrimEnd('\'))" />

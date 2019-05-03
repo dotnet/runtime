@@ -15,13 +15,19 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public struct FileSpec
     {
-        public string SourcePath;
-        public string BundleRelativePath;
+        public readonly string SourcePath;
+        public readonly string BundleRelativePath;
 
         public FileSpec(string sourcePath, string bundleRelativePath)
         {
             SourcePath = sourcePath;
             BundleRelativePath = bundleRelativePath;
+        }
+
+        public bool IsValid()
+        {
+            return !string.IsNullOrWhiteSpace(SourcePath) && 
+                   !string.IsNullOrWhiteSpace(BundleRelativePath);
         }
     }
 }
