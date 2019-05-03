@@ -1696,7 +1696,7 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
     OBJECTREF* retPointer = 0;
     UINT numObjRefs = 1;
 #if defined(UNIX_AMD64_ABI) || defined(_TARGET_ARM64_)
-    // Multireg return.
+    // These targets support multireg returns.
     DWORD_PTR retValArray[2];
     retPointer = (OBJECTREF*)retValArray;
 #else // ARM32, x86, AMD64 Windows.
