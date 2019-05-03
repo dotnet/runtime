@@ -20,15 +20,17 @@ namespace Microsoft.NET.HostModel.Bundle
     /// </summary>
     public class FileEntry
     {
-        public long Offset;
-        public long Size;
-        public FileType Type;
-        public string RelativePath; // Path of an embedded file, relative to the Bundle source-directory.
+        public readonly long Offset;
+        public readonly long Size;
+        public readonly FileType Type;
+        public readonly string RelativePath; // Path of an embedded file, relative to the Bundle source-directory.
+
+        public const char DirectorySeparatorChar = '/';
 
         public FileEntry(FileType fileType, string relativePath, long offset, long size)
         {
             Type = fileType;
-            RelativePath = relativePath.Replace(Path.DirectorySeparatorChar, Manifest.DirectorySeparatorChar);
+            RelativePath = relativePath.Replace(Path.DirectorySeparatorChar, DirectorySeparatorChar);
             Offset = offset;
             Size = size;
         }

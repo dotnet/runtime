@@ -1,22 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Microsoft.NET.HostModel.Tests</Description>
+    <Description>Microsoft.NET.HostModel.Bundle Tests</Description>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <AssemblyName>Microsoft.NET.HostModel.Tests</AssemblyName>
-    <PackageId>Microsoft.NET.HostModel.Tests</PackageId>
+    <AssemblyName>Microsoft.NET.HostModel.Bundle.Tests</AssemblyName>
+    <PackageId>Microsoft.NET.HostModel.Bundle.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TestUtils\TestUtils.csproj" />
+    <ProjectReference Include="..\..\TestUtils\TestUtils.csproj" />
+    <ProjectReference Include="..\..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
+    <ProjectReference Include="..\Helpers\BundleHelper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
     <PackageReference Include="xunit" Version="2.2.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
-    <ProjectReference Include="..\..\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
   </ItemGroup>
 
 </Project>
