@@ -31,8 +31,8 @@
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
     <!-- Don't error due to lack of runtime-specific deps, we're referencing those directly -->
     <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
-    <!-- Use a project-local packages folder -->
-    <RestorePackagesPath>$(IntermediateOutputPath)packages</RestorePackagesPath>
+    <!-- Use a project-local packages folder. 'p' rather than 'packages': stay under char limit. -->
+    <RestorePackagesPath>$(IntermediateOutputPath)p</RestorePackagesPath>
     <!-- Do not build or nor build in publish output or deps -->
     <NoBuild>true</NoBuild>
     <CopyBuildOutputToPublishDirectory>false</CopyBuildOutputToPublishDirectory>
