@@ -26,6 +26,8 @@ namespace R2RDump
         public bool GC;
         public bool SectionContents;
         public bool EntryPoints;
+        public bool SignatureBinary;
+        public bool InlineSignatureBinary;
 
         public IReadOnlyList<string> ReferenceAssemblies = Array.Empty<string>();
         public IReadOnlyList<string> ReferencePaths = Array.Empty<string>();
@@ -186,6 +188,8 @@ namespace R2RDump
                 syntax.DefineOption("ignoreSensitive", ref _ignoreSensitive, "Ignores sensitive properties in xml dump to avoid failing tests");
                 syntax.DefineOptionList("r|reference", ref _options.ReferenceAssemblies, "Explicit reference assembly files");
                 syntax.DefineOptionList("rp|referencepath", ref _options.ReferencePaths, "Search paths for reference assemblies");
+                syntax.DefineOption("isb|inlineSignatureBinary", ref _options.InlineSignatureBinary, "Embed binary signature into its textual description");
+                syntax.DefineOption("sb|signatureBinary", ref _options.SignatureBinary, "Append signature binary to its textual description");
             });
 
             if (verbose)
