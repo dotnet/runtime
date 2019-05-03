@@ -67,7 +67,7 @@
           DependsOnTargets="GetDependencyVersionFiles"
           Condition="'$(FrameworkPackageName)' != ''">
     <Error
-      Condition="!Exists('%(DependencyVersionFile.Identity)')"
+      Condition="'@(DependencyVersionFile)' != '' AND !Exists('%(DependencyVersionFile.Identity)')"
       Text="'%(Name)' version file does not exist: %(Identity)" />
 
     <ItemGroup>
@@ -77,6 +77,8 @@
       <_VersionsFileLines Include="@(DependencyVersionFile ->'%(Name) %(Content)')" />
     </ItemGroup>
 
+    <!-- GetDependencyVersionFiles may or may not create the intermediate dir. Ensure it exists. -->
+    <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile Lines="@(_VersionsFileLines)"
                        File="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt"
                        Overwrite="true"/>
