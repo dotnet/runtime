@@ -4940,14 +4940,15 @@ AC_SEARCH_LIBS(dlopen, dl)
 old_ldflags="${LDFLAGS}"
 # GNU specific option, this confuses IBM ld, but do offer alternatives when possible
 if test $lt_cv_prog_gnu_ld = yes; then
-	LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
+	LDFLAGS="${LDFLAGS} -Wl,-export-dynamic,-Bsymbolic"
 else
 	case $host in
 	*-*-aix*|*-*-os400*)
+		LDFLAGS="${LDFLAGS} -bsymbolic"
 		;;
 	*)
 		dnl Try to use export-dynamic anyways
-		LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
+		LDFLAGS="${LDFLAGS} -Wl,-export-dynamic,-Bsymbolic"
 		;;
 	esac
 fi
