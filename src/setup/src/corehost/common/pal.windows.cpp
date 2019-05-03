@@ -221,6 +221,15 @@ bool pal::get_default_servicing_directory(string_t* recv)
 
 bool pal::get_default_installation_dir(pal::string_t* recv)
 {
+    //  ***Used only for testing***
+    pal::string_t environmentOverride;
+    if (pal::getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environmentOverride))
+    {
+        recv->assign(environmentOverride);
+        return true;
+    }
+    //  ***************************
+
     pal::char_t* program_files_dir;
     if (pal::is_running_in_wow64())
     {

@@ -271,7 +271,11 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public Command EnvironmentVariable(string name, string value)
         {
-            Process.StartInfo.Environment[name] = value;
+            if (value != null)
+            {
+                Process.StartInfo.Environment[name] = value;
+            }
+
             return this;
         }
 
