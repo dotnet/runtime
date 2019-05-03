@@ -64,9 +64,6 @@ namespace System
         // and not a - or '
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern bool IsFastSort();
-        // Is this a string that only contains characters < 0x80.
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern bool IsAscii();
 
         // Set extra byte for odd-sized strings that came from interop as BSTR.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
