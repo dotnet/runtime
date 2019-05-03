@@ -7,18 +7,29 @@ using System.Security.Cryptography.X509Certificates;
 using Xunit;
 
 using System.Security.Cryptography.Pkcs.Tests;
+using Test.Cryptography;
 
 namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
 {
     public static partial class KeyTransRecipientInfoRsaPaddingModeTests
     {
+        public static bool SupportsRsaOaepCerts => PlatformDetection.IsWindows;
+
         [Theory]
         [MemberData(nameof(TestKeyTransEncryptedKey_RsaAlgorithmTypes))]
         public static void TestKeyTransEncryptedKey_RsaAlgorithms(RSAEncryptionPadding encryptionPadding, string expectedOid, byte[] expectedParameters)
         {
-            KeyTransRecipientInfo recipientInfo1 = EncodeKeyTransl_Rsa2048(encryptionPadding);
+            KeyTransRecipientInfo recipientInfo1 = EncodeKeyTransl_Rsa2048(encryptionPadding, Certificates.RSA2048Sha256KeyTransfer1);
             Assert.Equal(expectedOid, recipientInfo1.KeyEncryptionAlgorithm.Oid.Value);
             Assert.Equal(expectedParameters, recipientInfo1.KeyEncryptionAlgorithm.Parameters);
+        }
+
+        [ConditionalFact(nameof(SupportsRsaOaepCerts))]
+        public static void TestKeyTransEncryptedKey_RsaAlgorithms_Recipient_PreferredOverCertificate()
+        {
+            KeyTransRecipientInfo recipientInfo1 = EncodeKeyTransl_Rsa2048(RSAEncryptionPadding.OaepSHA256, Certificates.RsaOaep2048_Sha1Parameters);
+            Assert.Equal(Oids.RsaOaep, recipientInfo1.KeyEncryptionAlgorithm.Oid.Value);
+            Assert.Equal(s_rsaOaepSha256Parameters, recipientInfo1.KeyEncryptionAlgorithm.Parameters);
         }
 
         [Fact]
@@ -26,7 +37,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         {
             RSAEncryptionPadding oaepMd5Padding = RSAEncryptionPadding.CreateOaep(HashAlgorithmName.MD5);
             Assert.ThrowsAny<CryptographicException>(() => {
-                EncodeKeyTransl_Rsa2048(oaepMd5Padding);
+                EncodeKeyTransl_Rsa2048(oaepMd5Padding, Certificates.RSA2048Sha256KeyTransfer1);
             });
         }
 
@@ -43,20 +54,20 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
-        private static KeyTransRecipientInfo EncodeKeyTransl_Rsa2048(RSAEncryptionPadding encryptionPadding, SubjectIdentifierType type = SubjectIdentifierType.IssuerAndSerialNumber)
+        private static KeyTransRecipientInfo EncodeKeyTransl_Rsa2048(RSAEncryptionPadding encryptionPadding, CertLoader loader)
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
             EnvelopedCms ecms = new EnvelopedCms(contentInfo);
-            using (X509Certificate2 cert = Certificates.RSA2048Sha256KeyTransfer1.GetCertificate())
+            using (X509Certificate2 cert = loader.GetCertificate())
             {
                 CmsRecipient cmsRecipient;
                 if (encryptionPadding is null)
                 {
-                    cmsRecipient = new CmsRecipient(type, cert);
+                    cmsRecipient = new CmsRecipient(cert);
                 }
                 else
                 {
-                    cmsRecipient = new CmsRecipient(type, cert, encryptionPadding);
+                    cmsRecipient = new CmsRecipient(cert, encryptionPadding);
                 }
 
                 ecms.Encrypt(cmsRecipient);

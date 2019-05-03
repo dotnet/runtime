@@ -207,36 +207,22 @@ namespace Internal.Cryptography.Pal.Windows
             //
             private static CMSG_RECIPIENT_ENCODE_INFO EncodeRecipientInfo(CmsRecipient recipient, AlgorithmIdentifier contentEncryptionAlgorithm, HeapBlockRetainer hb)
             {
-                CMsgCmsRecipientChoice recipientChoice;
-                string keyAlgorithmOid = recipient.Certificate.GetKeyAlgorithm();
-                AlgId algId = keyAlgorithmOid.ToAlgId();
-                switch (algId)
-                {
-                    case AlgId.CALG_RSA_KEYX:
-                        recipientChoice = CMsgCmsRecipientChoice.CMSG_KEY_TRANS_RECIPIENT;
-                        break;
-
-                    case AlgId.CALG_DH_SF:
-                    case AlgId.CALG_DH_EPHEM:
-                        recipientChoice = CMsgCmsRecipientChoice.CMSG_KEY_AGREE_RECIPIENT;
-                        break;
-
-                    default:
-                        throw ErrorCode.CRYPT_E_UNKNOWN_ALGO.ToCryptographicException();
-                }
-
                 CMSG_RECIPIENT_ENCODE_INFO recipientEncodeInfo;
-                recipientEncodeInfo.dwRecipientChoice = recipientChoice;
 
                 unsafe
                 {
-                    switch (recipientChoice)
+                    switch (recipient.Certificate.GetKeyAlgorithm())
                     {
-                        case CMsgCmsRecipientChoice.CMSG_KEY_TRANS_RECIPIENT:
+                        case Oids.Rsa:
+                        case Oids.RsaOaep:
+                            recipientEncodeInfo.dwRecipientChoice = CMsgCmsRecipientChoice.CMSG_KEY_TRANS_RECIPIENT;
                             recipientEncodeInfo.pCmsRecipientEncodeInfo = (IntPtr)EncodeKeyTransRecipientInfo(recipient, hb);
                             break;
 
-                        case CMsgCmsRecipientChoice.CMSG_KEY_AGREE_RECIPIENT:
+                        case Oids.Esdh:
+                        case Oids.DiffieHellman:
+                        case Oids.DiffieHellmanPkcs3:
+                            recipientEncodeInfo.dwRecipientChoice = CMsgCmsRecipientChoice.CMSG_KEY_AGREE_RECIPIENT;
                             recipientEncodeInfo.pCmsRecipientEncodeInfo = (IntPtr)EncodeKeyAgreeRecipientInfo(recipient, contentEncryptionAlgorithm, hb);
                             break;
 
@@ -266,36 +252,54 @@ namespace Internal.Cryptography.Pal.Windows
 
                     pEncodeInfo->cbSize = sizeof(CMSG_KEY_TRANS_RECIPIENT_ENCODE_INFO);
 
-                    if (recipient.RSAEncryptionPadding is null)
+                    RSAEncryptionPadding padding = recipient.RSAEncryptionPadding;
+
+                    if (padding is null)
                     {
-                        CRYPT_ALGORITHM_IDENTIFIER algId = pCertInfo->SubjectPublicKeyInfo.Algorithm;
-                        pEncodeInfo->KeyEncryptionAlgorithm = algId;
+                        if (recipient.Certificate.GetKeyAlgorithm() == Oids.RsaOaep)
+                        {
+                            byte[] parameters = recipient.Certificate.GetKeyAlgorithmParameters();
+
+                            if (parameters == null || parameters.Length == 0)
+                            {
+                                padding = RSAEncryptionPadding.OaepSHA1;
+                            }
+                            else if (!PkcsHelpers.TryGetRsaOaepEncryptionPadding(parameters, out padding, out _))
+                            {
+                                throw ErrorCode.CRYPT_E_UNKNOWN_ALGO.ToCryptographicException();
+                            }
+                        }
+                        else
+                        {
+                            padding = RSAEncryptionPadding.Pkcs1;
+                        }
                     }
-                    else if (recipient.RSAEncryptionPadding == RSAEncryptionPadding.Pkcs1)
+
+                    if (padding == RSAEncryptionPadding.Pkcs1)
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.Rsa);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaPkcsParameters.Length;
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = hb.AllocBytes(s_rsaPkcsParameters);
                     }
-                    else if (recipient.RSAEncryptionPadding == RSAEncryptionPadding.OaepSHA1)
+                    else if (padding == RSAEncryptionPadding.OaepSHA1)
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.RsaOaep);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaOaepSha1Parameters.Length;
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = hb.AllocBytes(s_rsaOaepSha1Parameters);
                     }
-                    else if (recipient.RSAEncryptionPadding == RSAEncryptionPadding.OaepSHA256)
+                    else if (padding == RSAEncryptionPadding.OaepSHA256)
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.RsaOaep);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaOaepSha256Parameters.Length;
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = hb.AllocBytes(s_rsaOaepSha256Parameters);
                     }
-                    else if (recipient.RSAEncryptionPadding == RSAEncryptionPadding.OaepSHA384)
+                    else if (padding == RSAEncryptionPadding.OaepSHA384)
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.RsaOaep);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaOaepSha384Parameters.Length;
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.pbData = hb.AllocBytes(s_rsaOaepSha384Parameters);
                     }
-                    else if (recipient.RSAEncryptionPadding == RSAEncryptionPadding.OaepSHA512)
+                    else if (padding == RSAEncryptionPadding.OaepSHA512)
                     {
                         pEncodeInfo->KeyEncryptionAlgorithm.pszObjId = hb.AllocAsciiString(Oids.RsaOaep);
                         pEncodeInfo->KeyEncryptionAlgorithm.Parameters.cbData = (uint)s_rsaOaepSha512Parameters.Length;
