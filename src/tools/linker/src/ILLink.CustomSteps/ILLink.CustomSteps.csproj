@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- net46 build is disabled until cecil uses SDK-style projects. -->
@@ -12,38 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\linker\Mono.Linker.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=illink_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=illink_Release</SetConfiguration>
-      <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' And '$(TargetFramework)' == 'net46' ">Configuration=net_4_0_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' And '$(TargetFramework)' == 'net46' ">Configuration=net_4_0_Release</SetConfiguration>
-      <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
-    </ProjectReference>
+    <ProjectReference Include="..\linker\Mono.Linker.csproj" />
+    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj" />
   </ItemGroup>
 
-  <!-- The reference to the linker will cause Mono.Cecil.Pdb to be
-       built in the wrong configuration unless we apply this
-       workaround. -->
-  <Target Name="SetCecilConfiguration"
-          AfterTargets="AssignProjectConfiguration">
-    <ItemGroup>
-      <ProjectReferenceWithConfiguration Condition=" '%(Filename)%(Extension)' == 'Mono.Cecil.Pdb.csproj' ">
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'net46' And '$(Configuration)' == 'illink_Debug' ">Configuration=net_4_0_Debug</SetConfiguration>
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'netcoreapp2.0' And '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'net46' And '$(Configuration)' == 'illink_Release' ">Configuration=net_4_0_Release</SetConfiguration>
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'netcoreapp2.0' And '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
-      </ProjectReferenceWithConfiguration>
-      <ProjectReferenceWithConfiguration Condition=" '%(Filename)%(Extension)' == 'Mono.Cecil.Mdb.csproj' ">
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'net46' And '$(Configuration)' == 'illink_Debug' ">Configuration=net_4_0_Debug</SetConfiguration>
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'netcoreapp2.0' And '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'net46' And '$(Configuration)' == 'illink_Release' ">Configuration=net_4_0_Release</SetConfiguration>
-        <SetConfiguration Condition=" '$(TargetFramework)' == 'netcoreapp2.0' And '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
-      </ProjectReferenceWithConfiguration>
-    </ItemGroup>
-  </Target>
 </Project>

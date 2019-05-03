@@ -1,63 +1,38 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
-  <!--
-      TODO: Remove this workaround once supported.
+<Project Sdk="Microsoft.NET.Sdk">
 
-      The configuration isn't correctly set when the linker is
-      restored as a P2P reference due to a nuget bug
-      (https://github.com/NuGet/Home/issues/4873). As a workaround, we
-      check NuGetRestoreTargets, which is set by the .NET Core restore
-      targets.
-  -->
-  <PropertyGroup>
-    <ILLinkBuild Condition=" $(Configuration.StartsWith('illink')) Or '$(NuGetRestoreTargets)' != '' ">true</ILLinkBuild>
-    <ILLinkBuild Condition=" '$(ILLinkBuild)' == '' ">false</ILLinkBuild>
-    <TargetFrameworkProfile />
+  <PropertyGroup Condition=" $(Configuration.StartsWith('illink')) ">
+    <AssemblyName>illink</AssemblyName>
+    <Description>IL Linker</Description>
+    <DefineConstants>$(DefineConstants);FEATURE_ILLINK</DefineConstants>
+    <!-- net46 build is disabled until cecil uses SDK-style projects. -->
+    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks Condition=" '$(MSBuildRuntimeType)' == 'Core' And '$(OS)' != 'Windows_NT' ">netcoreapp2.0</TargetFrameworks>
   </PropertyGroup>
-  <Import Project="ILLink.props" Condition=" $(ILLinkBuild) " />
+
+  <PropertyGroup Condition=" ! $(Configuration.StartsWith('illink')) ">
+    <AssemblyName>monolinker</AssemblyName>
+    <AssemblyTitle>Mono.Linker</AssemblyTitle>
+    <Description>Mono CIL Linker</Description>
+    <TargetFrameworks>net462</TargetFrameworks>
+  </PropertyGroup>
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.50727</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <RootNamespace>Mono</RootNamespace>
-    <AssemblyName Condition=" ! $(ILLinkBuild) ">monolinker</AssemblyName>
-    <AssemblyName Condition=" $(ILLinkBuild) ">illink</AssemblyName>
-    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
+    <Copyright>(C) 2006, Jb Evain</Copyright>
+    <Version>0.2.0.0</Version>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>True</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>False</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+
+  <PropertyGroup Condition=" $(Configuration.EndsWith('Debug')) ">
+    <DebugSymbols Condition=" '$(DebugSymbols)' == '' ">true</DebugSymbols>
+    <Optimize Condition=" '$(Optimize)' == '' ">false</Optimize>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>True</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+
+  <PropertyGroup Condition=" $(Configuration.EndsWith('Release')) ">
+    <Optimize Condition=" '$(Optimize)' == '' ">true</Optimize>
   </PropertyGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" ! $(ILLinkBuild) " />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
-  <ItemGroup Condition=" ! $(ILLinkBuild) ">
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="Linker.Steps\BaseStep.cs" />
     <Compile Include="Linker.Steps\BlacklistStep.cs" />
@@ -112,30 +87,24 @@
     <Compile Include="Linker\BCL.cs" />
     <Compile Include="Linker\MethodDefinitionExtensions.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="app.config" />
-    <None Include="README" />
+    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj" />
+    <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
+    <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' And '$(TargetFramework)' == 'net46' ">Configuration=net_4_0_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' And '$(TargetFramework)' == 'net46' ">Configuration=net_4_0_Release</SetConfiguration>
-      <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
-      <Name>Mono.Cecil</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
-      <Project>{8559dd7f-a16f-46d0-a05a-9139faeba8fd}</Project>
-      <Name>Mono.Cecil.Mdb</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
-      <Project>{63E6915C-7EA4-4D76-AB28-0D7191EEA626}</Project>
-      <Name>Mono.Cecil.Pdb</Name>
-    </ProjectReference>
-  </ItemGroup>
+
+  <!-- When publishing illink as a dependency of ILLink.Tasks, we want
+       to include files needed to run it as an application in the
+       publish output. See https://github.com/dotnet/sdk/issues/1675. -->
+  <Target Name="AddRuntimeDependenciesToContent"
+          BeforeTargets="GetCopyToOutputDirectoryItems"
+          DependsOnTargets="GenerateBuildDependencyFile;GenerateBuildRuntimeConfigurationFiles"
+          Condition=" '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+    <ItemGroup>
+      <ContentWithTargetPath Include="$(ProjectDepsFilePath)" CopyToOutputDirectory="PreserveNewest" TargetPath="$(ProjectDepsFileName)" />
+      <ContentWithTargetPath Include="$(ProjectRuntimeConfigFilePath)" CopyToOutputDirectory="PreserveNewest" TargetPath="$(ProjectRuntimeConfigFileName)" />
+    </ItemGroup>
+  </Target>
+
 </Project>

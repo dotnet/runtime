@@ -1,51 +1,23 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <ILLinkBuild Condition=" $(Configuration.StartsWith('illink')) ">true</ILLinkBuild>
-    <ILLinkBuild Condition=" '$(ILLinkBuild)' == '' ">false</ILLinkBuild>
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Condition=" $(Configuration.StartsWith('illink')) ">
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <ILLinkBuild>true</ILLinkBuild>
   </PropertyGroup>
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props') And ! $(ILLinkBuild) " />
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" Condition=" $(ILLinkBuild) " />
+
+  <PropertyGroup Condition=" ! $(Configuration.StartsWith('illink')) ">
+    <TargetFramework>net471</TargetFramework>
+    <ILLinkBuild>false</ILLinkBuild>
+  </PropertyGroup>
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Mono.Linker.Tests.Cases</RootNamespace>
-    <AssemblyName>Mono.Linker.Tests.Cases</AssemblyName>
-    <TargetFramework Condition=" $(ILLinkBuild) ">netcoreapp3.0</TargetFramework>
-    <EnableDefaultCompileItems Condition=" $(ILLinkBuild) ">false</EnableDefaultCompileItems>
-    <TargetFrameworkVersion Condition=" ! $(ILLinkBuild) ">v4.7.1</TargetFrameworkVersion>
-    <GenerateAssemblyInfo Condition=" $(ILLinkBuild) ">false</GenerateAssemblyInfo>
-    <DefineConstants Condition=" $(ILLinkBuild) ">$(DefineConstants);INCLUDE_EXPECTATIONS</DefineConstants>
-    <FileAlignment>512</FileAlignment>
+    <DefineConstants>$(DefineConstants);INCLUDE_EXPECTATIONS</DefineConstants>
+    <WarningLevel>0</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE;INCLUDE_EXPECTATIONS</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>0</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;INCLUDE_EXPECTATIONS</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>0</WarningLevel>
-  </PropertyGroup>
-  <ItemGroup Condition=" ! $(ILLinkBuild) ">
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTarget.cs" />
     <Compile Include="Attributes.Debugger\DebuggerDisplayAttributeOnAssemblyUsingTargetTypeNameInOtherAssembly.cs" />
@@ -703,10 +675,7 @@
     <Content Include="LinkXml\UnusedTypeDeclarationPreservedByLinkXmlIsKept.xml" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
-      <Project>{2C26601F-3E2F-45B9-A02F-58EE9296E19E}</Project>
-      <Name>Mono.Linker.Tests.Cases.Expectations</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Include="TestFramework\Dependencies\ILAssemblySample.il" />
@@ -728,13 +697,4 @@
     <PackageReference Include="NUnit.Extension.NUnitV2ResultWriter" Version="3.5.0" />
   </ItemGroup>
 
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" Condition=" ! $(ILLinkBuild) " />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" Condition=" $(ILLinkBuild) " />
 </Project>

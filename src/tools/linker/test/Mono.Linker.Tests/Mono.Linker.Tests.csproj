@@ -1,106 +1,40 @@
-﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup>
-    <ILLinkBuild Condition=" $(Configuration.StartsWith('illink')) ">true</ILLinkBuild>
-    <ILLinkBuild Condition=" '$(ILLinkBuild)' == '' ">false</ILLinkBuild>
-  </PropertyGroup>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" Condition=" $(ILLinkBuild) " />
-  <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.50727</ProductVersion>
-    <ProjectGuid>{400A1561-B6B6-482D-9E4C-3DDAEDE5BD07}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <AssemblyName>Mono.Linker.Tests</AssemblyName>
-    <StartupObject>
-    </StartupObject>
-    <TargetFramework Condition=" $(ILLinkBuild) ">netcoreapp3.0</TargetFramework>
-    <EnableDefaultCompileItems Condition=" $(ILLinkBuild) ">false</EnableDefaultCompileItems>
-    <TargetFrameworkVersion Condition=" ! $(ILLinkBuild) ">v4.7.1</TargetFrameworkVersion>
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup Condition=" $(Configuration.StartsWith('illink')) ">
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+    <ILLinkBuild>true</ILLinkBuild>
+    <DefineConstants>$(DefineConstants);ILLINK</DefineConstants>
+    <DefineConstants Condition=" '$(Configuration)' == 'illink_Debug' ">$(DefineConstants);DEBUG</DefineConstants>
     <!-- Simulate https://github.com/dotnet/sdk/pull/2073 until it ships. -->
     <DefineConstants Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">$(DefineConstants);NETCOREAPP</DefineConstants>
-    <DefineConstants Condition=" $(ILLinkBuild) ">$(DefineConstants);ILLINK</DefineConstants>
-    <DefineConstants Condition=" '$(Configuration)' == 'illink_Debug' ">$(DefineConstants);DEBUG</DefineConstants>
+
     <DefineConstants Condition=" '$(ArcadeBuild)' == 'true' ">$(DefineConstants);ARCADE</DefineConstants>
-    <IsTestProject Condition=" $(ILLinkBuild) ">true</IsTestProject>
     <!-- Arcade's custom test imports assume that we are using xunit. -->
     <DisableArcadeTestFramework Condition=" '$(ArcadeBuild)' == 'true' ">true</DisableArcadeTestFramework>
-    <RootNamespace>Mono.Linker.Tests</RootNamespace>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+
+  <PropertyGroup Condition=" ! $(Configuration.StartsWith('illink')) ">
+    <TargetFramework>net471</TargetFramework>
+    <ILLinkBuild>false</ILLinkBuild>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" Condition=" ! $(ILLinkBuild) " />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
-  <ItemGroup Condition=" ! $(ILLinkBuild) ">
-    <Reference Include="System" />
-    <Reference Include="System.Xml" />
-    <Reference Include="System.Core" />
-    <Reference Include="nunit.framework">
-      <HintPath>..\..\packages\NUnit.3.6.1\lib\net45\nunit.framework.dll</HintPath>
-    </Reference>
-  </ItemGroup>
+
   <ItemGroup>
     <Folder Include="Properties\" />
     <Folder Include="TestCasesRunner\" />
     <Folder Include="Extensions\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
-      <Project>{D68133BD-1E63-496E-9EDE-4FBDBF77B486}</Project>
-      <Name>Mono.Cecil</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
-      <Project>{8559dd7f-a16f-46d0-a05a-9139faeba8fd}</Project>
-      <Name>Mono.Cecil.Mdb</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=netstandard_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=netstandard_Release</SetConfiguration>
-      <Project>{63e6915c-7ea4-4d76-ab28-0d7191eea626}</Project>
-      <Name>Mono.Cecil.Pdb</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj">
-      <Project>{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}</Project>
-      <Name>Mono.Linker</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj">
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Debug' ">Configuration=illink_Debug</SetConfiguration>
-      <SetConfiguration Condition=" '$(Configuration)' == 'illink_Release' ">Configuration=illink_Release</SetConfiguration>
-      <Project>{B6BEE6AA-ADA0-4E1D-9A17-FBF2936F82B5}</Project>
-      <Name>Mono.Linker.Tests.Cases</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj">
-      <Project>{2C26601F-3E2F-45B9-A02F-58EE9296E19E}</Project>
-      <Name>Mono.Linker.Tests.Cases.Expectations</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.config" />
+    <ProjectReference Include="..\..\external\cecil\Mono.Cecil.csproj" />
+    <ProjectReference Include="..\..\external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj" />
+    <ProjectReference Include="..\..\external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj" />
+    <ProjectReference Include="..\..\src\linker\Mono.Linker.csproj" />
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases\Mono.Linker.Tests.Cases.csproj" />
+    <ProjectReference Include="..\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="TestCasesRunner\CompilerOptions.cs" />
@@ -166,5 +100,10 @@
     <MSBuild Projects="$(IlasmProject)" Targets="CopyILAsmTool" Properties="BaseIntermediateOutputPath=$(IlasmDir);__BuildPhase=Copy" />
   </Target>
 
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" Condition=" $(ILLinkBuild) " />
+  <ItemGroup Condition=" ! $(ILLinkBuild) ">
+    <PackageReference Include="NUnit" Version="3.6.1" />
+    <PackageReference Include="NUnit.ConsoleRunner" Version="3.6.1" />
+    <PackageReference Include="NUnit.Extension.NUnitV2ResultWriter" Version="3.5.0" />
+  </ItemGroup>
+
 </Project>

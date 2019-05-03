@@ -30,7 +30,8 @@ The full set of options is described below.
 ## Building
 
 ```
-linker> ./eng/dotnet.{sh/ps1} build illink.sln
+linker> dotnet restore illink.sln
+linker> dotnet pack illink.sln
 ```
 
 To produce a package:
