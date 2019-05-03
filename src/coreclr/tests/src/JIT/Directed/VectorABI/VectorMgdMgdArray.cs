@@ -14,14 +14,11 @@ using System.Runtime.InteropServices;
 
 // This Test case covers all cases for
 //   Methods that take one HVA argument with between 1 and 5 Vector64 or Vector128 elements
+//   - Passing HVAs that are held as elements in an array.
 //   - Called normally or by using reflection
 //   Methods that return an HVA with between 1 and 5 Vector64 or Vector128 elements
+//   - Returning HVAs that are held as elements in an array.
 //   - Called normally or by using reflection
-
-// Remaining Test cases to do:
-// - Add tests that have one than one HVA argument
-// - Add types that are *not* HVA types (e.g. too many vectors, or using Vector256).
-// - Add tests that use a mix of HVA and non-HVA arguments
 
 public static class VectorMgdMgd
 {
@@ -153,11 +150,11 @@ public static class VectorMgdMgd
             public Vector64<T> v4;
         }
 
-        private HVA64_01  hva64_01;
-        private HVA64_02  hva64_02;
-        private HVA64_03  hva64_03;
-        private HVA64_04  hva64_04;
-        private HVA64_05  hva64_05;
+        private HVA64_01[]  hva64_01_a;
+        private HVA64_02[]  hva64_02_a;
+        private HVA64_03[]  hva64_03_a;
+        private HVA64_04[]  hva64_04_a;
+        private HVA64_05[]  hva64_05_a;
 
         ////////////////////////////////////////
 
@@ -196,11 +193,11 @@ public static class VectorMgdMgd
             public Vector128<T> v4;
        }
 
-        private HVA128_01 hva128_01;
-        private HVA128_02 hva128_02;
-        private HVA128_03 hva128_03;
-        private HVA128_04 hva128_04;
-        private HVA128_05 hva128_05;
+        private HVA128_01[] hva128_01_a;
+        private HVA128_02[] hva128_02_a;
+        private HVA128_03[] hva128_03_a;
+        private HVA128_04[] hva128_04_a;
+        private HVA128_05[] hva128_05_a;
 
         ////////////////////////////////////////
 
@@ -209,76 +206,86 @@ public static class VectorMgdMgd
             int i;
 
             i = 0;
-            hva64_01.v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+	    hva64_01_a = new HVA64_01[5];
+            hva64_01_a[4].v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
 
             i = 0;
-            hva64_02.v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+	    hva64_02_a = new HVA64_02[4];
+            hva64_02_a[3].v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_02.v1 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_02_a[3].v1 = Unsafe.As<T, Vector64<T>>(ref values[i]);
 
             i = 0;
-            hva64_03.v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+	    hva64_03_a = new HVA64_03[3];
+            hva64_03_a[2].v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_03.v1 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_03_a[2].v1 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_03.v2 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_03_a[2].v2 = Unsafe.As<T, Vector64<T>>(ref values[i]);
 
             i = 0;
-            hva64_04.v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+	    hva64_04_a = new HVA64_04[2];
+            hva64_04_a[1].v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_04.v1 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_04_a[1].v1 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_04.v2 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_04_a[1].v2 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_04.v3 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_04_a[1].v3 = Unsafe.As<T, Vector64<T>>(ref values[i]);
 
             i = 0;
-            hva64_05.v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+	    hva64_05_a = new HVA64_05[1];
+            hva64_05_a[0].v0 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_05.v1 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_05_a[0].v1 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_05.v2 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_05_a[0].v2 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_05.v3 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_05_a[0].v3 = Unsafe.As<T, Vector64<T>>(ref values[i]);
             i += Vector64<T>.Count;
-            hva64_05.v4 = Unsafe.As<T, Vector64<T>>(ref values[i]);
+            hva64_05_a[0].v4 = Unsafe.As<T, Vector64<T>>(ref values[i]);
 
             ////////////////////////////////////////
 
             i = 0;
-            hva128_01.v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+	    hva128_01_a = new HVA128_01[5];
+            hva128_01_a[4].v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
 
             i = 0;
-            hva128_02.v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+	    hva128_02_a = new HVA128_02[4];
+            hva128_02_a[3].v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_02.v1 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_02_a[3].v1 = Unsafe.As<T, Vector128<T>>(ref values[i]);
 
             i = 0;
-            hva128_03.v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+	    hva128_03_a = new HVA128_03[3];
+            hva128_03_a[2].v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_03.v1 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_03_a[2].v1 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_03.v2 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_03_a[2].v2 = Unsafe.As<T, Vector128<T>>(ref values[i]);
 
             i = 0;
-            hva128_04.v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+	    hva128_04_a = new HVA128_04[2];
+            hva128_04_a[1].v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_04.v1 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_04_a[1].v1 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_04.v2 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_04_a[1].v2 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_04.v3 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_04_a[1].v3 = Unsafe.As<T, Vector128<T>>(ref values[i]);
  
             i = 0;
-            hva128_05.v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+	    hva128_05_a = new HVA128_05[1];
+            hva128_05_a[0].v0 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_05.v1 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_05_a[0].v1 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_05.v2 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_05_a[0].v2 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_05.v3 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_05_a[0].v3 = Unsafe.As<T, Vector128<T>>(ref values[i]);
             i += Vector128<T>.Count;
-            hva128_05.v4 = Unsafe.As<T, Vector128<T>>(ref values[i]);
+            hva128_05_a[0].v4 = Unsafe.As<T, Vector128<T>>(ref values[i]);
        }
 
         public HVATests()
@@ -362,7 +369,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA64_01) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA64_01), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva64_01 };
+            reflectionInvokeArgs = new object[] { hva64_01_a[4] };
         }
 
         //====================   Tests for passing 1 argumnet of HVA64_02
@@ -380,7 +387,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA64_02) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA64_02), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva64_02 };
+            reflectionInvokeArgs = new object[] { hva64_02_a[3] };
         }
 
         //====================   Tests for passing 1 argumnet of HVA64_03
@@ -399,7 +406,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA64_03) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA64_03), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva64_03 };
+            reflectionInvokeArgs = new object[] { hva64_03_a[2] };
         }
 
         //====================   Tests for passing 1 argumnet of HVA64_04
@@ -419,7 +426,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA64_04) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA64_04), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva64_04 };
+            reflectionInvokeArgs = new object[] { hva64_04_a[1] };
         }
 
         //====================   Tests for passing 1 argumnet of HVA64_05
@@ -440,7 +447,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA64_05) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA64_05), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva64_05 };
+            reflectionInvokeArgs = new object[] { hva64_05_a[0] };
         }
 
         //===============   Tests for return values if HVA64
@@ -451,7 +458,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA64_01 returnTest_HVA64_01()
         {
-            return hva64_01;
+            return hva64_01_a[4];
         }
 
         public void testReturn_HVA64_01()
@@ -487,7 +494,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA64_02 returnTest_HVA64_02()
         {
-            return hva64_02;
+            return hva64_02_a[3];
         }
 
         public void testReturn_HVA64_02()
@@ -525,7 +532,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA64_03 returnTest_HVA64_03()
         {
-            return hva64_03;
+            return hva64_03_a[2];
         }
 
         public void testReturn_HVA64_03()
@@ -565,7 +572,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA64_04 returnTest_HVA64_04()
         {
-            return hva64_04;
+            return hva64_04_a[1];
         }
 
         public void testReturn_HVA64_04()
@@ -607,7 +614,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA64_05 returnTest_HVA64_05()
         {
-            return hva64_05;
+            return hva64_05_a[0];
         }
 
         public void testReturn_HVA64_05()
@@ -661,7 +668,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA128_01) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA128_01), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva128_01 };
+            reflectionInvokeArgs = new object[] { hva128_01_a[4] };
         }
 
         //====================   Tests for passing 1 argumnet of HVA128_02
@@ -679,7 +686,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA128_02) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA128_02), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva128_02 };
+            reflectionInvokeArgs = new object[] { hva128_02_a[3] };
         }
 
         //====================   Tests for passing 1 argumnet of HVA128_03
@@ -698,7 +705,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA128_03) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA128_03), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva128_03 };
+            reflectionInvokeArgs = new object[] { hva128_03_a[2] };
         }
 
         //====================   Tests for passing 1 argumnet of HVA128_04
@@ -718,7 +725,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA128_04) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA128_04), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva128_04 };
+            reflectionInvokeArgs = new object[] { hva128_04_a[1] };
         }
 
         //====================   Tests for passing 1 argumnet of HVA128_05
@@ -739,7 +746,7 @@ public static class VectorMgdMgd
             isReflection = true;
             reflectionParameterTypes = new Type[] { typeof(HVA128_05) };
             reflectionMethodInfo = typeof(HVATests<T>).GetMethod(nameof(HVATests<T>.test1Argument_HVA128_05), reflectionParameterTypes);
-            reflectionInvokeArgs = new object[] { hva128_05 };
+            reflectionInvokeArgs = new object[] { hva128_05_a[0] };
         }
 
         //====================   Tests for return values of HVA128_01
@@ -748,7 +755,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA128_01 returnTest_HVA128_01()
         {
-            return hva128_01;
+            return hva128_01_a[4];
         }
 
         public void testReturn_HVA128_01()
@@ -783,7 +790,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA128_02 returnTest_HVA128_02()
         {
-            return hva128_02;
+            return hva128_02_a[3];
         }
 
         public void testReturn_HVA128_02()
@@ -821,7 +828,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA128_03 returnTest_HVA128_03()
         {
-            return hva128_03;
+            return hva128_03_a[2];
         }
 
         public void testReturn_HVA128_03()
@@ -861,7 +868,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA128_04 returnTest_HVA128_04()
         {
-            return hva128_04;
+            return hva128_04_a[1];
         }
 
         public void testReturn_HVA128_04()
@@ -903,7 +910,7 @@ public static class VectorMgdMgd
         [MethodImpl(MethodImplOptions.NoInlining)]
         public HVA128_05 returnTest_HVA128_05()
         {
-            return hva128_05;
+            return hva128_05_a[0];
         }
 
         public void testReturn_HVA128_05()
@@ -949,35 +956,35 @@ public static class VectorMgdMgd
 
             // Test HVA Vector64<T> Arguments
 
-            test1Argument_HVA64_01(hva64_01);
+            test1Argument_HVA64_01(hva64_01_a[4]);
 
             Init_Reflection_Args_HVA64_01();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
             Done_Reflection();
 
 
-            test1Argument_HVA64_02(hva64_02);
+            test1Argument_HVA64_02(hva64_02_a[3]);
 
             Init_Reflection_Args_HVA64_02();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
             Done_Reflection();
 
 
-            test1Argument_HVA64_03(hva64_03);
+            test1Argument_HVA64_03(hva64_03_a[2]);
 
             Init_Reflection_Args_HVA64_03();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
             Done_Reflection();
 
 
-            test1Argument_HVA64_04(hva64_04);
+            test1Argument_HVA64_04(hva64_04_a[1]);
 
             Init_Reflection_Args_HVA64_04();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
             Done_Reflection();
 
 
-            test1Argument_HVA64_05(hva64_05);
+            test1Argument_HVA64_05(hva64_05_a[0]);
 
             Init_Reflection_Args_HVA64_05();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
@@ -1015,35 +1022,35 @@ public static class VectorMgdMgd
 
             // Test HVA Vector128<T> Arguments
 
-            test1Argument_HVA128_01(hva128_01);
+            test1Argument_HVA128_01(hva128_01_a[4]);
 
             Init_Reflection_Args_HVA128_01();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
             Done_Reflection();
 
 
-            test1Argument_HVA128_02(hva128_02);
+            test1Argument_HVA128_02(hva128_02_a[3]);
 
             Init_Reflection_Args_HVA128_02();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
             Done_Reflection();
 
 
-            test1Argument_HVA128_03(hva128_03);
+            test1Argument_HVA128_03(hva128_03_a[2]);
 
             Init_Reflection_Args_HVA128_03();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
             Done_Reflection();
 
 
-            test1Argument_HVA128_04(hva128_04);
+            test1Argument_HVA128_04(hva128_04_a[1]);
 
             Init_Reflection_Args_HVA128_04();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
             Done_Reflection();
 
 
-            test1Argument_HVA128_05(hva128_05);
+            test1Argument_HVA128_05(hva128_05_a[0]);
 
             Init_Reflection_Args_HVA128_05();
             reflectionMethodInfo.Invoke(this, reflectionInvokeArgs);
