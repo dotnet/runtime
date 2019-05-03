@@ -32,7 +32,7 @@
     <Error Condition=" '$(BUILD_SOURCEVERSION)' == '' " Text="BUILD_SOURCEVERSION must be set" />
 
     <PropertyGroup>
-      <AssetManifestFilePath>$(ArtifactsLogDir)AssetManifest\$(OSIdentifier)-$(BuildArch)</AssetManifestFilePath>
+      <AssetManifestFilePath>$(ArtifactsLogDir)AssetManifest\$(AssetManifest)</AssetManifestFilePath>
     </PropertyGroup>
 
     <Message Importance="Low" Text="BUILD_REPOSITORY_URI: $(BUILD_REPOSITORY_URI)" />
