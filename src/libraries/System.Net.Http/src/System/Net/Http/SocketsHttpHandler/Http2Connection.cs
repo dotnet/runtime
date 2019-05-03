@@ -45,6 +45,7 @@ namespace System.Net.Http
         private int _pendingWriters;
 
         private bool _disposed;
+        private Exception _abortException;
 
         // If an in-progress write is canceled we need to be able to immediately
         // report a cancellation to the user, but also block the connection until
@@ -173,17 +174,24 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<FrameHeader> ReadFrameAsync()
+        private async ValueTask<FrameHeader> ReadFrameAsync(bool initialFrame = false)
         {
             // Read frame header
             await EnsureIncomingBytesAsync(FrameHeader.Size).ConfigureAwait(false);
             FrameHeader frameHeader = FrameHeader.ReadFrom(_incomingBuffer.ActiveSpan);
-            _incomingBuffer.Discard(FrameHeader.Size);
 
             if (frameHeader.Length > FrameHeader.MaxLength)
             {
-                throw new Http2ProtocolException(Http2ProtocolErrorCode.FrameSizeError);
+                if (initialFrame && NetEventSource.IsEnabled)
+                {
+                    string response = System.Text.Encoding.ASCII.GetString(_incomingBuffer.ActiveSpan.Slice(0, Math.Min(20, _incomingBuffer.ActiveSpan.Length)));
+                    Trace($"HTTP/2 handshake failed. Server returned {response}");
+                }
+
+                _incomingBuffer.Discard(FrameHeader.Size);
+                throw new Http2ProtocolException(initialFrame ? Http2ProtocolErrorCode.ProtocolError : Http2ProtocolErrorCode.FrameSizeError);
             }
+            _incomingBuffer.Discard(FrameHeader.Size);
 
             // Read frame contents
             await EnsureIncomingBytesAsync(frameHeader.Length).ConfigureAwait(false);
@@ -195,14 +203,13 @@ namespace System.Net.Http
         {
             try
             {
-                // Receive the initial SETTINGS frame from the peer.
-                FrameHeader frameHeader = await ReadFrameAsync().ConfigureAwait(false);
+                FrameHeader frameHeader = await ReadFrameAsync(initialFrame: true).ConfigureAwait(false);
                 if (frameHeader.Type != FrameType.Settings || frameHeader.AckFlag)
                 {
                     throw new Http2ProtocolException(Http2ProtocolErrorCode.ProtocolError);
                 }
 
-                // Process the SETTINGS frame.  This will send an ACK.
+                // Process the initial SETTINGS frame. This will send an ACK.
                 ProcessSettingsFrame(frameHeader);
 
                 // Keep processing frames as they arrive.
@@ -1117,6 +1124,10 @@ namespace System.Net.Http
         {
             // The connection has failed, e.g. failed IO or a connection-level frame error.
             // Abort all streams and cause further processing to fail.
+            if (!IsAborted())
+            {
+                _abortException = abortException;
+            }
             AbortStreams(0, abortException);
         }
 
@@ -1358,7 +1369,7 @@ namespace System.Net.Http
                     e is ObjectDisposedException ||
                     e is Http2ProtocolException)
                 {
-                    replacementException = new HttpRequestException(SR.net_http_client_execution_error, e);
+                    replacementException = new HttpRequestException(SR.net_http_client_execution_error, _abortException ?? e);
                 }
                 else if (e is OperationCanceledException oce)
                 {
