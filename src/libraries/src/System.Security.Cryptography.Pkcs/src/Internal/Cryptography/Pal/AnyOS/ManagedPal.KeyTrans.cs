@@ -6,7 +6,6 @@ using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Security.Cryptography;
-using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.Pkcs.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -15,8 +14,6 @@ namespace Internal.Cryptography.Pal.AnyOS
 {
     internal sealed partial class ManagedPkcsPal : PkcsPal
     {
-        private static readonly byte[] s_pSpecifiedDefaultParameters = { 0x04, 0x00 };
-
         internal sealed class ManagedKeyTransPal : KeyTransRecipientInfoPal
         {
             private readonly KeyTransRecipientInfoAsn _asn;
@@ -81,7 +78,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         encryptionPadding = RSAEncryptionPadding.Pkcs1;
                         break;
                     case Oids.RsaOaep:
-                        if (!TryGetRsaOaepEncryptionPadding(algorithmParameters, out encryptionPadding, out exception))
+                        if (!PkcsHelpers.TryGetRsaOaepEncryptionPadding(algorithmParameters, out encryptionPadding, out exception))
                         {
                             return null;
                         }
@@ -140,19 +137,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     recipient.RecipientIdentifierType.ToString());
             }
 
-            RSAEncryptionPadding padding = recipient.RSAEncryptionPadding;
-
-            if (padding is null)
-            {
-                if (recipient.Certificate.GetKeyAlgorithm() == Oids.RsaOaep)
-                {
-                    padding = RSAEncryptionPadding.OaepSHA1;
-                }
-                else
-                {
-                    padding = RSAEncryptionPadding.Pkcs1;
-                }
-            }
+            RSAEncryptionPadding padding = recipient.RSAEncryptionPadding ?? RSAEncryptionPadding.Pkcs1;
 
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
@@ -248,76 +233,6 @@ namespace Internal.Cryptography.Pal.AnyOS
                 return null;
             }
 #endif
-        }
-
-        private static bool TryGetRsaOaepEncryptionPadding(
-            ReadOnlyMemory<byte>? parameters,
-            out RSAEncryptionPadding rsaEncryptionPadding,
-            out Exception exception)
-        {
-            exception = null;
-            rsaEncryptionPadding = null;
-
-            if (parameters == null || parameters.Value.IsEmpty)
-            {
-                exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                return false;
-            }
-
-            try
-            {
-                OaepParamsAsn oaepParameters = OaepParamsAsn.Decode(parameters.Value, AsnEncodingRules.DER);
-
-                if (oaepParameters.MaskGenFunc.Algorithm.Value != Oids.Mgf1 ||
-                    oaepParameters.MaskGenFunc.Parameters == null ||
-                    oaepParameters.PSourceFunc.Algorithm.Value != Oids.PSpecified
-                    )
-                {
-                    exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                    return false;
-                }
-
-                AlgorithmIdentifierAsn mgf1AlgorithmIdentifier = AlgorithmIdentifierAsn.Decode(oaepParameters.MaskGenFunc.Parameters.Value, AsnEncodingRules.DER);
-
-                if (mgf1AlgorithmIdentifier.Algorithm.Value != oaepParameters.HashFunc.Algorithm.Value)
-                {
-                    exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                    return false;
-                }
-
-                if (oaepParameters.PSourceFunc.Parameters != null &&
-                    !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(s_pSpecifiedDefaultParameters))
-                {
-                    exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                    return false;
-                }
-
-                switch (oaepParameters.HashFunc.Algorithm.Value)
-                {
-                    case Oids.Sha1:
-                        rsaEncryptionPadding = RSAEncryptionPadding.OaepSHA1;
-                        return true;
-                    case Oids.Sha256:
-                        rsaEncryptionPadding = RSAEncryptionPadding.OaepSHA256;
-                        return true;
-                    case Oids.Sha384:
-                        rsaEncryptionPadding = RSAEncryptionPadding.OaepSHA384;
-                        return true;
-                    case Oids.Sha512:
-                        rsaEncryptionPadding = RSAEncryptionPadding.OaepSHA512;
-                        return true;
-                    default:
-                        exception = new CryptographicException(
-                            SR.Cryptography_Cms_UnknownAlgorithm,
-                            oaepParameters.HashFunc.Algorithm.Value);
-                        return false;
-                }
-            }
-            catch (CryptographicException e)
-            {
-                exception = e;
-                return false;
-            }
         }
     }
 }
