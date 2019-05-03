@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 
-namespace StandaloneAppWithSubDirs
+namespace AppWithSubDirs
 {
     public static class Program
     {

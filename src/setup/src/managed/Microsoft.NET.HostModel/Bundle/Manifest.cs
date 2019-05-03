@@ -50,13 +50,12 @@ namespace Microsoft.NET.HostModel.Bundle
         public const string Signature = ".NetCoreBundle";
         public const uint MajorVersion = 0;
         public const uint MinorVersion = 1;
-        public const char DirectorySeparatorChar = '/';
 
         // Bundle ID is a string that is used to uniquely 
         // identify this bundle. It is choosen to be compatible
         // with path-names so that the AppHost can use it in
         // extraction path.
-        string BundleID;
+        public readonly string BundleID;
 
         public List<FileEntry> Files;
 
@@ -64,6 +63,12 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             Files = new List<FileEntry>();
             BundleID = Path.GetRandomFileName();
+        }
+
+        public Manifest(string bundleID)
+        {
+            Files = new List<FileEntry>();
+            BundleID = bundleID;
         }
 
         public long Write(BinaryWriter writer)
@@ -91,8 +96,6 @@ namespace Microsoft.NET.HostModel.Bundle
 
         public static Manifest Read(BinaryReader reader)
         {
-            Manifest manifest = new Manifest();
-
             // Read the manifest footer
 
             // signatureSize is one byte longer, for the length encoding.
@@ -113,7 +116,7 @@ namespace Microsoft.NET.HostModel.Bundle
             uint majorVersion = reader.ReadUInt32();
             uint minorVersion = reader.ReadUInt32();
             int fileCount = reader.ReadInt32();
-            manifest.BundleID = reader.ReadString(); // Bundle ID
+            string bundleID = reader.ReadString(); // Bundle ID
 
             if (majorVersion != MajorVersion || minorVersion != MinorVersion)
             {
@@ -121,6 +124,7 @@ namespace Microsoft.NET.HostModel.Bundle
             }
 
             // Read the manifest entries
+            Manifest manifest = new Manifest(bundleID);
             for (long i = 0; i < fileCount; i++)
             {
                 manifest.Files.Add(FileEntry.Read(reader));

@@ -49,7 +49,7 @@ namespace Microsoft.NET.HostModel.Bundle
                     {
                         trace.Log($"Extract: {entry}");
 
-                        string fileRelativePath = entry.RelativePath.Replace(Manifest.DirectorySeparatorChar, Path.DirectorySeparatorChar);
+                        string fileRelativePath = entry.RelativePath.Replace(FileEntry.DirectorySeparatorChar, Path.DirectorySeparatorChar);
                         string filePath = Path.Combine(OutputDir, fileRelativePath);
                         string fileDir = Path.GetDirectoryName(filePath);
 
