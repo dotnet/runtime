@@ -1,0 +1,13 @@
+<Project>
+  <PropertyGroup>
+    <PackageConfigurations>
+      netstandard;
+      netstandard2.1;
+      netcoreapp2.1;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations);
+      netcoreapp;
+    </BuildConfigurations>
+  </PropertyGroup>
+</Project>

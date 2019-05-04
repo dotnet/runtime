@@ -31,6 +31,13 @@
     ]
   },
   {
+    "Name": "Microsoft.Bcl.HashCode",
+    "Description": "Provides the HashCode type for .NET Standard 2.0. This package is not required starting with .NET Standard 2.1 and .NET Core 3.0.",
+    "CommonTypes": [
+      "System.HashCode"
+    ]
+  },
+  {
     "Name": "Microsoft.Diagnostics.Tracing.EventSource.Redist",
     "Description": "This package includes the class Microsoft.Diagnostics.Tracing.EventSource which enables firing ETW events from managed code. This is the \"runtime\" or \"redist\" EventSource package and should be referenced directly only by other NuGet packages that need the EventSource functionality. Application developers that need this functionality should instead reference the Microsoft.Diagnostics.Tracing.EventSource NuGet package which provides an enhanced developer experience.
 

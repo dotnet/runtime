@@ -1,0 +1,41 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Bcl.HashCode", "src\Microsoft.Bcl.HashCode.csproj", "{B77D0212-D53C-4F7F-8CEC-2E067AC6FCAB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{96AA2060-C846-4E56-9509-E8CB9C114C8F} = {96AA2060-C846-4E56-9509-E8CB9C114C8F}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Bcl.HashCode", "ref\Microsoft.Bcl.HashCode.csproj", "{96AA2060-C846-4E56-9509-E8CB9C114C8F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B77D0212-D53C-4F7F-8CEC-2E067AC6FCAB}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{B77D0212-D53C-4F7F-8CEC-2E067AC6FCAB}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{B77D0212-D53C-4F7F-8CEC-2E067AC6FCAB}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{B77D0212-D53C-4F7F-8CEC-2E067AC6FCAB}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{96AA2060-C846-4E56-9509-E8CB9C114C8F}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{96AA2060-C846-4E56-9509-E8CB9C114C8F}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{96AA2060-C846-4E56-9509-E8CB9C114C8F}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{96AA2060-C846-4E56-9509-E8CB9C114C8F}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B77D0212-D53C-4F7F-8CEC-2E067AC6FCAB} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{96AA2060-C846-4E56-9509-E8CB9C114C8F} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9B2C2F54-126A-4D67-8690-F9E19A1B901F}
+	EndGlobalSection
+EndGlobal

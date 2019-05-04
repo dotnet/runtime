@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
+  <PropertyGroup>
+    <ProjectGuid>{B77D0212-D53C-4F7F-8CEC-2E067AC6FCAB}</ProjectGuid>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsPartialFacadeAssembly Condition="'$(TargetFramework)' != 'netstandard2.0'">true</IsPartialFacadeAssembly>
+    <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="$(CommonPath)\CoreLib\System\HashCode.cs">
+      <Link>ProductionCode\Common\CoreLib\System\HashCode.cs</Link>
+    </Compile>
+    <Compile Include="BitOperations.cs" />
+    <Compile Include="Interop.GetRandomBytes.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true' AND '$(TargetGroup)' != 'netstandard2.1'">
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Resources.ResourceManager" />
+  </ItemGroup>
+</Project>
