@@ -170,6 +170,7 @@
       <_GenAPICmd>$(_GenAPICmd) --out "$(_RefSourceFileOutputPath)"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAPIList)"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --header-file "$(_LicenseHeaderTxtPath)"</_GenAPICmd>
+      <_GenAPICmd Condition="'$(LangVersion)' != ''">$(_GenAPICmd) --lang-version "$(LangVersion)"</_GenAPICmd>
     </PropertyGroup>
 
     <Exec Command="$(_GenAPICmd)" />
