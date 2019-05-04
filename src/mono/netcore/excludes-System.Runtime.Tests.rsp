@@ -35,30 +35,24 @@
 -nomethod System.Tests.ExitCodeTests.SigTermExitCode
 
 # crashes runtime
--nomethod System.Tests.ArgIteratorTests.ArgIterator_Throws_PlatformNotSupportedException
 
 # causes 'error: Return type can't be a byref type Parameter name: returnType':
 # while the test passes, xunit fails in the end if it's enabled
 -nomethod System.Tests.Types.VoidTests.IsByRef_Get_ReturnsExpected
 
-# float- and double- backed enums
--nomethod System.Tests.EnumTests.Parse
--nomethod System.Tests.EnumTests.Parse_NetCoreApp11
-
-# Implement more checks
+# Implement more checks in Array.Copy
 -nomethod System.Tests.ArrayTests.SetValue_Casting_Invalid
 -nomethod System.Tests.ArrayTests.Copy_SZArray
 -nomethod System.Tests.ArrayTests.CreateInstance_NotSupportedType_ThrowsNotSupportedException
-
-# Missing exceptions
--nomethod System.Tests.ActivatorTests.CreateInstance_PublicOnlyValueTypeWithPrivateDefaultConstructor_ThrowsMissingMethodException
 -nomethod System.Tests.ActivatorTests.CreateInstance_PrimitiveWidening_ThrowsInvalidCastException
+
+# Boxed pointers are not supported? https://github.com/mono/mono/blob/ced517784b2a07fb851e2227dac04e0df2262d57/mcs/class/corlib/ReferenceSources/RuntimeType.cs#L229
 -nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
 
 # `private new T Foo` doesn't hide members from Type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
 -nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensBeforeBindingFlagChecks
 
-# IEEE rounding issues
+# remove once CoreFX gets https://github.com/dotnet/coreclr/pull/24279
 -nomethod System.Tests.TimeSpanTests.FromMilliseconds
 -nomethod System.Tests.TimeSpanTests.FromMilliseconds_Invalid
 -nomethod System.Tests.TimeSpanTests.Multiplication
@@ -81,3 +75,6 @@
 -nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.Add
 -nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetValue
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
+-nomethod System.Tests.EnumTests.Parse
+-nomethod System.Tests.EnumTests.Parse_NetCoreApp11
+-nomethod System.Tests.ArgIteratorTests.ArgIterator_Throws_PlatformNotSupportedException
