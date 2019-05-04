@@ -218,7 +218,7 @@ if [[ -n "${useInstalledDotNetCli:-}" ]]; then
   use_installed_dotnet_cli="$useInstalledDotNetCli"
 fi
 
-if [[ "$restore" == true ]]; then
+if [[ "$restore" == true && -z ${DisableNativeToolsetInstalls:-} ]]; then
   InitializeNativeTools
 fi
 
