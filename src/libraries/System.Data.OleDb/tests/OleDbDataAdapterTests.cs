@@ -132,18 +132,15 @@ namespace System.Data.OleDb.Tests
                 Action<bool> FillShouldThrow = (shouldFail) => {
                     DataSet ds = new DataSet();
                     OleDbDataAdapter adapter = new OleDbDataAdapter(command);
-                    var exception = Record.Exception(() => adapter.Fill(ds, tableName));
                     if (shouldFail)
                     {
-                        Assert.NotNull(exception);
-                        Assert.IsType<InvalidOperationException>(exception);
-                        Assert.Equal(
-                            "There is already an open DataReader associated with this Command which must be closed first.",
-                            exception.Message);
+                        AssertExtensions.Throws<InvalidOperationException>(
+                            () => adapter.Fill(ds, tableName), 
+                            "There is already an open DataReader associated with this Command which must be closed first.");
                     }
                     else
                     {
-                        Assert.Null(exception);
+                        Assert.NotNull(adapter.Fill(ds, tableName));
                     }
                 };
                 using (var reader = command.ExecuteReader())

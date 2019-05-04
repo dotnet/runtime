@@ -113,28 +113,25 @@ namespace System.Data.OleDb.Tests
             }
         }
 
-        [ConditionalFact(Helpers.IsDriverAvailable)]
-        public void GetSchema()
+        [ConditionalTheory(Helpers.IsDriverAvailable)]
+        [InlineData(nameof(DbMetaDataCollectionNames.MetaDataCollections), "CollectionName")]
+        [InlineData(nameof(DbMetaDataCollectionNames.DataSourceInformation), "CompositeIdentifierSeparatorPattern")]
+        [InlineData(nameof(DbMetaDataCollectionNames.DataTypes), "TypeName")]
+        public void GetSchema(string tableName, string columnName)
         {
-            using (var oleDbConnection = new OleDbConnection(ConnectionString))
-            {
-                oleDbConnection.Open();
+            DataTable schema = connection.GetSchema(tableName);
+            Assert.True(schema != null && schema.Rows.Count > 0);
+            var exception = Record.Exception(() => schema.Rows[0].Field<string>(columnName));
+            Assert.Null(exception);
 
-                DataTable metaDataCollections = oleDbConnection.GetSchema(DbMetaDataCollectionNames.MetaDataCollections);
-                Assert.True(metaDataCollections != null && metaDataCollections.Rows.Count > 0);
-
-                DataTable metaDataSourceInfo = oleDbConnection.GetSchema(DbMetaDataCollectionNames.DataSourceInformation);
-                Assert.True(metaDataSourceInfo != null && metaDataSourceInfo.Rows.Count > 0);
-
-                DataTable metaDataTypes = oleDbConnection.GetSchema(DbMetaDataCollectionNames.DataTypes);
-                Assert.True(metaDataTypes != null && metaDataTypes.Rows.Count > 0);
-                
-                DataTable schema = oleDbConnection.GetSchema();
-                Assert.True(schema != null && schema.Rows.Count > 0);
-
-                Assert.Throws<NotSupportedException>(
-                    () => oleDbConnection.GetSchema(DbMetaDataCollectionNames.MetaDataCollections, new string[] { new string('a', 5000) } ));
-            }
+            AssertExtensions.Throws<ArgumentException>(
+                () => connection.GetSchema(tableName, new string[] { null }), 
+                $"More restrictions were provided than the requested schema ('{tableName}') supports."
+            );
+            const string MissingColumn = "MissingColumn";
+            AssertExtensions.Throws<ArgumentException>(
+                () => schema.Rows[0].Field<IEnumerable<char>>(MissingColumn), 
+                $"Column '{MissingColumn}' does not belong to table {tableName}.");
         }
 
         [ConditionalFact(Helpers.IsDriverAvailable)]
@@ -215,12 +212,9 @@ namespace System.Data.OleDb.Tests
                 ConnectionString }.AsSpan();
             File.WriteAllLines(udlFile, lines.Slice(start, length).ToArray());
 
-            var exception = Record.Exception(() => new OleDbConnection(@"file name = " + udlFile));
-            Assert.NotNull(exception);
-            Assert.IsType<ArgumentException>(exception);
-            Assert.Equal(
-                "Invalid UDL file.",
-                exception.Message);
+            AssertExtensions.Throws<ArgumentException>(
+                () => new OleDbConnection(@"file name = " + udlFile), 
+                "Invalid UDL file.");
         }
 
         [ConditionalFact(Helpers.IsDriverAvailable)]
