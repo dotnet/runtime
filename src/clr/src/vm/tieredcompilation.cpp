@@ -93,7 +93,7 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
     WRAPPER_NO_CONTRACT;
     _ASSERTE(pMethodDesc != NULL);
 
-#if defined(FEATURE_TIERED_COMPILATION) && !defined(DACCESS_COMPILE)
+#ifdef FEATURE_TIERED_COMPILATION
     if (!pMethodDesc->IsEligibleForTieredCompilation())
     {
         // The optimization tier is not used
@@ -113,7 +113,7 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
         return NativeCodeVersion::OptimizationTier0;
     }
 
-    if (!pMethodDesc->GetCallCounter()->IsTier0CallCountingEnabled(pMethodDesc))
+    if (!pMethodDesc->GetCallCounter()->IsCallCountingEnabled(pMethodDesc))
     {
         // Tier 0 call counting may have been disabled based on information about precompiled code or for other reasons, the
         // intention is to begin at tier 1
@@ -132,7 +132,7 @@ NativeCodeVersion::OptimizationTier TieredCompilationManager::GetInitialOptimiza
 //
 // currentCallCountLimit is pre-decremented, that is to say the value is <= 0 when the
 //      threshold for promoting to tier 1 is reached.
-void TieredCompilationManager::OnTier0MethodCalled(
+void TieredCompilationManager::OnMethodCalled(
     MethodDesc* pMethodDesc,
     bool isFirstCall,
     int currentCallCountLimit,

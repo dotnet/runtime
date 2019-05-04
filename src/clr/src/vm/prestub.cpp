@@ -376,9 +376,9 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         if (!g_pConfig->TieredCompilation_QuickJit() &&
             IsEligibleForTieredCompilation() &&
             pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTier0 &&
-            CallCounter::IsEligibleForTier0CallCounting(this))
+            CallCounter::IsEligibleForCallCounting(this))
         {
-            GetCallCounter()->DisableTier0CallCounting(this);
+            GetCallCounter()->DisableCallCounting(this);
             pConfig->GetCodeVersion().SetOptimizationTier(NativeCodeVersion::OptimizationTier1);
         }
 #endif
@@ -1006,7 +1006,7 @@ PCODE MethodDesc::JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEn
 
         // Update the tier in the code version. The JIT may have decided to switch from tier 0 to tier 1, in which case call
         // counting would have been disabled for the method.
-        if (!methodDesc->GetCallCounter()->IsTier0CallCountingEnabled(methodDesc))
+        if (!methodDesc->GetCallCounter()->IsCallCountingEnabled(methodDesc))
         {
             pConfig->GetCodeVersion().SetOptimizationTier(NativeCodeVersion::OptimizationTier1);
         }
