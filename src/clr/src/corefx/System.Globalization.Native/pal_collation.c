@@ -17,13 +17,13 @@ c_static_assert_msg(UCOL_LESS < 0, "managed side requires less than zero for a <
 c_static_assert_msg(UCOL_GREATER > 0, "managed side requires greater than zero for a > b");
 c_static_assert_msg(USEARCH_DONE == -1, "managed side requires -1 for not found");
 
-const int32_t CompareOptionsIgnoreCase = 0x1;
-const int32_t CompareOptionsIgnoreNonSpace = 0x2;
-const int32_t CompareOptionsIgnoreSymbols = 0x4;
-const int32_t CompareOptionsIgnoreKanaType = 0x8;
-const int32_t CompareOptionsIgnoreWidth = 0x10;
-const int32_t CompareOptionsMask = 0x1f;
-// const int32_t CompareOptionsStringSort = 0x20000000;
+#define CompareOptionsIgnoreCase 0x1
+#define CompareOptionsIgnoreNonSpace 0x2
+#define CompareOptionsIgnoreSymbols 0x4
+#define CompareOptionsIgnoreKanaType 0x8
+#define CompareOptionsIgnoreWidth 0x10
+#define CompareOptionsMask 0x1f
+// #define CompareOptionsStringSort 0x20000000
 // ICU's default is to use "StringSort", i.e. nonalphanumeric symbols come before alphanumeric.
 // When StringSort is not specified (.NET's default), the sort order will be different between
 // Windows and Unix platforms. The nonalphanumeric symbols will come after alphanumeric
