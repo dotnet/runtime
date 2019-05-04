@@ -459,90 +459,6 @@ if %__BuildCrossArchNative% EQU 1 (
 
 REM =========================================================================================
 REM ===
-REM === Build the CLR VM
-REM ===
-REM =========================================================================================
-
-if %__BuildNative% EQU 1 (
-    REM Scope environment changes start {
-    setlocal
-
-    echo %__MsgPrefix%Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
-
-    REM Set the environment for the native build
-    set __VCBuildArch=x86_amd64
-    if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
-    if /i "%__BuildArch%" == "arm" (
-        set __VCBuildArch=x86_arm
-
-        REM Make CMake pick the highest installed version in the 10.0.* range
-        set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
-    )
-    if /i "%__BuildArch%" == "arm64" (
-        set __VCBuildArch=x86_arm64
-
-        REM Make CMake pick the highest installed version in the 10.0.* range
-        set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
-    )
-
-    echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
-    call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
-    @if defined _echo @echo on
-
-    if not defined VSINSTALLDIR (
-        echo %__MsgPrefix%Error: VSINSTALLDIR variable not defined.
-        exit /b 1
-    )
-    if not exist "!VSINSTALLDIR!DIA SDK" goto NoDIA
-
-    if defined __SkipConfigure goto SkipConfigure
-
-    echo %__MsgPrefix%Regenerating the Visual Studio solution
-
-    pushd "%__IntermediatesDir%"
-    set __ExtraCmakeArgs=!___SDKVersion! "-DCLR_CMAKE_TARGET_OS=%__BuildOS%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
-    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
-    @if defined _echo @echo on
-    popd
-
-:SkipConfigure
-    if not exist "%__IntermediatesDir%\install.vcxproj" (
-        echo %__MsgPrefix%Error: failed to generate native component build project!
-        exit /b 1
-    )
-
-    if defined __ConfigureOnly goto SkipNativeBuild
-
-    set __BuildLogRootName=CoreCLR
-    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
-
-    call %__ProjectDir%\cmake_msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-      /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
-      /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-      /p:UsePartialNGENOptimization=false /maxcpucount %__IntermediatesDir%\install.vcxproj^
-      !__Logging! /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__CommonMSBuildArgs% /m:2 %__UnprocessedBuildArgs%
-
-    if not !errorlevel! == 0 (
-        echo %__MsgPrefix%Error: native component build failed. Refer to the build log files for details:
-        echo     !__BuildLog!
-        echo     !__BuildWrn!
-        echo     !__BuildErr!
-        exit /b 1
-    )
-
-:SkipNativeBuild
-    REM } Scope environment changes end
-    endlocal
-)
-
-REM =========================================================================================
-REM ===
 REM === Build Cross-Architecture Native Components (if applicable)
 REM ===
 REM =========================================================================================
@@ -605,6 +521,93 @@ if %__BuildCrossArchNative% EQU 1 (
     )
 
 :SkipCrossCompBuild
+    REM } Scope environment changes end
+    endlocal
+)
+
+REM =========================================================================================
+REM ===
+REM === Build the CLR VM
+REM ===
+REM =========================================================================================
+
+if %__BuildNative% EQU 1 (
+    REM Scope environment changes start {
+    setlocal
+
+    echo %__MsgPrefix%Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
+
+    REM Set the environment for the native build
+    set __VCBuildArch=x86_amd64
+    if /i "%__BuildArch%" == "x86" ( set __VCBuildArch=x86 )
+    if /i "%__BuildArch%" == "arm" (
+        set __VCBuildArch=x86_arm
+        REM Make CMake pick the highest installed version in the 10.0.* range
+        set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
+        set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
+    )
+    if /i "%__BuildArch%" == "arm64" (
+        set __VCBuildArch=x86_arm64
+
+        REM Make CMake pick the highest installed version in the 10.0.* range
+        set ___SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
+        set ___CrossBuildDefine="-DCLR_CMAKE_CROSS_ARCH=1" "-DCLR_CMAKE_CROSS_HOST_ARCH=%__CrossArch%"
+    )
+
+    echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+    call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+    @if defined _echo @echo on
+
+    if not defined VSINSTALLDIR (
+        echo %__MsgPrefix%Error: VSINSTALLDIR variable not defined.
+        exit /b 1
+    )
+    if not exist "!VSINSTALLDIR!DIA SDK" goto NoDIA
+
+    if defined __SkipConfigure goto SkipConfigure
+
+    echo %__MsgPrefix%Regenerating the Visual Studio solution
+
+    echo Cross Arch Defines !___CrossBuildDefine!
+
+    pushd "%__IntermediatesDir%"
+    set __ExtraCmakeArgs=!___SDKVersion! !___CrossBuildDefine! "-DCLR_CMAKE_TARGET_OS=%__BuildOS%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
+    call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
+    @if defined _echo @echo on
+    popd
+
+:SkipConfigure
+    if not exist "%__IntermediatesDir%\install.vcxproj" (
+        echo %__MsgPrefix%Error: failed to generate native component build project!
+        exit /b 1
+    )
+
+    if defined __ConfigureOnly goto SkipNativeBuild
+
+    set __BuildLogRootName=CoreCLR
+    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
+    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
+    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
+    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
+
+    call %__ProjectDir%\cmake_msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
+      /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
+      /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+      /p:UsePartialNGENOptimization=false /maxcpucount %__IntermediatesDir%\install.vcxproj^
+      !__Logging! /p:Configuration=%__BuildType% /p:Platform=%__BuildArch% %__CommonMSBuildArgs% /m:2 %__UnprocessedBuildArgs%
+
+    if not !errorlevel! == 0 (
+        echo %__MsgPrefix%Error: native component build failed. Refer to the build log files for details:
+        echo     !__BuildLog!
+        echo     !__BuildWrn!
+        echo     !__BuildErr!
+        exit /b 1
+    )
+
+:SkipNativeBuild
     REM } Scope environment changes end
     endlocal
 )
