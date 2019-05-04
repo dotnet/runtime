@@ -28,12 +28,9 @@ namespace System.Data.OleDb.Tests
             using (var cmd = (OleDbCommand)OleDbFactory.Instance.CreateCommand())
             {
                 cmd.CommandType = commandType;
-                var exception = Record.Exception(() => OleDbCommandBuilder.DeriveParameters(cmd));
-                Assert.NotNull(exception);
-                Assert.IsType<InvalidOperationException>(exception);
-                Assert.Equal(
-                    string.Format("{0} DeriveParameters only supports CommandType.StoredProcedure, not CommandType.{1}.", nameof(OleDbCommand), cmd.CommandType.ToString()),
-                    exception.Message);
+                AssertExtensions.Throws<InvalidOperationException>(
+                    () => OleDbCommandBuilder.DeriveParameters(cmd), 
+                    $"{nameof(OleDbCommand)} DeriveParameters only supports CommandType.StoredProcedure, not CommandType.{cmd.CommandType.ToString()}.");
             }
         }
 
@@ -43,13 +40,10 @@ namespace System.Data.OleDb.Tests
             using (var cmd = (OleDbCommand)OleDbFactory.Instance.CreateCommand())
             {
                 cmd.CommandType = CommandType.StoredProcedure;
-                cmd.CommandText = null;  
-                var exception = Record.Exception(() => OleDbCommandBuilder.DeriveParameters(cmd));
-                Assert.NotNull(exception);
-                Assert.IsType<InvalidOperationException>(exception);
-                Assert.Equal(
-                    string.Format("{0}: {1} property has not been initialized", nameof(OleDbCommandBuilder.DeriveParameters), nameof(cmd.CommandText)),
-                    exception.Message);
+                cmd.CommandText = null;
+                AssertExtensions.Throws<InvalidOperationException>(
+                    () => OleDbCommandBuilder.DeriveParameters(cmd), 
+                    $"{nameof(OleDbCommandBuilder.DeriveParameters)}: {nameof(cmd.CommandText)} property has not been initialized");
             }
         }
 
@@ -63,12 +57,10 @@ namespace System.Data.OleDb.Tests
                     cmd.CommandType = CommandType.StoredProcedure;
                     cmd.CommandText = @"SELECT * FROM " + tableName;  
                     cmd.Connection = null;
-                    var exception = Record.Exception(() => OleDbCommandBuilder.DeriveParameters(cmd));
-                    Assert.NotNull(exception);
-                    Assert.IsType<InvalidOperationException>(exception);
-                    Assert.Equal(
-                        string.Format("{0}: {1} property has not been initialized.", nameof(OleDbCommandBuilder.DeriveParameters), nameof(cmd.Connection)),
-                        exception.Message);
+                    
+                    AssertExtensions.Throws<InvalidOperationException>(
+                        () => OleDbCommandBuilder.DeriveParameters(cmd), 
+                        $"{nameof(OleDbCommandBuilder.DeriveParameters)}: {nameof(cmd.Connection)} property has not been initialized.");
                 }
             });
         }
@@ -88,7 +80,7 @@ namespace System.Data.OleDb.Tests
                     Assert.NotNull(exception);
                     Assert.IsType<InvalidOperationException>(exception);
                     Assert.Contains(
-                        string.Format("{0} requires an open and available Connection.", nameof(OleDbCommandBuilder.DeriveParameters)),
+                        $"{nameof(OleDbCommandBuilder.DeriveParameters)} requires an open and available Connection.",
                         exception.Message);
                 }
             });
