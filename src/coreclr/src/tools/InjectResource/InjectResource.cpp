@@ -14,7 +14,7 @@ char* g_appName;
 
 void
 AddBinaryResourceToDll(__in_z char* dllName,
-                       __in_z char* resName,
+                       __in_z const char* resName,
                        PVOID resData,
                        ULONG resDataSize)
 {
@@ -34,7 +34,7 @@ AddBinaryResourceToDll(__in_z char* dllName,
         }
 
         if (!UpdateResourceA(dllUpdate,
-            RT_RCDATA,
+            (LPCSTR)RT_RCDATA,
             resName,
             MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL),
             resData,
