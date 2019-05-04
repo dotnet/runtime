@@ -193,9 +193,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/eh/FinallyExec/nonlocalexitinhandler/*">
             <Issue>times out</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventsource/eventsourcetrace/eventsourcetrace/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/inducedgc/inducedgc/*">
             <Issue>times out</Issue>
         </ExcludeList>
