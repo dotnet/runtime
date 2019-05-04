@@ -1623,7 +1623,6 @@ namespace System.Data.OleDb
                 short getType = info.type.wType;
 
                 Debug.Assert(NativeDBType.STR != getType, "Should have bound as WSTR");
-                Debug.Assert(!NativeDBType.HasHighBit(getType), "CreateAccessor - unexpected high bits on datatype");
 
                 if (-1 != info.size)
                 {

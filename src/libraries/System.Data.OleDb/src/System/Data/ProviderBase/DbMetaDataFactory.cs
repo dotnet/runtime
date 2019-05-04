@@ -416,7 +416,6 @@ namespace System.Data.ProviderBase
         {
             Debug.Assert(_metaDataCollectionsDataSet != null);
 
-            //TODO: MarkAsh or EnzoL should review this code for efficency.
             DataTable metaDataCollectionsTable = _metaDataCollectionsDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
             DataColumn populationMechanismColumn = metaDataCollectionsTable.Columns[_populationMechanism];
             DataColumn collectionNameColumn = metaDataCollectionsTable.Columns[DbMetaDataColumnNames.CollectionName];

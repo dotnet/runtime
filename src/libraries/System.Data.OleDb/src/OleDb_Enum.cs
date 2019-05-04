@@ -88,28 +88,6 @@ namespace System.Data.OleDb
         // high mask
         internal const short HighMask = unchecked((short)0xf000);
 
-        static internal bool HasHighBit(short value)
-        {
-            return (0 != (HighMask & value));
-        }
-        /*
-        static internal bool IsArray(short value) {
-            return (ARRAY == (HighMask & value));
-        }
-        static internal bool IsByRef(short value) {
-            return (BYREF == (HighMask & value));
-        }
-        static internal bool IsReserved(short value) {
-            return (RESERVED == (HighMask & value));
-        }
-        static internal bool IsVector(short value) {
-            return (VECTOR == (HighMask & value));
-        }        
-        static internal int GetLowBits(short value) {
-            return (value & ~HighMask);
-        }
-        */
-
         private const string S_BINARY = "DBTYPE_BINARY"; // DBTYPE_BYTES
         private const string S_BOOL = "DBTYPE_BOOL";
         private const string S_BSTR = "DBTYPE_BSTR";

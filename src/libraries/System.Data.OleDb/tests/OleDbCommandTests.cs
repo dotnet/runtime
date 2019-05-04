@@ -13,6 +13,18 @@ namespace System.Data.OleDb.Tests
 {
     public class OleDbCommandTests : OleDbTestBase
     {
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void CommandType_SetInvalidValue_Throws()
+        {
+            using (var cmd = (OleDbCommand)OleDbFactory.Instance.CreateCommand())
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                    () => cmd.CommandType = (CommandType)0, 
+                    $"The CommandType enumeration value, 0, is invalid.\r\nParameter name: {nameof(cmd.CommandType)}"
+                );
+            }
+        }
+
         [OuterLoop]
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void CommandType_InvalidType_Throws()
