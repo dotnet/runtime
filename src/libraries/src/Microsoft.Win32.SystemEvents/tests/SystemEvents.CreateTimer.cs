@@ -3,11 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.Win32.SystemEventsTests
@@ -78,24 +80,19 @@ namespace Microsoft.Win32.SystemEventsTests
         public void ConcurrentTimers()
         {
             const int NumConcurrentTimers = 10;
-            var timersSignalled = new Dictionary<IntPtr, bool>();
+            var timersSignaled = new ConcurrentDictionary<IntPtr, bool>();
             int numSignaled = 0;
-            var elapsed = new AutoResetEvent(false);
+            var elapsed = new ManualResetEventSlim();
 
             TimerElapsedEventHandler handler = (sender, args) =>
             {
-                bool signaled = false;
-                lock (timersSignalled)
+                // A timer might fire more than once.  When it fires the first time, track it by adding
+                // it to a set and then increment the number of timers that have ever fired.  When all
+                // timers have fired, set the event.
+                if (timersSignaled.TryAdd(args.TimerId, true) &&
+                    Interlocked.Increment(ref numSignaled) == NumConcurrentTimers)
                 {
-                    if (timersSignalled.TryGetValue(args.TimerId, out signaled) && !signaled)
-                    {
-                        timersSignalled[args.TimerId] = true;
-
-                        if (Interlocked.Increment(ref numSignaled) == NumConcurrentTimers)
-                        {
-                            elapsed.Set();
-                        }
-                    }
+                    elapsed.Set();
                 }
             };
 
@@ -104,27 +101,25 @@ namespace Microsoft.Win32.SystemEventsTests
             {
                 if (PlatformDetection.IsFullFramework)
                 {
-                    // desktop has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
+                    // netfx has a bug where it will allow EnsureSystemEvents to proceed without actually creating the HWND
                     SystemEventsTest.WaitForSystemEventsWindow();
                 }
 
+                // Create all the timers
+                var timers = new List<IntPtr>();
                 for (int i = 0; i < NumConcurrentTimers; i++)
                 {
-                    lock (timersSignalled)
-                    {
-                        timersSignalled[SystemEvents.CreateTimer(TimerInterval)] = false;
-                    }
+                    timers.Add(SystemEvents.CreateTimer(TimerInterval));
                 }
 
-                Assert.True(elapsed.WaitOne(TimerInterval * SystemEventsTest.ExpectedEventMultiplier));
+                // Wait for them all to fire
+                Assert.True(elapsed.Wait(TimerInterval * SystemEventsTest.ExpectedEventMultiplier));
 
-                lock (timersSignalled)
+                // Delete them all
+                foreach (IntPtr timer in timers)
                 {
-                    foreach (var timer in timersSignalled.Keys.ToArray())
-                    {
-                        Assert.True(timersSignalled[timer]);
-                        SystemEvents.KillTimer(timer);
-                    }
+                    Assert.True(timersSignaled.TryGetValue(timer, out _));
+                    SystemEvents.KillTimer(timer);
                 }
             }
             finally
