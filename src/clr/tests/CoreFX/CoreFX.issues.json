@@ -1118,10 +1118,6 @@
                     "name": "System.Tests.VersionTests.Comparisons_NullArgument_ThrowsArgumentNullException",
                     "reason":  "Version was improved to no longer throw from comparison operators"
                 },
-                {
-                    "name" : "System.Tests.ActivatorNetcoreTests.CreateInstanceAssemblyResolve",
-                    "reason" : "Waiting for https://github.com/dotnet/corefx/pull/37080"
-                }
             ]
         }
     },
@@ -1273,20 +1269,6 @@
                 {
                     "name": "System.Runtime.InteropServices.Tests.ThrowExceptionForHRTests.ThrowExceptionForHR_ErrorInfo_ReturnsValidException",
                     "reason": "outdated"
-                }
-            ]
-        }
-    },
-    {
-        "name": "System.Runtime.Loader.DefaultContext.Tests",
-        "enabled": true,
-        "exclusions": {
-            "namespaces": null,
-            "classes": null,
-            "methods": [
-                {
-                    "name" : "System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadInDefaultContext",
-                    "reason" : "Waiting for https://github.com/dotnet/corefx/pull/37071"
                 }
             ]
         }
