@@ -14,11 +14,10 @@ namespace System.IO
 
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // The destination path may just be a directory into which the file should be copied.
-            // If it is, append the filename from the source onto the destination directory
+            // If the destination path points to a directory, we throw to match Windows behaviour
             if (DirectoryExists(destFullPath))
             {
-                destFullPath = Path.Combine(destFullPath, Path.GetFileName(sourceFullPath));
+                throw new IOException(SR.Format(SR.Arg_FileIsDirectory_Name, destFullPath));
             }
 
             // Copy the contents of the file from the source to the destination, creating the destination in the process

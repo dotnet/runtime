@@ -35,8 +35,9 @@ namespace System.IO.Tests
         public void CopyOntoDirectory()
         {
             string testFile = GetTestFilePath();
+            string targetTestDirectory = Directory.CreateDirectory(GetTestFilePath()).FullName;
             File.Create(testFile).Dispose();
-            Assert.Throws<IOException>(() => Copy(testFile, TestDirectory));
+            Assert.Throws<IOException>(() => Copy(testFile, targetTestDirectory));
         }
 
         [Fact]
