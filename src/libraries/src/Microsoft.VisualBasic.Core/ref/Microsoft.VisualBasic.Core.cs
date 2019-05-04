@@ -461,7 +461,10 @@ namespace Microsoft.VisualBasic
     public sealed partial class Interaction
     {
         internal Interaction() { }
+        public static void Beep() { }
         public static object CallByName(object ObjectRef, string ProcName, CallType UseCallType, params object[] Args) { throw null; }
+        public static object CreateObject(string ProgId, string ServerName = "") { throw null; }
+        public static object IIf(bool Expression, object TruePart, object FalsePart) { throw null; }
     }
     public enum MsgBoxResult
     {
