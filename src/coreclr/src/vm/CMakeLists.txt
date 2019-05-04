@@ -41,6 +41,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     assembly.cpp
     baseassemblyspec.cpp
     binder.cpp
+    callcounter.cpp
     ceeload.cpp
     class.cpp
     classhash.cpp
@@ -287,7 +288,6 @@ set(VM_SOURCES_WKS
     assemblynative.cpp
     assemblyspec.cpp
     cachelinealloc.cpp
-    callcounter.cpp
     callhelpers.cpp
     callsiteinspect.cpp
     ceemain.cpp

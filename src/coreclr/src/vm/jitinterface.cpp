@@ -6912,7 +6912,7 @@ void CEEInfo::setMethodAttribs (
     if (attribs & CORINFO_FLG_SWITCHED_TO_TIER1)
     {
         _ASSERTE(ftn->IsEligibleForTieredCompilation());
-        ftn->GetCallCounter()->DisableTier0CallCounting(ftn);
+        ftn->GetCallCounter()->DisableCallCounting(ftn);
     }
 #endif
 
