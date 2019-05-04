@@ -24,7 +24,7 @@
 
 LOADEDMODULES * LOADEDMODULES::s_pLoadedModules = NULL;
 UTSemReadWrite * LOADEDMODULES::m_pSemReadWrite = NULL;
-RegMeta * (LOADEDMODULES::m_HashedModules[LOADEDMODULES_HASH_SIZE]) = { NULL };
+RegMeta * LOADEDMODULES::m_HashedModules[LOADEDMODULES_HASH_SIZE] = { NULL };
 
 //*****************************************************************************
 // Hash a file name.

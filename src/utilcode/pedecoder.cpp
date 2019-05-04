@@ -2081,7 +2081,7 @@ bool EnumerateLangIDs(const PEDecoder *pDecoder, DWORD rvaOfResourceSection, boo
 
     BYTE *pData = (BYTE*)pDecoder->GetRvaData(resourceDataRva);
 
-    return state->langIDcallback(state->nameName, state->nameType, (DWORD)name, pData, cbData, state->context);
+    return state->langIDcallback(state->nameName, state->nameType, (DWORD)(uintptr_t)name, pData, cbData, state->context);
 }
 
 
