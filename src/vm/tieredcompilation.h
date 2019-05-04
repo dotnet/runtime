@@ -34,7 +34,7 @@ public:
 #ifdef FEATURE_TIERED_COMPILATION
 
 public:
-    void OnTier0MethodCalled(MethodDesc* pMethodDesc, bool isFirstCall, int currentCallCountLimit, BOOL* shouldStopCountingCallsRef, BOOL* wasPromotedToNextTierRef);
+    void OnMethodCalled(MethodDesc* pMethodDesc, bool isFirstCall, int currentCallCountLimit, BOOL* shouldStopCountingCallsRef, BOOL* wasPromotedToNextTierRef);
     void OnMethodCallCountingStoppedWithoutTierPromotion(MethodDesc* pMethodDesc);
     void AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc);
     void Shutdown();
