@@ -44,6 +44,10 @@ Namespace Microsoft.VisualBasic.CompilerServices
             ByVal vt As Int16)
         End Sub
 
+        <DllImport("user32", PreserveSig:=True, CharSet:=CharSet.Unicode, EntryPoint:="MessageBeep")>
+        Friend Shared Function MessageBeep(ByVal uType As Integer) As Integer
+        End Function
+
         <DllImport("kernel32", PreserveSig:=True, CharSet:=CharSet.Unicode, EntryPoint:="SetLocalTime", SetLastError:=True)>
         Friend Shared Function SetLocalTime(ByVal systime As NativeTypes.SystemTime) As Integer
         End Function
