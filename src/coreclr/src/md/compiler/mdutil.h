@@ -90,7 +90,7 @@ public:
     
     // Named for locking macros - see code:LOCKREAD
     static UTSemReadWrite * m_pSemReadWrite;
-    static RegMeta *(m_HashedModules[LOADEDMODULES_HASH_SIZE]);
+    static RegMeta *m_HashedModules[LOADEDMODULES_HASH_SIZE];
     
     static ULONG HashFileName(LPCWSTR szName);
 
