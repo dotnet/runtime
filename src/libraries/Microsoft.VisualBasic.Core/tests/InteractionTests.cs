@@ -73,5 +73,30 @@ namespace Microsoft.VisualBasic.Tests
                 set { Value = (int)value + (int)index; }
             }
         }
+
+        [Fact]
+        public void CreateObject()
+        {
+            Assert.Throws<NullReferenceException>(() => Interaction.CreateObject(null));
+            Assert.Throws<Exception>(() => Interaction.CreateObject(""));
+            // Not tested: valid ProgID.
+        }
+
+        [Theory]
+        [MemberData(nameof(IIf_TestData))]
+        public void IIf(bool expression, object truePart, object falsePart, object expected)
+        {
+            Assert.Equal(expected, Interaction.IIf(expression, truePart, falsePart));
+        }
+
+        private static IEnumerable<object[]> IIf_TestData()
+        {
+            yield return new object[] { false, 1, null, null };
+            yield return new object[] { true, 1, null, 1 };
+            yield return new object[] { false, null, 2, 2 };
+            yield return new object[] { true, null, 2, null };
+            yield return new object[] { false, 3, "str", "str" };
+            yield return new object[] { true, 3, "str", 3 };
+        }
     }
 }

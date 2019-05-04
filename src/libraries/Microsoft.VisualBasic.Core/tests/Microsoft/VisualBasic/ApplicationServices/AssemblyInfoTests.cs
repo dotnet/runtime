@@ -59,7 +59,7 @@ namespace Microsoft.VisualBasic.ApplicationServices.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)] // Retrieving local process info is not supported on UWP.
         public void WorkingSet()
         {
             // Property is independent of the actual assembly.
