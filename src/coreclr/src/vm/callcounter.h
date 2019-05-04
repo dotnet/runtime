@@ -17,28 +17,32 @@
 struct CallCounterEntry
 {
     CallCounterEntry() {}
-    CallCounterEntry(const MethodDesc* m, const int tier0CallCountLimit)
-        : pMethod(m), tier0CallCountLimit(tier0CallCountLimit) {}
+    CallCounterEntry(PTR_MethodDesc m, const int callCountLimit)
+        : pMethod(m), callCountLimit(callCountLimit) {}
 
-    const MethodDesc* pMethod;
-    int tier0CallCountLimit;
+    PTR_MethodDesc pMethod;
+    int callCountLimit;
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    static CallCounterEntry CreateWithTier0CallCountingDisabled(const MethodDesc *m);
+#ifndef DACCESS_COMPILE
+    static CallCounterEntry CreateWithCallCountingDisabled(MethodDesc *m);
+#endif
 
-    bool IsTier0CallCountingEnabled() const
+    bool IsCallCountingEnabled() const
     {
         LIMITED_METHOD_CONTRACT;
-        return tier0CallCountLimit != INT_MAX;
+        return callCountLimit != INT_MAX;
     }
 
-    void DisableTier0CallCounting()
+#ifndef DACCESS_COMPILE
+    void DisableCallCounting()
     {
         LIMITED_METHOD_CONTRACT;
-        tier0CallCountLimit = INT_MAX;
+        callCountLimit = INT_MAX;
     }
 #endif
 };
+
+typedef DPTR(struct CallCounterEntry) PTR_CallCounterEntry;
 
 class CallCounterHashTraits : public DefaultSHashTraits<CallCounterEntry>
 {
@@ -46,7 +50,7 @@ public:
     typedef typename DefaultSHashTraits<CallCounterEntry>::element_t element_t;
     typedef typename DefaultSHashTraits<CallCounterEntry>::count_t count_t;
 
-    typedef const MethodDesc* key_t;
+    typedef PTR_MethodDesc key_t;
 
     static key_t GetKey(element_t e)
     {
@@ -61,13 +65,13 @@ public:
     static count_t Hash(key_t k)
     {
         LIMITED_METHOD_CONTRACT;
-        return (count_t)(size_t)k;
+        return (count_t)dac_cast<TADDR>(k);
     }
 
-    static const element_t Null() { LIMITED_METHOD_CONTRACT; return element_t(NULL, 0); }
-    static const element_t Deleted() { LIMITED_METHOD_CONTRACT; return element_t((const MethodDesc*)-1, 0); }
-    static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.pMethod == NULL; }
-    static bool IsDeleted(const element_t &e) { return e.pMethod == (const MethodDesc*)-1; }
+    static const element_t Null() { LIMITED_METHOD_CONTRACT; return element_t(PTR_NULL, 0); }
+    static const element_t Deleted() { LIMITED_METHOD_CONTRACT; return element_t((PTR_MethodDesc)-1, 0); }
+    static bool IsNull(const element_t &e) { LIMITED_METHOD_CONTRACT; return e.pMethod == PTR_NULL; }
+    static bool IsDeleted(const element_t &e) { return e.pMethod == (PTR_MethodDesc)-1; }
 };
 
 typedef SHash<NoRemoveSHashTraits<CallCounterHashTraits>> CallCounterHash;
@@ -80,29 +84,16 @@ typedef SHash<NoRemoveSHashTraits<CallCounterHashTraits>> CallCounterHash;
 class CallCounter
 {
 public:
-#if defined(DACCESS_COMPILE) || defined(CROSSGEN_COMPILE)
+#ifdef DACCESS_COMPILE
     CallCounter() {}
 #else
     CallCounter();
 #endif
 
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-    static bool IsEligibleForCallCounting(MethodDesc* pMethodDesc)
-    {
-        WRAPPER_NO_CONTRACT;
-        return IsEligibleForTier0CallCounting(pMethodDesc);
-    }
-
-    static bool IsEligibleForTier0CallCounting(MethodDesc* pMethodDesc);
-
-    bool IsCallCountingEnabled(MethodDesc* pMethodDesc)
-    {
-        WRAPPER_NO_CONTRACT;
-        return IsTier0CallCountingEnabled(pMethodDesc);
-    }
-
-    bool IsTier0CallCountingEnabled(MethodDesc* pMethodDesc);
-    void DisableTier0CallCounting(MethodDesc* pMethodDesc);
+    static bool IsEligibleForCallCounting(PTR_MethodDesc pMethodDesc);
+    bool IsCallCountingEnabled(PTR_MethodDesc pMethodDesc);
+#ifndef DACCESS_COMPILE
+    void DisableCallCounting(MethodDesc* pMethodDesc);
 #endif
 
     void OnMethodCalled(MethodDesc* pMethodDesc, TieredCompilationManager *pTieredCompilationManager, BOOL* shouldStopCountingCallsRef, BOOL* wasPromotedToNextTierRef);
