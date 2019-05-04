@@ -977,7 +977,7 @@ bool ILCodeStream::IsSupportedInstruction(ILInstrEnum instr)
     LIMITED_METHOD_CONTRACT;
     
     CONSISTENCY_CHECK_MSG(instr != CEE_SWITCH, "CEE_SWITCH is not supported currently due to InlineSwitch in s_rgbOpcodeSizes");
-    CONSISTENCY_CHECK_MSG(((instr >= CEE_BR_S) && (instr <= CEE_BLT_UN_S)) || (CEE_LEAVE), "we only use long-form branch opcodes");
+    CONSISTENCY_CHECK_MSG(((instr >= CEE_BR_S) && (instr <= CEE_BLT_UN_S)) || instr == CEE_LEAVE, "we only use long-form branch opcodes");
     return true;
 }
 #endif // _DEBUG
