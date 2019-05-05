@@ -5,18 +5,26 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text.Encodings.Web;
+using System.Text.Internal;
 using System.Text.Unicode;
 using Xunit;
 
 namespace Microsoft.Framework.WebEncoders
 {
-    public static class TextEncoderSettingsExtensions
+    internal static class TextEncoderSettingsExtensions
     {
+        public static AllowedCharactersBitmap GetAllowedCharacters(this TextEncoderSettings settings)
+        {
+            object bitmap = settings.GetType().InvokeMember("GetAllowedCharacters", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.InvokeMethod, null, settings, null);
+            object underlyingArray = bitmap.GetType().GetField("_allowedCharacters", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bitmap);
+            return (AllowedCharactersBitmap)typeof(AllowedCharactersBitmap).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(uint[]) }, null).Invoke(new object[] { underlyingArray });
+        }
+
         public static bool IsCharacterAllowed(this TextEncoderSettings settings, char character)
         {
-            var bitmap = settings.GetAllowedCharacters();
-            return bitmap.IsCharacterAllowed(character);
+            return GetAllowedCharacters(settings).IsCharacterAllowed(character);
         }
     }
 

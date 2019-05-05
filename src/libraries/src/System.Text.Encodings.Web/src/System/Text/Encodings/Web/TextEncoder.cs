@@ -130,8 +130,12 @@ namespace System.Text.Encodings.Web
 
             if (firstCharacterToEncode > 0)
             {
-                int bytesToCopy = firstCharacterToEncode + firstCharacterToEncode;
-                BufferInternal.MemoryCopy(value, buffer, bytesToCopy, bytesToCopy);
+                Debug.Assert(firstCharacterToEncode <= valueLength);
+                Buffer.MemoryCopy(source: value,
+                    destination: buffer,
+                    destinationSizeInBytes: sizeof(char) * bufferLength,
+                    sourceBytesToCopy: sizeof(char) * firstCharacterToEncode);
+
                 totalWritten += firstCharacterToEncode;
                 bufferLength -= firstCharacterToEncode;
                 buffer += firstCharacterToEncode;

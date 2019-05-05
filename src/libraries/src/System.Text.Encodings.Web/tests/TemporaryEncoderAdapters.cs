@@ -12,7 +12,7 @@ namespace Microsoft.Framework.WebEncoders
     // These implement ASP.NET interfaces. They will be removed once we transition ASP.NET
     internal sealed class HtmlEncoder : IHtmlEncoder
     {
-        System.Text.Encodings.Web.DefaultHtmlEncoder _encoder;
+        System.Text.Encodings.Web.HtmlEncoder _encoder;
         static HtmlEncoder s_default;
 
         /// <summary>
@@ -44,11 +44,11 @@ namespace Microsoft.Framework.WebEncoders
 
         public HtmlEncoder()
         {
-            _encoder = System.Text.Encodings.Web.DefaultHtmlEncoder.Singleton;
+            _encoder = System.Text.Encodings.Web.HtmlEncoder.Default;
         }
         public HtmlEncoder(TextEncoderSettings filter)
         {
-            _encoder = new System.Text.Encodings.Web.DefaultHtmlEncoder(filter);
+            _encoder = System.Text.Encodings.Web.HtmlEncoder.Create(filter);
         }
 
         public HtmlEncoder(UnicodeRange allowedRange) : this(new TextEncoderSettings(allowedRange))
@@ -75,7 +75,7 @@ namespace Microsoft.Framework.WebEncoders
 
     internal sealed class JavaScriptStringEncoder : IJavaScriptStringEncoder
     {
-        System.Text.Encodings.Web.DefaultJavaScriptEncoder _encoder;
+        System.Text.Encodings.Web.JavaScriptEncoder _encoder;
         static JavaScriptStringEncoder s_default;
 
         /// <summary>
@@ -107,11 +107,11 @@ namespace Microsoft.Framework.WebEncoders
 
         public JavaScriptStringEncoder()
         {
-            _encoder = System.Text.Encodings.Web.DefaultJavaScriptEncoder.Singleton;
+            _encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default;
         }
         public JavaScriptStringEncoder(TextEncoderSettings filter)
         {
-            _encoder = new System.Text.Encodings.Web.DefaultJavaScriptEncoder(filter);
+            _encoder = System.Text.Encodings.Web.JavaScriptEncoder.Create(filter);
         }
 
         public JavaScriptStringEncoder(UnicodeRange allowedRange) : this(new TextEncoderSettings(allowedRange))
@@ -138,7 +138,7 @@ namespace Microsoft.Framework.WebEncoders
 
     internal sealed class UrlEncoder : IUrlEncoder
     {
-        System.Text.Encodings.Web.DefaultUrlEncoder _encoder;
+        System.Text.Encodings.Web.UrlEncoder _encoder;
         static UrlEncoder s_default;
 
         /// <summary>
@@ -170,11 +170,11 @@ namespace Microsoft.Framework.WebEncoders
 
         public UrlEncoder()
         {
-            _encoder = System.Text.Encodings.Web.DefaultUrlEncoder.Singleton;
+            _encoder = System.Text.Encodings.Web.UrlEncoder.Default;
         }
         public UrlEncoder(TextEncoderSettings filter)
         {
-            _encoder = new System.Text.Encodings.Web.DefaultUrlEncoder(filter);
+            _encoder = System.Text.Encodings.Web.UrlEncoder.Create(filter);
         }
 
         public UrlEncoder(UnicodeRange allowedRange) : this(new TextEncoderSettings(allowedRange))
