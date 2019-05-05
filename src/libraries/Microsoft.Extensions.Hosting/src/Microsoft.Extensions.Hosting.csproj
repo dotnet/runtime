@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>.NET Core hosting and startup infrastructures for applications.</Description>
@@ -22,6 +22,7 @@
     <Reference Include="Microsoft.Extensions.Logging.Console" />
     <Reference Include="Microsoft.Extensions.Logging.Debug" />
     <Reference Include="Microsoft.Extensions.Logging.EventSource" />
+    <Reference Include="Microsoft.Extensions.Logging.EventLog" />
   </ItemGroup>
 
 </Project>

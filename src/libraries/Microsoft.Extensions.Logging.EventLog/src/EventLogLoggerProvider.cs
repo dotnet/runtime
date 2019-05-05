@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// <param name="settings">The <see cref="EventLogSettings"/>.</param>
         public EventLogLoggerProvider(EventLogSettings settings)
         {
-            _settings = settings;
+            _settings = settings ?? new EventLogSettings();
         }
 
         /// <summary>
@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Logging.EventLog
         /// <inheritdoc />
         public ILogger CreateLogger(string name)
         {
-            return new EventLogLogger(name, _settings ?? new EventLogSettings(), _scopeProvider);
+            return new EventLogLogger(name, _settings, _scopeProvider);
         }
 
         public void Dispose()

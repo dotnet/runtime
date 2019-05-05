@@ -7,8 +7,8 @@
     <Compile Include="Microsoft.Extensions.Configuration.Json.netstandard2.0.cs" />
     <Reference Include="Microsoft.Extensions.Configuration"  />
     <Reference Include="Microsoft.Extensions.Configuration.FileExtensions"  />
+    <Reference Include="System.Text.Json"  />
     <Reference Include="System.Threading.Tasks.Extensions"  />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe"  />
   </ItemGroup>
 <ItemGroup Condition="'$(TargetFramework)' == 'netcoreapp3.0'">
     <Compile Include="Microsoft.Extensions.Configuration.Json.netcoreapp3.0.cs" />

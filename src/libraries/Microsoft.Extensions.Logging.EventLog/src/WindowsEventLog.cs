@@ -22,6 +22,8 @@ namespace Microsoft.Extensions.Logging.EventLog
 
         public int MaxMessageSize => MaximumMessageSize;
 
+        public int? DefaultEventId { get; set; }
+
         public void WriteEntry(string message, EventLogEntryType type, int eventID, short category)
         {
             try

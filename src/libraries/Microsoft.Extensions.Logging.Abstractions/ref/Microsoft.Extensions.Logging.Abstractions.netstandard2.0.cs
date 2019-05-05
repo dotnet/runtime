@@ -112,13 +112,13 @@ namespace Microsoft.Extensions.Logging
     }
     public enum LogLevel
     {
-        Critical = 5,
-        Debug = 1,
-        Error = 4,
-        Information = 2,
-        None = 6,
         Trace = 0,
+        Debug = 1,
+        Information = 2,
         Warning = 3,
+        Error = 4,
+        Critical = 5,
+        None = 6,
     }
 }
 namespace Microsoft.Extensions.Logging.Abstractions

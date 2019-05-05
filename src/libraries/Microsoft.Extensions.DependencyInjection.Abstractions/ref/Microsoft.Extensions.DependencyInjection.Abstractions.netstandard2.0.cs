@@ -96,8 +96,8 @@ namespace Microsoft.Extensions.DependencyInjection
     }
     public enum ServiceLifetime
     {
-        Scoped = 1,
         Singleton = 0,
+        Scoped = 1,
         Transient = 2,
     }
     public static partial class ServiceProviderServiceExtensions
