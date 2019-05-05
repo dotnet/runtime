@@ -2,18 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Buffers.Binary;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Unicode
 {
     /// <summary>
     /// Contains helpers for dealing with Unicode code points.
     /// </summary>
-    internal static unsafe class UnicodeHelpers
+    internal static unsafe partial class UnicodeHelpers
     {
         /// <summary>
         /// Used for invalid Unicode sequences or other unrepresentable values.
@@ -25,64 +24,49 @@ namespace System.Text.Unicode
         /// </summary>
         internal const int UNICODE_LAST_CODEPOINT = 0x10FFFF;
 
-        private static uint[] _definedCharacterBitmap;
+        // This field is only used on big-endian architectures. We don't
+        // bother computing it on little-endian architectures.
+        private static uint[] _definedCharacterBitmapBigEndian = (BitConverter.IsLittleEndian) ? null : CreateDefinedCharacterBitmapMachineEndian();
 
-        /// <summary>
-        /// Helper method which creates a bitmap of all characters which are
-        /// defined per the Unicode specification.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static uint[] CreateDefinedCharacterBitmap()
+        private static uint[] CreateDefinedCharacterBitmapMachineEndian()
         {
-            // The stream should be exactly 8KB in size.
-            var stream = typeof(UnicodeRange).GetTypeInfo().Assembly.GetManifestResourceStream("System.Text.Encodings.Web.Resources.unicode8definedcharacters.bin");
+            Debug.Assert(!BitConverter.IsLittleEndian);
 
-            if (stream == null)
+            // We need to convert little-endian to machine-endian.
+
+            ReadOnlySpan<byte> remainingBitmap = DefinedCharsBitmapSpan;
+            uint[] bigEndianData = new uint[remainingBitmap.Length / sizeof(uint)];
+
+            for (int i = 0; i < bigEndianData.Length; i++)
             {
-                throw new BadImageFormatException();
+                bigEndianData[i] = BinaryPrimitives.ReadUInt32LittleEndian(remainingBitmap);
+                remainingBitmap = remainingBitmap.Slice(sizeof(uint));
             }
 
-            if (stream.Length != 8 * 1024)
-            {
-                Environment.FailFast("Corrupt data detected.");
-            }
-
-            // Read everything in as raw bytes.
-            byte[] rawData = new byte[8 * 1024];
-            for (int numBytesReadTotal = 0; numBytesReadTotal < rawData.Length;)
-            {
-                int numBytesReadThisIteration = stream.Read(rawData, numBytesReadTotal, rawData.Length - numBytesReadTotal);
-                if (numBytesReadThisIteration == 0)
-                {
-                    Environment.FailFast("Corrupt data detected.");
-                }
-                numBytesReadTotal += numBytesReadThisIteration;
-            }
-
-            // Finally, convert the byte[] to a uint[].
-            // The incoming bytes are little-endian.
-            uint[] retVal = new uint[2 * 1024];
-            for (int i = 0; i < retVal.Length; i++)
-            {
-                retVal[i] = (((uint)rawData[4 * i + 3]) << 24)
-                    | (((uint)rawData[4 * i + 2]) << 16)
-                    | (((uint)rawData[4 * i + 1]) << 8)
-                    | (uint)rawData[4 * i];
-            }
-
-            // And we're done!
-            Volatile.Write(ref _definedCharacterBitmap, retVal);
-            return retVal;
+            return bigEndianData;
         }
 
         /// <summary>
-        /// Returns a bitmap of all characters which are defined per version 7.0.0
+        /// Returns a bitmap of all characters which are defined per the checked-in version
         /// of the Unicode specification.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static uint[] GetDefinedCharacterBitmap()
+        internal static ReadOnlySpan<uint> GetDefinedCharacterBitmap()
         {
-            return Volatile.Read(ref _definedCharacterBitmap) ?? CreateDefinedCharacterBitmap();
+            if (BitConverter.IsLittleEndian)
+            {
+                // Underlying data is a series of 32-bit little-endian values and is guaranteed
+                // properly aligned by the compiler, so we know this is a valid cast byte -> uint.
+
+                return MemoryMarshal.Cast<byte, uint>(DefinedCharsBitmapSpan);
+            }
+            else
+            {
+                // Static compiled data was little-endian; we had to create a big-endian
+                // representation at runtime.
+
+                return _definedCharacterBitmapBigEndian;
+            }
         }
 
         /// <summary>
@@ -266,7 +250,7 @@ namespace System.Text.Unicode
         }
 
         /// <summary>
-        /// Returns a value stating whether a character is defined per version 7.0.0
+        /// Returns a value stating whether a character is defined per the checked-in version
         /// of the Unicode specification. Certain classes of characters (control chars,
         /// private use, surrogates, some whitespace) are considered "undefined" for
         /// our purposes.
