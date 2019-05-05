@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{2337A55E-7077-4FBE-8132-2CD8DDC18671}</ProjectGuid>
@@ -6,7 +6,7 @@
     <ReferencePath>$(ProgramFiles)\Common Files\microsoft shared\VSTT\11.0\UITestExtensionPackages</ReferencePath>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netstandard-Debug;netstandard-Release;netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDependentAssemblyPaths Condition=" '$(VS100COMNTOOLS)' != '' " Include="$(VS100COMNTOOLS)..\IDE\PrivateAssemblies">
@@ -14,11 +14,13 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\src\System\Text\Encodings\Web\AllowedCharactersBitmap.cs" Link="AllowedCharactersBitmap.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\HexUtil.cs" Link="HexUtil.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\UnicodeHelpers.cs" Link="UnicodeHelpers.cs" />
     <Compile Include="AllowedCharsBitmapTests.cs" />
     <Compile Include="TextEncoderTests.cs" />
     <Compile Include="ScalarTestEncoder.cs" />
     <Compile Include="CommonTestEncoder.cs" />
-    <Compile Include="BufferInternalTests.cs" />
     <Compile Include="EncoderCommon.cs" />
     <Compile Include="EncoderCommonTests.cs" />
     <Compile Include="EncoderExtensionsTests.cs" />
