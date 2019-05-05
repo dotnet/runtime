@@ -354,22 +354,7 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.InvalidOperationException">The builder is incorrectly initialized.</exception>
         public void SetStateMachine(IAsyncStateMachine stateMachine)
-        {
-            if (stateMachine == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stateMachine);
-            }
-
-            if (m_task != null)
-            {
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.AsyncMethodBuilder_InstanceNotInitialized);
-            }
-
-            // SetStateMachine was originally needed in order to store the boxed state machine reference into
-            // the boxed copy.  Now that a normal box is no longer used, SetStateMachine is also legacy.  We need not
-            // do anything here, and thus assert to ensure we're not calling this from our own implementations.
-            Debug.Fail("SetStateMachine should not be used.");
-        }
+            => AsyncMethodBuilderCore.SetStateMachine(stateMachine, m_task);
 
         /// <summary>
         /// Schedules the specified state machine to be pushed forward when the specified awaiter completes.
@@ -1045,6 +1030,24 @@ namespace System.Runtime.CompilerServices
                     ExecutionContext.RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
                 }
             }
+        }
+
+        public static void SetStateMachine(IAsyncStateMachine stateMachine, Task task)
+        {
+            if (stateMachine == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.stateMachine);
+            }
+
+            if (task != null)
+            {
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.AsyncMethodBuilder_InstanceNotInitialized);
+            }
+
+            // SetStateMachine was originally needed in order to store the boxed state machine reference into
+            // the boxed copy.  Now that a normal box is no longer used, SetStateMachine is also legacy.  We need not
+            // do anything here, and thus assert to ensure we're not calling this from our own implementations.
+            Debug.Fail("SetStateMachine should not be used.");
         }
 
 #if !CORERT
