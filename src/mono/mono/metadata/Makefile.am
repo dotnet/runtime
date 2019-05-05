@@ -176,7 +176,11 @@ libmono_icall_table_la_SOURCES = \
 libmono_icall_table_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
 libmono_icall_table_la_LDFLAGS = $(libmonoldflags)
 if BITCODE
+if WASM
+libmono_icall_table_la_LIBADD = # empty to avoid duplicate symbols when enabling dynamic linking
+else
 libmono_icall_table_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+endif
 endif
 endif
 
@@ -196,7 +200,11 @@ libmono_ilgen_la_SOURCES = \
 libmono_ilgen_la_CFLAGS = $(SGEN_DEFINES) @CXX_ADD_CFLAGS@
 libmono_ilgen_la_LDFLAGS = $(libmonoldflags)
 if BITCODE
+if WASM
+libmono_ilgen_la_LIBADD =  # empty to avoid duplicate symbols when enabling dynamic linking
+else
 libmono_ilgen_la_LIBADD = $(glib_libs) ../utils/libmonoutils.la ../sgen/libmonosgen.la libmonoruntimesgen.la
+endif
 endif
 endif
 
