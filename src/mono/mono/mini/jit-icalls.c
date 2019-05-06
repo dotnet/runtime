@@ -1017,6 +1017,15 @@ mono_lconv_to_r8_un (guint64 a)
 }
 #endif
 
+#ifdef MONO_ARCH_EMULATE_FREM
+// Wrapper to avoid taking address of overloaded function.
+double
+mono_fmod (double a, double b)
+{
+	return fmod (a, b);
+}
+#endif
+
 gpointer
 mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointer *this_arg)
 {

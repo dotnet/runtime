@@ -4387,15 +4387,6 @@ mini_init (const char *filename, const char *runtime_version)
 	return domain;
 }
 
-#ifdef MONO_ARCH_EMULATE_FREM
-// Wrapper to avoid taking address of overloaded function.
-static double
-mono_fmod (double a, double b)
-{
-	return fmod (a, b);
-}
-#endif
-
 static void
 register_icalls (void)
 {
@@ -4524,7 +4515,7 @@ register_icalls (void)
 	register_opcode_emulation (OP_LCONV_TO_R_UN, __emul_lconv_to_r8_un, mono_icall_sig_double_long, mono_lconv_to_r8_un, "mono_lconv_to_r8_un", FALSE);
 #endif
 #ifdef MONO_ARCH_EMULATE_FREM
-	register_opcode_emulation (OP_FREM, __emul_frem, mono_icall_sig_double_double_double, mono_fmod, "fmod", FALSE);
+	register_opcode_emulation (OP_FREM, __emul_frem, mono_icall_sig_double_double_double, mono_fmod, "mono_fmod", FALSE);
 	register_opcode_emulation (OP_RREM, __emul_rrem, mono_icall_sig_float_float_float, fmodf, "fmodf", FALSE);
 #endif
 
