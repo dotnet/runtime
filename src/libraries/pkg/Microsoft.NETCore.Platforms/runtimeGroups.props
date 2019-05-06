@@ -35,14 +35,14 @@
     <RuntimeGroup Include="debian">
       <Parent>linux</Parent>
       <Architectures>x64;x86;arm;armel;arm64</Architectures>
-      <Versions>8;9</Versions>
+      <Versions>8;9;10</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>23;24;25;26;27;28;29</Versions>
+      <Versions>23;24;25;26;27;28;29;30;31</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -65,7 +65,7 @@
     <RuntimeGroup Include="linuxmint.19">
       <Parent>ubuntu.18.04</Parent>
       <Architectures>x64</Architectures>
-      <Versions></Versions><!-- Empty because there are no point releases yet -->
+      <Versions>1;2</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="ol">
@@ -74,12 +74,18 @@
       <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6</Versions>
       <ApplyVersionsToParent>true</ApplyVersionsToParent>
     </RuntimeGroup>
+    <RuntimeGroup Include="ol">
+      <Parent>rhel</Parent>
+      <Architectures>x64</Architectures>
+      <Versions>8;8.0</Versions>
+      <ApplyVersionsToParent>true</ApplyVersionsToParent>
+    </RuntimeGroup>
 
     <!-- all opensuse releases are independent -->
     <RuntimeGroup Include="opensuse">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>13.2;15.0;42.1;42.2;42.3</Versions>
+      <Versions>13.2;15.0;15.1;42.1;42.2;42.3</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
@@ -107,7 +113,6 @@
       <Architectures>x64</Architectures>
       <Versions>7;7.0;7.1;7.2;7.3;7.4;7.5;7.6</Versions>
     </RuntimeGroup>
-
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
@@ -117,7 +122,7 @@
     <RuntimeGroup Include="sles">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>12;12.1;12.2;12.3;15</Versions>
+      <Versions>12;12.1;12.2;12.3;12.4;15;15.1</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="tizen">
@@ -135,7 +140,7 @@
     <RuntimeGroup Include="ubuntu">
       <Parent>debian</Parent>
       <Architectures>x64;x86;arm;arm64</Architectures>
-      <Versions>16.04;16.10;17.04;17.10;18.04;18.10;19.04</Versions>
+      <Versions>16.04;16.10;17.04;17.10;18.04;18.10;19.04;19.10</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
 
