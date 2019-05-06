@@ -52,7 +52,7 @@
     <TestSupportFiles Include="$(RepositoryEngineeringDir)versions.props">
       <DestinationFolder>$(TestToolsDir)eng/</DestinationFolder>
     </TestSupportFiles>
-    <TestSupportFiles Include="$(PackagingTaskDir)..\..\**\*.*">
+    <TestSupportFiles Include="$(PackagingTaskDir)..\..\**\*.*" Exclude="$(PackagingTaskDir)..\..\*.*">
       <DestinationFolder>$(TestToolsDir)%(RecursiveDir)</DestinationFolder>
     </TestSupportFiles>
     <TestSupportFiles Include="props\Directory.Build.props">
