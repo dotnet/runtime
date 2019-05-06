@@ -17,6 +17,9 @@ using Microsoft.Extensions.Primitives;
 using Moq;
 using Xunit;
 
+// ConsoleLogger is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
+
 namespace Microsoft.Extensions.Logging.Test
 {
     public class ConsoleLoggerTest

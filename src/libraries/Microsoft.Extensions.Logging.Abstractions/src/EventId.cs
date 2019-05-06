@@ -3,7 +3,7 @@
 
 namespace Microsoft.Extensions.Logging
 {
-    public struct EventId
+    public readonly struct EventId
     {
         public static implicit operator EventId(int i)
         {

@@ -697,6 +697,91 @@ namespace Microsoft.Extensions.Primitives
             Assert.Throws<ArgumentOutOfRangeException>(() => segment.Subsegment(2, 3));
         }
 
+        public static TheoryData<StringSegment, StringSegmentComparer> CompareLesserData
+        {
+            get
+            {
+                // candidate / comparer
+                return new TheoryData<StringSegment, StringSegmentComparer>()
+                {
+                    { new StringSegment("abcdef", 1, 4), StringSegmentComparer.Ordinal },
+                    { new StringSegment("abcdef", 1, 5), StringSegmentComparer.OrdinalIgnoreCase },
+                    { new StringSegment("ABCDEF", 2, 2), StringSegmentComparer.OrdinalIgnoreCase },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompareLesserData))]
+        public void StringSegment_Compare_Lesser(StringSegment candidate, StringSegmentComparer comparer)
+        {
+            // Arrange
+            var segment = new StringSegment("ABCDEF", 1, 4);
+
+            // Act
+            var result = comparer.Compare(segment, candidate);
+
+            // Assert
+            Assert.True(result < 0, $"{segment} should be less than {candidate}");
+        }
+
+        public static TheoryData<StringSegment, StringSegmentComparer> CompareEqualData
+        {
+            get
+            {
+                // candidate / comparer
+                return new TheoryData<StringSegment, StringSegmentComparer>()
+                {
+                    { new StringSegment("abcdef", 1, 4), StringSegmentComparer.Ordinal },
+                    { new StringSegment("ABCDEF", 1, 4), StringSegmentComparer.OrdinalIgnoreCase },
+                    { new StringSegment("bcde", 0, 4), StringSegmentComparer.Ordinal },
+                    { new StringSegment("BcDeF", 0, 4), StringSegmentComparer.OrdinalIgnoreCase },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompareEqualData))]
+        public void StringSegment_Compare_Equal(StringSegment candidate, StringSegmentComparer comparer)
+        {
+            // Arrange
+            var segment = new StringSegment("abcdef", 1, 4);
+
+            // Act
+            var result = comparer.Compare(segment, candidate);
+
+            // Assert
+            Assert.True(result == 0, $"{segment} should equal {candidate}");
+        }
+
+        public static TheoryData<StringSegment, StringSegmentComparer> CompareGreaterData
+        {
+            get
+            {
+                // candidate / comparer
+                return new TheoryData<StringSegment, StringSegmentComparer>()
+                {
+                    { new StringSegment("ABCDEF", 1, 4), StringSegmentComparer.Ordinal },
+                    { new StringSegment("ABCDEF", 0, 6), StringSegmentComparer.OrdinalIgnoreCase },
+                    { new StringSegment("abcdef", 0, 3), StringSegmentComparer.Ordinal },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CompareGreaterData))]
+        public void StringSegment_Compare_Greater(StringSegment candidate, StringSegmentComparer comparer)
+        {
+            // Arrange
+            var segment = new StringSegment("abcdef", 1, 4);
+
+            // Act
+            var result = comparer.Compare(segment, candidate);
+
+            // Assert
+            Assert.True(result > 0, $"{segment} should be greater than {candidate}");
+        }
+
         [Fact]
         public void IndexOf_ComputesIndex_RelativeToTheCurrentSegment()
         {

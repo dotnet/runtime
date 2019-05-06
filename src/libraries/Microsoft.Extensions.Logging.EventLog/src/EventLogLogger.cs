@@ -11,6 +11,7 @@ namespace Microsoft.Extensions.Logging.EventLog
     /// <summary>
     /// A logger that writes messages to Windows Event Log.
     /// </summary>
+    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is using EventLogLoggerProvider to construct loggers.")]
     public class EventLogLogger : ILogger
     {
         private readonly string _name;

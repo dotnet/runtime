@@ -53,7 +53,10 @@ namespace Microsoft.Extensions.Logging.TraceSource
         /// <returns></returns>
         public ILogger CreateLogger(string name)
         {
+            // TraceSourceLogger is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
             return new TraceSourceLogger(GetOrAddTraceSource(name));
+#pragma warning restore CS0618
         }
 
         private DiagnosticsTraceSource GetOrAddTraceSource(string name)

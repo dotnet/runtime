@@ -9,6 +9,9 @@ using Microsoft.Extensions.Logging.EventLog;
 using Microsoft.Extensions.Logging.EventLog.Internal;
 using Xunit;
 
+// EventLogLogger is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
+
 namespace Microsoft.Extensions.Logging
 {
     [OSSkipCondition(OperatingSystems.Linux)]

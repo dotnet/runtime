@@ -1,11 +1,13 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging.EventLog.Internal;
 
 namespace Microsoft.Extensions.Logging.EventLog
 {
+    [Obsolete("This type is obsolete and will be removed in a future version. The recommended alternative is using EventLogLoggerProvider.")]
     public class WindowsEventLog : IEventLog
     {
         // https://msdn.microsoft.com/EN-US/library/windows/desktop/aa363679.aspx

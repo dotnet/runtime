@@ -5,7 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Extensions.Configuration.Ini;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Configuration.Xml;
@@ -866,6 +868,39 @@ IniKey1=IniValue2");
             Assert.NotNull(providers.Single(p => p is IniConfigurationProvider));
         }
 
+        [Fact]
+        public void BindingDoesNotThrowIfReloadedDuringBinding()
+        {
+            WriteTestFiles();
+
+            var configurationBuilder = CreateBuilder();
+            configurationBuilder.Add(new TestIniSourceProvider(_iniFile));
+            configurationBuilder.Add(new TestJsonSourceProvider(_jsonFile));
+            configurationBuilder.Add(new TestXmlSourceProvider(_xmlFile));
+            configurationBuilder.AddEnvironmentVariables();
+            configurationBuilder.AddCommandLine(new[] { "--CmdKey1=CmdValue1" });
+            configurationBuilder.AddInMemoryCollection(_memConfigContent);
+
+            var config = configurationBuilder.Build();
+
+            using (var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250)))
+            {
+                _ = Task.Run(() => { while (!cts.IsCancellationRequested) config.Reload(); });
+                MyOptions options = null;
+
+                while (!cts.IsCancellationRequested)
+                {
+                    options = config.Get<MyOptions>();
+                }
+
+                Assert.Equal("CmdValue1", options.CmdKey1);
+                Assert.Equal("IniValue1", options.IniKey1);
+                Assert.Equal("JsonValue1", options.JsonKey1);
+                Assert.Equal("MemValue1", options.MemKey1);
+                Assert.Equal("XmlValue1", options.XmlKey1);
+            }
+        }
+
         public void Dispose()
         {
             _fileProvider.Dispose();
@@ -887,6 +922,19 @@ IniKey1=IniValue2");
 
                 await Task.Delay(_msDelay);
             }
+        }
+
+        private sealed class MyOptions
+        {
+            public string CmdKey1 { get; set; }
+
+            public string IniKey1 { get; set; }
+
+            public string JsonKey1 { get; set; }
+
+            public string MemKey1 { get; set; }
+
+            public string XmlKey1 { get; set; }
         }
     }
 }
