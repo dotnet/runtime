@@ -84,17 +84,9 @@ mono_IUnknown_Release (MonoIUnknown *pUnk)
 /*
 Code shared between the DISABLE_COM and !DISABLE_COM
 */
-#ifdef __cplusplus
-template <typename T>
-static void
-register_icall (       T func, const char *name, MonoMethodSignature *sig, gboolean save)
-#else
-static void
-register_icall (gpointer func, const char *name, MonoMethodSignature *sig, gboolean save)
-#endif
-{
-	mono_register_jit_icall_full (func, name, sig, save, name);
-}
+
+#define register_icall(func, sig, save) \
+	(mono_register_jit_icall_full ((func), (#func), (sig), (save), (#func)))
 
 mono_bstr
 mono_string_to_bstr_impl (MonoStringHandle s, MonoError *error)
@@ -648,23 +640,23 @@ mono_cominterop_init (void)
 		com_provider = MONO_COM_MS;
 	g_free (com_provider_env);
 
-	register_icall (cominterop_get_method_interface, "cominterop_get_method_interface", mono_icall_sig_ptr_ptr, FALSE);
-	register_icall (cominterop_get_function_pointer, "cominterop_get_function_pointer", mono_icall_sig_ptr_ptr_int32, FALSE);
-	register_icall (cominterop_object_is_rcw, "cominterop_object_is_rcw", mono_icall_sig_int32_object, FALSE);
-	register_icall (cominterop_get_ccw, "cominterop_get_ccw", mono_icall_sig_ptr_object_ptr, FALSE);
-	register_icall (cominterop_get_ccw_object, "cominterop_get_ccw_object", mono_icall_sig_object_ptr_int32, FALSE);
-	register_icall (cominterop_get_interface, "cominterop_get_interface", mono_icall_sig_ptr_object_ptr, FALSE);
+	register_icall (cominterop_get_method_interface, mono_icall_sig_ptr_ptr, FALSE);
+	register_icall (cominterop_get_function_pointer, mono_icall_sig_ptr_ptr_int32, FALSE);
+	register_icall (cominterop_object_is_rcw, mono_icall_sig_int32_object, FALSE);
+	register_icall (cominterop_get_ccw, mono_icall_sig_ptr_object_ptr, FALSE);
+	register_icall (cominterop_get_ccw_object, mono_icall_sig_object_ptr_int32, FALSE);
+	register_icall (cominterop_get_interface, mono_icall_sig_ptr_object_ptr, FALSE);
 
-	register_icall (cominterop_type_from_handle, "cominterop_type_from_handle", mono_icall_sig_object_ptr, FALSE);
+	register_icall (cominterop_type_from_handle, mono_icall_sig_object_ptr, FALSE);
 
 	/* SAFEARRAY marshalling */
-	register_icall (mono_marshal_safearray_begin, "mono_marshal_safearray_begin", mono_icall_sig_int32_ptr_ptr_ptr_ptr_ptr_int32, FALSE);
-	register_icall (mono_marshal_safearray_get_value, "mono_marshal_safearray_get_value", mono_icall_sig_ptr_ptr_ptr, FALSE);
-	register_icall (mono_marshal_safearray_next, "mono_marshal_safearray_next", mono_icall_sig_int32_ptr_ptr, FALSE);
-	register_icall (mono_marshal_safearray_end, "mono_marshal_safearray_end", mono_icall_sig_void_ptr_ptr, FALSE);
-	register_icall (mono_marshal_safearray_create, "mono_marshal_safearray_create", mono_icall_sig_int32_object_ptr_ptr_ptr, FALSE);
-	register_icall (mono_marshal_safearray_set_value, "mono_marshal_safearray_set_value", mono_icall_sig_void_ptr_ptr_ptr, FALSE);
-	register_icall (mono_marshal_safearray_free_indices, "mono_marshal_safearray_free_indices", mono_icall_sig_void_ptr, FALSE);
+	register_icall (mono_marshal_safearray_begin, mono_icall_sig_int32_ptr_ptr_ptr_ptr_ptr_int32, FALSE);
+	register_icall (mono_marshal_safearray_get_value, mono_icall_sig_ptr_ptr_ptr, FALSE);
+	register_icall (mono_marshal_safearray_next, mono_icall_sig_int32_ptr_ptr, FALSE);
+	register_icall (mono_marshal_safearray_end, mono_icall_sig_void_ptr_ptr, FALSE);
+	register_icall (mono_marshal_safearray_create, mono_icall_sig_int32_object_ptr_ptr_ptr, FALSE);
+	register_icall (mono_marshal_safearray_set_value, mono_icall_sig_void_ptr_ptr_ptr, FALSE);
+	register_icall (mono_marshal_safearray_free_indices, mono_icall_sig_void_ptr, FALSE);
 #endif // DISABLE_COM
 	/*FIXME
 
@@ -676,9 +668,9 @@ mono_cominterop_init (void)
 	The proper fix would be to emit warning, remove them from marshal.c when DISABLE_COM is used and
 	emit an exception in the generated IL.
 	*/
-	register_icall (mono_string_to_bstr, "mono_string_to_bstr", mono_icall_sig_ptr_obj, FALSE);
-	register_icall (mono_string_from_bstr_icall, "mono_string_from_bstr_icall", mono_icall_sig_obj_ptr, FALSE);
-	register_icall (mono_free_bstr, "mono_free_bstr", mono_icall_sig_void_ptr, FALSE);
+	register_icall (mono_string_to_bstr, mono_icall_sig_ptr_obj, FALSE);
+	register_icall (mono_string_from_bstr_icall, mono_icall_sig_obj_ptr, FALSE);
+	register_icall (mono_free_bstr, mono_icall_sig_void_ptr, FALSE);
 }
 
 #ifndef DISABLE_COM
