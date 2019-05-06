@@ -335,6 +335,10 @@
           BeforeTargets="GetFilesToPackage"
           DependsOnTargets="PrepareForCrossGen;GetCrossGenSymbolsFiles" />
 
+  <Target Name="GetReferenceFilenames"
+          Returns="@(Reference -> '%(Filename)')"
+          DependsOnTargets="ResolveNuGetPackages" />
+
   <!-- Target overrides (can't be shared with pkgproj) -->
 
   <Target Name="Build" DependsOnTargets="GenerateHashVersionsFile;GetFilesToPackage" />
