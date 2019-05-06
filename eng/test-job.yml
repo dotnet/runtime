@@ -196,6 +196,8 @@ jobs:
           - jitstress1_tiered
           - jitstress2
           - jitstress2_tiered
+          - zapdisable
+          - tailcallstress
         ${{ if eq(parameters.testGroup, 'outerloop-jitstressregs') }}:
           scenarios:
           - jitstressregs1
