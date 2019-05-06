@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -11,7 +12,7 @@ namespace System.Collections.Generic
     internal ref partial struct ValueListBuilder<T>
     {
         private Span<T> _span;
-        private T[] _arrayFromPool;
+        private T[]? _arrayFromPool;
         private int _pos;
 
         public ValueListBuilder(Span<T> initialSpan)
@@ -74,7 +75,7 @@ namespace System.Collections.Generic
             bool success = _span.TryCopyTo(array);
             Debug.Assert(success);
 
-            T[] toReturn = _arrayFromPool;
+            T[]? toReturn = _arrayFromPool;
             _span = _arrayFromPool = array;
             if (toReturn != null)
             {
