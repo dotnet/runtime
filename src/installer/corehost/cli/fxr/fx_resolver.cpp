@@ -89,8 +89,8 @@ namespace
         //   For backward compatibility reasons the apply_patches for pre-release framework reference only applies to the patch portion of the version,
         //     the pre-release portion of the version ignores apply_patches and we should roll to the latest (100% backward would roll to closest, but for consistency
         //     in the new behavior we will roll to latest).
-        if ((fx_ref.get_roll_forward() == roll_forward_option::LatestPatch || 
-             fx_ref.get_roll_forward() == roll_forward_option::Minor || 
+        if ((fx_ref.get_roll_forward() == roll_forward_option::LatestPatch ||
+             fx_ref.get_roll_forward() == roll_forward_option::Minor ||
              fx_ref.get_roll_forward() == roll_forward_option::Major)
             && (fx_ref.get_apply_patches() || fx_ref.get_fx_version_number().is_prerelease()))
         {
@@ -413,7 +413,7 @@ StatusCode fx_resolver_t::read_framework(
         {
             // Reconcile the framework reference with the most up to date so far we have for the framework.
             // This does not read any physical framework folders yet.
-            // Since we didn't find the framework in the resolved list yet, it's OK to update the effective reference 
+            // Since we didn't find the framework in the resolved list yet, it's OK to update the effective reference
             // as we haven't processed it yet.
             rc = reconcile_fx_references(fx_ref, current_effective_fx_ref, new_effective_fx_ref);
             if (rc)
@@ -519,4 +519,34 @@ StatusCode fx_resolver_t::resolve_frameworks_for_app(
     }
 
     return rc;
+}
+
+bool fx_resolver_t::is_config_compatible_with_frameworks(
+    const runtime_config_t &config,
+    const std::unordered_map<pal::string_t, const fx_ver_t> &existing_framework_versions_by_name)
+{
+    // Loop through each reference and check if it is compatible
+    for (const fx_reference_t& fx_ref : config.get_frameworks())
+    {
+        const pal::string_t& fx_name = fx_ref.get_fx_name();
+        auto iter = existing_framework_versions_by_name.find(fx_name);
+        if (iter == existing_framework_versions_by_name.cend())
+        {
+            display_missing_loaded_framework_error(fx_name);
+            return false;
+        }
+
+        const fx_ver_t &existing_version = (*iter).second;
+
+        if (existing_version < fx_ref.get_fx_version_number()
+            || !fx_ref.is_compatible_with_higher_version(existing_version))
+        {
+            display_incompatible_loaded_framework_error(existing_version.as_str(), fx_ref);
+            return false;
+        }
+
+        // Base frameworks must already have been resolved / checked if this framework is already available
+    }
+
+    return true;
 }

@@ -6,6 +6,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
     internal static class Constants
     {
+        public const string MicrosoftNETCoreApp = "Microsoft.NETCore.App";
+
         public static class ApplyPatchesSetting
         {
             public const string RuntimeConfigPropertyName = "applyPatches";

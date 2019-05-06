@@ -137,3 +137,20 @@ void fx_resolver_t::display_missing_framework_error(
     trace::error(_X("The .NET Core frameworks can be found at:"));
     trace::error(_X("  - %s"), DOTNET_CORE_DOWNLOAD_URL);
 }
+
+void fx_resolver_t::display_incompatible_loaded_framework_error(
+    const pal::string_t& loaded_version,
+    const fx_reference_t& fx_ref)
+{
+    trace::error(_X("The specified framework '%s', version '%s', apply_patches=%d, roll_forward=%s is incompatible with the previously loaded version '%s'."),
+        fx_ref.get_fx_name().c_str(),
+        fx_ref.get_fx_version().c_str(),
+        fx_ref.get_apply_patches(),
+        roll_forward_option_to_string(fx_ref.get_roll_forward()).c_str(),
+        loaded_version.c_str());
+}
+
+void fx_resolver_t::display_missing_loaded_framework_error(const pal::string_t& fx_name)
+{
+    trace::error(_X("The specified framework '%s' is not present in the previously loaded runtime."), fx_name.c_str());
+}

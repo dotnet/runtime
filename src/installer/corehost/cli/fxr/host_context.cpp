@@ -55,6 +55,7 @@ int host_context_t::create(
     if (rc == StatusCode::Success)
     {
         std::unique_ptr<host_context_t> context_local(new host_context_t(host_context_type::initialized, hostpolicy_contract, hostpolicy_context_contract));
+        init.get_found_fx_versions(context_local->fx_versions_by_name);
         context = std::move(context_local);
     }
 
@@ -84,7 +85,7 @@ int host_context_t::create_secondary(
 
     corehost_context_contract hostpolicy_context_contract;
     int rc = create_context_common(hostpolicy_contract, nullptr, &init_request, initialization_options, /*already_loaded*/ true, &hostpolicy_context_contract);
-    if (rc == StatusCode::CoreHostAlreadyInitialized)
+    if (STATUS_CODE_SUCCEEDED(rc))
     {
         std::unique_ptr<host_context_t> context_local(new host_context_t(host_context_type::secondary, hostpolicy_contract, hostpolicy_context_contract));
         context_local->config_properties = config_properties;
