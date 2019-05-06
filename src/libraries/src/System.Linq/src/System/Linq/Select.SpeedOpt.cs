@@ -125,8 +125,13 @@ namespace System.Linq
                 return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
             }
 
-            public IPartition<TResult> Take(int count) =>
-                count >= _source.Length ? (IPartition<TResult>)this : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+            public IPartition<TResult> Take(int count)
+            {
+                Debug.Assert(count > 0);
+                return count >= _source.Length ?
+                    (IPartition<TResult>)this :
+                    new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+            }
 
             public TResult TryGetElementAt(int index, out bool found)
             {
@@ -154,6 +159,132 @@ namespace System.Linq
 
                 found = true;
                 return _selector(_source[_source.Length - 1]);
+            }
+        }
+
+        private sealed partial class SelectRangeIterator<TResult> : Iterator<TResult>, IPartition<TResult>
+        {
+            private readonly int _start;
+            private readonly int _end;
+            private readonly Func<int, TResult> _selector;
+
+            public SelectRangeIterator(int start, int end, Func<int, TResult> selector)
+            {
+                Debug.Assert(start < end);
+                Debug.Assert((end - start) <= int.MaxValue);
+                Debug.Assert(selector != null);
+
+                _start = start;
+                _end = end;
+                _selector = selector;
+            }
+
+            public override Iterator<TResult> Clone() =>
+                new SelectRangeIterator<TResult>(_start, _end, _selector);
+
+            public override bool MoveNext()
+            {
+                if (_state < 1 || _state == (_end - _start + 1))
+                {
+                    Dispose();
+                    return false;
+                }
+
+                int index = _state++ - 1;
+                Debug.Assert(_start < _end - index);
+                _current = _selector(_start + index);
+                return true;
+            }
+
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
+                new SelectRangeIterator<TResult2>(_start, _end, CombineSelectors(_selector, selector));
+
+            public TResult[] ToArray()
+            {
+                var results = new TResult[_end - _start];
+                int srcIndex = _start;
+                for (int i = 0; i < results.Length; i++)
+                {
+                    results[i] = _selector(srcIndex++);
+                }
+
+                return results;
+            }
+
+            public List<TResult> ToList()
+            {
+                var results = new List<TResult>(_end - _start);
+                for (int i = _start; i != _end; i++)
+                {
+                    results.Add(_selector(i));
+                }
+
+                return results;
+            }
+
+            public int GetCount(bool onlyIfCheap)
+            {
+                // In case someone uses Count() to force evaluation of the selector,
+                // run it provided `onlyIfCheap` is false.
+                if (!onlyIfCheap)
+                {
+                    for (int i = _start; i != _end; i++)
+                    {
+                        _selector(i);
+                    }
+                }
+
+                return _end - _start;
+            }
+
+            public IPartition<TResult> Skip(int count)
+            {
+                Debug.Assert(count > 0);
+
+                if (count >= (_end - _start))
+                {
+                    return EmptyPartition<TResult>.Instance;
+                }
+
+                return new SelectRangeIterator<TResult>(_start + count, _end, _selector);
+            }
+
+            public IPartition<TResult> Take(int count)
+            {
+                Debug.Assert(count > 0);
+
+                if (count >= (_end - _start))
+                {
+                    return this;
+                }
+
+                return new SelectRangeIterator<TResult>(_start, _start + count, _selector);
+            }
+
+            public TResult TryGetElementAt(int index, out bool found)
+            {
+                if ((uint)index < (uint)(_end - _start))
+                {
+                    found = true;
+                    return _selector(_start + index);
+                }
+
+                found = false;
+                return default;
+            }
+
+            public TResult TryGetFirst(out bool found)
+            {
+                Debug.Assert(_end > _start);
+                found = true;
+                return _selector(_start);
+            }
+
+            public TResult TryGetLast(out bool found)
+            {
+                Debug.Assert(_end > _start);
+                found = true;
+                return _selector(_end - 1);
             }
         }
 
@@ -212,8 +343,11 @@ namespace System.Linq
                 return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
             }
 
-            public IPartition<TResult> Take(int count) =>
-                new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+            public IPartition<TResult> Take(int count)
+            {
+                Debug.Assert(count > 0);
+                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+            }
 
             public TResult TryGetElementAt(int index, out bool found)
             {
@@ -308,8 +442,11 @@ namespace System.Linq
                 return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, count, int.MaxValue);
             }
 
-            public IPartition<TResult> Take(int count) =>
-                new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+            public IPartition<TResult> Take(int count)
+            {
+                Debug.Assert(count > 0);
+                return new SelectListPartitionIterator<TSource, TResult>(_source, _selector, 0, count - 1);
+            }
 
             public TResult TryGetElementAt(int index, out bool found)
             {
@@ -413,8 +550,11 @@ namespace System.Linq
                 return new SelectIPartitionIterator<TSource, TResult>(_source.Skip(count), _selector);
             }
 
-            public IPartition<TResult> Take(int count) =>
-                new SelectIPartitionIterator<TSource, TResult>(_source.Take(count), _selector);
+            public IPartition<TResult> Take(int count)
+            {
+                Debug.Assert(count > 0);
+                return new SelectIPartitionIterator<TSource, TResult>(_source.Take(count), _selector);
+            }
 
             public TResult TryGetElementAt(int index, out bool found)
             {
@@ -579,6 +719,7 @@ namespace System.Linq
 
             public IPartition<TResult> Take(int count)
             {
+                Debug.Assert(count > 0);
                 int maxIndex = _minIndexInclusive + count - 1;
                 return (uint)maxIndex >= (uint)_maxIndexInclusive ? this : new SelectListPartitionIterator<TSource, TResult>(_source, _selector, _minIndexInclusive, maxIndex);
             }
