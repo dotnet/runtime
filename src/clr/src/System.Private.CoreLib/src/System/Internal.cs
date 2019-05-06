@@ -13,10 +13,11 @@
 ===========================================================*/
 
 #nullable disable // Code in this file isn't actually executed
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Security;
 using System.StubHelpers;
 using System.Threading.Tasks;
@@ -25,9 +26,12 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices.WindowsRuntime;
 #endif // FEATURE_COMINTEROP
 
-[assembly: DefaultDependencyAttribute(LoadHint.Always)]
-// mscorlib would like to have its literal strings frozen if possible
-[assembly: System.Runtime.CompilerServices.StringFreezingAttribute()]
+[assembly: CLSCompliant(true)]
+[assembly: ComVisible(false)]
+[assembly: DefaultDllImportSearchPathsAttribute(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
+
+// Add Serviceable attribute to the assembly metadata
+[assembly: AssemblyMetadata("Serviceable", "True")]
 
 namespace System
 {

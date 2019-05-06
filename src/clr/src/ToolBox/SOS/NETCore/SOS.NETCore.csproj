@@ -1,80 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
     <AssemblyName>SOS.NETCore</AssemblyName>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <ProjectGuid>{20513BA2-A156-4A17-4C70-5AC2DBD4F833}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <OutputType>Library</OutputType>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <NoStdLib>true</NoStdLib>
-    <NoCompilerStandardLib>true</NoCompilerStandardLib>
-    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
-    <AssemblyKey>Open</AssemblyKey>
-    <ExcludeMscorlibFacade>true</ExcludeMscorlibFacade>
-    <ContainsPackageReferences>true</ContainsPackageReferences>
-
-    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
-         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
-    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
-    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
-  </PropertyGroup>
-
-  <!-- Default configurations to help VS understand the options -->
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
-
-  <!-- Configuration specific properties -->
-  <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
-    <DebugSymbols>true</DebugSymbols>
-    <DefineConstants>_DEBUG;DEBUG;TRACE;$(DefineConstants)</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <DebugType>portable</DebugType>
+    <NoWarn>;1591;1701</NoWarn>
+    <Description>.NET Core SOS</Description>
+    <OutputPath>$(BinDir)</OutputPath>
+    <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="SymbolReader.cs" />
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <TargetFramework>netcoreapp1.0</TargetFramework>
-    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
-    <PackageTargetFallback>$(PackageTargetFallback);portable-net45+win8</PackageTargetFallback>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.IO.FileSystem">
-      <Version>4.3.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.InteropServices">
-      <Version>4.3.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Reflection.Metadata">
-      <Version>1.4.1</Version>
-    </PackageReference>
-  </ItemGroup>
-
-  <Target Name="CopyItemsToDirectory" AfterTargets="Build">
-    <Copy
-      SourceFiles="$(OutputPath)$(AssemblyName).dll"
-      DestinationFolder="$(BinDir)"
-      SkipUnchangedFiles="false"
-      OverwriteReadOnlyFiles="false"
-      UseHardlinksIfPossible="false">
-    </Copy>
-
-    <Copy
-      SourceFiles="$(OutputPath)$(AssemblyName).pdb"
-      DestinationFolder="$(BinDir)\PDB"
-      SkipUnchangedFiles="false"
-      OverwriteReadOnlyFiles="false"
-      UseHardlinksIfPossible="false">
-    </Copy>
-  </Target>
-
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
