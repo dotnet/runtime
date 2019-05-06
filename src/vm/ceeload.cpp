@@ -5239,7 +5239,9 @@ mdTypeRef Module::LookupTypeRefByMethodTable(MethodTable *pMT)
 
         // FUTURE: Encoding of new cross-module references for ReadyToRun
         // This warning is hit for recursive cross-module inlining. It is commented out to avoid noise.
-        // GetSvcLogger()->Log(W("ReadyToRun: Type reference outside of current version bubble cannot be encoded\n"));
+        // if (g_CorCompileVerboseLevel >= CORCOMPILE_VERBOSE)
+        //     GetSvcLogger()->Log(W("ReadyToRun: Type reference outside of current version bubble cannot be encoded\n"));
+        ThrowHR(E_NOTIMPL);
     }
     else
 #endif // FEATURE_READYTORUN_COMPILER
