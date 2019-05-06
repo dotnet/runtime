@@ -52,4 +52,12 @@ namespace host_context_test
         int argc,
         const pal::char_t *argv[],
         pal::stringstream_t &test_output);
+    bool non_context_mixed(
+        check_properties scenario,
+        const pal::string_t &hostfxr_path,
+        const pal::char_t *app_path,
+        const pal::char_t *config_path,
+        int argc,
+        const pal::char_t *argv[],
+        pal::stringstream_t &test_output);
 }

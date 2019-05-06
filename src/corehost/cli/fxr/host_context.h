@@ -47,6 +47,9 @@ public:
     bool is_app;
     std::vector<pal::string_t> argv;
 
+    // Frameworks used for active context
+    std::unordered_map<pal::string_t, const fx_ver_t> fx_versions_by_name;
+
     // Config properties for secondary contexts
     std::unordered_map<pal::string_t, pal::string_t> config_properties;
 

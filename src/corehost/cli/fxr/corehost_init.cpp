@@ -129,3 +129,13 @@ const host_interface_t& corehost_init_t::get_host_init_data()
 
     return hi;
 }
+
+void corehost_init_t::get_found_fx_versions(std::unordered_map<pal::string_t, const fx_ver_t> &out_fx_versions)
+{
+    for (size_t i = 0; i < m_fx_names.size(); ++i)
+    {
+        fx_ver_t version;
+        if (fx_ver_t::parse(m_fx_found_versions[i], &version))
+            out_fx_versions.emplace(m_fx_names[i], version);
+    }
+}
