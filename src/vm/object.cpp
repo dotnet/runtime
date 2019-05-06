@@ -173,6 +173,11 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     MethodTable * pMT = GetGCSafeMethodTable();
     _ASSERTE(pMT != NULL);
 
+    if (pMT == g_pFreeObjectMethodTable)
+    {
+        return NULL;
+    }
+
     // Don't look at types that belong to an unloading AppDomain, or else
     // pObj->GetGCSafeTypeHandle() can AV. For example, we encountered this AV when pObj
     // was an array like this:
@@ -222,8 +227,6 @@ TypeHandle Object::GetGCSafeTypeHandleIfPossible() const
     }
 
     Module * pLoaderModule = pMTToCheck->GetLoaderModule();
-
-    BaseDomain * pBaseDomain = pLoaderModule->GetDomain();
 
     // Don't look up types that are unloading due to Collectible Assemblies. Haven't been
     // able to find a case where we actually encounter objects like this that can cause
