@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configurations>netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;</Configurations>
+    <Configurations>netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ProjectGuid>{F64208FC-83DA-4C94-973F-1DDDE4354AFF}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Numerics.Tensors.cs" />

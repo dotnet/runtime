@@ -4,6 +4,9 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
+  <PropertyGroup>
+    <ProjectGuid>{F9C30DC5-30C1-45DA-9336-F7BE358C367C}</ProjectGuid>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="TestCollectibleAssembly.cs" />
   </ItemGroup>

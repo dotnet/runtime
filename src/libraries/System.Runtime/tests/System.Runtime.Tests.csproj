@@ -5,7 +5,7 @@
     <NoWarn>1718</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release;uapaot-Debug;uapaot-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release;uapaot-Debug;uapaot-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
@@ -272,7 +272,8 @@
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\BindingFlagsDoNotWrap.netcoreapp.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.netcoreapp.cs" />
-    <Compile Include="System\Reflection\IsCollectibleTests.cs" Condition="'$(TargetGroup)' != 'uapaot'" /><!-- missing method 'AssemblyLoadContext..ctor(bool) -->
+    <Compile Include="System\Reflection\IsCollectibleTests.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
+    <!-- missing method 'AssemblyLoadContext..ctor(bool) -->
     <Compile Include="System\Reflection\MethodBaseTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\SignatureTypes.netcoreapp.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.netcoreapp.cs" />

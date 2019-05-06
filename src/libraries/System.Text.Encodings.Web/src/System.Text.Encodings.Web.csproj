@@ -3,7 +3,7 @@
     <ProjectGuid>{B7EDBF00-765A-48E8-B593-CD668288E274}</ProjectGuid>
     <RootNamespace>System.Text.Encodings.Web</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netstandard-Debug;netstandard-Release;netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Encodings\Web\AllowedCharactersBitmap.cs" />

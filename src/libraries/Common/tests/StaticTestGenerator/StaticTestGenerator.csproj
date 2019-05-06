@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.0</TargetFramework>
@@ -9,12 +8,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn />
     <NullableContextOptions>enable</NullableContextOptions>
+    <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <ProjectGuid>{67648882-2D9D-451A-BAC2-D16DE96895C2}</ProjectGuid>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Compilers" Version="2.10.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="2.10.0" />
@@ -23,5 +24,4 @@
     <PackageReference Include="xunit.core" Version="2.4.1" />
     <PackageReference Include="xunit.runner.utility" Version="2.4.1" />
   </ItemGroup>
-
 </Project>

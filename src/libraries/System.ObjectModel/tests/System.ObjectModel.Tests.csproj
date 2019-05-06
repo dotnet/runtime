@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{43841228-2A2B-4215-B97F-33006995E486}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release;uapaot-Debug;uapaot-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerableTest.cs">
@@ -44,7 +44,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
-    <Compile Include="ObservableCollection\ObservableCollection_MethodTests.netcoreapp.cs" />    
+    <Compile Include="ObservableCollection\ObservableCollection_MethodTests.netcoreapp.cs" />
     <Compile Include="ObservableCollection\ObservableCollection_SkipCollectionChangedTests.netcoreapp.cs" />
     <Compile Include="KeyedCollection\TestMethods.netcoreapp.cs" />
     <Compile Include="System\Collections\ObjectModel\KeyedCollectionTests.netcoreapp.cs" />

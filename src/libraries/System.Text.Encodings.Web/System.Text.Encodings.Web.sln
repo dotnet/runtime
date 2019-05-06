@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28829.227
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web.Tests", "tests\System.Text.Encodings.Web.Tests.csproj", "{2337A55E-7077-4FBE-8132-2CD8DDC18671}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -8,14 +8,17 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web.T
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "src\System.Text.Encodings.Web.csproj", "{B7EDBF00-765A-48E8-B593-CD668288E274}"
+	ProjectSection(ProjectDependencies) = postProject
+		{41648C6D-D431-478D-8228-7EB68714541C} = {41648C6D-D431-478D-8228-7EB68714541C}
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "ref\System.Text.Encodings.Web.csproj", "{41648C6D-D431-478D-8228-7EB68714541C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{E70569F3-C1DA-4EDE-A850-328BDBFDC59A}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.Encodings.Web", "ref\System.Text.Encodings.Web.csproj", "{41648C6D-D431-478D-8228-7EB68714541C}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,7 +45,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{2337A55E-7077-4FBE-8132-2CD8DDC18671} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{B7EDBF00-765A-48E8-B593-CD668288E274} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
-		{41648C6D-D431-478D-8228-7EB68714541C} = {E70569F3-C1DA-4EDE-A850-328BDBFDC59A}
+		{41648C6D-D431-478D-8228-7EB68714541C} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {2EFFAFC0-87C3-45D1-88AF-35F0AC866D70}

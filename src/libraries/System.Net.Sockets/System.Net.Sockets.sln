@@ -1,13 +1,13 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28725.219
+# Visual Studio 15
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Sockets.Tests", "tests\FunctionalTests\System.Net.Sockets.Tests.csproj", "{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}"
 	ProjectSection(ProjectDependencies) = postProject
 		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B} = {43311AFB-D7C4-4E5A-B1DE-855407F90D1B}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Sockets.Async.PerformanceTests", "tests\ManualPerformanceTests\System.Net.Sockets.Async.PerformanceTests.csproj", "{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Sockets.Async.Stress.Tests", "tests\ManualPerformanceTests\System.Net.Sockets.Async.Stress.Tests.csproj", "{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}"
 	ProjectSection(ProjectDependencies) = postProject
 		{43311AFB-D7C4-4E5A-B1DE-855407F90D1B} = {43311AFB-D7C4-4E5A-B1DE-855407F90D1B}
 	EndProjectSection
@@ -31,10 +31,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Debug|Any CPU.ActiveCfg = netcoreapp-Unix-Debug|Any CPU
-		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Debug|Any CPU.Build.0 = netcoreapp-Unix-Debug|Any CPU
-		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Release|Any CPU.ActiveCfg = netcoreapp-Unix-Release|Any CPU
-		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Release|Any CPU.Build.0 = netcoreapp-Unix-Release|Any CPU
+		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{8CBA022C-635F-4C8D-9D29-CD8AAC68C8E6}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
 		{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
 		{BB5C85AD-C51A-4903-80E9-6F6E1AC1AD34}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{92A9467A-9F7E-4294-A7D5-7B59F2E54ABE}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netstandard-Debug;netstandard-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="TestTraceFilter.cs" />

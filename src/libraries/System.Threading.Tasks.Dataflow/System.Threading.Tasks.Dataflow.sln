@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks.Dataflow.Tests", "tests\System.Threading.Tasks.Dataflow.Tests.csproj", "{72E21903-0FBA-444E-9855-3B4F05DFC1F9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks.Dataflow.Tests", "tests\System.Threading.Tasks.Dataflow.Tests.csproj", "{A7AA2FC3-855F-44BA-8735-AB2F43D118A5}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2E2F7224-7C72-4A81-9625-A5241F8D836D} = {2E2F7224-7C72-4A81-9625-A5241F8D836D}
 	EndProjectSection
@@ -26,10 +26,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{72E21903-0FBA-444E-9855-3B4F05DFC1F9}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{72E21903-0FBA-444E-9855-3B4F05DFC1F9}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{72E21903-0FBA-444E-9855-3B4F05DFC1F9}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{72E21903-0FBA-444E-9855-3B4F05DFC1F9}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{A7AA2FC3-855F-44BA-8735-AB2F43D118A5}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{A7AA2FC3-855F-44BA-8735-AB2F43D118A5}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{A7AA2FC3-855F-44BA-8735-AB2F43D118A5}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{A7AA2FC3-855F-44BA-8735-AB2F43D118A5}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 		{2E2F7224-7C72-4A81-9625-A5241F8D836D}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
 		{2E2F7224-7C72-4A81-9625-A5241F8D836D}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{2E2F7224-7C72-4A81-9625-A5241F8D836D}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
@@ -43,7 +43,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{72E21903-0FBA-444E-9855-3B4F05DFC1F9} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{A7AA2FC3-855F-44BA-8735-AB2F43D118A5} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
 		{2E2F7224-7C72-4A81-9625-A5241F8D836D} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{01F36E3F-7664-4A71-AE6E-B8B6BF724FD1} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection

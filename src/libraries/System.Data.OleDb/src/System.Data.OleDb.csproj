@@ -8,9 +8,9 @@
     <DefineConstants>$(DefineConstants);</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS' AND '$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_OleDb</GeneratePlatformNotSupportedAssemblyMessage>
-    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer> 
+    <EnablePinvokeUWPAnalyzer>false</EnablePinvokeUWPAnalyzer>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetFx)' != 'true' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
@@ -19,64 +19,64 @@
     <Compile Include="$(CommonPath)\System\Data\Common\MultipartIdentifier.cs">
       <Link>Common\System\Data\Common\MultipartIdentifier.cs</Link>
     </Compile>
-     <Compile Include="AdapterSwitches.cs"/>
-     <Compile Include="ColumnBinding.cs"/>
-     <Compile Include="DBBindings.cs"/>
-     <Compile Include="DbConnectionOptions.cs"/>
-     <Compile Include="DbConnectionStringCommon.cs"/>
-     <Compile Include="DbParameterHelper.cs"/>
-     <Compile Include="DbPropSet.cs"/>
-     <Compile Include="NativeMethods.cs"/>
-     <Compile Include="OleDb_Enum.cs"/>
-     <Compile Include="OleDb_Util.cs"/>
-     <Compile Include="OleDbCommand.cs"/>
-     <Compile Include="OleDbCommandBuilder.cs"/>
-     <Compile Include="OleDbConnection.cs"/>
-     <Compile Include="OleDbConnectionFactory.cs"/>
-     <Compile Include="OleDbConnectionInternal.cs"/>
-     <Compile Include="OleDbConnectionPoolGroupProviderInfo.cs"/>
-     <Compile Include="OleDbConnectionString.cs"/>
-     <Compile Include="OleDbConnectionStringBuilder.cs"/>
-     <Compile Include="OleDbDataAdapter.cs"/>
-     <Compile Include="OleDbDataReader.cs"/>
-     <Compile Include="OleDbEnumerator.cs"/>
-     <Compile Include="OleDbError.cs"/>
-     <Compile Include="OleDbErrorCollection.cs"/>
-     <Compile Include="OleDbException.cs"/>
-     <Compile Include="OleDbFactory.cs"/>
-     <Compile Include="OleDbHResult.cs"/>
-     <Compile Include="OleDbInfoMessageEvent.cs"/>
-     <Compile Include="OleDbInfoMessageEventHandler.cs"/>
-     <Compile Include="OleDbLiteral.cs"/>
-     <Compile Include="OleDbMetadataCollectionNames.cs"/>
-     <Compile Include="OleDbMetadataColumnNames.cs"/>
-     <Compile Include="OleDbMetaDataFactory.cs"/>
-     <Compile Include="OleDbParameter.cs"/>
-     <Compile Include="OleDbParameterCollection.cs"/>
-     <Compile Include="OleDbParameterCollectionHelper.cs"/>
-     <Compile Include="OleDbPropertySetGuid.cs"/>
-     <Compile Include="OleDbPropertyStatus.cs"/>
-     <Compile Include="OleDbReferenceCollection.cs"/>
-     <Compile Include="OleDbRowUpdatedEvent.cs"/>
-     <Compile Include="OleDbRowUpdatedEventHandler.cs"/>
-     <Compile Include="OleDbRowUpdatingEvent.cs"/>
-     <Compile Include="OleDbRowUpdatingEventHandler.cs"/>
-     <Compile Include="OleDbSchemaGuid.cs"/>
-     <Compile Include="OleDbStruct.cs"/>
-     <Compile Include="OleDbTransaction.cs"/>
-     <Compile Include="OleDbType.cs"/>
-     <Compile Include="OleDbWrapper.cs"/>
-     <Compile Include="PropertyIDSet.cs"/>
-     <Compile Include="PropertyInfoSet.cs"/>
-     <Compile Include="RowBinding.cs"/>
-     <Compile Include="SafeHandles.cs"/>
-     <Compile Include="SafeNativeMethods.cs"/>
-     <Compile Include="UnsafeNativeMethods.cs"/>
+    <Compile Include="AdapterSwitches.cs" />
+    <Compile Include="ColumnBinding.cs" />
+    <Compile Include="DBBindings.cs" />
+    <Compile Include="DbConnectionOptions.cs" />
+    <Compile Include="DbConnectionStringCommon.cs" />
+    <Compile Include="DbParameterHelper.cs" />
+    <Compile Include="DbPropSet.cs" />
+    <Compile Include="NativeMethods.cs" />
+    <Compile Include="OleDb_Enum.cs" />
+    <Compile Include="OleDb_Util.cs" />
+    <Compile Include="OleDbCommand.cs" />
+    <Compile Include="OleDbCommandBuilder.cs" />
+    <Compile Include="OleDbConnection.cs" />
+    <Compile Include="OleDbConnectionFactory.cs" />
+    <Compile Include="OleDbConnectionInternal.cs" />
+    <Compile Include="OleDbConnectionPoolGroupProviderInfo.cs" />
+    <Compile Include="OleDbConnectionString.cs" />
+    <Compile Include="OleDbConnectionStringBuilder.cs" />
+    <Compile Include="OleDbDataAdapter.cs" />
+    <Compile Include="OleDbDataReader.cs" />
+    <Compile Include="OleDbEnumerator.cs" />
+    <Compile Include="OleDbError.cs" />
+    <Compile Include="OleDbErrorCollection.cs" />
+    <Compile Include="OleDbException.cs" />
+    <Compile Include="OleDbFactory.cs" />
+    <Compile Include="OleDbHResult.cs" />
+    <Compile Include="OleDbInfoMessageEvent.cs" />
+    <Compile Include="OleDbInfoMessageEventHandler.cs" />
+    <Compile Include="OleDbLiteral.cs" />
+    <Compile Include="OleDbMetadataCollectionNames.cs" />
+    <Compile Include="OleDbMetadataColumnNames.cs" />
+    <Compile Include="OleDbMetaDataFactory.cs" />
+    <Compile Include="OleDbParameter.cs" />
+    <Compile Include="OleDbParameterCollection.cs" />
+    <Compile Include="OleDbParameterCollectionHelper.cs" />
+    <Compile Include="OleDbPropertySetGuid.cs" />
+    <Compile Include="OleDbPropertyStatus.cs" />
+    <Compile Include="OleDbReferenceCollection.cs" />
+    <Compile Include="OleDbRowUpdatedEvent.cs" />
+    <Compile Include="OleDbRowUpdatedEventHandler.cs" />
+    <Compile Include="OleDbRowUpdatingEvent.cs" />
+    <Compile Include="OleDbRowUpdatingEventHandler.cs" />
+    <Compile Include="OleDbSchemaGuid.cs" />
+    <Compile Include="OleDbStruct.cs" />
+    <Compile Include="OleDbTransaction.cs" />
+    <Compile Include="OleDbType.cs" />
+    <Compile Include="OleDbWrapper.cs" />
+    <Compile Include="PropertyIDSet.cs" />
+    <Compile Include="PropertyInfoSet.cs" />
+    <Compile Include="RowBinding.cs" />
+    <Compile Include="SafeHandles.cs" />
+    <Compile Include="SafeNativeMethods.cs" />
+    <Compile Include="UnsafeNativeMethods.cs" />
     <Compile Include="System\Data\Common\AdapterUtil.cs" />
     <Compile Include="System\Data\Common\DataCommonEventSource.cs" />
-    <Compile Include="System\Data\Common\DbConnectionPoolKey.cs" /> 
+    <Compile Include="System\Data\Common\DbConnectionPoolKey.cs" />
     <Compile Include="System\Data\Common\FieldNameLookup.cs" />
-    <Compile Include="System\Data\Common\NameValuePair.cs" /> 
+    <Compile Include="System\Data\Common\NameValuePair.cs" />
     <Compile Include="System\Data\Common\SR.cs" />
     <Compile Include="System\Data\ProviderBase\DbBuffer.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionClosed.cs" />
