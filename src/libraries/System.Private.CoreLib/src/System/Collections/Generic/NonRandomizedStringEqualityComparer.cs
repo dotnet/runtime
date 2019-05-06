@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Collections.Generic
@@ -12,23 +13,25 @@ namespace System.Collections.Generic
     // randomized string hashing.
     [Serializable] // Required for compatibility with .NET Core 2.0 as we exposed the NonRandomizedStringEqualityComparer inside the serialization blob
     // Needs to be public to support binary serialization compatibility
-    public sealed class NonRandomizedStringEqualityComparer : EqualityComparer<string>, ISerializable
+    public sealed class NonRandomizedStringEqualityComparer : EqualityComparer<string?>, ISerializable
     {
-        internal static new IEqualityComparer<string> Default { get; } = new NonRandomizedStringEqualityComparer();
+        internal static new IEqualityComparer<string?> Default { get; } = new NonRandomizedStringEqualityComparer();
 
         private NonRandomizedStringEqualityComparer() { }
 
         // This is used by the serialization engine.
         private NonRandomizedStringEqualityComparer(SerializationInfo information, StreamingContext context) { }
 
-        public sealed override bool Equals(string x, string y) => string.Equals(x, y);
+        public sealed override bool Equals(string? x, string? y) => string.Equals(x, y);
 
-        public sealed override int GetHashCode(string obj) => obj?.GetNonRandomizedHashCode() ?? 0;
+        public sealed override int GetHashCode(string? obj) => obj?.GetNonRandomizedHashCode() ?? 0;
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // We are doing this to stay compatible with .NET Framework.
+#pragma warning disable CS8631 // TODO-NULLABLE-GENERIC: https://github.com/dotnet/roslyn/issues/35406
             info.SetType(typeof(GenericEqualityComparer<string>));
+#pragma warning restore
         }
     }
 } 

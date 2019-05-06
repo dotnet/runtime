@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     /// <typeparam name="TKey">Type of objects that act as keys.</typeparam>    
     /// <typeparam name="TValue">Type of objects that act as entries / values.</typeparam>
     [DebuggerDisplay("Count = {Count}")]
-    internal sealed class ConstantSplittableMap<TKey, TValue> : IMapView<TKey, TValue>
+    internal sealed class ConstantSplittableMap<TKey, TValue> : IMapView<TKey, TValue> where TKey : object
     {
         private class KeyValuePairComparator : IComparer<KeyValuePair<TKey, TValue>>
         {

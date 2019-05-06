@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -80,7 +81,7 @@ namespace System.Collections.Generic
             {
                 _size = 0;
                 _items = s_emptyArray;
-                using (IEnumerator<T> en = collection.GetEnumerator())
+                using (IEnumerator<T> en = collection!.GetEnumerator())
                 {
                     while (en.MoveNext())
                     {
@@ -166,14 +167,14 @@ namespace System.Collections.Generic
             }
         }
 
-        private static bool IsCompatibleObject(object value)
+        private static bool IsCompatibleObject(object? value)
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>. 
-            return ((value is T) || (value == null && default(T) == null));
+            return ((value is T) || (value == null && default(T)! == null)); // https://github.com/dotnet/roslyn/issues/34757
         }
 
-        object IList.this[int index]
+        object? IList.this[int index] // TODO-NULLABLE-GENERIC: nullability is the same as of T
         {
             get
             {
@@ -185,7 +186,7 @@ namespace System.Collections.Generic
 
                 try
                 {
-                    this[index] = (T)value;
+                    this[index] = (T)value!;
                 }
                 catch (InvalidCastException)
                 {
@@ -225,13 +226,13 @@ namespace System.Collections.Generic
             _items[size] = item;
         }
 
-        int IList.Add(object item)
+        int IList.Add(object? item) // TODO-NULLABLE-GENERIC: nullable if default(T) can be null
         {
             ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(item, ExceptionArgument.item);
 
             try
             {
-                Add((T)item);
+                Add((T)item!);
             }
             catch (InvalidCastException)
             {
@@ -271,7 +272,7 @@ namespace System.Collections.Generic
         // The method uses the Array.BinarySearch method to perform the
         // search.
         // 
-        public int BinarySearch(int index, int count, T item, IComparer<T> comparer)
+        public int BinarySearch(int index, int count, T item, IComparer<T>? comparer)
         {
             if (index < 0)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
@@ -286,7 +287,7 @@ namespace System.Collections.Generic
         public int BinarySearch(T item)
             => BinarySearch(0, Count, item, null);
 
-        public int BinarySearch(T item, IComparer<T> comparer)
+        public int BinarySearch(T item, IComparer<T>? comparer)
             => BinarySearch(0, Count, item, comparer);
 
         // Clears the contents of List.
@@ -326,11 +327,11 @@ namespace System.Collections.Generic
             return _size != 0 && IndexOf(item) != -1;
         }
 
-        bool IList.Contains(object item)
+        bool IList.Contains(object? item)
         {
             if (IsCompatibleObject(item))
             {
-                return Contains((T)item);
+                return Contains((T)item!);
             }
             return false;
         }
@@ -345,7 +346,7 @@ namespace System.Collections.Generic
             List<TOutput> list = new List<TOutput>(_size);
             for (int i = 0; i < _size; i++)
             {
-                list._items[i] = converter(_items[i]);
+                list._items[i] = converter!(_items[i]); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
             list._size = _size;
             return list;
@@ -368,7 +369,7 @@ namespace System.Collections.Generic
             try
             {
                 // Array.Copy will check for NULL.
-                Array.Copy(_items, 0, array, arrayIndex, _size);
+                Array.Copy(_items, 0, array!, arrayIndex, _size);
             }
             catch (ArrayTypeMismatchException)
             {
@@ -427,12 +428,12 @@ namespace System.Collections.Generic
 
             for (int i = 0; i < _size; i++)
             {
-                if (match(_items[i]))
+                if (match!(_items[i]))
                 {
                     return _items[i];
                 }
             }
-            return default;
+            return default!; // TODO-NULLABLE-GENERIC: return value is nullable when T can be nullable
         }
 
         public List<T> FindAll(Predicate<T> match)
@@ -445,7 +446,7 @@ namespace System.Collections.Generic
             List<T> list = new List<T>();
             for (int i = 0; i < _size; i++)
             {
-                if (match(_items[i]))
+                if (match!(_items[i])) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     list.Add(_items[i]);
                 }
@@ -479,7 +480,7 @@ namespace System.Collections.Generic
             int endIndex = startIndex + count;
             for (int i = startIndex; i < endIndex; i++)
             {
-                if (match(_items[i])) return i;
+                if (match!(_items[i])) return i;
             }
             return -1;
         }
@@ -493,12 +494,12 @@ namespace System.Collections.Generic
 
             for (int i = _size - 1; i >= 0; i--)
             {
-                if (match(_items[i]))
+                if (match!(_items[i]))
                 {
                     return _items[i];
                 }
             }
-            return default;
+            return default!; // TODO-NULLABLE-GENERIC: return value is nullable when T can be nullable
         }
 
         public int FindLastIndex(Predicate<T> match)
@@ -540,7 +541,7 @@ namespace System.Collections.Generic
             int endIndex = startIndex - count;
             for (int i = startIndex; i > endIndex; i--)
             {
-                if (match(_items[i]))
+                if (match!(_items[i])) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     return i;
                 }
@@ -563,7 +564,7 @@ namespace System.Collections.Generic
                 {
                     break;
                 }
-                action(_items[i]);
+                action!(_items[i]);
             }
 
             if (version != _version)
@@ -619,11 +620,11 @@ namespace System.Collections.Generic
         public int IndexOf(T item)
             => Array.IndexOf(_items, item, 0, _size);
 
-        int IList.IndexOf(object item)
+        int IList.IndexOf(object? item) // TODO-NULLABLE-GENERIC: nullability == nullability(T)
         {
             if (IsCompatibleObject(item))
             {
-                return IndexOf((T)item);
+                return IndexOf((T)item!);
             }
             return -1;
         }
@@ -685,13 +686,13 @@ namespace System.Collections.Generic
             _version++;
         }
 
-        void IList.Insert(int index, object item)
+        void IList.Insert(int index, object? item) // TODO-NULLABLE-GENERIC: nullable when T can be null
         {
             ThrowHelper.IfNullAndNullsAreIllegalThenThrow<T>(item, ExceptionArgument.item);
 
             try
             {
-                Insert(index, (T)item);
+                Insert(index, (T)item!);
             }
             catch (InvalidCastException)
             {
@@ -744,7 +745,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                using (IEnumerator<T> en = collection.GetEnumerator())
+                using (IEnumerator<T> en = collection!.GetEnumerator()) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
                 {
                     while (en.MoveNext())
                     {
@@ -844,11 +845,11 @@ namespace System.Collections.Generic
             return false;
         }
 
-        void IList.Remove(object item)
+        void IList.Remove(object? item) // TODO-NULLABLE-GENERIC: nullable when T can be null
         {
             if (IsCompatibleObject(item))
             {
-                Remove((T)item);
+                Remove((T)item!);
             }
         }
 
@@ -864,14 +865,14 @@ namespace System.Collections.Generic
             int freeIndex = 0;   // the first free slot in items array
 
             // Find the first item which needs to be removed.
-            while (freeIndex < _size && !match(_items[freeIndex])) freeIndex++;
+            while (freeIndex < _size && !match!(_items[freeIndex])) freeIndex++; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             if (freeIndex >= _size) return 0;
 
             int current = freeIndex + 1;
             while (current < _size)
             {
                 // Find the first item which needs to be kept.
-                while (current < _size && match(_items[current])) current++;
+                while (current < _size && match!(_items[current])) current++;
 
                 if (current < _size)
                 {
@@ -906,7 +907,7 @@ namespace System.Collections.Generic
             }
             if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                _items[_size] = default;
+                _items[_size] = default!;
             }
             _version++;
         }
@@ -981,7 +982,7 @@ namespace System.Collections.Generic
 
         // Sorts the elements in this list.  Uses Array.Sort with the
         // provided comparer.
-        public void Sort(IComparer<T> comparer)
+        public void Sort(IComparer<T>? comparer)
             => Sort(0, Count, comparer);
 
         // Sorts the elements in a section of this list. The sort compares the
@@ -992,7 +993,7 @@ namespace System.Collections.Generic
         // 
         // This method uses the Array.Sort method to sort the elements.
         // 
-        public void Sort(int index, int count, IComparer<T> comparer)
+        public void Sort(int index, int count, IComparer<T>? comparer)
         {
             if (index < 0)
             {
@@ -1023,7 +1024,7 @@ namespace System.Collections.Generic
 
             if (_size > 1)
             {
-                ArraySortHelper<T>.Sort(_items, 0, _size, comparison);
+                ArraySortHelper<T>.Sort(_items, 0, _size, comparison!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }
             _version++;
         }
@@ -1069,7 +1070,7 @@ namespace System.Collections.Generic
 
             for (int i = 0; i < _size; i++)
             {
-                if (!match(_items[i]))
+                if (!match!(_items[i]))
                 {
                     return false;
                 }
@@ -1082,14 +1083,14 @@ namespace System.Collections.Generic
             private readonly List<T> _list;
             private int _index;
             private readonly int _version;
-            private T _current;
+            private T _current; // TODO-NULLABLE-GENERIC: nullable when T can be null
 
             internal Enumerator(List<T> list)
             {
                 _list = list;
                 _index = 0;
                 _version = list._version;
-                _current = default;
+                _current = default!;
             }
 
             public void Dispose()
@@ -1117,13 +1118,13 @@ namespace System.Collections.Generic
                 }
 
                 _index = _list._size + 1;
-                _current = default;
+                _current = default!;
                 return false;
             }
 
             public T Current => _current;
 
-            object IEnumerator.Current
+            object? IEnumerator.Current
             {
                 get
                 {
@@ -1143,7 +1144,7 @@ namespace System.Collections.Generic
                 }
 
                 _index = 0;
-                _current = default;
+                _current = default!;
             }
         }
     }
