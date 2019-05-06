@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
 using System;
 
 namespace System.Collections.Generic
 {
     // Provides a read-only view of a generic dictionary.
-    public interface IReadOnlyDictionary<TKey, TValue> : IReadOnlyCollection<KeyValuePair<TKey, TValue>>
+    public interface IReadOnlyDictionary<TKey, TValue> : IReadOnlyCollection<KeyValuePair<TKey, TValue>> where TKey : object
     {
         bool ContainsKey(TKey key);
-        bool TryGetValue(TKey key, out TValue value);
+        bool TryGetValue(TKey key, out TValue value); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
 
         TValue this[TKey key] { get; }
         IEnumerable<TKey> Keys { get; }
