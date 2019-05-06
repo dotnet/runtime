@@ -23,9 +23,9 @@ import shutil
 # Version specific imports
 
 if sys.version_info.major < 3:
-    import urllib
+    from urllib import urlretrieve
 else:
-    import urllib.request
+    from urllib.request import urlretrieve
 
 def expandPath(path):
     return os.path.abspath(os.path.expanduser(path))
@@ -69,67 +69,6 @@ def main(argv):
 
     my_env = os.environ
 
-    # Download .NET CLI
-
-    dotnetcliUrl = ""
-    dotnetcliFilename = ""
-
-    # build.cmd removes the Tools directory, so we need to put our version of jitutils
-    # outside of the Tools directory
-    # must use short path here to avoid trouble on windows
-
-    dotnetcliPath = os.path.join(coreclr, 'dj')
-
-    # Try to make the dotnetcli-jitutils directory if it doesn't exist
-
-    try:
-        os.makedirs(dotnetcliPath)
-    except OSError:
-        if not os.path.isdir(dotnetcliPath):
-            raise
-
-    print("Downloading .NET CLI")
-    if platform == 'Linux':
-        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-linux-x64.tar.gz"
-        dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
-    elif platform == 'OSX':
-        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-osx-x64.tar.gz"
-        dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.tar.gz')
-    elif platform == 'Windows_NT':
-        dotnetcliUrl = "https://dotnetcli.azureedge.net/dotnet/Sdk/2.1.402/dotnet-sdk-2.1.402-win-x64.zip"
-        dotnetcliFilename = os.path.join(dotnetcliPath, 'dotnetcli-jitutils.zip')
-    else:
-        print('Unknown os ', os)
-        return -1
-
-    urlretrieve = urllib.urlretrieve if sys.version_info.major < 3 else urllib.request.urlretrieve
-    urlretrieve(dotnetcliUrl, dotnetcliFilename)
-
-    if not os.path.isfile(dotnetcliFilename):
-        print("Did not download .NET CLI!")
-        return -1
-
-    # Install .NET CLI
-
-    if platform == 'Linux' or platform == 'OSX':
-        tar = tarfile.open(dotnetcliFilename)
-        tar.extractall(dotnetcliPath)
-        tar.close()
-    elif platform == 'Windows_NT':
-        with zipfile.ZipFile(dotnetcliFilename, "r") as z:
-            z.extractall(dotnetcliPath)
-
-    dotnet = ""
-    if platform == 'Linux' or platform == 'OSX':
-        dotnet = "dotnet"
-    elif platform == 'Windows_NT':
-        dotnet = "dotnet.exe"
-
-
-    if not os.path.isfile(os.path.join(dotnetcliPath, dotnet)):
-        print("Did not extract .NET CLI from download")
-        return -1
-
     # Download bootstrap
 
     bootstrapFilename = ""
@@ -163,8 +102,6 @@ def main(argv):
     print(bootstrapPath)
 
     # Run bootstrap
-
-    my_env["PATH"] = dotnetcliPath + os.pathsep + my_env["PATH"]
     if platform == 'Linux' or platform == 'OSX':
         print("Running bootstrap")
         proc = subprocess.Popen(['bash', bootstrapPath], env=my_env)
@@ -226,24 +163,9 @@ def main(argv):
         proc = subprocess.Popen(["git", "diff", "--patch", "-U20"], env=my_env, stdout=patchFile)
         output,error = proc.communicate()
 
-    # shutdown the dotnet build servers before cleaning things up
-    proc = subprocess.Popen(["dotnet", "build-server", "shutdown"], env=my_env)
-    output,error = proc.communicate()
-
-    # shutdown all spurious dotnet processes using os shell
-    if platform == 'Linux' or platform == 'OSX':
-        subprocess.call(['killall', '-SIGTERM', '-qw', dotnet])
-    elif platform == 'Windows_NT':
-        utilpath = os.path.join(coreclr, 'tests\\scripts\\kill-all.cmd')
-        subprocess.call([utilpath, dotnet])
-
     if os.path.isdir(jitUtilsPath):
         print("Deleting " + jitUtilsPath)
         shutil.rmtree(jitUtilsPath, onerror=del_rw)
-
-    if os.path.isdir(dotnetcliPath):
-        print("Deleting " + dotnetcliPath)
-        shutil.rmtree(dotnetcliPath, onerror=del_rw)
 
     if os.path.isfile(bootstrapPath):
         print("Deleting " + bootstrapPath)
