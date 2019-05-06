@@ -14,7 +14,7 @@ namespace System.Threading.Tasks
         Name = "System.Threading.Tasks.TplEventSource",
         Guid = "2e5dba47-a3d2-4d16-8ee0-6671ffdcd7b5"
 #if CORECLR
-        ,LocalizationResources = "FxResources.System.Private.CoreLib.SR"
+        ,LocalizationResources = "System.Private.CoreLib.Resources.Strings"
 #endif
         )]
     internal sealed class TplEventSource : EventSource

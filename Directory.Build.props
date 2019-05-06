@@ -1,4 +1,7 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
+
+  <!-- Ensure our properties are set before Arcade defines defaults -->
+  <Import Project="dir.common.props" Condition="'$(ArcadeBuild)' == 'True'" />
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" Condition="'$(ArcadeBuild)' == 'True'"/>
 
   <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
