@@ -8,12 +8,16 @@
 #include <future>
 #include <hostfxr.h>
 #include "host_context_test.h"
+#include <utils.h>
 
 namespace
 {
     const pal::char_t *app_log_prefix = _X("[APP] ");
     const pal::char_t *config_log_prefix = _X("[CONFIG] ");
     const pal::char_t *secondary_log_prefix = _X("[SECONDARY] ");
+
+    const hostfxr_delegate_type first_delegate_type = hostfxr_delegate_type::com_activation;
+    const hostfxr_delegate_type secondary_delegate_type = hostfxr_delegate_type::load_in_memory_assembly;
 
     class hostfxr_exports
     {
@@ -29,6 +33,8 @@ namespace
         hostfxr_get_runtime_properties_fn get_properties;
 
         hostfxr_close_fn close;
+
+        hostfxr_main_startupinfo_fn main_startupinfo;
 
     public:
         hostfxr_exports(const pal::string_t &hostfxr_path)
@@ -51,10 +57,13 @@ namespace
 
             close = (hostfxr_close_fn)pal::get_symbol(_dll, "hostfxr_close");
 
+            main_startupinfo = (hostfxr_main_startupinfo_fn)pal::get_symbol(_dll, "hostfxr_main_startupinfo");
+
             if (init_app == nullptr || run_app == nullptr
                 || init_config == nullptr || get_delegate == nullptr
                 || get_prop_value == nullptr || set_prop_value == nullptr
-                || get_properties == nullptr || close == nullptr)
+                || get_properties == nullptr || close == nullptr
+                || main_startupinfo == nullptr)
             {
                 std::cout << "Failed to get hostfxr entry points" << std::endl;
                 throw StatusCode::CoreHostEntryPointFailure;
@@ -195,21 +204,24 @@ namespace
         const pal::char_t *config_path,
         int argc,
         const pal::char_t *argv[],
+        hostfxr_delegate_type delegate_type,
         const pal::char_t *log_prefix,
         pal::stringstream_t &test_output)
     {
         hostfxr_handle handle;
         int rc = hostfxr.init_config(config_path, nullptr, &handle);
-        if (rc != StatusCode::Success && rc != StatusCode::CoreHostAlreadyInitialized)
+        if (!STATUS_CODE_SUCCEEDED(rc))
         {
             test_output << log_prefix << _X("hostfxr_initialize_for_runtime_config failed: ") << std::hex << std::showbase << rc << std::endl;
             return false;
         }
 
+        test_output << log_prefix << _X("hostfxr_initialize_for_runtime_config succeeded: ") << std::hex << std::showbase << rc << std::endl;
+
         inspect_modify_properties(check_properties, hostfxr, handle, argc, argv, log_prefix, test_output);
 
         void *delegate;
-        rc = hostfxr.get_delegate(handle, hostfxr_delegate_type::com_activation, &delegate);
+        rc = hostfxr.get_delegate(handle, delegate_type, &delegate);
         if (rc != StatusCode::Success)
             test_output << log_prefix << _X("hostfxr_get_runtime_delegate failed: ") << std::hex << std::showbase << rc << std::endl;
 
@@ -292,7 +304,7 @@ bool host_context_test::config(
 {
     hostfxr_exports hostfxr { hostfxr_path };
 
-    return config_test(hostfxr, check_properties, config_path, argc, argv, config_log_prefix, test_output);
+    return config_test(hostfxr, check_properties, config_path, argc, argv, first_delegate_type, config_log_prefix, test_output);
 }
 
 bool host_context_test::config_multiple(
@@ -306,10 +318,10 @@ bool host_context_test::config_multiple(
 {
     hostfxr_exports hostfxr { hostfxr_path };
 
-    if (!config_test(hostfxr, check_properties, config_path, argc, argv, config_log_prefix, test_output))
+    if (!config_test(hostfxr, check_properties, config_path, argc, argv, first_delegate_type, config_log_prefix, test_output))
         return false;
 
-    return config_test(hostfxr, check_properties, secondary_config_path, argc, argv, secondary_log_prefix, test_output);
+    return config_test(hostfxr, check_properties, secondary_config_path, argc, argv, secondary_delegate_type, secondary_log_prefix, test_output);
 }
 
 namespace
@@ -340,6 +352,18 @@ namespace
     private:
         pal::string_t _path;
     };
+
+    void wait_for_signal_mock_execute_assembly()
+    {
+        pal::string_t path;
+        if (!pal::getenv(_X("TEST_SIGNAL_MOCK_EXECUTE_ASSEMBLY"), &path))
+            return;
+
+        while (!pal::file_exists(path))
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
 }
 
 bool host_context_test::mixed(
@@ -377,7 +401,49 @@ bool host_context_test::mixed(
     };
     std::thread app_start = std::thread(run_app);
 
-    bool success = config_test(hostfxr, check_properties, config_path, argc, argv, secondary_log_prefix, test_output);
+    bool success = config_test(hostfxr, check_properties, config_path, argc, argv, secondary_delegate_type, secondary_log_prefix, test_output);
+    block_mock.unblock();
+    app_start.join();
+    test_output << run_app_output.str();
+    return success;
+}
+
+bool host_context_test::non_context_mixed(
+    check_properties check_properties,
+    const pal::string_t &hostfxr_path,
+    const pal::char_t *app_path,
+    const pal::char_t *config_path,
+    int argc,
+    const pal::char_t *argv[],
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr { hostfxr_path };
+
+    pal::string_t host_path;
+    if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
+    {
+        trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path.c_str());
+        return false;
+    }
+
+    block_mock_execute_assembly block_mock;
+
+    std::vector<const pal::char_t*> argv_local;
+    argv_local.push_back(app_path);
+    for (int i = 0; i < argc; ++i)
+        argv_local.push_back(argv[i]);
+
+    pal::stringstream_t run_app_output;
+    auto run_app = [&]{
+        int rc = hostfxr.main_startupinfo(argv_local.size(), argv_local.data(), host_path.c_str(), get_dotnet_root_from_fxr_path(hostfxr_path).c_str(), app_path);
+        if (rc != StatusCode::Success)
+            run_app_output << _X("hostfxr_main_startupinfo failed: ") << std::hex << std::showbase << rc << std::endl;
+    };
+    std::thread app_start = std::thread(run_app);
+
+    wait_for_signal_mock_execute_assembly();
+
+    bool success = config_test(hostfxr, check_properties, config_path, argc, argv, secondary_delegate_type, secondary_log_prefix, test_output);
     block_mock.unblock();
     app_start.join();
     test_output << run_app_output.str();

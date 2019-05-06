@@ -52,7 +52,7 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_initialize(
 
     if (hostHandle != nullptr)
     {
-        *hostHandle = reinterpret_cast<coreclr_t::host_handle_t>(0xdeadbeef);
+        *hostHandle = reinterpret_cast<coreclr_t::host_handle_t>(static_cast<size_t>(0xdeadbeef));
     }
 
     return StatusCode::Success;
@@ -98,6 +98,10 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_execute_assembly(
         MockLogEntry("argv", i, argv[i]);
     }
 
+    pal::string_t signalFile;
+    if (pal::getenv(_X("TEST_SIGNAL_MOCK_EXECUTE_ASSEMBLY"), &signalFile))
+        pal::touch_file(signalFile);
+
     pal::string_t path;
     if (pal::getenv(_X("TEST_BLOCK_MOCK_EXECUTE_ASSEMBLY"), &path))
     {
@@ -106,6 +110,9 @@ SHARED_API pal::hresult_t STDMETHODCALLTYPE coreclr_execute_assembly(
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
     }
+
+    if (!signalFile.empty())
+        pal::remove(signalFile.c_str());
 
     if (exitCode != nullptr)
     {

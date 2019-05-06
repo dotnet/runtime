@@ -44,7 +44,7 @@ namespace
     // It will only be set once both hostpolicy and coreclr are loaded and initialized. Once set, it should not be changed.
     // This will remain set even if the context is closed through hostfxr_close. Since the context represents the active
     // CoreCLR runtime and the active runtime cannot be unloaded, the active context is never unset.
-    std::unique_ptr<const host_context_t> g_active_host_context;
+    std::unique_ptr<host_context_t> g_active_host_context;
 
     // Tracks whether the first host context is initializing (from creation of the first context to loading the runtime).
     // Initialization of other contexts should block if the first context is initializing (i.e. this is true).
@@ -133,6 +133,7 @@ static int execute_app(
         std::lock_guard<std::mutex> lock{ g_context_lock };
         assert(g_active_host_context == nullptr);
         g_active_host_context.reset(new host_context_t(host_context_type::empty, hostpolicy_contract, {}));
+        init->get_found_fx_versions(g_active_host_context->fx_versions_by_name);
         g_context_initializing.store(false);
     }
 
@@ -839,7 +840,9 @@ namespace
             return StatusCode::InvalidConfigFile;
         }
 
-        // [TODO] Validate the current context is acceptable for this request (frameworks)
+        // Validate the current context is acceptable for this request (frameworks)
+        if (!fx_resolver_t::is_config_compatible_with_frameworks(app_config, existing_context->fx_versions_by_name))
+            return StatusCode::CoreHostIncompatibleConfig;
 
         app_config.combine_properties(config_properties);
         return StatusCode::Success;
@@ -981,7 +984,7 @@ int fx_muxer_t::initialize_for_runtime_config(
         rc = initialize_context(hostpolicy_dir, *init, initialization_options, context);
     }
 
-    if (rc != StatusCode::Success && rc != StatusCode::CoreHostAlreadyInitialized)
+    if (!STATUS_CODE_SUCCEEDED(rc))
     {
         trace::error(_X("Failed to initialize context for config: %s. Error code: 0x%x"), runtime_config_path, rc);
         return rc;

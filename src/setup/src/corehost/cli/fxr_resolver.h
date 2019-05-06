@@ -78,7 +78,7 @@ int load_fxr_and_get_delegate(hostfxr_delegate_type type, THostPathToConfigCallb
 
     hostfxr_handle context;
     int rc = hostfxr_initialize_for_runtime_config(config_path.c_str(), &parameters, &context);
-    if (rc != StatusCode::Success && rc != StatusCode::CoreHostAlreadyInitialized)
+    if (!STATUS_CODE_SUCCEEDED(rc))
         return rc;
 
     rc = hostfxr_get_runtime_delegate(context, type, reinterpret_cast<void**>(delegate));

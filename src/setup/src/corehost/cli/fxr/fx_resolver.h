@@ -21,6 +21,10 @@ public:
         const runtime_config_t& app_config,
         fx_definition_vector_t& fx_definitions);
 
+    static bool is_config_compatible_with_frameworks(
+        const runtime_config_t& config,
+        const std::unordered_map<pal::string_t, const fx_ver_t> &existing_framework_versions_by_name);
+
 private:
     fx_resolver_t();
 
@@ -58,6 +62,11 @@ private:
     static void display_summary_of_frameworks(
         const fx_definition_vector_t& fx_definitions,
         const fx_name_to_fx_reference_map_t& newest_references);
+    static void display_incompatible_loaded_framework_error(
+        const pal::string_t& loaded_version,
+        const fx_reference_t& fx_ref);
+    static void display_missing_loaded_framework_error(
+        const pal::string_t& fx_name);
 
     // Map of FX Name -> FX Reference of the most up-to-date effective references so far. This map is keeping the state
     // of the resolution algorithm. For each framework it holds the highest version referenced and the merged
