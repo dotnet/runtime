@@ -8,7 +8,6 @@ namespace strswitch
 {
     internal class Class1
     {
-        [STAThread]
         private static int Main(string[] args)
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };

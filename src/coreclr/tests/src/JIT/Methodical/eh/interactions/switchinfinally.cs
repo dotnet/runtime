@@ -86,7 +86,6 @@ namespace test3
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        [STAThread]
         static int Main(string[] args)
         {
             //Start recording

@@ -47,7 +47,6 @@
     .method public static int32 Main() cil managed
     {
       .entrypoint
-      .custom instance void [mscorlib]System.STAThreadAttribute::.ctor() = ( 01 00 00 00 ) 
       .maxstack  2
       .locals init (bool V_0,
                uint8 V_1)
