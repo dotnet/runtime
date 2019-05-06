@@ -41,8 +41,6 @@ class Test
 	// post-finalization work to be done.
 	const int maxIterations = 10;
 
-	// STA
-	[STAThread]
 	static int Main()
 	{
 		MyFinalizeObject mfo;

@@ -76,7 +76,6 @@
   .method public static int32  Main() cil managed
   {
     .entrypoint
-    .custom instance void [mscorlib]System.STAThreadAttribute::.ctor() = ( 01 00 00 00 ) 
     .maxstack  1
     .locals init ([0] class ConsoleApplicationVB.ICovariant`1<object> y)
     IL_0000:  nop

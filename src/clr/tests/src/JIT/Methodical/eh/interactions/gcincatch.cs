@@ -41,7 +41,6 @@ namespace test2
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        [STAThread]
         public static int Main(String[] args)
         {
             int[] ar = new int[] { 1, 2, 3, 4, 5 };
