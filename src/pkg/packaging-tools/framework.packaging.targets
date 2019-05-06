@@ -329,7 +329,18 @@
   <Target Name="GenerateSharedFramework"
           Condition="'$(GenerateSharedFramework)' == 'true'">
     <PropertyGroup>
-      <SharedFrameworkIntermediateOutputPath>$(IntermediateOutputPath)sfx/</SharedFrameworkIntermediateOutputPath>
+      <!--
+        For the sfx intermediate path, use 'bin/obj/sfx/', without OSPlatformConfig (RID +
+        Release/Debug). This is to save on path chars, which are at a premium. if the Git clone root
+        is even a little deep, Windows max path is a big problem. Package caches are a particular
+        problem due to long IDs, long versions, and deep resource DLLs with big names.
+
+        The OSPlatformConfig is normally in the intermediate path because it allows building
+        different configurations without cleaning the repo in between. This can be valuable for dev
+        builds. Not including OSPlatformConfig is ok in this target because the intermediate dir is
+        always deleted before it's used.
+      -->
+      <SharedFrameworkIntermediateOutputPath>$(BaseIntermediateOutputPath)sfx/$(ShortFrameworkName)/</SharedFrameworkIntermediateOutputPath>
     </PropertyGroup>
 
     <!-- Delete layout directory and sfx NuGet cache to ensure freshness. -->
