@@ -1,16 +1,45 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- Include common build properties -->
+<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
-  <!-- Compilation options -->
+
+  <!-- Generate rsp -->
+  <Import Project="GenerateCompilerResponseFile.targets" />
+
+  <Target Name="GenerateTheRSPFile" BeforeTargets="CoreCompile" DependsOnTargets="GenerateCompilerResponseFile">
+  </Target>
+
+  <PropertyGroup>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <GenerateResxSourceOmitGetResourceString>true</GenerateResxSourceOmitGetResourceString>
+    <GenerateNeutralResourcesLanguageAttribute>false</GenerateNeutralResourcesLanguageAttribute>
+    <EnsureRuntimePackageDependencies>false</EnsureRuntimePackageDependencies>
+
+    <OutputType>Library</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+
+    <!-- Ensure a portable PDB is emitted for the project. A PDB is needed for crossgen. -->
+    <DebugType>Portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+
+    <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
+    <OutputPath>$(BinDir)IL/</OutputPath>
+  </PropertyGroup>
+
+  <!-- Note that various places in SPCL depend on this resource name i.e. TplEventSource -->
+  <ItemGroup Label="Embedded Resources">
+    <EmbeddedResource Update="$(MSBuildThisFileDirectory)Resources\Strings.resx">
+      <GenerateSource>true</GenerateSource>
+      <ClassName>System.SR</ClassName>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <PropertyGroup>
     <AvailablePlatforms>x64,x86,arm,armel,arm64</AvailablePlatforms>
     <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <ProjectGuid>{3DA06C3A-2E7B-4CB7-80ED-9B12916013F9}</ProjectGuid>
-    <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- This prevents the default MsBuild targets from referencing System.Core.dll -->
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -19,19 +48,18 @@
     <NoStdLib>true</NoStdLib>
     <NoCompilerStandardLib>true</NoCompilerStandardLib>
     <SubsystemVersion>6.00</SubsystemVersion>
-    <UTF8OutPut>true</UTF8OutPut>
+    <Utf8Output>true</Utf8Output>
     <HighEntropyVA>true</HighEntropyVA>
     <ErrorReport>prompt</ErrorReport>
-    <CLSCompliant>true</CLSCompliant>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- Remove BCL0020 once https://github.com/dotnet/arcade/pull/2158 is available 
-         Remove CS8608 once https://github.com/dotnet/roslyn/issues/23268 is resolved -->
-    <NoWarn>649,1573,1591,0419,BCL0020,CS8609</NoWarn>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-    <SignAssembly>true</SignAssembly>
-    <DelaySign>true</DelaySign>
-    <DefineConstants>$(DefineConstants);CORECLR;netcoreapp</DefineConstants>
+    <!-- Remove CS8608 once https://github.com/dotnet/roslyn/issues/23268 is resolved -->
+    <NoWarn>649,1573,1591,0419,3021,CS8609</NoWarn>
+
+    <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
+    <DefineConstants>CORECLR;netcoreapp</DefineConstants>
+    <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
+
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
@@ -40,25 +68,6 @@
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
   </PropertyGroup>
 
-  <!-- Approximate Arcade version string https://github.com/dotnet/arcade/blob/master/Documentation/CorePackages/Versioning.md -->
-  <!-- This workaround should be removed once CoreCLR repo is updated to use Arcade -->
-  <PropertyGroup>
-    <InformationalVersion>$(VersionPrefix)</InformationalVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(PreReleaseLabel)' != ''">
-    <InformationalVersion>$(InformationalVersion)-$(PreReleaseLabel).$(BuildNumberMajor).$(BuildNumberMinor)</InformationalVersion>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(LatestCommit)' != ''">
-    <InformationalVersion>$(InformationalVersion)+$(LatestCommit)</InformationalVersion>
-  </PropertyGroup>
-
-  <!-- Add Serviceable attribute to the project's metadata -->
-  <ItemGroup>
-    <AssemblyMetadata Include="Serviceable">
-      <Value>True</Value>
-      <Visible>false</Visible>
-    </AssemblyMetadata>
-  </ItemGroup>
   <!-- Platform specific properties -->
   <PropertyGroup Condition="'$(Platform)' == 'x64'">
     <PlatformTarget>x64</PlatformTarget>
@@ -77,27 +86,32 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <DefineConstants>BIT64;ARM64;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
+
   <!-- Configuration specific properties -->
   <PropertyGroup Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'">
-    <DebugSymbols>true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Debug'">false</Optimize>
     <Optimize Condition="'$(Optimize)' == '' and '$(Configuration)' == 'Checked'">true</Optimize>
-    <DebugType Condition="'$(DebugType)' == ''">full</DebugType>
     <DefineConstants>_LOGGING;DEBUG;$(DefineConstants)</DefineConstants>
     <DefineConstants Condition="'$(Platform)' == 'x86' or '$(Platform)' == 'x64'">CODE_ANALYSIS;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <DebugSymbols>true</DebugSymbols>
     <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
   </PropertyGroup>
+
   <!-- Assembly attributes -->
   <PropertyGroup>
     <AssemblyName>System.Private.CoreLib</AssemblyName>
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <MajorVersion>4</MajorVersion>
-    <MinorVersion>6</MinorVersion>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
+
+  <!-- Signing -->
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <StrongNameKeyId>SilverlightPlatform</StrongNameKeyId>
+  </PropertyGroup>
+
   <!--
     Helper Paths
   -->
@@ -105,19 +119,17 @@
     <CommonPath>$(MSBuildThisFileDirectory)Common</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
   </PropertyGroup>
+
   <!-- Msbuild variables needed to get CoreCLR features to be set properly. -->
   <PropertyGroup>
     <!-- These are needed to make sure we have the right set of defines -->
     <TargetArch Condition="'$(Platform)'=='x86'">i386</TargetArch>
     <TargetArch Condition="'$(Platform)'!='x86'">$(Platform)</TargetArch>
   </PropertyGroup>
-  <!-- CLR Features -->
-  <Import Project="$(MSBuildThisFileDirectory)..\..\clr.coreclr.props" />
-  <Import Project="$(MSBuildThisFileDirectory)..\..\clr.defines.targets" />
-  <!-- Experimental features -->
-  <PropertyGroup Condition="'$(FeatureUtf8String)' == 'true'">
-    <DefineConstants>$(DefineConstants);FEATURE_UTF8STRING</DefineConstants>
-  </PropertyGroup>
+
+  <!-- Compilation options -->
+  <Import Project="../../clr.featuredefines.props" />
+
   <!-- Sources -->
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
@@ -287,7 +299,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Diagnostics\Eventing\XplatEventLogger.cs" Condition="'$(FeatureXplatEventSource)' == 'true'" />
-    <Compile Include="$(IntermediateOutputPath)..\Eventing\NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'"/>
+    <Compile Include="$(IntermediateOutputPath)../Eventing/NativeRuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'"/>
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCominterop)' == 'true'">
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\WindowsRuntime\ExceptionSupport.cs" />
@@ -413,9 +425,9 @@
   <Target Name="CDefineChecker" BeforeTargets="Build" Condition="'$(CheckCDefines)'=='true'">
     <!-- Compiler Definition Verification -->
     <PropertyGroup>
-      <CMakeDefinitionSaveFile>$(IntermediateOutputPath)..\cmake.definitions</CMakeDefinitionSaveFile>
+      <CMakeDefinitionSaveFile>$(IntermediateOutputPath)\cmake.definitions</CMakeDefinitionSaveFile>
     </PropertyGroup>
-    <Exec Command="&quot;$(PYTHON)&quot; $(MSBuildThisFileDirectory)..\scripts\check-definitions.py &quot;$(CMakeDefinitionSaveFile)&quot; &quot;$(DefineConstants)&quot; &quot;$(IgnoreDefineConstants)&quot; " />
+    <Exec Command="&quot;$(PYTHON)&quot; $(MSBuildThisFileDirectory)..\scripts\check-definitions.py &quot;$(ProjectDir.TrimEnd('\'))&quot; &quot;$(CMakeDefinitionSaveFile)&quot; &quot;$(DefineConstants)&quot; &quot;$(IgnoreDefineConstants)&quot; " />
   </Target>
   <PropertyGroup Condition="'$(BuildOS)' == 'Windows_NT'">
     <EnableDotnetAnalyzers Condition="'$(EnableDotnetAnalyzers)'==''">true</EnableDotnetAnalyzers>
@@ -425,28 +437,29 @@
   <PropertyGroup>
     <FeatureAsyncCausalityTracer Condition="'$(FeatureCominterop)' == 'true'">true</FeatureAsyncCausalityTracer>
   </PropertyGroup>
+
+  <!-- Globals used by ILLink.targets -->
   <PropertyGroup>
-    <StrongNameSig>Silverlight</StrongNameSig>
+    <TargetName>$(MSBuildProjectName)</TargetName>
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
+
+  <!-- Setup ILLink.targets -->
   <ItemGroup>
-    <AssemblyInfoLines Include="[assembly:System.Runtime.InteropServices.ComVisible(false)]" />
-    <AssemblyInfoLines Include="[assembly:System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute(System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory | System.Runtime.InteropServices.DllImportSearchPath.System32)]" />
+    <PackageReference Include="$(ILLinkTasksPackage)">
+      <Version>$(ILLinkTasksPackageVersion)</Version>
+    </PackageReference>
   </ItemGroup>
-  <!--
-    Import common targets: codeAnalysis, Microsoft.CSharp, sign, versioning, codeOptimizations, etc.
-    In doing so, override versioning targets.
-  -->
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  <PropertyGroup>
-    <!-- Overwrite the key that we are going to use for signing -->
-    <AssemblyOriginatorKeyFile>$(ToolsDir)SilverlightPlatformPublicKey.snk</AssemblyOriginatorKeyFile>
-    <!-- Don't need a strong name signature because we only ship the native image -->
-    <StrongNameSig>None</StrongNameSig>
-  </PropertyGroup>
+
   <Import Project="CreateRuntimeRootILLinkDescriptorFile.targets" />
+
+  <Target Name="CreateRuntimeRootIlLinkDescFile" BeforeTargets="CoreCompile" DependsOnTargets="_CreateILLinkRuntimeRootDescriptorFile">
+  </Target>
+
   <ItemGroup>
-    <EmbeddedResource Include="$(_ILLinkRuntimeRootDescriptorFilePath)" />
+    <EmbeddedResource Include="$(_ILLinkRuntimeRootDescriptorFilePath)">
+      <LogicalName>$(MSBuildProjectName).xml</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="ILLink.targets" />
-  <Import Project="GenerateCompilerResponseFile.targets" />
 </Project>

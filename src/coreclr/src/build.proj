@@ -1,54 +1,30 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\dir.props"/>
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <!-- List the projects that need to be restored only -->
+ <ItemGroup Condition="'$(IncludeRestoreOnlyProjects)' == 'true'">
+    <ProjectReference Condition="'$(BuildType)'=='Release'" Include="$(SourceDir).nuget/optdata/optdata.csproj" />
+    <ProjectReference Include="$(SourceDir).nuget/init/init.csproj" />
+ </ItemGroup>
   
   <!-- List the projects that need to be built -->
   <ItemGroup>
-    <Project Condition="$(SkipSOS) != 'true'" Include="ToolBox\SOS\NETCore\SOS.NETCore.csproj" />
-    <Project Include="System.Private.CoreLib\System.Private.CoreLib.csproj" />
+    <ProjectReference Condition="'$(SkipSOS)' != 'true'" Include="ToolBox\SOS\NETCore\SOS.NETCore.csproj" />
+    <ProjectReference Condition="'$(BuildManagedTools)' == 'true'" Include="tools/r2rdump/R2RDump.csproj" />
+    <ProjectReference Include="System.Private.CoreLib\System.Private.CoreLib.csproj" />
   </ItemGroup>
 
-  <Import Project="..\dir.targets" />
+  <!-- [ARCADE_REMOVE] The below targets should be removed entirely when all projects become SDK
+       projects. These should not be in this project file, but in a separate targets file for post-build.
+  -->
+  <Import Project="../dir.props" />
 
-  <Import Project="..\dir.traversal.targets" />
-
-  <Target Name="MovePostBuildBinaries" AfterTargets="Build">
-    <Move SourceFiles="@(BinariesToMove)"
-        DestinationFolder="$(BinDir)" />
-  </Target>
-
-  <ItemGroup>
-    <ILToCopy Include="$(BinDir)System.Private.CoreLib.dll"/>
-    <PDBSToMove Include="$(BinDir)System.Private.CoreLib.pdb"/>
-  </ItemGroup>
-
-  <PropertyGroup>
-    <CoreLibPath>$(BinDir)System.Private.CoreLib.dll</CoreLibPath>
-    <CoreLibPDBPath>$(BinDir)System.Private.CoreLib.pdb</CoreLibPDBPath>
-  </PropertyGroup>
-
-  <Target Name="BuildR2RDumpPackages" Condition="'$(DotNetBuildFromSource)' != 'true' AND '$(BuildManagedTools)' == 'true'" BeforeTargets="Build">
-    <Exec Command="$(DotnetToolCommand) build /p:__BuildArch=$(BuildArch) /p:__BuildOS=$(BuildOS) /p:__BuildType=$(BuildType) tools/r2rdump/R2RDump.csproj"
-          StandardOutputImportance="Low" />
-  </Target>
-
-  <Target Name="CopyCoreLib" AfterTargets="Build">
-    <Copy Condition="Exists($(CoreLibPath))"
-        SourceFiles="@(ILToCopy)"
-        DestinationFolder="$(BinDir)IL" />
-  </Target>
-
-  <Target Name="MovePDB" AfterTargets="Build">
-    <Move Condition="Exists($(CoreLibPDBPath))"
-        SourceFiles="@(PDBSToMove)"
-        DestinationFolder="$(BinDir)PDB" />
-  </Target>
-
-  <ItemGroup>
-    <UcrtFilesToCopy Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
-  </ItemGroup>
   <!-- Copy the UCRT files from the windows kit directory to the local directory.
        The api-*xstate.dll binary needs to be signed. -->
   <Target Name="CopyUcrtFiles" AfterTargets="Build">
+    <ItemGroup>
+      <UcrtFilesToCopy Include="$(UniversalCRTSDKDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" />
+    </ItemGroup>
+
     <Copy Condition="'$(BuildType)'=='Release' AND '$(BuildArch)' != 'arm64'"
         SourceFiles="@(UcrtFilesToCopy)"
         DestinationFolder="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)" />
@@ -66,6 +42,6 @@
     </ItemGroup>
 
     <Message Text="Checking if the following DLLs are properly compiled with PGO" Importance="High" />
-    <Exec Command="python $(MSBuildThisFileDirectory)scripts\pgocheck.py @(PGOEnforcedFiles)" />
+    <Exec Command="&quot;$(PYTHON)&quot; $(MSBuildThisFileDirectory)scripts\pgocheck.py @(PGOEnforcedFiles)" />
   </Target>
 </Project>

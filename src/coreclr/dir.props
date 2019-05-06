@@ -61,10 +61,7 @@
     <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
 
     <BinDir>$(__BinDir)\</BinDir>
-    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
-
-    <__IntermediatesDir Condition="'$(__IntermediatesDir)' == ''">$(RootBinDir)obj\$(BuildOS).$(BuildArch).$(BuildType)</__IntermediatesDir>
-    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(__IntermediatesDir)\</IntermediateOutputRootPath>
+    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(PlatformConfigPathPart)\</BinDir>
 
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
          fails to write packages to it if the path contains the forward slash.
@@ -78,7 +75,7 @@
     <BuildToolsSemaphore Condition="'$(BuildToolsSemaphore)' == ''">$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll</BuildToolsSemaphore>
 
     <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
-    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
+    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(PlatformConfigPathPart)\</TestWorkingDir>
 
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
     <Platform Condition="'$(Platform)' == 'amd64'">x64</Platform>
@@ -92,7 +89,11 @@
   <!-- Output paths -->
   <PropertyGroup>
     <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)' == ''">$(RootBinDir)obj\</BaseIntermediateOutputPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(BaseIntermediateOutputPath)$(BuildOS).$(BuildArch).$(BuildType)\$(MSBuildProjectName)</IntermediateOutputPath>
+
+    <AppendTargetFrameworkToOutputPath Condition="'$(ArcadeBuild)' == 'true'">false</AppendTargetFrameworkToOutputPath>
+    <IntermediateOutputPath>$(__IntermediatesDir)\$(MSBuildProjectName)\</IntermediateOutputPath>
+    <IntermediateOutputPath Condition="'$(__IntermediatesDir)' == ''">$(RootBinDir)obj/$(PlatformConfigPathPart)/$(MSBuildProjectName)/</IntermediateOutputPath>
+
     <OutputPath Condition="'$(OutputPath)' == ''">$(BinDir)</OutputPath>
   </PropertyGroup>
 

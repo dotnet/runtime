@@ -48,7 +48,7 @@
        rewriting the assembly to an "output assembly"
   -->
   <UsingTask TaskName="ILLink" AssemblyFile="$(ILLinkTasksPath)" />
-  <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'" DependsOnTargets="EnsureBuildToolsRuntime">
+  <Target Name="ILLinkTrimAssembly" Condition="'$(ILLinkTrimAssembly)' == 'true'">
     <PropertyGroup>
       <ILLinkArgs>$(ILLinkArgs)-r $(TargetName)</ILLinkArgs>
       <!-- default action for core assemblies -->
