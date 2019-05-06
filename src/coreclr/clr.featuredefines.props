@@ -1,4 +1,42 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
+    <PropertyGroup>
+        <FeatureCollectibleALC>true</FeatureCollectibleALC>
+        <FeatureEventTrace>true</FeatureEventTrace>
+        <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
+        <FeatureICastable>true</FeatureICastable>
+        <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
+        <FeatureManagedEtw>true</FeatureManagedEtw>
+        <FeaturePerfTracing>true</FeaturePerfTracing>
+        <FeatureTypeEquivalence>true</FeatureTypeEquivalence>
+        <FeatureBasicFreeze>true</FeatureBasicFreeze>
+        <FeatureDefaultInterfaces>true</FeatureDefaultInterfaces>
+        <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
+        <FeaturePal>true</FeaturePal>
+        <FeatureXplatEventSource>true</FeatureXplatEventSource>
+
+        <FeatureArrayStubAsIL>true</FeatureArrayStubAsIL>
+        <FeatureMulticastStubAsIL>true</FeatureMulticastStubAsIL>
+        <FeatureStubsAsIL>true</FeatureStubsAsIL>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+        <FeatureArrayStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureArrayStubAsIL>
+        <FeatureMulticastStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureMulticastStubAsIL>
+        <FeatureStubsAsIL Condition="'$(Platform)' == 'arm64'">true</FeatureStubsAsIL>
+        <FeatureUseLcid>true</FeatureUseLcid>
+        <FeatureCominterop>true</FeatureCominterop>
+        <FeatureClassicCominterop>true</FeatureClassicCominterop>
+        <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
+        <FeatureCominteropWinRTManagedActivation>true</FeatureCominteropWinRTManagedActivation>
+        <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
+        <FeatureAppX>true</FeatureAppX>
+        <FeatureWin32Registry>true</FeatureWin32Registry>
+        <FeatureProfAttach>true</FeatureProfAttach>
+    </PropertyGroup>
+
     <!-- Features we're currently flighting, but don't intend to ship in officially supported releases -->
     <PropertyGroup Condition="'$(IsPrerelease)' == 'true'">
         <FeatureUtf8String>true</FeatureUtf8String>
@@ -26,6 +64,7 @@
         <DefineConstants Condition="'$(FeatureDefaultInterfaces)' == 'true'">$(DefineConstants);FEATURE_DEFAULT_INTERFACES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>
         <DefineConstants Condition="'$(FeatureBasicFreeze)' == 'true'">$(DefineConstants);FEATURE_BASICFREEZE</DefineConstants>
+        <DefineConstants Condition="'$(FeatureUtf8String)' == 'true'">$(DefineConstants);FEATURE_UTF8STRING</DefineConstants>
 
         <DefineConstants Condition="'$(ProfilingSupportedBuild)' == 'true'">$(DefineConstants);PROFILING_SUPPORTED</DefineConstants>
         <DefineConstants Condition="'$(FeatureProfAttach)' == 'true'">$(DefineConstants);FEATURE_PROFAPI_ATTACH_DETACH</DefineConstants>

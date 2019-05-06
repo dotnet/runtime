@@ -27,6 +27,7 @@ from __future__ import print_function
 
 import sys
 import re
+import os
 
 debug = 0
 
@@ -130,32 +131,33 @@ def printPotentiallyCritical(arrDefinitions, referencedFilename, arrIgnore):
 # MAIN SCRIPT
 if len(sys.argv) < 3:
     print("\nUsage:")
-    print("$ check-definitions.py [Definition file] [String of definitions]")
+    print("$ check-definitions.py [ProjectDir] [Definition file] [String of definitions]")
     print("    Definition file contains the list of cmake (native) compiler definitions")
     print("      seperated by line.")
     print("    String of definitions contains the list of csproj (managed) definitions")
     print("      seperated by semicolons.")
     sys.exit(-1)
 
-filename = sys.argv[1]
-string = sys.argv[2]
+projectDir = sys.argv[1]
+filename = sys.argv[2]
+string = sys.argv[3]
 
 arrayNative = loadDefinitionFile(filename)
 arrayManaged = loadDefinitionString(string)
 arrayIgnore = []
 
-if len(sys.argv) > 3:
-    arrayIgnore = loadDefinitionString(sys.argv[3])
+if len(sys.argv) > 4:
+    arrayIgnore = loadDefinitionString(sys.argv[4])
 
 arrays = getDiff(arrayNative, arrayManaged)
 # arrays[0] = array of added in managed
 # arrays[1] = array of omitted in managed (added in native)
 
 print("Potentially Dangerous Compiler Definitions in clrdefinitions.cmake (omitted in native build):")
-printPotentiallyCritical(arrays[0], "../../clrdefinitions.cmake", arrayIgnore)
+printPotentiallyCritical(arrays[0], os.path.join(projectDir, "clrdefinitions.cmake"), arrayIgnore)
 
-print("Potentially Dangerous Compiler Definitions in clr.defines.targets (omitted in managed build):")
-printPotentiallyCritical(arrays[1], "../../clr.defines.targets", arrayIgnore)
+print("Potentially Dangerous Compiler Definitions in clr.featuredefines.props (omitted in managed build):")
+printPotentiallyCritical(arrays[1], os.path.join(projectDir, "clr.featuredefines.props"), arrayIgnore)
 
 print("Definition Check Completed.")
 

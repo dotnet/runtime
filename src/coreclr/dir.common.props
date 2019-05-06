@@ -1,4 +1,4 @@
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
 
   <!-- This file contains build properties that apply to product
        projects and test projects. It's imported by
@@ -30,11 +30,12 @@
 
     <Configuration Condition="'$(Configuration)' == ''">$(BuildType)</Configuration>
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
+
+    <PlatformConfigPathPart>$(BuildOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
   </PropertyGroup>
 
   <PropertyGroup>
     <RestorePackagesPath>$(PackagesDir)</RestorePackagesPath>
   </PropertyGroup>
-
 
 </Project>

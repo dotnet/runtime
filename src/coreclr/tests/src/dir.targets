@@ -236,7 +236,6 @@
     <ProjectAssetsFile></ProjectAssetsFile>
   </PropertyGroup>
 
-  <Import Project="../../clr.coreclr.props" />
-  <Import Project="../../clr.defines.targets" />
+  <Import Project="../../clr.featuredefines.props" />
 
 </Project>

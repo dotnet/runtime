@@ -1,51 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build"
-  xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.Build.NoTargets">
+  <!-- [ARCADE_REMOVE] The entire file can be removed -->
   <Import Project="dir.props" />
-
-  <ItemGroup>
-    <!-- We use build.proj instead of dirs.proj so we don't conflict with the TFS build-->
-    <Project Include="src\build.proj" />
-  </ItemGroup>
 
   <Import Project="dir.targets" />
 
   <Import Project="dir.traversal.targets" />
 
-  <Import Project="$(ToolsDir)clean.targets" />
-
-  <!-- The following properties are in place to keep the behavior of build.cmd while we work on the dev workflow steps. -->
-  <PropertyGroup>
-    <!-- To disable the restoration of packages, set RestoreDuringBuild=false or pass /p:RestoreDuringBuild=false.-->
-    <RestoreDuringBuild Condition="'$(RestoreDuringBuild)'==''">true</RestoreDuringBuild>
-  </PropertyGroup>
-
-  <!-- Override clean from dir.traversal.targets and just remove the full BinDir -->
-  <Target Name="Clean">
-    <Delete Files="$(BinDir)SOS.NETCore.*" />
-    <Delete Files="$(BinDir)mscorlib.*" />
-    <Delete Files="$(BinDir)System.Private.CoreLib.*" />
-    <Delete Files="$(BinDir)netcoreapp2.0/R2RDump.*" />
-  </Target>
-
-  <!--
-    BuildTools will conditionally restore additional packages, including IBC tools, using the "RestoreOptionalToolingPackages"
-    target, which runs automatically before "Sync". Since no "Sync" target actually exists, go ahead and define one now so that
-    the tools are fetched before "Build".
-  -->
-  <Target Name="Sync" BeforeTargets="Build" DependsOnTargets="RestoreOptData;RestoreNETCorePlatforms" />
-
   <Target Name="RestoreOptData" Condition="'$(RestoreDuringBuild)'=='true' and '$(BuildType)'=='Release'">
     <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj" StandardOutputImportance="Low" />
   </Target>
 
-  <Target Name="RestoreNETCorePlatforms" Condition="'$(RestoreDuringBuild)'=='true'">
-    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/init/init.csproj" StandardOutputImportance="Low" />
-  </Target>
-
-  <Target Name="CleanAllProjects">
-    <Message Condition="Exists($(RootBinDir))" Importance="High" Text="Removing $(RootBinDir)"/>
-    <RemoveDir Directories="$(RootBinDir)" />
-  </Target>
-
+  <Import Project="$(ToolsDir)clean.targets" />
 </Project>
