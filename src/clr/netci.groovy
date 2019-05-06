@@ -154,7 +154,6 @@ class Constants {
                'ilrt',
                'r2r',
                'longgc',
-               'formatting',
                'gcsimulator',
                // 'jitdiff', // jitdiff is currently disabled, until someone spends the effort to make it fully work
                'standalone_gc',
