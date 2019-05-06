@@ -2776,6 +2776,8 @@ try_process_suspend (void *the_tls, MonoContext *ctx)
 		/* Fastpath during invokes, see in process_suspend () */
 		if (suspend_count - tls->resume_count == 0)
 			return FALSE;
+		if (tls->invoke)
+			return FALSE;
 		process_suspend (tls, ctx);
 		return TRUE;
 	}
