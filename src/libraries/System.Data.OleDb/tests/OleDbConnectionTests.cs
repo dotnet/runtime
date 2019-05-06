@@ -119,6 +119,11 @@ namespace System.Data.OleDb.Tests
         [InlineData(nameof(DbMetaDataCollectionNames.DataTypes), "TypeName")]
         public void GetSchema(string tableName, string columnName)
         {
+            if (PlatformDetection.IsWindows7)
+            {
+                return; // [ActiveIssue(37438)]
+            }
+
             DataTable schema = connection.GetSchema(tableName);
             Assert.True(schema != null && schema.Rows.Count > 0);
             var exception = Record.Exception(() => schema.Rows[0].Field<string>(columnName));
