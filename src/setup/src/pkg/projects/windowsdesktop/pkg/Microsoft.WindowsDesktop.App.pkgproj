@@ -18,13 +18,50 @@
       available. This lets us skip them on the non-Windows official build legs.
     -->
     <BuildOnUnknownPlatforms>false</BuildOnUnknownPlatforms>
+
+    <TargetFrameworkName>netcoreapp</TargetFrameworkName>
+    <TargetFrameworkVersion>3.0</TargetFrameworkVersion>
+    <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
+
+    <!--
+      Turn on package validation to validate the dependency closure. Important because the
+      WPF/WinForms packages don't declare their transitive dependencies and the depproj has to fill
+      it in correctly. Being wrong means dependency failures at runtime.
+    -->
+    <SkipValidatePackage>false</SkipValidatePackage>
   </PropertyGroup>
 
-  <!-- Identity / Reference package content -->
-  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
-    <!-- reference RID specific packages to generate lineup -->
-    <ProjectReference Include="@(RuntimeProject)" />
+  <ItemGroup>
+    <ExcludeFromDuplicateTypes Include="PresentationFramework.Aero" />
+    <ExcludeFromDuplicateTypes Include="PresentationFramework.Aero2" />
+    <ExcludeFromDuplicateTypes Include="PresentationFramework.AeroLite" />
+    <ExcludeFromDuplicateTypes Include="PresentationFramework.Classic" />
+    <ExcludeFromDuplicateTypes Include="PresentationFramework.Luna" />
+    <ExcludeFromDuplicateTypes Include="PresentationFramework.Royale" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!-- There is a known cycle. More info at https://github.com/dotnet/wpf/issues/607 -->
+    <IgnoredReference Include="PresentationFramework" />
+    <IgnoredReference Include="ReachFramework" />
+    <IgnoredReference Include="System.Printing" />
+
+    <!-- We don't have a ref assembly for DirectWriteForwarder -->
+    <IgnoredReference Condition="'$(PackageTargetRuntime)' == ''" Include="DirectWriteForwarder" />
   </ItemGroup>
 
+  <Target Name="GetNETCoreAppIgnoredReference" BeforeTargets="VerifyClosure">
+    <MSBuild
+      Projects="../../netcoreapp/src/netcoreapp.depproj"
+      Properties="Configuration=netcoreapp"
+      Targets="GetReferenceFilenames">
+      <Output TaskParameter="TargetOutputs"  ItemName="IgnoredReference" />
+    </MSBuild>
+  </Target>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <!-- Don't validate this package as it doesn't actually represent a framework. -->
+  <Target Name="ValidateFrameworkPackage" />
+
 </Project>

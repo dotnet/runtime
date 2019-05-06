@@ -382,8 +382,93 @@
     </PropertyGroup>
   </Target>
 
+  <!-- Closure verification targets for WindowsDesktop. -->
+  <PropertyGroup>
+    <!-- Avoid MSBuild quirk: AfterTargets failure doesn't cause the build to fail. -->
+    <BuildDependsOn>$(BuildDependsOn);VerifyClosure;VerifyDuplicateTypes</BuildDependsOn>
+  </PropertyGroup>
+
+  <Target Name="GetClosureFiles">
+    <!-- Set up ClosureFile items organized by file-set. -->
+    <ItemGroup>
+      <ExistingLibraryFile
+        Include="@(File)"
+        Condition="
+          Exists('%(FullPath)') AND
+          (
+            '%(Extension)' == '.dll' OR
+            '%(Extension)' == '$(LibraryFileExtension)'
+          )"/>
+
+      <ClosureFile
+        Include="@(ExistingLibraryFile)"
+        Condition="'%(ExistingLibraryFile.TargetPath)' == 'ref/$(TargetFramework)'"
+        FileSet="reference" />
+
+      <ClosureFile
+        Include="@(ExistingLibraryFile)"
+        Condition="
+          '%(ExistingLibraryFile.TargetPath)' == 'runtimes/$(PackageTargetRuntime)/lib/$(TargetFramework)' OR
+          '%(ExistingLibraryFile.TargetPath)' == 'runtimes/$(PackageTargetRuntime)/native'"
+        FileSet="runtime" />
+
+      <!-- Remove resource files. -->
+      <ClosureFile
+        Remove="@(ClosureFile)"
+        Condition="'%(ClosureFile.DestinationSubDirectory)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="VerifyClosure"
+          DependsOnTargets="GetClosureFiles"
+          Condition="'$(SkipValidatePackage)' != 'true'"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+    <ItemGroup>
+      <_closureFileNames Include="@(ClosureFile->'%(FileName)')" Original="%(Identity)" />
+
+      <_closureFileNamesFiltered Include="@(_closureFileNames)" Exclude="@(ExcludeFromClosure)"/>
+      <_closureFileFiltered Include="@(_closureFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Verifying closure of $(Id) %(ClosureFile.FileSet) assemblies" />
+    <VerifyClosure
+      Sources="@(_closureFileFiltered)"
+      IgnoredReferences="@(IgnoredReference)"
+      DependencyGraphFilePath="$(PackageReportDir)$(Id)$(NuspecSuffix)-%(ClosureFile.FileSet).dgml" />
+  </Target>
+
+  <Target Name="VerifyDuplicateTypes"
+          DependsOnTargets="GetClosureFiles"
+          Condition="'$(SkipValidatePackage)' != 'true'"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+    <PropertyGroup>
+      <_fileSet>%(ClosureFile.FileSet)</_fileSet>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_dupTypeFileName Include="@(ClosureFile->'%(FileName)')" Original="%(Identity)" />
+      <_dupTypeFileName
+        Include="@(FrameworkClosureFile->'%(FileName)')"
+        Exclude="@(_dupTypeFileName)"
+        Condition="'$(_fileSet)' == '%(FrameworkClosureFile.FileSet)'"
+        Original="%(Identity)" />
+
+      <_dupTypeFileNamesFiltered Include="@(_dupTypeFileName)" Exclude="@(ExcludeFromDuplicateTypes)"/>
+      <_dupTypeFileFiltered Include="@(_dupTypeFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Verifying no duplicate types in $(Id) %(ClosureFile.FileSet) assemblies" />
+    <VerifyTypes
+      Sources="@(_dupTypeFileFiltered)"
+      IgnoredTypes="@(IgnoredDuplicateType)" />
+  </Target>
+
   <!-- Target overrides (can't be shared with other package projects) -->
 
-  <Target Name="GetPackageReport" />
+  <Import
+    Project="$(MSBuildThisFileDirectory)skip.GetPackageReport.targets"
+    Condition="'$(SkipValidatePackage)' == 'true'"/>
 
 </Project>
