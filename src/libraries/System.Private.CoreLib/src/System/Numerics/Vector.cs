@@ -61,7 +61,13 @@ namespace System.Numerics
             get
             {
                 ThrowHelper.ThrowForUnsupportedVectorBaseType<T>();
+#if PROJECTN
+                // Hits an active bug in ProjectN (887908). This code path is actually only used rarely,
+                // since get_Count is an intrinsic.
+                throw new NotImplementedException();
+#else
                 return Unsafe.SizeOf<Vector<T>>() / Unsafe.SizeOf<T>();
+#endif
             }
         }
 
