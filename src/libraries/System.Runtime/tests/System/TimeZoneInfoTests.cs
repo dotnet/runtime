@@ -2221,12 +2221,23 @@ namespace System.Tests
                 {
                     Assert.False(string.IsNullOrWhiteSpace(tzi.StandardName));
                     Assert.Matches(@"^\(UTC(\+|-)[0-9]{2}:[0-9]{2}\) \S.*", tzi.DisplayName);
-                    
+
                     // see https://github.com/dotnet/corefx/pull/33204#issuecomment-438782500
                     if (PlatformDetection.IsNotWindowsNanoServer && !PlatformDetection.IsWindows7)
                     {
                         string offset = Regex.Match(tzi.DisplayName, @"(-|)[0-9]{2}:[0-9]{2}").Value;
-                        Assert.True(tzi.BaseUtcOffset == TimeSpan.Parse(offset), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.DisplayName}");
+                        TimeSpan ts = TimeSpan.Parse(offset);
+                        if (tzi.BaseUtcOffset != ts && tzi.Id.IndexOf("Morocco", StringComparison.Ordinal) >= 0)
+                        {
+                            // Windows data can report display name with UTC+01:00 offset which is not matching the actual BaseUtcOffset.
+                            // We special case this in the test to avoid the test failures like:
+                            //      01:00 != 00:00:00, dn:(UTC+01:00) Casablanca, sn:Morocco Standard Time
+                            Assert.True(tzi.BaseUtcOffset == new TimeSpan(0, 0, 0), $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                        }
+                        else
+                        {
+                            Assert.True(tzi.BaseUtcOffset == ts, $"{offset} != {tzi.BaseUtcOffset}, dn:{tzi.DisplayName}, sn:{tzi.StandardName}");
+                        }
                     }
                 }
             }
