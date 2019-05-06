@@ -16,7 +16,7 @@
     <!-- coreclr -->
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview6-27706-71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- dotnet-trusted -->
-    <MicrosoftPrivateWindowsDesktopAppPackageVersion>3.0.0-preview6-27706-22</MicrosoftPrivateWindowsDesktopAppPackageVersion>
+    <MicrosoftPrivateWindowsDesktopAppPackageVersion>3.0.0-preview6-27706-30</MicrosoftPrivateWindowsDesktopAppPackageVersion>
     <!-- Not auto-updated. -->
     <MicrosoftBclJsonSourcesPackageVersion>4.6.0-preview.19072.2</MicrosoftBclJsonSourcesPackageVersion>
   </PropertyGroup>
