@@ -25,7 +25,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // V this[K key] { get }
-        internal V Indexer_Get<K, V>(K key)
+        internal V Indexer_Get<K, V>(K key) where K : object
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // V this[K key] { set }
-        internal void Indexer_Set<K, V>(K key, V value)
+        internal void Indexer_Set<K, V>(K key, V value) where K : object
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -47,7 +47,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // ICollection<K> Keys { get }
-        internal ICollection<K> Keys<K, V>()
+        internal ICollection<K> Keys<K, V>() where K : object
         {
             IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             IDictionary<K, V> dictionary = (IDictionary<K, V>)_this;
@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // ICollection<V> Values { get }
-        internal ICollection<V> Values<K, V>()
+        internal ICollection<V> Values<K, V>() where K : object
         {
             IMap<K, V> _this = Unsafe.As<IMap<K, V>>(this);
             IDictionary<K, V> dictionary = (IDictionary<K, V>)_this;
@@ -63,7 +63,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool ContainsKey(K key)
-        internal bool ContainsKey<K, V>(K key)
+        internal bool ContainsKey<K, V>(K key) where K : object
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -73,7 +73,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Add(K key, V value)
-        internal void Add<K, V>(K key, V value)
+        internal void Add<K, V>(K key, V value) where K : object
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -87,7 +87,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool Remove(TKey key)
-        internal bool Remove<K, V>(K key)
+        internal bool Remove<K, V>(K key) where K : object
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -111,7 +111,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool TryGetValue(TKey key, out TValue value)
-        internal bool TryGetValue<K, V>(K key, out V value)
+        internal bool TryGetValue<K, V>(K key, out V value) where K : object
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -137,7 +137,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // Helpers:
 
-        private static V Lookup<K, V>(IMap<K, V> _this, K key)
+        private static V Lookup<K, V>(IMap<K, V> _this, K key) where K : object
         {
             Debug.Assert(null != key);
 
@@ -153,7 +153,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             }
         }
 
-        private static bool Insert<K, V>(IMap<K, V> _this, K key, V value)
+        private static bool Insert<K, V>(IMap<K, V> _this, K key, V value) where K : object
         {
             Debug.Assert(null != key);
 

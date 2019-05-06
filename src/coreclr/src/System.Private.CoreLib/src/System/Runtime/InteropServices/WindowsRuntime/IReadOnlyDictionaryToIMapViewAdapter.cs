@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // V Lookup(K key)
-        internal V Lookup<K, V>(K key)
+        internal V Lookup<K, V>(K key) where K : object
         {
             IReadOnlyDictionary<K, V> _this = Unsafe.As<IReadOnlyDictionary<K, V>>(this);
             V value;
@@ -44,21 +44,21 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // uint Size { get }
-        internal uint Size<K, V>()
+        internal uint Size<K, V>() where K : object
         {
             IReadOnlyDictionary<K, V> _this = Unsafe.As<IReadOnlyDictionary<K, V>>(this);
             return (uint)_this.Count;
         }
 
         // bool HasKey(K key)
-        internal bool HasKey<K, V>(K key)
+        internal bool HasKey<K, V>(K key) where K : object
         {
             IReadOnlyDictionary<K, V> _this = Unsafe.As<IReadOnlyDictionary<K, V>>(this);
             return _this.ContainsKey(key);
         }
 
         // void Split(out IMapView<K, V> first, out IMapView<K, V> second)
-        internal void Split<K, V>(out IMapView<K, V>? first, out IMapView<K, V>? second)
+        internal void Split<K, V>(out IMapView<K, V>? first, out IMapView<K, V>? second) where K : object
         {
             IReadOnlyDictionary<K, V> _this = Unsafe.As<IReadOnlyDictionary<K, V>>(this);
 
