@@ -496,6 +496,7 @@ BEGIN
 STRINGTABLE DISCARDABLE 
 BEGIN
     CEE_E_CVTRES_NOT_FOUND                  "Could not execute CVTRES.EXE."
+    IDS_EE_THREAD_APARTMENT_NOT_SUPPORTED   "The system does not support the %1 thread apartment."
     IDS_EE_NDIRECT_UNSUPPORTED_SIG          "Method's type signature is not PInvoke compatible."
     IDS_EE_COM_UNSUPPORTED_SIG              "Method's type signature is not Interop compatible."
     IDS_EE_COM_UNSUPPORTED_TYPE             "The method returned a COM Variant type that is not Interop compatible."

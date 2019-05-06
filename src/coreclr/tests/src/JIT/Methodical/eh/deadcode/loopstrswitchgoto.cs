@@ -25,7 +25,7 @@ namespace strswitch
 
             s_testLog = new TestUtil.TestLog(expectedOut);
         }
-        [STAThread]
+
         private static int Main(string[] args)
         {
             string[] s = { "one", "two", "three", "four", "five", "six" };

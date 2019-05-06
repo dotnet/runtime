@@ -40,7 +40,6 @@ namespace GCD
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
-        [STAThread]
             static int Main(string[] args)
             {
                 GCD gcd = new GCD();

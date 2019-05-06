@@ -26,7 +26,7 @@ namespace test
             // Create and initialize test log object
             testLog = new TestUtil.TestLog(expectedOut);
         }
-        [STAThread]
+
         static int Main(string[] args)
         {
             int[] array = { 1, 2, 3, 4, 5, 6 };

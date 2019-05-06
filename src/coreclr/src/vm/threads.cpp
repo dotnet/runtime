@@ -5092,6 +5092,10 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
     {
         COMPlusThrowOM();
     }
+    else if (hr == E_NOTIMPL)
+    {
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_THREAD_APARTMENT_NOT_SUPPORTED, (state == AS_InSTA) ? W("STA") : W("MTA"));
+    }
     else
     {
         _ASSERTE(!"Unexpected HRESULT returned from CoInitializeEx!");
