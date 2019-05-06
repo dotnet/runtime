@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{650277B5-9423-4ACE-BB54-2659995B21C7}</ProjectGuid>
-    <DefineConstants>$(DefineConstants);HAS_SPAN</DefineConstants>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
