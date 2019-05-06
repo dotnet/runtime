@@ -374,9 +374,19 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     {
         // Disable the profiler.
         SampleProfiler::Disable();
+        
+        // Get the managed command line.
+        LPCWSTR pCmdLine = GetManagedCommandLine();
+
+        // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
+        if (pCmdLine == nullptr)
+        {
+            // Use the result from GetCommandLineW() instead
+            pCmdLine = GetCommandLineW();
+        }
 
         // Log the process information event.
-        s_pEventSource->SendProcessInfo(GetManagedCommandLine());
+        s_pEventSource->SendProcessInfo(pCmdLine);
 
         // Log the runtime information event.
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
