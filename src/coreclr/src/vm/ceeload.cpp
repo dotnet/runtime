@@ -11795,7 +11795,7 @@ static void ProfileDataAllocateScenarioInfo(ProfileEmitter * pEmitter, LPCSTR sc
         // Get the managed command line.
         LPCWSTR pCmdLine = GetManagedCommandLine();
 
-        // If this process started as a service we won't have a managed command line
+        // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
         if (pCmdLine == nullptr)
         {
             // Use the result from GetCommandLineW() instead
