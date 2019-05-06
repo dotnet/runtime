@@ -54,31 +54,38 @@ namespace R2RDump
         /// <param name="methodToken">ECMA token to provide string representation for</param>
         private string EmitHandleName(Handle handle, bool namespaceQualified, string owningTypeOverride, string signaturePrefix = "")
         {
-            switch (handle.Kind)
+            try
             {
-                case HandleKind.MemberReference:
-                    return EmitMemberReferenceName((MemberReferenceHandle)handle, owningTypeOverride, signaturePrefix);
+                switch (handle.Kind)
+                {
+                    case HandleKind.MemberReference:
+                        return EmitMemberReferenceName((MemberReferenceHandle)handle, owningTypeOverride, signaturePrefix);
 
-                case HandleKind.MethodSpecification:
-                    return EmitMethodSpecificationName((MethodSpecificationHandle)handle, owningTypeOverride, signaturePrefix);
+                    case HandleKind.MethodSpecification:
+                        return EmitMethodSpecificationName((MethodSpecificationHandle)handle, owningTypeOverride, signaturePrefix);
 
-                case HandleKind.MethodDefinition:
-                    return EmitMethodDefinitionName((MethodDefinitionHandle)handle, owningTypeOverride, signaturePrefix);
+                    case HandleKind.MethodDefinition:
+                        return EmitMethodDefinitionName((MethodDefinitionHandle)handle, owningTypeOverride, signaturePrefix);
 
-                case HandleKind.TypeReference:
-                    return EmitTypeReferenceName((TypeReferenceHandle)handle, namespaceQualified, signaturePrefix);
+                    case HandleKind.TypeReference:
+                        return EmitTypeReferenceName((TypeReferenceHandle)handle, namespaceQualified, signaturePrefix);
 
-                case HandleKind.TypeSpecification:
-                    return EmitTypeSpecificationName((TypeSpecificationHandle)handle, namespaceQualified, signaturePrefix);
+                    case HandleKind.TypeSpecification:
+                        return EmitTypeSpecificationName((TypeSpecificationHandle)handle, namespaceQualified, signaturePrefix);
 
-                case HandleKind.TypeDefinition:
-                    return EmitTypeDefinitionName((TypeDefinitionHandle)handle, namespaceQualified, signaturePrefix);
+                    case HandleKind.TypeDefinition:
+                        return EmitTypeDefinitionName((TypeDefinitionHandle)handle, namespaceQualified, signaturePrefix);
 
-                case HandleKind.FieldDefinition:
-                    return EmitFieldDefinitionName((FieldDefinitionHandle)handle, namespaceQualified, owningTypeOverride, signaturePrefix);
+                    case HandleKind.FieldDefinition:
+                        return EmitFieldDefinitionName((FieldDefinitionHandle)handle, namespaceQualified, owningTypeOverride, signaturePrefix);
 
-                default:
-                    throw new NotImplementedException();
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+            catch (Exception ex)
+            {
+                return $"$$INVALID-{handle.Kind}-{MetadataTokens.GetRowNumber((EntityHandle)handle):X6}: {ex.Message}";
             }
         }
 
@@ -483,8 +490,16 @@ namespace R2RDump
         {
             StringBuilder builder = new StringBuilder();
             int startOffset = _offset;
-            ParseSignature(builder);
-            EmitSignatureBinaryFrom(builder, startOffset);
+            try
+            {
+                ParseSignature(builder);
+                EmitSignatureBinaryFrom(builder, startOffset);
+            }
+            catch (Exception ex)
+            {
+                builder.Append(" - ");
+                builder.Append(ex.Message);
+            }
             return builder.ToString();
         }
 
@@ -492,15 +507,31 @@ namespace R2RDump
         {
             StringBuilder builder = new StringBuilder();
             int startOffset = _offset;
-            ParseType(builder);
-            EmitSignatureBinaryFrom(builder, startOffset);
+            try
+            {
+                ParseType(builder);
+                EmitSignatureBinaryFrom(builder, startOffset);
+            }
+            catch (Exception ex)
+            {
+                builder.Append(" - ");
+                builder.Append(ex.Message);
+            }
             return builder.ToString();
         }
 
         public string ReadTypeSignatureNoEmit()
         {
             StringBuilder builder = new StringBuilder();
-            ParseType(builder);
+            try
+            {
+                ParseType(builder);
+            }
+            catch (Exception ex)
+            {
+                builder.Append(" - ");
+                builder.Append(ex.Message);
+            }
             return builder.ToString();
         }
 
