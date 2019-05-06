@@ -3,7 +3,7 @@
     <ProjectGuid>{D4266847-6692-481B-9459-6141DB7DA339}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
     <RootNamespace>System</RootNamespace>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPrerelease)' != 'false'">

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{50A5A8BC-C6A9-4000-8B52-667BEE00459D}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release;netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
     <IsPartialFacadeAssembly Condition="'$(TargetsNETStandard)' != 'true'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup>

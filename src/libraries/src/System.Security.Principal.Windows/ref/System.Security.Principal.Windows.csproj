@@ -5,7 +5,7 @@
     <!-- Must match version supported by frameworks which support 4.1.* inbox.
          Can be removed when API is added and this assembly is versioned to 4.2.* -->
     <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.1.1.0</AssemblyVersion>
-    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM)" />

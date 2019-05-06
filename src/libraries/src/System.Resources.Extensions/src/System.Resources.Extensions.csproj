@@ -4,6 +4,9 @@
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
     <DefineConstants>$(DefineConstants);RESOURCES_EXTENSIONS</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup>
+    <ProjectGuid>{6773D354-A573-4D9C-9A67-C7FAE579DA50}</ProjectGuid>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)\System\Resources\ResourceWriter.cs" Link="System\Resources\Extensions\ResourceWriter.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\IO\PinnedBufferMemoryStream.cs" Link="System\IO\PinnedBufferMemoryStream.cs" />
@@ -14,7 +17,7 @@
     <Compile Include="BinaryReaderExtensions.cs" />
     <Compile Include="System\Resources\Extensions\DeserializingResourceReader.cs" />
     <Compile Include="System\Resources\Extensions\PreserializedResourceWriter.cs" />
-    <Compile Include="System\Resources\Extensions\SerializationFormat.cs" />    
+    <Compile Include="System\Resources\Extensions\SerializationFormat.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />

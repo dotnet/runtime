@@ -3,7 +3,7 @@
     <RootNamespace>System.Diagnostics.TextWriterTraceListener</RootNamespace>
     <AssemblyName>System.Diagnostics.TextWriterTraceListener</AssemblyName>
     <ProjectGuid>{315929D9-D76E-47E9-BE82-C787FB3A7876}</ProjectGuid>
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="FxCopBaseline.cs" />

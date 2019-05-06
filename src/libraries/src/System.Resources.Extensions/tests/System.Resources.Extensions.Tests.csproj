@@ -4,6 +4,9 @@
     <TestDataPackageVersion>1.0.9</TestDataPackageVersion>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
+  <PropertyGroup>
+    <ProjectGuid>{9003846C-EE54-4E58-B01E-6AA177E046C5}</ProjectGuid>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="MyResourceType.cs" />
     <Compile Include="TestData.cs" />
@@ -11,7 +14,6 @@
     <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\**\*.*" Link="%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="TestData.resources" WithCulture="false" Type="Non-Resx" />
   </ItemGroup>
-  
   <!-- use the following target to regenerate the test resources file
        This is done from a test application and checked in so that we don't run
        product code during the build -->
@@ -20,10 +22,7 @@
       <_executor>Microsoft.DotNet.RemoteExecutorHost.dll</_executor>
     </PropertyGroup>
     <ItemGroup>
-      <ExecuteMethod Class="System.Resources.Extensions.Tests.TestData"
-                     Include="WriteResources" 
-                     Parameters="$(MSBuildProjectDirectory)\TestData.resources" />
-
+      <ExecuteMethod Class="System.Resources.Extensions.Tests.TestData" Include="WriteResources" Parameters="$(MSBuildProjectDirectory)\TestData.resources" />
       <ExecuteMethod>
         <ExceptionFile>$(TargetDir)%(Class)%(Identity).exception.txt</ExceptionFile>
       </ExecuteMethod>
@@ -31,7 +30,6 @@
         <Command>$(TestHostRootPath)dotnet $(_executor) $(AssemblyName) %(Class) %(Identity) %(ExceptionFile) %(Parameters)</Command>
       </ExecuteMethod>
     </ItemGroup>
-    
     <Exec Command="%(ExecuteMethod.Command)" WorkingDirectory="$(TargetDir)" />
   </Target>
 </Project>

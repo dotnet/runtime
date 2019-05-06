@@ -2,6 +2,9 @@
   <PropertyGroup>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
+  <PropertyGroup>
+    <ProjectGuid>{D8C148D2-FAB2-4D8C-ACA3-D201665F7255}</ProjectGuid>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Resources.Extensions.cs" />
   </ItemGroup>

@@ -119,10 +119,10 @@ Global
 		{979510CE-9042-4F8D-9C74-EE03B89194CC}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{979510CE-9042-4F8D-9C74-EE03B89194CC}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
 		{979510CE-9042-4F8D-9C74-EE03B89194CC}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
-		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{5D4FB9ED-C3AC-4EFA-9FEE-619ED4B4B92D}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 		{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E1C5358-7F04-4791-8B5F-6A5A4E42ABF1}.Release|Any CPU.ActiveCfg = Release|Any CPU

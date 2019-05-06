@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks.Exte
 		{DE90AD0B-649D-4062-B8D9-9658DE140532} = {DE90AD0B-649D-4062-B8D9-9658DE140532}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks.Extensions", "src\SystemThreading.Tasks.Extensions.csproj", "{DE90AD0B-649D-4062-B8D9-9658DE140532}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.Tasks.Extensions", "src\System.Threading.Tasks.Extensions.csproj", "{DE90AD0B-649D-4062-B8D9-9658DE140532}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0DF7FA9A-E7D3-4CEF-862B-A37F5BBBB54C} = {0DF7FA9A-E7D3-4CEF-862B-A37F5BBBB54C}
 	EndProjectSection
