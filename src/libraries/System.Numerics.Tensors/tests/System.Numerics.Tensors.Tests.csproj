@@ -1,7 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ProjectGuid>{D4718CD3-8492-4734-94B7-E31A39AA6275}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NativeMemory.cs" />

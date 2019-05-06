@@ -1,24 +1,24 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.28224.57
+VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{87920B79-6C7A-4815-89F4-1DA09FAFF411}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{D221B689-1AF1-4595-B37B-85D478B94EAD}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{559061C0-F6A9-4522-992E-3C95AAF852DB}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "pkg", "pkg", "{7CCC80FC-70B2-4026-BE52-FA2451FAA83D}"
-	ProjectSection(SolutionItems) = preProject
-		pkg\System.Numerics.Tensors.pkgproj = pkg\System.Numerics.Tensors.pkgproj
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors.Tests", "tests\System.Numerics.Tensors.Tests.csproj", "{D4718CD3-8492-4734-94B7-E31A39AA6275}"
+	ProjectSection(ProjectDependencies) = postProject
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805} = {BE0F13BE-9140-49A8-9FDD-994D0D8A3805}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors", "ref\System.Numerics.Tensors.csproj", "{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors", "src\System.Numerics.Tensors.csproj", "{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF} = {F64208FC-83DA-4C94-973F-1DDDE4354AFF}
+	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors", "src\System.Numerics.Tensors.csproj", "{34B7B42D-ADE0-419D-A636-80180244875D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors", "ref\System.Numerics.Tensors.csproj", "{F64208FC-83DA-4C94-973F-1DDDE4354AFF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Numerics.Tensors.Tests", "tests\System.Numerics.Tensors.Tests.csproj", "{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{1A2F9F4A-A032-433E-B914-ADD5992BB178}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{E107E9C1-E893-4E87-987E-04EF0DCEAEFD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{2E666815-2EDB-464B-9DF6-380BF4789AD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -26,26 +26,26 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
-		{34B7B42D-ADE0-419D-A636-80180244875D}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{34B7B42D-ADE0-419D-A636-80180244875D}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{34B7B42D-ADE0-419D-A636-80180244875D}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{34B7B42D-ADE0-419D-A636-80180244875D}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
-		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{D4718CD3-8492-4734-94B7-E31A39AA6275}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{AEE6F10B-B34C-4D0A-A94D-277AE02F06E8} = {87920B79-6C7A-4815-89F4-1DA09FAFF411}
-		{34B7B42D-ADE0-419D-A636-80180244875D} = {D221B689-1AF1-4595-B37B-85D478B94EAD}
-		{1725EFB4-DE6C-4EBA-8E94-78D3E46F6B37} = {559061C0-F6A9-4522-992E-3C95AAF852DB}
+		{D4718CD3-8492-4734-94B7-E31A39AA6275} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
+		{BE0F13BE-9140-49A8-9FDD-994D0D8A3805} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{F64208FC-83DA-4C94-973F-1DDDE4354AFF} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {13D12508-D252-4FD4-A8AA-1DD44F666914}

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{AAADA5D3-CF64-4E9D-943C-EFDC006D6366}</ProjectGuid>
     <RootNamespace>System.Threading.Channels</RootNamespace>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Debug;netcoreapp-Release;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\VoidResult.cs" />
@@ -40,7 +40,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.ThreadPool"  Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Reference Include="System.Threading.ThreadPool" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>

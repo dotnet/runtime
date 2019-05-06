@@ -4,6 +4,9 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
+  <PropertyGroup>
+    <ProjectGuid>{50D18478-BE75-4F54-8080-A5C3047D776B}</ProjectGuid>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />

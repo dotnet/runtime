@@ -4,10 +4,10 @@ VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.CSharp.Tests", "tests\Microsoft.CSharp.Tests.csproj", "{82B54697-0251-47A1-8546-FC507D0F3B08}"
 	ProjectSection(ProjectDependencies) = postProject
-		{96AA2060-C846-4E56-9509-E8CB9C114C8F} = {96AA2060-C846-4E56-9509-E8CB9C114C8F}
+		{149D7DFE-2FAC-4A38-89AD-E24CE63AACB8} = {149D7DFE-2FAC-4A38-89AD-E24CE63AACB8}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.CSharp", "src\Microsoft.CSharp.csproj", "{96AA2060-C846-4E56-9509-E8CB9C114C8F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.CSharp", "src\Microsoft.CSharp.csproj", "{149D7DFE-2FAC-4A38-89AD-E24CE63AACB8}"
 	ProjectSection(ProjectDependencies) = postProject
 		{1427906B-FF3D-422A-8278-F2B7E89DE12A} = {1427906B-FF3D-422A-8278-F2B7E89DE12A}
 	EndProjectSection
@@ -30,10 +30,10 @@ Global
 		{82B54697-0251-47A1-8546-FC507D0F3B08}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
 		{82B54697-0251-47A1-8546-FC507D0F3B08}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
 		{82B54697-0251-47A1-8546-FC507D0F3B08}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
-		{96AA2060-C846-4E56-9509-E8CB9C114C8F}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{96AA2060-C846-4E56-9509-E8CB9C114C8F}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{96AA2060-C846-4E56-9509-E8CB9C114C8F}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{96AA2060-C846-4E56-9509-E8CB9C114C8F}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{149D7DFE-2FAC-4A38-89AD-E24CE63AACB8}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
+		{149D7DFE-2FAC-4A38-89AD-E24CE63AACB8}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
+		{149D7DFE-2FAC-4A38-89AD-E24CE63AACB8}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
+		{149D7DFE-2FAC-4A38-89AD-E24CE63AACB8}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
 		{1427906B-FF3D-422A-8278-F2B7E89DE12A}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
 		{1427906B-FF3D-422A-8278-F2B7E89DE12A}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{1427906B-FF3D-422A-8278-F2B7E89DE12A}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
@@ -44,7 +44,7 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{82B54697-0251-47A1-8546-FC507D0F3B08} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
-		{96AA2060-C846-4E56-9509-E8CB9C114C8F} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{149D7DFE-2FAC-4A38-89AD-E24CE63AACB8} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{1427906B-FF3D-422A-8278-F2B7E89DE12A} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

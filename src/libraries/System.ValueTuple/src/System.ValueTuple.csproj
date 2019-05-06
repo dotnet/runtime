@@ -3,7 +3,7 @@
     <!-- rev'ed to 4.0.1.0 even though 4.0.0.0 never shipped so that we can drop pre-release down to beta -->
     <ProjectGuid>{4C2655DB-BD9E-4C86-83A6-744ECDDBDF29}</ProjectGuid>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Collections" />

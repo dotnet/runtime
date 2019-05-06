@@ -35,10 +35,10 @@ Global
 		{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
 		{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
 		{17D5CC82-F72C-4DD2-B6DB-DE7FB2F19C34}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
-		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
-		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
-		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU
-		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Release|Any CPU.Build.0 = netstandard-Windows_NT-Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
+		{A2ECDEDB-12B7-402C-9230-152B7601179F}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
 		{F75E3008-0562-42DF-BE72-C1384F12157E}.Debug|Any CPU.ActiveCfg = netstandard-Windows_NT-Debug|Any CPU
 		{F75E3008-0562-42DF-BE72-C1384F12157E}.Debug|Any CPU.Build.0 = netstandard-Windows_NT-Debug|Any CPU
 		{F75E3008-0562-42DF-BE72-C1384F12157E}.Release|Any CPU.ActiveCfg = netstandard-Windows_NT-Release|Any CPU

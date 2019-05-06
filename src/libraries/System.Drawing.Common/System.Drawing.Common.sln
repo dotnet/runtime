@@ -34,10 +34,10 @@ Global
 		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
 		{191B3618-FECD-4ABD-9D6B-5AC90DC33621}.Release|Any CPU.Build.0 = netcoreapp-Windows_NT-Release|Any CPU
-		{D7AEA698-275D-441F-B7A7-8491D1F0EFF0}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{D7AEA698-275D-441F-B7A7-8491D1F0EFF0}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{D7AEA698-275D-441F-B7A7-8491D1F0EFF0}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{D7AEA698-275D-441F-B7A7-8491D1F0EFF0}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{D7AEA698-275D-441F-B7A7-8491D1F0EFF0}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{D7AEA698-275D-441F-B7A7-8491D1F0EFF0}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{D7AEA698-275D-441F-B7A7-8491D1F0EFF0}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{D7AEA698-275D-441F-B7A7-8491D1F0EFF0}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

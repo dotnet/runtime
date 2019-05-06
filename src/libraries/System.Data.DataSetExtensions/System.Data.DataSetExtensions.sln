@@ -4,10 +4,10 @@ VisualStudioVersion = 15.0.27213.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.DataSetExtensions.Tests", "tests\System.Data.DataSetExtensions.Tests.csproj", "{2B38992F-9979-485F-B104-38C476D0B706}"
 	ProjectSection(ProjectDependencies) = postProject
-		{C7CB4B69-2A11-4A20-A21E-5C954855AE5A} = {C7CB4B69-2A11-4A20-A21E-5C954855AE5A}
+		{50D18478-BE75-4F54-8080-A5C3047D776B} = {50D18478-BE75-4F54-8080-A5C3047D776B}
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.DataSetExtensions", "src\System.Data.DataSetExtensions.csproj", "{C7CB4B69-2A11-4A20-A21E-5C954855AE5A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Data.DataSetExtensions", "src\System.Data.DataSetExtensions.csproj", "{50D18478-BE75-4F54-8080-A5C3047D776B}"
 	ProjectSection(ProjectDependencies) = postProject
 		{50A5A8BC-C6A9-4000-8B52-667BEE00459D} = {50A5A8BC-C6A9-4000-8B52-667BEE00459D}
 	EndProjectSection
@@ -30,21 +30,21 @@ Global
 		{2B38992F-9979-485F-B104-38C476D0B706}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
 		{2B38992F-9979-485F-B104-38C476D0B706}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
 		{2B38992F-9979-485F-B104-38C476D0B706}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
-		{C7CB4B69-2A11-4A20-A21E-5C954855AE5A}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{C7CB4B69-2A11-4A20-A21E-5C954855AE5A}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{C7CB4B69-2A11-4A20-A21E-5C954855AE5A}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{C7CB4B69-2A11-4A20-A21E-5C954855AE5A}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
-		{50A5A8BC-C6A9-4000-8B52-667BEE00459D}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{50A5A8BC-C6A9-4000-8B52-667BEE00459D}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{50A5A8BC-C6A9-4000-8B52-667BEE00459D}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{50A5A8BC-C6A9-4000-8B52-667BEE00459D}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{50D18478-BE75-4F54-8080-A5C3047D776B}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{50D18478-BE75-4F54-8080-A5C3047D776B}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{50D18478-BE75-4F54-8080-A5C3047D776B}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{50D18478-BE75-4F54-8080-A5C3047D776B}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
+		{50A5A8BC-C6A9-4000-8B52-667BEE00459D}.Debug|Any CPU.ActiveCfg = netcoreapp-Debug|Any CPU
+		{50A5A8BC-C6A9-4000-8B52-667BEE00459D}.Debug|Any CPU.Build.0 = netcoreapp-Debug|Any CPU
+		{50A5A8BC-C6A9-4000-8B52-667BEE00459D}.Release|Any CPU.ActiveCfg = netcoreapp-Release|Any CPU
+		{50A5A8BC-C6A9-4000-8B52-667BEE00459D}.Release|Any CPU.Build.0 = netcoreapp-Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{2B38992F-9979-485F-B104-38C476D0B706} = {1A2F9F4A-A032-433E-B914-ADD5992BB178}
-		{C7CB4B69-2A11-4A20-A21E-5C954855AE5A} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
+		{50D18478-BE75-4F54-8080-A5C3047D776B} = {E107E9C1-E893-4E87-987E-04EF0DCEAEFD}
 		{50A5A8BC-C6A9-4000-8B52-667BEE00459D} = {2E666815-2EDB-464B-9DF6-380BF4789AD4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
