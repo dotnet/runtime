@@ -465,7 +465,7 @@ namespace R2RDump
             // open output stream
             if (_outputFilename != null)
             {
-                _writer = File.CreateText(_outputFilename);
+                _writer = new StreamWriter(_outputFilename, append: false, encoding: Encoding.ASCII);
             }
             else
             {
