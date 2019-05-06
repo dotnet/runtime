@@ -8,6 +8,7 @@ Microsoft.Extensions.FileProviders.IDirectoryContents
 Microsoft.Extensions.FileProviders.IFileInfo
 Microsoft.Extensions.FileProviders.IFileProvider</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>

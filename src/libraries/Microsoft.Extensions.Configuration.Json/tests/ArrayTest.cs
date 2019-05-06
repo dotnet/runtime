@@ -13,10 +13,10 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         public void ArraysAreConvertedToKeyValuePairs()
         {
             var json = @"{
-                'ip': [
-                    '1.2.3.4',
-                    '7.8.9.10',
-                    '11.12.13.14'
+                ""ip"": [
+                    ""1.2.3.4"",
+                    ""7.8.9.10"",
+                    ""11.12.13.14""
                 ]
             }";
 
@@ -32,14 +32,14 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         public void ArrayOfObjects()
         {
             var json = @"{
-                'ip': [
+                ""ip"": [
                     {
-                        'address': '1.2.3.4',
-                        'hidden': false
+                        ""address"": ""1.2.3.4"",
+                        ""hidden"": false
                     },
                     {
-                        'address': '5.6.7.8',
-                        'hidden': true
+                        ""address"": ""5.6.7.8"",
+                        ""hidden"": true
                     }
                 ]
             }";
@@ -57,15 +57,15 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         public void NestedArrays()
         {
             var json = @"{
-                'ip': [
+                ""ip"": [
                     [ 
-                        '1.2.3.4',
-                        '5.6.7.8'
+                        ""1.2.3.4"",
+                        ""5.6.7.8""
                     ],
                     [ 
-                        '9.10.11.12',
-                        '13.14.15.16'
-                    ],
+                        ""9.10.11.12"",
+                        ""13.14.15.16""
+                    ]
                 ]
             }";
 
@@ -82,16 +82,16 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         public void ImplicitArrayItemReplacement()
         {
             var json1 = @"{
-                'ip': [
-                    '1.2.3.4',
-                    '7.8.9.10',
-                    '11.12.13.14'
+                ""ip"": [
+                    ""1.2.3.4"",
+                    ""7.8.9.10"",
+                    ""11.12.13.14""
                 ]
             }";
 
             var json2 = @"{
-                'ip': [
-                    '15.16.17.18'
+                ""ip"": [
+                    ""15.16.17.18""
                 ]
             }";
 
@@ -113,16 +113,16 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         public void ExplicitArrayReplacement()
         {
             var json1 = @"{
-                'ip': [
-                    '1.2.3.4',
-                    '7.8.9.10',
-                    '11.12.13.14'
+                ""ip"": [
+                    ""1.2.3.4"",
+                    ""7.8.9.10"",
+                    ""11.12.13.14""
                 ]
             }";
 
             var json2 = @"{
-                'ip': {
-                    '1': '15.16.17.18'
+                ""ip"": {
+                    ""1"": ""15.16.17.18""
                 }
             }";
 
@@ -144,16 +144,16 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         public void ArrayMerge()
         {
             var json1 = @"{
-                'ip': [
-                    '1.2.3.4',
-                    '7.8.9.10',
-                    '11.12.13.14'
+                ""ip"": [
+                    ""1.2.3.4"",
+                    ""7.8.9.10"",
+                    ""11.12.13.14""
                 ]
             }";
 
             var json2 = @"{
-                'ip': {
-                    '3': '15.16.17.18'
+                ""ip"": {
+                    ""3"": ""15.16.17.18""
                 }
             }";
 
@@ -176,10 +176,10 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         public void ArraysAreKeptInFileOrder()
         {
             var json = @"{
-                'setting': [
-                    'b',
-                    'a',
-                    '2'
+                ""setting"": [
+                    ""b"",
+                    ""a"",
+                    ""2""
                 ]
             }";
 
@@ -202,13 +202,13 @@ namespace Microsoft.Extensions.Configuration.Json.Test
         public void PropertiesAreSortedByNumberOnlyFirst()
         {
             var json = @"{
-                'setting': {
-                    'hello': 'a',
-                    'bob': 'b',
-                    '42': 'c',
-                    '4':'d',
-                    '10': 'e',
-                    '1text': 'f',
+                ""setting"": {
+                    ""hello"": ""a"",
+                    ""bob"": ""b"",
+                    ""42"": ""c"",
+                    ""4"":""d"",
+                    ""10"": ""e"",
+                    ""1text"": ""f""
                 }
             }";
 

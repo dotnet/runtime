@@ -2,17 +2,24 @@
 
   <PropertyGroup>
     <Description>Default implementation of dependency injection for Microsoft.Extensions.DependencyInjection.</Description>
-    <TargetFrameworks>netcoreapp2.0;net461;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.0;net461;netstandard2.0</TargetFrameworks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>dependencyinjection;di</PackageTags>
+    <IsShipping>true</IsShipping>
 
     <ILEmitBackend Condition="$(TargetFramework) != 'netstandard2.0'">True</ILEmitBackend>
     <DefineConstants Condition="'$(ILEmitBackend)' == 'True'">$(DefineConstants);IL_EMIT</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp3.0'">$(DefineConstants);DISPOSE_ASYNC</DefineConstants>
 
     <!-- Debug IL generation -->
     <ILEmitBackendSaveAssemblies>False</ILEmitBackendSaveAssemblies>
-    <DefineConstants Condition="'$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'net461' AND '$(ILEmitBackendSaveAssemblies)' == 'True'">$(DefineConstants);SAVE_ASSEMBLIES</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyInjection.Tests" />
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyInjection.Performance" />
+  </ItemGroup>
 
   <ItemGroup>
     <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />

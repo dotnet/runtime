@@ -8,6 +8,11 @@ namespace Microsoft.Extensions.Logging
     public class LoggerFilterOptions
     {
         /// <summary>
+        /// Gets or sets value indicating whether logging scopes are being captured. Defaults to <c>true</c>
+        /// </summary>
+        public bool CaptureScopes { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the minimum level of log messages if none of the rules match.
         /// </summary>
         public LogLevel MinLevel { get; set; }

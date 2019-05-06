@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Threading;
@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Hosting
         Task WaitForStartAsync(CancellationToken cancellationToken);
 
         /// <summary>
-        /// Called from <see cref="IHost.StopAsync(CancellationToken)"/> to indicate that the host as stopped and clean up resources.
+        /// Called from <see cref="IHost.StopAsync(CancellationToken)"/> to indicate that the host is stopping and it's time to shut down.
         /// </summary>
         /// <param name="cancellationToken">Used to indicate when stop should no longer be graceful.</param>
         /// <returns></returns>

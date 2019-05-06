@@ -1,15 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <Description>Primitives shared by framework extensions. Commonly used types include:
 Microsoft.Extensions.Primitives.IChangeToken
 Microsoft.Extensions.Primitives.StringValues
 Microsoft.Extensions.Primitives.StringSegment</Description>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.0</TargetFrameworks>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>primitives</PackageTags>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
 
   <ItemGroup>

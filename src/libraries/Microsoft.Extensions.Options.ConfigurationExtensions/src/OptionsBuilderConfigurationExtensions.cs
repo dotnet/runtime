@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static class OptionsBuilderConfigurationExtensions
     {
         /// <summary>
-        /// Registers a configuration instance which TOptions will bind against.
+        /// Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="optionsBuilder">The options builder to add the services to.</param>
@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.DependencyInjection
             => optionsBuilder.Bind(config, _ => { });
 
         /// <summary>
-        /// Registers a configuration instance which TOptions will bind against.
+        /// Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.
         /// </summary>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="optionsBuilder">The options builder to add the services to.</param>

@@ -3,15 +3,17 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
 using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Microsoft.Extensions.DependencyInjection.Tests.Fakes;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
 {
-    public abstract class ServiceProviderContainerTests : DependencyInjectionSpecificationTests
+    public abstract partial class ServiceProviderContainerTests : DependencyInjectionSpecificationTests
     {
         [Fact]
         public void RethrowOriginalExceptionFromConstructor()
@@ -192,6 +194,27 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var provider = CreateServiceProvider(serviceCollection);
             var service = provider.GetService<IFakeMultipleService>();
             Assert.NotNull(service);
+        }
+
+        [Fact]
+        public void WorksWithWideScopedTrees()
+        {
+            var serviceCollection = new ServiceCollection();
+            for (int i = 0; i < 20; i++)
+            {
+                serviceCollection.AddScoped<IFakeOuterService, FakeOuterService>();
+                serviceCollection.AddScoped<IFakeMultipleService, FakeMultipleServiceWithIEnumerableDependency>();
+                serviceCollection.AddScoped<IFakeService, FakeService>();
+            }
+
+            var service = CreateServiceProvider(serviceCollection).GetService<IEnumerable<IFakeOuterService>>();
+        }
+
+        private class FakeMultipleServiceWithIEnumerableDependency: IFakeMultipleService
+        {
+            public FakeMultipleServiceWithIEnumerableDependency(IEnumerable<IFakeService> fakeServices)
+            {
+            }
         }
 
         private abstract class AbstractFakeOpenGenericService<T> : IFakeOpenGenericService<T>

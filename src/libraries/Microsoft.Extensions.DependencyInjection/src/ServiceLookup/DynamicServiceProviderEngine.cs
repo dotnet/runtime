@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
         }
 
-        protected override Func<ServiceProviderEngineScope, object> RealizeService(IServiceCallSite callSite)
+        protected override Func<ServiceProviderEngineScope, object> RealizeService(ServiceCallSite callSite)
         {
             var callCount = 0;
             return scope =>

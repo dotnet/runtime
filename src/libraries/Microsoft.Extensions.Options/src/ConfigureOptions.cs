@@ -6,7 +6,7 @@ using System;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Implementation of IConfigureOptions.
+    /// Implementation of <see cref="IConfigureOptions{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions"></typeparam>
     public class ConfigureOptions<TOptions> : IConfigureOptions<TOptions> where TOptions : class
@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Options
         public Action<TOptions> Action { get; }
 
         /// <summary>
-        /// Invokes the registered configure Action if the name matches.
+        /// Invokes the registered configure <see cref="Action"/>.
         /// </summary>
         /// <param name="options"></param>
         public virtual void Configure(TOptions options)

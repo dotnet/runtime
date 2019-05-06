@@ -7,9 +7,11 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Testing;
 using Microsoft.AspNetCore.Testing.xunit;
 using Microsoft.Extensions.Configuration.Ini;
 using Microsoft.Extensions.Configuration.Json;
+using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.Configuration.Xml;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Primitives;
@@ -87,6 +89,36 @@ CommonKey3:CommonKey4=IniValue6";
             _iniFile = Path.GetRandomFileName();
             _xmlFile = Path.GetRandomFileName();
             _jsonFile = Path.GetRandomFileName();
+        }
+
+        [Fact]
+        public void ThrowsOnFileNotFoundWhenNotIgnored()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddJsonFile(c =>
+            {
+                c.Path = Path.Combine(_fileSystem.RootPath, _jsonFile);
+            });
+
+            Assert.Throws<FileNotFoundException>(() => configurationBuilder.Build());
+        }
+        
+        [Fact]
+        public void CanHandleExceptionIfFileNotFound()
+        {
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddJsonFile(c =>
+            {
+                c.Path = Path.Combine(_fileSystem.RootPath, _jsonFile);
+                c.OnLoadException = e =>
+                {
+                    e.Ignore = true;
+                    var exception = e.Exception as FileNotFoundException;
+                    Assert.NotNull(exception);
+                };
+            });
+
+            configurationBuilder.Build();
         }
 
         [Fact]
@@ -347,7 +379,7 @@ CommonKey3:CommonKey4=IniValue6";
                     .SetFileLoadExceptionHandler(jsonLoadError)
                     .Build();
             }
-            catch (FormatException e)
+            catch (Exception e)
             {
                 Assert.Equal(e, jsonError);
             }
@@ -374,7 +406,7 @@ CommonKey3:CommonKey4=IniValue6";
                     .SetFileLoadExceptionHandler(loadError)
                     .Build();
             }
-            catch (FormatException e)
+            catch (Exception e)
             {
                 Assert.Equal(e, error);
             }
@@ -433,6 +465,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
         public void CanSetValuesAndReloadValues()
         {
             WriteTestFiles();
@@ -475,6 +508,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
         public async Task ReloadOnChangeWorksAfterError()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -505,6 +539,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
         public async Task TouchingFileWillReload()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -541,6 +576,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
         public async Task CreatingOptionalFileInNonExistentDirectoryWillReload()
         {
             var directory = Path.GetRandomFileName();
@@ -574,6 +610,7 @@ IniKey1=IniValue2");
         }
 
         [Theory]
+        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DeletingFilesThatRedefineKeysWithReload(bool optional)
@@ -654,6 +691,7 @@ IniKey1=IniValue2");
         }
         
         [Theory]
+        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
         [InlineData(false)]
         [InlineData(true)]
         public async Task DeletingFileWillReload(bool optional)
@@ -692,6 +730,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
         public async Task CreatingWritingDeletingCreatingFileWillReload()
         {
             var config = CreateBuilder()
@@ -775,7 +814,7 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        public void LoadIncorrectJsonFile_ThrowFormatException()
+        public void LoadIncorrectJsonFile_ThrowException()
         {
             var json = @"{
                 'name': 'test',
@@ -787,7 +826,7 @@ IniKey1=IniValue2");
             _fileSystem.WriteFile(_jsonFile, json);
 
             var exception = Assert.Throws<FormatException>(() => CreateBuilder().AddJsonFile(_jsonFile).Build());
-            Assert.NotNull(exception.Message);
+            Assert.Contains("Could not parse the JSON file.", exception.Message);
         }
 
         [Fact]
@@ -869,6 +908,36 @@ IniKey1=IniValue2");
         }
 
         [Fact]
+        [Flaky("File watching is flaky (particularly on non windows.", FlakyOn.All)]
+        public async Task TouchingFileWillReloadForUserSecrets()
+        {
+            string userSecretsId = "Test";
+            var userSecretsPath = PathHelper.GetSecretsPathFromSecretsId(userSecretsId);
+            var userSecretsFolder = Path.GetDirectoryName(userSecretsPath);
+
+            _fileSystem.CreateFolder(userSecretsFolder);
+            _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue1""}");
+
+            var config = CreateBuilder()
+                .AddUserSecrets(userSecretsId, reloadOnChange: true)
+                .Build();
+
+            Assert.Equal("UserSecretValue1", config["UserSecretKey1"]);
+
+            var token = config.GetReloadToken();
+
+            // Update file
+            _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}");
+
+            await WaitForChange(
+                () => config["UserSecretKey1"] == "UserSecretValue2",
+                "Reload failed after create-delete-create.");
+
+            Assert.Equal("UserSecretValue2", config["UserSecretKey1"]);
+            Assert.True(token.HasChanged);
+        }
+
+        [Fact]
         public void BindingDoesNotThrowIfReloadedDuringBinding()
         {
             WriteTestFiles();
@@ -885,7 +954,16 @@ IniKey1=IniValue2");
 
             using (var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250)))
             {
-                _ = Task.Run(() => { while (!cts.IsCancellationRequested) config.Reload(); });
+                void ReloadLoop()
+                {
+                    while (!cts.IsCancellationRequested)
+                    {
+                        config.Reload();
+                    }
+                }
+
+                _ = Task.Run(ReloadLoop);
+
                 MyOptions options = null;
 
                 while (!cts.IsCancellationRequested)

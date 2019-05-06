@@ -4,11 +4,17 @@
     <Description>EventSource/EventListener logger provider implementation for Microsoft.Extensions.Logging.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackageTags>$(PackageTags);EventSource;ETW</PackageTags>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsShipping>true</IsShipping>
+    <NoWarn>$(NoWarn);CS3021</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="../../shared/*.cs" />
+
     <Reference Include="Microsoft.Extensions.Logging" />
-    <Reference Include="Newtonsoft.Json" />
+    <Reference Include="System.Text.Json" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 
 </Project>

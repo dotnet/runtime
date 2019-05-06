@@ -6,7 +6,7 @@ using System.IO;
 using Microsoft.Extensions.FileProviders;
 using Xunit;
 
-namespace Microsoft.Extensions.Configuration.Json
+namespace Microsoft.Extensions.Configuration.FileExtensions.Test
 {
     public class FileConfigurationBuilderExtensionsTest
     {
