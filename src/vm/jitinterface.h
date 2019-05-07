@@ -1088,16 +1088,16 @@ public:
     void logSQMLongJitEvent(unsigned mcycles, unsigned msec, unsigned ilSize, unsigned numBasicBlocks, bool minOpts, 
                             CORINFO_METHOD_HANDLE methodHnd);
 
-    HRESULT allocBBProfileBuffer (
-            ULONG                 count,           // The number of basic blocks that we have
-            ProfileBuffer **      profileBuffer
+    HRESULT allocMethodBlockCounts (
+            DWORD                 count,           // the count of <ILOffset, ExecutionCount> tuples
+            BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
             );
 
-    HRESULT getBBProfileData(
+    HRESULT getMethodBlockCounts(
             CORINFO_METHOD_HANDLE ftnHnd,
-            ULONG *               count,           // The number of basic blocks that we have
-            ProfileBuffer **      profileBuffer,
-            ULONG *               numRuns
+            DWORD *               pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+            BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
+            DWORD *               pNumRuns
             );
 
     void recordCallSite(
@@ -1295,16 +1295,16 @@ public:
             );
 
 
-    HRESULT allocBBProfileBuffer (
-        ULONG                         count,            // The number of basic blocks that we have
-        ICorJitInfo::ProfileBuffer ** profileBuffer
+    HRESULT allocMethodBlockCounts (
+        DWORD                         count,         // the count of <ILOffset, ExecutionCount> tuples
+        ICorJitInfo::BlockCounts **   pBlockCounts   // pointer to array of <ILOffset, ExecutionCount> tuples
     );
 
-    HRESULT getBBProfileData (
+    HRESULT getMethodBlockCounts(
         CORINFO_METHOD_HANDLE         ftnHnd,
-        ULONG *                       count,            // The number of basic blocks that we have
-        ICorJitInfo::ProfileBuffer ** profileBuffer,
-        ULONG *                       numRuns
+        DWORD *               pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+        BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
+        DWORD *               pNumRuns
     );
 
     void recordCallSite(

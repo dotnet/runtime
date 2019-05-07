@@ -10668,9 +10668,9 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
 // Profile data management
 //
 
-ICorJitInfo::ProfileBuffer * Module::AllocateProfileBuffer(mdToken _token, DWORD _count, DWORD _ILSize)
+ICorJitInfo::BlockCounts * Module::AllocateMethodBlockCounts(mdToken _token, DWORD _count, DWORD _ILSize)
 {
-    CONTRACT (ICorJitInfo::ProfileBuffer*)
+    CONTRACT (ICorJitInfo::BlockCounts*)
     {
         INSTANCE_CHECK;
         THROWS;
@@ -10707,7 +10707,7 @@ ICorJitInfo::ProfileBuffer * Module::AllocateProfileBuffer(mdToken _token, DWORD
     methodProfileList->next = m_methodProfileList;
     m_methodProfileList     = methodProfileList;
 
-    RETURN ((ICorJitInfo::ProfileBuffer *) &methodProfileData->method.block[0]);
+    RETURN ((ICorJitInfo::BlockCounts *) &methodProfileData->method.block[0]);
 }
 
 HANDLE Module::OpenMethodProfileDataLogFile(GUID mvid)
@@ -11923,7 +11923,7 @@ static void ProfileDataAllocateMethodBlockCounts(ProfileEmitter * pEmitter, CORC
         }
         
         // Reset all of the basic block counts to zero
-        for (ULONG i=0; (i <  pInfo->method.cBlock); i++ )
+        for (DWORD i=0; (i <  pInfo->method.cBlock); i++ )
         {
             //
             // If methodWasExecuted is false then every block's ExecutionCount should also be zero

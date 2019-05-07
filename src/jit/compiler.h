@@ -5323,10 +5323,10 @@ protected:
 
     void fgAdjustForAddressExposedOrWrittenThis();
 
-    bool                        fgProfileData_ILSizeMismatch;
-    ICorJitInfo::ProfileBuffer* fgProfileBuffer;
-    ULONG                       fgProfileBufferCount;
-    ULONG                       fgNumProfileRuns;
+    bool                      fgProfileData_ILSizeMismatch;
+    ICorJitInfo::BlockCounts* fgBlockCounts;
+    DWORD                     fgBlockCountsCount;
+    DWORD                     fgNumProfileRuns;
 
     unsigned fgStressBBProf()
     {
