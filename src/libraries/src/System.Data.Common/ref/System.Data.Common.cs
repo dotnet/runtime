@@ -48,7 +48,7 @@ namespace System.Data
     [System.ComponentModel.DefaultPropertyAttribute("ConstraintName")]
     public abstract partial class Constraint
     {
-        protected Constraint() { }
+        internal Constraint() { }
         [System.ComponentModel.DefaultValueAttribute("")]
         public virtual string ConstraintName { get { throw null; } set { } }
         [System.ComponentModel.BrowsableAttribute(false)]

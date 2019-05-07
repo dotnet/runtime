@@ -1726,7 +1726,7 @@ namespace System.Xml.Schema
     }
     public abstract partial class XmlSchemaDatatype
     {
-        protected XmlSchemaDatatype() { }
+        internal XmlSchemaDatatype() { }
         public abstract System.Xml.XmlTokenizedType TokenizedType { get; }
         public virtual System.Xml.Schema.XmlTypeCode TypeCode { get { throw null; } }
         public abstract System.Type ValueType { get; }
@@ -1891,7 +1891,7 @@ namespace System.Xml.Schema
     }
     public abstract partial class XmlSchemaGroupBase : System.Xml.Schema.XmlSchemaParticle
     {
-        protected XmlSchemaGroupBase() { }
+        internal XmlSchemaGroupBase() { }
         [System.Xml.Serialization.XmlIgnoreAttribute]
         public abstract System.Xml.Schema.XmlSchemaObjectCollection Items { get; }
     }

@@ -102,7 +102,7 @@ namespace System.Security.AccessControl
 
         #region Constructors
 
-        protected GenericSecurityDescriptor()
+        internal GenericSecurityDescriptor()
         { }
 
         #endregion
