@@ -68,15 +68,13 @@ uint64_t SystemNative_GetTimestampResolution()
 
     return (SecondsToNanoSeconds * (uint64_t)(mtid.denom)) / (uint64_t)(mtid.numer);
 #else
-    struct timespec ts;
+    // clock_gettime() returns a result in terms of nanoseconds rather than a count. This
+    // means that we need to either always scale the result by the actual resolution (to
+    // get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
+    // the latter since it allows the highest throughput and should minimize error propagated
+    // to the user.
 
-    if (clock_getres(CLOCK_MONOTONIC, &ts) != 0)
-    {
-        return 0;
-    }
-
-    uint64_t nanosecondsPerTick = ((uint64_t)(ts.tv_sec) * SecondsToNanoSeconds) + (uint64_t)(ts.tv_nsec);
-    return SecondsToNanoSeconds / nanosecondsPerTick;
+    return SecondsToNanoSeconds;
 #endif
 }
 
