@@ -1274,7 +1274,7 @@ void LinearScan::recordVarLocationsAtStartOfBB(BasicBlock* bb)
             {
                 // varDsc was alive on previous block end ("bb->bbPrev->bbLiveOut"), so it has an open
                 // "VariableLiveRange" which should change to be according "getInVarToRegMap"
-                compiler->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
+                compiler->codeGen->getVariableLiveKeeper()->siUpdateVariableLiveRange(varDsc, varNum);
             }
 #endif // USING_VARIABLE_LIVE_RANGE
         }
