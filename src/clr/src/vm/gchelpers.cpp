@@ -542,10 +542,13 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     // Initialize Object
     orArray->m_NumComponents = cElements;
 
+    bool bProfilerNotifyLargeAllocation = false;
+
     if (bAllocateInLargeHeap || 
         (totalSize >= g_pConfig->GetGCLOHThreshold()))
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
+        bProfilerNotifyLargeAllocation = TrackLargeAllocations();
     }
 
 #ifdef  _LOGALLOC
@@ -566,7 +569,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
 
     // Notify the profiler of the allocation
     // do this after initializing bounds so callback has size information
-    if (TrackAllocations())
+    if (TrackAllocations() || bProfilerNotifyLargeAllocation)
     {
         ProfileTrackArrayAlloc(orArray);
     }
@@ -768,10 +771,13 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     // Initialize Object
     orArray->m_NumComponents = cElements;
 
+    bool bProfilerNotifyLargeAllocation = false;
+
     if (bAllocateInLargeHeap || 
         (totalSize >= g_pConfig->GetGCLOHThreshold()))
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
+        bProfilerNotifyLargeAllocation = TrackLargeAllocations();
     }
 
 #ifdef  _LOGALLOC
@@ -804,7 +810,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 
     // Notify the profiler of the allocation
     // do this after initializing bounds so callback has size information
-    if (TrackAllocations())
+    if (TrackAllocations() || bProfilerNotifyLargeAllocation)
     {
         ProfileTrackArrayAlloc(orArray);
     }
@@ -988,13 +994,15 @@ STRINGREF AllocateString( DWORD cchStringLength )
     orObject->SetMethodTable( g_pStringClass );
     orObject->SetStringLength( cchStringLength );
 
+    bool bProfilerNotifyLargeAllocation = false;
     if (ObjectSize >= g_pConfig->GetGCLOHThreshold())
     {
+        bProfilerNotifyLargeAllocation = TrackLargeAllocations();
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
     }
 
     // Notify the profiler of the allocation
-    if (TrackAllocations())
+    if (TrackAllocations() || bProfilerNotifyLargeAllocation)
     {
         OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
         GCPROTECT_BEGIN(objref);
@@ -1062,13 +1070,16 @@ UTF8STRINGREF AllocateUtf8String(DWORD cchStringLength)
     orObject->SetMethodTable(g_pUtf8StringClass);
     orObject->SetLength(cchStringLength);
 
-    if (ObjectSize >= LARGE_OBJECT_SIZE)
+    bool bProfilerNotifyLargeAllocation = false;
+
+    if (ObjectSize >= g_pConfig->GetGCLOHThreshold())
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
+        bProfilerNotifyLargeAllocation = TrackLargeAllocations();
     }
 
     // Notify the profiler of the allocation
-    if (TrackAllocations())
+    if (TrackAllocations() || bProfilerNotifyLargeAllocation)
     {
         OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
         GCPROTECT_BEGIN(objref);
@@ -1192,9 +1203,11 @@ OBJECTREF AllocateObject(MethodTable *pMT
         // verify zero'd memory (at least for sync block)
         _ASSERTE( orObject->HasEmptySyncBlockInfo() );
 
+        bool bProfilerNotifyLargeAllocation = false;
         if ((baseSize >= g_pConfig->GetGCLOHThreshold()))
         {
             orObject->SetMethodTableForLargeObject(pMT);
+            bProfilerNotifyLargeAllocation = TrackLargeAllocations();
             GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orObject);
         }
         else
@@ -1203,7 +1216,7 @@ OBJECTREF AllocateObject(MethodTable *pMT
         }
 
         // Notify the profiler of the allocation
-        if (TrackAllocations())
+        if (TrackAllocations() || bProfilerNotifyLargeAllocation)
         {
             OBJECTREF objref = ObjectToOBJECTREF((Object*)orObject);
             GCPROTECT_BEGIN(objref);
