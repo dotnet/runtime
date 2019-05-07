@@ -54,15 +54,11 @@
         The included build targets explicitly reference System.Runtime
         and add the facade references to the compiler.
     -->
-    <PackageFile Include=".\build\net45\System.Runtime.WindowsRuntime.targets">
-      <TargetPath>\build\net45\</TargetPath>
-    </PackageFile>
-    <PackageFile Include=".\build\net451\System.Runtime.WindowsRuntime.targets">
-      <TargetPath>\build\net451\</TargetPath>
-    </PackageFile>
-    <PackageFile Include=".\build\net461\System.Runtime.WindowsRuntime.targets">
-      <TargetPath>\build\net461\</TargetPath>
-    </PackageFile>
+    <_buildTargetsTFMs Include="net45;net451;net461" 
+                    TFM="%(Identity)"
+                    SourceFile=".\build\%(TFM)\$(Id).targets" />
+    <PackageFile Include="@(_buildTargetsTFMs->'%(SourceFile)')" TargetPath="build\%(TFM)\" />
+    <PackageFile Include="@(_buildTargetsTFMs->'%(SourceFile)')" TargetPath="buildTransitive\%(TFM)\" />
 
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
