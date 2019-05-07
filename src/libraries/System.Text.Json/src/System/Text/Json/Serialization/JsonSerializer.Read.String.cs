@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization
         /// <exception cref="System.ArgumentNullException">
         /// Thrown if <paramref name="json"/> is null.
         /// </exception>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization
         /// <exception cref="System.ArgumentNullException">
         /// Thrown if <paramref name="json"/> or <paramref name="returnType"/> is null.
         /// </exception>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
@@ -76,8 +76,8 @@ namespace System.Text.Json.Serialization
             if (reader.BytesConsumed != jsonBytes.Length)
             {
                 readerState = reader.CurrentState;
-                throw new JsonReaderException(SR.Format(SR.DeserializeDataRemaining,
-                    jsonBytes.Length, jsonBytes.Length - readerState.BytesConsumed), readerState);
+                ThrowHelper.ThrowJsonException_DeserializeDataRemaining(
+                    jsonBytes.Length, jsonBytes.Length - readerState.BytesConsumed);
             }
 
             return result;

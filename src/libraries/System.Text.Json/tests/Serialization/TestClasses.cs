@@ -898,26 +898,26 @@ namespace System.Text.Json.Serialization.Tests
         public string name { get; set; }
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
-            "{" +
-                @"""name"" : ""Microsoft""," +
-                @"""sites"" : [" +
-                    "{" +
-                        @"""street"" : ""1 Lone Tree Rd S""," +
-                        @"""city"" : ""Fargo""," +
-                        @"""zip"" : 58104" +
-                    "}," +
-                    "{" +
-                        @"""street"" : ""8055 Microsoft Way""," +
-                        @"""city"" : ""Charlotte""," +
-                        @"""zip"" : 28273" +
-                    "}" +
-                @"]," +
-                @"""mainSite"" : " +
-                    "{" +
-                        @"""street"" : ""1 Microsoft Way""," +
-                        @"""city"" : ""Redmond""," +
-                        @"""zip"" : 98052" +
-                    "}" +
+            "{\n" +
+                @"""name"" : ""Microsoft""," + "\n" +
+                @"""sites"" :[" + "\n" +
+                    "{\n" +
+                        @"""street"" : ""1 Lone Tree Rd S""," + "\n" +
+                        @"""city"" : ""Fargo""," + "\n" +
+                        @"""zip"" : 58104" + "\n" +
+                    "},\n" +
+                    "{\n" +
+                        @"""street"" : ""8055 Microsoft Way""," + "\n" +
+                        @"""city"" : ""Charlotte""," + "\n" +
+                        @"""zip"" : 28273" + "\n" +
+                    "}\n" +
+                "],\n" +
+                @"""mainSite"":" + "\n" +
+                    "{\n" +
+                        @"""street"" : ""1 Microsoft Way""," + "\n" +
+                        @"""city"" : ""Redmond""," + "\n" +
+                        @"""zip"" : 98052" + "\n" +
+                    "}\n" +
             "}");
 
         public void Initialize()

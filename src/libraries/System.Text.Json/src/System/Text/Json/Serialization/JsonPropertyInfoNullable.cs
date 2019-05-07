@@ -56,7 +56,7 @@ namespace System.Text.Json.Serialization
                     }
                 }
 
-                ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state);
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.PropertyPath);
             }
         }
 
@@ -64,19 +64,19 @@ namespace System.Text.Json.Serialization
         {
             if (ValueConverter == null || !ValueConverter.TryRead(typeof(TProperty), ref reader, out TProperty value))
             {
-                ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state);
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.PropertyPath);
                 return;
             }
 
             // Converting to TProperty? here lets us share a common ApplyValue() with ApplyNullValue().
             TProperty? nullableValue = new TProperty?(value);
-            JsonSerializer.ApplyValueToEnumerable(ref nullableValue, options, ref state.Current);
+            JsonSerializer.ApplyValueToEnumerable(ref nullableValue, options, ref state, ref reader);
         }
 
-        public override void ApplyNullValue(JsonSerializerOptions options, ref ReadStack state)
+        public override void ApplyNullValue(JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
         {
             TProperty? nullableValue = null;
-            JsonSerializer.ApplyValueToEnumerable(ref nullableValue, options, ref state.Current);
+            JsonSerializer.ApplyValueToEnumerable(ref nullableValue, options, ref state, ref reader);
         }
 
         // todo: have the caller check if current.Enumerator != null and call WriteEnumerable of the underlying property directly to avoid an extra virtual call.

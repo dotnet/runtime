@@ -12,7 +12,7 @@ namespace System.Text.Json
         /// <summary>
         /// By default, do no allow comments within the JSON input.
         /// Comments are treated as invalid JSON if found and a
-        /// <see cref="JsonReaderException"/> is thrown.
+        /// <see cref="JsonException"/> is thrown.
         /// </summary>
         Disallow = 0,
         /// <summary>

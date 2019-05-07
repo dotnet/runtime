@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void EnumAsStringFail()
         {
-            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<SimpleTestClass>(s_jsonStringEnum));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(s_jsonStringEnum));
         }
 
         [Fact]

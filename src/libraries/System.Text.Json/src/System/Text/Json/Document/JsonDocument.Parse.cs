@@ -33,7 +33,7 @@ namespace System.Text.Json
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
@@ -65,7 +65,7 @@ namespace System.Text.Json
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
@@ -106,7 +106,7 @@ namespace System.Text.Json
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
@@ -146,7 +146,7 @@ namespace System.Text.Json
         /// <returns>
         ///   A Task to produce a JsonDocument representation of the JSON value.
         /// </returns>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
@@ -200,7 +200,7 @@ namespace System.Text.Json
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         ///   <paramref name="json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
@@ -238,7 +238,7 @@ namespace System.Text.Json
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         ///   <paramref name="json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
@@ -291,7 +291,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   The current <paramref name="reader"/> token does not start or represent a value.
         /// </exception>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         ///   A value could not be read from the reader.
         /// </exception>
         public static bool TryParseValue(ref Utf8JsonReader reader, out JsonDocument document)
@@ -331,7 +331,7 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         ///   The current <paramref name="reader"/> token does not start or represent a value.
         /// </exception>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         ///   A value could not be read from the reader.
         /// </exception>
         public static JsonDocument ParseValue(ref Utf8JsonReader reader)

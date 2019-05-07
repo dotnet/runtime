@@ -21,100 +21,108 @@ namespace System.Text.Json.Serialization
             ref Utf8JsonReader reader,
             ref ReadStack state)
         {
-            while (reader.Read())
+            try
             {
-                JsonTokenType tokenType = reader.TokenType;
-
-                if (JsonHelpers.IsInRangeInclusive(tokenType, JsonTokenType.String, JsonTokenType.False))
+                while (reader.Read())
                 {
-                    Debug.Assert(tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number || tokenType == JsonTokenType.True || tokenType == JsonTokenType.False);
+                    JsonTokenType tokenType = reader.TokenType;
 
-                    if (HandleValue(tokenType, options, ref reader, ref state))
+                    if (JsonHelpers.IsInRangeInclusive(tokenType, JsonTokenType.String, JsonTokenType.False))
                     {
-                        return;
-                    }
-                }
-                else if (tokenType == JsonTokenType.PropertyName)
-                {
-                    if (!state.Current.Drain)
-                    {
-                        Debug.Assert(state.Current.ReturnValue != default);
-                        Debug.Assert(state.Current.JsonClassInfo != default);
+                        Debug.Assert(tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number || tokenType == JsonTokenType.True || tokenType == JsonTokenType.False);
 
-                        if (state.Current.IsDictionary)
+                        if (HandleValue(tokenType, options, ref reader, ref state))
                         {
-                            string keyName = reader.GetString();
-                            if (options.DictionaryKeyPolicy != null)
-                            {
-                                keyName = options.DictionaryKeyPolicy.ConvertName(keyName);
-                            }
-
-                            state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetPolicyProperty();
-                            state.Current.KeyName = keyName;
-                        }
-                        else
-                        {
-                            ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-                            if (reader._stringHasEscaping)
-                            {
-                                int idx = propertyName.IndexOf(JsonConstants.BackSlash);
-                                Debug.Assert(idx != -1);
-                                propertyName = GetUnescapedString(propertyName, idx);
-                            }
-
-                            state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(options, propertyName, ref state.Current);
-                            if (state.Current.JsonPropertyInfo == null)
-                            {
-                                state.Current.JsonPropertyInfo = s_missingProperty;
-                            }
-
-                            state.Current.PropertyIndex++;
+                            return;
                         }
                     }
+                    else if (tokenType == JsonTokenType.PropertyName)
+                    {
+                        if (!state.Current.Drain)
+                        {
+                            Debug.Assert(state.Current.ReturnValue != default);
+                            Debug.Assert(state.Current.JsonClassInfo != default);
+
+                            if (state.Current.IsDictionary)
+                            {
+                                string keyName = reader.GetString();
+                                if (options.DictionaryKeyPolicy != null)
+                                {
+                                    keyName = options.DictionaryKeyPolicy.ConvertName(keyName);
+                                }
+
+                                state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetPolicyProperty();
+                                state.Current.KeyName = keyName;
+                            }
+                            else
+                            {
+                                ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+                                if (reader._stringHasEscaping)
+                                {
+                                    int idx = propertyName.IndexOf(JsonConstants.BackSlash);
+                                    Debug.Assert(idx != -1);
+                                    propertyName = GetUnescapedString(propertyName, idx);
+                                }
+
+                                state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(options, propertyName, ref state.Current);
+                                if (state.Current.JsonPropertyInfo == null)
+                                {
+                                    state.Current.JsonPropertyInfo = s_missingProperty;
+                                }
+
+                                state.Current.PropertyIndex++;
+                            }
+                        }
+                    }
+                    else if (tokenType == JsonTokenType.StartObject)
+                    {
+                        if (!state.Current.IsProcessingProperty)
+                        {
+                            HandleStartObject(options, ref reader, ref state);
+                        }
+                        else if (HandleValue(tokenType, options, ref reader, ref state))
+                        {
+                            return;
+                        }
+                    }
+                    else if (tokenType == JsonTokenType.EndObject)
+                    {
+                        if (HandleEndObject(options, ref state, ref reader))
+                        {
+                            return;
+                        }
+                    }
+                    else if (tokenType == JsonTokenType.StartArray)
+                    {
+                        if (!state.Current.IsProcessingProperty)
+                        {
+                            HandleStartArray(options, ref reader, ref state);
+                        }
+                        else if (HandleValue(tokenType, options, ref reader, ref state))
+                        {
+                            return;
+                        }
+                    }
+                    else if (tokenType == JsonTokenType.EndArray)
+                    {
+                        if (HandleEndArray(options, ref state, ref reader))
+                        {
+                            return;
+                        }
+                    }
+                    else if (tokenType == JsonTokenType.Null)
+                    {
+                        if (HandleNull(ref reader, ref state, options))
+                        {
+                            return;
+                        }
+                    }
                 }
-                else if (tokenType == JsonTokenType.StartObject)
-                {
-                    if (!state.Current.IsProcessingProperty)
-                    {
-                        HandleStartObject(options, ref reader, ref state);
-                    }
-                    else if (HandleValue(tokenType, options, ref reader, ref state))
-                    {
-                        return;
-                    }
-                }
-                else if (tokenType == JsonTokenType.EndObject)
-                {
-                    if (HandleEndObject(options, ref state))
-                    {
-                        return;
-                    }
-                }
-                else if (tokenType == JsonTokenType.StartArray)
-                {
-                    if (!state.Current.IsProcessingProperty)
-                    {
-                        HandleStartArray(options, ref reader, ref state);
-                    }
-                    else if (HandleValue(tokenType, options, ref reader, ref state))
-                    {
-                        return;
-                    }
-                }
-                else if (tokenType == JsonTokenType.EndArray)
-                {
-                    if (HandleEndArray(options, ref state))
-                    {
-                        return;
-                    }
-                }
-                else if (tokenType == JsonTokenType.Null)
-                {
-                    if (HandleNull(ref reader, ref state, options))
-                    {
-                        return;
-                    }
-                }
+            }
+            catch (JsonReaderException e)
+            {
+                // Re-throw with Path information.
+                ThrowHelper.ReThrowWithPath(e, state.PropertyPath);
             }
 
             return;

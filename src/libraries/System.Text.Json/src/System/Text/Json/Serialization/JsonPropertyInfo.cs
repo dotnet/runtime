@@ -259,7 +259,7 @@ namespace System.Text.Json.Serialization
             return (TAttribute)PropertyInfo?.GetCustomAttribute(typeof(TAttribute), inherit: false);
         }
 
-        public abstract void ApplyNullValue(JsonSerializerOptions options, ref ReadStack state);
+        public abstract void ApplyNullValue(JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
 
         public abstract IList CreateConverterList();
 
