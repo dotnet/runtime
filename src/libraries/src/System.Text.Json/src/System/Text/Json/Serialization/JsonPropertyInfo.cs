@@ -259,11 +259,9 @@ namespace System.Text.Json.Serialization
             return (TAttribute)PropertyInfo?.GetCustomAttribute(typeof(TAttribute), inherit: false);
         }
 
-        public abstract void ApplyNullValue(JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
-
         public abstract IList CreateConverterList();
 
-        public abstract Type GetConcreteType(Type interfaceType);
+        public abstract Type GetDictionaryConcreteType();
 
         public abstract void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
         public abstract void ReadEnumerable(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
@@ -271,7 +269,7 @@ namespace System.Text.Json.Serialization
 
         public abstract void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer);
 
-        public abstract void WriteDictionary(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer);
+        public virtual void WriteDictionary(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer) { }
         public abstract void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer);
     }
 }

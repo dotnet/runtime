@@ -19,6 +19,51 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, list.Count);
         }
 
+
+        public static IEnumerable<object[]> ReadNullJson
+        {
+            get
+            {
+                yield return new object[] { $"[null, null, null]", true, true, true };
+                yield return new object[] { $"[null, null, {SimpleTestClass.s_json}]", true, true, false };
+                yield return new object[] { $"[null, {SimpleTestClass.s_json}, null]", true, false, true };
+                yield return new object[] { $"[null, {SimpleTestClass.s_json}, {SimpleTestClass.s_json}]", true, false, false };
+                yield return new object[] { $"[{SimpleTestClass.s_json}, {SimpleTestClass.s_json}, {SimpleTestClass.s_json}]", false, false, false };
+                yield return new object[] { $"[{SimpleTestClass.s_json}, {SimpleTestClass.s_json}, null]", false, false, true };
+                yield return new object[] { $"[{SimpleTestClass.s_json}, null, {SimpleTestClass.s_json}]", false, true, false };
+                yield return new object[] { $"[{SimpleTestClass.s_json}, null, null]", false, true, true };
+            }
+        }
+
+        private static void VerifyReadNull(SimpleTestClass obj, bool isNull)
+        {
+            if (isNull)
+            {
+                Assert.Null(obj);
+            }
+            else
+            {
+                obj.Verify();
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ReadNullJson))]
+        public static void ReadNull(string json, bool element0Null, bool element1Null, bool element2Null)
+        {
+            SimpleTestClass[] arr = JsonSerializer.Parse<SimpleTestClass[]>(json);
+            Assert.Equal(3, arr.Length);
+            VerifyReadNull(arr[0], element0Null);
+            VerifyReadNull(arr[1], element1Null);
+            VerifyReadNull(arr[2], element2Null);
+
+            List<SimpleTestClass> list = JsonSerializer.Parse<List<SimpleTestClass>>(json);
+            Assert.Equal(3, list.Count);
+            VerifyReadNull(list[0], element0Null);
+            VerifyReadNull(list[1], element1Null);
+            VerifyReadNull(list[2], element2Null);
+        }
+
         [Fact]
         public static void ReadClassWithStringArray()
         {

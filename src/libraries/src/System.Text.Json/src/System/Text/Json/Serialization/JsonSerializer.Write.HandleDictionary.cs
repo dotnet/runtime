@@ -27,8 +27,14 @@ namespace System.Text.Json.Serialization
 
             if (state.Current.Enumerator == null)
             {
-                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
+                // Verify that the Dictionary can be serialized by having <string> as first generic argument.
+                Type[] args = jsonPropertyInfo.RuntimePropertyType.GetGenericArguments();
+                if (args.Length == 0 || args[0].UnderlyingSystemType != typeof(string))
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type, state.PropertyPath);
+                }
 
+                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
                 if (enumerable == null)
                 {
                     // Write a null object or enumerable.

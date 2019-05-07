@@ -14,10 +14,14 @@ namespace System.Text.Json.Serialization.Tests
             var obj = new TestClassWithInitializedProperties();
             obj.MyString = null;
             obj.MyInt = null;
+            obj.MyIntArray = null;
+            obj.MyIntList = null;
 
             string json = JsonSerializer.ToString(obj);
             Assert.Contains(@"""MyString"":null", json);
             Assert.Contains(@"""MyInt"":null", json);
+            Assert.Contains(@"""MyIntArray"":null", json);
+            Assert.Contains(@"""MyIntList"":null", json);
         }
 
         [Fact]
@@ -29,6 +33,8 @@ namespace System.Text.Json.Serialization.Tests
             var obj = new TestClassWithInitializedProperties();
             obj.MyString = null;
             obj.MyInt = null;
+            obj.MyIntArray = null;
+            obj.MyIntList = null;
 
             string json = JsonSerializer.ToString(obj, options);
             Assert.Equal(@"{}", json);
