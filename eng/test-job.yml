@@ -96,6 +96,8 @@ jobs:
       timeoutInMinutes: 360
     ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
       timeoutInMinutes: 480
+    ${{ eq in(parameters.testGroup, 'outerloop-gcstress-extra') }}:
+      timeoutInMinutes: 600
 
     steps:
 
@@ -171,6 +173,9 @@ jobs:
         ${{ if in(parameters.testGroup, 'outerloop-gcstress0x3-gcstress0xc') }}:
           timeoutPerTestCollectionInMinutes: 240
           timeoutPerTestInMinutes: 60
+        ${{ if in(parameters.testGroup, 'outerloop-gcstress-extra') }}:
+          timeoutPerTestCollectionInMinutes: 300
+          timeoutPerTestInMinutes: 90
 
         runCrossGen: ${{ parameters.readyToRun }}
 
@@ -222,6 +227,15 @@ jobs:
           scenarios:
           - gcstress0x3
           - gcstress0xc
+        ${{ if eq(parameters.testGroup, 'outerloop-gcstress-extra') }}:
+          scenarios:
+          - heapverify1
+          - gcstress0xc_zapdisable
+          - gcstress0xc_zapdisable_jitstress2
+          - gcstress0xc_zapdisable_heapverify1
+          - gcstress0xc_jitstress1
+          - gcstress0xc_jitstress2
+          - gcstress0xc_jitminopts_heapverify1
 
     # Publish Logs
     - task: PublishPipelineArtifact@0
