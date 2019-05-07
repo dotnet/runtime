@@ -11,6 +11,8 @@ namespace System.Linq
     {
         internal abstract object ExecuteBoxed();
 
+        internal EnumerableExecutor() { }
+
         internal static EnumerableExecutor Create(Expression expression)
         {
             Type execType = typeof(EnumerableExecutor<>).MakeGenericType(expression.Type);

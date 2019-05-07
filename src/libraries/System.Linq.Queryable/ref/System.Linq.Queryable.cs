@@ -9,7 +9,7 @@ namespace System.Linq
 {
     public abstract partial class EnumerableExecutor
     {
-        protected EnumerableExecutor() { }
+        internal EnumerableExecutor() { }
     }
     public partial class EnumerableExecutor<T> : System.Linq.EnumerableExecutor
     {
@@ -17,7 +17,7 @@ namespace System.Linq
     }
     public abstract partial class EnumerableQuery
     {
-        protected EnumerableQuery() { }
+        internal EnumerableQuery() { }
     }
     public partial class EnumerableQuery<T> : System.Linq.EnumerableQuery, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable, System.Linq.IOrderedQueryable, System.Linq.IOrderedQueryable<T>, System.Linq.IQueryable, System.Linq.IQueryable<T>, System.Linq.IQueryProvider
     {

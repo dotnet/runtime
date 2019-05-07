@@ -297,7 +297,7 @@ namespace System.Security.AccessControl
     }
     public abstract partial class GenericSecurityDescriptor
     {
-        protected GenericSecurityDescriptor() { }
+        internal GenericSecurityDescriptor() { }
         public int BinaryLength { get { throw null; } }
         public abstract System.Security.AccessControl.ControlFlags ControlFlags { get; }
         public abstract System.Security.Principal.SecurityIdentifier Group { get; set; }
