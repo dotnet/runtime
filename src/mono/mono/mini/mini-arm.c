@@ -88,6 +88,8 @@ static gboolean thumb2_supported = FALSE;
  */
 static gboolean eabi_supported = FALSE;
 
+static gboolean arm64_32_abi = FALSE;
+
 /* 
  * Whenever to use the iphone ABI extensions:
  * http://developer.apple.com/library/ios/documentation/Xcode/Conceptual/iPhoneOSABIReference/index.html
@@ -2371,11 +2373,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			lainfo->storage = LLVMArgAsIArgs;
 			int slotsize;
 #ifdef TARGET_WATCHOS
-			/* slotsize=4 would work for armv7k, however arm64_32 allows
-			 * passing structs with sizes up to 8 bytes in a single register.
-			 * On armv7k slotsize=8 boils down to the same generated native
-			 * code by LLVM, so it's okay. */
-			slotsize = 8;
+			/* slotsize=4 works for armv7k, however arm64_32 allows passing
+			 * structs with sizes up to 8 bytes in a single register. */
+			slotsize = arm64_32_abi ? 8 : 4;
 #else
 			slotsize = eabi_supported && ainfo->align == 8 ? 8 : 4;
 #endif
@@ -7468,6 +7468,9 @@ mono_arch_set_target (char *mtriple)
 	}
 	if (strstr (mtriple, "gnueabi"))
 		eabi_supported = TRUE;
+
+	if (strstr (mtriple, "arm64_32"))
+		arm64_32_abi = TRUE;
 }
 
 gboolean
