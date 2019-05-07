@@ -8,6 +8,8 @@ namespace System.Xml.Schema
 
     public abstract class XmlSchemaGroupBase : XmlSchemaParticle
     {
+        internal XmlSchemaGroupBase() {}
+        
         [XmlIgnore]
         public abstract XmlSchemaObjectCollection Items { get; }
 
