@@ -543,7 +543,7 @@ mono_error_set_argument_format (MonoError *oerror, const char *argument, const c
 }
 
 void
-mono_error_set_argument (MonoError *oerror, const char *argument, const char *msg, ...)
+mono_error_set_argument (MonoError *oerror, const char *argument, const char *msg)
 {
 	MonoErrorInternal *error = (MonoErrorInternal*)oerror;
 	mono_error_prepare (error);
