@@ -336,7 +336,6 @@ typedef void* context_handle;
 struct corehost_context_contract
 {
     size_t version;
-    context_handle instance;
     int (*get_property_value)(
         const char_t *key,
         const char_t **value);
@@ -349,11 +348,9 @@ struct corehost_context_contract
         const char_t **values);
     int (*load_runtime)();
     int (*run_app)(
-        const context_handle instance,
         const int argc,
         const char_t* argv[]);
     int (*get_runtime_delegate)(
-        const context_handle instance,
         coreclr_delegate_type type,
         void** delegate);
 };
@@ -361,7 +358,6 @@ struct corehost_context_contract
 
 Contract for performing operations on an initialized hostpolicy.
 * `version` - version of the struct.
-* `instance` - opaque handle to the `corehost_context_contract` state.
 * `get_property_value` - function pointer for getting a property on the host context.
   * `key` - key of the property to get.
   * `value` - pointer to a buffer with the retrieved property value.
@@ -384,13 +380,15 @@ enum intialization_options_t
 {
     none = 0x0,
     wait_for_initialized = 0x1,
+    get_contract = 0x2,
 };
 
 int corehost_initialize(const corehost_initialize_request_t *init_request, int32_t options, corehost_context_contract *context_contract)
 ```
 
-Initializes the host context. This calculates everything required to start CoreCLR (but does not actually do so).
+Initialize hostpolicy. This calculates everything required to start or attach to CoreCLR (but does not actually do so).
 * `init_request` - struct containing information about the initialization request. If hostpolicy is not yet initialized, this is expected to be nullptr. If hostpolicy is already initialized, this should not be nullptr and this function will use the struct to check for compatibility with the way in which hostpolicy was previously initialized.
 * `options` - initialization options
   * `wait_for_initialized` - wait until initialization through a different request is completed
-* `context_contract` - if initialization is successful, this is populated with the contract for operating on the initialized host context.
+  * `get_contract` - get the contract for already initialized hostpolicy
+* `context_contract` - if initialization is successful, this is populated with the contract for operating on the initialized hostpolicy.

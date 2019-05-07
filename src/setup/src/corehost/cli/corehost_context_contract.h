@@ -12,6 +12,7 @@ enum intialization_options_t : int32_t
 {
     none = 0x0,
     wait_for_initialized = 0x1,  // Wait until initialization through a different request is completed
+    get_contract = 0x2,          // Get the contract for the initialized hostpolicy
 };
 
 enum class coreclr_delegate_type

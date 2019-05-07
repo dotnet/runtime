@@ -669,7 +669,7 @@ SHARED_API int32_t __cdecl hostfxr_get_runtime_property_value(
     if (host_context_handle == nullptr)
     {
         const host_context_t *context_maybe = fx_muxer_t::get_active_host_context();
-        if (context_maybe == nullptr || context_maybe->type != host_context_type::active)
+        if (context_maybe == nullptr)
         {
             trace::error(_X("Hosting components context has not been initialized. Cannot get runtime properties."));
             return StatusCode::HostInvalidState;
@@ -786,7 +786,7 @@ SHARED_API int32_t __cdecl hostfxr_get_runtime_properties(
     if (host_context_handle == nullptr)
     {
         const host_context_t *context_maybe = fx_muxer_t::get_active_host_context();
-        if (context_maybe == nullptr || context_maybe->type != host_context_type::active)
+        if (context_maybe == nullptr)
         {
             trace::error(_X("Hosting components context has not been initialized. Cannot get runtime properties."));
             return StatusCode::HostInvalidState;

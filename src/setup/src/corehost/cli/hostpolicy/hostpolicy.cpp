@@ -605,7 +605,22 @@ SHARED_API int __cdecl corehost_initialize(const corehost_initialize_request_t *
         return StatusCode::InvalidArgFailure;
 
     bool wait_for_initialized = (options & intialization_options_t::wait_for_initialized) != 0;
+    bool get_contract = (options & intialization_options_t::get_contract) != 0;
+    if (wait_for_initialized && get_contract)
+    {
+        trace::error(_X("Specifying both initialization options for wait_for_initialized and get_contract is not allowed"));
+        return StatusCode::InvalidArgFailure;
+    }
 
+    if (get_contract)
+    {
+        if (init_request != nullptr)
+        {
+            trace::error(_X("Initialization request is expected to be null when getting the already initialized contract"));
+            return StatusCode::InvalidArgFailure;
+        }
+    }
+    else
     {
         std::unique_lock<std::mutex> lock { g_context_lock };
         bool already_initializing = g_context_initializing.load();
@@ -664,6 +679,17 @@ SHARED_API int __cdecl corehost_initialize(const corehost_initialize_request_t *
         }
 
         rc = StatusCode::Success_HostAlreadyInitialized;
+    }
+    else if (get_contract)
+    {
+        const hostpolicy_context_t *context = get_hostpolicy_context(/*require_runtime*/ true);
+        if (context == nullptr)
+        {
+            trace::error(_X("Option to get the contract for the initialized hostpolicy was set, but hostpolicy has not been initialized"));
+            return StatusCode::HostInvalidState;
+        }
+
+        rc = StatusCode::Success;
     }
     else
     {
