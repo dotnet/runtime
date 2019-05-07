@@ -31,7 +31,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="eventSource">The event source.</param>
-        public DiagnosticCounter(string name, EventSource eventSource)
+        internal DiagnosticCounter(string name, EventSource eventSource)
         {
             if (name == null)
             {
