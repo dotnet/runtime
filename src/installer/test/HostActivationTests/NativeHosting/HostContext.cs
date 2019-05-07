@@ -186,8 +186,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [InlineData(Scenario.NonContextMixed, CheckProperties.Set)]
         [InlineData(Scenario.NonContextMixed, CheckProperties.Remove)]
         [InlineData(Scenario.NonContextMixed, CheckProperties.GetAll)]
-        // [InlineData(Scenario.NonContextMixed, CheckProperties.GetActive)]        // TODO: https://github.com/dotnet/core-setup/issues/6197
-        // [InlineData(Scenario.NonContextMixed, CheckProperties.GetAllActive)]     // TODO: https://github.com/dotnet/core-setup/issues/6197
+        [InlineData(Scenario.NonContextMixed, CheckProperties.GetActive)]
+        [InlineData(Scenario.NonContextMixed, CheckProperties.GetAllActive)]
         public void RunApp_GetDelegate(string scenario, string checkProperties)
         {
             if (scenario != Scenario.Mixed && scenario != Scenario.NonContextMixed)
