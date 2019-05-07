@@ -20,10 +20,6 @@
 #
 # Please list a GitHub issue for every exclusion.
 
-# https://github.com/dotnet/coreclr/issues/24159
--nomethod "System.Buffers.Tests.ArrayBufferWriterTests_Byte.Advance"
--nomethod "System.Buffers.Tests.ArrayBufferWriterTests_Char.Advance"
-
 # https://github.com/dotnet/coreclr/issues/22442
 -nomethod "Microsoft.Win32.SystemEventsTests.CreateTimerTests.ConcurrentTimers"
 -nomethod "Microsoft.Win32.SystemEventsTests.SessionSwitchTests.SignalsSessionSwitch"
