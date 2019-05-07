@@ -38,7 +38,8 @@ namespace System.Text.Json.Serialization
 
             if (state.Current.IsPropertyEnumerable)
             {
-                state.Current.JsonPropertyInfo.ApplyNullValue(options, ref state, ref reader);
+                bool setPropertyToNull = !state.Current.EnumerableCreated;
+                ApplyObjectToEnumerable(null, options, ref state, ref reader, setPropertyDirectly: setPropertyToNull);
                 return false;
             }
 

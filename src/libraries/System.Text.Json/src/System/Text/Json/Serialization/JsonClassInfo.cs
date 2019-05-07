@@ -324,9 +324,8 @@ namespace System.Text.Json.Serialization
                         {
                             elementType = args[1];
                         }
-                        else if (args.Length >= 1) // It is >= 1 in case there is an IEnumerable<T, TSomeExtension>.
+                        else if (GetClassType(propertyType) == ClassType.Enumerable && args.Length >= 1) // It is >= 1 in case there is an IEnumerable<T, TSomeExtension>.
                         {
-                            Debug.Assert(GetClassType(propertyType) == ClassType.Enumerable);
                             elementType = args[0];
                         }
                     }

@@ -283,7 +283,7 @@
     <value>Expected depth to be zero at the end of the JSON payload. There is an open JSON object or array that should be closed.</value>
   </data>
   <data name="DeserializeCannotBeNull" xml:space="preserve">
-    <value>The JSON value from {0} cannot be null.</value>
+    <value>The JSON value cannot be null.</value>
   </data>
   <data name="DeserializeDataRemaining" xml:space="preserve">
     <value>The provided data of length {0} has remaining bytes {1}.</value>

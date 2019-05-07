@@ -31,13 +31,9 @@ namespace System.Text.Json.Serialization
 
         public override void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
         {
-            if (ElementClassInfo != null)
-            {
-                // Forward the setter to the value-based JsonPropertyInfo.
-                JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
-                propertyInfo.ReadEnumerable(tokenType, options, ref state, ref reader);
-            }
-            else if (ShouldDeserialize)
+            Debug.Assert(ElementClassInfo == null);
+
+            if (ShouldDeserialize)
             {
                 if (ValueConverter != null)
                 {
@@ -68,18 +64,10 @@ namespace System.Text.Json.Serialization
                 return;
             }
 
-            // Converting to TProperty? here lets us share a common ApplyValue() with ApplyNullValue().
             TProperty? nullableValue = new TProperty?(value);
             JsonSerializer.ApplyValueToEnumerable(ref nullableValue, options, ref state, ref reader);
         }
 
-        public override void ApplyNullValue(JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
-        {
-            TProperty? nullableValue = null;
-            JsonSerializer.ApplyValueToEnumerable(ref nullableValue, options, ref state, ref reader);
-        }
-
-        // todo: have the caller check if current.Enumerator != null and call WriteEnumerable of the underlying property directly to avoid an extra virtual call.
         public override void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
         {
             if (current.Enumerator != null)
@@ -102,11 +90,9 @@ namespace System.Text.Json.Serialization
 
                 if (value == null)
                 {
-                    if (_escapedName == null)
-                    {
-                        writer.WriteNullValue();
-                    }
-                    else if (!IgnoreNullValues)
+                    Debug.Assert(_escapedName != null);
+
+                    if (!IgnoreNullValues)
                     {
                         writer.WriteNull(_escapedName);
                     }
@@ -123,11 +109,6 @@ namespace System.Text.Json.Serialization
                     }
                 }
             }
-        }
-
-        public override void WriteDictionary(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
-        {
-            JsonSerializer.WriteDictionary(ValueConverter, options, ref current, writer);
         }
 
         public override void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)

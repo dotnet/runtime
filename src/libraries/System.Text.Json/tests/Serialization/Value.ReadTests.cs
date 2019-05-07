@@ -72,6 +72,9 @@ namespace System.Text.Json.Serialization.Tests
             // Invalid data
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<int[]>(Encoding.UTF8.GetBytes(@"[1,""a""]")));
 
+            // Invalid data
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<List<int?>>(Encoding.UTF8.GetBytes(@"[1,""a""]")));
+
             // Multidimensional arrays currently not supported
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<int[,]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]")));
         }
