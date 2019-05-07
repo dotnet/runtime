@@ -15,11 +15,4 @@
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
   </ItemGroup>
-
-  <!-- Unix CoreLib contains EventRegistrationToken but no other
-       types from System.Runtime.InteropServices.WindowsRuntime.
-       https://github.com/dotnet/corefx/issues/35792 -->
-  <ItemGroup Condition="'$(RuntimeIdentifier)' != '' AND !$(RuntimeIdentifier.StartsWith('win'))">
-    <IgnoredTypes Include="System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken" />
-  </ItemGroup>
 </Project>
