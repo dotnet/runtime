@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization
                     Debug.Assert(state.Current.JsonClassInfo.Type.GetGenericArguments().Length >= 1);
                     if (state.Current.JsonClassInfo.Type.GetGenericArguments()[0].UnderlyingSystemType != typeof(string))
                     {
-                        ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type, reader, state);
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type, reader, state.PropertyPath);
                     }
 
                     ClassType classType = state.Current.JsonClassInfo.ElementClassInfo.ClassType;
@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization
             state.Current.ReturnValue = classInfo.CreateObject();
         }
 
-        private static bool HandleEndObject(JsonSerializerOptions options, ref ReadStack state)
+        private static bool HandleEndObject(JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
         {
             bool isLastFrame = state.IsLastFrame;
             if (state.Current.Drain)
@@ -87,7 +87,7 @@ namespace System.Text.Json.Serialization
             }
 
             state.Pop();
-            ApplyObjectToEnumerable(value, options, ref state.Current);
+            ApplyObjectToEnumerable(value, options, ref state, ref reader);
             return false;
         }
     }

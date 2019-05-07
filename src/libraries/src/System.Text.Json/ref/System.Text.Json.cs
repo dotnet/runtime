@@ -113,19 +113,22 @@ namespace System.Text.Json
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }
     }
+    public partial class JsonException : System.Exception
+    {
+        protected JsonException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public JsonException(string message, string path, long? lineNumber, long? bytePositionInLine) { }
+        public JsonException(string message, string path, long? lineNumber, long? bytePositionInLine, System.Exception innerException) { }
+        public long? BytePositionInLine { get { throw null; } }
+        public long? LineNumber { get { throw null; } }
+        public string Path { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
     public readonly partial struct JsonProperty
     {
         private readonly object _dummy;
         public string Name { get { throw null; } }
         public System.Text.Json.JsonElement Value { get { throw null; } }
         public override string ToString() { throw null; }
-    }
-    public sealed partial class JsonReaderException : System.Exception
-    {
-        public JsonReaderException(string message, long lineNumber, long bytePositionInLine) { }
-        public long BytePositionInLine { get { throw null; } }
-        public long LineNumber { get { throw null; } }
-        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public partial struct JsonReaderOptions
     {

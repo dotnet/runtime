@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization
         /// <param name="cancellationToken">
         /// The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the read operation.
         /// </param>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization
         /// <exception cref="System.ArgumentNullException">
         /// Thrown if <paramref name="utf8Json"/> or <paramref name="returnType"/> is null.
         /// </exception>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
@@ -180,9 +180,7 @@ namespace System.Text.Json.Serialization
 
             if (bytesInBuffer != 0)
             {
-                throw new JsonReaderException(
-                    SR.Format(SR.DeserializeDataRemaining, totalBytesRead, bytesInBuffer),
-                    readerState);
+                ThrowHelper.ThrowJsonException_DeserializeDataRemaining(totalBytesRead, bytesInBuffer);
             }
 
             return (TValue)state.Current.ReturnValue;

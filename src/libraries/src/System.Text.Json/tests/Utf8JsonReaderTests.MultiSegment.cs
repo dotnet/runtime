@@ -280,9 +280,9 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonReaderException for multi-segment data was not thrown.");
+                    Assert.True(false, "Expected JsonException for multi-segment data was not thrown.");
                 }
-                catch (JsonReaderException ex)
+                catch (JsonException ex)
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
@@ -308,9 +308,9 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonReaderException for multi-segment data was not thrown.");
+                    Assert.True(false, "Expected JsonException for multi-segment data was not thrown.");
                 }
-                catch (JsonReaderException ex)
+                catch (JsonException ex)
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
@@ -328,9 +328,9 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
                 Assert.Equal(0, ex.LineNumber);
                 Assert.Equal(0, ex.BytePositionInLine);
@@ -422,9 +422,9 @@ namespace System.Text.Json.Tests
                         break;
                     }
                 }
-                Assert.True(false, "Expected JsonReaderException due to invalid JSON.");
+                Assert.True(false, "Expected JsonException due to invalid JSON.");
             }
-            catch (JsonReaderException)
+            catch (JsonException)
             { }
         }
 
@@ -829,7 +829,7 @@ namespace System.Text.Json.Tests
                 Assert.Contains(reader.TokenType, new[] { JsonTokenType.EndArray, JsonTokenType.EndObject });
             }
 
-            JsonTestHelper.AssertThrows<JsonReaderException>(reader, (jsonReader) =>
+            JsonTestHelper.AssertThrows<JsonException>(reader, (jsonReader) =>
             {
                 jsonReader.Read();
                 if (commentHandling == JsonCommentHandling.Allow && jsonReader.TokenType == JsonTokenType.Comment)
@@ -940,7 +940,7 @@ namespace System.Text.Json.Tests
 
             if (expectThrow)
             {
-                JsonTestHelper.AssertThrows<JsonReaderException>(reader, (jsonReader) =>
+                JsonTestHelper.AssertThrows<JsonException>(reader, (jsonReader) =>
                 {
                     while (jsonReader.Read())
                         ;

@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization
         /// <returns>A <typeparamref name="TValue"/> representation of the JSON value.</returns>
         /// <param name="utf8Json">JSON text to parse.</param>
         /// <param name="options">Options to control the behavior during parsing.</param>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization
         /// <exception cref="System.ArgumentNullException">
         /// Thrown if <paramref name="returnType"/> is null.
         /// </exception>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         /// Thrown when the JSON is invalid,
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
@@ -60,8 +60,7 @@ namespace System.Text.Json.Serialization
             if (reader.BytesConsumed != utf8Json.Length)
             {
                 readerState = reader.CurrentState;
-                throw new JsonReaderException(SR.Format(SR.DeserializeDataRemaining,
-                    utf8Json.Length, utf8Json.Length - readerState.BytesConsumed), readerState);
+                ThrowHelper.ThrowJsonException_DeserializeDataRemaining(utf8Json.Length, utf8Json.Length - readerState.BytesConsumed);
             }
 
             return result;

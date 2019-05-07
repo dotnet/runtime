@@ -862,9 +862,9 @@ namespace System.Text.Json.Tests
                     if (maxDepth < json.CurrentDepth)
                         maxDepth = json.CurrentDepth;
                 }
-                Assert.True(false, $"Expected JsonReaderException was not thrown. Max depth allowed = {json.CurrentState.Options.MaxDepth} | Max depth reached = {maxDepth}");
+                Assert.True(false, $"Expected JsonException was not thrown. Max depth allowed = {json.CurrentState.Options.MaxDepth} | Max depth reached = {maxDepth}");
             }
-            catch (JsonReaderException)
+            catch (JsonException)
             { }
 
             jsonStr = JsonTestHelper.WriteDepthArray(depth - 1);
@@ -881,9 +881,9 @@ namespace System.Text.Json.Tests
                     if (maxDepth < json.CurrentDepth)
                         maxDepth = json.CurrentDepth;
                 }
-                Assert.True(false, $"Expected JsonReaderException was not thrown. Max depth allowed = {json.CurrentState.Options.MaxDepth} | Max depth reached = {maxDepth}");
+                Assert.True(false, $"Expected JsonException was not thrown. Max depth allowed = {json.CurrentState.Options.MaxDepth} | Max depth reached = {maxDepth}");
             }
-            catch (JsonReaderException)
+            catch (JsonException)
             { }
         }
 
@@ -1029,9 +1029,9 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonReaderException was not thrown.");
+                    Assert.True(false, "Expected JsonException was not thrown.");
                 }
-                catch (JsonReaderException ex)
+                catch (JsonException ex)
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
@@ -1079,9 +1079,9 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonReaderException was not thrown.");
+                    Assert.True(false, "Expected JsonException was not thrown.");
                 }
-                catch (JsonReaderException ex)
+                catch (JsonException ex)
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
@@ -1105,9 +1105,9 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonReaderException was not thrown.");
+                    Assert.True(false, "Expected JsonException was not thrown.");
                 }
-                catch (JsonReaderException ex)
+                catch (JsonException ex)
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
@@ -1130,9 +1130,9 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                    Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
                 }
-                catch (JsonReaderException ex)
+                catch (JsonException ex)
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
@@ -1157,9 +1157,9 @@ namespace System.Text.Json.Tests
                 {
                     while (json.Read())
                         ;
-                    Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                    Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
                 }
-                catch (JsonReaderException ex)
+                catch (JsonException ex)
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedBytePosition, ex.BytePositionInLine);
@@ -1186,9 +1186,9 @@ namespace System.Text.Json.Tests
                         while (jsonSlice.Read())
                             ;
 
-                        Assert.True(false, "Expected JsonReaderException was not thrown with multi-segment data.");
+                        Assert.True(false, "Expected JsonException was not thrown with multi-segment data.");
                     }
-                    catch (JsonReaderException ex)
+                    catch (JsonException ex)
                     {
                         string errorMessage = $"expectedLineNumber: {expectedlineNumber} | actual: {ex.LineNumber} | index: {i} | option: {commentHandling}";
                         string firstSegmentString = Encoding.UTF8.GetString(dataUtf8, 0, i);
@@ -1589,9 +1589,9 @@ namespace System.Text.Json.Tests
                             break;
                     }
                 }
-                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
                 Assert.Equal(expectedlineNumber, ex.LineNumber);
                 Assert.Equal(expectedPosition, ex.BytePositionInLine);
@@ -1649,9 +1649,9 @@ namespace System.Text.Json.Tests
                             break;
                     }
                 }
-                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
                 Assert.Equal(expectedlineNumber, ex.LineNumber);
                 Assert.Equal(expectedPosition, ex.BytePositionInLine);
@@ -1686,9 +1686,9 @@ namespace System.Text.Json.Tests
                         }
                     }
 
-                    Assert.True(false, "Expected JsonReaderException was not thrown with multi-segment data.");
+                    Assert.True(false, "Expected JsonException was not thrown with multi-segment data.");
                 }
-                catch (JsonReaderException ex)
+                catch (JsonException ex)
                 {
                     Assert.Equal(expectedlineNumber, ex.LineNumber);
                     Assert.Equal(expectedPosition, ex.BytePositionInLine);
@@ -1763,9 +1763,9 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
                 Assert.Equal(expectedlineNumber, ex.LineNumber);
                 Assert.Equal(expectedPosition, ex.BytePositionInLine);
@@ -1778,9 +1778,9 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
                 Assert.Equal(expectedlineNumber, ex.LineNumber);
                 Assert.Equal(expectedPosition, ex.BytePositionInLine);
@@ -1849,9 +1849,9 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
                 Assert.Equal(expectedlineNumber, ex.LineNumber);
                 Assert.Equal(expectedPosition, ex.BytePositionInLine);
@@ -1868,9 +1868,9 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
                 Assert.Equal(0, ex.LineNumber);
                 Assert.Equal(0, ex.BytePositionInLine);
@@ -1887,9 +1887,9 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
                 Assert.Equal(0, ex.LineNumber);
                 Assert.Equal(1, ex.BytePositionInLine);
@@ -1913,9 +1913,9 @@ namespace System.Text.Json.Tests
             {
                 while (json.Read())
                     ;
-                Assert.True(false, "Expected JsonReaderException was not thrown with single-segment data.");
+                Assert.True(false, "Expected JsonException was not thrown with single-segment data.");
             }
-            catch (JsonReaderException ex)
+            catch (JsonException ex)
             {
                 Assert.Equal(expectedLineNumber, ex.LineNumber);
                 Assert.Equal(expectedConsumed, ex.BytePositionInLine);
@@ -2218,7 +2218,7 @@ namespace System.Text.Json.Tests
                 Assert.Contains(reader.TokenType, new[] { JsonTokenType.EndArray, JsonTokenType.EndObject });
             }
 
-            JsonTestHelper.AssertThrows<JsonReaderException>(reader, (jsonReader) =>
+            JsonTestHelper.AssertThrows<JsonException>(reader, (jsonReader) =>
             {
                 jsonReader.Read();
                 if (commentHandling == JsonCommentHandling.Allow && jsonReader.TokenType == JsonTokenType.Comment)
@@ -2325,7 +2325,7 @@ namespace System.Text.Json.Tests
 
             if (expectThrow)
             {
-                JsonTestHelper.AssertThrows<JsonReaderException>(reader, (jsonReader) =>
+                JsonTestHelper.AssertThrows<JsonException>(reader, (jsonReader) =>
                 {
                     while (jsonReader.Read())
                         ;
@@ -2426,7 +2426,7 @@ namespace System.Text.Json.Tests
         {
             if (expectThrow)
             {
-                Assert.Throws<JsonReaderException>(() => PartialReaderLoop(utf8, state));
+                Assert.ThrowsAny<JsonException>(() => PartialReaderLoop(utf8, state));
             }
             else
             {

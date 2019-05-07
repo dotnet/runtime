@@ -27,18 +27,18 @@ namespace System.Text.Json.Serialization
             JsonPropertyInfo propertyInfo = state.Current.JsonPropertyInfo;
             if (!propertyInfo.CanBeNull)
             {
-                ThrowHelper.ThrowJsonReaderException_DeserializeCannotBeNull(reader, state);
+                ThrowHelper.ThrowJsonException_DeserializeCannotBeNull(reader, state.PropertyPath);
             }
 
             if (state.Current.IsEnumerable || state.Current.IsDictionary)
             {
-                ApplyObjectToEnumerable(null, options, ref state.Current);
+                ApplyObjectToEnumerable(null, options, ref state, ref reader);
                 return false;
             }
 
             if (state.Current.IsPropertyEnumerable)
             {
-                state.Current.JsonPropertyInfo.ApplyNullValue(options, ref state);
+                state.Current.JsonPropertyInfo.ApplyNullValue(options, ref state, ref reader);
                 return false;
             }
 
