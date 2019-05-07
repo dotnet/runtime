@@ -10,8 +10,8 @@
 
 #ifndef _CODEGEN_H_
 #define _CODEGEN_H_
-#include "compiler.h" // temporary??
 #include "codegeninterface.h"
+#include "compiler.h" // temporary??
 #include "regset.h"
 #include "jitgcinfo.h"
 
