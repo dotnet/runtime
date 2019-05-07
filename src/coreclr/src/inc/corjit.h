@@ -389,7 +389,7 @@ public:
     
     virtual void reportFatalError(CorJitResult result) = 0;
 
-    struct ProfileBuffer  // Also defined here: code:CORBBTPROF_BLOCK_DATA
+    struct BlockCounts  // Also defined by:  CORBBTPROF_BLOCK_DATA
     {
         ULONG ILOffset;
         ULONG ExecutionCount;
@@ -397,18 +397,18 @@ public:
 
     // allocate a basic block profile buffer where execution counts will be stored
     // for jitted basic blocks.
-    virtual HRESULT allocBBProfileBuffer (
-            ULONG                 count,           // The number of basic blocks that we have
-            ProfileBuffer **      profileBuffer
+    virtual HRESULT allocMethodBlockCounts (
+            DWORD                 count,           // The number of basic blocks that we have
+            BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
             ) = 0;
 
     // get profile information to be used for optimizing the current method.  The format
     // of the buffer is the same as the format the JIT passes to allocBBProfileBuffer.
-    virtual HRESULT getBBProfileData(
+    virtual HRESULT getMethodBlockCounts(
             CORINFO_METHOD_HANDLE ftnHnd,
-            ULONG *               count,           // The number of basic blocks that we have
-            ProfileBuffer **      profileBuffer,
-            ULONG *               numRuns
+            DWORD *               pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+            BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
+            DWORD *               pNumRuns         // pointer to the total number of profile scenarios run
             ) = 0;
 
     // Associates a native call site, identified by its offset in the native code stream, with
