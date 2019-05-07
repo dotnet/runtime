@@ -96,7 +96,7 @@ jobs:
       timeoutInMinutes: 360
     ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
       timeoutInMinutes: 480
-    ${{ eq in(parameters.testGroup, 'outerloop-gcstress-extra') }}:
+    ${{ if eq(parameters.testGroup, 'outerloop-gcstress-extra') }}:
       timeoutInMinutes: 600
 
     steps:
