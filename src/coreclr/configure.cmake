@@ -1,4 +1,5 @@
 include(CheckCXXSourceCompiles)
+include(CheckCXXCompilerFlag)
 
 # VC++ guarantees support for LTCG (LTO's equivalent)
 if(NOT WIN32)
@@ -9,4 +10,6 @@ if(NOT WIN32)
     check_cxx_source_compiles("int main() { return 0; }" HAVE_LTO)
   endfunction(check_have_lto)
   check_have_lto()
+
+  check_cxx_compiler_flag(-faligned-new COMPILER_SUPPORTS_F_ALIGNED_NEW)
 endif(NOT WIN32)
