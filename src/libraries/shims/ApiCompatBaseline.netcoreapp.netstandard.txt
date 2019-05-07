@@ -68,4 +68,7 @@ CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a pri
 MembersMustExist : Member 'System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
-Total Issues: 59
+MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.ConfigureAwait(System.IAsyncDisposable, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.ConfigureAwait<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Boolean)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.WithCancellation<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
+Total Issues: 62
