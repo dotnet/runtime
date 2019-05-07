@@ -3463,41 +3463,41 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 #endif
     }
 
-    fgProfileBuffer              = nullptr;
+    fgBlockCounts                = nullptr;
     fgProfileData_ILSizeMismatch = false;
     fgNumProfileRuns             = 0;
     if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
     {
         assert(!compIsForInlining());
         HRESULT hr;
-        hr = info.compCompHnd->getBBProfileData(info.compMethodHnd, &fgProfileBufferCount, &fgProfileBuffer,
-                                                &fgNumProfileRuns);
+        hr = info.compCompHnd->getMethodBlockCounts(info.compMethodHnd, &fgBlockCountsCount, &fgBlockCounts,
+                                                    &fgNumProfileRuns);
 
-        // a failed result that also has a non-NULL fgProfileBuffer
+        // a failed result that also has a non-NULL fgBlockCounts
         // indicates that the ILSize for the method no longer matches
         // the ILSize for the method when profile data was collected.
         //
         // We will discard the IBC data in this case
         //
-        if (FAILED(hr) && (fgProfileBuffer != nullptr))
+        if (FAILED(hr) && (fgBlockCounts != nullptr))
         {
             fgProfileData_ILSizeMismatch = true;
-            fgProfileBuffer              = nullptr;
+            fgBlockCounts                = nullptr;
         }
 #ifdef DEBUG
-        // A successful result implies a non-NULL fgProfileBuffer
+        // A successful result implies a non-NULL fgBlockCounts
         //
         if (SUCCEEDED(hr))
         {
-            assert(fgProfileBuffer != nullptr);
+            assert(fgBlockCounts != nullptr);
         }
 
-        // A failed result implies a NULL fgProfileBuffer
+        // A failed result implies a NULL fgBlockCounts
         //   see implementation of Compiler::fgHaveProfileData()
         //
         if (FAILED(hr))
         {
-            assert(fgProfileBuffer == nullptr);
+            assert(fgBlockCounts == nullptr);
         }
 #endif
     }
@@ -5471,8 +5471,8 @@ void Compiler::compCompileFinish()
         unsigned profCallCount = 0;
         if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && fgHaveProfileData())
         {
-            assert(fgProfileBuffer[0].ILOffset == 0);
-            profCallCount = fgProfileBuffer[0].ExecutionCount;
+            assert(fgBlockCounts[0].ILOffset == 0);
+            profCallCount = fgBlockCounts[0].ExecutionCount;
         }
 
         static bool headerPrinted = false;
@@ -5948,7 +5948,12 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
         goto _Next;
     }
 
+#ifdef FEATURE_CORECLR
     if (fgHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToTier1())
+#else // !FEATURE_CORECLR
+    // We may want to use JitConfig value here to support DISABLE_TIER0_FOR_LOOPS
+    if (fgHasBackwardJump && fgCanSwitchToTier1())
+#endif
     {
         // Method likely has a loop, switch to the OptimizedTier to avoid spending too much time running slower code
         fgSwitchToTier1();
