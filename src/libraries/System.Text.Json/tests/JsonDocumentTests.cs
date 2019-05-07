@@ -416,7 +416,7 @@ namespace System.Text.Json.Tests
         public static void ParseJson_SeekableStream_BadBOM(string json)
         {
             byte[] data = Encoding.UTF8.GetBytes(json);
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(new MemoryStream(data)));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(new MemoryStream(data)));
         }
 
         [Theory]
@@ -424,7 +424,7 @@ namespace System.Text.Json.Tests
         public static Task ParseJson_SeekableStream_Async_BadBOM(string json)
         {
             byte[] data = Encoding.UTF8.GetBytes(json);
-            return Assert.ThrowsAsync<JsonReaderException>(() => JsonDocument.ParseAsync(new MemoryStream(data)));
+            return Assert.ThrowsAnyAsync<JsonException>(() => JsonDocument.ParseAsync(new MemoryStream(data)));
         }
 
         [Theory]
@@ -433,7 +433,7 @@ namespace System.Text.Json.Tests
         {
             byte[] data = Encoding.UTF8.GetBytes(json);
 
-            Assert.Throws<JsonReaderException>(
+            Assert.ThrowsAny<JsonException>(
                 () => JsonDocument.Parse(
                     new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, data)));
         }
@@ -444,7 +444,7 @@ namespace System.Text.Json.Tests
         {
             byte[] data = Encoding.UTF8.GetBytes(json);
 
-            return Assert.ThrowsAsync<JsonReaderException>(
+            return Assert.ThrowsAnyAsync<JsonException>(
                 () => JsonDocument.ParseAsync(
                     new WrappedMemoryStream(canRead: true, canWrite: false, canSeek: false, data)));
         }
@@ -1579,22 +1579,22 @@ namespace System.Text.Json.Tests
         [InlineData("[ 1")]
         public static Task CheckUnparsable(string json)
         {
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(json));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(json));
 
             byte[] utf8 = Encoding.UTF8.GetBytes(json);
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(utf8));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(utf8));
 
             ReadOnlySequence<byte> singleSeq = new ReadOnlySequence<byte>(utf8);
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(singleSeq));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(singleSeq));
 
             ReadOnlySequence<byte> multiSegment = JsonTestHelper.SegmentInto(utf8, 6);
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(multiSegment));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(multiSegment));
 
             Stream stream = new MemoryStream(utf8);
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(stream));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(stream));
 
             stream.Seek(0, SeekOrigin.Begin);
-            return Assert.ThrowsAsync<JsonReaderException>(() => JsonDocument.ParseAsync(stream));
+            return Assert.ThrowsAnyAsync<JsonException>(() => JsonDocument.ParseAsync(stream));
         }
 
         [Fact]
@@ -1625,7 +1625,7 @@ namespace System.Text.Json.Tests
 
             string badJson = $"[{okayJson}]";
 
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(badJson));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(badJson));
         }
 
         [Fact]
@@ -1654,10 +1654,10 @@ namespace System.Text.Json.Tests
                 Assert.Equal(OkayCount, depth);
             }
 
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = 32 }));
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(okayJson));
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = 0 }));
-            Assert.Throws<JsonReaderException>(() => JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = 64 }));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = 32 }));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(okayJson));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = 0 }));
+            Assert.ThrowsAny<JsonException>(() => JsonDocument.Parse(okayJson, new JsonReaderOptions { MaxDepth = 64 }));
         }
 
         [Fact]
@@ -2365,7 +2365,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ParseDefaultReader()
         {
-            Assert.Throws<JsonReaderException>(() =>
+            Assert.ThrowsAny<JsonException>(() =>
             {
                 Utf8JsonReader reader = default;
                 JsonDocument.ParseValue(ref reader);
@@ -2504,7 +2504,7 @@ namespace System.Text.Json.Tests
             }
 
             Assert.NotNull(ex);
-            Assert.IsType<JsonReaderException>(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
 
             BuildSegmentedReader(out reader, utf8.AsMemory((int)position), 0, state, true);
 
@@ -2695,7 +2695,7 @@ namespace System.Text.Json.Tests
             }
 
             Assert.NotNull(ex);
-            Assert.IsType<JsonReaderException>(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
 
             Assert.Equal(initialPosition, reader.BytesConsumed);
 
@@ -2739,7 +2739,7 @@ namespace System.Text.Json.Tests
             }
 
             Assert.NotNull(ex);
-            Assert.IsType<JsonReaderException>(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
 
             Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
             Assert.Equal(startPosition, reader.BytesConsumed);
@@ -2757,7 +2757,7 @@ namespace System.Text.Json.Tests
             }
 
             Assert.NotNull(ex);
-            Assert.IsType<JsonReaderException>(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
             Assert.Null(doc);
 
             Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
@@ -2799,7 +2799,7 @@ namespace System.Text.Json.Tests
             }
 
             Assert.NotNull(ex);
-            Assert.IsType<JsonReaderException>(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
 
             Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
             Assert.Equal(startPosition, reader.BytesConsumed);
@@ -2846,7 +2846,7 @@ namespace System.Text.Json.Tests
             }
 
             Assert.NotNull(ex);
-            Assert.IsType<JsonReaderException>(ex);
+            Assert.IsAssignableFrom<JsonException>(ex);
 
             Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
             Assert.Equal(startPosition, reader.BytesConsumed);

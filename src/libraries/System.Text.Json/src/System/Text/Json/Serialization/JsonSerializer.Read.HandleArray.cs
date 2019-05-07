@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization
             Type arrayType = jsonPropertyInfo.RuntimePropertyType;
             if (!typeof(IEnumerable).IsAssignableFrom(arrayType) || (arrayType.IsArray && arrayType.GetArrayRank() > 1))
             {
-                ThrowHelper.ThrowJsonReaderException_DeserializeUnableToConvertValue(arrayType, reader, state);
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(arrayType, reader, state.PropertyPath);
             }
 
             Debug.Assert(state.Current.IsPropertyEnumerable || state.Current.IsDictionary);
@@ -85,7 +85,8 @@ namespace System.Text.Json.Serialization
 
         private static bool HandleEndArray(
             JsonSerializerOptions options,
-            ref ReadStack state)
+            ref ReadStack state,
+            ref Utf8JsonReader reader)
         {
             bool lastFrame = state.IsLastFrame;
 
@@ -142,7 +143,7 @@ namespace System.Text.Json.Serialization
                 // else there must be an outer object, so we'll return false here.
             }
 
-            ApplyObjectToEnumerable(value, options, ref state.Current, setPropertyDirectly: setPropertyDirectly);
+            ApplyObjectToEnumerable(value, options, ref state, ref reader, setPropertyDirectly: setPropertyDirectly);
 
             if (!valueReturning)
             {
@@ -153,41 +154,56 @@ namespace System.Text.Json.Serialization
         }
 
         // If this method is changed, also change ApplyValueToEnumerable.
-        internal static void ApplyObjectToEnumerable(object value, JsonSerializerOptions options, ref ReadStackFrame frame, bool setPropertyDirectly = false)
+        internal static void ApplyObjectToEnumerable(
+            object value,
+            JsonSerializerOptions options,
+            ref ReadStack state,
+            ref Utf8JsonReader reader,
+            bool setPropertyDirectly = false)
         {
-            if (frame.IsEnumerable)
+            if (state.Current.IsEnumerable)
             {
-                if (frame.TempEnumerableValues != null)
+                if (state.Current.TempEnumerableValues != null)
                 {
-                    frame.TempEnumerableValues.Add(value);
+                    state.Current.TempEnumerableValues.Add(value);
                 }
                 else
                 {
-                    ((IList)frame.ReturnValue).Add(value);
+                    ((IList)state.Current.ReturnValue).Add(value);
                 }
             }
-            else if (!setPropertyDirectly && frame.IsPropertyEnumerable)
+            else if (!setPropertyDirectly && state.Current.IsPropertyEnumerable)
             {
-                Debug.Assert(frame.JsonPropertyInfo != null);
-                Debug.Assert(frame.ReturnValue != null);
-                if (frame.TempEnumerableValues != null)
+                Debug.Assert(state.Current.JsonPropertyInfo != null);
+                Debug.Assert(state.Current.ReturnValue != null);
+                if (state.Current.TempEnumerableValues != null)
                 {
-                    frame.TempEnumerableValues.Add(value);
+                    state.Current.TempEnumerableValues.Add(value);
                 }
                 else
                 {
-                    ((IList)frame.JsonPropertyInfo.GetValueAsObject(frame.ReturnValue)).Add(value);
+                    ((IList)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue)).Add(value);
                 }
             }
-            else if (frame.IsDictionary)
+            else if (state.Current.IsDictionary)
             {
-                Debug.Assert(frame.ReturnValue != null);
-                ((IDictionary)frame.JsonPropertyInfo.GetValueAsObject(frame.ReturnValue)).Add(frame.KeyName, value);
+                Debug.Assert(state.Current.ReturnValue != null);
+                IDictionary dictionary = (IDictionary)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
+                string key = state.Current.KeyName;
+                Debug.Assert(!string.IsNullOrEmpty(key));
+                if (!dictionary.Contains(key))
+                {
+                    dictionary.Add(key, value);
+                }
+                else
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.PropertyPath);
+                }
             }
             else
             {
-                Debug.Assert(frame.JsonPropertyInfo != null);
-                frame.JsonPropertyInfo.SetValueAsObject(frame.ReturnValue, value);
+                Debug.Assert(state.Current.JsonPropertyInfo != null);
+                state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
             }
         }
 
@@ -195,41 +211,53 @@ namespace System.Text.Json.Serialization
         internal static void ApplyValueToEnumerable<TProperty>(
             ref TProperty value,
             JsonSerializerOptions options,
-            ref ReadStackFrame frame)
+            ref ReadStack state,
+            ref Utf8JsonReader reader)
         {
-            if (frame.IsEnumerable)
+            if (state.Current.IsEnumerable)
             {
-                if (frame.TempEnumerableValues != null)
+                if (state.Current.TempEnumerableValues != null)
                 {
-                    ((IList<TProperty>)frame.TempEnumerableValues).Add(value);
+                    ((IList<TProperty>)state.Current.TempEnumerableValues).Add(value);
                 }
                 else
                 {
-                    ((IList<TProperty>)frame.ReturnValue).Add(value);
+                    ((IList<TProperty>)state.Current.ReturnValue).Add(value);
                 }
             }
-            else if (frame.IsPropertyEnumerable)
+            else if (state.Current.IsPropertyEnumerable)
             {
-                Debug.Assert(frame.JsonPropertyInfo != null);
-                Debug.Assert(frame.ReturnValue != null);
-                if (frame.TempEnumerableValues != null)
+                Debug.Assert(state.Current.JsonPropertyInfo != null);
+                Debug.Assert(state.Current.ReturnValue != null);
+                if (state.Current.TempEnumerableValues != null)
                 {
-                    ((IList<TProperty>)frame.TempEnumerableValues).Add(value);
+                    ((IList<TProperty>)state.Current.TempEnumerableValues).Add(value);
                 }
                 else
                 {
-                    ((IList<TProperty>)frame.JsonPropertyInfo.GetValueAsObject(frame.ReturnValue)).Add(value);
+                    ((IList<TProperty>)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue)).Add(value);
                 }
             }
-            else if (frame.IsDictionary)
+            else if (state.Current.IsDictionary)
             {
-                Debug.Assert(frame.ReturnValue != null);
-                ((IDictionary<string, TProperty>)frame.JsonPropertyInfo.GetValueAsObject(frame.ReturnValue)).Add(frame.KeyName, value);
+                Debug.Assert(state.Current.ReturnValue != null);
+                IDictionary<string, TProperty> dictionary = (IDictionary<string, TProperty>)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
+
+                string key = state.Current.KeyName;
+                Debug.Assert(!string.IsNullOrEmpty(key));
+                if (!dictionary.ContainsKey(key)) // The IDictionary.TryAdd extension method is not available in netstandard.
+                {
+                    dictionary.Add(key, value);
+                }
+                else
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.PropertyPath);
+                }
             }
             else
             {
-                Debug.Assert(frame.JsonPropertyInfo != null);
-                frame.JsonPropertyInfo.SetValueAsObject(frame.ReturnValue, value);
+                Debug.Assert(state.Current.JsonPropertyInfo != null);
+                state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
             }
         }
     }

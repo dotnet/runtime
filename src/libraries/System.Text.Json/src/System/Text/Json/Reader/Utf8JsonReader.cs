@@ -13,7 +13,7 @@ namespace System.Text.Json
     /// Provides a high-performance API for forward-only, read-only access to the UTF-8 encoded JSON text.
     /// It processes the text sequentially with no caching and adheres strictly to the JSON RFC
     /// by default (https://tools.ietf.org/html/rfc8259). When it encounters invalid JSON, it throws
-    /// a JsonReaderException with basic error information like line number and byte position on the line.
+    /// a JsonException with basic error information like line number and byte position on the line.
     /// Since this type is a ref struct, it does not directly support async. However, it does provide
     /// support for reentrancy to read incomplete data, and continue reading once more data is presented.
     /// To be able to set max depth while reading OR allow skipping comments, create an instance of 
@@ -242,7 +242,7 @@ namespace System.Text.Json
         /// Read the next JSON token from input source.
         /// </summary>
         /// <returns>True if the token was read successfully, else false.</returns>
-        /// <exception cref="JsonReaderException">
+        /// <exception cref="JsonException">
         /// Thrown when an invalid JSON token is encountered according to the JSON RFC
         /// or if the current depth exceeds the recursive limit set by the max depth.
         /// </exception>

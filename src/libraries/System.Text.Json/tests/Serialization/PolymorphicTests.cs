@@ -42,8 +42,8 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadPrimitivesFail()
         {
-            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<object>(@""));
-            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<object>(@"a"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>(@""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>(@"a"));
         }
 
         [Fact]

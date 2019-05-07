@@ -603,7 +603,7 @@ namespace System.Text.Json
                 throw new ThrowsException(typeof(E));
             }
 
-            if (ex.GetType() != typeof(E))
+            if (!(ex is E))
             {
                 throw new ThrowsException(typeof(E), ex);
             }

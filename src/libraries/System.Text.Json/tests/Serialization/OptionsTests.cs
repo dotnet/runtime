@@ -59,7 +59,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void AllowTrailingCommas()
         {
-            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<int[]>("[1,]"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<int[]>("[1,]"));
 
             var options = new JsonSerializerOptions();
             options.AllowTrailingCommas = true;
@@ -93,11 +93,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadCommentHandling()
         {
-            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<object>("/* commment */"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>("/* commment */"));
 
             var options = new JsonSerializerOptions();
 
-            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<object>("/* commment */", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>("/* commment */", options));
 
             options = new JsonSerializerOptions();
             options.ReadCommentHandling = JsonCommentHandling.Allow;
@@ -117,7 +117,7 @@ namespace System.Text.Json.Serialization.Tests
             options = new JsonSerializerOptions();
             options.MaxDepth = 1;
 
-            Assert.Throws<JsonReaderException>(() => JsonSerializer.Parse<BasicCompany>(BasicCompany.s_data, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<BasicCompany>(BasicCompany.s_data, options));
         }
     }
 }
