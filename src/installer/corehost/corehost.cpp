@@ -293,9 +293,25 @@ int main(const int argc, const pal::char_t* argv[])
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
     if (get_windows_graphical_user_interface_bit())
     {
-        // If this is a GUI application, buffer errors to display them later. Without this any errors are effectively lost
-        // unless the caller explicitly redirects stderr. This leads to bad experience of running the GUI app and nothing happening.
-        trace::set_error_writer(buffering_trace_writer);
+        pal::string_t env_value;
+        bool gui_errors_disabled = false;
+
+        if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &env_value))
+        {
+            gui_errors_disabled = pal::xtoi(env_value.c_str()) == 1;
+        }
+
+        if (!gui_errors_disabled)
+        {
+            trace::verbose(_X("Redirecting errors to custom writer."));
+            // If this is a GUI application, buffer errors to display them later. Without this any errors are effectively lost
+            // unless the caller explicitly redirects stderr. This leads to bad experience of running the GUI app and nothing happening.
+            trace::set_error_writer(buffering_trace_writer);
+        }
+        else
+        {
+            trace::verbose(_X("Gui errors disabled, keeping errors in stderr."));
+        }
     }
 #endif
 

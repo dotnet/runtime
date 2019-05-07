@@ -314,6 +314,50 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.FileContains(traceFilePath, "This executable is not bound to a managed DLL to execute.");
         }
 
+        [Fact]
+        public void Running_AppHost_with_GUI_Doesnt_Report_Errors_In_Window_When_Disabled()
+        {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                // GUI app host is only supported on Windows.
+                return;
+            }
+
+            var fixture = sharedTestState.StandaloneAppFixture_Published
+                .Copy();
+
+            string appExe = fixture.TestProject.AppExe;
+
+            // Mark the apphost as GUI, but don't bind it to anything - this will cause it to fail
+            UseBuiltAppHost(appExe);
+            MarkAppHostAsGUI(appExe);
+
+            Command command = Command.Create(appExe)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .EnvironmentVariable(Constants.DisableGuiErrors.EnvironmentVariable, "1")
+                .Start();
+
+            CommandResult commandResult = command.WaitForExit(fExpectedToFail: false, timeoutMilliseconds: 30000);
+            if (commandResult.ExitCode == -1)
+            {
+                try
+                {
+                    // Try to kill the process - it may be up with a dialog, or have some other issue.
+                    command.Process.Kill();
+                }
+                catch
+                {
+                    // Ignore exceptions, we don't know what's going on with the process.
+                }
+
+                Assert.True(false, "The process failed to exit in the alloted time, it's possible it has a dialog up which should not be there.");
+            }
+
+            commandResult.Should().HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
+        }
+
 #if WINDOWS
         private delegate bool EnumThreadWindowsDelegate(IntPtr hWnd, IntPtr lParam);
 
