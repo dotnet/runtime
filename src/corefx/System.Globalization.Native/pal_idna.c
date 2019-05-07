@@ -50,6 +50,9 @@ int32_t GlobalizationNative_ToAscii(
 
     int32_t asciiStrLen = uidna_nameToASCII(pIdna, lpSrc, cwSrcLength, lpDst, cwDstLength, &info, &err);
 
+    // To have a consistent behavior with Windows, we mask out the error when having 2 hyphens in the third and fourth place.
+    info.errors &= ~UIDNA_ERROR_HYPHEN_3_4;
+
     uidna_close(pIdna);
 
     return ((U_SUCCESS(err) || (err == U_BUFFER_OVERFLOW_ERROR)) && (info.errors == 0)) ? asciiStrLen : 0;
