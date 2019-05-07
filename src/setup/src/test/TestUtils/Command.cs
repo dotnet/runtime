@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.DotNet.InternalAbstractions;
 
 namespace Microsoft.DotNet.Cli.Build.Framework
@@ -212,13 +213,19 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return this;
         }
 
-        public CommandResult WaitForExit(bool fExpectedToFail)
+        public CommandResult WaitForExit(bool fExpectedToFail, int timeoutMilliseconds = Timeout.Infinite)
         {
             ReportExecWaitOnExit();
 
-            Process.WaitForExit();
-
-            var exitCode = Process.ExitCode;
+            int exitCode;
+            if (!Process.WaitForExit(timeoutMilliseconds))
+            {
+                exitCode = -1;
+            }
+            else
+            {
+                exitCode = Process.ExitCode;
+            }
 
             ReportExecEnd(exitCode, fExpectedToFail);
 
@@ -255,18 +262,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
             Process.StartInfo.Environment[userDir] = userprofile;
             return this;
-        }
-
-        public Command WithGlobalLocation(string global)
-        {
-            if (RuntimeEnvironment.OperatingSystemPlatform == Platform.Windows)
-            {
-                throw new NotImplementedException("Global location override needs test improvements for Windows");
-            }
-            else
-            {
-                throw new NotSupportedException("Global location override not supported for Linux");
-            }
         }
 
         public Command EnvironmentVariable(string name, string value)
@@ -420,15 +415,9 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 capture.WriteLine(data);
             }
 
-            if (forward != null)
-            {
-                forward(data);
-            }
+            forward?.Invoke(data);
 
-            if (handler != null)
-            {
-                handler(data);
-            }
+            handler?.Invoke(data);
         }
     }
 }

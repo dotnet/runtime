@@ -44,6 +44,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public const string EnvironmentVariable = "DOTNET_ROLL_FORWARD_TO_PRERELEASE";
         }
 
+        public static class DisableGuiErrors
+        {
+            public const string EnvironmentVariable = "DOTNET_DISABLE_GUI_ERRORS";
+        }
+
         public static class TestOnlyEnvironmentVariables
         {
             public const string DefaultInstallPath = "_DOTNET_TEST_DEFAULT_INSTALL_PATH";
