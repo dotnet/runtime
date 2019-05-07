@@ -1497,20 +1497,20 @@ void interceptor_ICJI::reportFatalError(CorJitResult result)
 
 // allocate a basic block profile buffer where execution counts will be stored
 // for jitted basic blocks.
-HRESULT interceptor_ICJI::allocBBProfileBuffer(ULONG           count, // The number of basic blocks that we have
-                                               ProfileBuffer** profileBuffer)
+HRESULT interceptor_ICJI::allocMethodBlockCounts(DWORD           count, // The number of basic blocks that we have
+                                                 BlockCounts**   pBlockCounts)
 {
-    return original_ICorJitInfo->allocBBProfileBuffer(count, profileBuffer);
+    return original_ICorJitInfo->allocMethodBlockCounts(count, pBlockCounts);
 }
 
 // get profile information to be used for optimizing the current method.  The format
-// of the buffer is the same as the format the JIT passes to allocBBProfileBuffer.
-HRESULT interceptor_ICJI::getBBProfileData(CORINFO_METHOD_HANDLE ftnHnd,
-                                           ULONG*                count, // The number of basic blocks that we have
-                                           ProfileBuffer**       profileBuffer,
-                                           ULONG*                numRuns)
+// of the buffer is the same as the format the JIT passes to allocMethodBlockCounts.
+HRESULT interceptor_ICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
+                                               DWORD*                pCount, // The number of basic blocks that we have
+                                               BlockCounts**         pBlockCounts,
+                                               DWORD*                pNumRuns)
 {
-    return original_ICorJitInfo->getBBProfileData(ftnHnd, count, profileBuffer, numRuns);
+    return original_ICorJitInfo->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

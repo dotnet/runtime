@@ -183,7 +183,7 @@ bool Compiler::fgHaveProfileData()
         return false;
     }
 
-    return (fgProfileBuffer != nullptr);
+    return (fgBlockCounts != nullptr);
 }
 
 bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weightWB)
@@ -232,11 +232,11 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
     }
 
     noway_assert(!compIsForInlining());
-    for (unsigned i = 0; i < fgProfileBufferCount; i++)
+    for (DWORD i = 0; i < fgBlockCountsCount; i++)
     {
-        if (fgProfileBuffer[i].ILOffset == offset)
+        if (fgBlockCounts[i].ILOffset == offset)
         {
-            weight = fgProfileBuffer[i].ExecutionCount;
+            weight = fgBlockCounts[i].ExecutionCount;
 
             *weightWB = weight;
             return true;
@@ -266,9 +266,9 @@ void Compiler::fgInstrumentMethod()
 
     // Allocate the profile buffer
 
-    ICorJitInfo::ProfileBuffer* bbProfileBufferStart;
+    ICorJitInfo::BlockCounts* profileBlockCountsStart;
 
-    HRESULT res = info.compCompHnd->allocBBProfileBuffer(countOfBlocks, &bbProfileBufferStart);
+    HRESULT res = info.compCompHnd->allocMethodBlockCounts(countOfBlocks, &profileBlockCountsStart);
 
     GenTreeStmt* stmt;
 
@@ -286,7 +286,7 @@ void Compiler::fgInstrumentMethod()
         }
         else
         {
-            noway_assert(!"Error:  failed to allocate bbProfileBuffer");
+            noway_assert(!"Error:  failed to allocate profileBlockCounts");
             return;
         }
     }
@@ -296,10 +296,10 @@ void Compiler::fgInstrumentMethod()
         //  1. Assign the blocks bbCodeOffs to the ILOffset field of this blocks profile data.
         //  2. Add an operation that increments the ExecutionCount field at the beginning of the block.
 
-        // Each (non-Internal) block has it own ProfileBuffer tuple [ILOffset, ExecutionCount]
+        // Each (non-Internal) block has it own BlockCounts tuple [ILOffset, ExecutionCount]
         // To start we initialize our current one with the first one that we allocated
         //
-        ICorJitInfo::ProfileBuffer* bbCurrentBlockProfileBuffer = bbProfileBufferStart;
+        ICorJitInfo::BlockCounts* currentBlockCounts = profileBlockCountsStart;
 
         for (block = fgFirstBB; (block != nullptr); block = block->bbNext)
         {
@@ -309,10 +309,10 @@ void Compiler::fgInstrumentMethod()
             }
 
             // Assign the current block's IL offset into the profile data
-            bbCurrentBlockProfileBuffer->ILOffset = block->bbCodeOffs;
-            assert(bbCurrentBlockProfileBuffer->ExecutionCount == 0); // This value should already be zero-ed out
+            currentBlockCounts->ILOffset = block->bbCodeOffs;
+            assert(currentBlockCounts->ExecutionCount == 0); // This value should already be zero-ed out
 
-            size_t addrOfCurrentExecutionCount = (size_t)&bbCurrentBlockProfileBuffer->ExecutionCount;
+            size_t addrOfCurrentExecutionCount = (size_t)&currentBlockCounts->ExecutionCount;
 
             // Read Basic-Block count value
             GenTree* valueNode =
@@ -327,13 +327,13 @@ void Compiler::fgInstrumentMethod()
 
             fgInsertStmtAtBeg(block, asgNode);
 
-            // Advance to the next ProfileBuffer tuple [ILOffset, ExecutionCount]
-            bbCurrentBlockProfileBuffer++;
+            // Advance to the next BlockCounts tuple [ILOffset, ExecutionCount]
+            currentBlockCounts++;
 
             // One less block
             countOfBlocks--;
         }
-        // Check that we allocated and initialized the same number of ProfileBuffer tuples
+        // Check that we allocated and initialized the same number of BlockCounts tuples
         noway_assert(countOfBlocks == 0);
 
         // Add the method entry callback node
@@ -365,7 +365,7 @@ void Compiler::fgInstrumentMethod()
         GenTree*        call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
         // Get the address of the first blocks ExecutionCount
-        size_t addrOfFirstExecutionCount = (size_t)&bbProfileBufferStart->ExecutionCount;
+        size_t addrOfFirstExecutionCount = (size_t)&profileBlockCountsStart->ExecutionCount;
 
         // Read Basic-Block count value
         GenTree* valueNode = gtNewIndOfIconHandleNode(TYP_INT, addrOfFirstExecutionCount, GTF_ICON_BBC_PTR, false);

@@ -1810,22 +1810,22 @@ void MyICJI::reportFatalError(CorJitResult result)
 
 // allocate a basic block profile buffer where execution counts will be stored
 // for jitted basic blocks.
-HRESULT MyICJI::allocBBProfileBuffer(ULONG           count, // The number of basic blocks that we have
-                                     ProfileBuffer** profileBuffer)
+HRESULT MyICJI::allocMethodBlockCounts(DWORD           count, // The number of basic blocks that we have
+                                       BlockCounts**   pBlockCounts)
 {
-    jitInstance->mc->cr->AddCall("allocBBProfileBuffer");
-    return jitInstance->mc->cr->repAllocBBProfileBuffer(count, profileBuffer);
+    jitInstance->mc->cr->AddCall("allocMethodBlockCounts");
+    return jitInstance->mc->cr->repAllocMethodBlockCounts(count, pBlockCounts);
 }
 
 // get profile information to be used for optimizing the current method.  The format
-// of the buffer is the same as the format the JIT passes to allocBBProfileBuffer.
-HRESULT MyICJI::getBBProfileData(CORINFO_METHOD_HANDLE ftnHnd,
-                                 ULONG*                count, // The number of basic blocks that we have
-                                 ProfileBuffer**       profileBuffer,
-                                 ULONG*                numRuns)
+// of the buffer is the same as the format the JIT passes to allocMethodBlockCounts.
+HRESULT MyICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
+                                     DWORD*                pCount, // The number of basic blocks that we have
+                                     BlockCounts**         pBlockCounts,
+                                     DWORD*                pNumRuns)
 {
-    jitInstance->mc->cr->AddCall("getBBProfileData");
-    return jitInstance->mc->repGetBBProfileData(ftnHnd, count, profileBuffer, numRuns);
+    jitInstance->mc->cr->AddCall("getMethodBlockCounts");
+    return jitInstance->mc->repGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
 }
 
 // Associates a native call site, identified by its offset in the native code stream, with

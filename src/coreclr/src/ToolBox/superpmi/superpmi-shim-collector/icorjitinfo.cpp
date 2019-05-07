@@ -2117,25 +2117,25 @@ void interceptor_ICJI::reportFatalError(CorJitResult result)
 
 // allocate a basic block profile buffer where execution counts will be stored
 // for jitted basic blocks.
-HRESULT interceptor_ICJI::allocBBProfileBuffer(ULONG           count, // The number of basic blocks that we have
-                                               ProfileBuffer** profileBuffer)
+HRESULT interceptor_ICJI::allocMethodBlockCounts(DWORD           count, // The number of basic blocks that we have
+                                                 BlockCounts**   pBlockCounts)
 {
-    mc->cr->AddCall("allocBBProfileBuffer");
-    HRESULT result = original_ICorJitInfo->allocBBProfileBuffer(count, profileBuffer);
-    mc->cr->recAllocBBProfileBuffer(count, profileBuffer, result);
+    mc->cr->AddCall("allocMethodBlockCounts");
+    HRESULT result = original_ICorJitInfo->allocMethodBlockCounts(count, pBlockCounts);
+    mc->cr->recAllocMethodBlockCounts(count, pBlockCounts, result);
     return result;
 }
 
 // get profile information to be used for optimizing the current method.  The format
-// of the buffer is the same as the format the JIT passes to allocBBProfileBuffer.
-HRESULT interceptor_ICJI::getBBProfileData(CORINFO_METHOD_HANDLE ftnHnd,
-                                           ULONG*                count, // The number of basic blocks that we have
-                                           ProfileBuffer**       profileBuffer,
-                                           ULONG*                numRuns)
+// of the buffer is the same as the format the JIT passes to allocMethodBlockCounts.
+HRESULT interceptor_ICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
+                                               DWORD*                pCount, // The number of basic blocks that we have
+                                               BlockCounts**         pBlockCounts,
+                                               DWORD*                pNumRuns)
 {
-    mc->cr->AddCall("getBBProfileData");
-    HRESULT temp = original_ICorJitInfo->getBBProfileData(ftnHnd, count, profileBuffer, numRuns);
-    mc->recGetBBProfileData(ftnHnd, count, profileBuffer, numRuns, temp);
+    mc->cr->AddCall("getMethodBlockCounts");
+    HRESULT temp = original_ICorJitInfo->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
+    mc->recGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns, temp);
     return temp;
 }
 

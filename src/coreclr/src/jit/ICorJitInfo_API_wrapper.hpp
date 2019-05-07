@@ -1590,25 +1590,25 @@ void WrapICorJitInfo::reportFatalError(CorJitResult result)
     API_LEAVE(reportFatalError);
 }
 
-HRESULT WrapICorJitInfo::allocBBProfileBuffer(
-        ULONG count,
-        ProfileBuffer **profileBuffer)
+HRESULT WrapICorJitInfo::allocMethodBlockCounts(
+        DWORD count,
+        BlockCounts **pBlockCounts)
 {
-    API_ENTER(allocBBProfileBuffer);
-    HRESULT result = wrapHnd->allocBBProfileBuffer(count, profileBuffer);
-    API_LEAVE(allocBBProfileBuffer);
+    API_ENTER(allocMethodBlockCounts);
+    HRESULT result = wrapHnd->allocMethodBlockCounts(count, pBlockCounts);
+    API_LEAVE(allocMethodBlockCounts);
     return result;
 }
 
-HRESULT WrapICorJitInfo::getBBProfileData(
+HRESULT WrapICorJitInfo::getMethodBlockCounts(
         CORINFO_METHOD_HANDLE ftnHnd,
-        ULONG *count,
-        ProfileBuffer **profileBuffer,
-        ULONG *numRuns)
+        DWORD *pCount,
+        BlockCounts **pBlockCounts,
+        DWORD *numRuns)
 {
-    API_ENTER(getBBProfileData);
-    HRESULT temp = wrapHnd->getBBProfileData(ftnHnd, count, profileBuffer, numRuns);
-    API_LEAVE(getBBProfileData);
+    API_ENTER(getMethodBlockCounts);
+    HRESULT temp = wrapHnd->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, numRuns);
+    API_LEAVE(getMethodBlockCounts);
     return temp;
 }
 
