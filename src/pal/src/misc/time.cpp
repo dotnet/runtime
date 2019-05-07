@@ -51,16 +51,19 @@ FALSE otherwise
 --*/
 BOOL TIMEInitialize(void)
 {
+    BOOL retval = TRUE;
+
 #if HAVE_MACH_ABSOLUTE_TIME
-    kern_return_t machRet;
-    if ((machRet = mach_timebase_info(&s_TimebaseInfo)) != KERN_SUCCESS)
+    kern_return_t result = mach_timebase_info(&s_TimebaseInfo);
+
+    if (result != KERN_SUCCESS)
     {
-        ASSERT("mach_timebase_info() failed: %s\n", mach_error_string(machRet));
-        return FALSE;
+        ASSERT("mach_timebase_info() failed: %s\n", mach_error_string(result));
+        retval = FALSE;
     }
 #endif
 
-    return TRUE;
+    return retval;
 }
 
 
@@ -198,57 +201,28 @@ QueryPerformanceCounter(
     )
 {
     BOOL retval = TRUE;
-
     PERF_ENTRY(QueryPerformanceCounter);
     ENTRY("QueryPerformanceCounter()\n");
-    do
+
 #if HAVE_MACH_ABSOLUTE_TIME
-    {
-        lpPerformanceCount->QuadPart = (LONGLONG)mach_absolute_time();
-    }
+    lpPerformanceCount->QuadPart = (LONGLONG)mach_absolute_time();
 #elif HAVE_CLOCK_MONOTONIC
+    struct timespec ts;
+    int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    if (result != 0)
     {
-        struct timespec ts;
-        if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0)
-        {
-            ASSERT("clock_gettime(CLOCK_MONOTONIC) failed; errno is %d (%s)\n", errno, strerror(errno));
-            retval = FALSE;
-            break;
-        }
-        lpPerformanceCount->QuadPart = 
-            (LONGLONG)ts.tv_sec * (LONGLONG)tccSecondsToNanoSeconds + (LONGLONG)ts.tv_nsec;
+        ASSERT("clock_gettime(CLOCK_MONOTONIC) failed: %d\n", result);
+        retval = FALSE;     
     }
-#elif HAVE_GETHRTIME
+    else
     {
-        lpPerformanceCount->QuadPart = (LONGLONG)gethrtime();
-    }
-#elif HAVE_READ_REAL_TIME
-    {
-        timebasestruct_t tb;
-        read_real_time(&tb, TIMEBASE_SZ);
-        if (time_base_to_time(&tb, TIMEBASE_SZ) != 0)
-        {
-            ASSERT("time_base_to_time() failed; errno is %d (%s)\n", errno, strerror(errno));
-            retval = FALSE;
-            break;
-        }
-        lpPerformanceCount->QuadPart = 
-            (LONGLONG)tb.tb_high * (LONGLONG)tccSecondsToNanoSeconds + (LONGLONG)tb.tb_low;
+        lpPerformanceCount->QuadPart =
+                ((LONGLONG)(ts.tv_sec) * (LONGLONG)(tccSecondsToNanoSeconds)) + (LONGLONG)(ts.tv_nsec);
     }
 #else
-    {
-        struct timeval tv;    
-        if (gettimeofday(&tv, NULL) == -1)
-        {
-            ASSERT("gettimeofday() failed; errno is %d (%s)\n", errno, strerror(errno));
-            retval = FALSE;
-            break;
-        }
-        lpPerformanceCount->QuadPart = 
-            (LONGLONG)tv.tv_sec * (LONGLONG)tccSecondsToMicroSeconds + (LONGLONG)tv.tv_usec;    
-    }
-#endif // HAVE_CLOCK_MONOTONIC 
-    while (false);
+    #error "The PAL requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
+#endif
 
     LOGEXIT("QueryPerformanceCounter\n");
     PERF_EXIT(QueryPerformanceCounter);
@@ -264,6 +238,7 @@ QueryPerformanceFrequency(
     BOOL retval = TRUE;
     PERF_ENTRY(QueryPerformanceFrequency);
     ENTRY("QueryPerformanceFrequency()\n");
+
 #if HAVE_MACH_ABSOLUTE_TIME
     // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
     if (s_TimebaseInfo.denom == 0)
@@ -273,13 +248,24 @@ QueryPerformanceFrequency(
     }
     else
     {
-        lpFrequency->QuadPart = (LONGLONG)tccSecondsToNanoSeconds * ((LONGLONG)s_TimebaseInfo.denom / (LONGLONG)s_TimebaseInfo.numer);
+        // (numer / denom) gives you the nanoseconds per tick, so the below code
+        // computes the number of ticks per second. We explicitly do the multiplication
+        // first in order to help minimize the error that is produced by integer division.
+
+        lpFrequency->QuadPart = ((LONGLONG)(tccSecondsToNanoSeconds) * (LONGLONG)(s_TimebaseInfo.denom)) / (LONGLONG)(s_TimebaseInfo.numer);
     }
-#elif HAVE_GETHRTIME || HAVE_READ_REAL_TIME || HAVE_CLOCK_MONOTONIC
-    lpFrequency->QuadPart = (LONGLONG)tccSecondsToNanoSeconds;
+#elif HAVE_CLOCK_MONOTONIC
+    // clock_gettime() returns a result in terms of nanoseconds rather than a count. This
+    // means that we need to either always scale the result by the actual resolution (to
+    // get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
+    // the latter since it allows the highest throughput and should minimize error propagated
+    // to the user.
+
+    lpFrequency->QuadPart = (LONGLONG)(tccSecondsToNanoSeconds);
 #else
-    lpFrequency->QuadPart = (LONGLONG)tccSecondsToMicroSeconds;
-#endif // HAVE_MACH_ABSOLUTE_TIME
+    #error "The PAL requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
+#endif
+
     LOGEXIT("QueryPerformanceFrequency\n");
     PERF_EXIT(QueryPerformanceFrequency);
     return retval;
@@ -336,62 +322,52 @@ PALAPI
 ULONGLONG
 GetTickCount64()
 {
-    ULONGLONG retval = 0;
+    LONGLONG retval = 0;
 
 #if HAVE_MACH_ABSOLUTE_TIME
+    // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
+    if (s_TimebaseInfo.denom == 0)
     {
-        // use denom == 0 to indicate that s_TimebaseInfo is uninitialised.
-        if (s_TimebaseInfo.denom == 0)
-        {
-            ASSERT("s_TimebaseInfo is uninitialized.\n");
-            goto EXIT;
-        }
-        retval = (mach_absolute_time() * s_TimebaseInfo.numer / s_TimebaseInfo.denom) / tccMillieSecondsToNanoSeconds;
+        ASSERT("s_TimebaseInfo is uninitialized.\n");
+        retval = FALSE;
     }
-#elif HAVE_CLOCK_MONOTONIC_COARSE || HAVE_CLOCK_MONOTONIC
+    else
     {
-        clockid_t clockType = 
+        retval = ((LONGLONG)mach_absolute_time() * (LONGLONG)(s_TimebaseInfo.numer)) / ((LONGLONG)(tccMillieSecondsToNanoSeconds) * (LONGLONG)(s_TimebaseInfo.denom));
+    }
+#elif HAVE_CLOCK_MONOTONIC || HAVE_CLOCK_MONOTONIC_COARSE
+    struct timespec ts;
+
 #if HAVE_CLOCK_MONOTONIC_COARSE
-            CLOCK_MONOTONIC_COARSE; // good enough resolution, fastest speed
+    // CLOCK_MONOTONIC_COARSE has enough precision for GetTickCount but
+    // doesn't have the same overhead as CLOCK_MONOTONIC. This allows
+    // overall higher throughput. See dotnet/coreclr#2257 for more details.
+
+    const clockid_t clockType = CLOCK_MONOTONIC_COARSE;
 #else
-            CLOCK_MONOTONIC;
+    const clockid_t clockType = CLOCK_MONOTONIC;
 #endif
-        struct timespec ts;
-        if (clock_gettime(clockType, &ts) != 0)
-        {
-            ASSERT("clock_gettime(CLOCK_MONOTONIC*) failed; errno is %d (%s)\n", errno, strerror(errno));
-            goto EXIT;
-        }
-        retval = (ts.tv_sec * tccSecondsToMillieSeconds)+(ts.tv_nsec / tccMillieSecondsToNanoSeconds);
-    }
-#elif HAVE_GETHRTIME
+
+    int result = clock_gettime(clockType, &ts);
+
+    if (result != 0)
     {
-        retval = (ULONGLONG)(gethrtime() / tccMillieSecondsToNanoSeconds);
+#if HAVE_CLOCK_MONOTONIC_COARSE
+        ASSERT("clock_gettime(CLOCK_MONOTONIC_COARSE) failed: %d\n", result);
+#else
+        ASSERT("clock_gettime(CLOCK_MONOTONIC) failed: %d\n", result);
+#endif
+        retval = FALSE;     
     }
-#elif HAVE_READ_REAL_TIME
+    else
     {
-        timebasestruct_t tb;
-        read_real_time(&tb, TIMEBASE_SZ);
-        if (time_base_to_time(&tb, TIMEBASE_SZ) != 0)
-        {
-            ASSERT("time_base_to_time() failed; errno is %d (%s)\n", errno, strerror(errno));
-            goto EXIT;
-        }
-        retval = (tb.tb_high * tccSecondsToMillieSeconds)+(tb.tb_low / tccMillieSecondsToNanoSeconds);
+        retval = ((LONGLONG)(ts.tv_sec) * (LONGLONG)(tccSecondsToMillieSeconds)) + ((LONGLONG)(ts.tv_nsec) / (LONGLONG)(tccMillieSecondsToNanoSeconds));
     }
 #else
-    {
-        struct timeval tv;    
-        if (gettimeofday(&tv, NULL) == -1)
-        {
-            ASSERT("gettimeofday() failed; errno is %d (%s)\n", errno, strerror(errno));
-            goto EXIT;
-        }
-        retval = (tv.tv_sec * tccSecondsToMillieSeconds) + (tv.tv_usec / tccMillieSecondsToMicroSeconds);
-    }
-#endif // HAVE_CLOCK_MONOTONIC 
-EXIT:    
-    return retval;
+    #error "The PAL requires either mach_absolute_time() or clock_gettime(CLOCK_MONOTONIC) to be supported."
+#endif
+
+    return (ULONGLONG)(retval);
 }
 
 /*++
