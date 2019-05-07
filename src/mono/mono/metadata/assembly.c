@@ -4385,10 +4385,15 @@ mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname,
 					  MonoImageOpenStatus *status)
 {
 	MonoAssembly *result;
+	MonoAssemblyName maped_aname;
 	char *fullpath, *filename;
 	int ext_index;
 	const char *ext;
 	int len;
+
+	/* If we remap e.g. 4.1.3.0 to 4.0.0.0, look in the 4.0.0.0
+	 * GAC directory, not 4.1.3.0 */
+	aname = mono_assembly_remap_version (aname, &maped_aname);
 
 	/* Currently we retrieve the loaded corlib for reflection 
 	 * only requests, like a common reflection only assembly 
