@@ -611,6 +611,8 @@ public:
 
     COM_METHOD IsFrozenObject(ObjectID objectId, BOOL *pbFrozen);
 
+    COM_METHOD GetLOHObjectSizeThreshold(DWORD *pThreshold);
+
     // end ICorProfilerInfo10
 
 protected:

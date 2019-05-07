@@ -649,7 +649,7 @@ void __stdcall ProfilerObjectAllocatedCallback(OBJECTREF objref, ClassID classId
     // Notify the profiler of the allocation
 
     {
-        BEGIN_PIN_PROFILER(CORProfilerTrackAllocations());
+        BEGIN_PIN_PROFILER(CORProfilerTrackAllocations() || CORProfilerTrackLargeAllocations());
         // Note that for generic code we always return uninstantiated ClassIDs and FunctionIDs.
         // Thus we strip any instantiations of the ClassID (which is really a type handle) here.
         g_profControlBlock.pProfInterface->ObjectAllocated(
@@ -6888,6 +6888,46 @@ HRESULT ProfToEEInterfaceImpl::IsFrozenObject(ObjectID objectId, BOOL *pbFrozen)
         objectId));
 
     *pbFrozen = GCHeapUtilities::GetGCHeap()->IsInFrozenSegment((Object*)objectId) ? TRUE : FALSE;
+
+    return S_OK;
+}
+
+/*
+ * GetLOHObjectSizeThreshold
+ * 
+ * Gets the value of the configured LOH Threshold.
+ * 
+ * Parameters:
+ *      pThreshold        - value of the threshold in bytes
+ *
+ * Returns:
+ *   S_OK if successful
+ *
+ */
+HRESULT ProfToEEInterfaceImpl::GetLOHObjectSizeThreshold(DWORD *pThreshold)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        EE_THREAD_NOT_REQUIRED;
+        CANNOT_TAKE_LOCK;
+    }
+    CONTRACTL_END;
+
+    PROFILER_TO_CLR_ENTRYPOINT_SYNC_EX(
+        kP2EEAllowableAfterAttach,
+        (LF_CORPROF,
+        LL_INFO1000,
+        "**PROF: GetLOHObjectSizeThreshold\n"));
+
+    if (pThreshold == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    *pThreshold = g_pConfig->GetGCLOHThreshold();
 
     return S_OK;
 }
