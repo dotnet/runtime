@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
@@ -24,15 +23,16 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DeserializeCannotBeNull(in Utf8JsonReader reader, string path)
+        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType, string path)
         {
-            ThowJsonException(SR.DeserializeCannotBeNull, in reader, path);
+            string message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType.FullName) + $" Path: {path}.";
+            throw new JsonException(message, path, null, null);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowObjectDisposedException(string name)
+        public static void ThrowJsonException_DeserializeCannotBeNull(in Utf8JsonReader reader, string path)
         {
-            throw new ObjectDisposedException(name);
+            ThowJsonException(SR.DeserializeCannotBeNull, in reader, path);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

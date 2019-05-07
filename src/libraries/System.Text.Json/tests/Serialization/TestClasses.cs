@@ -30,11 +30,6 @@ namespace System.Text.Json.Serialization.Tests
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
-        public void Initialize()
-        {
-            MyString = null;
-        }
-
         public void Verify()
         {
             Assert.Equal(MyString, null);
@@ -45,10 +40,14 @@ namespace System.Text.Json.Serialization.Tests
     {
         public string MyString { get; set; } = "Hello";
         public int? MyInt { get; set; } = 1;
+        public int[] MyIntArray { get; set; } = new int[] { 1 };
+        public List<int> MyIntList { get; set; } = new List<int> { 1 };
         public static readonly string s_null_json =
                 @"{" +
                 @"""MyString"" : null," +
-                @"""MyInt"" : null" +
+                @"""MyInt"" : null," +
+                @"""MyIntArray"" : null," +
+                @"""MyIntList"" : null" +
                 @"}";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_null_json);
@@ -108,6 +107,7 @@ namespace System.Text.Json.Serialization.Tests
             @"{" +
                 @"""MyData"":[" +
                     SimpleTestClass.s_json + "," +
+                    "null," +
                     SimpleTestClass.s_json +
                 @"]" +
             @"}");
@@ -122,6 +122,8 @@ namespace System.Text.Json.Serialization.Tests
                 MyData.Add(obj);
             }
 
+            MyData.Add(null);
+
             {
                 SimpleTestClass obj = new SimpleTestClass();
                 obj.Initialize();
@@ -131,9 +133,10 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Verify()
         {
-            Assert.Equal(2, MyData.Count);
+            Assert.Equal(3, MyData.Count);
             MyData[0].Verify();
-            MyData[1].Verify();
+            Assert.Null(MyData[1]);
+            MyData[2].Verify();
         }
     }
 

@@ -98,14 +98,9 @@ namespace System.Text.Json.Serialization
             }
 
             IEnumerable value = ReadStackFrame.GetEnumerableValue(state.Current);
-            if (value == null)
-            {
-                // We added the items to the list property already.
-                state.Current.ResetProperty();
-                return false;
-            }
-
             bool setPropertyDirectly;
+            bool popStackOnEnd = state.Current.PopStackOnEnd;
+
             if (state.Current.TempEnumerableValues != null)
             {
                 JsonEnumerableConverter converter = state.Current.JsonPropertyInfo.EnumerableConverter;
@@ -115,13 +110,20 @@ namespace System.Text.Json.Serialization
                 value = converter.CreateFromList(elementType, (IList)value);
                 setPropertyDirectly = true;
             }
+            else if (!popStackOnEnd)
+            {
+                Debug.Assert(state.Current.IsPropertyEnumerable);
+
+                // We added the items to the list property already.
+                state.Current.ResetProperty();
+                return false;
+            }
             else
             {
                 setPropertyDirectly = false;
             }
 
-            bool valueReturning = state.Current.PopStackOnEnd;
-            if (state.Current.PopStackOnEnd)
+            if (popStackOnEnd)
             {
                 state.Pop();
             }
@@ -145,8 +147,9 @@ namespace System.Text.Json.Serialization
 
             ApplyObjectToEnumerable(value, options, ref state, ref reader, setPropertyDirectly: setPropertyDirectly);
 
-            if (!valueReturning)
+            if (!popStackOnEnd)
             {
+                Debug.Assert(state.Current.IsPropertyEnumerable);
                 state.Current.ResetProperty();
             }
 
@@ -182,7 +185,9 @@ namespace System.Text.Json.Serialization
                 }
                 else
                 {
-                    ((IList)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue)).Add(value);
+                    IList list = (IList)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
+                    Debug.Assert(list != null);
+                    list.Add(value);
                 }
             }
             else if (state.Current.IsDictionary)
@@ -235,7 +240,9 @@ namespace System.Text.Json.Serialization
                 }
                 else
                 {
-                    ((IList<TProperty>)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue)).Add(value);
+                    IList<TProperty> list = (IList<TProperty>)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
+                    Debug.Assert(list != null);
+                    list.Add(value);
                 }
             }
             else if (state.Current.IsDictionary)

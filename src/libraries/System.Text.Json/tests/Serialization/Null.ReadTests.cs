@@ -35,6 +35,8 @@ namespace System.Text.Json.Serialization.Tests
             TestClassWithInitializedProperties obj = JsonSerializer.Parse<TestClassWithInitializedProperties>(TestClassWithInitializedProperties.s_null_json);
             Assert.Equal(null, obj.MyString);
             Assert.Equal(null, obj.MyInt);
+            Assert.Equal(null, obj.MyIntArray);
+            Assert.Equal(null, obj.MyIntList);
         }
 
         [Fact]
@@ -46,6 +48,8 @@ namespace System.Text.Json.Serialization.Tests
             TestClassWithInitializedProperties obj = JsonSerializer.Parse<TestClassWithInitializedProperties>(TestClassWithInitializedProperties.s_null_json, options);
             Assert.Equal("Hello", obj.MyString);
             Assert.Equal(1, obj.MyInt);
+            Assert.Equal(1, obj.MyIntArray[0]);
+            Assert.Equal(1, obj.MyIntList[0]);
         }
 
         [Fact]

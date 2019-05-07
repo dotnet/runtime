@@ -18,6 +18,18 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
+                int? value = 1;
+                string json = JsonSerializer.ToString(value);
+                Assert.Equal("1", json);
+            }
+
+            {
+                int? value = null;
+                string json = JsonSerializer.ToString(value);
+                Assert.Equal("null", json);
+            }
+
+            {
                 Span<byte> json = JsonSerializer.ToBytes(1);
                 Assert.Equal(Encoding.UTF8.GetBytes("1"), json.ToArray());
             }

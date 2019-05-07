@@ -55,6 +55,7 @@ namespace System.Text.Json.Serialization.Tests
         public Dictionary<string, string> MyStringToStringDict { get; set; }
         public IDictionary<string, string> MyStringToStringIDict { get; set; }
         public IReadOnlyDictionary<string, string> MyStringToStringIReadOnlyDict { get; set; }
+        public List<string> MyListOfNullString { get; set; }
 
         public static readonly string s_json = $"{{{s_partialJsonProperties},{s_partialJsonArrays}}}";
         public static readonly string s_json_flipped = $"{{{s_partialJsonArrays},{s_partialJsonProperties}}}";
@@ -106,7 +107,8 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyStringIListT"" : [""Hello""]," +
                 @"""MyStringICollectionT"" : [""Hello""]," +
                 @"""MyStringIReadOnlyCollectionT"" : [""Hello""]," +
-                @"""MyStringIReadOnlyListT"" : [""Hello""]";
+                @"""MyStringIReadOnlyListT"" : [""Hello""]," +
+                @"""MyListOfNullString"" : [null]";
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
 
@@ -160,6 +162,7 @@ namespace System.Text.Json.Serialization.Tests
             MyStringToStringDict = new Dictionary<string, string> { { "key", "value" } };
             MyStringToStringIDict = new Dictionary<string, string> { { "key", "value" } };
             MyStringToStringIReadOnlyDict = new Dictionary<string, string> { { "key", "value" } };
+            MyListOfNullString = new List<string> { null };
         }
 
         public void Verify()
@@ -212,6 +215,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("value", MyStringToStringDict["key"]);
             Assert.Equal("value", MyStringToStringIDict["key"]);
             Assert.Equal("value", MyStringToStringIReadOnlyDict["key"]);
+            Assert.Null(MyListOfNullString[0]);
         }
     }
 }

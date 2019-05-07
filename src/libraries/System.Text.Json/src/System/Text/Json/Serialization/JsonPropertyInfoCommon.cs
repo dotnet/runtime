@@ -92,16 +92,9 @@ namespace System.Text.Json.Serialization
             return new List<TDeclaredProperty>();
         }
 
-        // Map interfaces to a well-known implementation.
-        public override Type GetConcreteType(Type interfaceType)
+        public override Type GetDictionaryConcreteType()
         {
-            if (interfaceType.IsAssignableFrom(typeof(IDictionary<string, TRuntimeProperty>)) ||
-                interfaceType.IsAssignableFrom(typeof(IReadOnlyDictionary<string, TRuntimeProperty>)))
-            {
-                return typeof(Dictionary<string, TRuntimeProperty>);
-            }
-
-            return interfaceType;
+            return typeof(Dictionary<string, TRuntimeProperty>);
         }
     }
 }

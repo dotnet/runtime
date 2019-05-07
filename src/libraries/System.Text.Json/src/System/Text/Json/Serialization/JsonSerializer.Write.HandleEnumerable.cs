@@ -30,8 +30,12 @@ namespace System.Text.Json.Serialization
 
                 if (enumerable == null)
                 {
-                    // Write a null object or enumerable.
-                    state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, writeNull: true);
+                    if (!state.Current.JsonPropertyInfo.IgnoreNullValues)
+                    {
+                        // Write a null object or enumerable.
+                        state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, writeNull: true);
+                    }
+
                     return true;
                 }
 
