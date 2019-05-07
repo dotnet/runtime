@@ -547,7 +547,8 @@ enum __MIDL___MIDL_itf_corprof_0000_0000_0006
         COR_PRF_HIGH_BASIC_GC	= 0x10,
         COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS	= 0x20,
         COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE	= 0,
-        COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH	= ( ( ( COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS )  | COR_PRF_HIGH_BASIC_GC )  | COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS ) ,
+        COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED	= 0x40,
+        COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH	= ( ( ( ( COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS )  | COR_PRF_HIGH_BASIC_GC )  | COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS )  | COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED ) ,
         COR_PRF_HIGH_MONITOR_IMMUTABLE	= COR_PRF_HIGH_DISABLE_TIERED_COMPILATION
     } 	COR_PRF_HIGH_MONITOR;
 
@@ -15195,6 +15196,9 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             ObjectID objectId,
             BOOL *pbFrozen) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE GetLOHObjectSizeThreshold( 
+            DWORD *pThreshold) = 0;
+        
     };
     
     
@@ -15793,6 +15797,10 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             ObjectID objectId,
             BOOL *pbFrozen);
         
+        HRESULT ( STDMETHODCALLTYPE *GetLOHObjectSizeThreshold )( 
+            ICorProfilerInfo10 * This,
+            DWORD *pThreshold);
+        
         END_INTERFACE
     } ICorProfilerInfo10Vtbl;
 
@@ -16100,6 +16108,9 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
 
 #define ICorProfilerInfo10_IsFrozenObject(This,objectId,pbFrozen)	\
     ( (This)->lpVtbl -> IsFrozenObject(This,objectId,pbFrozen) ) 
+
+#define ICorProfilerInfo10_GetLOHObjectSizeThreshold(This,pThreshold)	\
+    ( (This)->lpVtbl -> GetLOHObjectSizeThreshold(This,pThreshold) ) 
 
 #endif /* COBJMACROS */
 

@@ -634,10 +634,14 @@ typedef enum
 
     COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE              = 0,
 
+    // Enables the large object allocation monitoring according to the LOH threshold.
+    COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED      = 0x00000040,
+
     COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH             = COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | 
                                                       COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS | 
                                                       COR_PRF_HIGH_BASIC_GC |
-                                                      COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS,
+                                                      COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS |
+                                                      COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED,
 
     // MONITOR_IMMUTABLE represents all flags that may only be set during initialization.
     // Trying to change any of these flags elsewhere will result in a
@@ -3932,6 +3936,9 @@ interface ICorProfilerInfo10 : ICorProfilerInfo9
 
     // Given an ObjectID, determines whether it is in a read only segment.
     HRESULT IsFrozenObject(ObjectID objectId, BOOL *pbFrozen);
+
+    // Gets the value of the configured LOH Threshold.
+    HRESULT GetLOHObjectSizeThreshold(DWORD *pThreshold);
 }
 
 /*
