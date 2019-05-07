@@ -35,7 +35,7 @@ namespace System.Runtime.CompilerServices.Tests
         [Fact]
         public void Default_WithCancellation_ConfigureAwait_NoThrow()
         {
-            ConfiguredCancelableAsyncEnumerable<int> e = TaskExtensions.WithCancellation((IAsyncEnumerable<int>)null, default);
+            ConfiguredCancelableAsyncEnumerable<int> e = ((IAsyncEnumerable<int>)null).WithCancellation(default);
             e = e.ConfigureAwait(false);
             e = e.WithCancellation(default);
             Assert.Throws<NullReferenceException>(() => e.GetAsyncEnumerator());
@@ -44,7 +44,7 @@ namespace System.Runtime.CompilerServices.Tests
         [Fact]
         public void Default_ConfigureAwait_WithCancellation_NoThrow()
         {
-            ConfiguredCancelableAsyncEnumerable<int> e = TaskExtensions.ConfigureAwait((IAsyncEnumerable<int>)null, false);
+            ConfiguredCancelableAsyncEnumerable<int> e = ((IAsyncEnumerable<int>)null).ConfigureAwait(false);
             e = e.WithCancellation(default);
             e = e.ConfigureAwait(false);
             Assert.Throws<NullReferenceException>(() => e.GetAsyncEnumerator());
