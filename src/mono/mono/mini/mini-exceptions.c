@@ -3851,16 +3851,18 @@ mono_llvm_load_exception (void)
 
 	MonoException *mono_ex = (MonoException*)mono_gchandle_get_target_internal (jit_tls->thrown_exc);
 
-	if (mono_ex->trace_ips) {
+	MonoArray *ta = mono_ex->trace_ips;
+
+	if (ta) {
 		GList *trace_ips = NULL;
 		gpointer ip = MONO_RETURN_ADDRESS ();
 
-		size_t upper = mono_array_length_internal (mono_ex->trace_ips);
+		size_t upper = mono_array_length_internal (ta);
 
 		for (int i = 0; i < upper; i += TRACE_IP_ENTRY_SIZE) {
-			gpointer curr_ip = mono_array_get_internal (mono_ex->trace_ips, gpointer, i);
+			gpointer curr_ip = mono_array_get_internal (ta, gpointer, i);
 			for (int j = 0; j < TRACE_IP_ENTRY_SIZE; ++j) {
-				gpointer p = mono_array_get_internal (mono_ex->trace_ips, gpointer, i + j);
+				gpointer p = mono_array_get_internal (ta, gpointer, i + j);
 				trace_ips = g_list_append (trace_ips, p);
 			}
 			if (ip == curr_ip)
