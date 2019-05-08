@@ -84,7 +84,7 @@
           Condition="'$(GenerateNetCoreAppRuntimeConfig)' == 'true'"
           BeforeTargets="Publish">
     <MakeDir Directories="$(PublishDir)" />
-    
+
     <PropertyGroup>
       <_runtimeConfigContent>
       <![CDATA[
@@ -100,7 +100,7 @@
       ]]>
       </_runtimeConfigContent>
     </PropertyGroup>
-    
+
     <WriteLinesToFile
       File="$(PublishDir)$(SharedFrameworkName).runtimeconfig.json"
       Lines="$(_runtimeConfigContent)"
@@ -148,6 +148,8 @@
       <ToDelete Include="$(PublishDir)$(LibPrefix)comhost$(LibSuffix)" />
       <ToDelete Include="$(PublishDir)$(LibPrefix)hostfxr$(LibSuffix)" />
       <ToDelete Include="$(PublishDir)$(LibPrefix)ijwhost$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost$(LibSuffix)" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost.h" />
       <!--
         On Windows, LibSuffix is .dll (for dynamic libraries), but for this particular file, we also
         build a .lib (static library). Make sure neither is included.
@@ -156,6 +158,7 @@
         handled yet.
       -->
       <ToDelete Include="$(PublishDir)$(LibPrefix)ijwhost.lib" />
+      <ToDelete Include="$(PublishDir)$(LibPrefix)nethost.lib" />
     </ItemGroup>
 
     <Delete Files="@(ToDelete)" />
