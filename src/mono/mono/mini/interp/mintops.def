@@ -705,6 +705,8 @@ OPDEF(MINT_TANH, "tanh", 1, MintOpNoArgs)
  * the STINARG* opcodes have executed.
  */
 OPDEF(MINT_PROF_ENTER, "prof_enter", 1, MintOpNoArgs)
+OPDEF(MINT_TRACE_ENTER, "trace_enter", 1, MintOpNoArgs)
+OPDEF(MINT_TRACE_EXIT, "trace_exit", 1, MintOpNoArgs)
 
 OPDEF(MINT_INTRINS_ENUM_HASFLAG, "intrins_enum_hasflag", 2, MintOpClassToken)
 OPDEF(MINT_INTRINS_GET_HASHCODE, "intrins_get_hashcode", 1, MintOpNoArgs)

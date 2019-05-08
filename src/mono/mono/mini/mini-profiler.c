@@ -352,10 +352,18 @@ mini_profiler_context_get_local (MonoProfilerCallContext *ctx, guint32 pos)
 gpointer
 mini_profiler_context_get_result (MonoProfilerCallContext *ctx)
 {
+	MonoType *ret = mono_method_signature_internal (ctx->method)->ret;
+
+	if (ctx->interp_frame) {
+		int dummy;
+		// FIXME:
+		return g_malloc0 (mono_type_size (ret, &dummy));
+	}
+
 	if (!ctx->return_value)
 		return NULL;
 
-	return memdup_with_type (ctx->return_value, mono_method_signature_internal (ctx->method)->ret);
+	return memdup_with_type (ctx->return_value, ret);
 }
 
 void

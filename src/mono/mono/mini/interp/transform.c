@@ -2897,7 +2897,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		if (header->num_locals && header->init_locals)
 			interp_add_ins (td, MINT_INITLOCALS);
 
-		if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
+		if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+			interp_add_ins (td, MINT_TRACE_ENTER);
+		else if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
 			interp_add_ins (td, MINT_PROF_ENTER);
 
 		/* safepoint is required on method entry */
@@ -3248,6 +3250,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				last_seq_point = interp_add_ins (td, MINT_SDB_SEQ_POINT);
 				td->last_ins->flags = INTERP_INST_FLAG_SEQ_POINT_METHOD_EXIT;
 			}
+
+			if (mono_jit_trace_calls != NULL && mono_trace_eval (method))
+				interp_add_ins (td, MINT_TRACE_EXIT);
 
 			if (vt_size == 0)
 				SIMPLE_OP(td, ult->type == MONO_TYPE_VOID ? MINT_RET_VOID : MINT_RET);
