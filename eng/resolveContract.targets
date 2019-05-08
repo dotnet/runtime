@@ -2,7 +2,10 @@
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
     <ContractProject Condition="'$(ContractProject)' == ''">$(SourceDir)/$(MSBuildProjectName)/ref/$(MSBuildProjectName).csproj</ContractProject>
     <HasMatchingContract Condition="'$(HasMatchingContract)' == '' and Exists('$(ContractProject)')">true</HasMatchingContract>
-    <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == ''">$(ContractOutputPath)/$(MSBuildProjectName).dll</ContractAssemblyPath>
+    <ContractAssemblyPath Condition="'$(ContractAssemblyPath)' == ''">$(RefPath)/$(MSBuildProjectName).dll</ContractAssemblyPath>
+
+    <!-- Disable API compat if the project doesn't have reference assembly -->
+    <RunApiCompat Condition="'$(HasMatchingContract)' != 'true'">false</RunApiCompat>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(HasMatchingContract)' == 'true'">
@@ -17,7 +20,13 @@
   <!-- intentionally empty since we no longer need a target -->
   <Target Name="ResolveMatchingContract" />
 
-  <Target Name="VerifyMatchingContract" AfterTargets="ResolveReferences">
-    <Error Condition="'$(HasMatchingContract)' == 'true' and !Exists('%(ResolvedMatchingContract.Identity)')" Text="ResolveMatchingContract could not find a matching contract '%(ResolvedMatchingContract.Identity)' not found." />
+  <!-- Disable matching ref API compat for aot runtime refencing libs, these have a lot of public API
+         only by implementation and we don't intend to start new API development on AOT -->
+  <Target Name="DisableRunMatchingRefApiCompat" 
+          BeforeTargets="CoreCompile"
+          Condition="'$(TargetsAot)' == 'true' AND '@(ReferenceFromRuntime)' != ''">
+    <PropertyGroup>
+      <RunMatchingRefApiCompat>False</RunMatchingRefApiCompat>
+    </PropertyGroup>
   </Target>
 </Project>
