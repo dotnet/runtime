@@ -25,9 +25,11 @@ namespace Microsoft.Extensions.Configuration.Json
         /// <param name="stream">The stream to read.</param>
         public override void Load(Stream stream)
         {
-            try {
+            try
+            {
                 Data = JsonConfigurationFileParser.Parse(stream);
-            } catch (JsonReaderException e)
+            }
+            catch (JsonException e)
             {
                 throw new FormatException(Resources.Error_JSONParseError, e);
             }
