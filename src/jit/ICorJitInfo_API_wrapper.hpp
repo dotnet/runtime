@@ -1604,10 +1604,10 @@ HRESULT WrapICorJitInfo::getMethodBlockCounts(
         CORINFO_METHOD_HANDLE ftnHnd,
         UINT32 *pCount,
         BlockCounts **pBlockCounts,
-        UINT32 *numRuns)
+        UINT32 *pNumRuns)
 {
     API_ENTER(getMethodBlockCounts);
-    HRESULT temp = wrapHnd->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, numRuns);
+    HRESULT temp = wrapHnd->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
     API_LEAVE(getMethodBlockCounts);
     return temp;
 }
