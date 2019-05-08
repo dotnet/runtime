@@ -1089,15 +1089,15 @@ public:
                             CORINFO_METHOD_HANDLE methodHnd);
 
     HRESULT allocMethodBlockCounts (
-            DWORD                 count,           // the count of <ILOffset, ExecutionCount> tuples
+            UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
             BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
             );
 
     HRESULT getMethodBlockCounts(
             CORINFO_METHOD_HANDLE ftnHnd,
-            DWORD *               pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+            UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
             BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-            DWORD *               pNumRuns
+            UINT32 *              pNumRuns
             );
 
     void recordCallSite(
@@ -1296,15 +1296,15 @@ public:
 
 
     HRESULT allocMethodBlockCounts (
-        DWORD                         count,         // the count of <ILOffset, ExecutionCount> tuples
+        UINT32                        count,         // the count of <ILOffset, ExecutionCount> tuples
         ICorJitInfo::BlockCounts **   pBlockCounts   // pointer to array of <ILOffset, ExecutionCount> tuples
     );
 
     HRESULT getMethodBlockCounts(
         CORINFO_METHOD_HANDLE         ftnHnd,
-        DWORD *               pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
-        BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-        DWORD *               pNumRuns
+        UINT32 *                      pCount,        // pointer to the count of <ILOffset, ExecutionCount> tuples
+        BlockCounts **                pBlockCounts,  // pointer to array of <ILOffset, ExecutionCount> tuples
+        UINT32 *                      pNumRuns
     );
 
     void recordCallSite(

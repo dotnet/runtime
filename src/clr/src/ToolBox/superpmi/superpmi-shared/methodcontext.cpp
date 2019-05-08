@@ -5238,9 +5238,9 @@ DWORD MethodContext::repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, v
 }
 
 void MethodContext::recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                                            DWORD*                       pCount,
+                                            UINT32 *                     pCount,
                                             ICorJitInfo::BlockCounts**   pBlockCounts,
-                                            DWORD*                       pNumRuns,
+                                            UINT32 *                     pNumRuns,
                                             HRESULT                      result)
 {
     if (GetMethodBlockCounts == nullptr)
@@ -5269,17 +5269,17 @@ void MethodContext::dmpGetMethodBlockCounts(DWORDLONG key, const Agnostic_GetMet
     printf(" numRuns-%u result-%u", value.numRuns, value.result);
 }
 HRESULT MethodContext::repGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                                               DWORD*                       pCount,
+                                               UINT32 *                     pCount,
                                                ICorJitInfo::BlockCounts**   pBlockCounts,
-                                               DWORD*                       pNumRuns)
+                                               UINT32 *                     pNumRuns)
 {
     Agnostic_GetMethodBlockCounts tempValue;
 
     tempValue = GetMethodBlockCounts->Get((DWORDLONG)ftnHnd);
 
-    *pCount        = (ULONG)tempValue.count;
+    *pCount        = (UINT32)tempValue.count;
     *pBlockCounts  = (ICorJitInfo::BlockCounts*)GetMethodBlockCounts->GetBuffer(tempValue.pBlockCounts_index);
-    *pNumRuns      = (ULONG)tempValue.numRuns;
+    *pNumRuns      = (UINT32)tempValue.numRuns;
     HRESULT result = (HRESULT)tempValue.result;
     return result;
 }

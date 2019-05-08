@@ -391,14 +391,14 @@ public:
 
     struct BlockCounts  // Also defined by:  CORBBTPROF_BLOCK_DATA
     {
-        ULONG ILOffset;
-        ULONG ExecutionCount;
+        UINT32 ILOffset;
+        UINT32 ExecutionCount;
     };
 
     // allocate a basic block profile buffer where execution counts will be stored
     // for jitted basic blocks.
     virtual HRESULT allocMethodBlockCounts (
-            DWORD                 count,           // The number of basic blocks that we have
+            UINT32                count,           // The number of basic blocks that we have
             BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
             ) = 0;
 
@@ -406,9 +406,9 @@ public:
     // of the buffer is the same as the format the JIT passes to allocBBProfileBuffer.
     virtual HRESULT getMethodBlockCounts(
             CORINFO_METHOD_HANDLE ftnHnd,
-            DWORD *               pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+            UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
             BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-            DWORD *               pNumRuns         // pointer to the total number of profile scenarios run
+            UINT32 *              pNumRuns         // pointer to the total number of profile scenarios run
             ) = 0;
 
     // Associates a native call site, identified by its offset in the native code stream, with
