@@ -7,9 +7,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>a7a250e9c13147134543c35fef2fb81f19592edf</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="2.0.0-beta.19229.8">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="2.0.0-beta.19257.7">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>a7a250e9c13147134543c35fef2fb81f19592edf</Sha>
+      <Sha>bda52d7619f9420de46f2c39ffc972864bbcab63</Sha>
     </Dependency>
     <!-- This dependency should be added, but it causes the github PR legs to not launch. -->
     <!-- Dependency Name="microsoft.dotnet.build.tasks.feed" Version="2.2.0-beta.19229.8">
