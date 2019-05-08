@@ -535,6 +535,12 @@ HRESULT CEECompileInfo::SetCompilationTarget(CORINFO_ASSEMBLY_HANDLE     assembl
         }
     }
 
+    if (IsReadyToRunCompilation() && !pModule->GetFile()->IsILOnly())
+    {
+        GetSvcLogger()->Printf(LogLevel_Error, W("Error: ReadyToRun is not supported for mixed mode assemblies\n"));
+        return E_FAIL;
+    }
+
     return S_OK;
 }
 
