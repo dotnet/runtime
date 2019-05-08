@@ -6,6 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{1AFDD005-7AB9-48E0-B6D4-4DE0560C936D}</ProjectGuid>
     <OutputType>Exe</OutputType>
+    <!-- https://github.com/dotnet/coreclr/issues/23199 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
