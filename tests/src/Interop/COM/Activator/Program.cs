@@ -136,6 +136,111 @@ namespace Activator
             Assert.AreNotEqual(typeCFromAssemblyA, typeCFromAssemblyB, "Types should be from different AssemblyLoadContexts");
         }
 
+        static void ValidateUserDefinedRegistrationCallbacks()
+        {
+            Console.WriteLine($"Running {nameof(ValidateUserDefinedRegistrationCallbacks)}...");
+
+            string assemblySubPath = Path.Combine(Environment.CurrentDirectory, "Servers");
+            string assemblyAPath = Path.Combine(assemblySubPath, "AssemblyA.dll");
+            string assemblyBPath = Path.Combine(assemblySubPath, "AssemblyB.dll");
+            string assemblyCPath = Path.Combine(assemblySubPath, "AssemblyC.dll");
+            string assemblyPaths = $"{assemblyAPath}{Path.PathSeparator}{assemblyBPath}{Path.PathSeparator}{assemblyCPath}";
+
+            HostPolicyMock.Initialize(Environment.CurrentDirectory, null);
+
+            var CLSID_NotUsed = Guid.Empty; // During this phase of activation the GUID is not used.
+            Guid iid = typeof(IValidateRegistrationCallbacks).GUID;
+
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
+                0,
+                assemblyPaths,
+                string.Empty,
+                string.Empty))
+            {
+                foreach (string typename in new[] { "ValidRegistrationTypeCallbacks",  "ValidRegistrationStringCallbacks" })
+                {
+                    Console.WriteLine($"Validating {typename}...");
+
+                    var cxt = new ComActivationContext()
+                    {
+                        ClassId = CLSID_NotUsed,
+                        InterfaceId = typeof(IClassFactory).GUID,
+                        AssemblyPath = assemblyAPath,
+                        AssemblyName = "AssemblyA",
+                        TypeName = typename
+                    };
+
+                    var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+
+                    object svr;
+                    factory.CreateInstance(null, ref iid, out svr);
+
+                    var inst = (IValidateRegistrationCallbacks)svr;
+                    Assert.IsFalse(inst.DidRegister());
+                    Assert.IsFalse(inst.DidUnregister());
+
+                    cxt.InterfaceId = Guid.Empty;
+                    ComActivator.ClassRegisterationScenarioForType(cxt, register: true);
+                    ComActivator.ClassRegisterationScenarioForType(cxt, register: false);
+
+                    Assert.IsTrue(inst.DidRegister());
+                    Assert.IsTrue(inst.DidUnregister());
+                }
+            }
+
+            using (HostPolicyMock.Mock_corehost_resolve_component_dependencies(
+                0,
+                assemblyPaths,
+                string.Empty,
+                string.Empty))
+            {
+                foreach (string typename in new[] { "NoRegistrationCallbacks",  "InvalidArgRegistrationCallbacks", "InvalidInstanceRegistrationCallbacks", "MultipleRegistrationCallbacks" })
+                {
+                    Console.WriteLine($"Validating {typename}...");
+
+                    var cxt = new ComActivationContext()
+                    {
+                        ClassId = CLSID_NotUsed,
+                        InterfaceId = typeof(IClassFactory).GUID,
+                        AssemblyPath = assemblyAPath,
+                        AssemblyName = "AssemblyA",
+                        TypeName = typename
+                    };
+
+                    var factory = (IClassFactory)ComActivator.GetClassFactoryForType(cxt);
+
+                    object svr;
+                    factory.CreateInstance(null, ref iid, out svr);
+
+                    var inst = (IValidateRegistrationCallbacks)svr;
+                    cxt.InterfaceId = Guid.Empty;
+                    bool exceptionThrown = false;
+                    try
+                    {
+                        ComActivator.ClassRegisterationScenarioForType(cxt, register: true);
+                    }
+                    catch
+                    {
+                        exceptionThrown = true;
+                    }
+
+                    Assert.IsTrue(exceptionThrown || !inst.DidRegister());
+
+                    exceptionThrown = false;
+                    try
+                    {
+                        ComActivator.ClassRegisterationScenarioForType(cxt, register: false);
+                    }
+                    catch
+                    {
+                        exceptionThrown = true;
+                    }
+
+                    Assert.IsTrue(exceptionThrown || !inst.DidUnregister());
+                }
+            }
+        }
+
         static int Main(string[] doNotUse)
         {
             try
@@ -144,6 +249,7 @@ namespace Activator
                 ClassNotRegistered();
                 NonrootedAssemblyPath();
                 ValidateAssemblyIsolation();
+                ValidateUserDefinedRegistrationCallbacks();
             }
             catch (Exception e)
             {
