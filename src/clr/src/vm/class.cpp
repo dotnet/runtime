@@ -13,6 +13,7 @@
 #include "customattribute.h"
 #include "encee.h"
 #include "typestring.h"
+#include "dbginterface.h"
 
 #ifdef FEATURE_COMINTEROP 
 #include "comcallablewrapper.h"

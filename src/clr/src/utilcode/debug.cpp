@@ -620,12 +620,6 @@ CHAR g_szExprWithStack2[10480];
 #endif
 void *dbgForceToMemory;     // dummy pointer that pessimises enregistration
 
-#ifdef MDA_SUPPORTED
-#ifdef _DEBUG
-BOOL g_bMdaDisableAsserts = FALSE;
-#endif
-#endif
-
 int g_BufferLock = -1;
 
 VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
@@ -636,13 +630,6 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
     
     DEBUG_ONLY_FUNCTION;
-
-#ifdef MDA_SUPPORTED
-#ifdef _DEBUG
-    if (g_bMdaDisableAsserts)
-        return;
-#endif
-#endif
 
 #ifdef DACCESS_COMPILE
     // In the DAC case, asserts can mean one of two things.

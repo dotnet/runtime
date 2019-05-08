@@ -421,22 +421,6 @@ public:
     enum ApartmentState { AS_Unknown };
 #endif
 
-#if defined(FEATURE_COMINTEROP) && defined(MDA_SUPPORTED)
-    void RegisterRCW(RCW *pRCW)
-    {
-    }
-
-    BOOL RegisterRCWNoThrow(RCW *pRCW)
-    {
-        return FALSE;
-    }
-
-    RCW *UnregisterRCW(INDEBUG(SyncBlock *pSB))
-    {
-        return NULL;
-    }
-#endif
-
     DWORD       m_dwLastError;
 };
 
@@ -6525,12 +6509,6 @@ class GCForbidLoaderUseHolder
 #define FORBIDGC_LOADER_USE_ENABLED() (sizeof(YouCannotUseThisHere) != 0)
 #endif  // _DEBUG_IMPL
 #endif // DACCESS_COMPILE
-
-// There is an MDA which can detect illegal reentrancy into the CLR.  For instance, if you call managed
-// code from a native vectored exception handler, this might cause a reverse PInvoke to occur.  But if the
-// exception was triggered from code that was executing in cooperative GC mode, we now have GC holes and
-// general corruption.
-BOOL HasIllegalReentrancy();
 
 // We have numerous places where we start up a managed thread.  This includes several places in the
 // ThreadPool, the 'new Thread(...).Start()' case, and the Finalizer.  Try to factor the code so our

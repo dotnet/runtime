@@ -13,7 +13,6 @@
 #include "contxt.h"
 #include "ctxtcall.h"
 #include "win32threadpool.h"
-#include "mdaassistants.h"
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 #include "olecontexthelpers.h"
@@ -226,9 +225,6 @@ struct CtxEntryEnterContextCallbackData
     LPVOID         m_pUserData;
     LPVOID         m_pCtxCookie;
     HRESULT        m_UserCallbackHR;
-#ifdef MDA_SUPPORTED
-    CLREvent*      m_hTimeoutEvent;
-#endif
 };
 
 //================================================================
@@ -657,17 +653,6 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
             // Otherwise, we return S_OK but m_pStream will stay being NULL
             hrCDH = MarshalIUnknownToStreamCallback(this);
             CheckForFuncEvalAbort(hrCDH);
-
-#ifdef MDA_SUPPORTED
-            if (FAILED(hrCDH))
-            {
-                MDA_TRIGGER_ASSISTANT(DisconnectedContext, ReportViolationDisconnected(m_pCtxCookie, hrCDH));
-            }
-            else if (m_pStream == NULL)
-            {
-                MDA_TRIGGER_ASSISTANT(NotMarshalable, ReportViolation());
-            }
-#endif
         }
 
         if (TryUpdateEntry())                
@@ -939,17 +924,6 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContextHelper()
 
     CheckForFuncEvalAbort(hrCDH);
 
-#ifdef MDA_SUPPORTED
-    if (FAILED(hrCDH))
-    {
-        MDA_TRIGGER_ASSISTANT(DisconnectedContext, ReportViolationDisconnected(m_pCtxCookie, hrCDH));
-    }
-    else if(spStream == NULL)
-    {
-        MDA_TRIGGER_ASSISTANT(NotMarshalable, ReportViolation());
-    }
-#endif
-
     // If the interface is not marshalable or if we failed to 
     // enter the context, then we don't have any choice but to 
     // use the raw IP.
@@ -1168,119 +1142,6 @@ VOID IUnkEntry::EndUpdateEntry()
 }
 
 
-#ifdef MDA_SUPPORTED
-
-// Default to a 60 second timeout
-#define MDA_CONTEXT_SWITCH_DEADLOCK_TIMEOUT 60000
-#define MDA_CONTEXT_SWITCH_DEADLOCK_ITERATION_COUNT 1000
-
-struct MDAContextSwitchDeadlockArgs
-{
-    CLREvent* hEvent;
-    LPVOID  OriginContext;
-    LPVOID  DestinationContext;
-};
-
-DWORD WINAPI MDAContextSwitchDeadlockThreadProc(LPVOID lpParameter)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(MDA_GET_ASSISTANT(ContextSwitchDeadlock)));
-    }
-    CONTRACTL_END;
-
-    // We need to ensure a thread object has been set up since we will toggle to cooperative GC mode
-    // inside the wait loop.
-    Thread *pThread = SetupThreadNoThrow();
-    if (pThread == NULL)
-    {
-        // If we failed to allocate the thread object, we will skip running the watchdog thread
-        // and simply return.
-        return 0;
-    }
-
-    DWORD retval = 0;
-    NewHolder<MDAContextSwitchDeadlockArgs> args = (MDAContextSwitchDeadlockArgs*)lpParameter;
-
-    // This interesting piece of code allows us to avoid firing the MDA when a process is
-    // being debugged while the context transition is in progress. It is needed because
-    // CLREvent::Wait will timeout after the specified amount of wall time, even if the
-    // process is broken into the debugger for a portion of the time. By splitting the 
-    // wait into a bunch of smaller waits, we allow many more step/continue operations to
-    // occur before we signal the timeout.
-    for (int i = 0; i < MDA_CONTEXT_SWITCH_DEADLOCK_ITERATION_COUNT; i++)
-    {
-        retval = args->hEvent->Wait(MDA_CONTEXT_SWITCH_DEADLOCK_TIMEOUT / MDA_CONTEXT_SWITCH_DEADLOCK_ITERATION_COUNT, FALSE);
-        if (retval != WAIT_TIMEOUT)
-            break;
-
-        // Transition to cooperative GC mode and back. This will allow us to stop the timeout
-        // if we are broken in while managed only debugging.
-        {
-            GCX_COOP();
-        }
-    }
-
-    if (retval == WAIT_TIMEOUT)
-    {
-        // We didn't transition into the context within the allotted timeout period.
-        // We'll fire the mda and close the event, but we can't delete is as the
-        //  thread may still complete the transition and attempt to signal the event.
-        //  So we'll just leak it and let the transition thread recognize that the
-        //  event is no longer valid so it can simply delete it.
-        MDA_TRIGGER_ASSISTANT(ContextSwitchDeadlock, ReportDeadlock(args->OriginContext, args->DestinationContext));
-        
-        args->hEvent->CloseEvent();       
-        return 1;
-    }
-
-    delete args->hEvent;
-    
-    return 0;
-}
-
-
-void QueueMDAThread(CtxEntryEnterContextCallbackData* data)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(data->m_hTimeoutEvent));
-    }
-    CONTRACTL_END;
-
-    MDAContextSwitchDeadlockArgs* args = NULL;
-    
-    EX_TRY
-    {
-        args = new MDAContextSwitchDeadlockArgs;
-        
-        args->OriginContext = GetCurrentCtxCookie();
-        args->DestinationContext = data->m_pCtxCookie;
-        args->hEvent = data->m_hTimeoutEvent;
-
-        // Will execute in the Default AppDomain
-        ThreadpoolMgr::QueueUserWorkItem(MDAContextSwitchDeadlockThreadProc, (LPVOID)args, WT_EXECUTELONGFUNCTION);
-    }
-    EX_CATCH
-    {
-        delete data->m_hTimeoutEvent;
-        data->m_hTimeoutEvent = NULL;
-
-        if (args)
-            delete args;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-}
-
-#endif // MDA_SUPPORTED
-
-
 // Initialize the entry, returns true on success (i.e. the entry was free).
 bool InterfaceEntry::Init(MethodTable* pMT, IUnknown* pUnk)
 {
@@ -1463,28 +1324,6 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     CallbackInfo.m_pUserData = pData;
     CallbackInfo.m_pCtxCookie = m_pCtxCookie;
     CallbackInfo.m_UserCallbackHR = E_FAIL;
-#ifdef MDA_SUPPORTED
-    CallbackInfo.m_hTimeoutEvent = NULL;
-
-    MdaContextSwitchDeadlock* mda = MDA_GET_ASSISTANT(ContextSwitchDeadlock);
-    if (mda)
-    {
-        EX_TRY
-        {          
-            CallbackInfo.m_hTimeoutEvent = new CLREvent();
-            CallbackInfo.m_hTimeoutEvent->CreateAutoEvent(FALSE);
-        }
-        EX_CATCH
-        {
-            if (CallbackInfo.m_hTimeoutEvent)
-            {
-                delete CallbackInfo.m_hTimeoutEvent;
-                CallbackInfo.m_hTimeoutEvent = NULL;
-            }
-        }
-        EX_END_CATCH(SwallowAllExceptions);
-    }
-#endif // MDA_SUPPORTED
 
     // Retrieve the IContextCallback interface from the IObjectContext.
     SafeComHolderPreemp<IContextCallback> pCallback;
@@ -1497,14 +1336,6 @@ HRESULT CtxEntry::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
     callBackData.dwDispid = 0;
     callBackData.dwReserved = 0;
     callBackData.pUserDefined = &CallbackInfo;
-
-#ifdef MDA_SUPPORTED
-    // Make sure we don't deadlock when trying to enter the context.
-    if (mda && CallbackInfo.m_hTimeoutEvent)
-    {
-        QueueMDAThread(&CallbackInfo);
-    }
-#endif
 
     EX_TRY
     {
@@ -1556,24 +1387,6 @@ HRESULT __stdcall CtxEntry::EnterContextCallback(ComCallData* pComCallData)
     CtxEntryEnterContextCallbackData *pData = (CtxEntryEnterContextCallbackData*)pComCallData->pUserDefined;
 
 
-#ifdef MDA_SUPPORTED
-    // If active, signal the MDA watcher so we don't accidentally trigger a timeout.
-    MdaContextSwitchDeadlock* mda = MDA_GET_ASSISTANT(ContextSwitchDeadlock);
-    if (mda)
-    {
-        // If our watchdog worker is still waiting on us, the event will be valid.
-        if (pData->m_hTimeoutEvent->IsValid())
-        {
-            pData->m_hTimeoutEvent->Set();
-        }
-        else
-        {
-            // If we did timeout, we will have already cleaned up the event...just delete it now.
-            delete pData->m_hTimeoutEvent;
-        }
-    }
-#endif // MDA_SUPPORTED
-    
     Thread *pThread = GetThread();
     
     // Make sure the thread has been set before we call the user callback function.

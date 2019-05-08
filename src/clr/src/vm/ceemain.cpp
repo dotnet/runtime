@@ -161,7 +161,6 @@
 #include "syncclean.hpp"
 #include "typeparse.h"
 #include "debuginfostore.h"
-#include "mdaassistants.h"
 #include "eemessagebox.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
@@ -872,10 +871,6 @@ void EEStartupHelper(COINITIEE fFlags)
         }
 #endif // DEBUGGING_SUPPORTED
 
-#ifdef MDA_SUPPORTED
-        ManagedDebuggingAssistants::EEStartupActivation();
-#endif
-
 #ifdef PROFILING_SUPPORTED
         // Initialize the profiling services.
         hr = ProfilingAPIUtility::InitializeProfiling();
@@ -1261,11 +1256,6 @@ static void ExternalShutdownHelper(int exitCode, ShutdownCompleteAction sca)
     if (g_fEEShutDown || !g_fEEStarted)
         return;
 
-    if (HasIllegalReentrancy())
-    {
-        return;
-    }
-    else
     if (!CanRunManagedCode())
     {
         return;
@@ -1994,7 +1984,7 @@ NOINLINE BOOL CanRunManagedCodeRare(LoaderLockCheck::kind checkKind, HINSTANCE h
 {
     CONTRACTL {
         NOTHROW;
-        if (checkKind == LoaderLockCheck::ForMDA) { GC_TRIGGERS; } else { GC_NOTRIGGER; }; // because of the CustomerDebugProbe
+        GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
 
@@ -2012,39 +2002,6 @@ NOINLINE BOOL CanRunManagedCodeRare(LoaderLockCheck::kind checkKind, HINSTANCE h
     if ((g_fEEShutDown & ShutDown_Finalize2) && !FinalizerThread::IsCurrentThreadFinalizer())
         return FALSE;
 
-#if defined(FEATURE_COMINTEROP) && defined(MDA_SUPPORTED)
-    if ((checkKind == LoaderLockCheck::ForMDA) && (NULL == MDA_GET_ASSISTANT(LoaderLock))) 
-        return TRUE;
-
-    if (checkKind == LoaderLockCheck::None)
-        return TRUE;
-
-    // If we are checking whether the OS loader lock is held by the current thread, then
-    // it better not be.  Note that ShouldCheckLoaderLock is a cached test for whether
-    // we are checking this probe.  So we can call AuxUlibIsDLLSynchronizationHeld before
-    // verifying that the probe is still enabled.
-    //
-    // What's the difference between ignoreLoaderLock & ShouldCheckLoaderLock?
-    // ShouldCheckLoaderLock is a process-wide flag.  In a few places where we
-    // *know* we are in the loader lock but haven't quite reached the dangerous
-    // point, we call CanRunManagedCode suppressing/deferring this check.
-    BOOL IsHeld;
-
-    if (ShouldCheckLoaderLock(FALSE) &&
-        AuxUlibIsDLLSynchronizationHeld(&IsHeld) &&
-        IsHeld)
-    {
-        if (checkKind == LoaderLockCheck::ForMDA)
-        {
-            MDA_TRIGGER_ASSISTANT(LoaderLock, ReportViolation(hInst));
-        }
-        else
-        {
-            return FALSE;
-        }
-    }
-#endif // defined(FEATURE_COMINTEROP) && defined(MDA_SUPPORTED)
-
     return TRUE;
 }
 
@@ -2053,7 +2010,7 @@ BOOL CanRunManagedCode(LoaderLockCheck::kind checkKind, HINSTANCE hInst /*= 0*/)
 {
     CONTRACTL {
         NOTHROW;
-        if (checkKind == LoaderLockCheck::ForMDA) { GC_TRIGGERS; } else { GC_NOTRIGGER; }; // because of the CustomerDebugProbe
+        GC_NOTRIGGER;
         MODE_ANY;
     } CONTRACTL_END;
 
@@ -2062,11 +2019,7 @@ BOOL CanRunManagedCode(LoaderLockCheck::kind checkKind, HINSTANCE hInst /*= 0*/)
     if (!g_fForbidEnterEE 
         && (g_pPreallocatedOutOfMemoryException != NULL)
         && !(g_fEEShutDown & ShutDown_Finalize2)
-        && (((checkKind == LoaderLockCheck::ForMDA) 
-#ifdef MDA_SUPPORTED
-             && (NULL == MDA_GET_ASSISTANT(LoaderLock))
-#endif // MDA_SUPPORTED
-            ) || (checkKind == LoaderLockCheck::None)))
+        && ((checkKind == LoaderLockCheck::None)))
     {
         return TRUE;
     }

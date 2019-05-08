@@ -35,11 +35,6 @@ class BaseDomain;
 // CPU-dependent functions
 Stub * GenerateInitPInvokeFrameHelper();
 
-#ifdef MDA_SUPPORTED
-EXTERN_C void STDCALL PInvokeStackImbalanceHelper(void);
-#endif // MDA_SUPPORTED
-
-
 #ifdef FEATURE_STUBS_AS_IL
 EXTERN_C void SinglecastDelegateInvokeStub();
 #endif // FEATURE_STUBS_AS_IL

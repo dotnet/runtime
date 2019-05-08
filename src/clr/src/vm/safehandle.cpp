@@ -20,7 +20,6 @@
 #include "excep.h"
 #include "frames.h"
 #include "eecontract.h"
-#include "mdaassistants.h"
 #include "typestring.h"
 
 WORD SafeHandle::s_IsInvalidHandleMethodSlot = MethodTable::NO_SLOT;
@@ -229,11 +228,7 @@ FCIMPL1(void, CriticalHandle::FireCustomerDebugProbe, CriticalHandle* refThisUNS
 
     HELPER_METHOD_FRAME_BEGIN_1(ch);
 
-#ifdef MDA_SUPPORTED
-    MDA_TRIGGER_ASSISTANT(ReleaseHandleFailed, ReportViolation(ch->GetTypeHandle(), ch->m_handle));
-#else
     FCUnique(0x53);
-#endif
 
     HELPER_METHOD_FRAME_END();
 }

@@ -24,7 +24,6 @@
 #include "eeconfig.h"
 #include "corhost.h"
 #include "reflectioninvocation.h"
-#include "mdaassistants.h"
 #include "sigbuilder.h"
 #include "callsiteinspect.h"
 

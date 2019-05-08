@@ -16,7 +16,6 @@
 #include "stdinterfaces.h"
 #include "runtimecallablewrapper.h"
 #include "cominterfacemarshaler.h"
-#include "mdaassistants.h"
 #include "binder.h"
 #include "winrttypenameconverter.h"
 #include "typestring.h"
@@ -436,18 +435,6 @@ void GetObjectRefFromComIP(OBJECTREF* pObjOut, IUnknown **ppUnk, MethodTable *pM
 
     IUnknown *pUnk = *ppUnk;
     Thread * pThread = GetThread();
-
-#ifdef MDA_SUPPORTED
-    MdaInvalidIUnknown* mda = MDA_GET_ASSISTANT(InvalidIUnknown);
-    if (mda && pUnk)
-    {
-        // Test pUnk
-        SafeComHolder<IUnknown> pTemp;
-        HRESULT hr = SafeQueryInterface(pUnk, IID_IUnknown, &pTemp);
-        if (hr != S_OK)
-            mda->ReportViolation();
-    }
-#endif
 
     *pObjOut = NULL;
     IUnknown* pOuter = pUnk;

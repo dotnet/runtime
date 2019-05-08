@@ -15,7 +15,6 @@
 #include "eeconfig.h"
 #include "eehash.h"
 #include "../dlls/mscorrc/resource.h"
-#include "mdaassistants.h"
 #include "typeparse.h"
 #include "comdelegate.h"
 #include "olevariant.h"

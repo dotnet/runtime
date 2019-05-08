@@ -965,31 +965,18 @@ LONG CLRNoCatchHandler(EXCEPTION_POINTERS* pExceptionInfo, PVOID pv);
 // Comments:
 //   The BEGIN macro will setup a Thread if necessary. It should only be called
 //   in preemptive mode.  If you are calling it from cooperative mode, this implies
-//   we are executing "external" code in cooperative mode.  The Reentrancy MDA
-//   complains about this.
+//   we are executing "external" code in cooperative mode.
 //
 //   Only use this macro for actual boundaries between CLR and
 //   outside unmanaged code. If you want to connect internal pieces
 //   of CLR code, use EX_TRY instead.
 //===================================================================================
-#ifdef MDA_SUPPORTED
-NOINLINE BOOL HasIllegalReentrancyRare();
-#define HAS_ILLEGAL_REENTRANCY()  (NULL != MDA_GET_ASSISTANT(Reentrancy) && HasIllegalReentrancyRare())
-#else
-#define HAS_ILLEGAL_REENTRANCY() false
-#endif
-
 #define BEGIN_EXTERNAL_ENTRYPOINT(phresult)                             \
     {                                                                   \
         HRESULT *__phr = (phresult);                                    \
         *__phr = S_OK;                                                  \
         _ASSERTE(GetThread() == NULL ||                                 \
                     !GetThread()->PreemptiveGCDisabled());              \
-        if (HAS_ILLEGAL_REENTRANCY())                                   \
-        {                                                               \
-            *__phr = COR_E_ILLEGAL_REENTRANCY;                          \
-        }                                                               \
-        else                                                            \
         if (!CanRunManagedCode())                                       \
         {                                                               \
             *__phr = E_PROCESS_SHUTDOWN_REENTRY;                        \

@@ -45,7 +45,6 @@
 #include "typekey.h"
 #include "pendingload.h"
 #include "proftoeeinterfaceimpl.h"
-#include "mdaassistants.h"
 #include "virtualcallstub.h"
 #include "stringarraylist.h"
 
