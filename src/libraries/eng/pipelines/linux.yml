@@ -110,15 +110,15 @@ jobs:
           - _outerloop: true
 
         - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
-          - linuxDefaultQueues: Centos.7.Amd64.Open+RedHat.7.Amd64.Open+Debian.8.Amd64.Open+Ubuntu.1604.Amd64.Open+Ubuntu.1804.Amd64.Open+OpenSuse.42.Amd64.Open+\(Fedora.28.Amd64\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-28-helix-98b4f89-20190506161422
+          - linuxDefaultQueues: Centos.7.Amd64.Open+RedHat.7.Amd64.Open+Debian.8.Amd64.Open+Ubuntu.1604.Amd64.Open+Ubuntu.1804.Amd64.Open+OpenSuse.42.Amd64.Open+\(Fedora.28.Amd64\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-28-helix-09ca40b-20190508143249
           - linuxArm64Queues: \(Ubuntu.1604.Arm64\)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-b049512-20190321153539
-          - alpineQueues: \(Alpine.38.Amd64\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-98b4f89-20190506161422
-        
+          - alpineQueues: \(Alpine.38.Amd64\)ubuntu.1604.amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-09ca40b-20190508143246
+
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-          - linuxDefaultQueues: Centos.7.Amd64+RedHat.7.Amd64+Debian.8.Amd64+Debian.9.Amd64+Ubuntu.1604.Amd64+Ubuntu.1804.Amd64+Ubuntu.1810.Amd64+OpenSuse.42.Amd64+SLES.12.Amd64+SLES.15.Amd64+\(Fedora.28.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-28-helix-45b1fa2-20190402012449+\(Fedora.29.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-helix-c6dc5e6-20190402012449+\(Ubuntu.1904.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.04-helix-amd64-b43bf34-20190503204407
+          - linuxDefaultQueues: Centos.7.Amd64+RedHat.7.Amd64+Debian.8.Amd64+Debian.9.Amd64+Ubuntu.1604.Amd64+Ubuntu.1804.Amd64+Ubuntu.1810.Amd64+OpenSuse.42.Amd64+SLES.12.Amd64+SLES.15.Amd64+\(Fedora.28.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-28-helix-09ca40b-20190508143249+\(Fedora.29.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-09ca40b-20190508143249+\(Ubuntu.1904.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-19.04-helix-amd64-09ca40b-20190508143257
           - linuxArm64Queues: \(Ubuntu.1604.Arm64\)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-b049512-20190321153539
           - linuxArmQueues: \(Debian.9.Arm32\)Ubuntu.1604.Arm32@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-b049512-20190321153542
-          - alpineQueues: \(Alpine.38.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-45b1fa2-20190327215821+\(Alpine.39.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-helix-e4eaef4-20190228230637
+          - alpineQueues: \(Alpine.38.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-09ca40b-20190508143246+\(Alpine.39.Amd64\)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-helix-09ca40b-20190508143246
           - alpineArm64Queues: \(Alpine.38.Arm64\)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-46e69dd-20190327215724
 
     # Legs without helix testing
