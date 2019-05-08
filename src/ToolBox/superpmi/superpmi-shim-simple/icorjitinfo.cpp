@@ -1497,7 +1497,7 @@ void interceptor_ICJI::reportFatalError(CorJitResult result)
 
 // allocate a basic block profile buffer where execution counts will be stored
 // for jitted basic blocks.
-HRESULT interceptor_ICJI::allocMethodBlockCounts(DWORD           count, // The number of basic blocks that we have
+HRESULT interceptor_ICJI::allocMethodBlockCounts(UINT32          count, // The number of basic blocks that we have
                                                  BlockCounts**   pBlockCounts)
 {
     return original_ICorJitInfo->allocMethodBlockCounts(count, pBlockCounts);
@@ -1506,9 +1506,9 @@ HRESULT interceptor_ICJI::allocMethodBlockCounts(DWORD           count, // The n
 // get profile information to be used for optimizing the current method.  The format
 // of the buffer is the same as the format the JIT passes to allocMethodBlockCounts.
 HRESULT interceptor_ICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
-                                               DWORD*                pCount, // The number of basic blocks that we have
+                                               UINT32 *              pCount, // The number of basic blocks that we have
                                                BlockCounts**         pBlockCounts,
-                                               DWORD*                pNumRuns)
+                                               UINT32 *              pNumRuns)
 {
     return original_ICorJitInfo->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);
 }

@@ -11914,7 +11914,7 @@ void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
 
 /*********************************************************************/
 HRESULT CEEJitInfo::allocMethodBlockCounts (
-    DWORD                         count,           // count of <ILOffset, ExecutionCount> tuples
+    UINT32                        count,           // count of <ILOffset, ExecutionCount> tuples
     ICorJitInfo::BlockCounts **   pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
     )
 {
@@ -11963,9 +11963,9 @@ HRESULT CEEJitInfo::allocMethodBlockCounts (
 // to use profile info in codegen for non zapped images.
 HRESULT CEEJitInfo::getMethodBlockCounts (
     CORINFO_METHOD_HANDLE         ftnHnd,
-    DWORD *                       pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+    UINT32 *                      pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
     ICorJitInfo::BlockCounts **   pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-    DWORD *                       pNumRuns
+    UINT32 *                      pNumRuns
     )
 {
     LIMITED_METHOD_CONTRACT;
@@ -13988,7 +13988,7 @@ void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
 }
 
 HRESULT CEEInfo::allocMethodBlockCounts (
-        DWORD                 count,           // the count of <ILOffset, ExecutionCount> tuples
+        UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
         BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
         )
 {
@@ -13998,9 +13998,9 @@ HRESULT CEEInfo::allocMethodBlockCounts (
 
 HRESULT CEEInfo::getMethodBlockCounts(
         CORINFO_METHOD_HANDLE ftnHnd,
-        DWORD *               pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+        UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
         BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-        DWORD *               pNumRuns
+        UINT32 *              pNumRuns
         )
 {
     LIMITED_METHOD_CONTRACT;

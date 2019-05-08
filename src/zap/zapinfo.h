@@ -308,14 +308,14 @@ public:
     void reportFatalError(CorJitResult result);
 
     HRESULT allocMethodBlockCounts (
-            DWORD count,
+            UINT32 count,
             ICorJitInfo::BlockCounts ** pBlockCounts);
 
     HRESULT getMethodBlockCounts (
             CORINFO_METHOD_HANDLE ftnHnd,
-            DWORD * pCount,
+            UINT32 * pCount,
             ICorJitInfo::BlockCounts ** pBlockCounts,
-            DWORD * pNumRuns);
+            UINT32 * pNumRuns);
 
     DWORD getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
 
