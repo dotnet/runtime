@@ -1591,7 +1591,7 @@ void WrapICorJitInfo::reportFatalError(CorJitResult result)
 }
 
 HRESULT WrapICorJitInfo::allocMethodBlockCounts(
-        DWORD count,
+        UINT32 count,
         BlockCounts **pBlockCounts)
 {
     API_ENTER(allocMethodBlockCounts);
@@ -1602,9 +1602,9 @@ HRESULT WrapICorJitInfo::allocMethodBlockCounts(
 
 HRESULT WrapICorJitInfo::getMethodBlockCounts(
         CORINFO_METHOD_HANDLE ftnHnd,
-        DWORD *pCount,
+        UINT32 *pCount,
         BlockCounts **pBlockCounts,
-        DWORD *numRuns)
+        UINT32 *numRuns)
 {
     API_ENTER(getMethodBlockCounts);
     HRESULT temp = wrapHnd->getMethodBlockCounts(ftnHnd, pCount, pBlockCounts, numRuns);

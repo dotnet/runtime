@@ -1190,15 +1190,15 @@ public:
     DWORD repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection);
 
     void recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                             DWORD*                       pCount,
-                             ICorJitInfo::BlockCounts**   pBlockCounts,
-                             DWORD*                       pNumRuns,
-                             HRESULT                      result);
+                                 UINT32 *                     pCount,
+                                 ICorJitInfo::BlockCounts**   pBlockCounts,
+                                 UINT32 *                     pNumRuns,
+                                 HRESULT                      result);
     void dmpGetMethodBlockCounts(DWORDLONG key, const Agnostic_GetMethodBlockCounts& value);
     HRESULT repGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
-                                DWORD*                       pCount,
-                                ICorJitInfo::BlockCounts**   pBlockCounts,
-                                DWORD*                       pNumRuns);
+                                    UINT32 *                     pCount,
+                                    ICorJitInfo::BlockCounts**   pBlockCounts,
+                                    UINT32 *                     pNumRuns);
 
     void recMergeClasses(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2, CORINFO_CLASS_HANDLE result);
     void dmpMergeClasses(DLDL key, DWORDLONG value);

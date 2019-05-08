@@ -11923,7 +11923,7 @@ static void ProfileDataAllocateMethodBlockCounts(ProfileEmitter * pEmitter, CORC
         }
         
         // Reset all of the basic block counts to zero
-        for (DWORD i=0; (i <  pInfo->method.cBlock); i++ )
+        for (UINT32 i=0; (i <  pInfo->method.cBlock); i++ )
         {
             //
             // If methodWasExecuted is false then every block's ExecutionCount should also be zero
