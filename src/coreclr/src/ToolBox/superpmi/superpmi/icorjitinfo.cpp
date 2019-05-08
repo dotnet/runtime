@@ -1810,7 +1810,7 @@ void MyICJI::reportFatalError(CorJitResult result)
 
 // allocate a basic block profile buffer where execution counts will be stored
 // for jitted basic blocks.
-HRESULT MyICJI::allocMethodBlockCounts(DWORD           count, // The number of basic blocks that we have
+HRESULT MyICJI::allocMethodBlockCounts(UINT32          count, // The number of basic blocks that we have
                                        BlockCounts**   pBlockCounts)
 {
     jitInstance->mc->cr->AddCall("allocMethodBlockCounts");
@@ -1820,9 +1820,9 @@ HRESULT MyICJI::allocMethodBlockCounts(DWORD           count, // The number of b
 // get profile information to be used for optimizing the current method.  The format
 // of the buffer is the same as the format the JIT passes to allocMethodBlockCounts.
 HRESULT MyICJI::getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
-                                     DWORD*                pCount, // The number of basic blocks that we have
+                                     UINT32 *              pCount, // The number of basic blocks that we have
                                      BlockCounts**         pBlockCounts,
-                                     DWORD*                pNumRuns)
+                                     UINT32 *              pNumRuns)
 {
     jitInstance->mc->cr->AddCall("getMethodBlockCounts");
     return jitInstance->mc->repGetMethodBlockCounts(ftnHnd, pCount, pBlockCounts, pNumRuns);

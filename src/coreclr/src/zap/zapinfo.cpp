@@ -877,7 +877,7 @@ bool ZapInfo::runWithErrorTrap(void (*function)(void*), void* param)
 }
 
 HRESULT ZapInfo::allocMethodBlockCounts (
-    DWORD                         count,           // the count of <ILOffset, ExecutionCount> tuples
+    UINT32                        count,           // the count of <ILOffset, ExecutionCount> tuples
     ICorJitInfo::BlockCounts **   pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
     )
 {
@@ -937,9 +937,9 @@ HRESULT ZapInfo::allocMethodBlockCounts (
 
 HRESULT ZapInfo::getMethodBlockCounts (
     CORINFO_METHOD_HANDLE ftnHnd,
-    DWORD *               pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+    UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
     BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
-    DWORD *               pNumRuns
+    UINT32 *              pNumRuns
     )
 {
     _ASSERTE(pBlockCounts != nullptr);
@@ -4026,7 +4026,7 @@ template<> void LoadTable<CORINFO_METHOD_HANDLE>::EmitLoadFixups(CORINFO_METHOD_
 BOOL ZapInfo::CurrentMethodHasProfileData()
 {
     WRAPPER_NO_CONTRACT;
-    DWORD size;
+    UINT32 size;
     ICorJitInfo::BlockCounts * pBlockCounts;
     return SUCCEEDED(getMethodBlockCounts(m_currentMethodHandle, &size, &pBlockCounts, NULL));
 }

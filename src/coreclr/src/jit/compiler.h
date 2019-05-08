@@ -5325,8 +5325,8 @@ protected:
 
     bool                      fgProfileData_ILSizeMismatch;
     ICorJitInfo::BlockCounts* fgBlockCounts;
-    DWORD                     fgBlockCountsCount;
-    DWORD                     fgNumProfileRuns;
+    UINT32                    fgBlockCountsCount;
+    UINT32                    fgNumProfileRuns;
 
     unsigned fgStressBBProf()
     {
