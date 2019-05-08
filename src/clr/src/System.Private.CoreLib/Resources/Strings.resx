@@ -3754,4 +3754,22 @@
   <data name="Argument_StartupHookAssemblyLoadFailed" xml:space="preserve">
     <value>Startup hook assembly '{0}' failed to load. See inner exception for details.</value>
   </data>
+  <data name="InvalidOperation_NonStaticComRegFunction" xml:space="preserve">
+    <value>COM register function must be static.</value>
+  </data>
+  <data name="InvalidOperation_NonStaticComUnRegFunction" xml:space="preserve">
+    <value>COM unregister function must be static.</value>
+  </data>
+  <data name="InvalidOperation_InvalidComRegFunctionSig" xml:space="preserve">
+    <value>COM register function must have a System.Type parameter and a void return type.</value>
+  </data>
+  <data name="InvalidOperation_InvalidComUnRegFunctionSig" xml:space="preserve">
+    <value>COM unregister function must have a System.Type parameter and a void return type.</value>
+  </data>
+  <data name="InvalidOperation_MultipleComRegFunctions" xml:space="preserve">
+    <value>Type '{0}' has more than one COM registration function.</value>
+  </data>
+  <data name="InvalidOperation_MultipleComUnRegFunctions" xml:space="preserve">
+    <value>Type '{0}' has more than one COM unregistration function.</value>
+  </data>
 </root>
