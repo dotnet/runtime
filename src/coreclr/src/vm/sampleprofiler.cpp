@@ -113,16 +113,23 @@ void SampleProfiler::Disable()
         return;
     }
 
-    // Reset the event before shutdown.
-    s_threadShutdownEvent.Reset();
+    // If g_fProcessDetach is true, the sampling profiler thread probably got
+    // ripped because someone called ExitProcess(). This check is an attempt 
+    // to recognize that case and avoid waiting for the (already dead) sampling
+    // profiler thread to tell us it is terminated.
+    if (!g_fProcessDetach)
+    {
+        // Reset the event before shutdown.
+        s_threadShutdownEvent.Reset();
 
-    // The sampling thread will watch this value and exit
-    // when profiling is disabled.
-    s_profilingEnabled = false;
+        // The sampling thread will watch this value and exit
+        // when profiling is disabled.
+        s_profilingEnabled = false;
 
-    // Wait for the sampling thread to clean itself up.
-    s_threadShutdownEvent.Wait(INFINITE, FALSE /* bAlertable */);
-    s_threadShutdownEvent.CloseEvent();
+        // Wait for the sampling thread to clean itself up.
+        s_threadShutdownEvent.Wait(INFINITE, FALSE /* bAlertable */);
+        s_threadShutdownEvent.CloseEvent();
+    }
 
     if(s_timePeriodIsSet)
     {
