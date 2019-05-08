@@ -86,10 +86,10 @@ public:
     void WriteTag(FastSerializerTags tag, BYTE *payload = NULL, unsigned int payloadLength = 0);
     void WriteString(const char *strContents, unsigned int length);
 
-    size_t GetCurrentPosition() const
+    unsigned int GetRequiredPadding() const
     {
         LIMITED_METHOD_CONTRACT;
-        return m_currentPos;
+        return m_requiredPadding;
     }
 
     bool HasWriteErrors() const
@@ -104,7 +104,7 @@ private:
 
     StreamWriter *const m_pStreamWriter;
     bool m_writeErrorEncountered;
-    size_t m_currentPos;
+    unsigned int m_requiredPadding;
 };
 
 #endif // FEATURE_PERFTRACING

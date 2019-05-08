@@ -132,7 +132,7 @@ FastSerializer::FastSerializer(StreamWriter *pStreamWriter) : m_pStreamWriter(pS
     CONTRACTL_END;
 
     m_writeErrorEncountered = false;
-    m_currentPos = 0;
+    m_requiredPadding = 0;
     WriteFileHeader();
 }
 
@@ -190,19 +190,12 @@ void FastSerializer::WriteBuffer(BYTE *pBuffer, unsigned int length)
         uint32_t outCount;
         bool fSuccess = m_pStreamWriter->Write(pBuffer, length, outCount);
 
-#ifdef _DEBUG
-        size_t prevPos = m_currentPos;
-#endif
-        m_currentPos += outCount;
+        m_requiredPadding = (ALIGNMENT_SIZE + m_requiredPadding - (outCount % ALIGNMENT_SIZE)) % ALIGNMENT_SIZE;
 
         // This will cause us to stop writing to the file.
         // The file will still remain open until shutdown so that we don't
         // have to take a lock at this level when we touch the file stream.
         m_writeErrorEncountered = (length != outCount) || !fSuccess;
-
-#ifdef _DEBUG
-        _ASSERTE(m_writeErrorEncountered || (prevPos < m_currentPos));
-#endif
     }
     EX_CATCH
     {
