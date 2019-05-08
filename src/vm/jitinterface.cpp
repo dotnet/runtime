@@ -5445,21 +5445,33 @@ void CEEInfo::getCallInfo(
         //    (c) constraint calls that require runtime context lookup are never resolved 
         //        to underlying shared generic code
 
+        bool unresolvedLdVirtFtn = (flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt;
+
         if (((pResult->exactContextNeedsRuntimeLookup && pTargetMD->IsInstantiatingStub() && (!allowInstParam || fResolvedConstraint)) || fForceUseRuntimeLookup)
                 // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
                 && ContextIsShared(pResolvedToken->tokenContext))
         {
             _ASSERTE(!m_pMethodBeingCompiled->IsDynamicMethod());
-            pResult->kind = CORINFO_CALL_CODE_POINTER;
 
-            // For reference types, the constrained type does not affect method resolution
-            DictionaryEntryKind entryKind = (!constrainedType.IsNull() && constrainedType.IsValueType()) ? ConstrainedMethodEntrySlot : MethodEntrySlot;
+            if (IsReadyToRunCompilation() && unresolvedLdVirtFtn)
+            {
+                // Compensate for always treating delegates as direct calls above.
+                // Dictionary lookup is computed in embedGenericHandle as part of the LDVIRTFTN code sequence
+                pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
+            }
+            else
+            {
+                pResult->kind = CORINFO_CALL_CODE_POINTER;
 
-            ComputeRuntimeLookupForSharedGenericToken(entryKind,
-                                                      pResolvedToken,
-                                                      pConstrainedResolvedToken,
-                                                      pMD,
-                                                      &pResult->codePointerLookup);
+                // For reference types, the constrained type does not affect method resolution
+                DictionaryEntryKind entryKind = (!constrainedType.IsNull() && constrainedType.IsValueType()) ? ConstrainedMethodEntrySlot : MethodEntrySlot;
+
+                ComputeRuntimeLookupForSharedGenericToken(entryKind,
+                                                            pResolvedToken,
+                                                            pConstrainedResolvedToken,
+                                                            pMD,
+                                                            &pResult->codePointerLookup);
+            }
         }
         else
         {
@@ -5470,13 +5482,10 @@ void CEEInfo::getCallInfo(
 
             pResult->kind = CORINFO_CALL;
 
-            if (IsReadyToRunCompilation())
+            if (IsReadyToRunCompilation() && unresolvedLdVirtFtn)
             {
                 // Compensate for always treating delegates as direct calls above
-                if ((flags & CORINFO_CALLINFO_LDFTN) && (flags & CORINFO_CALLINFO_CALLVIRT) && !resolvedCallVirt)
-                {
-                   pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
-                }
+                pResult->kind = CORINFO_VIRTUALCALL_LDVIRTFTN;
             }
         }
         pResult->nullInstanceCheck = resolvedCallVirt;
