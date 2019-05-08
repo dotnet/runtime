@@ -12,6 +12,7 @@ set(CLR_SOURCES
 if(WIN32)
 list(APPEND CLR_SOURCES
     comcallunmarshal.cpp
+    delayloadhook.cpp
     Native.rc
 )
 
