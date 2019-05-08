@@ -19,7 +19,6 @@
 #include "object.h"
 #include "comsynchronizable.h"
 #include "eeconfig.h"
-#include "mdaassistants.h"
 
 
 /********************************************************************/
@@ -76,16 +75,7 @@ NOINLINE static INT32 GetHashCodeHelper(OBJECTREF objRef)
 
     HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);   
 
-#ifdef MDA_SUPPORTED
-    MdaModuloObjectHashcode* pProbe = MDA_GET_ASSISTANT(ModuloObjectHashcode);
-#endif
-        
     idx = objRef->GetHashCodeEx();
-
-#ifdef MDA_SUPPORTED
-    if (pProbe)
-        idx = idx % pProbe->GetModulo();
-#endif
 
     HELPER_METHOD_FRAME_END();
     FC_INNER_EPILOG();
@@ -110,9 +100,6 @@ FCIMPL1(INT32, ObjectNative::GetHashCode, Object* obj) {
 
     OBJECTREF objRef(obj);
 
-#ifdef MDA_SUPPORTED
-    if (!MDA_GET_ASSISTANT(ModuloObjectHashcode))
-#endif
     {
         DWORD bits = objRef->GetHeader()->GetBits();
 

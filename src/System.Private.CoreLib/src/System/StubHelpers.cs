@@ -1663,16 +1663,6 @@ namespace System.StubHelpers
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern Delegate GetTargetForAmbiguousVariantCall(object objSrc, IntPtr pMT, out bool fUseString);
 
-        //-------------------------------------------------------
-        // Helper for the MDA RaceOnRCWCleanup
-        //-------------------------------------------------------
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void StubRegisterRCW(object pThis);
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void StubUnregisterRCW(object pThis);
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetDelegateInvokeMethod(Delegate pThis);
 
@@ -1685,17 +1675,7 @@ namespace System.StubHelpers
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetOuterInspectable(object pThis, IntPtr pCtorMD);
 
-#if MDA_SUPPORTED
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern Exception TriggerExceptionSwallowedMDA(Exception ex, IntPtr pManagedTarget);
-#endif // MDA_SUPPORTED
-
 #endif // FEATURE_COMINTEROP
-
-#if MDA_SUPPORTED
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void CheckCollectedDelegateMDA(IntPtr pEntryThunk);
-#endif // MDA_SUPPORTED
 
         //-------------------------------------------------------
         // Profiler helpers
@@ -1758,11 +1738,6 @@ namespace System.StubHelpers
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern IntPtr GetStubContextAddr();
 #endif // BIT64
-
-#if MDA_SUPPORTED
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void TriggerGCForMDA();        
-#endif // MDA_SUPPORTED
 
 #if FEATURE_ARRAYSTUB_AS_IL
         [MethodImplAttribute(MethodImplOptions.InternalCall)]

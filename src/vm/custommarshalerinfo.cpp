@@ -16,7 +16,6 @@
 
 #include "custommarshalerinfo.h"
 #include "mlinfo.h"
-#include "mdaassistants.h"
 #include "sigbuilder.h"
 
 //==========================================================================
@@ -531,14 +530,6 @@ void CustomMarshalerHelper::InvokeCleanUpNativeMeth(void *pNative)
             ExceptionObj = GET_THROWABLE();
         }
         EX_END_CATCH(SwallowAllExceptions);
-
-#ifdef MDA_SUPPORTED
-        if (ExceptionObj != NULL)
-        {
-            TypeHandle typeCustomMarshaler = GetCustomMarshalerInfo()->GetCustomMarshalerType();
-            MDA_TRIGGER_ASSISTANT(MarshalCleanupError, ReportErrorCustomMarshalerCleanup(typeCustomMarshaler, &ExceptionObj));
-        }
-#endif
     }
     GCPROTECT_END();   
 }

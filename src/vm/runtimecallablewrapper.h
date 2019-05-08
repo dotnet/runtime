@@ -67,7 +67,6 @@
 #include "excep.h"
 #include "comcache.h"
 #include "threads.h"
-#include "mdaassistants.h"
 #include "comcache.h"
 #include "jupiterobject.h"
 
@@ -1563,9 +1562,6 @@ public:
         m_pSB = NULL;
         m_fValid = FALSE;
         m_fRCWInUse = FALSE;
-#ifdef MDA_SUPPORTED
-        m_pMDA = MDA_GET_ASSISTANT(RaceOnRCWCleanup);
-#endif // MDA_SUPPORTED
     }
 
     ~RCWHolder()
@@ -1578,15 +1574,6 @@ public:
             SUPPORTS_DAC;
         }
         CONTRACTL_END;
-
-#ifdef MDA_SUPPORTED
-        // Unregister this RCW on the thread
-        if (m_pThread && m_pSB && m_fValid)
-        {
-            if (m_pMDA)
-                m_pThread->UnregisterRCW(INDEBUG(m_pSB));
-        }
-#endif // MDA_SUPPORTED
 
         if (m_fRCWInUse)
         {
@@ -1616,13 +1603,6 @@ public:
             COMPlusThrow(kInvalidComObjectException, IDS_EE_COM_OBJECT_NO_LONGER_HAS_WRAPPER);
         }
         m_fRCWInUse = TRUE;
-
-#ifdef MDA_SUPPORTED
-        if (m_pMDA)
-        {
-            m_pThread->RegisterRCW(m_pRCW);
-        }
-#endif // MDA_SUPPORTED
 
         m_fValid = TRUE;
     }
@@ -1665,13 +1645,6 @@ public:
             COMPlusThrow(kInvalidComObjectException, IDS_EE_COM_OBJECT_NO_LONGER_HAS_WRAPPER);
         }
 
-#ifdef MDA_SUPPORTED
-        if (m_pMDA)
-        {
-            m_pThread->RegisterRCW(m_pRCW);
-        }
-#endif // MDA_SUPPORTED
-
         m_fValid = TRUE;
     }
 
@@ -1692,17 +1665,7 @@ public:
         
         m_pSB = pSB;
         m_pRCW = m_pSB->GetInteropInfoNoCreate()->GetRawRCW();
-
-#ifdef MDA_SUPPORTED
-        if (m_pMDA)
-        {
-            m_fValid = m_pThread->RegisterRCWNoThrow(m_pRCW);
-        }
-        else
-#endif // MDA_SUPPORTED
-        {
-            m_fValid = TRUE;
-        }
+        m_fValid = TRUE;
     }
 
     void InitNoCheck(OBJECTREF pObject)
@@ -1762,11 +1725,6 @@ public:
         if (m_fValid)
         {
             m_fValid = FALSE;
-
-#ifdef MDA_SUPPORTED
-            if (m_pMDA)
-                m_pThread->UnregisterRCW(INDEBUG(m_pSB));
-#endif // MDA_SUPPORTED
         }
 
         BOOL fThrowException = FALSE;
@@ -1832,11 +1790,6 @@ private:
     // Used for de-registration
     BOOL        m_fValid;
     BOOL        m_fRCWInUse;
-
-#ifdef MDA_SUPPORTED
-    // Stores the MDA.
-    MdaRaceOnRCWCleanup* m_pMDA;
-#endif // MDA_SUPPORTED
 };
 #endif // !DACCESS_COMPILE
 

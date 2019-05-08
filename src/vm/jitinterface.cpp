@@ -51,8 +51,6 @@
 #include "gccover.h"
 #endif // HAVE_GCCOVER
 
-#include "mdaassistants.h"
-
 #ifdef FEATURE_PREJIT
 #include "compile.h"
 #include "corcompile.h"

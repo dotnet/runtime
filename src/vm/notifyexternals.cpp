@@ -15,11 +15,10 @@
 #include "comcache.h"
 
 #include "notifyexternals.h"
-#include "mdaassistants.h"
 
 // On some platforms, we can detect whether the current thread holds the loader
 // lock.  It is unsafe to execute managed code when this is the case
-BOOL ShouldCheckLoaderLock(BOOL fForMDA /*= TRUE*/)
+BOOL ShouldCheckLoaderLock()
 {
     CONTRACTL
     {
@@ -37,24 +36,13 @@ BOOL ShouldCheckLoaderLock(BOOL fForMDA /*= TRUE*/)
     // 0 here.  Any explicit initialization will result in thread-safety problems.
     static BOOL fInited;
     static BOOL fShouldCheck;
-    static BOOL fShouldCheck_ForMDA;
 
     if (VolatileLoad(&fInited) == FALSE)
     {
-        fShouldCheck_ForMDA = FALSE;
-
         fShouldCheck = AuxUlibInitialize();      // may fail
 
-#ifdef MDA_SUPPORTED
-        if (fShouldCheck)
-        {
-            MdaLoaderLock* pProbe = MDA_GET_ASSISTANT(LoaderLock);
-            if (pProbe)
-                fShouldCheck_ForMDA = TRUE;
-        }
-#endif // MDA_SUPPORTED
         VolatileStore(&fInited, TRUE);
     }
-    return (fForMDA ? fShouldCheck_ForMDA : fShouldCheck);
+    return (fShouldCheck);
 #endif // FEATURE_CORESYSTEM
 }

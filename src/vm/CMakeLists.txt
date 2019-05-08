@@ -352,7 +352,6 @@ set(VM_SOURCES_WKS
     jithelpers.cpp
     managedmdimport.cpp
     marshalnative.cpp
-    mdaassistants.cpp
     methodtablebuilder.cpp
     mlinfo.cpp
     mscorlib.cpp # <DisablePrecompiledHeaders>true</DisablePrecompiledHeaders>
@@ -475,7 +474,6 @@ set(VM_HEADERS_WKS
     invokeutil.h
     managedmdimport.hpp
     marshalnative.h
-    mdaassistants.h
     methodtablebuilder.h
     mlinfo.h
     mscorlib.h

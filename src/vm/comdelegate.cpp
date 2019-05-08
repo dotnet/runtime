@@ -19,7 +19,6 @@
 #include "dllimportcallback.h"
 #include "dllimport.h"
 #include "eeconfig.h"
-#include "mdaassistants.h"
 #include "cgensys.h"
 #include "asmconstants.h"
 #include "virtualcallstub.h"
@@ -1254,27 +1253,7 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
     // Check if this callback was originally a managed method passed out to unmanaged code.
     //
 
-    UMEntryThunk* pUMEntryThunk = NULL;
-
-#ifdef MDA_SUPPORTED    
-    if (MDA_GET_ASSISTANT(InvalidFunctionPointerInDelegate))
-    {
-        EX_TRY
-        {
-            AVInRuntimeImplOkayHolder AVOkay;
-            pUMEntryThunk = UMEntryThunk::Decode(pCallback);
-        }
-        EX_CATCH
-        {
-            MDA_TRIGGER_ASSISTANT(InvalidFunctionPointerInDelegate, ReportViolation(pCallback));
-        }
-        EX_END_CATCH(SwallowAllExceptions)
-    }
-    else
-#endif // MDA_SUPPORTED
-    {
-        pUMEntryThunk = UMEntryThunk::Decode(pCallback);
-    }
+    UMEntryThunk* pUMEntryThunk = UMEntryThunk::Decode(pCallback);
 
     // Lookup the callsite in the hash, if found, we can map this call back to its managed function.
     // Otherwise, we'll treat this as an unmanaged callsite.
@@ -1377,12 +1356,6 @@ OBJECTREF COMDelegate::ConvertToDelegate(LPVOID pCallback, MethodTable* pMT)
         MethodDesc *pStubMD = pClass->m_pForwardStubMD;
         _ASSERTE(pStubMD != NULL && pStubMD->IsILStub());
 
-#if defined(MDA_SUPPORTED)
-        if (MDA_GET_ASSISTANT(PInvokeStackImbalance))
-        {
-            pInterceptStub = GenerateStubForMDA(pMD, pStubMD, pCallback, pInterceptStub);
-        }
-#endif // MDA_SUPPORTED
     }
 
     if (pInterceptStub != NULL)
@@ -3502,8 +3475,7 @@ static void TryConstructUnhandledExceptionArgs(OBJECTREF *pThrowable,
     {
         *pOutEventArgs = NULL;      // arguably better than half-constructed object
 
-        // It's not even worth asserting, because these aren't our bugs.  At
-        // some point, a MDA may be warranted.
+        // It's not even worth asserting, because these aren't our bugs.
     }
     EX_END_CATCH(SwallowAllExceptions)
 }
@@ -3570,8 +3542,7 @@ static void InvokeUnhandledSwallowing(OBJECTREF *pDelegate,
     }
     EX_CATCH
     {
-        // It's not even worth asserting, because these aren't our bugs.  At
-        // some point, a MDA may be warranted.
+        // It's not even worth asserting, because these aren't our bugs.
     }
     EX_END_CATCH(SwallowAllExceptions)
 }
@@ -3637,8 +3608,7 @@ void DistributeUnhandledExceptionReliably(OBJECTREF *pDelegate,
     }
     EX_CATCH
     {
-        // It's not even worth asserting, because these aren't our bugs.  At
-        // some point, a MDA may be warranted.
+        // It's not even worth asserting, because these aren't our bugs.
     }
     EX_END_CATCH(SwallowAllExceptions)
 }

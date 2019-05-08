@@ -22,7 +22,6 @@
 #include "eeconfig.h"
 #include "strongname.h"
 #include "strongnameholders.h"
-#include "mdaassistants.h"
 #include "eventtrace.h"
 
 #ifdef FEATURE_COMINTEROP
