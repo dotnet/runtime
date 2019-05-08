@@ -46,9 +46,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>a7a250e9c13147134543c35fef2fb81f19592edf</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="1.0.0-beta.19229.8">
+    <Dependency Name="Microsoft.DotNet.ApiCompat" Version="1.0.0-beta.19256.12">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>1b8589bbf53b9a5e819460798eff59830f39a3be</Sha>
+      <Sha>c31fac9f6899094226cb5cd77c85b8f60ecafa3d</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.GenAPI" Version="1.0.0-beta.19254.1">
       <Uri>https://github.com/dotnet/arcade</Uri>

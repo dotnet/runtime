@@ -1,0 +1,11 @@
+Compat issues with assembly System.Runtime.Loader:
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.add_AssemblyLoad(System.AssemblyLoadEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.add_AssemblyResolve(System.ResolveEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.add_ResourceResolve(System.ResolveEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.add_TypeResolve(System.ResolveEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.GetLoadedAssemblies()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.remove_AssemblyLoad(System.AssemblyLoadEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.remove_AssemblyResolve(System.ResolveEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.remove_ResourceResolve(System.ResolveEventHandler)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Loader.AssemblyLoadContext.remove_TypeResolve(System.ResolveEventHandler)' does not exist in the reference but it does exist in the implementation.
+Total Issues: 9

@@ -18,7 +18,7 @@
     <UseSharedCompilation>true</UseSharedCompilation>
 
     <ToolSetCommonDirectory>$(MSBuildThisFileDirectory)artifacts\toolset\Common\</ToolSetCommonDirectory>
-    <IsSourceProject Condition="$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))">true</IsSourceProject>
+    <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
   </PropertyGroup>
 
   <!-- Define vNext UAP Moniker -->
@@ -167,7 +167,8 @@
     <OutputType>Library</OutputType>
     <!-- Default any assembly not specifying a key to use the Open Key -->
     <StrongNameKeyId>Open</StrongNameKeyId>
-    <RunApiCompat>true</RunApiCompat>
+    <RunApiCompatForSrc>$(IsSourceProject)</RunApiCompatForSrc>
+    <RunMatchingRefApiCompat>$(IsSourceProject)</RunMatchingRefApiCompat>
     <ApiCompatExcludeAttributeList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</ApiCompatExcludeAttributeList>
     <!-- Build as portable by default -->
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>

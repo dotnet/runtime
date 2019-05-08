@@ -1,0 +1,7 @@
+Compat issues with assembly System.Reflection:
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.CustomAttributeNamedArgument' in the implementation but not the reference.
+TypeCannotChangeClassification : Type 'System.Reflection.CustomAttributeNamedArgument' is marked as readonly in the implementation so it must also be marked readonly in the reference.
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.CustomAttributeTypedArgument' in the implementation but not the reference.
+TypeCannotChangeClassification : Type 'System.Reflection.CustomAttributeTypedArgument' is marked as readonly in the implementation so it must also be marked readonly in the reference.
+MembersMustExist : Member 'System.Reflection.Module.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
+Total Issues: 5

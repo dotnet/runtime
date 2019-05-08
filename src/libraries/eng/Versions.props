@@ -23,7 +23,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.19229.8</MicrosoftDotNetApiCompatPackageVersion>
+    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.19256.12</MicrosoftDotNetApiCompatPackageVersion>
     <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.19254.1</MicrosoftDotNetCodeAnalysisPackageVersion>
     <MicrosoftDotNetGenAPIPackageVersion>1.0.0-beta.19254.1</MicrosoftDotNetGenAPIPackageVersion>
     <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.19254.1</MicrosoftDotNetGenFacadesPackageVersion>
