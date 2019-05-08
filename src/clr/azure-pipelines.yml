@@ -134,7 +134,7 @@ jobs:
         - Windows_NT_arm64
         - Windows_NT_x64
         - Windows_NT_x86
-      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc') }}:
+      ${{ if in(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc', 'coreclr-outerloop-gcstress-extra') }}:
         platforms:
         - Linux_arm
         - Linux_arm64
@@ -200,7 +200,7 @@ jobs:
         - Windows_NT_arm64
         - Windows_NT_x64
         - Windows_NT_x86
-      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc') }}:
+      ${{ if in(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc', 'coreclr-outerloop-gcstress-extra') }}:
         platforms:
         - Linux_arm
         - Linux_arm64
@@ -220,6 +220,8 @@ jobs:
           testGroup: outerloop-jitstress2-jitstressregs
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc') }}:
           testGroup: outerloop-gcstress0x3-gcstress0xc
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress-extra') }}:
+          testGroup: outerloop-gcstress-extra
 
 # The ReadyToRun test jobs that are triggered by default from a PR.
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
