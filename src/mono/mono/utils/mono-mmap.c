@@ -287,10 +287,21 @@ mono_valloc (void *addr, size_t length, int flags, MonoMemAccountType type)
 #endif
 
 #if defined(__APPLE__) && defined(MAP_JIT)
-	if ((flags & MONO_MMAP_JIT) && use_mmap_jit) {
-		if (get_darwin_version () >= DARWIN_VERSION_MOJAVE) {
-			mflags |= MAP_JIT;
+	if (get_darwin_version () >= DARWIN_VERSION_MOJAVE) {
+		/* Check for hardened runtime */
+		static int is_hardened_runtime;
+
+		if (is_hardened_runtime == 0 && !use_mmap_jit) {
+			ptr = mmap (NULL, getpagesize (), PROT_WRITE|PROT_EXEC, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+			if (ptr == MAP_FAILED) {
+				is_hardened_runtime = 1;
+			} else {
+				is_hardened_runtime = 2;
+				munmap (ptr, getpagesize ());
+			}
 		}
+		if ((flags & MONO_MMAP_JIT) && (use_mmap_jit || is_hardened_runtime == 1))
+			mflags |= MAP_JIT;
 	}
 #endif
 
