@@ -47,7 +47,6 @@
 
 #include "caparser.h"
 #include "../md/compiler/custattr.h"
-#include "mdaassistants.h"
 
 #include "peimagelayout.inl"
 

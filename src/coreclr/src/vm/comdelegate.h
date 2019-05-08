@@ -113,12 +113,6 @@ public:
     // get the one single delegate invoke stub
     static PCODE TheDelegateInvokeStub();
 
-#ifdef _TARGET_X86_
-#ifdef MDA_SUPPORTED
-    static Stub *GenerateStubForMDA(MethodDesc *pInvokeMD, MethodDesc *pStubMD, LPVOID pNativeTarget, Stub *pInnerStub);
-#endif // MDA_SUPPORTED
-#endif // _TARGET_X86_
-
     static MethodDesc * __fastcall GetMethodDesc(OBJECTREF obj);
     static OBJECTREF GetTargetObject(OBJECTREF obj);
 

@@ -35,7 +35,6 @@
 
 #include "nativeoverlapped.h"
 
-#include "mdaassistants.h"
 #include "appdomain.inl"
 #include "vmholder.h"
 #include "exceptmacros.h"
@@ -4772,11 +4771,7 @@ Thread::ApartmentState Thread::GetApartment()
         as = TS_TO_AS(maskedTs);
     }
 
-    if (
-#ifdef MDA_SUPPORTED
-        (NULL == MDA_GET_ASSISTANT(InvalidApartmentStateChange)) &&
-#endif
-        (as != AS_Unknown))
+    if (as != AS_Unknown)
     {
         return as;
     }
@@ -4798,33 +4793,6 @@ Thread::ApartmentState Thread::GetApartmentRare(Thread::ApartmentState as)
     {
         THDTYPE type;
         HRESULT hr = S_OK;
-
-#ifdef MDA_SUPPORTED
-        MdaInvalidApartmentStateChange* pProbe = MDA_GET_ASSISTANT(InvalidApartmentStateChange);
-        if (pProbe)
-        {
-            // Without notifications from OLE32, we cannot know when the apartment state of a
-            // thread changes.  But we have cached this fact and depend on it for all our
-            // blocking and COM Interop behavior to work correctly.  Using the CDH, log that it
-            // is not changing underneath us, on those platforms where it is relatively cheap for
-            // us to do so.
-            if (as != AS_Unknown)
-            {
-                hr = GetCurrentThreadTypeNT5(&type);
-                if (hr == S_OK)
-                {
-                    if (type == THDTYPE_PROCESSMESSAGES && as == AS_InMTA)
-                    {
-                        pProbe->ReportViolation(this, as, FALSE);
-                    }
-                    else if (type == THDTYPE_BLOCKMESSAGES && as == AS_InSTA)
-                    {
-                        pProbe->ReportViolation(this, as, FALSE);
-                    }
-                }
-            }
-        }
-#endif
 
         if (as == AS_Unknown)
         {
@@ -4998,12 +4966,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
     // MTA.
     if (m_State & TS_InSTA)
     {
-#ifdef MDA_SUPPORTED
-        if (state == AS_InMTA && fFireMDAOnMismatch)
-        {
-            MDA_TRIGGER_ASSISTANT(InvalidApartmentStateChange, ReportViolation(this, state, TRUE));
-        }
-#endif
         return AS_InSTA;
     }
 
@@ -5011,12 +4973,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
     // STA.
     if (m_State & TS_InMTA)
     {
-#ifdef MDA_SUPPORTED
-        if (state == AS_InSTA && fFireMDAOnMismatch)
-        {
-            MDA_TRIGGER_ASSISTANT(InvalidApartmentStateChange, ReportViolation(this, state, TRUE));
-        }
-#endif
         return AS_InMTA;
     }
 
@@ -5078,15 +5034,6 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
         // we can work out what the state is now.  No need to actually do the CoInit --
         // obviously someone else already took care of that.
         FastInterlockOr((ULONG *) &m_State, ((state == AS_InSTA) ? TS_InMTA : TS_InSTA));
-
-#ifdef MDA_SUPPORTED
-        if (fFireMDAOnMismatch)
-        {
-            // Report via the customer debug helper that we failed to set the apartment type
-            // to the specified type.
-            MDA_TRIGGER_ASSISTANT(InvalidApartmentStateChange, ReportViolation(this, state, TRUE));
-        }
-#endif
     }
     else if (hr == E_OUTOFMEMORY)
     {
@@ -8662,55 +8609,6 @@ BOOL dbgOnly_IsSpecialEEThread()
 }
 
 #endif // _DEBUG
-
-
-// There is an MDA which can detect illegal reentrancy into the CLR.  For instance, if you call managed
-// code from a native vectored exception handler, this might cause a reverse PInvoke to occur.  But if the
-// exception was triggered from code that was executing in cooperative GC mode, we now have GC holes and
-// general corruption.
-#ifdef MDA_SUPPORTED
-NOINLINE BOOL HasIllegalReentrancyRare()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        ENTRY_POINT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    Thread *pThread = GetThread();
-    if (pThread == NULL || !pThread->PreemptiveGCDisabled())
-        return FALSE;
-
-    BEGIN_ENTRYPOINT_VOIDRET;
-    MDA_TRIGGER_ASSISTANT(Reentrancy, ReportViolation());
-    END_ENTRYPOINT_VOIDRET;
-    return TRUE;
-}
-#endif
-
-// Actually fire the Reentrancy probe, if warranted.
-BOOL HasIllegalReentrancy()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        ENTRY_POINT;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifdef MDA_SUPPORTED
-    if (NULL == MDA_GET_ASSISTANT(Reentrancy))
-        return FALSE;
-    return HasIllegalReentrancyRare();
-#else
-    return FALSE;
-#endif // MDA_SUPPORTED
-}
 
 
 #endif // #ifndef DACCESS_COMPILE

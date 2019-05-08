@@ -17,7 +17,6 @@
 #include "olevariant.h"
 #include "comdatetime.h"
 #include "fieldmarshaler.h"
-#include "mdaassistants.h"
 
 /* ------------------------------------------------------------------------- *
  * Local constants
@@ -3049,12 +3048,6 @@ void OleVariant::MarshalObjectForOleVariant(const VARIANT * pOle, OBJECTREF * co
     { 
         COMPlusThrow(kPlatformNotSupportedException, IDS_EE_BADMARSHAL_TYPE_VARIANTASOBJECT);
     }
-
-#ifdef MDA_SUPPORTED
-    MdaInvalidVariant* pProbe = MDA_GET_ASSISTANT(InvalidVariant);
-    if (pProbe && !CheckVariant((VARIANT*)pOle))
-        pProbe->ReportViolation();
-#endif
 
     // if V_ISBYREF(pOle) and V_BYREF(pOle) is null then we have a problem,
     // unless we're dealing with VT_EMPTY or VT_NULL in which case that is ok??

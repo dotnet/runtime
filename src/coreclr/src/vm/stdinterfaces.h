@@ -456,10 +456,6 @@ HRESULT __stdcall ICCW_Unpeg_Wrapper(IUnknown *pUnk);
 
 
 
-#ifdef MDA_SUPPORTED
-VOID __stdcall DirtyCast_Assert(IUnknown* pUnk);
-#endif
-
 // IUNKNOWN wrappers
 
 // prototypes IUnknown methods

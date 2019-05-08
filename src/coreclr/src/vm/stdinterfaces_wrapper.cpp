@@ -476,19 +476,6 @@ struct AddRefReleaseArgs
     HRESULT* hr;
 };
 
-#ifdef MDA_SUPPORTED
-VOID __stdcall DirtyCast_Assert(IUnknown* pUnk)
-{
-    WRAPPER_NO_CONTRACT;
-    
-    _ASSERTE(!"The native code calling into the CLR has performed an illegal dirty cast on this IUnknown or IDispatch pointer. "
-              "The caller neglected to QI for the correct interface before making this call.  This is not a CLR bug. "
-              "A bug should be filed against the native caller.");
-
-    MDA_TRIGGER_ASSISTANT(DirtyCastAndCallOnInterface, ReportViolation(pUnk));
-}
-#endif
-
 ULONG __stdcall Unknown_AddRef(IUnknown* pUnk)
 {
     // Ensure the Thread is available for contracts and other users of the Thread, but don't do any of
@@ -643,8 +630,6 @@ HRESULT __stdcall Unknown_QueryInterface_IErrorInfo(IUnknown* pUnk, REFIID riid,
 
         if (hr == E_NOINTERFACE)
         {
-            // make sure that the MDA fires
-            VERIFY(!CanRunManagedCode(LoaderLockCheck::ForMDA));
             hr = HOST_E_CLRNOTAVAILABLE;
         }
     }

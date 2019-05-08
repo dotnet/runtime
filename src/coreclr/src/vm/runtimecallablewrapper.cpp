@@ -35,7 +35,6 @@ class Object;
 #include "notifyexternals.h"
 #include "winrttypenameconverter.h"
 #include "../md/compiler/custattr.h"
-#include "mdaassistants.h"
 #include "olevariant.h"
 #include "interopconverter.h"
 #include "typestring.h"
@@ -2564,41 +2563,6 @@ INT32 RCW::ExternalRelease(OBJECTREF* pObjPROTECTED)
     // do cleanup after releasing the lock
     if (fCleanupWrapper)
     {
-#ifdef MDA_SUPPORTED
-        MdaRaceOnRCWCleanup* mda = MDA_GET_ASSISTANT(RaceOnRCWCleanup);
-        if (mda)
-        {
-            BOOL fIsInUse = FALSE;
-            
-            // Walk the thread tables, looking for this RCW in use.
-            {
-                // Take the threadstore lock
-                ThreadStoreLockHolder tslh;
-            
-                Thread* pThread = NULL;
-            
-                // walk each thread's table
-                while (NULL != (pThread = ThreadStore::GetThreadList(pThread)) )
-                {
-                    if (pThread->RCWIsInUse(pRCW))
-                    {
-                        // found a match!
-                        fIsInUse = TRUE;
-                        break;
-                    }
-                }
-            }
-            
-            // If we found one, bail.
-            if (fIsInUse)
-            {
-                // Cannot decrement the counter if it's in use.
-                ++(pRCW->m_cbRefCount);
-                mda->ReportViolation();
-            }
-        }
-#endif // MDA_SUPPORTED
-        
         // Release all the data associated with the __ComObject.
         ComObject::ReleaseAllData(pRCW->GetExposedObject());
 
@@ -2650,41 +2614,6 @@ void RCW::FinalExternalRelease(OBJECTREF* pObjPROTECTED)
     // do cleanup after releasing the lock
     if (fCleanupWrapper)
     {
-#ifdef MDA_SUPPORTED
-        MdaRaceOnRCWCleanup* mda = MDA_GET_ASSISTANT(RaceOnRCWCleanup);
-        if (mda)
-        {
-            BOOL fIsInUse = FALSE;
-            
-            // Walk the thread tables, looking for this RCW in use.
-            {
-                // Take the threadstore lock
-                ThreadStoreLockHolder tslh;
-            
-                Thread* pThread = NULL;
-            
-                // walk each thread's table
-                while (NULL != (pThread = ThreadStore::GetThreadList(pThread)) )
-                {
-                    if (pThread->RCWIsInUse(pRCW))
-                    {
-                        // found a match!
-                        fIsInUse = TRUE;
-                        break;
-                    }
-                }
-            }
-            
-            // If we found one, bail.
-            if (fIsInUse)
-            {
-                // Cannot zero the counter if it's in use.
-                pRCW->m_cbRefCount = 1;
-                mda->ReportViolation();
-            }
-        }
-#endif // MDA_SUPPORTED
-
         // Release all the data associated with the __ComObject.
         ComObject::ReleaseAllData(pRCW->GetExposedObject());
 
@@ -4034,13 +3963,6 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
         }
     }
 
-#ifdef MDA_SUPPORTED
-    if (FAILED(hr))
-    {
-        MDA_TRIGGER_ASSISTANT(FailedQI, ReportAdditionalInfo(hr, this, iid, pMT));
-    }
-#endif
-    
     if (pUnk == NULL)
         RETURN NULL;
 
@@ -4286,10 +4208,6 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
             // a pointer to them directly. It will however fail for others since we only
             // have a pointer to a proxy which is no longer attached to the object.
 
-#ifdef MDA_SUPPORTED
-            MDA_TRIGGER_ASSISTANT(DisconnectedContext, ReportViolationCleanup(pWrap->GetWrapperCtxCookie(), pCurrentCtxCookie, hr));     
-#endif
-
             pWrap->ReleaseAllInterfaces();
         }
     }
@@ -4332,10 +4250,6 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
                         // the current context. This will work for context agile object's since we have
                         // a pointer to them directly. It will however fail for others since we only
                         // have a pointer to a proxy which is no longer attached to the object.
-
-#ifdef MDA_SUPPORTED
-                        MDA_TRIGGER_ASSISTANT(DisconnectedContext, ReportViolationCleanup(it.GetCtxCookie(), pCurrentCtxCookie, hr));     
-#endif
 
                         // make sure we never try to clean this up again
                         pEntry->Free();
