@@ -11,3 +11,11 @@ public interface IGetTypeFromC
 {
     object GetTypeFromC();
 }
+
+[Guid("DA746E78-E1E8-44DD-8184-203AB57B3002")]
+public interface IValidateRegistrationCallbacks
+{
+    bool DidRegister();
+    bool DidUnregister();
+    void Reset();
+}
