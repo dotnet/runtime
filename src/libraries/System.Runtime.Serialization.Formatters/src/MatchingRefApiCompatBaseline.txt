@@ -1,3 +1,9 @@
 # Exposed publicly only in implementation for serialization compat
 TypesMustExist : Type 'System.Runtime.Serialization.SerializationEventHandler' does not exist in the reference but it does exist in the implementation.
 TypesMustExist : Type 'System.Runtime.Serialization.TypeLoadExceptionHolder' does not exist in the reference but it does exist in the implementation.
+
+MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.DeserializationInProgress.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.StartDeserialization()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress(System.String, System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.UpdateValue(System.String, System.Object, System.Type)' does not exist in the reference but it does exist in the implementation.

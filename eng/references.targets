@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
-    <ContractOutputPath>$(RefPath)</ContractOutputPath>
-    <FrameworkPathOverride>$(ContractOutputPath)</FrameworkPathOverride>
-    <AssemblySearchPaths>$(AssemblySearchPaths);$(ContractOutputPath);{RawFileName}</AssemblySearchPaths>
+    <ContractDependencyPaths>$(RefPath)</ContractDependencyPaths>
+    <FrameworkPathOverride>$(RefPath)</FrameworkPathOverride>
+    <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
     <!-- Disable RAR from transitively discovering dependencies for References -->
     <_FindDependencies>false</_FindDependencies>
     <!--

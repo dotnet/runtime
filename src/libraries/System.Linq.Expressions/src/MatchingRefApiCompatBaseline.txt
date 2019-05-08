@@ -1,0 +1,18 @@
+Compat issues with assembly System.Linq.Expressions:
+CannotMakeTypeAbstract : Type 'System.Linq.Expressions.DynamicExpressionVisitor' is abstract in the reference but is not abstract in the implementation.
+CannotMakeMoreVisible : Visibility of member 'System.Linq.Expressions.DynamicExpressionVisitor..ctor()' is 'Family' in the reference but 'Public' in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.ElementInit.ArgumentCount.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.ElementInit.GetArgument(System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.IndexExpression.ArgumentCount.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.IndexExpression.GetArgument(System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.InvocationExpression.ArgumentCount.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.InvocationExpression.GetArgument(System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.MethodCallExpression.ArgumentCount.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.MethodCallExpression.GetArgument(System.Int32)' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.NewExpression.ArgumentCount.get()' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'System.Linq.Expressions.NewExpression.GetArgument(System.Int32)' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Linq.Expressions.Interpreter.LightLambda' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.CallSiteOps' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.Closure' does not exist in the reference but it does exist in the implementation.
+TypesMustExist : Type 'System.Runtime.CompilerServices.RuntimeOps' does not exist in the reference but it does exist in the implementation.
+Total Issues: 16
