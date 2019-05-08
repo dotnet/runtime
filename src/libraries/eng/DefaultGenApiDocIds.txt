@@ -20,8 +20,9 @@ T:System.IO.IODescriptionAttribute
 T:System.Runtime.CompilerServices.AsyncStateMachineAttribute
 T:System.Runtime.CompilerServices.CompilerGeneratedAttribute
 T:System.Runtime.CompilerServices.IteratorStateMachineAttribute
-T:System.Runtime.CompilerServices.TypeForwardedFromAttribute
 T:System.Runtime.CompilerServices.MethodImpl
+T:System.Runtime.CompilerServices.NullableAttribute
+T:System.Runtime.CompilerServices.TypeForwardedFromAttribute
 T:System.Runtime.ConstrainedExecution.ReliabilityContractAttribute
 T:System.Runtime.InteropServices.ClassInterfaceAttribute
 T:System.Runtime.InteropServices.ComDefaultInterfaceAttribute
