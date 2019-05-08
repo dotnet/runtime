@@ -5,6 +5,7 @@
 #include "common.h"
 #include "diagnosticserver.h"
 #include "eventpipeprotocolhelper.h"
+#include "diagnosticprotocolhelper.h"
 
 #ifdef FEATURE_PAL
 #include "pal.h"
@@ -64,6 +65,12 @@ static DWORD WINAPI DiagnosticsServerThread(LPVOID lpThreadParameter)
             case DiagnosticMessageType::CollectEventPipeTracing:
                 EventPipeProtocolHelper::CollectTracing(pStream);
                 break;
+
+#ifdef FEATURE_PAL
+            case DiagnosticMessageType::GenerateCoreDump:
+                DiagnosticProtocolHelper::GenerateCoreDump(pStream);
+                break;
+#endif
 
             default:
                 STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, "Received unknown request type (%d)\n", header.RequestType);

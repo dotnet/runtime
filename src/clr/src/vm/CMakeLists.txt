@@ -58,6 +58,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     debughelp.cpp
     debuginfostore.cpp
     decodemd.cpp
+    diagnosticprotocolhelper.cpp
     disassembler.cpp
     dllimport.cpp
     domainfile.cpp

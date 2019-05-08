@@ -46,6 +46,8 @@ Gathering the crash information on OS X will be quite a bit different than Linux
 
 # Configuration/Policy #
 
+NOTE: Core dump generation in docker containers require the ptrace capability (--cap-add=SYS_PTRACE or --privileged run/exec options).
+
 Any configuration or policy is set with environment variables which are passed as options to the _createdump_ utility.
 
 Environment variables supported:
