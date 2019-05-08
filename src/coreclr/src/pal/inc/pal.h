@@ -450,6 +450,14 @@ PALAPI
 PAL_SetShutdownCallback(
     IN PSHUTDOWN_CALLBACK callback);
 
+PALIMPORT
+BOOL
+PALAPI
+PAL_GenerateCoreDump(
+    IN LPCSTR dumpName,
+    IN INT dumpType,
+    IN BOOL diag);
+
 typedef VOID (*PPAL_STARTUP_CALLBACK)(
     char *modulePath,
     HMODULE hModule,
