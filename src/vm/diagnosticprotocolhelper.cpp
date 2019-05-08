@@ -44,25 +44,33 @@ void DiagnosticProtocolHelper::GenerateCoreDump(IpcStream* pStream)
     if (fSuccess)
     {
         // The protocol buffer is defined as:
-        //   string - dumpName (array<char> where the last char must = 0) or (length = 0)
+        //   string - dumpName (UTF16)
         //   int - dumpType
         //   int - diagnostics
         // returns
         //   ulong - status
-        LPCSTR dumpName;
+        LPCWSTR pwszDumpName;
         INT dumpType;
         INT diagnostics;
 
         uint8_t *pBufferCursor = buffer;
         uint32_t bufferLen = nNumberOfBytesRead;
 
-        if (TryParseString(pBufferCursor, bufferLen, dumpName) &&
+        if (TryParseString(pBufferCursor, bufferLen, pwszDumpName) &&
             TryParse(pBufferCursor, bufferLen, dumpType) &&
             TryParse(pBufferCursor, bufferLen, diagnostics))
         {
-            if (!PAL_GenerateCoreDump(dumpName, dumpType, diagnostics))
+            MAKE_UTF8PTR_FROMWIDE_NOTHROW(szDumpName, pwszDumpName);
+            if (szDumpName != nullptr)
             {
-                hr = E_FAIL;
+                if (!PAL_GenerateCoreDump(szDumpName, dumpType, diagnostics))
+                {
+                    hr = E_FAIL;
+                }
+            }
+            else 
+            {
+                hr = E_OUTOFMEMORY;
             }
         }
         else
