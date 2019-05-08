@@ -51,10 +51,6 @@ EXTERN _UMThunkStubRareDisableWorker@8:PROC
 EXTERN _VarargPInvokeStubWorker@12:PROC
 EXTERN _GenericPInvokeCalliStubWorker@12:PROC
 
-ifdef MDA_SUPPORTED
-EXTERN _PInvokeStackImbalanceWorker@8:PROC
-endif
-
 ifndef FEATURE_CORECLR
 EXTERN _CopyCtorCallStubWorker@4:PROC
 endif
@@ -1283,87 +1279,6 @@ GoCallCalliWorker:
     jmp _GenericPInvokeCalliHelper@0
 
 _GenericPInvokeCalliHelper@0 endp
-
-ifdef MDA_SUPPORTED
-
-;==========================================================================
-; Invoked from on-the-fly generated stubs when the stack imbalance MDA is
-; enabled. The common low-level work for both direct P/Invoke and unmanaged
-; delegate P/Invoke happens here. PInvokeStackImbalanceWorker is where the
-; actual imbalance check is implemented.
-; [ESP + 4] - the StackImbalanceCookie
-; [EBP + 8] - stack arguments (EBP frame pushed by the calling stub)
-; 
-_PInvokeStackImbalanceHelper@0 proc public
-    ; StackImbalanceCookie to EBX
-    push    ebx
-    lea     ebx, [esp + 8]
-    
-    push    esi
-    push    edi
-    
-    ; copy stack args
-    mov     edx, ecx
-    mov     ecx, [ebx + StackImbalanceCookie__m_dwStackArgSize]
-    sub     esp, ecx
-
-    shr     ecx, 2
-    lea     edi, [esp]
-    lea     esi, [ebp + 8]
-
-    cld
-    rep movsd
-    
-    ; record pre-call ESP
-    mov     [ebx + StackImbalanceCookie__m_dwSavedEsp], esp
-    
-    ; call the target (restore ECX in case it's a thiscall)
-    mov     ecx, edx
-    call    [ebx + StackImbalanceCookie__m_pTarget]
-
-    ; record post-call ESP and restore ESP to pre-pushed state
-    mov     ecx, esp
-    lea     esp, [ebp - SIZEOF_StackImbalanceCookie - 16] ; 4 DWORDs and the cookie have been pushed
-
-    ; save return value
-    push    eax
-    push    edx
-    sub     esp, 12
-    
-.errnz (StackImbalanceCookie__HAS_FP_RETURN_VALUE AND 00ffffffh), HAS_FP_RETURN_VALUE has changed - update asm code
-    
-    ; save top of the floating point stack if the target has FP retval
-    test    byte ptr [ebx + StackImbalanceCookie__m_callConv + 3], (StackImbalanceCookie__HAS_FP_RETURN_VALUE SHR 24)
-    jz      noFPURetVal
-    fstp    tbyte ptr [esp] ; save full 10 bytes to avoid precision loss
-noFPURetVal:
-
-    ; call PInvokeStackImbalanceWorker(StackImbalanceCookie *pSICookie, DWORD dwPostESP)
-    push    ecx
-    push    ebx
-    call    _PInvokeStackImbalanceWorker@8
-
-    ; restore return value
-    test    byte ptr [ebx + StackImbalanceCookie__m_callConv + 3], (StackImbalanceCookie__HAS_FP_RETURN_VALUE SHR 24)
-    jz      noFPURetValToRestore
-    fld     tbyte ptr [esp]
-noFPURetValToRestore:
-
-    add     esp, 12
-    pop     edx
-    pop     eax
-
-    ; restore registers
-    pop     edi
-    pop     esi
-
-    pop     ebx
-    
-    ; EBP frame and original stack arguments will be removed by the caller
-    ret
-_PInvokeStackImbalanceHelper@0 endp
-
-endif ; MDA_SUPPORTED
 
 ifdef FEATURE_COMINTEROP
 

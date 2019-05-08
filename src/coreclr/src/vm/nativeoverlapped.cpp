@@ -17,7 +17,6 @@
 #include "nativeoverlapped.h"
 #include "corhost.h"
 #include "win32threadpool.h"
-#include "mdaassistants.h"
 #include "comsynchronizable.h"
 #include "comthreadpool.h"
 #include "marshalnative.h"

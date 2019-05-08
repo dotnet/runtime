@@ -26,7 +26,6 @@
 #include "clsload.hpp"
 #include "cgensys.h"
 #include "virtualcallstub.h"
-#include "mdaassistants.h"
 #include "dllimport.h"
 #include "gcrefmap.h"
 #include "asmconstants.h"

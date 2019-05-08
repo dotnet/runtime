@@ -20,7 +20,6 @@
 #include "interopconverter.h"
 #include "wrappers.h"
 #include "invokeutil.h"
-#include "mdaassistants.h"
 #include "comcallablewrapper.h"
 #include "../md/compiler/custattr.h"
 #include "siginfo.hpp"
@@ -1408,11 +1407,7 @@ ErrExit:
     return hr;
 }
 
-void SafeRelease_OnException(IUnknown* pUnk, RCW* pRCW
-#ifdef MDA_SUPPORTED
-                             , MdaReportAvOnComRelease* pProbe
-#endif // MDA_SUPPORTED
-                             )
+void SafeRelease_OnException(IUnknown* pUnk, RCW* pRCW)
 {
     CONTRACTL
     {
@@ -1422,12 +1417,6 @@ void SafeRelease_OnException(IUnknown* pUnk, RCW* pRCW
     CONTRACTL_END;
 
 #ifndef CROSSGEN_COMPILE
-#ifdef MDA_SUPPORTED
-    // Report the exception that was thrown.
-    if (pProbe) 
-        pProbe->ReportHandledException(pRCW);
-#endif  // MDA_SUPPORTED
-
 #ifdef FEATURE_COMINTEROP
     LogInterop(W("An exception occurred during release"));
     LogInteropLeak(pUnk);
@@ -1457,15 +1446,6 @@ ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
     // Message pump could happen, so arbitrary managed code could run.
     CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
 
-#ifdef MDA_SUPPORTED
-    // Mode where we just let the fault occur.
-    MdaReportAvOnComRelease* pProbe = MDA_GET_ASSISTANT_EX(ReportAvOnComRelease);
-    if (pProbe && pProbe->AllowAV())
-    {
-        return pUnk->Release();
-    }   
-#endif // MDA_SUPPORTED    
-
     bool fException = false;
     
     SCAN_EHMARKER();
@@ -1500,11 +1480,7 @@ ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
 
     if (fException)
     {
-        SafeRelease_OnException(pUnk, pRCW
-#ifdef MDA_SUPPORTED
-            , pProbe
-#endif // MDA_SUPPORTED
-            );
+        SafeRelease_OnException(pUnk, pRCW);
     }
 
     return res;
@@ -1531,15 +1507,6 @@ ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
     // Message pump could happen, so arbitrary managed code could run.
     CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
 
-#ifdef MDA_SUPPORTED
-    // Mode where we just let the fault occur.
-    MdaReportAvOnComRelease* pProbe = MDA_GET_ASSISTANT_EX(ReportAvOnComRelease);
-    if (pProbe && pProbe->AllowAV())
-    {
-        return pUnk->Release();
-    }   
-#endif // MDA_SUPPORTED    
-
     bool fException = false;
     
     SCAN_EHMARKER();
@@ -1574,11 +1541,7 @@ ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
 
     if (fException)
     {
-        SafeRelease_OnException(pUnk, pRCW
-#ifdef MDA_SUPPORTED
-            , pProbe
-#endif // MDA_SUPPORTED
-            );
+        SafeRelease_OnException(pUnk, pRCW);
     }
 
     GCX_PREEMP_NO_DTOR_END();
@@ -4110,10 +4073,6 @@ static void DoIUInvokeDispMethod(IDispatchEx* pDispEx, IDispatch* pDisp, DISPID 
 
     memset(&ExcepInfo, 0, sizeof(EXCEPINFO));
    
-#ifdef MDA_SUPPORTED
-    MDA_TRIGGER_ASSISTANT(GcManagedToUnmanaged, TriggerGC());
-#endif
-
     GCX_COOP();
     OBJECTREF pThrowable = NULL;
     GCPROTECT_BEGIN(pThrowable);
@@ -4136,17 +4095,6 @@ static void DoIUInvokeDispMethod(IDispatchEx* pDispEx, IDispatch* pDisp, DISPID 
                                         pDispParams, pVarResult, &ExcepInfo, &iArgErr);
                 }
             }
-
-#ifdef MDA_SUPPORTED
-            EX_TRY
-            {
-                MDA_TRIGGER_ASSISTANT(GcUnmanagedToManaged, TriggerGC());
-            }
-            EX_CATCH
-            {
-            }
-            EX_END_CATCH(RethrowTerminalExceptions);
-#endif
 
             // If the invoke call failed then throw an exception based on the EXCEPINFO.
             if (FAILED(hr))

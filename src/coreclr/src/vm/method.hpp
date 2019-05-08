@@ -3028,10 +3028,6 @@ public:
 private:
     FARPROC FindEntryPointWithMangling(HINSTANCE mod, PTR_CUTF8 entryPointName) const;
 
-#ifdef MDA_SUPPORTED    
-    Stub* GenerateStubForMDA(LPVOID pNativeTarget, Stub *pInnerStub);
-#endif // MDA_SUPPORTED
-
 public:
 
     void SetStackArgumentSize(WORD cbDstBuffer, CorPinvokeMap unmgdCallConv)

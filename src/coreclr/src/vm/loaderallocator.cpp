@@ -7,6 +7,7 @@
 #include "stringliteralmap.h"
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
+#include "mlinfo.h"
 #ifndef DACCESS_COMPILE
 #include "comdelegate.h"
 #endif

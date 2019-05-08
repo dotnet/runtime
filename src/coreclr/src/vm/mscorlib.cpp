@@ -62,10 +62,7 @@
 #include "comdependenthandle.h"
 #include "weakreferencenative.h"
 #include "varargsnative.h"
-
-#ifdef MDA_SUPPORTED 
-#include "mdaassistants.h"
-#endif
+#include "mlinfo.h"
 
 #ifdef FEATURE_COMINTEROP
 #include "variant.h"

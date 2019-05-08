@@ -16,7 +16,6 @@
 #include "ceeload.h"
 #include "class.h"
 #include "dllimport.h"
-#include "mdaassistants.h"
 
 enum UMThunkStubFlags
 {
