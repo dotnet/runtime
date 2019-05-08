@@ -232,7 +232,7 @@ bool Compiler::fgGetProfileWeightForBasicBlock(IL_OFFSET offset, unsigned* weigh
     }
 
     noway_assert(!compIsForInlining());
-    for (DWORD i = 0; i < fgBlockCountsCount; i++)
+    for (UINT32 i = 0; i < fgBlockCountsCount; i++)
     {
         if (fgBlockCounts[i].ILOffset == offset)
         {
