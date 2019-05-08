@@ -51,14 +51,13 @@ public:
         if (eventsSize == 0)
             return;
 
-        size_t currentPosition = pSerializer->GetCurrentPosition();
-        if (currentPosition % ALIGNMENT_SIZE != 0)
+        unsigned int requiredPadding = pSerializer->GetRequiredPadding();
+        if (requiredPadding != 0)
         {
             BYTE maxPadding[ALIGNMENT_SIZE - 1] = {}; // it's longest possible padding, we are going to use only part of it
-            unsigned int paddingLength = ALIGNMENT_SIZE - (currentPosition % ALIGNMENT_SIZE);
-            pSerializer->WriteBuffer(maxPadding, paddingLength); // we write zeros here, the reader is going to always read from the first aligned address of the serialized content
+            pSerializer->WriteBuffer(maxPadding, requiredPadding); // we write zeros here, the reader is going to always read from the first aligned address of the serialized content
 
-            _ASSERTE(pSerializer->HasWriteErrors() || (pSerializer->GetCurrentPosition() % ALIGNMENT_SIZE == 0));
+            _ASSERTE(pSerializer->HasWriteErrors() || (pSerializer->GetRequiredPadding() == 0));
         }
 
         pSerializer->WriteBuffer(m_pBlock, eventsSize);
