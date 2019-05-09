@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Xunit;
 using System.Collections.Generic;
 using System.Data.Common;
-using System.Data.OleDb;
 using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
+using Xunit;
 
 namespace System.Data.OleDb.Tests
 {
@@ -94,6 +91,22 @@ namespace System.Data.OleDb.Tests
         }
         
         [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void StateChange_ChangeState_TriggersEvent()
+        {
+            int timesCalled = 0;
+            Action<object, StateChangeEventArgs> OnStateChange = (sender, args) => {
+                timesCalled++;
+            };
+            using (var oleDbConnection = new OleDbConnection(ConnectionString))
+            {
+                oleDbConnection.StateChange += new StateChangeEventHandler(OnStateChange);  
+                oleDbConnection.Open();
+                oleDbConnection.Close();
+                Assert.Equal(2, timesCalled);
+            }
+        }
+        
+        [ConditionalFact(Helpers.IsDriverAvailable)]
         public void BeginTransaction_InvalidIsolationLevel_Throws()
         {
             using (var oleDbConnection = new OleDbConnection(ConnectionString))
@@ -103,6 +116,77 @@ namespace System.Data.OleDb.Tests
             }
         }
 
+        [ConditionalFact(Helpers.IsAceDriverAvailable)]
+        public void BeginTransaction_CallTwice_Throws()
+        {
+            using (var conn = new OleDbConnection(ConnectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    var cmd = conn.CreateCommand();
+                    cmd.CommandText = "CREATE TABLE table_x.csv (column_y NVARCHAR(40));";
+                    cmd.Transaction = tx;
+                    cmd.ExecuteNonQuery();
+                    AssertExtensions.Throws<InvalidOperationException>(
+                        () => conn.BeginTransaction(),
+                        $"{nameof(OleDbConnection)} does not support parallel transactions."
+                    );
+                }
+                conn.Close();
+            }
+        }
+
+        [ConditionalFact(Helpers.IsAceDriverAvailable)]
+        public void CommitTransaction_AfterConnectionClosed_Throws()
+        {
+            using (var conn = new OleDbConnection(ConnectionString))
+            {
+                conn.Open();
+                using (var tx = conn.BeginTransaction())
+                {
+                    var cmd = conn.CreateCommand();
+                    cmd.CommandText = "CREATE TABLE table_x.csv (column_y NVARCHAR(40));";
+                    cmd.Transaction = tx;
+                    cmd.ExecuteNonQuery();
+                    conn.Close();
+                    AssertExtensions.Throws<InvalidOperationException>(
+                        () => tx.Commit(),
+                        $"This {nameof(OleDbTransaction)} has completed; it is no longer usable."
+                    );
+                }
+            }
+        }
+        
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void GetDefaults_AnyGivenState_DoesNotThrow()
+        {
+            const int DefaultTimeout = 15;
+            Action<OleDbConnection> VerifyDefaults = (conn) => {
+                Assert.Equal(DefaultTimeout, conn.ConnectionTimeout);
+                Assert.Contains(conn.DataSource, TestDirectory);
+                Assert.Empty(conn.Database);
+            };
+            using (var oleDbConnection = new OleDbConnection())
+            {
+                VerifyDefaults(oleDbConnection);
+                oleDbConnection.ConnectionString = ConnectionString;
+                oleDbConnection.Open();
+                VerifyDefaults(oleDbConnection);
+                oleDbConnection.Close();
+                VerifyDefaults(oleDbConnection);
+            }
+        }
+        
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void CreateCommand_AsDbConnection_IsOleDb()
+        {
+            DbConnection dbConnection = connection as DbConnection;
+            DbCommand dbCommand = dbConnection.CreateCommand();
+            Assert.NotNull(dbCommand);
+            Assert.IsType<OleDbCommand>(dbCommand);
+        }
+
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void Provider_SetProperlyFromCtor()
         {
@@ -110,6 +194,27 @@ namespace System.Data.OleDb.Tests
             {
                 oleDbConnection.Open();
                 Assert.Equal(Helpers.ProviderName, oleDbConnection.Provider);
+            }
+        }
+
+        [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void GetSchema_NoArgs_ReturnsMetaDataCollections()
+        {
+            if (PlatformDetection.IsWindows7)
+            {
+                return; // [ActiveIssue(37438)]
+            }
+
+            DataTable t1 = connection.GetSchema();
+            DataTable t2 = connection.GetSchema(DbMetaDataCollectionNames.MetaDataCollections);
+            Assert.Equal(t1.Rows.Count, t2.Rows.Count);
+
+            foreach (DataColumn dc in t1.Columns)
+            {
+                for (int i = 0; i < t1.Rows.Count; i++)
+                {
+                    Assert.Equal(t1.Rows[i][dc.ColumnName], t2.Rows[i][dc.ColumnName]);
+                }
             }
         }
 
@@ -139,13 +244,45 @@ namespace System.Data.OleDb.Tests
                 $"Column '{MissingColumn}' does not belong to table {tableName}.");
         }
 
+        [OuterLoop]
         [ConditionalFact(Helpers.IsDriverAvailable)]
+        public void GetOleDbSchemaTable_ReturnsTableInfo()
+        {
+            string tableName = Helpers.GetTableName(nameof(GetOleDbSchemaTable_ReturnsTableInfo));
+            command.CommandText = @"CREATE TABLE t1.csv (CustomerName NVARCHAR(40));";
+            command.ExecuteNonQuery();
+            command.CommandText = @"CREATE TABLE t2.csv (CustomerName NVARCHAR(40));";
+            command.ExecuteNonQuery();
+            DataTable listedTables = connection.GetOleDbSchemaTable(
+                OleDbSchemaGuid.Tables, new object[] {null, null, null, "Table"});
+
+            Assert.NotNull(listedTables);
+            Assert.Equal(2, listedTables.Rows.Count);
+            Assert.Equal("t1#csv", listedTables.Rows[0][2].ToString());
+            Assert.Equal("t2#csv", listedTables.Rows[1][2].ToString());
+
+            command.CommandText = @"DROP TABLE t1.csv";
+            command.ExecuteNonQuery();
+            command.CommandText = @"DROP TABLE t2.csv";
+            command.ExecuteNonQuery();
+        }
+
+        [ConditionalFact(Helpers.IsAceDriverAvailable)]
         public void ChangeDatabase_EmptyDatabase_Throws()
         {
             using (var oleDbConnection = new OleDbConnection(ConnectionString))
             {
                 oleDbConnection.Open();
+                Assert.Throws<ArgumentException>(() => oleDbConnection.ChangeDatabase(null));
+                Assert.Throws<ArgumentException>(() => oleDbConnection.ChangeDatabase(" "));
                 Assert.Throws<ArgumentException>(() => oleDbConnection.ChangeDatabase(string.Empty));
+                AssertExtensions.Throws<InvalidOperationException>(
+                    () => oleDbConnection.ChangeDatabase("ReadOnlyShouldThrow"), 
+                    "The 'current catalog' property was read-only, or the consumer attempted to set values of properties " + 
+                    "in the Initialization property group after the data source object was initialized. " + 
+                    "Consumers can set the value of a read-only property to its current value. " + 
+                    "This status is also returned if a settable column property could not be set for the particular column."
+                );
             }
         }
 
