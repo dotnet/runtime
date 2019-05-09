@@ -2031,7 +2031,7 @@ public:
 
     HRESULT GetILToNativeMappingIntoArrays(
         MethodDesc * pMethodDesc,
-        PCODE pCode,
+        PCODE pNativeCodeStartAddress,
         USHORT cMapMax,
         USHORT * pcMap,
         UINT ** prguiILOffset,
