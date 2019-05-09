@@ -20,7 +20,9 @@ enum class coreclr_delegate_type
     invalid,
     com_activation,
     load_in_memory_assembly,
-    winrt_activation
+    winrt_activation,
+    com_register,
+    com_unregister
 };
 
 #pragma pack(push, _HOST_INTERFACE_PACK)

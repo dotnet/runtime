@@ -42,14 +42,14 @@ struct com_activation_context
     void **class_factory_dest;
 };
 
-using com_activation_fn = int(STDMETHODCALLTYPE*)(com_activation_context*);
+using com_delegate_fn = int(STDMETHODCALLTYPE*)(com_activation_context*);
 
 namespace
 {
-    int get_com_activation_delegate(pal::string_t *app_path, com_activation_fn *delegate)
+    int get_com_delegate(hostfxr_delegate_type del_type, pal::string_t *app_path, com_delegate_fn *delegate)
     {
         return load_fxr_and_get_delegate(
-            hostfxr_delegate_type::com_activation,
+            del_type,
             [app_path](const pal::string_t& host_path, pal::string_t* config_path_out)
             {
                 // Strip the comhost suffix to get the 'app' and config
@@ -108,14 +108,14 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
 
     HRESULT hr;
     pal::string_t app_path;
-    com_activation_fn act;
+    com_delegate_fn act;
     {
         trace::setup();
         reset_redirected_error_writer();
         
         error_writer_scope_t writer_scope(redirected_error_writer);
 
-        int ec = get_com_activation_delegate(&app_path, &act);
+        int ec = get_com_delegate(hostfxr_delegate_type::com_activation, &app_path, &act);
         if (ec != StatusCode::Success)
         {
             report_com_error_info(rclsid, std::move(get_redirected_error_string()));
@@ -317,6 +317,8 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
 {
     // Step 0: Initialize logging
     trace::setup();
+    reset_redirected_error_writer();
+    error_writer_scope_t writer_scope(redirected_error_writer);
 
     // Step 1: Get CLSID mapping
     clsid_map map;
@@ -324,10 +326,33 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
 
     trace::info(_X("Registering %d CLSIDs"), (int)map.size());
 
-    // Step 2: Register each CLSID
     HRESULT hr;
+    pal::string_t app_path;
+    com_delegate_fn reg;
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::com_register, &app_path, &reg));
+
+    com_activation_context cxt
+    {
+        GUID_NULL,
+        GUID_NULL,  // Must be GUID_NULL
+        app_path.c_str(),
+        nullptr,
+        nullptr,
+        nullptr     // Must be nullptr
+    };
+
+    // Step 2: Register each CLSID
     for (clsid_map::const_reference p : map)
+    {
+        // Register the CLSID in registry
         RETURN_IF_FAILED(RegisterClsid(p.first, _X("Both")));
+
+        // Call user-defined register function
+        cxt.class_id = p.first;
+        cxt.assembly_name = p.second.assembly.c_str();
+        cxt.type_name = p.second.type.c_str();
+        RETURN_IF_FAILED(reg(&cxt));
+    }
 
     return S_OK;
 }
@@ -336,15 +361,42 @@ COM_API HRESULT STDMETHODCALLTYPE DllUnregisterServer(void)
 {
     // Step 0: Initialize logging
     trace::setup();
+    reset_redirected_error_writer();
+    error_writer_scope_t writer_scope(redirected_error_writer);
 
     // Step 1: Get CLSID mapping
     clsid_map map;
     RETURN_HRESULT_IF_EXCEPT(map = comhost::get_clsid_map());
 
-    // Step 2: Unregister each CLSID
+    trace::info(_X("Unregistering %d CLSIDs"), (int)map.size());
+
     HRESULT hr;
+    pal::string_t app_path;
+    com_delegate_fn unreg;
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::com_unregister, &app_path, &unreg));
+
+    com_activation_context cxt
+    {
+        GUID_NULL,
+        GUID_NULL,  // Must be GUID_NULL
+        app_path.c_str(),
+        nullptr,
+        nullptr,
+        nullptr     // Must be nullptr
+    };
+
+    // Step 2: Unregister each CLSID
     for (clsid_map::const_reference p : map)
+    {
+        // Call user-defined unregister function
+        cxt.class_id = p.first;
+        cxt.assembly_name = p.second.assembly.c_str();
+        cxt.type_name = p.second.type.c_str();
+        RETURN_IF_FAILED(unreg(&cxt));
+
+        // Unregister the CLSID from registry
         RETURN_IF_FAILED(RemoveClsid(p.first));
+    }
 
     return S_OK;
 }
