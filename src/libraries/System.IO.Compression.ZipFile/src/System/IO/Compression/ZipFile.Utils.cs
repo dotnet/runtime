@@ -66,8 +66,10 @@ namespace System.IO.Compression
                 int newCapacity = buffer.Length * 2;
                 if (newCapacity < min)
                     newCapacity = min;
-                ArrayPool<char>.Shared.Return(buffer);
+
+                char[] oldBuffer = buffer;
                 buffer = ArrayPool<char>.Shared.Rent(newCapacity);
+                ArrayPool<char>.Shared.Return(oldBuffer);
             }
         }
 
