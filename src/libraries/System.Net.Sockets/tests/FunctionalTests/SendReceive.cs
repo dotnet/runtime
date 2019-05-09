@@ -798,8 +798,8 @@ namespace System.Net.Sockets.Tests
                         if (received <= 0) break;
                         totalReceived += received;
                     }
-                    Assert.Equal(sendBuffer.Length, totalReceived);
                     await sendTask;
+                    Assert.Equal(sendBuffer.Length, totalReceived);
                 }
             }
         }
