@@ -693,3 +693,24 @@ bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const st
     // On Windows, paths are case-insensitive
     return (strcasecmp(path1.c_str(), path2.c_str()) == 0);
 }
+
+pal::mutex_t::mutex_t()
+    : _impl{ }
+{
+    ::InitializeCriticalSection(&_impl);
+}
+
+pal::mutex_t::~mutex_t()
+{
+    ::DeleteCriticalSection(&_impl);
+}
+
+void pal::mutex_t::lock()
+{
+    ::EnterCriticalSection(&_impl);
+}
+
+void pal::mutex_t::unlock()
+{
+    ::LeaveCriticalSection(&_impl);
+}
