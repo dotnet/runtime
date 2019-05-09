@@ -71,7 +71,7 @@ namespace System.Runtime.Serialization
                     if (allMembers != null && allMembers.Count > 0)
                     {
                         var membersTemp = new FieldInfo[allMembers.Count + typeMembers.Length];
-                        Array.Copy(typeMembers, membersTemp, typeMembers.Length);
+                        Array.Copy(typeMembers, 0, membersTemp, 0, typeMembers.Length);
                         allMembers.CopyTo(membersTemp, typeMembers.Length);
                         typeMembers = membersTemp;
                     }

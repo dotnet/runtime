@@ -1706,7 +1706,7 @@ namespace System.Xml
         {
             Debug.Assert(_lastMarkPos + 1 == _textContentMarks.Length);
             int[] newTextContentMarks = new int[_textContentMarks.Length * 2];
-            Array.Copy(_textContentMarks, newTextContentMarks, _textContentMarks.Length);
+            Array.Copy(_textContentMarks, 0, newTextContentMarks, 0, _textContentMarks.Length);
             _textContentMarks = newTextContentMarks;
         }
         // Write NewLineChars to the specified buffer position and return an updated position.

@@ -492,7 +492,9 @@ namespace System.Transactions
                 {
                     Array.Copy(
                         enlistments._volatileEnlistments,
+                        0,
                         newEnlistments,
+                        0,
                         enlistments._volatileEnlistmentSize
                         );
                 }
