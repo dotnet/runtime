@@ -4543,6 +4543,7 @@ handle_parent:
 		guint32 flags = 0;
 		if (method)
 			flags = method->flags;
+#if !ENABLE_NETCORE  
 		if ((prop->get && ((prop->get->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC)) ||
 			(prop->set && ((prop->set->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC))) {
 			if (bflags & BFLAGS_Public)
@@ -4555,6 +4556,10 @@ handle_parent:
 		}
 		if (!match)
 			continue;
+#endif
+// for .NET Core we load both public and nonpublic
+// private properties in subclasses can hide public properties with the same name in Parents
+
 		match = 0;
 		if (flags & METHOD_ATTRIBUTE_STATIC) {
 			if (bflags & BFLAGS_Static)

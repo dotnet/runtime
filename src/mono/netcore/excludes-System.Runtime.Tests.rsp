@@ -43,8 +43,6 @@
 # Boxed pointers are not supported? https://github.com/mono/mono/blob/ced517784b2a07fb851e2227dac04e0df2262d57/mcs/class/corlib/ReferenceSources/RuntimeType.cs#L229
 -nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
 
-# `private new T Foo` doesn't hide members from Type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
--nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensBeforeBindingFlagChecks
 
 # TODO: ignore in CoreFX for mono runtime:
 -nomethod System.Reflection.Tests.PointerTests.*
