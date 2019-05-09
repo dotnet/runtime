@@ -17,7 +17,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
-      <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
+      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
     </Compile>
     <ProjectReference Include="STAMain\STAMain.csproj">
       <Name>STAMain</Name>
