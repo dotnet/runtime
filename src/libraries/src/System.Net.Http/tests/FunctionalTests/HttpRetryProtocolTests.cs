@@ -68,9 +68,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task PostAsyncExpect100Continue_FailsAfterContentSendStarted_Throws()
         {
-            if (IsWinHttpHandler)
+            if (!UseSocketsHttpHandler)
             {
                 // WinHttpHandler does not support Expect: 100-continue.
+                // And the test is expecting specific behaviors of how SocketsHttpHandler does pooling;
+                // it generally works on CurlHandler, but not always.
                 return;
             }
 
