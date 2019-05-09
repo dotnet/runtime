@@ -16,7 +16,7 @@ namespace Microsoft.Framework.WebEncoders
     public unsafe class UnicodeHelpersTests
     {
         // If updating the version of UnicodeData.txt, update the below string with the new file name.
-        private const string UnicodeDataFileName = "UnicodeData.8.0.txt";
+        private const string UnicodeDataFileName = "UnicodeData.12.1.txt";
 
         private const int UnicodeReplacementChar = '\uFFFD';
 
