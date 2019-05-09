@@ -1,18 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using Xunit;
 
 namespace System.Data.OleDb.Tests
 {
     public static class Helpers
     {
         public const string IsDriverAvailable = nameof(Helpers) + "." + nameof(GetIsDriverAvailable);
+        public const string IsAceDriverAvailable = nameof(Helpers) + "." + nameof(GetIsAceDriverAvailable);
         private static readonly bool s_skipAllTemporarily = true;  // [ActiveIssue(37538)]
         public static bool GetIsDriverAvailable() => !s_skipAllTemporarily && Nested.IsAvailable;
+        public static bool GetIsAceDriverAvailable() => GetIsDriverAvailable() && !PlatformDetection.Is32BitProcess;
         public static string ProviderName => Nested.ProviderName;
         public static string GetTableName(string memberName) => memberName + ".csv";
 
