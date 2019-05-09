@@ -435,7 +435,7 @@ namespace System.Net.Http.Headers
                 needsQuotes = true;
             }
 
-            if (result.IndexOf("\"", 0, StringComparison.Ordinal) >= 0) // Only bounding quotes are allowed.
+            if (result.Contains('"')) // Only bounding quotes are allowed.
             {
                 throw new ArgumentException(SR.Format(CultureInfo.InvariantCulture,
                     SR.net_http_headers_invalid_value, input));

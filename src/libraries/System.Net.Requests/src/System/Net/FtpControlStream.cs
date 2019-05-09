@@ -283,7 +283,7 @@ namespace System.Net
             // If we are already logged in and the server returns 530 then
             // the server does not support re-issuing a USER command,
             // tear down the connection and start all over again
-            if (entry.Command.IndexOf("USER") != -1)
+            if (entry.Command.IndexOf("USER", StringComparison.Ordinal) != -1)
             {
                 // The server may not require a password for this user, so bypass the password command
                 if (status == FtpStatusCode.LoggedInProceed)
@@ -306,7 +306,7 @@ namespace System.Net
             }
 
             if (_loginState != FtpLoginState.LoggedIn
-                && entry.Command.IndexOf("PASS") != -1)
+                && entry.Command.IndexOf("PASS", StringComparison.Ordinal) != -1)
             {
                 // Note the fact that we logged in
                 if (status == FtpStatusCode.NeedLoginAccount || status == FtpStatusCode.LoggedInProceed)
@@ -412,11 +412,11 @@ namespace System.Net
             else if (status == FtpStatusCode.FileStatus)
             {
                 FtpWebRequest request = (FtpWebRequest)_request;
-                if (entry.Command.StartsWith("SIZE "))
+                if (entry.Command.StartsWith("SIZE ", StringComparison.Ordinal))
                 {
                     _contentLength = GetContentLengthFrom213Response(response.StatusDescription);
                 }
-                else if (entry.Command.StartsWith("MDTM "))
+                else if (entry.Command.StartsWith("MDTM ", StringComparison.Ordinal))
                 {
                     _lastModified = GetLastModifiedFrom213Response(response.StatusDescription);
                 }
@@ -433,7 +433,7 @@ namespace System.Net
             else
             {
                 // We only use CWD to reset ourselves back to the login directory.
-                if (entry.Command.IndexOf("CWD") != -1)
+                if (entry.Command.IndexOf("CWD", StringComparison.Ordinal) != -1)
                 {
                     _establishedServerDirectory = _requestedServerDirectory;
                 }
@@ -940,7 +940,7 @@ namespace System.Net
             //
             // Not sure what we are doing here but I guess the logic is IIS centric
             //
-            int start = str.IndexOf("for ");
+            int start = str.IndexOf("for ", StringComparison.Ordinal);
             if (start == -1)
                 return;
             start += 4;
@@ -991,10 +991,10 @@ namespace System.Net
         /// </summary>
         private void TryUpdateContentLength(string str)
         {
-            int pos1 = str.LastIndexOf("(");
+            int pos1 = str.LastIndexOf('(');
             if (pos1 != -1)
             {
-                int pos2 = str.IndexOf(" bytes).");
+                int pos2 = str.IndexOf(" bytes).", StringComparison.Ordinal);
                 if (pos2 != -1 && pos2 > pos1)
                 {
                     pos1++;
@@ -1056,8 +1056,8 @@ namespace System.Net
         /// </summary>
         private int GetPortV6(string responseString)
         {
-            int pos1 = responseString.LastIndexOf("(");
-            int pos2 = responseString.LastIndexOf(")");
+            int pos1 = responseString.LastIndexOf('(');
+            int pos2 = responseString.LastIndexOf(')');
             if (pos1 == -1 || pos2 <= pos1)
                 throw new FormatException(SR.Format(SR.net_ftp_response_invalid_format, responseString));
 
@@ -1196,7 +1196,7 @@ namespace System.Net
             // FTP protocol for multiline responses.
             // All other cases indicate that the response is not yet complete.
             int index = 0;
-            while ((index = responseString.IndexOf("\r\n", validThrough)) != -1)  // gets the end line.
+            while ((index = responseString.IndexOf("\r\n", validThrough, StringComparison.Ordinal)) != -1)  // gets the end line.
             {
                 int lineStart = validThrough;
                 validThrough = index + 2;  // validThrough now marks the end of the line being examined.

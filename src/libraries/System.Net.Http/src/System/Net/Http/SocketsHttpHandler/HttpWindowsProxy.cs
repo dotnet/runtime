@@ -226,7 +226,7 @@ namespace System.Net.Http
                 return;
             }
 
-            int idx = value.IndexOf("http://");
+            int idx = value.IndexOf("http://", StringComparison.Ordinal);
             if (idx >= 0)
             {
                 int proxyLength = GetProxySubstringLength(value, idx);
@@ -235,7 +235,7 @@ namespace System.Net.Http
 
             if (insecureProxy == null)
             {
-                idx = value.IndexOf("http=");
+                idx = value.IndexOf("http=", StringComparison.Ordinal);
                 if (idx >= 0)
                 {
                     idx += 5; // Skip "http=" so we can replace it with "http://"
@@ -244,7 +244,7 @@ namespace System.Net.Http
                 }
             }
 
-            idx = value.IndexOf("https://");
+            idx = value.IndexOf("https://", StringComparison.Ordinal);
             if (idx >= 0)
             {
                 idx += 8; // Skip "https://" so we can replace it with "http://"
@@ -254,7 +254,7 @@ namespace System.Net.Http
 
             if (secureProxy == null)
             {
-                idx = value.IndexOf("https=");
+                idx = value.IndexOf("https=", StringComparison.Ordinal);
                 if (idx >= 0)
                 {
                     idx += 6; // Skip "https=" so we can replace it with "http://"

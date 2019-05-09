@@ -394,8 +394,7 @@ namespace System.Net
                     //
                     // if not check if the user is trying to set chunked:
                     //
-                    string newValue = value.ToLower();
-                    fChunked = (newValue.IndexOf(ChunkedHeader) != -1);
+                    fChunked = (value.IndexOf(ChunkedHeader, StringComparison.OrdinalIgnoreCase) != -1);
 
                     //
                     // prevent them from adding chunked, or from adding an Encoding without
@@ -539,10 +538,8 @@ namespace System.Net
                         return;
                     }
 
-                    string newValue = value.ToLower();
-
-                    fKeepAlive = (newValue.IndexOf("keep-alive") != -1);
-                    fClose = (newValue.IndexOf("close") != -1);
+                    fKeepAlive = (value.IndexOf("keep-alive", StringComparison.OrdinalIgnoreCase) != -1);
+                    fClose = (value.IndexOf("close", StringComparison.OrdinalIgnoreCase) != -1);
 
                     //
                     // Prevent keep-alive and close from being added
@@ -603,9 +600,7 @@ namespace System.Net
                     // Prevent 100-continues from being added
                     //
 
-                    string newValue = value.ToLower();
-
-                    fContinue100 = (newValue.IndexOf(ContinueHeader) != -1);
+                    fContinue100 = (value.IndexOf(ContinueHeader, StringComparison.OrdinalIgnoreCase) != -1);
 
                     if (fContinue100)
                     {
