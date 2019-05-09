@@ -6177,12 +6177,6 @@ mono_thread_internal_is_current (MonoInternalThread *internal)
 	return mono_native_thread_id_equals (mono_native_thread_id_get (), MONO_UINT_TO_NATIVE_THREAD_ID (internal->tid));
 }
 
-gboolean
-mono_thread_internal_is_current_handle (MonoInternalThreadHandle internal)
-{
-	return mono_thread_internal_is_current (MONO_HANDLE_RAW (internal));
-}
-
 void
 mono_set_thread_dump_dir (gchar* dir) {
 	thread_dump_dir = dir;
