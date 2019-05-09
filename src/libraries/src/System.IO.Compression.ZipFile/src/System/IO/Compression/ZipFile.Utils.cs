@@ -2,20 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
     internal static partial class ZipFileUtils
     {
         // Per the .ZIP File Format Specification 4.4.17.1 all slashes should be forward slashes
-        public const char PathSeparator = '/';
+        private const char PathSeparatorChar = '/';
+        private const string PathSeparatorString = "/";
 
         public static string EntryFromPath(string entry, int offset, int length, ref char[] buffer, bool appendPathSeparator = false)
         {
@@ -34,7 +31,7 @@ namespace System.IO.Compression
             }
 
             if (length == 0)
-                return appendPathSeparator ? PathSeparator.ToString() : string.Empty;
+                return appendPathSeparator ? PathSeparatorString : string.Empty;
 
             int resultLength = appendPathSeparator ? length + 1 : length;
             EnsureCapacity(ref buffer, resultLength);
@@ -47,11 +44,11 @@ namespace System.IO.Compression
             {
                 char ch = buffer[i];
                 if (ch == Path.DirectorySeparatorChar || ch == Path.AltDirectorySeparatorChar)
-                    buffer[i] = PathSeparator;
+                    buffer[i] = PathSeparatorChar;
             }
 
             if (appendPathSeparator)
-                buffer[length] = PathSeparator;
+                buffer[length] = PathSeparatorChar;
 
             return new string(buffer, 0, resultLength);
         }
