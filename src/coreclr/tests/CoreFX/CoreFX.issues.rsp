@@ -432,3 +432,6 @@
 -nomethod System.Security.Cryptography.X509Certificates.Tests.X509Certificate2UITests.DisplayCertificate_InvalidInput
 -nomethod System.Security.Cryptography.X509Certificates.Tests.X509Certificate2UITests.SelectFromCollection_InvalidInput
 -nomethod System.Security.Cryptography.X509Certificates.Tests.X509Certificate2UITests.SelectFromCollection_InvalidInput_WithHwnd
+
+# Disable Microsoft.Bcl.AsyncInterfaces tests
+-noclass System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests
