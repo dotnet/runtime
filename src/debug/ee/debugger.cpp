@@ -3079,7 +3079,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
 
 HRESULT Debugger::GetILToNativeMappingIntoArrays(
     MethodDesc * pMethodDesc,
-    PCODE pCode,
+    PCODE pNativeCodeStartAddress,
     USHORT cMapMax,
     USHORT * pcMap,
     UINT ** prguiILOffset,
@@ -3092,6 +3092,7 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
     }
     CONTRACTL_END;
 
+    _ASSERTE(pMethodDesc != NULL);
     _ASSERTE(pcMap != NULL);
     _ASSERTE(prguiILOffset != NULL);
     _ASSERTE(prguiNativeOffset != NULL);
@@ -3102,7 +3103,18 @@ HRESULT Debugger::GetILToNativeMappingIntoArrays(
 
     // Get the JIT info by functionId.
 
-    DebuggerJitInfo * pDJI = GetJitInfo(pMethodDesc, (const BYTE *)pCode);
+    if (pMethodDesc->IsWrapperStub() || pMethodDesc->IsDynamicMethod())
+    {
+        return E_FAIL;
+    }
+
+    DebuggerMethodInfo *pDMI = GetOrCreateMethodInfo(pMethodDesc->GetModule(), pMethodDesc->GetMemberDef());
+    if (pDMI == NULL)
+    {
+        return E_FAIL;
+    }
+
+    DebuggerJitInfo *pDJI = pDMI->FindOrCreateInitAndAddJitInfo(pMethodDesc, pNativeCodeStartAddress);
 
     // Dunno what went wrong
     if (pDJI == NULL)
