@@ -10,7 +10,6 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#nullable enable
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Threading;

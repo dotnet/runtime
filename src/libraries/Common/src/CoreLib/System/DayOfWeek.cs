@@ -11,7 +11,6 @@
 **
 ============================================================*/
 
-#nullable enable
 namespace System
 {
     public enum DayOfWeek

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
 internal partial class Interop
 {
     // As defined in winerror.h and https://msdn.microsoft.com/en-us/library/windows/desktop/ms681382.aspx

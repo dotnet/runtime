@@ -14,7 +14,6 @@
 ** 
 ===========================================================*/
 
-#nullable enable
 namespace System.Reflection.Emit
 {
     // The Label class is an opaque representation of a label used by the 

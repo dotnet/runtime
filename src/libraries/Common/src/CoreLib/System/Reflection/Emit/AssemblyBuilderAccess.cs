@@ -5,7 +5,6 @@
 // This enumeration defines the access modes for a dynamic assembly.
 // EE uses these enum values..look for m_dwDynamicAssemblyAccess in Assembly.hpp
 
-#nullable enable
 namespace System.Reflection.Emit
 {
     [Flags]

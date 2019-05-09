@@ -5,7 +5,6 @@
 // EventAttributes are an enum defining the attributes associated with and Event.
 // These are defined in CorHdr.h and are a combination of bits and enums.
 
-#nullable enable
 namespace System.Reflection
 {
     [Flags]
