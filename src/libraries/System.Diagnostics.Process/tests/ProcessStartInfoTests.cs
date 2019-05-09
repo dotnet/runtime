@@ -1106,7 +1106,10 @@ namespace System.Diagnostics.Tests
                 FileName = tempFile
             };
 
-            Assert.Throws<PlatformNotSupportedException>(() => Process.Start(info));
+            // Nano does not support either the STA apartment or ShellExecute.
+            // Since we try to start an STA thread for ShellExecute, we hit a ThreadStartException
+            // before we get to the PlatformNotSupportedException.
+            Assert.Throws<ThreadStartException>(() => Process.Start(info));
         }
 
         public static TheoryData<bool> UseShellExecute

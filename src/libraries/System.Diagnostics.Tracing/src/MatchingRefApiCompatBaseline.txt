@@ -1,9 +1,6 @@
 Compat issues with assembly System.Diagnostics.Tracing:
-CannotSealType : Type 'System.Diagnostics.Tracing.DiagnosticCounter' is effectively (has a private constructor) sealed in the reference but not sealed in the implementation.
-MembersMustExist : Member 'System.Diagnostics.Tracing.DiagnosticCounter..ctor(System.String, System.Diagnostics.Tracing.EventSource)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Diagnostics.Tracing.DiagnosticCounter.WritePayload(System.Single, System.Int32)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Diagnostics.Tracing.EventCounter.Flush()' does not exist in the reference but it does exist in the implementation.
 CannotMakeTypeAbstract : Type 'System.Diagnostics.Tracing.EventListener' is abstract in the reference but is not abstract in the implementation.
 CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener..ctor()' is 'Family' in the reference but 'Public' in the implementation.
 CannotMakeMoreVisible : Visibility of member 'System.Diagnostics.Tracing.EventListener.EventSourceIndex(System.Diagnostics.Tracing.EventSource)' is 'Family' in the reference but 'Public' in the implementation.
-Total Issues: 7
+Total Issues: 4
