@@ -154,7 +154,7 @@ icallarray_print (const char *format, ...)
 static GENERATE_GET_CLASS_WITH_CACHE (module, "System.Reflection", "Module")
 
 static void
-array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error);
+array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, gboolean strict, MonoError *error);
 
 static MonoArrayHandle
 type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error);
@@ -252,7 +252,7 @@ ves_icall_System_Array_GetValue (MonoArrayHandle arr, MonoArrayHandle indices, M
 void
 ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
 {
-	array_set_value_impl (arr, value, pos, error);
+	array_set_value_impl (arr, value, pos, FALSE, error);
 }
 
 static inline void
@@ -263,7 +263,7 @@ set_invalid_cast (MonoError *error, MonoClass *src_class, MonoClass *dst_class)
 }
 
 static void
-array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle, guint32 pos, MonoError *error)
+array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle, guint32 pos, gboolean strict, MonoError *error)
 {
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
@@ -273,6 +273,8 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 	gint64 i64 = 0;
 	gdouble r64 = 0;
 	gboolean castOk = FALSE;
+	gboolean et_isenum = FALSE;
+	gboolean vt_isenum = FALSE;
 
 	error_init (error);
 
@@ -312,18 +314,20 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 
 #ifdef ENABLE_NETCORE
 #define WIDENING_MSG NULL
+#define WIDENING_ARG NULL
 #else
 #define WIDENING_MSG "not a widening conversion"
+#define WIDENING_ARG "value"
 #endif
 
 #define NO_WIDENING_CONVERSION G_STMT_START{				\
-		mono_error_set_argument (error, "value", WIDENING_MSG); \
+		mono_error_set_argument (error, WIDENING_ARG, WIDENING_MSG); \
 		break;							\
 	}G_STMT_END
 
 #define CHECK_WIDENING_CONVERSION(extra) G_STMT_START{			\
 		if (esize < vsize + (extra)) {				\
-			mono_error_set_argument (error, "value", WIDENING_MSG); \
+			mono_error_set_argument (error, WIDENING_ARG, WIDENING_MSG); \
 			break;						\
 		}							\
 	}G_STMT_END
@@ -409,10 +413,20 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 
 	vsize = mono_class_value_size (vc, NULL);
 
-	if (et == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_class_get_byval_arg (ec)->data.klass))
+	et_isenum = et == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_class_get_byval_arg (ec)->data.klass);
+	vt_isenum = vt == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_class_get_byval_arg (vc)->data.klass);
+
+#if ENABLE_NETCORE
+	if (strict && et_isenum && !vt_isenum) {
+		INVALID_CAST;
+		goto leave;
+	}
+#endif
+
+	if (et_isenum)
 		et = mono_class_enum_basetype_internal (m_class_get_byval_arg (ec)->data.klass)->type;
 
-	if (vt == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_class_get_byval_arg (vc)->data.klass))
+	if (vt_isenum)
 		vt = mono_class_enum_basetype_internal (m_class_get_byval_arg (vc)->data.klass)->type;
 
 #define ASSIGN_UNSIGNED(etype) G_STMT_START{\
@@ -657,7 +671,7 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 			return;
 		}
 
-		array_set_value_impl (arr, value, idx, error);
+		array_set_value_impl (arr, value, idx, TRUE, error);
 		return;
 	}
 	
@@ -681,7 +695,7 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 		pos = pos * dim.length + idx - dim.lower_bound;
 	}
 
-	array_set_value_impl (arr, value, pos, error);
+	array_set_value_impl (arr, value, pos, TRUE, error);
 }
 
 MonoArrayHandle

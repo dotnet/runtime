@@ -5,7 +5,7 @@ include ../mcs/build/config.make
 #
 
 # Extracted MicrosoftPrivateCoreFxNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L12
-NETCORETESTS_VERSION := 4.6.0-preview6.19229.1
+NETCORETESTS_VERSION := 4.6.0-preview6.19257.4
 
 # Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L14
 NETCOREAPP_VERSION := 3.0.0-preview5-27620-01
@@ -72,9 +72,9 @@ corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
 	python dl-test-assets.py corefx-test-assets.xml $(FEED_BASE_URL) corefx/tests
 	touch $@
 
-run-sample:
+run-sample: prepare
 	dotnet build sample/HelloWorld
-	COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(NETCOREAPP_VERSION)" sample/HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
+	MONO_ENV_OPTIONS="--debug" COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(NETCOREAPP_VERSION)" sample/HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
 
 run-aspnet-sample: prepare
 	rm -rf sample/AspNetCore/{bin,obj}
@@ -89,7 +89,7 @@ SHAREDRUNTIME := shared/Microsoft.NETCore.App/$(NETCOREAPP_VERSION)
 bcl:
 	$(MAKE) -C ../mcs/build/ common/Consts.cs
 	$(MAKE) -C ../mcs/class/System.Private.CoreLib
-	cp ../mcs/class/System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll $(SHAREDRUNTIME)
+	cp ../mcs/class/System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.{dll,pdb} $(SHAREDRUNTIME)
 
 runtime:
 	$(MAKE) -C ../mono
