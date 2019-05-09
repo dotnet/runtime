@@ -2,13 +2,15 @@
   <PropertyGroup>
     <ProjectGuid>{861A3318-35AD-46ac-8257-8D5D2479BAD9}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DllImport.cs" />
     <Compile Include="ThreadPoolBoundHandle_PreAllocatedOverlappedTests.cs" />
     <Compile Include="ThreadPoolBoundHandle_IntegrationTests.cs" />
+    <Compile Include="ThreadPoolBoundHandle_IntegrationTests.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
     <Compile Include="ThreadPoolBoundHandle_Helpers.cs" />
     <Compile Include="AsyncResult.cs" />
     <Compile Include="Win32Handle.cs" />
@@ -20,5 +22,10 @@
     <Compile Include="ThreadPoolBoundHandle_DisposeTests.cs" />
     <Compile Include="ThreadPoolBoundHandle_BindHandleTests.cs" />
     <Compile Include="OverlappedTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\Threading\ThreadTestHelpers.cs">
+      <Link>CommonTest\System\Threading\ThreadTestHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
 </Project>

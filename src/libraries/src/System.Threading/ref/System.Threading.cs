@@ -228,6 +228,7 @@ namespace System.Threading
         public static void Enter(object obj, ref bool lockTaken) { }
         public static void Exit(object obj) { }
         public static bool IsEntered(object obj) { throw null; }
+        public static long LockContentionCount { get { throw null; } }
         public static void Pulse(object obj) { }
         public static void PulseAll(object obj) { }
         public static bool TryEnter(object obj) { throw null; }

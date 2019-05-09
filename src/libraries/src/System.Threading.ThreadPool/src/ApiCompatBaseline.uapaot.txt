@@ -1,0 +1,4 @@
+Compat issues with assembly System.Threading.ThreadPool:
+MembersMustExist : Member 'System.Threading.ThreadPool.CompletedWorkItemCount.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.ThreadPool.PendingWorkItemCount.get()' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Threading.ThreadPool.ThreadCount.get()' does not exist in the implementation but it does exist in the contract.

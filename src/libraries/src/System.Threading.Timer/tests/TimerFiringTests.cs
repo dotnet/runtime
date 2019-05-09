@@ -10,7 +10,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tests;
 using Xunit;
 using Xunit.Sdk;
 
@@ -336,59 +335,6 @@ public partial class TimerFiringTests
         {
             t.Change(period, period);
             await tcs.Task.ConfigureAwait(false);
-        }
-    }
-
-    [Fact]
-    public void TimersCreatedConcurrentlyOnDifferentThreadsAllFire()
-    {
-        int processorCount = Environment.ProcessorCount;
-
-        int timerTickCount = 0;
-        TimerCallback timerCallback = _ => Interlocked.Increment(ref timerTickCount);
-
-        var threadStarted = new AutoResetEvent(false);
-        var createTimers = new ManualResetEvent(false);
-        var timers = new Timer[processorCount];
-        Action<object> createTimerThreadStart = data =>
-        {
-            int i = (int)data;
-            var sw = new Stopwatch();
-            threadStarted.Set();
-            createTimers.WaitOne();
-
-            // Use the CPU a bit around creating the timer to try to have some of these threads run concurrently
-            sw.Restart();
-            do
-            {
-                Thread.SpinWait(1000);
-            } while (sw.ElapsedMilliseconds < 10);
-
-            timers[i] = new Timer(timerCallback, null, 1, Timeout.Infinite);
-
-            // Use the CPU a bit around creating the timer to try to have some of these threads run concurrently
-            sw.Restart();
-            do
-            {
-                Thread.SpinWait(1000);
-            } while (sw.ElapsedMilliseconds < 10);
-        };
-
-        var waitsForThread = new Action[timers.Length];
-        for (int i = 0; i < timers.Length; ++i)
-        {
-            var t = ThreadTestHelpers.CreateGuardedThread(out waitsForThread[i], createTimerThreadStart);
-            t.IsBackground = true;
-            t.Start(i);
-            threadStarted.CheckedWait();
-        }
-
-        createTimers.Set();
-        ThreadTestHelpers.WaitForCondition(() => timerTickCount == timers.Length);
-
-        foreach (var waitForThread in waitsForThread)
-        {
-            waitForThread();
         }
     }
 }

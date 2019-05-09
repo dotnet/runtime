@@ -8,6 +8,7 @@ namespace System.Threading.Threads.Tests
 {
     public static partial class ThreadTests
     {
+        [Fact]
         public static void GetCurrentProcessorId()
         {
             Assert.True(Thread.GetCurrentProcessorId() >= 0);
