@@ -150,11 +150,8 @@
     <Compile Include="Xor.Double.cs" />
     <Compile Include="Xor.Single.cs" />
     <Compile Include="Program.Avx.cs" />
-    <Compile Include="..\Shared\BooleanBinOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\BooleanTwoCmpOpTest_DataTable.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />     
-    <Compile Include="..\Shared\SimpleTernOpTest_DataTable.cs" />    
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

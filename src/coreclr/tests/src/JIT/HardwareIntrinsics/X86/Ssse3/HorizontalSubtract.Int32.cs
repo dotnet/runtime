@@ -52,6 +52,12 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing a static member works, using pinning and Load
+                    test.RunClsVarScenario_Load();
+                }
+
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -67,14 +73,38 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local class works
                 test.RunClassLclFldScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing the field of a local class works, using pinning and Load
+                    test.RunClassLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
+
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing an instance member of a class works, using pinning and Load
+                    test.RunClassFldScenario_Load();
+                }
 
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing the field of a local struct works, using pinning and Load
+                    test.RunStructLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing an instance member of a struct works, using pinning and Load
+                    test.RunStructFldScenario_Load();
+                }
             }
             else
             {
@@ -91,6 +121,59 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class HorizontalBinaryOpTest__HorizontalSubtractInt32
     {
+        private struct DataTable
+        {
+            private byte[] inArray1;
+            private byte[] inArray2;
+            private byte[] outArray;
+
+            private GCHandle inHandle1;
+            private GCHandle inHandle2;
+            private GCHandle outHandle;
+
+            private ulong alignment;
+
+            public DataTable(Int32[] inArray1, Int32[] inArray2, Int32[] outArray, int alignment)
+            {
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Int32>();
+                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<Int32>();
+                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<Int32>();
+                if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfoutArray)
+                {
+                    throw new ArgumentException("Invalid value of alignment");
+                }
+
+                this.inArray1 = new byte[alignment * 2];
+                this.inArray2 = new byte[alignment * 2];
+                this.outArray = new byte[alignment * 2];
+
+                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
+                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<Int32, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<Int32, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
+            }
+
+            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle1.Free();
+                inHandle2.Free();
+                outHandle.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
         private struct TestStruct
         {
             public Vector128<Int32> _fld1;
@@ -115,6 +198,21 @@ namespace JIT.HardwareIntrinsics.X86
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
             }
+
+            public void RunStructFldScenario_Load(HorizontalBinaryOpTest__HorizontalSubtractInt32 testClass)
+            {
+                fixed (Vector128<Int32>* pFld1 = &_fld1)
+                fixed (Vector128<Int32>* pFld2 = &_fld2)
+                {
+                    var result = Ssse3.HorizontalSubtract(
+                        Sse2.LoadVector128((Int32*)(pFld1)),
+                        Sse2.LoadVector128((Int32*)(pFld2))
+                    );
+
+                    Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                    testClass.ValidateResult(_fld1, _fld2, testClass._dataTable.outArrayPtr);
+                }
+            }
         }
 
         private static readonly int LargestVectorSize = 16;
@@ -132,7 +230,7 @@ namespace JIT.HardwareIntrinsics.X86
         private Vector128<Int32> _fld1;
         private Vector128<Int32> _fld2;
 
-        private HorizontalBinaryOpTest__DataTable<Int32, Int32, Int32> _dataTable;
+        private DataTable _dataTable;
 
         static HorizontalBinaryOpTest__HorizontalSubtractInt32()
         {
@@ -153,7 +251,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetInt32(); }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetInt32(); }
-            _dataTable = new HorizontalBinaryOpTest__DataTable<Int32, Int32, Int32>(_data1, _data2, new Int32[RetElementCount], LargestVectorSize);
+            _dataTable = new DataTable(_data1, _data2, new Int32[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Ssse3.IsSupported;
@@ -254,40 +352,57 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar1, _clsVar2, _dataTable.outArrayPtr);
         }
 
+        public void RunClsVarScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
+
+            fixed (Vector128<Int32>* pClsVar1 = &_clsVar1)
+            fixed (Vector128<Int32>* pClsVar2 = &_clsVar2)
+            {
+                var result = Ssse3.HorizontalSubtract(
+                    Sse2.LoadVector128((Int32*)(pClsVar1)),
+                    Sse2.LoadVector128((Int32*)(pClsVar2))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_clsVar1, _clsVar2, _dataTable.outArrayPtr);
+            }
+        }
+
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var left = Unsafe.Read<Vector128<Int32>>(_dataTable.inArray1Ptr);
-            var right = Unsafe.Read<Vector128<Int32>>(_dataTable.inArray2Ptr);
-            var result = Ssse3.HorizontalSubtract(left, right);
+            var op1 = Unsafe.Read<Vector128<Int32>>(_dataTable.inArray1Ptr);
+            var op2 = Unsafe.Read<Vector128<Int32>>(_dataTable.inArray2Ptr);
+            var result = Ssse3.HorizontalSubtract(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(left, right, _dataTable.outArrayPtr);
+            ValidateResult(op1, op2, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            var left = Sse2.LoadVector128((Int32*)(_dataTable.inArray1Ptr));
-            var right = Sse2.LoadVector128((Int32*)(_dataTable.inArray2Ptr));
-            var result = Ssse3.HorizontalSubtract(left, right);
+            var op1 = Sse2.LoadVector128((Int32*)(_dataTable.inArray1Ptr));
+            var op2 = Sse2.LoadVector128((Int32*)(_dataTable.inArray2Ptr));
+            var result = Ssse3.HorizontalSubtract(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(left, right, _dataTable.outArrayPtr);
+            ValidateResult(op1, op2, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
-            var left = Sse2.LoadAlignedVector128((Int32*)(_dataTable.inArray1Ptr));
-            var right = Sse2.LoadAlignedVector128((Int32*)(_dataTable.inArray2Ptr));
-            var result = Ssse3.HorizontalSubtract(left, right);
+            var op1 = Sse2.LoadAlignedVector128((Int32*)(_dataTable.inArray1Ptr));
+            var op2 = Sse2.LoadAlignedVector128((Int32*)(_dataTable.inArray2Ptr));
+            var result = Ssse3.HorizontalSubtract(op1, op2);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(left, right, _dataTable.outArrayPtr);
+            ValidateResult(op1, op2, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
@@ -301,6 +416,25 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
         }
 
+        public void RunClassLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
+
+            var test = new HorizontalBinaryOpTest__HorizontalSubtractInt32();
+
+            fixed (Vector128<Int32>* pFld1 = &test._fld1)
+            fixed (Vector128<Int32>* pFld2 = &test._fld2)
+            {
+                var result = Ssse3.HorizontalSubtract(
+                    Sse2.LoadVector128((Int32*)(pFld1)),
+                    Sse2.LoadVector128((Int32*)(pFld2))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
+            }
+        }
+
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
@@ -309,6 +443,23 @@ namespace JIT.HardwareIntrinsics.X86
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
+
+            fixed (Vector128<Int32>* pFld1 = &_fld1)
+            fixed (Vector128<Int32>* pFld2 = &_fld2)
+            {
+                var result = Ssse3.HorizontalSubtract(
+                    Sse2.LoadVector128((Int32*)(pFld1)),
+                    Sse2.LoadVector128((Int32*)(pFld2))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_fld1, _fld2, _dataTable.outArrayPtr);
+            }
         }
 
         public void RunStructLclFldScenario()
@@ -322,12 +473,34 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
         }
 
+        public void RunStructLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
+
+            var test = TestStruct.Create();
+            var result = Ssse3.HorizontalSubtract(
+                Sse2.LoadVector128((Int32*)(&test._fld1)),
+                Sse2.LoadVector128((Int32*)(&test._fld2))
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld1, test._fld2, _dataTable.outArrayPtr);
+        }
+        
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunStructFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()
@@ -351,27 +524,27 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector128<Int32> left, Vector128<Int32> right, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<Int32> op1, Vector128<Int32> op2, void* result, [CallerMemberName] string method = "")
         {
             Int32[] inArray1 = new Int32[Op1ElementCount];
             Int32[] inArray2 = new Int32[Op2ElementCount];
             Int32[] outArray = new Int32[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<Int32, byte>(ref inArray1[0]), left);
-            Unsafe.WriteUnaligned(ref Unsafe.As<Int32, byte>(ref inArray2[0]), right);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Int32, byte>(ref inArray1[0]), op1);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Int32, byte>(ref inArray2[0]), op2);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int32>>());
 
             ValidateResult(inArray1, inArray2, outArray, method);
         }
 
-        private void ValidateResult(void* left, void* right, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op1, void* op2, void* result, [CallerMemberName] string method = "")
         {
             Int32[] inArray1 = new Int32[Op1ElementCount];
             Int32[] inArray2 = new Int32[Op2ElementCount];
             Int32[] outArray = new Int32[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), (uint)Unsafe.SizeOf<Vector128<Int32>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), (uint)Unsafe.SizeOf<Vector128<Int32>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<Int32>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector128<Int32>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Int32, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<Int32>>());
 
             ValidateResult(inArray1, inArray2, outArray, method);

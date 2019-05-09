@@ -10,7 +10,6 @@
  ******************************************************************************/
 
 using System;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -53,6 +52,12 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing a static member works, using pinning and Load
+                    test.RunClsVarScenario_Load();
+                }
+
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -68,14 +73,38 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local class works
                 test.RunClassLclFldScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing the field of a local class works, using pinning and Load
+                    test.RunClassLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
+
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing an instance member of a class works, using pinning and Load
+                    test.RunClassFldScenario_Load();
+                }
 
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing the field of a local struct works, using pinning and Load
+                    test.RunStructLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing an instance member of a struct works, using pinning and Load
+                    test.RunStructFldScenario_Load();
+                }
             }
             else
             {
@@ -92,24 +121,74 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class BooleanUnaryOpTest__TestAllOnesSByte
     {
+        private struct DataTable
+        {
+            private byte[] inArray1;
+
+            private GCHandle inHandle1;
+
+            private ulong alignment;
+
+            public DataTable(SByte[] inArray1, int alignment)
+            {
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<SByte>();
+                if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1)
+                {
+                    throw new ArgumentException("Invalid value of alignment");
+                }
+
+                this.inArray1 = new byte[alignment * 2];
+
+                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<SByte, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+            }
+
+            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle1.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
         private struct TestStruct
         {
-            public Vector128<SByte> _fld;
+            public Vector128<SByte> _fld1;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSByte(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref testStruct._fld), ref Unsafe.As<SByte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref testStruct._fld1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
                 return testStruct;
             }
 
             public void RunStructFldScenario(BooleanUnaryOpTest__TestAllOnesSByte testClass)
             {
-                var result = Sse41.TestAllOnes(_fld);
-                testClass.ValidateResult(_fld, result);
+                var result = Sse41.TestAllOnes(_fld1);
+                testClass.ValidateResult(_fld1, result);
+            }
+
+            public void RunStructFldScenario_Load(BooleanUnaryOpTest__TestAllOnesSByte testClass)
+            {
+                fixed (Vector128<SByte>* pFld1 = &_fld1)
+                {
+                    var result = Sse41.TestAllOnes(
+                        Sse2.LoadVector128((SByte*)(pFld1))
+                    );
+
+                    testClass.ValidateResult(_fld1, result);
+                }
             }
         }
 
@@ -117,29 +196,29 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector128<SByte>>() / sizeof(SByte);
 
-        private static SByte[] _data = new SByte[Op1ElementCount];
+        private static SByte[] _data1 = new SByte[Op1ElementCount];
 
-        private static Vector128<SByte> _clsVar;
+        private static Vector128<SByte> _clsVar1;
 
-        private Vector128<SByte> _fld;
+        private Vector128<SByte> _fld1;
 
-        private BooleanUnaryOpTest__DataTable<SByte> _dataTable;
+        private DataTable _dataTable;
 
         static BooleanUnaryOpTest__TestAllOnesSByte()
         {
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSByte(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar), ref Unsafe.As<SByte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
         }
 
         public BooleanUnaryOpTest__TestAllOnesSByte()
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSByte(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld), ref Unsafe.As<SByte, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<SByte>, byte>(ref _fld1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSByte(); }
-            _dataTable = new BooleanUnaryOpTest__DataTable<SByte>(_data, LargestVectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
+            _dataTable = new DataTable(_data1, LargestVectorSize);
         }
 
         public bool IsSupported => Sse41.IsSupported;
@@ -151,10 +230,10 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
             var result = Sse41.TestAllOnes(
-                Unsafe.Read<Vector128<SByte>>(_dataTable.inArrayPtr)
+                Unsafe.Read<Vector128<SByte>>(_dataTable.inArray1Ptr)
             );
 
-            ValidateResult(_dataTable.inArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, result);
         }
 
         public void RunBasicScenario_Load()
@@ -162,10 +241,10 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
             var result = Sse41.TestAllOnes(
-                Sse2.LoadVector128((SByte*)(_dataTable.inArrayPtr))
+                Sse2.LoadVector128((SByte*)(_dataTable.inArray1Ptr))
             );
 
-            ValidateResult(_dataTable.inArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, result);
         }
 
         public void RunBasicScenario_LoadAligned()
@@ -173,10 +252,10 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
 
             var result = Sse41.TestAllOnes(
-                Sse2.LoadAlignedVector128((SByte*)(_dataTable.inArrayPtr))
+                Sse2.LoadAlignedVector128((SByte*)(_dataTable.inArray1Ptr))
             );
 
-            ValidateResult(_dataTable.inArrayPtr, result);
+            ValidateResult(_dataTable.inArray1Ptr, result);
         }
 
         public void RunReflectionScenario_UnsafeRead()
@@ -185,10 +264,10 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = typeof(Sse41).GetMethod(nameof(Sse41.TestAllOnes), new Type[] { typeof(Vector128<SByte>) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.Read<Vector128<SByte>>(_dataTable.inArrayPtr)
+                                        Unsafe.Read<Vector128<SByte>>(_dataTable.inArray1Ptr)
                                      });
 
-            ValidateResult(_dataTable.inArrayPtr, (bool)(result));
+            ValidateResult(_dataTable.inArray1Ptr, (bool)(result));
         }
 
         public void RunReflectionScenario_Load()
@@ -197,10 +276,10 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = typeof(Sse41).GetMethod(nameof(Sse41.TestAllOnes), new Type[] { typeof(Vector128<SByte>) })
                                      .Invoke(null, new object[] {
-                                        Sse2.LoadVector128((SByte*)(_dataTable.inArrayPtr))
+                                        Sse2.LoadVector128((SByte*)(_dataTable.inArray1Ptr))
                                      });
 
-            ValidateResult(_dataTable.inArrayPtr, (bool)(result));
+            ValidateResult(_dataTable.inArray1Ptr, (bool)(result));
         }
 
         public void RunReflectionScenario_LoadAligned()
@@ -209,10 +288,10 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = typeof(Sse41).GetMethod(nameof(Sse41.TestAllOnes), new Type[] { typeof(Vector128<SByte>) })
                                      .Invoke(null, new object[] {
-                                        Sse2.LoadAlignedVector128((SByte*)(_dataTable.inArrayPtr))
+                                        Sse2.LoadAlignedVector128((SByte*)(_dataTable.inArray1Ptr))
                                      });
 
-            ValidateResult(_dataTable.inArrayPtr, (bool)(result));
+            ValidateResult(_dataTable.inArray1Ptr, (bool)(result));
         }
 
         public void RunClsVarScenario()
@@ -220,40 +299,54 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
             var result = Sse41.TestAllOnes(
-                _clsVar
+                _clsVar1
             );
 
-            ValidateResult(_clsVar, result);
+            ValidateResult(_clsVar1, result);
+        }
+
+        public void RunClsVarScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
+
+            fixed (Vector128<SByte>* pClsVar1 = &_clsVar1)
+            {
+                var result = Sse41.TestAllOnes(
+                    Sse2.LoadVector128((SByte*)(pClsVar1))
+                );
+
+                ValidateResult(_clsVar1, result);
+            }
         }
 
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var value = Unsafe.Read<Vector128<SByte>>(_dataTable.inArrayPtr);
-            var result = Sse41.TestAllOnes(value);
+            var op1 = Unsafe.Read<Vector128<SByte>>(_dataTable.inArray1Ptr);
+            var result = Sse41.TestAllOnes(op1);
 
-            ValidateResult(value, result);
+            ValidateResult(op1, result);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            var value = Sse2.LoadVector128((SByte*)(_dataTable.inArrayPtr));
-            var result = Sse41.TestAllOnes(value);
+            var op1 = Sse2.LoadVector128((SByte*)(_dataTable.inArray1Ptr));
+            var result = Sse41.TestAllOnes(op1);
 
-            ValidateResult(value, result);
+            ValidateResult(op1, result);
         }
 
         public void RunLclVarScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
-            var value = Sse2.LoadAlignedVector128((SByte*)(_dataTable.inArrayPtr));
-            var result = Sse41.TestAllOnes(value);
+            var op1 = Sse2.LoadAlignedVector128((SByte*)(_dataTable.inArray1Ptr));
+            var result = Sse41.TestAllOnes(op1);
 
-            ValidateResult(value, result);
+            ValidateResult(op1, result);
         }
 
         public void RunClassLclFldScenario()
@@ -261,18 +354,48 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
             var test = new BooleanUnaryOpTest__TestAllOnesSByte();
-            var result = Sse41.TestAllOnes(test._fld);
+            var result = Sse41.TestAllOnes(test._fld1);
 
-            ValidateResult(test._fld, result);
+            ValidateResult(test._fld1, result);
+        }
+
+        public void RunClassLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
+
+            var test = new BooleanUnaryOpTest__TestAllOnesSByte();
+
+            fixed (Vector128<SByte>* pFld1 = &test._fld1)
+            {
+                var result = Sse41.TestAllOnes(
+                    Sse2.LoadVector128((SByte*)(pFld1))
+                );
+
+                ValidateResult(test._fld1, result);
+            }
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Sse41.TestAllOnes(_fld);
+            var result = Sse41.TestAllOnes(_fld1);
 
-            ValidateResult(_fld, result);
+            ValidateResult(_fld1, result);
+        }
+
+        public void RunClassFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
+
+            fixed (Vector128<SByte>* pFld1 = &_fld1)
+            {
+                var result = Sse41.TestAllOnes(
+                    Sse2.LoadVector128((SByte*)(pFld1))
+                );
+
+                ValidateResult(_fld1, result);
+            }
         }
 
         public void RunStructLclFldScenario()
@@ -280,8 +403,20 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Sse41.TestAllOnes(test._fld);
-            ValidateResult(test._fld, result);
+            var result = Sse41.TestAllOnes(test._fld1);
+            ValidateResult(test._fld1, result);
+        }
+
+        public void RunStructLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
+
+            var test = TestStruct.Create();
+            var result = Sse41.TestAllOnes(
+                Sse2.LoadVector128((SByte*)(&test._fld1))
+            );
+
+            ValidateResult(test._fld1, result);
         }
 
         public void RunStructFldScenario()
@@ -290,6 +425,14 @@ namespace JIT.HardwareIntrinsics.X86
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunStructFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()
@@ -313,26 +456,28 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector128<SByte> value, bool result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<SByte> op1, bool result, [CallerMemberName] string method = "")
         {
-            SByte[] inArray = new SByte[Op1ElementCount];
+            SByte[] inArray1 = new SByte[Op1ElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray[0]), value);
+            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), op1);
 
-            ValidateResult(inArray, result, method);
+            ValidateResult(inArray1, result, method);
         }
 
-        private void ValidateResult(void* value, bool result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op1, bool result, [CallerMemberName] string method = "")
         {
-            SByte[] inArray = new SByte[Op1ElementCount];
+            SByte[] inArray1 = new SByte[Op1ElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(value), (uint)Unsafe.SizeOf<Vector128<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<SByte>>());
 
-            ValidateResult(inArray, result, method);
+            ValidateResult(inArray1, result, method);
         }
 
         private void ValidateResult(SByte[] value, bool result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             var expectedResult = true;
 
             for (var i = 0; i < Op1ElementCount; i++)
@@ -340,11 +485,13 @@ namespace JIT.HardwareIntrinsics.X86
                 expectedResult &= ((~value[i] & -1) == 0);
             }
 
-            if (expectedResult != result)
+            succeeded = (expectedResult == result);
+
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Sse41)}.{nameof(Sse41.TestAllOnes)}<SByte>(Vector128<SByte>): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($"    value: ({string.Join(", ", value)})");
-                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($"   value: ({string.Join(", ", value)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({result})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

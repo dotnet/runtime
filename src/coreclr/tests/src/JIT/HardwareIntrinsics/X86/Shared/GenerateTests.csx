@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 // DIRECTIONS:
 //    This file isn't very robust and makes several assumptions
@@ -18,6 +19,103 @@ using System.IO;
 //
 //    You can support a new Isa by creating a new array and adding a new
 //    "ProcessInputs" call at the bottom of the script.
+
+private const string AlternatingOpTest_ValidationLogic = @"for (var i = 0; i < RetElementCount; i += 2)
+            {
+                if ({ValidateFirstResult})
+                {
+                    succeeded = false;
+                    break;
+                }
+
+                if ({ValidateRemainingResults})
+                {
+                    succeeded = false;
+                    break;
+                }
+            }";
+
+private const string BooleanCmpTest_ValidationLogic = @"if ({ValidateFirstResult})
+            {
+                succeeded = false;
+            }";
+
+private const string BooleanTwoCmpTest_ValidationLogic = @"var expectedResult1 = true;
+
+            for (var i = 0; i < Op1ElementCount; i++)
+            {
+                expectedResult1 &= ({ValidateFirstResult});
+            }
+
+            var expectedResult2 = true;
+
+            for (var i = 0; i < Op1ElementCount; i++)
+            {
+                expectedResult2 &= ({ValidateRemainingResults});
+            }
+
+            succeeded = (((expectedResult1 == false) && (expectedResult2 == false)) == result);";
+
+private const string BooleanOpTest_ValidationLogic = @"var expectedResult = true;
+
+            for (var i = 0; i < Op1ElementCount; i++)
+            {
+                expectedResult &= ({ValidateFirstResult});
+            }
+
+            succeeded = (expectedResult == result);";
+
+private const string HorizontalOpTest_ValidationLogic = @"for (var outer = 0; outer < (LargestVectorSize / 16); outer++)
+            {
+                for (var inner = 0; inner < (8 / sizeof({RetBaseType})); inner++)
+                {
+                    var i1 = (outer * (16 / sizeof({RetBaseType}))) + inner;
+                    var i2 = i1 + (8 / sizeof({RetBaseType}));
+                    var i3 = (outer * (16 / sizeof({RetBaseType}))) + (inner * 2);
+
+                    if ({ValidateFirstResult})
+                    {
+                        succeeded = false;
+                        break;
+                    }
+
+                    if ({ValidateRemainingResults})
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }";
+
+private const string SimpleOpTest_ValidationLogic = @"if ({ValidateFirstResult})
+            {
+                succeeded = false;
+            }
+            else
+            {
+                for (var i = 1; i < RetElementCount; i++)
+                {
+                    if ({ValidateRemainingResults})
+                    {
+                        succeeded = false;
+                        break;
+                    }
+                }
+            }";
+
+private static readonly (string templateFileName, string outputTemplateName, Dictionary<string, string> templateData)[] Templates = new[]
+{
+    ("_BinaryOpTestTemplate.template",        "AlternatingBinOpTest.template",  new Dictionary<string, string> { ["TemplateName"] = "Alternating", ["TemplateValidationLogic"] = AlternatingOpTest_ValidationLogic }),
+    ("_BinaryOpTestTemplate.template",        "HorizontalBinOpTest.template",   new Dictionary<string, string> { ["TemplateName"] = "Horizontal",  ["TemplateValidationLogic"] = HorizontalOpTest_ValidationLogic }),
+    ("_BinaryOpTestTemplate.template",        "SimpleBinOpTest.template",       new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic }),
+    ("_BooleanBinaryOpTestTemplate.template", "BooleanBinOpTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Boolean",     ["TemplateValidationLogic"] = BooleanOpTest_ValidationLogic }),
+    ("_BooleanBinaryOpTestTemplate.template", "BooleanCmpOpTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Boolean",     ["TemplateValidationLogic"] = BooleanCmpTest_ValidationLogic }),
+    ("_BooleanBinaryOpTestTemplate.template", "BooleanTwoCmpOpTest.template",   new Dictionary<string, string> { ["TemplateName"] = "Boolean",     ["TemplateValidationLogic"] = BooleanTwoCmpTest_ValidationLogic }),
+    ("_BooleanUnaryOpTestTemplate.template",  "BooleanUnOpTest.template",       new Dictionary<string, string> { ["TemplateName"] = "Boolean",     ["TemplateValidationLogic"] = BooleanOpTest_ValidationLogic }),
+    ("_TernaryOpTestTemplate.template",       "AlternatingTernOpTest.template", new Dictionary<string, string> { ["TemplateName"] = "Alternating", ["TemplateValidationLogic"] = AlternatingOpTest_ValidationLogic }),
+    ("_TernaryOpTestTemplate.template",       "SimpleTernOpTest.template",      new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic }),
+    ("_UnaryOpTestTemplate.template",         "SimpleUnOpTest.template",        new Dictionary<string, string> { ["TemplateName"] = "Simple",      ["TemplateValidationLogic"] = SimpleOpTest_ValidationLogic }),
+};
 
 private static readonly (string templateFileName, Dictionary<string, string> templateData)[] SseInputs = new []
 {
@@ -1243,7 +1341,22 @@ private static void ProcessInput(StreamWriter testListFile, string groupName, (s
     }
 
     var testFileName = Path.Combine("..", groupName, $"{testName}.cs");
-    var template = File.ReadAllText(input.templateFileName);
+    var matchingTemplate = Templates.Where((t) => t.outputTemplateName.Equals(input.templateFileName)).SingleOrDefault();
+    var template = string.Empty;
+
+    if (matchingTemplate.templateFileName is null)
+    {
+        template = File.ReadAllText(input.templateFileName);
+    }
+    else
+    {
+        template = File.ReadAllText(matchingTemplate.templateFileName);
+
+        foreach (var kvp in matchingTemplate.templateData)
+        {
+            template = template.Replace($"{{{kvp.Key}}}", kvp.Value);
+        }
+    }
 
     foreach (var kvp in input.templateData)
     {

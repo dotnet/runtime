@@ -83,11 +83,9 @@
     <Compile Include="SubtractScalar.Single.cs" />
     <Compile Include="Xor.Single.cs" />
     <Compile Include="Program.Sse.cs" />
-    <Compile Include="..\Shared\BooleanCmpOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
