@@ -1412,6 +1412,19 @@
                         </UserData>
                     </template>
 
+                    <template tid="ContentionStop_V1">
+                        <data name="ContentionFlags" inType="win:UInt8" map="ContentionFlagsMap" />
+                        <data name="ClrInstanceID" inType="win:UInt16" />
+                        <data name="Duration" inType="win:Double" />
+                        <UserData>
+                            <Contention xmlns="myNs">
+                                <ContentionFlags> %1 </ContentionFlags>
+                                <ClrInstanceID> %2 </ClrInstanceID>
+                                <Duration> %3 </Duration>
+                            </Contention>
+                        </UserData>
+                    </template>
+
                     <template tid="DomainModuleLoadUnload">
                         <data name="ModuleID" inType="win:UInt64" outType="win:HexInt64" />
                         <data name="AssemblyID" inType="win:UInt64" outType="win:HexInt64" />
@@ -2897,6 +2910,11 @@
                            keywords ="ContentionKeyword"  opcode="win:Stop"
                            task="Contention"
                            symbol="ContentionStop" message="$(string.RuntimePublisher.ContentionStopEventMessage)"/>
+
+                    <event value="91" version="1" level="win:Informational"  template="ContentionStop_V1"
+                           keywords ="ContentionKeyword"  opcode="win:Stop"
+                           task="Contention"
+                           symbol="ContentionStop_V1" message="$(string.RuntimePublisher.ContentionStop_V1EventMessage)"/>
 
                     <!-- CLR Stack events -->
                     <event value="82" version="0" level="win:LogAlways"  template="ClrStackWalk"
@@ -6408,6 +6426,7 @@
                 <string id="RuntimePublisher.ContentionStartEventMessage" value="NONE" />
                 <string id="RuntimePublisher.ContentionStart_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
                 <string id="RuntimePublisher.ContentionStopEventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2"/>
+                <string id="RuntimePublisher.ContentionStop_V1EventMessage" value="ContentionFlags=%1;%nClrInstanceID=%2;Duration=%3"/>
                 <string id="RuntimePublisher.DCStartCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.DCEndCompleteEventMessage" value="NONE" />
                 <string id="RuntimePublisher.MethodDCStartEventMessage" value="MethodID=%1;%nModuleID=%2;%nMethodStartAddress=%3;%nMethodSize=%4;%nMethodToken=%5;%nMethodFlags=%6" />
