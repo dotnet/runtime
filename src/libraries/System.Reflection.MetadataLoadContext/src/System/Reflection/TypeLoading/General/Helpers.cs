@@ -22,7 +22,7 @@ namespace System.Reflection.TypeLoading
             // We want to return the exact type of T[] even if "original" is a type of T2[] (due to array variance.)
             // The arrays produced by this helper are usually passed directly to app code.
             T[] copy = new T[original.Length];
-            Array.Copy(sourceArray: original, destinationArray: copy, length: original.Length);
+            Array.Copy(sourceArray: original, sourceIndex: 0, destinationArray: copy, destinationIndex: 0, length: original.Length);
             return copy;
         }
 

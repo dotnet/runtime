@@ -99,7 +99,7 @@ namespace System.ComponentModel
                 if (_types != null)
                 {
                     objTypes = new object[_types.Length];
-                    Array.Copy(_types, objTypes, _types.Length);
+                    Array.Copy(_types, 0, objTypes, 0, _types.Length);
                 }
                 else
                 {

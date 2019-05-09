@@ -39,7 +39,7 @@ namespace System.Xml.Xsl.Runtime
                     // Resize the stack
                     XPathNavigator[] stkOld = _stkNav;
                     _stkNav = new XPathNavigator[2 * _sp];
-                    Array.Copy(stkOld, _stkNav, _sp);
+                    Array.Copy(stkOld, 0, _stkNav, 0, _sp);
                 }
             }
 

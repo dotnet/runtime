@@ -164,7 +164,7 @@ namespace System.Xml
             else if (_depth == _scopes.Length)
             {
                 Scope[] newScopes = new Scope[_depth * 2];
-                Array.Copy(_scopes, newScopes, _depth);
+                Array.Copy(_scopes, 0, newScopes, 0, _depth);
                 _scopes = newScopes;
             }
             _scopes[_depth].xmlnsAttributeCount = _xmlnsAttributeCount;
@@ -736,7 +736,7 @@ namespace System.Xml
             else if (_attributeCount == _attributes.Length)
             {
                 Attribute[] newAttributes = new Attribute[_attributeCount * 2];
-                Array.Copy(_attributes, newAttributes, _attributeCount);
+                Array.Copy(_attributes, 0, newAttributes, 0, _attributeCount);
                 _attributes = newAttributes;
             }
 
@@ -756,7 +756,7 @@ namespace System.Xml
             else if (_xmlnsAttributes.Length == _xmlnsAttributeCount)
             {
                 XmlnsAttribute[] newXmlnsAttributes = new XmlnsAttribute[_xmlnsAttributeCount * 2];
-                Array.Copy(_xmlnsAttributes, newXmlnsAttributes, _xmlnsAttributeCount);
+                Array.Copy(_xmlnsAttributes, 0, newXmlnsAttributes, 0, _xmlnsAttributeCount);
                 _xmlnsAttributes = newXmlnsAttributes;
             }
 

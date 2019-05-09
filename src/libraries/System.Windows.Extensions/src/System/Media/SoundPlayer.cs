@@ -498,7 +498,7 @@ namespace System.Media
                     if (_streamData.Length < _currentPos + BlockSize)
                     {
                         byte[] newData = new byte[_streamData.Length * 2];
-                        Array.Copy(_streamData, newData, _streamData.Length);
+                        Array.Copy(_streamData, 0, newData, 0, _streamData.Length);
                         _streamData = newData;
                     }
                     readBytes = await _stream.ReadAsync(_streamData, _currentPos, BlockSize, cancellationToken).ConfigureAwait(false);

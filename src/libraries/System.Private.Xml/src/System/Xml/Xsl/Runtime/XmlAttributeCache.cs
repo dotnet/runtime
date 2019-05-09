@@ -363,7 +363,7 @@ namespace System.Xml.Xsl.Runtime
                 // Resize caching array
                 Debug.Assert(_numEntries == _arrAttrs.Length);
                 AttrNameVal[] arrNew = new AttrNameVal[_numEntries * 2];
-                Array.Copy(_arrAttrs, arrNew, _numEntries);
+                Array.Copy(_arrAttrs, 0, arrNew, 0, _numEntries);
                 _arrAttrs = arrNew;
             }
         }

@@ -67,7 +67,7 @@ namespace System.Xml.Xsl.XsltOld
             if (this.TextInfo.Length < newSize)
             {
                 string[] newArr = new string[newSize * 2];
-                Array.Copy(this.TextInfo, newArr, this.TextInfoCount);
+                Array.Copy(this.TextInfo, 0, newArr, 0, this.TextInfoCount);
                 this.TextInfo = newArr;
             }
         }
