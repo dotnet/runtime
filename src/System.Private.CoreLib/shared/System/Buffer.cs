@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
 #if AMD64 || ARM64 || (BIT32 && !ARM)
 #define HAS_CUSTOM_BLOCKS
 #endif

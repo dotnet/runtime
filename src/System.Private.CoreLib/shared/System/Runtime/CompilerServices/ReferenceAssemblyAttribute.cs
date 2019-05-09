@@ -13,7 +13,6 @@
 **
 ============================================================*/
 
-#nullable enable
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false)]

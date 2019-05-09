@@ -6,7 +6,6 @@
 // 
 // This class wraps a Type object and delegates all methods to that Type.
 
-#nullable enable
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection

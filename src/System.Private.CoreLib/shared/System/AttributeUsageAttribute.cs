@@ -11,7 +11,6 @@
 **
 ===========================================================*/
 
-#nullable enable
 using System.Reflection;
 
 namespace System

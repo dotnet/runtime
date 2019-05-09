@@ -13,7 +13,6 @@
 ** 
 ===========================================================*/
 
-#nullable enable
 namespace Microsoft.Win32
 {
     using System;

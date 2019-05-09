@@ -17,7 +17,6 @@
 ===========================================================*/
 #define DEBUG // The behavior of this contract library should be consistent regardless of build type.
 
-#nullable enable
 using System.Collections.Generic;
 using System.Reflection;
 

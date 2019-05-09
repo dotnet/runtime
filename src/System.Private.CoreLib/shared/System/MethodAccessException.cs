@@ -9,7 +9,6 @@
 **
 =============================================================================*/
 
-#nullable enable
 using System.Runtime.Serialization;
 
 namespace System

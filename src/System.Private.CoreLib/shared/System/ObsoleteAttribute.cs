@@ -11,7 +11,6 @@
 ** 
 ===========================================================*/
 
-#nullable enable
 namespace System
 {
     // This attribute is attached to members that are not to be used any longer.

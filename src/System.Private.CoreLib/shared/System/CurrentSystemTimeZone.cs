@@ -17,7 +17,6 @@
 **
 ============================================================*/
 
-#nullable enable
 using System.Collections;
 using System.Globalization;
 

@@ -7,7 +7,6 @@
 //
 
 // TODO-NULLABLE: We should edit original source instead: https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.Build.Tasks/GenerateEncodingTable.cs#L235
-#nullable enable
 namespace System.Text
 {
     internal static partial class EncodingTable

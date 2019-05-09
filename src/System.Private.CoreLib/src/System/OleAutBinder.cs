@@ -6,7 +6,6 @@
 
 // #define DISPLAY_DEBUG_INFO
 
-#nullable enable
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 using CultureInfo = System.Globalization.CultureInfo;
