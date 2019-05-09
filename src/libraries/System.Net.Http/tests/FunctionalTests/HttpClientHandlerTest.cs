@@ -183,6 +183,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [OuterLoop("Uses external servers")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP will send default credentials based on other criteria.")]
         [Theory]
         [InlineData(false)]
