@@ -5,6 +5,7 @@
     <IsPartialFacadeAssembly Condition="'$(TargetFramework)' != 'netstandard2.0'">true</IsPartialFacadeAssembly>
     <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+    <NullableContextOptions>enable</NullableContextOptions>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="$(CommonPath)\CoreLib\System\HashCode.cs">
