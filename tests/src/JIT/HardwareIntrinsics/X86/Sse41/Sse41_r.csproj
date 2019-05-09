@@ -155,14 +155,9 @@
     <Compile Include="Insert.Single.129.cs" />	
     <Compile Include="Insert.Single.192.cs" />
     <Compile Include="Program.Sse41.cs" />
-    <Compile Include="..\Shared\BooleanUnOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\BooleanBinOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\BooleanTwoCmpOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\HorizontalBinOpTest_DataTable.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimpleTernOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>

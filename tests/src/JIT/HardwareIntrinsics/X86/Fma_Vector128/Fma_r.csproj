@@ -48,9 +48,7 @@
     <Compile Include="MultiplySubtractScalar.Single.cs" />
     <Compile Include="MultiplySubtractScalar.Double.cs" />
     <Compile Include="Program.Fma_Vector128.cs" />
-    <Compile Include="..\Shared\AlternatingTernOpTest_DataTable.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleTernOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>

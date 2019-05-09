@@ -52,6 +52,12 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
+                if (Avx.IsSupported)
+                {
+                    // Validates passing a static member works, using pinning and Load
+                    test.RunClsVarScenario_Load();
+                }
+
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -67,14 +73,38 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local class works
                 test.RunClassLclFldScenario();
 
+                if (Avx.IsSupported)
+                {
+                    // Validates passing the field of a local class works, using pinning and Load
+                    test.RunClassLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
+
+                if (Avx.IsSupported)
+                {
+                    // Validates passing an instance member of a class works, using pinning and Load
+                    test.RunClassFldScenario_Load();
+                }
 
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
+                if (Avx.IsSupported)
+                {
+                    // Validates passing the field of a local struct works, using pinning and Load
+                    test.RunStructLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                if (Avx.IsSupported)
+                {
+                    // Validates passing an instance member of a struct works, using pinning and Load
+                    test.RunStructFldScenario_Load();
+                }
             }
             else
             {
@@ -91,26 +121,84 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class SimpleUnaryOpTest__DuplicateEvenIndexedSingle
     {
+        private struct DataTable
+        {
+            private byte[] inArray1;
+            private byte[] outArray;
+
+            private GCHandle inHandle1;
+            private GCHandle outHandle;
+
+            private ulong alignment;
+
+            public DataTable(Single[] inArray1, Single[] outArray, int alignment)
+            {
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Single>();
+                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<Single>();
+                if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfoutArray)
+                {
+                    throw new ArgumentException("Invalid value of alignment");
+                }
+
+                this.inArray1 = new byte[alignment * 2];
+                this.outArray = new byte[alignment * 2];
+
+                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<Single, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+            }
+
+            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle1.Free();
+                outHandle.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
         private struct TestStruct
         {
-            public Vector256<Single> _fld;
+            public Vector256<Single> _fld1;
 
             public static TestStruct Create()
             {
                 var testStruct = new TestStruct();
 
-                for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSingle(); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref testStruct._fld), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector256<Single>>());
+                for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref testStruct._fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector256<Single>>());
 
                 return testStruct;
             }
 
             public void RunStructFldScenario(SimpleUnaryOpTest__DuplicateEvenIndexedSingle testClass)
             {
-                var result = Avx.DuplicateEvenIndexed(_fld);
+                var result = Avx.DuplicateEvenIndexed(_fld1);
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
-                testClass.ValidateResult(_fld, testClass._dataTable.outArrayPtr);
+                testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
+            }
+
+            public void RunStructFldScenario_Load(SimpleUnaryOpTest__DuplicateEvenIndexedSingle testClass)
+            {
+                fixed (Vector256<Single>* pFld1 = &_fld1)
+                {
+                    var result = Avx.DuplicateEvenIndexed(
+                        Avx.LoadVector256((Single*)(pFld1))
+                    );
+
+                    Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                    testClass.ValidateResult(_fld1, testClass._dataTable.outArrayPtr);
+                }
             }
         }
 
@@ -119,29 +207,29 @@ namespace JIT.HardwareIntrinsics.X86
         private static readonly int Op1ElementCount = Unsafe.SizeOf<Vector256<Single>>() / sizeof(Single);
         private static readonly int RetElementCount = Unsafe.SizeOf<Vector256<Single>>() / sizeof(Single);
 
-        private static Single[] _data = new Single[Op1ElementCount];
+        private static Single[] _data1 = new Single[Op1ElementCount];
 
-        private static Vector256<Single> _clsVar;
+        private static Vector256<Single> _clsVar1;
 
-        private Vector256<Single> _fld;
+        private Vector256<Single> _fld1;
 
-        private SimpleUnaryOpTest__DataTable<Single, Single> _dataTable;
+        private DataTable _dataTable;
 
         static SimpleUnaryOpTest__DuplicateEvenIndexedSingle()
         {
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSingle(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _clsVar), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector256<Single>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _clsVar1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector256<Single>>());
         }
 
         public SimpleUnaryOpTest__DuplicateEvenIndexedSingle()
         {
             Succeeded = true;
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSingle(); }
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _fld), ref Unsafe.As<Single, byte>(ref _data[0]), (uint)Unsafe.SizeOf<Vector256<Single>>());
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<Single>, byte>(ref _fld1), ref Unsafe.As<Single, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector256<Single>>());
 
-            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = TestLibrary.Generator.GetSingle(); }
-            _dataTable = new SimpleUnaryOpTest__DataTable<Single, Single>(_data, new Single[RetElementCount], LargestVectorSize);
+            for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSingle(); }
+            _dataTable = new DataTable(_data1, new Single[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Avx.IsSupported;
@@ -153,11 +241,11 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_UnsafeRead));
 
             var result = Avx.DuplicateEvenIndexed(
-                Unsafe.Read<Vector256<Single>>(_dataTable.inArrayPtr)
+                Unsafe.Read<Vector256<Single>>(_dataTable.inArray1Ptr)
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunBasicScenario_Load()
@@ -165,11 +253,11 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_Load));
 
             var result = Avx.DuplicateEvenIndexed(
-                Avx.LoadVector256((Single*)(_dataTable.inArrayPtr))
+                Avx.LoadVector256((Single*)(_dataTable.inArray1Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunBasicScenario_LoadAligned()
@@ -177,11 +265,11 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario_LoadAligned));
 
             var result = Avx.DuplicateEvenIndexed(
-                Avx.LoadAlignedVector256((Single*)(_dataTable.inArrayPtr))
+                Avx.LoadAlignedVector256((Single*)(_dataTable.inArray1Ptr))
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_UnsafeRead()
@@ -190,11 +278,11 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = typeof(Avx).GetMethod(nameof(Avx.DuplicateEvenIndexed), new Type[] { typeof(Vector256<Single>) })
                                      .Invoke(null, new object[] {
-                                        Unsafe.Read<Vector256<Single>>(_dataTable.inArrayPtr)
+                                        Unsafe.Read<Vector256<Single>>(_dataTable.inArray1Ptr)
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector256<Single>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_Load()
@@ -203,11 +291,11 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = typeof(Avx).GetMethod(nameof(Avx.DuplicateEvenIndexed), new Type[] { typeof(Vector256<Single>) })
                                      .Invoke(null, new object[] {
-                                        Avx.LoadVector256((Single*)(_dataTable.inArrayPtr))
+                                        Avx.LoadVector256((Single*)(_dataTable.inArray1Ptr))
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector256<Single>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunReflectionScenario_LoadAligned()
@@ -216,11 +304,11 @@ namespace JIT.HardwareIntrinsics.X86
 
             var result = typeof(Avx).GetMethod(nameof(Avx.DuplicateEvenIndexed), new Type[] { typeof(Vector256<Single>) })
                                      .Invoke(null, new object[] {
-                                        Avx.LoadAlignedVector256((Single*)(_dataTable.inArrayPtr))
+                                        Avx.LoadAlignedVector256((Single*)(_dataTable.inArray1Ptr))
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (Vector256<Single>)(result));
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.outArrayPtr);
         }
 
         public void RunClsVarScenario()
@@ -228,44 +316,59 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
 
             var result = Avx.DuplicateEvenIndexed(
-                _clsVar
+                _clsVar1
             );
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar, _dataTable.outArrayPtr);
+            ValidateResult(_clsVar1, _dataTable.outArrayPtr);
+        }
+
+        public void RunClsVarScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
+
+            fixed (Vector256<Single>* pClsVar1 = &_clsVar1)
+            {
+                var result = Avx.DuplicateEvenIndexed(
+                    Avx.LoadVector256((Single*)(pClsVar1))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_clsVar1, _dataTable.outArrayPtr);
+            }
         }
 
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var firstOp = Unsafe.Read<Vector256<Single>>(_dataTable.inArrayPtr);
-            var result = Avx.DuplicateEvenIndexed(firstOp);
+            var op1 = Unsafe.Read<Vector256<Single>>(_dataTable.inArray1Ptr);
+            var result = Avx.DuplicateEvenIndexed(op1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(op1, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            var firstOp = Avx.LoadVector256((Single*)(_dataTable.inArrayPtr));
-            var result = Avx.DuplicateEvenIndexed(firstOp);
+            var op1 = Avx.LoadVector256((Single*)(_dataTable.inArray1Ptr));
+            var result = Avx.DuplicateEvenIndexed(op1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(op1, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
-            var firstOp = Avx.LoadAlignedVector256((Single*)(_dataTable.inArrayPtr));
-            var result = Avx.DuplicateEvenIndexed(firstOp);
+            var op1 = Avx.LoadAlignedVector256((Single*)(_dataTable.inArray1Ptr));
+            var result = Avx.DuplicateEvenIndexed(op1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, _dataTable.outArrayPtr);
+            ValidateResult(op1, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
@@ -273,20 +376,52 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
             var test = new SimpleUnaryOpTest__DuplicateEvenIndexedSingle();
-            var result = Avx.DuplicateEvenIndexed(test._fld);
+            var result = Avx.DuplicateEvenIndexed(test._fld1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, _dataTable.outArrayPtr);
+            ValidateResult(test._fld1, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
+
+            var test = new SimpleUnaryOpTest__DuplicateEvenIndexedSingle();
+
+            fixed (Vector256<Single>* pFld1 = &test._fld1)
+            {
+                var result = Avx.DuplicateEvenIndexed(
+                    Avx.LoadVector256((Single*)(pFld1))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(test._fld1, _dataTable.outArrayPtr);
+            }
         }
 
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
 
-            var result = Avx.DuplicateEvenIndexed(_fld);
+            var result = Avx.DuplicateEvenIndexed(_fld1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_fld, _dataTable.outArrayPtr);
+            ValidateResult(_fld1, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
+
+            fixed (Vector256<Single>* pFld1 = &_fld1)
+            {
+                var result = Avx.DuplicateEvenIndexed(
+                    Avx.LoadVector256((Single*)(pFld1))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_fld1, _dataTable.outArrayPtr);
+            }
         }
 
         public void RunStructLclFldScenario()
@@ -294,18 +429,39 @@ namespace JIT.HardwareIntrinsics.X86
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
 
             var test = TestStruct.Create();
-            var result = Avx.DuplicateEvenIndexed(test._fld);
+            var result = Avx.DuplicateEvenIndexed(test._fld1);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, _dataTable.outArrayPtr);
+            ValidateResult(test._fld1, _dataTable.outArrayPtr);
         }
 
+        public void RunStructLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
+
+            var test = TestStruct.Create();
+            var result = Avx.DuplicateEvenIndexed(
+                Avx.LoadVector256((Single*)(&test._fld1))
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld1, _dataTable.outArrayPtr);
+        }
+        
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunStructFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()
@@ -329,26 +485,26 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector256<Single> firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector256<Single> op1, void* result, [CallerMemberName] string method = "")
         {
-            Single[] inArray = new Single[Op1ElementCount];
+            Single[] inArray1 = new Single[Op1ElementCount];
             Single[] outArray = new Single[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), firstOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Single, byte>(ref inArray1[0]), op1);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector256<Single>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(inArray1, outArray, method);
         }
 
-        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op1, void* result, [CallerMemberName] string method = "")
         {
-            Single[] inArray = new Single[Op1ElementCount];
+            Single[] inArray1 = new Single[Op1ElementCount];
             Single[] outArray = new Single[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector256<Single>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector256<Single>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Single, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector256<Single>>());
 
-            ValidateResult(inArray, outArray, method);
+            ValidateResult(inArray1, outArray, method);
         }
 
         private void ValidateResult(Single[] firstOp, Single[] result, [CallerMemberName] string method = "")
@@ -374,8 +530,8 @@ namespace JIT.HardwareIntrinsics.X86
             if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Avx)}.{nameof(Avx.DuplicateEvenIndexed)}<Single>(Vector256<Single>): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
-                TestLibrary.TestFramework.LogInformation($"   result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

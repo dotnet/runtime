@@ -35,8 +35,6 @@
     <Compile Include="HorizontalSubtract.Single.cs" />
     <Compile Include="Program.Sse3.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\AlternatingBinOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\HorizontalBinOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
