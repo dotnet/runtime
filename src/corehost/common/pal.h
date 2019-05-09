@@ -37,6 +37,7 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <libgen.h>
+#include <mutex>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -119,6 +120,23 @@ namespace pal
     typedef HMODULE dll_t;
     typedef FARPROC proc_t;
 
+    // Lockable object backed by CRITICAL_SECTION such that it does not pull in ConcRT.
+    class mutex_t
+    {
+    public:
+        mutex_t();
+        ~mutex_t();
+
+        mutex_t(const mutex_t&) = delete;
+        mutex_t& operator=(const mutex_t&) = delete;
+
+        void lock();
+        void unlock();
+
+    private:
+        CRITICAL_SECTION _impl;
+    };
+
     inline string_t exe_suffix() { return _X(".exe"); }
 
     inline int cstrcasecmp(const char* str1, const char* str2) { return ::_stricmp(str1, str2); }
@@ -172,6 +190,7 @@ namespace pal
     typedef int hresult_t;
     typedef void* dll_t;
     typedef void* proc_t;
+    typedef std::mutex mutex_t;
 
     inline string_t exe_suffix() { return _X(""); }
 
