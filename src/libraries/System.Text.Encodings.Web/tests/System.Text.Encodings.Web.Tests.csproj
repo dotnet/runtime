@@ -45,8 +45,8 @@
     <Compile Include="UrlEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
-      <LogicalName>UnicodeData.8.0.txt</LogicalName>
+    <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.12.1.txt">
+      <LogicalName>UnicodeData.12.1.txt</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
