@@ -202,7 +202,7 @@ create_exception_two_strings (MonoClass *klass, MonoStringHandle a1, MonoStringH
 
 	gpointer args [ ] = { MONO_HANDLE_RAW (a1), MONO_HANDLE_RAW (a2) };
 
-	mono_runtime_invoke_handle (method, o, args, error);
+	mono_runtime_invoke_handle_void (method, o, args, error);
 	if (!is_ok (error))
 		o = mono_new_null ();
 
@@ -865,7 +865,7 @@ mono_get_exception_type_initialization_handle (const gchar *type_name, MonoExcep
 	MonoObjectHandle exc = mono_object_new_handle (domain, klass, error);
 	mono_error_assert_ok (error);
 
-	mono_runtime_invoke_handle (method, exc, args, error);
+	mono_runtime_invoke_handle_void (method, exc, args, error);
 	goto_if_nok (error, return_null);
 	goto exit;
 return_null:
@@ -1109,7 +1109,7 @@ mono_get_exception_runtime_wrapped_handle (MonoObjectHandle wrapped_exception, M
 
 	gpointer args [ ] = { MONO_HANDLE_RAW (wrapped_exception) };
 
-	mono_runtime_invoke_handle (method, o, args, error);
+	mono_runtime_invoke_handle_void (method, o, args, error);
 	goto_if_nok (error, return_null);
 	goto exit;
 return_null:

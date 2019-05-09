@@ -5156,7 +5156,7 @@ ves_icall_System_Runtime_InteropServices_Marshal_StructureToPtr (MonoObjectHandl
 
 	gpointer pa [ ] = { MONO_HANDLE_RAW (obj), &dst, &delete_old };
 
-	mono_runtime_invoke_handle (method, NULL_HANDLE, pa, error);
+	mono_runtime_invoke_handle_void (method, NULL_HANDLE, pa, error);
 }
 
 static void
@@ -6005,7 +6005,7 @@ mono_marshal_asany_impl (MonoObjectHandle o, MonoMarshalNative string_encoding, 
 			MonoBoolean delete_old = FALSE;
 			gpointer pa [ ] = { MONO_HANDLE_RAW (o), &res, &delete_old };
 
-			mono_runtime_invoke_handle (method, NULL_HANDLE, pa, error);
+			mono_runtime_invoke_handle_void (method, NULL_HANDLE, pa, error);
 			return_val_if_nok (error, NULL);
 		}
 

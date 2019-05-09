@@ -856,7 +856,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 		attr = mono_object_new_handle (mono_domain_get (), method->klass, error);
 		goto_if_nok (error, fail);
 
-		mono_runtime_invoke_handle (method, attr, NULL, error);
+		mono_runtime_invoke_handle_void (method, attr, NULL, error);
 		goto_if_nok (error, fail);
 
 		goto exit;
@@ -1460,7 +1460,7 @@ create_custom_attr_data (MonoImage *image, MonoCustomAttrEntry *cattr, MonoError
 	params [2] = &cattr->data;
 	params [3] = &cattr->data_size;
 
-	mono_runtime_invoke_handle (ctor, attr, params, error);
+	mono_runtime_invoke_handle_void (ctor, attr, params, error);
 	goto fail;
 result_null:
 	attr = MONO_HANDLE_CAST (MonoObject, mono_new_null ());
