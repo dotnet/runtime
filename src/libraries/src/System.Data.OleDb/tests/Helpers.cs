@@ -11,7 +11,8 @@ namespace System.Data.OleDb.Tests
     public static class Helpers
     {
         public const string IsDriverAvailable = nameof(Helpers) + "." + nameof(GetIsDriverAvailable);
-        public static bool GetIsDriverAvailable() => Nested.IsAvailable;
+        private static readonly bool s_skipAllTemporarily = true;  // [ActiveIssue(37538)]
+        public static bool GetIsDriverAvailable() => !s_skipAllTemporarily && Nested.IsAvailable;
         public static string ProviderName => Nested.ProviderName;
         public static string GetTableName(string memberName) => memberName + ".csv";
 
