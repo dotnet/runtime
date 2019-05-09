@@ -21,7 +21,7 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void TestNotZAndNotCSByte()
         {
-            var test = new BooleanTwoComparisonOpTest__TestNotZAndNotCSByte();
+            var test = new BooleanBinaryOpTest__TestNotZAndNotCSByte();
 
             if (test.IsSupported)
             {
@@ -52,6 +52,12 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
+                if (Avx.IsSupported)
+                {
+                    // Validates passing a static member works, using pinning and Load
+                    test.RunClsVarScenario_Load();
+                }
+
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -67,14 +73,38 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local class works
                 test.RunClassLclFldScenario();
 
+                if (Avx.IsSupported)
+                {
+                    // Validates passing the field of a local class works, using pinning and Load
+                    test.RunClassLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
+
+                if (Avx.IsSupported)
+                {
+                    // Validates passing an instance member of a class works, using pinning and Load
+                    test.RunClassFldScenario_Load();
+                }
 
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
+                if (Avx.IsSupported)
+                {
+                    // Validates passing the field of a local struct works, using pinning and Load
+                    test.RunStructLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                if (Avx.IsSupported)
+                {
+                    // Validates passing an instance member of a struct works, using pinning and Load
+                    test.RunStructFldScenario_Load();
+                }
             }
             else
             {
@@ -89,8 +119,54 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class BooleanTwoComparisonOpTest__TestNotZAndNotCSByte
+    public sealed unsafe class BooleanBinaryOpTest__TestNotZAndNotCSByte
     {
+        private struct DataTable
+        {
+            private byte[] inArray1;
+            private byte[] inArray2;
+
+            private GCHandle inHandle1;
+            private GCHandle inHandle2;
+
+            private ulong alignment;
+
+            public DataTable(SByte[] inArray1, SByte[] inArray2, int alignment)
+            {
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<SByte>();
+                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<SByte>();
+                if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2)
+                {
+                    throw new ArgumentException("Invalid value of alignment");
+                }
+
+                this.inArray1 = new byte[alignment * 2];
+                this.inArray2 = new byte[alignment * 2];
+
+                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<SByte, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<SByte, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
+            }
+
+            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle1.Free();
+                inHandle2.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
         private struct TestStruct
         {
             public Vector256<SByte> _fld1;
@@ -108,10 +184,24 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario(BooleanTwoComparisonOpTest__TestNotZAndNotCSByte testClass)
+            public void RunStructFldScenario(BooleanBinaryOpTest__TestNotZAndNotCSByte testClass)
             {
                 var result = Avx.TestNotZAndNotC(_fld1, _fld2);
                 testClass.ValidateResult(_fld1, _fld2, result);
+            }
+
+            public void RunStructFldScenario_Load(BooleanBinaryOpTest__TestNotZAndNotCSByte testClass)
+            {
+                fixed (Vector256<SByte>* pFld1 = &_fld1)
+                fixed (Vector256<SByte>* pFld2 = &_fld2)
+                {
+                    var result = Avx.TestNotZAndNotC(
+                        Avx.LoadVector256((SByte*)(pFld1)),
+                        Avx.LoadVector256((SByte*)(pFld2))
+                    );
+
+                    testClass.ValidateResult(_fld1, _fld2, result);
+                }
             }
         }
 
@@ -129,9 +219,9 @@ namespace JIT.HardwareIntrinsics.X86
         private Vector256<SByte> _fld1;
         private Vector256<SByte> _fld2;
 
-        private BooleanTwoComparisonOpTest__DataTable<SByte, SByte> _dataTable;
+        private DataTable _dataTable;
 
-        static BooleanTwoComparisonOpTest__TestNotZAndNotCSByte()
+        static BooleanBinaryOpTest__TestNotZAndNotCSByte()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _clsVar1), ref Unsafe.As<SByte, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector256<SByte>>());
@@ -139,7 +229,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector256<SByte>, byte>(ref _clsVar2), ref Unsafe.As<SByte, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector256<SByte>>());
         }
 
-        public BooleanTwoComparisonOpTest__TestNotZAndNotCSByte()
+        public BooleanBinaryOpTest__TestNotZAndNotCSByte()
         {
             Succeeded = true;
 
@@ -150,7 +240,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetSByte(); }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetSByte(); }
-            _dataTable = new BooleanTwoComparisonOpTest__DataTable<SByte, SByte>(_data1, _data2, LargestVectorSize);
+            _dataTable = new DataTable(_data1, _data2, LargestVectorSize);
         }
 
         public bool IsSupported => Avx.IsSupported;
@@ -197,51 +287,39 @@ namespace JIT.HardwareIntrinsics.X86
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_UnsafeRead));
 
-            var method = typeof(Avx).GetMethod(nameof(Avx.TestNotZAndNotC), new Type[] { typeof(Vector256<SByte>), typeof(Vector256<SByte>) });
-
-            if (method != null)
-            {
-                var result = method.Invoke(null, new object[] {
+            var result = typeof(Avx).GetMethod(nameof(Avx.TestNotZAndNotC), new Type[] { typeof(Vector256<SByte>), typeof(Vector256<SByte>) })
+                                     .Invoke(null, new object[] {
                                         Unsafe.Read<Vector256<SByte>>(_dataTable.inArray1Ptr),
                                         Unsafe.Read<Vector256<SByte>>(_dataTable.inArray2Ptr)
                                      });
 
-                ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
-            }
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
         }
 
         public void RunReflectionScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_Load));
 
-            var method = typeof(Avx).GetMethod(nameof(Avx.TestNotZAndNotC), new Type[] { typeof(Vector256<SByte>), typeof(Vector256<SByte>) });
-
-            if (method != null)
-            {
-                var result = method.Invoke(null, new object[] {
+            var result = typeof(Avx).GetMethod(nameof(Avx.TestNotZAndNotC), new Type[] { typeof(Vector256<SByte>), typeof(Vector256<SByte>) })
+                                     .Invoke(null, new object[] {
                                         Avx.LoadVector256((SByte*)(_dataTable.inArray1Ptr)),
                                         Avx.LoadVector256((SByte*)(_dataTable.inArray2Ptr))
                                      });
 
-                ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
-            }
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
         }
 
         public void RunReflectionScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario_LoadAligned));
 
-            var method = typeof(Avx).GetMethod(nameof(Avx.TestNotZAndNotC), new Type[] { typeof(Vector256<SByte>), typeof(Vector256<SByte>) });
-
-            if (method != null)
-            {
-                var result = method.Invoke(null, new object[] {
+            var result = typeof(Avx).GetMethod(nameof(Avx.TestNotZAndNotC), new Type[] { typeof(Vector256<SByte>), typeof(Vector256<SByte>) })
+                                     .Invoke(null, new object[] {
                                         Avx.LoadAlignedVector256((SByte*)(_dataTable.inArray1Ptr)),
                                         Avx.LoadAlignedVector256((SByte*)(_dataTable.inArray2Ptr))
                                      });
 
-                ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
-            }
+            ValidateResult(_dataTable.inArray1Ptr, _dataTable.inArray2Ptr, (bool)(result));
         }
 
         public void RunClsVarScenario()
@@ -256,47 +334,81 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar1, _clsVar2, result);
         }
 
+        public void RunClsVarScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
+
+            fixed (Vector256<SByte>* pClsVar1 = &_clsVar1)
+            fixed (Vector256<SByte>* pClsVar2 = &_clsVar2)
+            {
+                var result = Avx.TestNotZAndNotC(
+                    Avx.LoadVector256((SByte*)(pClsVar1)),
+                    Avx.LoadVector256((SByte*)(pClsVar2))
+                );
+
+                ValidateResult(_clsVar1, _clsVar2, result);
+            }
+        }
+
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var left = Unsafe.Read<Vector256<SByte>>(_dataTable.inArray1Ptr);
-            var right = Unsafe.Read<Vector256<SByte>>(_dataTable.inArray2Ptr);
-            var result = Avx.TestNotZAndNotC(left, right);
+            var op1 = Unsafe.Read<Vector256<SByte>>(_dataTable.inArray1Ptr);
+            var op2 = Unsafe.Read<Vector256<SByte>>(_dataTable.inArray2Ptr);
+            var result = Avx.TestNotZAndNotC(op1, op2);
 
-            ValidateResult(left, right, result);
+            ValidateResult(op1, op2, result);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            var left = Avx.LoadVector256((SByte*)(_dataTable.inArray1Ptr));
-            var right = Avx.LoadVector256((SByte*)(_dataTable.inArray2Ptr));
-            var result = Avx.TestNotZAndNotC(left, right);
+            var op1 = Avx.LoadVector256((SByte*)(_dataTable.inArray1Ptr));
+            var op2 = Avx.LoadVector256((SByte*)(_dataTable.inArray2Ptr));
+            var result = Avx.TestNotZAndNotC(op1, op2);
 
-            ValidateResult(left, right, result);
+            ValidateResult(op1, op2, result);
         }
 
         public void RunLclVarScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
-            var left = Avx.LoadAlignedVector256((SByte*)(_dataTable.inArray1Ptr));
-            var right = Avx.LoadAlignedVector256((SByte*)(_dataTable.inArray2Ptr));
-            var result = Avx.TestNotZAndNotC(left, right);
+            var op1 = Avx.LoadAlignedVector256((SByte*)(_dataTable.inArray1Ptr));
+            var op2 = Avx.LoadAlignedVector256((SByte*)(_dataTable.inArray2Ptr));
+            var result = Avx.TestNotZAndNotC(op1, op2);
 
-            ValidateResult(left, right, result);
+            ValidateResult(op1, op2, result);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new BooleanTwoComparisonOpTest__TestNotZAndNotCSByte();
+            var test = new BooleanBinaryOpTest__TestNotZAndNotCSByte();
             var result = Avx.TestNotZAndNotC(test._fld1, test._fld2);
 
             ValidateResult(test._fld1, test._fld2, result);
+        }
+
+        public void RunClassLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
+
+            var test = new BooleanBinaryOpTest__TestNotZAndNotCSByte();
+
+            fixed (Vector256<SByte>* pFld1 = &test._fld1)
+            fixed (Vector256<SByte>* pFld2 = &test._fld2)
+            {
+                var result = Avx.TestNotZAndNotC(
+                    Avx.LoadVector256((SByte*)(pFld1)),
+                    Avx.LoadVector256((SByte*)(pFld2))
+                );
+
+                ValidateResult(test._fld1, test._fld2, result);
+            }
         }
 
         public void RunClassFldScenario()
@@ -308,6 +420,22 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_fld1, _fld2, result);
         }
 
+        public void RunClassFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
+
+            fixed (Vector256<SByte>* pFld1 = &_fld1)
+            fixed (Vector256<SByte>* pFld2 = &_fld2)
+            {
+                var result = Avx.TestNotZAndNotC(
+                    Avx.LoadVector256((SByte*)(pFld1)),
+                    Avx.LoadVector256((SByte*)(pFld2))
+                );
+
+                ValidateResult(_fld1, _fld2, result);
+            }
+        }
+
         public void RunStructLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
@@ -317,12 +445,33 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, result);
         }
 
+        public void RunStructLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
+
+            var test = TestStruct.Create();
+            var result = Avx.TestNotZAndNotC(
+                Avx.LoadVector256((SByte*)(&test._fld1)),
+                Avx.LoadVector256((SByte*)(&test._fld2))
+            );
+
+            ValidateResult(test._fld1, test._fld2, result);
+        }
+
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunStructFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()
@@ -346,30 +495,32 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector256<SByte> left, Vector256<SByte> right, bool result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector256<SByte> op1, Vector256<SByte> op2, bool result, [CallerMemberName] string method = "")
         {
             SByte[] inArray1 = new SByte[Op1ElementCount];
             SByte[] inArray2 = new SByte[Op2ElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), left);
-            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), right);
+            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), op1);
+            Unsafe.WriteUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), op2);
 
             ValidateResult(inArray1, inArray2, result, method);
         }
 
-        private void ValidateResult(void* left, void* right, bool result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op1, void* op2, bool result, [CallerMemberName] string method = "")
         {
             SByte[] inArray1 = new SByte[Op1ElementCount];
             SByte[] inArray2 = new SByte[Op2ElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), (uint)Unsafe.SizeOf<Vector256<SByte>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), (uint)Unsafe.SizeOf<Vector256<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector256<SByte>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<SByte, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector256<SByte>>());
 
             ValidateResult(inArray1, inArray2, result, method);
         }
 
         private void ValidateResult(SByte[] left, SByte[] right, bool result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             var expectedResult1 = true;
 
             for (var i = 0; i < Op1ElementCount; i++)
@@ -384,12 +535,14 @@ namespace JIT.HardwareIntrinsics.X86
                 expectedResult2 &= (((~left[i] & right[i]) == 0));
             }
 
-            if (((expectedResult1 == false) && (expectedResult2 == false)) != result)
+            succeeded = (((expectedResult1 == false) && (expectedResult2 == false)) == result);
+
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Avx)}.{nameof(Avx.TestNotZAndNotC)}<SByte>(Vector256<SByte>, Vector256<SByte>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
-                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({result})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;
