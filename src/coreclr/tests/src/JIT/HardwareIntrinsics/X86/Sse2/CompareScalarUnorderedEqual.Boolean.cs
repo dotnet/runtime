@@ -21,7 +21,7 @@ namespace JIT.HardwareIntrinsics.X86
     {
         private static void CompareScalarUnorderedEqualBoolean()
         {
-            var test = new BooleanComparisonOpTest__CompareScalarUnorderedEqualBoolean();
+            var test = new BooleanBinaryOpTest__CompareScalarUnorderedEqualBoolean();
 
             if (test.IsSupported)
             {
@@ -52,6 +52,12 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing a static member works, using pinning and Load
+                    test.RunClsVarScenario_Load();
+                }
+
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -67,14 +73,38 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local class works
                 test.RunClassLclFldScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing the field of a local class works, using pinning and Load
+                    test.RunClassLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
+
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing an instance member of a class works, using pinning and Load
+                    test.RunClassFldScenario_Load();
+                }
 
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing the field of a local struct works, using pinning and Load
+                    test.RunStructLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing an instance member of a struct works, using pinning and Load
+                    test.RunStructFldScenario_Load();
+                }
             }
             else
             {
@@ -89,8 +119,54 @@ namespace JIT.HardwareIntrinsics.X86
         }
     }
 
-    public sealed unsafe class BooleanComparisonOpTest__CompareScalarUnorderedEqualBoolean
+    public sealed unsafe class BooleanBinaryOpTest__CompareScalarUnorderedEqualBoolean
     {
+        private struct DataTable
+        {
+            private byte[] inArray1;
+            private byte[] inArray2;
+
+            private GCHandle inHandle1;
+            private GCHandle inHandle2;
+
+            private ulong alignment;
+
+            public DataTable(Double[] inArray1, Double[] inArray2, int alignment)
+            {
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<Double>();
+                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<Double>();
+                if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2)
+                {
+                    throw new ArgumentException("Invalid value of alignment");
+                }
+
+                this.inArray1 = new byte[alignment * 2];
+                this.inArray2 = new byte[alignment * 2];
+
+                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<Double, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<Double, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
+            }
+
+            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle1.Free();
+                inHandle2.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
         private struct TestStruct
         {
             public Vector128<Double> _fld1;
@@ -108,10 +184,24 @@ namespace JIT.HardwareIntrinsics.X86
                 return testStruct;
             }
 
-            public void RunStructFldScenario(BooleanComparisonOpTest__CompareScalarUnorderedEqualBoolean testClass)
+            public void RunStructFldScenario(BooleanBinaryOpTest__CompareScalarUnorderedEqualBoolean testClass)
             {
                 var result = Sse2.CompareScalarUnorderedEqual(_fld1, _fld2);
                 testClass.ValidateResult(_fld1, _fld2, result);
+            }
+
+            public void RunStructFldScenario_Load(BooleanBinaryOpTest__CompareScalarUnorderedEqualBoolean testClass)
+            {
+                fixed (Vector128<Double>* pFld1 = &_fld1)
+                fixed (Vector128<Double>* pFld2 = &_fld2)
+                {
+                    var result = Sse2.CompareScalarUnorderedEqual(
+                        Sse2.LoadVector128((Double*)(pFld1)),
+                        Sse2.LoadVector128((Double*)(pFld2))
+                    );
+
+                    testClass.ValidateResult(_fld1, _fld2, result);
+                }
             }
         }
 
@@ -129,9 +219,9 @@ namespace JIT.HardwareIntrinsics.X86
         private Vector128<Double> _fld1;
         private Vector128<Double> _fld2;
 
-        private BooleanComparisonOpTest__DataTable<Double, Double> _dataTable;
+        private DataTable _dataTable;
 
-        static BooleanComparisonOpTest__CompareScalarUnorderedEqualBoolean()
+        static BooleanBinaryOpTest__CompareScalarUnorderedEqualBoolean()
         {
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetDouble(); }
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _clsVar1), ref Unsafe.As<Double, byte>(ref _data1[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
@@ -139,7 +229,7 @@ namespace JIT.HardwareIntrinsics.X86
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<Double>, byte>(ref _clsVar2), ref Unsafe.As<Double, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<Double>>());
         }
 
-        public BooleanComparisonOpTest__CompareScalarUnorderedEqualBoolean()
+        public BooleanBinaryOpTest__CompareScalarUnorderedEqualBoolean()
         {
             Succeeded = true;
 
@@ -150,7 +240,7 @@ namespace JIT.HardwareIntrinsics.X86
 
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetDouble(); }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetDouble(); }
-            _dataTable = new BooleanComparisonOpTest__DataTable<Double, Double>(_data1, _data2, LargestVectorSize);
+            _dataTable = new DataTable(_data1, _data2, LargestVectorSize);
         }
 
         public bool IsSupported => Sse2.IsSupported;
@@ -244,47 +334,81 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar1, _clsVar2, result);
         }
 
+        public void RunClsVarScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
+
+            fixed (Vector128<Double>* pClsVar1 = &_clsVar1)
+            fixed (Vector128<Double>* pClsVar2 = &_clsVar2)
+            {
+                var result = Sse2.CompareScalarUnorderedEqual(
+                    Sse2.LoadVector128((Double*)(pClsVar1)),
+                    Sse2.LoadVector128((Double*)(pClsVar2))
+                );
+
+                ValidateResult(_clsVar1, _clsVar2, result);
+            }
+        }
+
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var left = Unsafe.Read<Vector128<Double>>(_dataTable.inArray1Ptr);
-            var right = Unsafe.Read<Vector128<Double>>(_dataTable.inArray2Ptr);
-            var result = Sse2.CompareScalarUnorderedEqual(left, right);
+            var op1 = Unsafe.Read<Vector128<Double>>(_dataTable.inArray1Ptr);
+            var op2 = Unsafe.Read<Vector128<Double>>(_dataTable.inArray2Ptr);
+            var result = Sse2.CompareScalarUnorderedEqual(op1, op2);
 
-            ValidateResult(left, right, result);
+            ValidateResult(op1, op2, result);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            var left = Sse2.LoadVector128((Double*)(_dataTable.inArray1Ptr));
-            var right = Sse2.LoadVector128((Double*)(_dataTable.inArray2Ptr));
-            var result = Sse2.CompareScalarUnorderedEqual(left, right);
+            var op1 = Sse2.LoadVector128((Double*)(_dataTable.inArray1Ptr));
+            var op2 = Sse2.LoadVector128((Double*)(_dataTable.inArray2Ptr));
+            var result = Sse2.CompareScalarUnorderedEqual(op1, op2);
 
-            ValidateResult(left, right, result);
+            ValidateResult(op1, op2, result);
         }
 
         public void RunLclVarScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
-            var left = Sse2.LoadAlignedVector128((Double*)(_dataTable.inArray1Ptr));
-            var right = Sse2.LoadAlignedVector128((Double*)(_dataTable.inArray2Ptr));
-            var result = Sse2.CompareScalarUnorderedEqual(left, right);
+            var op1 = Sse2.LoadAlignedVector128((Double*)(_dataTable.inArray1Ptr));
+            var op2 = Sse2.LoadAlignedVector128((Double*)(_dataTable.inArray2Ptr));
+            var result = Sse2.CompareScalarUnorderedEqual(op1, op2);
 
-            ValidateResult(left, right, result);
+            ValidateResult(op1, op2, result);
         }
 
         public void RunClassLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
 
-            var test = new BooleanComparisonOpTest__CompareScalarUnorderedEqualBoolean();
+            var test = new BooleanBinaryOpTest__CompareScalarUnorderedEqualBoolean();
             var result = Sse2.CompareScalarUnorderedEqual(test._fld1, test._fld2);
 
             ValidateResult(test._fld1, test._fld2, result);
+        }
+
+        public void RunClassLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
+
+            var test = new BooleanBinaryOpTest__CompareScalarUnorderedEqualBoolean();
+
+            fixed (Vector128<Double>* pFld1 = &test._fld1)
+            fixed (Vector128<Double>* pFld2 = &test._fld2)
+            {
+                var result = Sse2.CompareScalarUnorderedEqual(
+                    Sse2.LoadVector128((Double*)(pFld1)),
+                    Sse2.LoadVector128((Double*)(pFld2))
+                );
+
+                ValidateResult(test._fld1, test._fld2, result);
+            }
         }
 
         public void RunClassFldScenario()
@@ -296,6 +420,22 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_fld1, _fld2, result);
         }
 
+        public void RunClassFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
+
+            fixed (Vector128<Double>* pFld1 = &_fld1)
+            fixed (Vector128<Double>* pFld2 = &_fld2)
+            {
+                var result = Sse2.CompareScalarUnorderedEqual(
+                    Sse2.LoadVector128((Double*)(pFld1)),
+                    Sse2.LoadVector128((Double*)(pFld2))
+                );
+
+                ValidateResult(_fld1, _fld2, result);
+            }
+        }
+
         public void RunStructLclFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
@@ -305,12 +445,33 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, result);
         }
 
+        public void RunStructLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
+
+            var test = TestStruct.Create();
+            var result = Sse2.CompareScalarUnorderedEqual(
+                Sse2.LoadVector128((Double*)(&test._fld1)),
+                Sse2.LoadVector128((Double*)(&test._fld2))
+            );
+
+            ValidateResult(test._fld1, test._fld2, result);
+        }
+
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunStructFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()
@@ -334,36 +495,43 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector128<Double> left, Vector128<Double> right, bool result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<Double> op1, Vector128<Double> op2, bool result, [CallerMemberName] string method = "")
         {
             Double[] inArray1 = new Double[Op1ElementCount];
             Double[] inArray2 = new Double[Op2ElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<Double, byte>(ref inArray1[0]), left);
-            Unsafe.WriteUnaligned(ref Unsafe.As<Double, byte>(ref inArray2[0]), right);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Double, byte>(ref inArray1[0]), op1);
+            Unsafe.WriteUnaligned(ref Unsafe.As<Double, byte>(ref inArray2[0]), op2);
 
             ValidateResult(inArray1, inArray2, result, method);
         }
 
-        private void ValidateResult(void* left, void* right, bool result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op1, void* op2, bool result, [CallerMemberName] string method = "")
         {
             Double[] inArray1 = new Double[Op1ElementCount];
             Double[] inArray2 = new Double[Op2ElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(left), (uint)Unsafe.SizeOf<Vector128<Double>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(right), (uint)Unsafe.SizeOf<Vector128<Double>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<Double>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<Double, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector128<Double>>());
 
             ValidateResult(inArray1, inArray2, result, method);
         }
 
         private void ValidateResult(Double[] left, Double[] right, bool result, [CallerMemberName] string method = "")
         {
+            bool succeeded = true;
+
             if ((left[0] == right[0]) != result)
+            {
+                succeeded = false;
+            }
+
+            if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Sse2)}.{nameof(Sse2.CompareScalarUnorderedEqual)}<Boolean>(Vector128<Double>, Vector128<Double>): {method} failed:");
                 TestLibrary.TestFramework.LogInformation($"    left: ({string.Join(", ", left)})");
                 TestLibrary.TestFramework.LogInformation($"   right: ({string.Join(", ", right)})");
-                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({result})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

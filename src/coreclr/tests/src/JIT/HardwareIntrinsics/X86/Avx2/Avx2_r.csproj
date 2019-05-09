@@ -276,10 +276,9 @@
     <Compile Include="Xor.UInt64.cs" />
     <Compile Include="Program.Avx2.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimpleTernOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>

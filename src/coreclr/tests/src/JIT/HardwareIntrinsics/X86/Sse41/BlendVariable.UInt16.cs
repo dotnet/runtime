@@ -52,6 +52,12 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing a static member works
                 test.RunClsVarScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing a static member works, using pinning and Load
+                    test.RunClsVarScenario_Load();
+                }
+
                 // Validates passing a local works, using Unsafe.Read
                 test.RunLclVarScenario_UnsafeRead();
 
@@ -67,14 +73,38 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates passing the field of a local class works
                 test.RunClassLclFldScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing the field of a local class works, using pinning and Load
+                    test.RunClassLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
+
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing an instance member of a class works, using pinning and Load
+                    test.RunClassFldScenario_Load();
+                }
 
                 // Validates passing the field of a local struct works
                 test.RunStructLclFldScenario();
 
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing the field of a local struct works, using pinning and Load
+                    test.RunStructLclFldScenario_Load();
+                }
+
                 // Validates passing an instance member of a struct works
                 test.RunStructFldScenario();
+
+                if (Sse2.IsSupported)
+                {
+                    // Validates passing an instance member of a struct works, using pinning and Load
+                    test.RunStructFldScenario_Load();
+                }
             }
             else
             {
@@ -91,6 +121,67 @@ namespace JIT.HardwareIntrinsics.X86
 
     public sealed unsafe class SimpleTernaryOpTest__BlendVariableUInt16
     {
+        private struct DataTable
+        {
+            private byte[] inArray1;
+            private byte[] inArray2;
+            private byte[] inArray3;
+            private byte[] outArray;
+
+            private GCHandle inHandle1;
+            private GCHandle inHandle2;
+            private GCHandle inHandle3;
+            private GCHandle outHandle;
+
+            private ulong alignment;
+
+            public DataTable(UInt16[] inArray1, UInt16[] inArray2, UInt16[] inArray3, UInt16[] outArray, int alignment)
+            {
+                int sizeOfinArray1 = inArray1.Length * Unsafe.SizeOf<UInt16>();
+                int sizeOfinArray2 = inArray2.Length * Unsafe.SizeOf<UInt16>();
+                int sizeOfinArray3 = inArray3.Length * Unsafe.SizeOf<UInt16>();
+                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<UInt16>();
+                if ((alignment != 32 && alignment != 16) || (alignment * 2) < sizeOfinArray1 || (alignment * 2) < sizeOfinArray2 || (alignment * 2) < sizeOfinArray3 || (alignment * 2) < sizeOfoutArray)
+                {
+                    throw new ArgumentException("Invalid value of alignment");
+                }
+
+                this.inArray1 = new byte[alignment * 2];
+                this.inArray2 = new byte[alignment * 2];
+                this.inArray3 = new byte[alignment * 2];
+                this.outArray = new byte[alignment * 2];
+
+                this.inHandle1 = GCHandle.Alloc(this.inArray1, GCHandleType.Pinned);
+                this.inHandle2 = GCHandle.Alloc(this.inArray2, GCHandleType.Pinned);
+                this.inHandle3 = GCHandle.Alloc(this.inArray3, GCHandleType.Pinned);
+                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray1Ptr), ref Unsafe.As<UInt16, byte>(ref inArray1[0]), (uint)sizeOfinArray1);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray2Ptr), ref Unsafe.As<UInt16, byte>(ref inArray2[0]), (uint)sizeOfinArray2);
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArray3Ptr), ref Unsafe.As<UInt16, byte>(ref inArray3[0]), (uint)sizeOfinArray3);
+            }
+
+            public void* inArray1Ptr => Align((byte*)(inHandle1.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray2Ptr => Align((byte*)(inHandle2.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* inArray3Ptr => Align((byte*)(inHandle3.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle1.Free();
+                inHandle2.Free();
+                inHandle3.Free();
+                outHandle.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
         private struct TestStruct
         {
             public Vector128<UInt16> _fld1;
@@ -106,7 +197,7 @@ namespace JIT.HardwareIntrinsics.X86
                 for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetUInt16(); }
                 Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref testStruct._fld2), ref Unsafe.As<UInt16, byte>(ref _data2[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
                 for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (((i % 2) == 0) ? Convert.ToUInt16("0xFFFF", 16) : (ushort)0); }
-                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref _clsVar3), ref Unsafe.As<UInt16, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
+                Unsafe.CopyBlockUnaligned(ref Unsafe.As<Vector128<UInt16>, byte>(ref testStruct._fld3), ref Unsafe.As<UInt16, byte>(ref _data3[0]), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
 
                 return testStruct;
             }
@@ -117,6 +208,23 @@ namespace JIT.HardwareIntrinsics.X86
 
                 Unsafe.Write(testClass._dataTable.outArrayPtr, result);
                 testClass.ValidateResult(_fld1, _fld2, _fld3, testClass._dataTable.outArrayPtr);
+            }
+
+            public void RunStructFldScenario_Load(SimpleTernaryOpTest__BlendVariableUInt16 testClass)
+            {
+                fixed (Vector128<UInt16>* pFld1 = &_fld1)
+                fixed (Vector128<UInt16>* pFld2 = &_fld2)
+                fixed (Vector128<UInt16>* pFld3 = &_fld3)
+                {
+                    var result = Sse41.BlendVariable(
+                        Sse2.LoadVector128((UInt16*)(pFld1)),
+                        Sse2.LoadVector128((UInt16*)(pFld2)),
+                        Sse2.LoadVector128((UInt16*)(pFld3))
+                    );
+
+                    Unsafe.Write(testClass._dataTable.outArrayPtr, result);
+                    testClass.ValidateResult(_fld1, _fld2, _fld3, testClass._dataTable.outArrayPtr);
+                }
             }
         }
 
@@ -139,7 +247,7 @@ namespace JIT.HardwareIntrinsics.X86
         private Vector128<UInt16> _fld2;
         private Vector128<UInt16> _fld3;
 
-        private SimpleTernaryOpTest__DataTable<UInt16, UInt16, UInt16, UInt16> _dataTable;
+        private DataTable _dataTable;
 
         static SimpleTernaryOpTest__BlendVariableUInt16()
         {
@@ -165,7 +273,7 @@ namespace JIT.HardwareIntrinsics.X86
             for (var i = 0; i < Op1ElementCount; i++) { _data1[i] = TestLibrary.Generator.GetUInt16(); }
             for (var i = 0; i < Op2ElementCount; i++) { _data2[i] = TestLibrary.Generator.GetUInt16(); }
             for (var i = 0; i < Op3ElementCount; i++) { _data3[i] = (((i % 2) == 0) ? Convert.ToUInt16("0xFFFF", 16) : (ushort)0); }
-            _dataTable = new SimpleTernaryOpTest__DataTable<UInt16, UInt16, UInt16, UInt16>(_data1, _data2, _data3, new UInt16[RetElementCount], LargestVectorSize);
+            _dataTable = new DataTable(_data1, _data2, _data3, new UInt16[RetElementCount], LargestVectorSize);
         }
 
         public bool IsSupported => Sse41.IsSupported;
@@ -273,43 +381,62 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_clsVar1, _clsVar2, _clsVar3, _dataTable.outArrayPtr);
         }
 
+        public void RunClsVarScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario_Load));
+
+            fixed (Vector128<UInt16>* pClsVar1 = &_clsVar1)
+            fixed (Vector128<UInt16>* pClsVar2 = &_clsVar2)
+            fixed (Vector128<UInt16>* pClsVar3 = &_clsVar3)
+            {
+                var result = Sse41.BlendVariable(
+                    Sse2.LoadVector128((UInt16*)(pClsVar1)),
+                    Sse2.LoadVector128((UInt16*)(pClsVar2)),
+                    Sse2.LoadVector128((UInt16*)(pClsVar3))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_clsVar1, _clsVar2, _clsVar3, _dataTable.outArrayPtr);
+            }
+        }
+
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
 
-            var firstOp = Unsafe.Read<Vector128<UInt16>>(_dataTable.inArray1Ptr);
-            var secondOp = Unsafe.Read<Vector128<UInt16>>(_dataTable.inArray2Ptr);
-            var thirdOp = Unsafe.Read<Vector128<UInt16>>(_dataTable.inArray3Ptr);
-            var result = Sse41.BlendVariable(firstOp, secondOp, thirdOp);
+            var op1 = Unsafe.Read<Vector128<UInt16>>(_dataTable.inArray1Ptr);
+            var op2 = Unsafe.Read<Vector128<UInt16>>(_dataTable.inArray2Ptr);
+            var op3 = Unsafe.Read<Vector128<UInt16>>(_dataTable.inArray3Ptr);
+            var result = Sse41.BlendVariable(op1, op2, op3);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, secondOp, thirdOp, _dataTable.outArrayPtr);
+            ValidateResult(op1, op2, op3, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_Load()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_Load));
 
-            var firstOp = Sse2.LoadVector128((UInt16*)(_dataTable.inArray1Ptr));
-            var secondOp = Sse2.LoadVector128((UInt16*)(_dataTable.inArray2Ptr));
-            var thirdOp = Sse2.LoadVector128((UInt16*)(_dataTable.inArray3Ptr));
-            var result = Sse41.BlendVariable(firstOp, secondOp, thirdOp);
+            var op1 = Sse2.LoadVector128((UInt16*)(_dataTable.inArray1Ptr));
+            var op2 = Sse2.LoadVector128((UInt16*)(_dataTable.inArray2Ptr));
+            var op3 = Sse2.LoadVector128((UInt16*)(_dataTable.inArray3Ptr));
+            var result = Sse41.BlendVariable(op1, op2, op3);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, secondOp, thirdOp, _dataTable.outArrayPtr);
+            ValidateResult(op1, op2, op3, _dataTable.outArrayPtr);
         }
 
         public void RunLclVarScenario_LoadAligned()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_LoadAligned));
 
-            var firstOp = Sse2.LoadAlignedVector128((UInt16*)(_dataTable.inArray1Ptr));
-            var secondOp = Sse2.LoadAlignedVector128((UInt16*)(_dataTable.inArray2Ptr));
-            var thirdOp = Sse2.LoadAlignedVector128((UInt16*)(_dataTable.inArray3Ptr));
-            var result = Sse41.BlendVariable(firstOp, secondOp, thirdOp);
+            var op1 = Sse2.LoadAlignedVector128((UInt16*)(_dataTable.inArray1Ptr));
+            var op2 = Sse2.LoadAlignedVector128((UInt16*)(_dataTable.inArray2Ptr));
+            var op3 = Sse2.LoadAlignedVector128((UInt16*)(_dataTable.inArray3Ptr));
+            var result = Sse41.BlendVariable(op1, op2, op3);
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(firstOp, secondOp, thirdOp, _dataTable.outArrayPtr);
+            ValidateResult(op1, op2, op3, _dataTable.outArrayPtr);
         }
 
         public void RunClassLclFldScenario()
@@ -323,6 +450,27 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
         }
 
+        public void RunClassLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario_Load));
+
+            var test = new SimpleTernaryOpTest__BlendVariableUInt16();
+
+            fixed (Vector128<UInt16>* pFld1 = &test._fld1)
+            fixed (Vector128<UInt16>* pFld2 = &test._fld2)
+            fixed (Vector128<UInt16>* pFld3 = &test._fld3)
+            {
+                var result = Sse41.BlendVariable(
+                    Sse2.LoadVector128((UInt16*)(pFld1)),
+                    Sse2.LoadVector128((UInt16*)(pFld2)),
+                    Sse2.LoadVector128((UInt16*)(pFld3))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
+            }
+        }
+
         public void RunClassFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario));
@@ -331,6 +479,25 @@ namespace JIT.HardwareIntrinsics.X86
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(_fld1, _fld2, _fld3, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassFldScenario_Load));
+
+            fixed (Vector128<UInt16>* pFld1 = &_fld1)
+            fixed (Vector128<UInt16>* pFld2 = &_fld2)
+            fixed (Vector128<UInt16>* pFld3 = &_fld3)
+            {
+                var result = Sse41.BlendVariable(
+                    Sse2.LoadVector128((UInt16*)(pFld1)),
+                    Sse2.LoadVector128((UInt16*)(pFld2)),
+                    Sse2.LoadVector128((UInt16*)(pFld3))
+                );
+
+                Unsafe.Write(_dataTable.outArrayPtr, result);
+                ValidateResult(_fld1, _fld2, _fld3, _dataTable.outArrayPtr);
+            }
         }
 
         public void RunStructLclFldScenario()
@@ -344,12 +511,35 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
         }
 
+        public void RunStructLclFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario_Load));
+
+            var test = TestStruct.Create();
+            var result = Sse41.BlendVariable(
+                Sse2.LoadVector128((UInt16*)(&test._fld1)),
+                Sse2.LoadVector128((UInt16*)(&test._fld2)),
+                Sse2.LoadVector128((UInt16*)(&test._fld3))
+            );
+
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(test._fld1, test._fld2, test._fld3, _dataTable.outArrayPtr);
+        }
+        
         public void RunStructFldScenario()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
 
             var test = TestStruct.Create();
             test.RunStructFldScenario(this);
+        }
+
+        public void RunStructFldScenario_Load()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario_Load));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario_Load(this);
         }
 
         public void RunUnsupportedScenario()
@@ -373,31 +563,31 @@ namespace JIT.HardwareIntrinsics.X86
             }
         }
 
-        private void ValidateResult(Vector128<UInt16> firstOp, Vector128<UInt16> secondOp, Vector128<UInt16> thirdOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(Vector128<UInt16> op1, Vector128<UInt16> op2, Vector128<UInt16> op3, void* result, [CallerMemberName] string method = "")
         {
             UInt16[] inArray1 = new UInt16[Op1ElementCount];
             UInt16[] inArray2 = new UInt16[Op2ElementCount];
             UInt16[] inArray3 = new UInt16[Op3ElementCount];
             UInt16[] outArray = new UInt16[RetElementCount];
 
-            Unsafe.WriteUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray1[0]), firstOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray2[0]), secondOp);
-            Unsafe.WriteUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray3[0]), thirdOp);
+            Unsafe.WriteUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray1[0]), op1);
+            Unsafe.WriteUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray2[0]), op2);
+            Unsafe.WriteUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray3[0]), op3);
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
 
             ValidateResult(inArray1, inArray2, inArray3, outArray, method);
         }
 
-        private void ValidateResult(void* firstOp, void* secondOp, void* thirdOp, void* result, [CallerMemberName] string method = "")
+        private void ValidateResult(void* op1, void* op2, void* op3, void* result, [CallerMemberName] string method = "")
         {
             UInt16[] inArray1 = new UInt16[Op1ElementCount];
             UInt16[] inArray2 = new UInt16[Op2ElementCount];
             UInt16[] inArray3 = new UInt16[Op3ElementCount];
             UInt16[] outArray = new UInt16[RetElementCount];
 
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(secondOp), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
-            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(thirdOp), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray1[0]), ref Unsafe.AsRef<byte>(op1), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray2[0]), ref Unsafe.AsRef<byte>(op2), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref inArray3[0]), ref Unsafe.AsRef<byte>(op3), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
             Unsafe.CopyBlockUnaligned(ref Unsafe.As<UInt16, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)Unsafe.SizeOf<Vector128<UInt16>>());
 
             ValidateResult(inArray1, inArray2, inArray3, outArray, method);
@@ -426,10 +616,10 @@ namespace JIT.HardwareIntrinsics.X86
             if (!succeeded)
             {
                 TestLibrary.TestFramework.LogInformation($"{nameof(Sse41)}.{nameof(Sse41.BlendVariable)}<UInt16>(Vector128<UInt16>, Vector128<UInt16>, Vector128<UInt16>): {method} failed:");
-                TestLibrary.TestFramework.LogInformation($"   firstOp: ({string.Join(", ", firstOp)})");
-                TestLibrary.TestFramework.LogInformation($"  secondOp: ({string.Join(", ", secondOp)})");
-                TestLibrary.TestFramework.LogInformation($"   thirdOp: ({string.Join(", ", thirdOp)})");
-                TestLibrary.TestFramework.LogInformation($"    result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation($" firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($"secondOp: ({string.Join(", ", secondOp)})");
+                TestLibrary.TestFramework.LogInformation($" thirdOp: ({string.Join(", ", thirdOp)})");
+                TestLibrary.TestFramework.LogInformation($"  result: ({string.Join(", ", result)})");
                 TestLibrary.TestFramework.LogInformation(string.Empty);
 
                 Succeeded = false;

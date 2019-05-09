@@ -40,9 +40,7 @@
     <Compile Include="MultiplySubtractNegated.Double.cs" />
     <Compile Include="MultiplySubtractNegated.Single.cs" />
     <Compile Include="Program.Fma_Vector256.cs" />
-    <Compile Include="..\Shared\AlternatingTernOpTest_DataTable.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\SimpleTernOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>

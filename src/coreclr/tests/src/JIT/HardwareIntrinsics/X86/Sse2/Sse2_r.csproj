@@ -276,12 +276,11 @@
     <Compile Include="Xor.UInt64.cs" />
     <Compile Include="Program.Sse2.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\BooleanCmpOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\ScalarSimdUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimdScalarUnOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleBinOpConvTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
+    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
     <Compile Include="Sse2Verify.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

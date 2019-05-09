@@ -61,9 +61,7 @@
     <Compile Include="Sign.Int32.cs" />
     <Compile Include="Program.Ssse3.cs" />
     <Compile Include="..\Shared\Program.cs" />
-    <Compile Include="..\Shared\HorizontalBinOpTest_DataTable.cs" />
     <Compile Include="..\Shared\SimpleBinOpTest_DataTable.cs" />
-    <Compile Include="..\Shared\SimpleUnOpTest_DataTable.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
   <PropertyGroup Condition=" '$(MsBuildProjectDirOverride)' != '' "></PropertyGroup>
