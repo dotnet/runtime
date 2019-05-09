@@ -18,6 +18,7 @@
 #include <mono/utils/mono-forward-internal.h>
 
 /* TLS entries used by the runtime */
+// This ordering is mimiced in MONO_JIT_ICALLS and will be in mono_create_tls_get.
 typedef enum {
 	/* mono_thread_internal_current () */
 	TLS_KEY_THREAD = 0,

@@ -1104,6 +1104,7 @@ typedef struct MonoJumpInfoRgctxEntry MonoJumpInfoRgctxEntry;
 typedef struct MonoJumpInfo MonoJumpInfo;
 typedef struct MonoJumpInfoGSharedVtCall MonoJumpInfoGSharedVtCall;
 
+// This ordering is mimiced in MONO_JIT_ICALLS.
 typedef enum {
 	MONO_TRAMPOLINE_JIT      = 0,
 	MONO_TRAMPOLINE_JUMP     = 1,

@@ -52,6 +52,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\icall-def.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\image.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\image-internals.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\jit-icall-reg.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\jit-info.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loader.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader-internals.h" />

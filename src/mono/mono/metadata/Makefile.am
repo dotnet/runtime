@@ -288,6 +288,7 @@ common_sources = \
 	icall-table.h	\
 	image.c			\
 	image-internals.h	\
+	jit-icall-reg.h		\
 	jit-info.c		\
 	loader.c		\
 	loader-internals.h	\

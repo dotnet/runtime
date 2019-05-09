@@ -145,6 +145,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\image-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\jit-icall-reg.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\jit-info.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>

@@ -1469,6 +1469,9 @@ mono_class_init_checked (MonoClass *klass, MonoError *error);
 MonoType*
 mono_class_enum_basetype_internal (MonoClass *klass);
 
+// Enum and static storage for JIT icalls.
+#include "jit-icall-reg.h"
+
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>
 
