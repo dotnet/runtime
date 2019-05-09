@@ -354,8 +354,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 Assert.True(false, "The process failed to exit in the alloted time, it's possible it has a dialog up which should not be there.");
             }
-
-            commandResult.Should().HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
         }
 
 #if WINDOWS
