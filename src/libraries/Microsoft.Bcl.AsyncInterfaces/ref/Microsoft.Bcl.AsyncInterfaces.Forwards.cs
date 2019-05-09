@@ -9,4 +9,5 @@
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.AsyncIteratorStateMachineAttribute))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.ConfiguredAsyncDisposable))]
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Runtime.CompilerServices.ConfiguredCancelableAsyncEnumerable<>))]
+//[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.TaskAsyncEnumerableExtensions))] // TODO #37354: Once .NET Standard 2.1 includes this type, uncomment this.
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Threading.Tasks.Sources.ManualResetValueTaskSourceCore<>))]
