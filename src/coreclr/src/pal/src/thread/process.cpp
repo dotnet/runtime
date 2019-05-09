@@ -3216,7 +3216,13 @@ Return
 
 --*/
 BOOL
-PROCBuildCreateDumpCommandLine(const char** argv, char* dumpName, char* dumpType, BOOL diag)
+PROCBuildCreateDumpCommandLine(
+    const char** argv,
+    char** pprogram,
+    char** ppidarg,
+    char* dumpName,
+    char* dumpType,
+    BOOL diag)
 {
     if (g_szCoreCLRPath == nullptr)
     {
@@ -3224,7 +3230,7 @@ PROCBuildCreateDumpCommandLine(const char** argv, char* dumpName, char* dumpType
     }
     const char* DumpGeneratorName = "createdump";
     int programLen = strlen(g_szCoreCLRPath) + strlen(DumpGeneratorName) + 1;
-    char* program = (char*)InternalMalloc(programLen);
+    char* program = *pprogram = (char*)InternalMalloc(programLen);
     if (program == nullptr)
     {
         return FALSE;
@@ -3246,7 +3252,7 @@ PROCBuildCreateDumpCommandLine(const char** argv, char* dumpName, char* dumpType
     {
         return FALSE;
     }
-    char* pidarg = (char*)InternalMalloc(128);
+    char* pidarg = *ppidarg = (char*)InternalMalloc(128);
     if (pidarg == nullptr)
     {
         return FALSE;
@@ -3372,8 +3378,10 @@ PROCAbortInitialize()
         char* dumpType = getenv("COMPlus_DbgMiniDumpType");
         char* diagStr = getenv("COMPlus_CreateDumpDiagnostics");
         BOOL diag = diagStr != nullptr && strcmp(diagStr, "1") == 0;
+        char* program = nullptr; 
+        char* pidarg = nullptr;
 
-        if (!PROCBuildCreateDumpCommandLine((const char **)g_argvCreateDump, dumpName, dumpType, diag))
+        if (!PROCBuildCreateDumpCommandLine((const char **)g_argvCreateDump, &program, &pidarg, dumpName, dumpType, diag))
         {
             return FALSE;
         }
@@ -3415,19 +3423,24 @@ PAL_GenerateCoreDump(
     {
         return FALSE;
     }
-    if (dumpName != nullptr && dumpName[0] == '\0')
-    {
-        dumpName = nullptr;
-    }
     if (_itoa_s(dumpType, dumpTypeStr, sizeof(dumpTypeStr), 10) != 0)
     {
         return FALSE;
     }
-    if (!PROCBuildCreateDumpCommandLine((const char **)argvCreateDump, (char*)dumpName, dumpTypeStr, diag))
+    if (dumpName != nullptr && dumpName[0] == '\0')
     {
-        return FALSE;
+        dumpName = nullptr;
     }
-    return PROCCreateCrashDump(argvCreateDump);
+    char* program = nullptr; 
+    char* pidarg = nullptr;
+    BOOL result = PROCBuildCreateDumpCommandLine((const char **)argvCreateDump, &program, &pidarg, (char*)dumpName, dumpTypeStr, diag);
+    if (result)
+    {
+        result = PROCCreateCrashDump(argvCreateDump);
+    }
+    free(program);
+    free(pidarg);
+    return result;
 }
 
 /*++
