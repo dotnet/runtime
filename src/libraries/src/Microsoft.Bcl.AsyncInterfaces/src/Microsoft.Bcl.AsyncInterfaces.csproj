@@ -25,6 +25,9 @@
     <Compile Include="$(CommonPath)\CoreLib\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs">
       <Link>ProductionCode\Common\CoreLib\System\Runtime\CompilerServices\ConfiguredCancelableAsyncEnumerable.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs">
+      <Link>ProductionCode\Common\CoreLib\System\Threading\Tasks\TaskAsyncEnumerableExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Reference Include="System.Runtime" />
