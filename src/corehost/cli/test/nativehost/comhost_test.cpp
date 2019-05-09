@@ -67,6 +67,15 @@ namespace
 
         return pal::pal_utf8string(clsid_str, &clsidVect);
     }
+
+    void log_activation(const char *clsid, int activationNumber, int total, HRESULT hr, std::ostream &ss)
+    {
+        ss << "Activation of " << clsid << (FAILED(hr) ? " failed. " : " succeeded. ") << activationNumber << " of " << total;
+        if (FAILED(hr))
+            ss << "(" << std::hex << std::showbase << hr << ")";
+
+        ss << std::endl;
+    }
 }
 
 bool comhost_test::synchronous(const pal::string_t &comhost_path, const pal::string_t &clsid_str, int count)
@@ -81,15 +90,9 @@ bool comhost_test::synchronous(const pal::string_t &comhost_path, const pal::str
     for (int i = 0; i < count; ++i)
     {
         HRESULT hr = activate_class(comhost, clsid);
+        log_activation(clsidVect.data(), i + 1, count, hr, std::cout);
         if (FAILED(hr))
-        {
-            std::cout << "Activation of " << clsidVect.data() << " failed. "
-                << i + 1 << " of " << count << "(" << std::hex << std::showbase << hr << ")" << std::endl;
             return false;
-        }
-
-        std::cout << "Activation of " << clsidVect.data() << " succeeded. "
-            << i + 1 << " of " << count << std::endl;
     }
 
     return true;
@@ -109,22 +112,16 @@ bool comhost_test::concurrent(const pal::string_t &comhost_path, const pal::stri
     for (int i = 0; i < count; ++i)
         activations.push_back(std::async(std::launch::async, activate_class, comhost, clsid));
 
+    std::stringstream ss;
     bool succeeded = true;
     for (int i = 0; i < count; ++i)
     {
         HRESULT hr = activations[i].get();
+        log_activation(clsidVect.data(), i + 1, count, hr, ss);
         if (FAILED(hr))
-        {
-            std::cout << "Activation of " << clsidVect.data() << " failed. "
-                << i + 1 << " of " << count << "(" << std::hex << std::showbase << hr << ")" << std::endl;
             succeeded = false;
-        }
-        else
-        {
-            std::cout << "Activation of " << clsidVect.data() << " succeeded. "
-                << i + 1 << " of " << count << std::endl;
-        }
     }
 
-    return true;
+    std::cout << ss.str();
+    return succeeded;
 }
