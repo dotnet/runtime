@@ -592,6 +592,10 @@ namespace
             return coreclr_delegate_type::load_in_memory_assembly;
         case hostfxr_delegate_type::winrt_activation:
             return coreclr_delegate_type::winrt_activation;
+        case hostfxr_delegate_type::com_register:
+            return coreclr_delegate_type::com_register;
+        case hostfxr_delegate_type::com_unregister:
+            return coreclr_delegate_type::com_unregister;
         }
         return coreclr_delegate_type::invalid;
     }

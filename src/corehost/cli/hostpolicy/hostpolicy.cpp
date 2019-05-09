@@ -461,6 +461,18 @@ namespace
                 "Internal.Runtime.InteropServices.WindowsRuntime.ActivationFactoryLoader",
                 "GetActivationFactory",
                 delegate);
+        case coreclr_delegate_type::com_register:
+            return coreclr->create_delegate(
+                "System.Private.CoreLib",
+                "Internal.Runtime.InteropServices.ComActivator",
+                "RegisterClassForTypeInternal",
+                delegate);
+        case coreclr_delegate_type::com_unregister:
+            return coreclr->create_delegate(
+                "System.Private.CoreLib",
+                "Internal.Runtime.InteropServices.ComActivator",
+                "UnregisterClassForTypeInternal",
+                delegate);
         default:
             return StatusCode::LibHostInvalidArgs;
         }
