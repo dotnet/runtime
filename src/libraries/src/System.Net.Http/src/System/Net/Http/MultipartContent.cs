@@ -96,7 +96,7 @@ namespace System.Net.Http
                 if (('0' <= ch && ch <= '9') || // Digit.
                     ('a' <= ch && ch <= 'z') || // alpha.
                     ('A' <= ch && ch <= 'Z') || // ALPHA.
-                    (AllowedMarks.IndexOf(ch) >= 0)) // Marks.
+                    (AllowedMarks.Contains(ch))) // Marks.
                 {
                     // Valid.
                 }

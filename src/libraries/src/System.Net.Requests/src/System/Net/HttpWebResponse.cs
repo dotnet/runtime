@@ -275,18 +275,18 @@ namespace System.Net
                     string srchString = contentType.ToLower();
 
                     //media subtypes of text type has a default as specified by rfc 2616
-                    if (srchString.Trim().StartsWith("text/"))
+                    if (srchString.Trim().StartsWith("text/", StringComparison.Ordinal))
                     {
                         _characterSet = "ISO-8859-1";
                     }
 
                     //one of the parameters may be the character set
                     //there must be at least a mediatype for this to be valid
-                    int i = srchString.IndexOf(";");
+                    int i = srchString.IndexOf(';');
                     if (i > 0)
                     {
                         //search the parameters
-                        while ((i = srchString.IndexOf("charset", i)) >= 0)
+                        while ((i = srchString.IndexOf("charset", i, StringComparison.Ordinal)) >= 0)
                         {
                             i += 7;
 
