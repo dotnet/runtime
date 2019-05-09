@@ -7,6 +7,9 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-wait-win32.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\win32</Filter>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-semaphore-win32.c">
+      <Filter>Source Files$(MonoUtilsFilterSubFolder)\win32</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files$(MonoUtilsFilterSubFolder)\win32">
