@@ -368,6 +368,75 @@ namespace System.Threading.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void ValuesGetterDoesNotThrowUnexpectedExceptionWhenDisposed()
+        {
+            var startTest = new ManualResetEvent(false);
+            var gotUnexpectedException = new ManualResetEvent(false);
+            ThreadLocal<int> threadLocal = null;
+            bool stop = false;
+
+            Action waitForCreatorDisposer;
+            Thread creatorDisposer = ThreadTestHelpers.CreateGuardedThread(out waitForCreatorDisposer, () =>
+            {
+                startTest.CheckedWait();
+                do
+                {
+                    var tl = new ThreadLocal<int>(trackAllValues: true);
+                    Volatile.Write(ref threadLocal, tl);
+                    tl.Value = 1;
+                    tl.Dispose();
+                } while (!Volatile.Read(ref stop));
+            });
+            creatorDisposer.IsBackground = true;
+            creatorDisposer.Start();
+
+            int readerCount = Math.Max(1, Environment.ProcessorCount - 1);
+            var waitsForReader = new Action[readerCount];
+            for (int i = 0; i < readerCount; ++i)
+            {
+                Thread reader = ThreadTestHelpers.CreateGuardedThread(out waitsForReader[i], () =>
+                {
+                    startTest.CheckedWait();
+                    do
+                    {
+                        var tl = Volatile.Read(ref threadLocal);
+                        if (tl == null)
+                        {
+                            continue;
+                        }
+
+                        try
+                        {
+                            IList<int> values = tl.Values;
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                        }
+                        catch
+                        {
+                            gotUnexpectedException.Set();
+                            throw;
+                        }
+                    } while (!Volatile.Read(ref stop));
+                });
+                reader.IsBackground = true;
+                reader.Start();
+            }
+
+            startTest.Set();
+            bool failed = gotUnexpectedException.WaitOne(500);
+            Volatile.Write(ref stop, true);
+            foreach (Action waitForReader in waitsForReader)
+            {
+                waitForReader();
+            }
+            waitForCreatorDisposer();
+            Assert.False(failed);
+        }
+
         private class SetMreOnFinalize
         {
             private ManualResetEventSlim _mres;

@@ -3,6 +3,7 @@
     <BuildConfigurations>
       netcoreapp;
       netstandard;
+      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>
