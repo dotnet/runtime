@@ -5,7 +5,6 @@
 // The Debugger class is a part of the System.Diagnostics package
 // and is used for communicating with a debugger.
 
-#nullable enable
 using System.Runtime.CompilerServices;
 
 namespace System.Diagnostics

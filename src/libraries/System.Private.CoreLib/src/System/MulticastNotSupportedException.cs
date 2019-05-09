@@ -7,7 +7,6 @@
 // This is thrown when you add multiple callbacks to a non-multicast delegate.
 ////////////////////////////////////////////////////////////////////////////////
 
-#nullable enable
 using System.Runtime.Serialization;
 
 namespace System

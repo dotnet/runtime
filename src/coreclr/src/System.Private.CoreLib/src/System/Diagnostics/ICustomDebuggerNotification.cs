@@ -9,7 +9,6 @@
 **
 ===========================================================*/
 
-#nullable enable
 using System;
 
 namespace System.Diagnostics

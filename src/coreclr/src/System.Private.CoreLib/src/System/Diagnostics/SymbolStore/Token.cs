@@ -10,7 +10,6 @@
 **
 ===========================================================*/
 
-#nullable enable
 namespace System.Diagnostics.SymbolStore
 {
     internal struct SymbolToken

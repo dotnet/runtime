@@ -11,7 +11,6 @@
 ** 
 ===========================================================*/
 
-#nullable enable
 using System.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.WindowsRuntime

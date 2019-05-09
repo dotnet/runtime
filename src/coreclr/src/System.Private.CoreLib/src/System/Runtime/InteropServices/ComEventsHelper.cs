@@ -82,7 +82,6 @@
 // means that the problem is already quite complex and we should not be dealing with it - see
 // ComEventsMethod.Invoke
 
-#nullable enable
 namespace System.Runtime.InteropServices
 {
     /// <summary>

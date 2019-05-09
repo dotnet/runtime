@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
 // Used by Hashtable and Dictionary's SeralizationInfo .ctor's to store the SeralizationInfo
 // object until OnDeserialization is called.
 

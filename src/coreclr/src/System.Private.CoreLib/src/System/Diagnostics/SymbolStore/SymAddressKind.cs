@@ -13,7 +13,6 @@
 ===========================================================*/
 // Only statics, does not need to be marked with the serializable attribute    
 
-#nullable enable
 namespace System.Diagnostics.SymbolStore
 {
     internal enum SymAddressKind

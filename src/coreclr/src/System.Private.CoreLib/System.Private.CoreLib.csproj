@@ -55,6 +55,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- Remove CS8608 once https://github.com/dotnet/roslyn/issues/23268 is resolved -->
     <NoWarn>649,1573,1591,0419,3021,CS8609</NoWarn>
+    <NullableContextOptions>enable</NullableContextOptions>
 
     <!-- Ignore all previous constants since SPCL is sensitive to what is defined and the Sdk adds some by default -->
     <DefineConstants>CORECLR;netcoreapp</DefineConstants>

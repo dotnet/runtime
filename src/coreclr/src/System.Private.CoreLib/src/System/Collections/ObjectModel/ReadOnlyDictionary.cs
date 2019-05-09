@@ -10,7 +10,6 @@
 ** Purpose: Read-only wrapper for another generic dictionary.
 **
 ===========================================================*/
-#nullable enable
 
 using System.Collections.Generic;
 using System.Diagnostics;

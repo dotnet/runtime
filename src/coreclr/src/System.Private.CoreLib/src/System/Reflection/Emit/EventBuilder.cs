@@ -13,7 +13,6 @@
 ** 
 ===========================================================*/
 
-#nullable enable
 namespace System.Reflection.Emit
 {
     // 

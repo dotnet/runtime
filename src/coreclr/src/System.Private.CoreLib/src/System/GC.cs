@@ -13,7 +13,6 @@
 **
 ===========================================================*/
 
-#nullable enable
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;

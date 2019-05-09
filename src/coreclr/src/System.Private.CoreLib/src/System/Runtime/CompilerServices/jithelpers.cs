@@ -7,7 +7,6 @@
 //    Low-level Jit Helpers
 ////////////////////////////////////////////////////////////////////////////////
 
-#nullable enable
 using System.Threading;
 using System.Diagnostics;
 using Internal.Runtime.CompilerServices;
