@@ -21,7 +21,6 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#nullable enable
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Threading;

@@ -13,7 +13,6 @@
 **
 =============================================================================*/
 
-#nullable enable
 namespace System.Runtime.InteropServices {
     using System;
     using System.Reflection;

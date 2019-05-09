@@ -7,7 +7,6 @@
 //    This class represents the void return type
 ////////////////////////////////////////////////////////////////////////////////
 
-#nullable enable
 namespace System
 {
     // This class represents the void return type

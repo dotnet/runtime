@@ -13,7 +13,6 @@
 
 //This class contains only static members and doesn't require serialization.
 
-#nullable enable
 using System.Runtime.CompilerServices;
 
 namespace System

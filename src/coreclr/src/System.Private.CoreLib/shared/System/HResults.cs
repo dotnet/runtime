@@ -18,7 +18,6 @@
 // Reflection will use 0x1600 -> 0x161f.  IO will use 0x1620 -> 0x163f.
 // Security will use 0x1640 -> 0x165f
 
-#nullable enable
 using System;
 
 namespace System

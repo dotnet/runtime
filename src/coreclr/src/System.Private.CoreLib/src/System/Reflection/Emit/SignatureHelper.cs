@@ -4,7 +4,6 @@
 
 // 
 
-#nullable enable
 using System.Text;
 using System;
 using System.Buffers.Binary;

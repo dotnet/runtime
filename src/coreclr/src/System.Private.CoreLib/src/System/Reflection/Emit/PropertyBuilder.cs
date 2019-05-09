@@ -13,7 +13,6 @@
 ** 
 ===========================================================*/
 
-#nullable enable
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit

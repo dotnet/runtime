@@ -21,7 +21,6 @@
 // ************</IMPORTANT NOTE>*************
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-#nullable enable
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
