@@ -39,7 +39,7 @@ internal partial class VectorTest
             caught = false;
             try
             {
-                v1.CopyTo(null);
+                v1.CopyTo((T[])null);
             }
             catch (NullReferenceException)
             {
