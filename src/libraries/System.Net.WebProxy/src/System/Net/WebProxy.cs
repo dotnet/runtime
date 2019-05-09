@@ -96,7 +96,7 @@ namespace System.Net
 
         private static Uri CreateProxyUri(string address) =>
             address == null ? null :
-            address.IndexOf("://") == -1 ? new Uri("http://" + address) :
+            address.IndexOf("://", StringComparison.Ordinal) == -1 ? new Uri("http://" + address) :
             new Uri(address);
 
         private void UpdateRegExList(bool canThrow)

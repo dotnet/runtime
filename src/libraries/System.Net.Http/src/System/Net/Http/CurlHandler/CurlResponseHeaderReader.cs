@@ -123,7 +123,7 @@ namespace System.Net.Http
         private static bool ValidHeaderNameChar(byte c)
         {
             const string invalidChars = "()<>@,;:\\\"/[]?={}";
-            return c > ' ' && invalidChars.IndexOf((char)c) < 0;
+            return c > ' ' && !invalidChars.Contains((char)c);
         }
 
         internal static bool IsWhiteSpaceLatin1(byte c)

@@ -237,7 +237,7 @@ namespace System.Net
             }
             else if (allowInvalidUriStrings)
             {
-                int i = uriPrefix.IndexOf("://") + 3;
+                int i = uriPrefix.IndexOf("://", StringComparison.Ordinal) + 3;
                 int j = i;
 
                 bool inSquareBrackets = false;
