@@ -272,7 +272,7 @@ namespace System.Threading.Threads.Tests
             });
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] 
         [MemberData(nameof(ApartmentStateTest_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
         [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
@@ -292,17 +292,30 @@ namespace System.Threading.Threads.Tests
             t.Start();
             Assert.True(t.Join(UnexpectedTimeoutMilliseconds));
 
-            if (PlatformDetection.IsWindowsNanoServer)
-            {
-                // Nano server threads are always MTA. If you set the thread to STA
-                // it will read back as STA but when the thread starts it will read back as MTA.
-                Assert.Equal(ApartmentState.MTA, apartmentStateInThread);
-            }
-            else
-            {
-                Assert.Equal(ApartmentState.STA, apartmentStateInThread);
-            }
+            Assert.Equal(ApartmentState.STA, apartmentStateInThread);
         }
+
+        
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))] 
+        [MemberData(nameof(ApartmentStateTest_MemberData))]
+        public static void ApartmentStateTest_ChangeBeforeThreadStarted_Windows_Nano_Server(
+            Func<Thread, ApartmentState> getApartmentState,
+            Func<Thread, ApartmentState, int> setApartmentState,
+            int setType /* 0 = ApartmentState setter, 1 = SetApartmentState, 2 = TrySetApartmentState */)
+        {
+            ApartmentState apartmentStateInThread = ApartmentState.Unknown;
+            Thread t = null;
+            t = new Thread(() => apartmentStateInThread = getApartmentState(t));
+            t.IsBackground = true;
+            Assert.Equal(0, setApartmentState(t, ApartmentState.STA));
+            Assert.Equal(ApartmentState.STA, getApartmentState(t));
+            Assert.Equal(setType == 0 ? 0 : 2, setApartmentState(t, ApartmentState.MTA)); // cannot be changed more than once
+            Assert.Equal(ApartmentState.STA, getApartmentState(t));
+            
+            Assert.Throws<ThreadStartException>(() => t.Start()); // Windows Nano Server does not support starting threads in the STA.
+        }
+
+        
 
         [Theory]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
