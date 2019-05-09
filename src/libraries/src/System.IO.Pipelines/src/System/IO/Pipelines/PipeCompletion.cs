@@ -77,7 +77,7 @@ namespace System.IO.Pipelines
             if (newLength == _callbacks.Length)
             {
                 PipeCompletionCallback[] newArray = s_completionCallbackPool.Rent(_callbacks.Length * 2);
-                Array.Copy(_callbacks, newArray, _callbacks.Length);
+                Array.Copy(_callbacks, 0, newArray, 0, _callbacks.Length);
                 s_completionCallbackPool.Return(_callbacks, clearArray: true);
                 _callbacks = newArray;
             }

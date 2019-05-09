@@ -511,7 +511,7 @@ namespace System.Xml
                 else if (_items.Length == newItemIndex)
                 {
                     Item[] newItems = new Item[newItemIndex * 2];
-                    Array.Copy(_items, newItems, newItemIndex);
+                    Array.Copy(_items, 0, newItems, 0, newItemIndex);
                     _items = newItems;
                 }
                 if (_items[newItemIndex] == null)

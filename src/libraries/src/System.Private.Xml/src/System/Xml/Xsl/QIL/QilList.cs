@@ -123,7 +123,7 @@ namespace System.Xml.Xsl.Qil
             if (_count == _members.Length)
             {
                 QilNode[] membersNew = new QilNode[_count * 2];
-                Array.Copy(_members, membersNew, _count);
+                Array.Copy(_members, 0, membersNew, 0, _count);
                 _members = membersNew;
             }
 

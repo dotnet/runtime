@@ -196,7 +196,7 @@ namespace System.ComponentModel
                     array = new CultureInfo[installedCultures.Length + 1];
                 }
 
-                Array.Copy(installedCultures, array, installedCultures.Length);
+                Array.Copy(installedCultures, 0, array, 0, installedCultures.Length);
                 Array.Sort(array, new CultureComparer(this));
                 Debug.Assert(array[0] == null);
                 if (array[0] == null)

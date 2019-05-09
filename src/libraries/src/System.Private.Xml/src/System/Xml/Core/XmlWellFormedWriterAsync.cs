@@ -292,7 +292,7 @@ namespace System.Xml
                 if (top == _elemScopeStack.Length)
                 {
                     ElementScope[] newStack = new ElementScope[top * 2];
-                    Array.Copy(_elemScopeStack, newStack, top);
+                    Array.Copy(_elemScopeStack, 0, newStack, 0, top);
                     _elemScopeStack = newStack;
                 }
                 _elemScopeStack[top].Set(prefix, localName, ns, _nsTop);

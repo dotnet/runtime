@@ -548,7 +548,7 @@ namespace System.Data.Common
 
             // Create a new array that only contains the filtered properties
             PropertyDescriptor[] filteredPropertiesArray = new PropertyDescriptor[index];
-            Array.Copy(propertiesArray, filteredPropertiesArray, index);
+            Array.Copy(propertiesArray, 0, filteredPropertiesArray, 0, index);
 
             return new PropertyDescriptorCollection(filteredPropertiesArray);
         }

@@ -1507,7 +1507,7 @@ namespace System.Xml
             if (nsIndex == _nsStack.Length)
             {
                 Namespace[] newStack = new Namespace[nsIndex * 2];
-                Array.Copy(_nsStack, newStack, nsIndex);
+                Array.Copy(_nsStack, 0, newStack, 0, nsIndex);
                 _nsStack = newStack;
             }
             _nsStack[nsIndex].Set(prefix, ns, declared);
@@ -1767,7 +1767,7 @@ namespace System.Xml
             if (_top == _stack.Length - 1)
             {
                 TagInfo[] na = new TagInfo[_stack.Length + 10];
-                if (_top > 0) Array.Copy(_stack, na, _top + 1);
+                if (_top > 0) Array.Copy(_stack, 0, na, 0, _top + 1);
                 _stack = na;
             }
 

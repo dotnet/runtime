@@ -319,7 +319,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var newQueries = new KeyValuePair<object, object>[_valueCount == 0 ? 5 : _valueCount * 2];
                 if (_values != null)
                 {
-                    Array.Copy(_values, newQueries, _valueCount);
+                    Array.Copy(_values, 0, newQueries, 0, _valueCount);
                 }
                 _values = newQueries;
             }

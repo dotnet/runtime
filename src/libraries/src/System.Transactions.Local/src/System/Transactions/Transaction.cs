@@ -487,7 +487,7 @@ namespace System.Transactions
             }
 
             byte[] toReturn = new byte[internalPromotedToken.Length];
-            Array.Copy(internalPromotedToken, toReturn, toReturn.Length);
+            Array.Copy(internalPromotedToken, 0, toReturn, 0, toReturn.Length);
             return toReturn;
         }
 

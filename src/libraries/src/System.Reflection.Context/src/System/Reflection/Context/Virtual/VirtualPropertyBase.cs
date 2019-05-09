@@ -122,7 +122,7 @@ namespace System.Reflection.Context.Virtual
             {
                 args = new object[index.Length + 1];
 
-                Array.Copy(index, args, index.Length);
+                Array.Copy(index, 0, args, 0, index.Length);
 
                 args[index.Length] = value;
             }

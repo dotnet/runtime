@@ -303,7 +303,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(names));
  
             string[] algorithmNames = new string[names.Length];
-            Array.Copy(names, algorithmNames, algorithmNames.Length);
+            Array.Copy(names, 0, algorithmNames, 0, algorithmNames.Length);
  
             // Pre-check the algorithm names for validity so that we don't add a few of the names and then
             // throw an exception if we find an invalid name partway through the list.
@@ -461,7 +461,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(names));
  
             string[] oidNames = new string[names.Length];
-            Array.Copy(names, oidNames, oidNames.Length);
+            Array.Copy(names, 0, oidNames, 0, oidNames.Length);
  
             // Pre-check the input names for validity, so that we don't add a few of the names and throw an
             // exception if an invalid name is found further down the array. 
