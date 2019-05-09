@@ -19,7 +19,6 @@
 //
 // "internal" and "external" ModuleBuilders are similar
 
-#nullable enable
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.SymbolStore;

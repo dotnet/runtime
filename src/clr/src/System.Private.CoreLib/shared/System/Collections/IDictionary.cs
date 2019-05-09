@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#nullable enable
-
 namespace System.Collections
 {
     // An IDictionary is a possibly unordered set of key-value pairs.

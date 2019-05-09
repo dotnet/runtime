@@ -4,7 +4,6 @@
 
 #pragma warning disable CS0067 // events are declared but not used
 
-#nullable enable
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;

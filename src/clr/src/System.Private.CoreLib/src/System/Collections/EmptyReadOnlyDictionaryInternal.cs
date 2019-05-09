@@ -12,7 +12,6 @@
 **
 ** 
 ===========================================================*/
-#nullable enable
 
 namespace System.Collections
 {

@@ -4,7 +4,6 @@
 
 // Note: If you add a new ctor overloads you need to update ParameterInfo.RawDefaultValue
 
-#nullable enable
 namespace System.Runtime.CompilerServices
 {
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Parameter, Inherited = false)]
