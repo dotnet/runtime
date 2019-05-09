@@ -173,7 +173,7 @@ namespace System.Runtime.Loader
             return assembly;
         }
 
-        private Assembly ResolveUsingEvent(AssemblyName assemblyName)
+        private Assembly? ResolveUsingEvent(AssemblyName assemblyName)
         {
             string? simpleName = assemblyName.Name;
 
@@ -182,13 +182,6 @@ namespace System.Runtime.Loader
             if (assembly != null)
             {
                 assembly = ValidateAssemblyNameWithSimpleName(assembly, simpleName);
-            }
-
-            // Since attempt to resolve the assembly via Resolving event is the last option,
-            // throw an exception if we do not find any assembly.
-            if (assembly == null)
-            {
-                throw new FileNotFoundException(SR.IO_FileLoad, simpleName);
             }
 
             return assembly;

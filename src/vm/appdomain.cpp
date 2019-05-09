@@ -5328,7 +5328,7 @@ EndTry2:;
                     // Use CoreClr's fusion alternative
                     CoreBindResult bindResult;
 
-                    pSpec->Bind(this, fThrowOnFileNotFound, &bindResult, FALSE /* fNgenExplicitBind */, FALSE /* fExplicitBindToNativeImage */);
+                    pSpec->Bind(this, FALSE /* fThrowOnFileNotFound */, &bindResult, FALSE /* fNgenExplicitBind */, FALSE /* fExplicitBindToNativeImage */);
                     hrBindResult = bindResult.GetHRBindResult();
 
                     if (bindResult.Found()) 
@@ -5368,8 +5368,6 @@ EndTry2:;
                     }
                     else
                     {
-                        _ASSERTE(fThrowOnFileNotFound == FALSE);
-
                         // Don't trigger the resolve event for the CoreLib satellite assembly. A misbehaving resolve event may
                         // return an assembly that does not match, and this can cause recursive resource lookups during error
                         // reporting. The CoreLib satellite assembly is loaded from relative locations based on the culture, see
@@ -5382,8 +5380,12 @@ EndTry2:;
 
                             fForceReThrow = TRUE; // Managed resolve event handler can throw
 
-                            // Purposly ignore return value
-                            PostBindResolveAssembly(pSpec, &NewSpec, hrBindResult, &pFailedSpec);
+                            BOOL fFailure = PostBindResolveAssembly(pSpec, &NewSpec, hrBindResult, &pFailedSpec);
+
+                            if (fFailure && fThrowOnFileNotFound)
+                            {
+                                EEFileLoadException::Throw(pFailedSpec, COR_E_FILENOTFOUND, NULL);
+                            }
                         }
                     }
                 }
@@ -6899,20 +6901,27 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 pAssemblyBindingContext = pLoadedPEAssembly->GetHostAssembly();
             }
             
-#ifdef FEATURE_COMINTEROP
-            if (AreSameBinderInstance(pAssemblyBindingContext, GetAppDomain()->GetWinRtBinder()))
+            if (fResolvedAssembly)
             {
-                // It is invalid to return an assembly bound to an incompatible binder
-                *ppLoadedAssembly = NULL;
-                SString name;
-                spec.GetFileOrDisplayName(0, name);
-                COMPlusThrowHR(COR_E_INVALIDOPERATION, IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_BINDING_CONTEXT, name);
-            }
+#ifdef FEATURE_COMINTEROP
+                if (AreSameBinderInstance(pAssemblyBindingContext, GetAppDomain()->GetWinRtBinder()))
+                {
+                    // It is invalid to return an assembly bound to an incompatible binder
+                    *ppLoadedAssembly = NULL;
+                    SString name;
+                    spec.GetFileOrDisplayName(0, name);
+                    COMPlusThrowHR(COR_E_INVALIDOPERATION, IDS_HOST_ASSEMBLY_RESOLVER_INCOMPATIBLE_BINDING_CONTEXT, name);
+                }
 #endif // FEATURE_COMINTEROP
 
-            // Get the ICLRPrivAssembly reference to return back to.
-            *ppLoadedAssembly = clr::SafeAddRef(pAssemblyBindingContext);
-            hr = S_OK;
+                // Get the ICLRPrivAssembly reference to return back to.
+                *ppLoadedAssembly = clr::SafeAddRef(pAssemblyBindingContext);
+                hr = S_OK;
+            }
+            else
+            {
+                hr = COR_E_FILENOTFOUND;
+            }
         }
         
         GCPROTECT_END();
