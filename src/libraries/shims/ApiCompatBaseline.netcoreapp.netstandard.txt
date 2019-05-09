@@ -71,4 +71,5 @@ MembersMustExist : Member 'System.Linq.EnumerableQuery..ctor()' does not exist i
 MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.ConfigureAwait(System.IAsyncDisposable, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.ConfigureAwait<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.WithCancellation<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
-Total Issues: 62
+TypesMustExist : Type 'System.Threading.Tasks.TaskAsyncEnumerableExtensions' does not exist in the implementation but it does exist in the contract.
+Total Issues: 63
