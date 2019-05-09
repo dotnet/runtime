@@ -1584,6 +1584,7 @@ DebuggerJitInfo *DebuggerMethodInfo::FindOrCreateInitAndAddJitInfo(MethodDesc* f
     else
     {
         _ASSERTE(g_pEEInterface->GetNativeCodeMethodDesc(startAddr) == fd);
+        _ASSERTE(g_pEEInterface->GetNativeCodeStartAddress(startAddr) == startAddr);
     }
 
     // Check the lsit to see if we've already populated an entry for this JitInfo.
