@@ -1595,34 +1595,8 @@ FCIMPL3(PCODE, COMDelegate::AdjustTarget, Object* refThisUNSAFE, Object* targetU
     // close delegates
     MethodTable* pMTTarg = target->GetMethodTable();
     MethodTable* pMTMeth = pMeth->GetMethodTable();
-
-    BOOL isComObject = false;
-
-#ifdef FEATURE_COMINTEROP
-    isComObject = pMTTarg->IsComObjectType();
-#endif // FEATURE_COMINTEROP
     
     MethodDesc *pCorrectedMethod = pMeth;
-
-    if (pMTMeth != pMTTarg)
-    {
-        //They cast to an interface before creating the delegate, so we now need 
-        //to figure out where this actually lives before we continue.
-        //<TODO>@perf:  Grovelling with a signature is really slow.  Speed this up.</TODO>
-        if (pCorrectedMethod->IsInterface())
-        {
-            // No need to resolve the interface based method desc to a class based
-            // one for COM objects because we invoke directly thru the interface MT.
-            if (!isComObject)
-            {
-                // <TODO>it looks like we need to pass an ownerType in here.
-                //  Why can we take a delegate to an interface method anyway?  </TODO>
-                // 
-                pCorrectedMethod = pMTTarg->FindDispatchSlotForInterfaceMD(pCorrectedMethod, TRUE /* throwOnConflict */).GetMethodDesc();
-                _ASSERTE(pCorrectedMethod != NULL);
-            }
-        }
-    }
 
     // Use the Unboxing stub for value class methods, since the value
     // class is constructed using the boxed instance.
@@ -1767,53 +1741,6 @@ FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* tar
         {
             if (pMTTarg)
             {
-                // We can skip the demand if SuppressUnmanagedCodePermission is present on the class,
-                //  or in the case where we are setting up a delegate for a COM event sink
-                //   we can skip the check if the source interface is defined in fully trusted code
-                //   we can skip the check if the source interface is a disp-only interface
-                BOOL isComObject = false;
-#ifdef FEATURE_COMINTEROP
-                isComObject = pMTTarg->IsComObjectType();
-#endif // FEATURE_COMINTEROP
-
-                if (pMTMeth != pMTTarg)
-                {
-                    // They cast to an interface before creating the delegate, so we now need 
-                    // to figure out where this actually lives before we continue.
-                    // <TODO>@perf:  We whould never be using this path to invoke on an interface - 
-                    // that should always be resolved when we are creating the delegate </TODO>
-                    if (pMeth->IsInterface())
-                    {
-                        // No need to resolve the interface based method desc to a class based
-                        // one for COM objects because we invoke directly thru the interface MT.
-                        if (!isComObject)
-                        {
-                            // <TODO>it looks like we need to pass an ownerType in here.
-                            //  Why can we take a delegate to an interface method anyway?  </TODO>
-                            // 
-                            MethodDesc * pDispatchSlotMD = pMTTarg->FindDispatchSlotForInterfaceMD(pMeth, TRUE /* throwOnConflict */).GetMethodDesc();
-                            if (pDispatchSlotMD == NULL)
-                            {
-                                COMPlusThrow(kArgumentException, W("Arg_DlgtTargMeth"));
-                            }
-
-                            if (pMeth->HasMethodInstantiation())
-                            {
-                                pMeth = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                                    pDispatchSlotMD,
-                                    pMTTarg,
-                                    (!pDispatchSlotMD->IsStatic() && pMTTarg->IsValueType()),
-                                    pMeth->GetMethodInstantiation(),
-                                    FALSE /* allowInstParam */);
-                            }
-                            else
-                            {
-                                pMeth = pDispatchSlotMD;
-                            }
-                        }
-                    }
-                }
-
                 g_IBCLogger.LogMethodTableAccess(pMTTarg);
 
                 // Use the Unboxing stub for value class methods, since the value
@@ -3199,10 +3126,9 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
 #endif
 
         // under the conditions below the delegate ctor needs to perform some heavy operation
-        // to either resolve the interface call to the real target or to get the unboxing stub (or both)
+        // to get the unboxing stub
         BOOL needsRuntimeInfo = !pTargetMethod->IsStatic() && 
-                    (pTargetMethod->IsInterface() ||
-                    (pTargetMethod->GetMethodTable()->IsValueType() && !pTargetMethod->IsUnboxingStub()));
+                    pTargetMethod->GetMethodTable()->IsValueType() && !pTargetMethod->IsUnboxingStub();
 
         if (needsRuntimeInfo)
             pRealCtor = MscorlibBinder::GetMethod(METHOD__MULTICAST_DELEGATE__CTOR_RT_CLOSED);
