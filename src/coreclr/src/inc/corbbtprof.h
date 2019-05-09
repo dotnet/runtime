@@ -402,10 +402,10 @@ struct CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER
     DWORD                          NumMethods;
 };
 
-struct CORBBTPROF_BLOCK_DATA    // Also defined here code:ICorJitInfo.ProfileBuffer
+struct CORBBTPROF_BLOCK_DATA    // This struct is also defined by:  ICorJitInfo.BlockCounts
 {
-    DWORD                          ILOffset;
-    DWORD                          ExecutionCount;
+    UINT32                         ILOffset;
+    UINT32                         ExecutionCount;
 };
 
 struct CORBBTPROF_METHOD_DETAIL_HEADER
