@@ -33,15 +33,28 @@ namespace System.Text.Json.Serialization.Converters
                 return Enum.TryParse(enumString, out value);
             }
 
-            if (reader.TokenType != JsonTokenType.Number ||
-                !reader.TryGetUInt64(out ulong ulongValue))
+            if (reader.TokenType != JsonTokenType.Number)
             {
                 value = default;
                 return false;
             }
 
-            value = (TValue)Enum.ToObject(valueType, ulongValue);
-            return true;
+            if (s_isUint64)
+            {
+                if (reader.TryGetUInt64(out ulong ulongValue))
+                {
+                    value = (TValue)Enum.ToObject(valueType, ulongValue);
+                    return true;
+                }
+            }
+            else if (reader.TryGetInt64(out long longValue))
+            {
+                value = (TValue)Enum.ToObject(valueType, longValue);
+                return true;
+            }
+
+            value = default;
+            return false;
         }
 
         public override void Write(TValue value, Utf8JsonWriter writer)
