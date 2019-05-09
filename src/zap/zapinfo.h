@@ -307,15 +307,15 @@ public:
     int  doAssert(const char* szFile, int iLine, const char* szExpr);
     void reportFatalError(CorJitResult result);
 
-    HRESULT allocBBProfileBuffer (
-            ULONG cBlock,
-            ICorJitInfo::ProfileBuffer ** ppBlock);
+    HRESULT allocMethodBlockCounts (
+            UINT32 count,
+            ICorJitInfo::BlockCounts ** pBlockCounts);
 
-    HRESULT getBBProfileData (
+    HRESULT getMethodBlockCounts (
             CORINFO_METHOD_HANDLE ftnHnd,
-            ULONG * size,
-            ICorJitInfo::ProfileBuffer ** profileBuffer,
-            ULONG * numRuns);
+            UINT32 * pCount,
+            ICorJitInfo::BlockCounts ** pBlockCounts,
+            UINT32 * pNumRuns);
 
     DWORD getJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes);
 

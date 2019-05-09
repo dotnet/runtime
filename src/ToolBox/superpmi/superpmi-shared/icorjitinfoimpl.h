@@ -1017,24 +1017,24 @@ int doAssert(const char* szFile, int iLine, const char* szExpr);
 void reportFatalError(CorJitResult result);
 
 /*
-struct ProfileBuffer  // Also defined here: code:CORBBTPROF_BLOCK_DATA
+struct BlockCounts  // Also defined here: code:CORBBTPROF_BLOCK_DATA
 {
-    ULONG ILOffset;
-    ULONG ExecutionCount;
+    UINT32 ILOffset;
+    UINT32 ExecutionCount;
 };
 */
 
 // allocate a basic block profile buffer where execution counts will be stored
 // for jitted basic blocks.
-HRESULT allocBBProfileBuffer(ULONG           count, // The number of basic blocks that we have
-                             ProfileBuffer** profileBuffer);
+HRESULT allocMethodBlockCounts(UINT32          count, // The number of basic blocks that we have
+                               BlockCounts**   pBlockCounts);
 
 // get profile information to be used for optimizing the current method.  The format
-// of the buffer is the same as the format the JIT passes to allocBBProfileBuffer.
-HRESULT getBBProfileData(CORINFO_METHOD_HANDLE ftnHnd,
-                         ULONG*                count, // The number of basic blocks that we have
-                         ProfileBuffer**       profileBuffer,
-                         ULONG*                numRuns);
+// of the buffer is the same as the format the JIT passes to allocMethodBlockCounts.
+HRESULT getMethodBlockCounts(CORINFO_METHOD_HANDLE ftnHnd,
+                             UINT32 *          pCount, // The number of basic blocks that we have
+                             BlockCounts**     pBlockCounts,
+                             UINT32 *          pNumRuns);
 
 // Associates a native call site, identified by its offset in the native code stream, with
 // the signature information and method handle the JIT used to lay out the call site. If

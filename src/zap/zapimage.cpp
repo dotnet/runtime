@@ -3276,7 +3276,7 @@ HRESULT ZapImage::RehydrateProfileData()
     return hr;
 }
 
-HRESULT ZapImage::hashBBProfileData ()
+HRESULT ZapImage::hashMethodBlockCounts()
 {
     ProfileDataSection * DataSection_MethodBlockCounts = & m_profileDataSections[MethodBlockCounts];
 
@@ -3290,7 +3290,7 @@ HRESULT ZapImage::hashBBProfileData ()
     CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER *mbcHeader;
     READ(mbcHeader,CORBBTPROF_METHOD_BLOCK_COUNTS_SECTION_HEADER);
 
-    for (ULONG i = 0; i < mbcHeader->NumMethods; i++)
+    for (DWORD i = 0; i < mbcHeader->NumMethods; i++)
     {
         ProfileDataHashEntry newEntry;
         newEntry.pos = profileReader.GetCurrentPos();
@@ -3357,7 +3357,7 @@ void ZapImage::LoadProfileData()
             hr = parseProfileData();
             if (hr == S_OK)
             {
-                hr = hashBBProfileData();
+                hr = hashMethodBlockCounts();
             }
         }
     }
