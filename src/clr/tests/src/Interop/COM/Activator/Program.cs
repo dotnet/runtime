@@ -180,8 +180,8 @@ namespace Activator
                     Assert.IsFalse(inst.DidUnregister());
 
                     cxt.InterfaceId = Guid.Empty;
-                    ComActivator.ClassRegisterationScenarioForType(cxt, register: true);
-                    ComActivator.ClassRegisterationScenarioForType(cxt, register: false);
+                    ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
+                    ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
 
                     Assert.IsTrue(inst.DidRegister());
                     Assert.IsTrue(inst.DidUnregister());
@@ -217,7 +217,7 @@ namespace Activator
                     bool exceptionThrown = false;
                     try
                     {
-                        ComActivator.ClassRegisterationScenarioForType(cxt, register: true);
+                        ComActivator.ClassRegistrationScenarioForType(cxt, register: true);
                     }
                     catch
                     {
@@ -229,7 +229,7 @@ namespace Activator
                     exceptionThrown = false;
                     try
                     {
-                        ComActivator.ClassRegisterationScenarioForType(cxt, register: false);
+                        ComActivator.ClassRegistrationScenarioForType(cxt, register: false);
                     }
                     catch
                     {
