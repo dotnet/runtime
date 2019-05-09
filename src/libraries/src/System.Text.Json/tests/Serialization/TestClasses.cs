@@ -20,6 +20,17 @@ namespace System.Text.Json.Serialization.Tests
         Two = 2
     }
 
+    public enum SampleInt64Enum : long
+    {
+        Min = long.MinValue,
+        Max = long.MaxValue
+    }
+
+    public enum SampleUInt64Enum : ulong
+    {
+        Max = ulong.MaxValue
+    }
+
     public class TestClassWithNull
     {
         public string MyString { get; set; }
