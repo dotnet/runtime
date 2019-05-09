@@ -2849,7 +2849,7 @@ public:
     }
 #endif // FEATURE_PREJIT
 
-    ICorJitInfo::ProfileBuffer * AllocateProfileBuffer(mdToken _token, DWORD _size, DWORD _ILSize);
+    ICorJitInfo::BlockCounts * AllocateMethodBlockCounts(mdToken _token, DWORD _size, DWORD _ILSize);
     HANDLE OpenMethodProfileDataLogFile(GUID mvid);
     static void ProfileDataAllocateTokenLists(ProfileEmitter * pEmitter, TokenProfileData* pTokenProfileData);
     HRESULT WriteMethodProfileDataLogFile(bool cleanup);

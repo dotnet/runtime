@@ -930,36 +930,36 @@ void CompileResult::dmpAllocUnwindInfo(DWORD key, const Agnostic_AllocUnwindInfo
            value.pUnwindBlock_index, value.funcKind);
 }
 
-void CompileResult::recAllocBBProfileBuffer(ULONG count, ICorJitInfo::ProfileBuffer** profileBuffer, HRESULT result)
+void CompileResult::recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result)
 {
-    if (AllocBBProfileBuffer == nullptr)
-        AllocBBProfileBuffer = new LightWeightMap<DWORD, Agnostic_AllocBBProfileBuffer>();
+    if (AllocMethodBlockCounts == nullptr)
+        AllocMethodBlockCounts = new LightWeightMap<DWORD, Agnostic_AllocMethodBlockCounts>();
 
-    Agnostic_AllocBBProfileBuffer value;
+    Agnostic_AllocMethodBlockCounts value;
 
     value.count  = (DWORD)count;
     value.result = (DWORD)result;
-    value.profileBuffer_index =
-        AllocBBProfileBuffer->AddBuffer((unsigned char*)*profileBuffer, count * sizeof(ICorJitInfo::ProfileBuffer));
+    value.pBlockCounts_index =
+        AllocMethodBlockCounts->AddBuffer((unsigned char*)*pBlockCounts, count * sizeof(ICorJitInfo::BlockCounts));
 
-    AllocBBProfileBuffer->Add((DWORD)0, value);
+    AllocMethodBlockCounts->Add((DWORD)0, value);
 }
-void CompileResult::dmpAllocBBProfileBuffer(DWORD key, const Agnostic_AllocBBProfileBuffer& value)
+void CompileResult::dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value)
 {
-    printf("AllocBBProfileBuffer key %u, value cnt-%u ind-%u res-%08X", key, value.count, value.profileBuffer_index,
+    printf("AllocMethodBlockCounts key %u, value cnt-%u ind-%u res-%08X", key, value.count, value.pBlockCounts_index,
            value.result);
 }
-HRESULT CompileResult::repAllocBBProfileBuffer(ULONG count, ICorJitInfo::ProfileBuffer** profileBuffer)
+HRESULT CompileResult::repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts)
 {
-    Agnostic_AllocBBProfileBuffer value;
-    value = AllocBBProfileBuffer->Get((DWORD)0);
+    Agnostic_AllocMethodBlockCounts value;
+    value = AllocMethodBlockCounts->Get((DWORD)0);
 
     if (count != value.count)
         __debugbreak();
 
     HRESULT result = (HRESULT)value.result;
-    *profileBuffer = (ICorJitInfo::ProfileBuffer*)AllocBBProfileBuffer->GetBuffer(value.profileBuffer_index);
-    recAddressMap((void*)0x4242, (void*)*profileBuffer, count * (sizeof(ICorJitInfo::ProfileBuffer)));
+    *pBlockCounts = (ICorJitInfo::BlockCounts*)AllocMethodBlockCounts->GetBuffer(value.pBlockCounts_index);
+    recAddressMap((void*)0x4242, (void*)*pBlockCounts, count * (sizeof(ICorJitInfo::BlockCounts)));
     return result;
 }
 

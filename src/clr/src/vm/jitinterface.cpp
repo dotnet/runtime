@@ -11920,9 +11920,9 @@ void* CEEJitInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
 }
 
 /*********************************************************************/
-HRESULT CEEJitInfo::allocBBProfileBuffer (
-    ULONG                         count,
-    ICorJitInfo::ProfileBuffer ** profileBuffer
+HRESULT CEEJitInfo::allocMethodBlockCounts (
+    UINT32                        count,           // count of <ILOffset, ExecutionCount> tuples
+    ICorJitInfo::BlockCounts **   pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
     )
 {
     CONTRACTL {
@@ -11954,10 +11954,10 @@ HRESULT CEEJitInfo::allocBBProfileBuffer (
         codeSize = m_ILHeader->GetCodeSize();    
     }
     
-    *profileBuffer = m_pMethodBeingCompiled->GetLoaderModule()->AllocateProfileBuffer(m_pMethodBeingCompiled->GetMemberDef(), count, codeSize);
-    hr = (*profileBuffer ? S_OK : E_OUTOFMEMORY);
+    *pBlockCounts = m_pMethodBeingCompiled->GetLoaderModule()->AllocateMethodBlockCounts(m_pMethodBeingCompiled->GetMemberDef(), count, codeSize);
+    hr = (*pBlockCounts != nullptr) ? S_OK : E_OUTOFMEMORY;
 #else // FEATURE_PREJIT
-    _ASSERTE(!"allocBBProfileBuffer not implemented on CEEJitInfo!");
+    _ASSERTE(!"allocMethodBlockCounts not implemented on CEEJitInfo!");
     hr = E_NOTIMPL;
 #endif // !FEATURE_PREJIT
 
@@ -11968,15 +11968,15 @@ HRESULT CEEJitInfo::allocBBProfileBuffer (
 
 // Consider implementing getBBProfileData on CEEJitInfo.  This will allow us
 // to use profile info in codegen for non zapped images.
-HRESULT CEEJitInfo::getBBProfileData (
+HRESULT CEEJitInfo::getMethodBlockCounts (
     CORINFO_METHOD_HANDLE         ftnHnd,
-    ULONG *                       size,
-    ICorJitInfo::ProfileBuffer ** profileBuffer,
-    ULONG *                       numRuns
+    UINT32 *                      pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+    ICorJitInfo::BlockCounts **   pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
+    UINT32 *                      pNumRuns
     )
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(!"getBBProfileData not implemented on CEEJitInfo!");
+    _ASSERTE(!"getMethodBlockCounts not implemented on CEEJitInfo!");
     return E_NOTIMPL;
 }
 
@@ -13994,20 +13994,20 @@ void* CEEInfo::getMethodSync(CORINFO_METHOD_HANDLE ftnHnd,
     UNREACHABLE();      // only called on derived class.
 }
 
-HRESULT CEEInfo::allocBBProfileBuffer (
-        ULONG                 count,           // The number of basic blocks that we have
-        ProfileBuffer **      profileBuffer
+HRESULT CEEInfo::allocMethodBlockCounts (
+        UINT32                count,           // the count of <ILOffset, ExecutionCount> tuples
+        BlockCounts **        pBlockCounts     // pointer to array of <ILOffset, ExecutionCount> tuples
         )
 {
     LIMITED_METHOD_CONTRACT;
     UNREACHABLE_RET();      // only called on derived class.
 }
 
-HRESULT CEEInfo::getBBProfileData(
+HRESULT CEEInfo::getMethodBlockCounts(
         CORINFO_METHOD_HANDLE ftnHnd,
-        ULONG *               count,           // The number of basic blocks that we have
-        ProfileBuffer **      profileBuffer,
-        ULONG *               numRuns
+        UINT32 *              pCount,          // pointer to the count of <ILOffset, ExecutionCount> tuples
+        BlockCounts **        pBlockCounts,    // pointer to array of <ILOffset, ExecutionCount> tuples
+        UINT32 *              pNumRuns
         )
 {
     LIMITED_METHOD_CONTRACT;
