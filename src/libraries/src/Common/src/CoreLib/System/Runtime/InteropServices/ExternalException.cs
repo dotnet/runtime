@@ -12,7 +12,6 @@
 **
 =============================================================================*/
 
-#nullable enable
 using System.Globalization;
 using System.Runtime.Serialization;
 

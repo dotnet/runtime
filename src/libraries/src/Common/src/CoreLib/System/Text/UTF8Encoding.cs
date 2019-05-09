@@ -10,7 +10,6 @@
 // The fast loops attempts to blaze through as fast as possible with optimistic range checks,
 // processing multiple characters at a time, and falling back to the slow loop for all special cases.
 
-#nullable enable
 using System;
 using System.Buffers;
 using System.Diagnostics;
