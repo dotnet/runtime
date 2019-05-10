@@ -175,7 +175,6 @@ MONO_JIT_ICALL (mono_gc_wbarrier_range_copy) \
 MONO_JIT_ICALL (mono_gchandle_get_target_internal) \
 MONO_JIT_ICALL (mono_generic_class_init) \
 MONO_JIT_ICALL (mono_get_assembly_object) \
-MONO_JIT_ICALL (mono_get_lmf_addr) \
 MONO_JIT_ICALL (mono_get_method_object) \
 MONO_JIT_ICALL (mono_get_native_calli_wrapper) \
 MONO_JIT_ICALL (mono_get_special_static_data) \
@@ -338,6 +337,12 @@ MONO_JIT_ICALLS
 extern MonoJitICallInfos mono_jit_icall_info;
 
 #define mono_jit_icall_info_index(x) ((x) - mono_jit_icall_info.array)
+
+static inline gboolean // temporary, lone caller will go away
+mono_is_jit_icall_info (gconstpointer jit_icall_info)
+{
+	return (char*)jit_icall_info >= (char*)&mono_jit_icall_info && (char*)jit_icall_info < (char*)(&mono_jit_icall_info + 1);
+}
 
 static inline MonoJitICallInfo*
 mono_check_jit_icall_info (gconstpointer jit_icall_info)

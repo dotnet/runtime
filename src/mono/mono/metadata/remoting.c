@@ -104,9 +104,16 @@ static MonoMethod *method_set_call_context, *method_needs_context_sink, *method_
 static gpointer
 mono_compile_method_icall (MonoMethod *method);
 
-// This is not the same as other register_icall.
+// func is an identifier, that names a function, and is also in jit-icall-reg.h,
+// and therefore a field in mono_jit_icall_info and can be token pasted into an enum value.
+//
+// The name of func must be linkable for AOT, for example g_free does not work (monoeg_g_free instead),
+// nor does the C++ overload fmod (mono_fmod instead). These functions therefore
+// must be extern "C".
+//
+// This is not the same as other register_icall (last parameter NULL vs. #func)
 #define register_icall(func, sig, save) \
-	(mono_register_jit_icall ((func), (#func), (sig), (save)))
+	(mono_register_jit_icall_info (&mono_jit_icall_info.func, func, #func, (sig), (save), NULL))
 
 static inline void
 remoting_lock (void)

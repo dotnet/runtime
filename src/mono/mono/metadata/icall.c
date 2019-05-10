@@ -179,6 +179,8 @@ mono_icall_get_file_path_prefix (const gchar *path)
 }
 #endif /* HOST_WIN32 */
 
+MonoJitICallInfos mono_jit_icall_info;
+
 MonoObjectHandle
 ves_icall_System_Array_GetValueImpl (MonoArrayHandle array, guint32 pos, MonoError *error)
 {
@@ -5486,7 +5488,6 @@ ves_icall_GetCurrentMethod (MonoError *error)
 	return mono_method_get_object_handle (mono_domain_get (), m, NULL, error);
 }
 
-
 static MonoMethod*
 mono_method_get_equivalent_method (MonoMethod *method, MonoClass *klass)
 {
@@ -9135,50 +9136,78 @@ mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 	mono_icall_unlock ();
 }
 
-MonoJitICallInfo *
-mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean avoid_wrapper, const char *c_symbol)
-{
-	MonoJitICallInfo *info;
+// The few functions that are registered multiple times need to be known here.
 
+void
+mono_no_trampolines (void); // prototype to avoid warning
+
+void
+mono_no_trampolines (void)
+{
+	g_assert_not_reached ();
+}
+
+// temporary -- later will just be NULL
+static void
+mono_jit_icall_info_free (gpointer info)
+{
+	if (!mono_is_jit_icall_info (info))
+		g_free (info);
+}
+
+MonoJitICallInfo *
+mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean avoid_wrapper, const char *c_symbol)
+{
 	g_assert (func);
 	g_assert (name);
+
+	// temporarily allow NULL, until conversion to static storage complete
+	if (info)
+		g_assert (mono_is_jit_icall_info (info));
+	else
+		info = g_new0 (MonoJitICallInfo, 1);
 
 	mono_icall_lock ();
 
 	if (!jit_icall_hash_name) {
-		jit_icall_hash_name = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, g_free);
+		jit_icall_hash_name = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, mono_jit_icall_info_free);
 		jit_icall_hash_addr = g_hash_table_new (NULL, NULL);
 	}
 
-	if ((info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name))) {
-		g_warning ("jit icall already defined \"%s\" \"%s\" %p %p\n", name, info->name, func, info->func);
-		g_assert_not_reached ();
+	// Do not allow duplicate registration, either name or function or info,
+	// except the function mono_no_trampolines is reused.
+
+	MonoJitICallInfo const * const existing_infos [ ] = {
+		(MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name),
+		(MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_addr, (gpointer)func),
+	};
+	for (int i = 0; i < 2; ++i) {
+		MonoJitICallInfo const * const existing_info = existing_infos [i];
+
+		g_assertf (!existing_info || func == (gpointer)mono_no_trampolines,
+			"jit icall info already hashed name:%s existing_name:%s func:%p existing_func:%p i:%d\n",
+			name, existing_info->name, func, existing_info->func, i);
 	}
 
-	info = g_new0 (MonoJitICallInfo, 1);
-	
+	g_assertf (!info->inited, "%s", name);
+
 	info->name = name;
 	info->func = func;
 	info->sig = sig;
 	info->c_symbol = c_symbol;
 
-	if (avoid_wrapper) {
-		info->wrapper = func;
-	} else {
-		info->wrapper = NULL;
-	}
+	// Fill in wrapper ahead of time, to just be func, to avoid
+	// later initializing it to anything else. So therefore, no wrapper.
+	info->wrapper = avoid_wrapper ? func : NULL;
 
 	g_hash_table_insert (jit_icall_hash_name, (gpointer)info->name, info);
 	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
 
+	g_assertf (!info->inited, "%s", name);
+	info->inited = TRUE;
+
 	mono_icall_unlock ();
 	return info;
-}
-
-MonoJitICallInfo *
-mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper)
-{
-	return mono_register_jit_icall_full (func, name, sig, no_wrapper, NULL);
 }
 
 int

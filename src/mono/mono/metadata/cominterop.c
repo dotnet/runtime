@@ -85,8 +85,14 @@ mono_IUnknown_Release (MonoIUnknown *pUnk)
 Code shared between the DISABLE_COM and !DISABLE_COM
 */
 
+// func is an identifier, that names a function, and is also in jit-icall-reg.h,
+// and therefore a field in mono_jit_icall_info and can be token pasted into an enum value.
+//
+// The name of func must be linkable for AOT, for example g_free does not work (monoeg_g_free instead),
+// nor does the C++ overload fmod (mono_fmod instead). These functions therefore
+// must be extern "C".
 #define register_icall(func, sig, save) \
-	(mono_register_jit_icall_full ((func), (#func), (sig), (save), (#func)))
+	(mono_register_jit_icall_info (&mono_jit_icall_info.func, func, #func, (sig), (save), #func))
 
 mono_bstr
 mono_string_to_bstr_impl (MonoStringHandle s, MonoError *error)

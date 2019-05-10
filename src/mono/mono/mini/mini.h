@@ -2104,14 +2104,14 @@ void      mono_add_ins_to_end               (MonoBasicBlock *bb, MonoInst *inst)
 
 void      mono_replace_ins                  (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, MonoInst **prev, MonoBasicBlock *first_bb, MonoBasicBlock *last_bb);
 
-void              mini_register_opcode_emulation (int opcode, const char *name, MonoMethodSignature *sig, gpointer func, const char *symbol, gboolean no_throw);
+void      mini_register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const char *name, MonoMethodSignature *sig, gpointer func, const char *symbol, gboolean no_throw);
 
 #ifdef __cplusplus
 template <typename T>
 inline void
-mini_register_opcode_emulation (int opcode, const char *name, MonoMethodSignature *sig, T func, const char *symbol, gboolean no_throw)
+mini_register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const char *name, MonoMethodSignature *sig, T func, const char *symbol, gboolean no_throw)
 {
-	mini_register_opcode_emulation (opcode, name, sig, (gpointer)func, symbol, no_throw);
+	mini_register_opcode_emulation (opcode, jit_icall_info, name, sig, (gpointer)func, symbol, no_throw);
 }
 #endif // __cplusplus
 

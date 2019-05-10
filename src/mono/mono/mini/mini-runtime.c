@@ -679,48 +679,57 @@ mono_dynamic_code_hash_lookup (MonoDomain *domain, MonoMethod *method)
 #ifdef __cplusplus
 template <typename T>
 static void
-register_opcode_emulation (int opcode, const char *name, MonoMethodSignature *sig, T func, const char *symbol, gboolean no_wrapper)
+register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const char *name, MonoMethodSignature *sig, T func, const char *symbol, gboolean no_wrapper)
 #else
 static void
-register_opcode_emulation (int opcode, const char *name, MonoMethodSignature *sig, gpointer func, const char *symbol, gboolean no_wrapper)
+register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const char *name, MonoMethodSignature *sig, gpointer func, const char *symbol, gboolean no_wrapper)
 #endif
 {
 #ifndef DISABLE_JIT
-	mini_register_opcode_emulation (opcode, name, sig, func, symbol, no_wrapper);
+	mini_register_opcode_emulation (opcode, jit_icall_info, name, sig, func, symbol, no_wrapper);
 #else
 	g_assert (!sig->hasthis);
 	g_assert (sig->param_count < 3);
 
-	mono_register_jit_icall_full (func, name, sig, no_wrapper, symbol);
+	mono_register_jit_icall_info (jit_icall_info, func, name, sig, no_wrapper, symbol);
 #endif
 }
 
-// This layering is only meant to provide smaller easier to read temporary change.
-// The de-stringing of name in the caller will be useful later.
 #define register_opcode_emulation(opcode, name, sig, func, no_wrapper) \
-	(register_opcode_emulation ((opcode), (#name), (sig), (func), (#func), (no_wrapper)))
+	(register_opcode_emulation ((opcode), &mono_jit_icall_info.name, #name, (sig), func, #func, (no_wrapper)))
 
 /*
  * For JIT icalls implemented in C.
  * NAME should be the same as the name of the C function whose address is FUNC.
  * If @avoid_wrapper is TRUE, no wrapper is generated. This is for perf critical icalls which
  * can't throw exceptions.
+ *
+ * func is an identifier, that names a function, and is also in jit-icall-reg.h,
+ * and therefore a field in mono_jit_icall_info and can be token pasted into an enum value.
+ *
+ * The name of func must be linkable for AOT, for example g_free does not work (monoeg_g_free instead),
+ * nor does the C++ overload fmod (mono_fmod instead). These functions therefore
+ * must be extern "C".
  */
 #define register_icall(func, sig, avoid_wrapper) \
-	(mono_register_jit_icall_full ((func), (#func), (sig), (avoid_wrapper), (#func)))
+	(mono_register_jit_icall_info (&mono_jit_icall_info.func, func, #func, (sig), (avoid_wrapper), #func))
 
-#define register_icall_no_wrapper(func, sig) \
-	(mono_register_jit_icall_full ((func), (#func), (sig), TRUE, (#func)))
-
-#define register_icall_with_wrapper(func, sig) \
-	(mono_register_jit_icall_full ((func), (#func), (sig), FALSE, (#func)))
+#define register_icall_no_wrapper(func, sig) register_icall (func, sig, TRUE)
+#define register_icall_with_wrapper(func, sig) register_icall (func, sig, FALSE)
 
 /*
  * Register an icall where FUNC is dynamically generated or otherwise not
  * possible to link to it using NAME during AOT.
+ *
+ * func is an expression, such a local variable or a function call to get a function pointer.
+ * name is an identifier
+ *
+ * Providing func and name separately is what distinguishes "dyn" from regular.
+ *
+ * This also passes last parameter c_symbol=NULL since there is not a directly linkable symbol.
  */
 #define register_dyn_icall(func, name, sig, save) \
-	(mono_register_jit_icall ((func), (#name), (sig), (save)))
+	(mono_register_jit_icall_info (&mono_jit_icall_info.name, (func), #name, (sig), (save), NULL))
 
 MonoLMF *
 mono_get_lmf (void)
@@ -4382,7 +4391,7 @@ register_icalls (void)
 
 	register_icall (mono_trace_enter_method, mono_icall_sig_void_ptr_ptr, TRUE);
 	register_icall (mono_trace_leave_method, mono_icall_sig_void_ptr_ptr, TRUE);
-	register_icall (mono_get_lmf_addr, mono_icall_sig_ptr, TRUE);
+	g_assert (mono_get_lmf_addr == mono_tls_get_lmf_addr);
 	register_icall (mono_jit_set_domain, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mono_domain_get, mono_icall_sig_ptr, TRUE);
 

@@ -583,6 +583,7 @@ typedef struct {
 	MonoMethodSignature *sig;
 	const char *c_symbol;
 	MonoMethod *wrapper_method;
+	gboolean inited;
 } MonoJitICallInfo;
 
 void
@@ -1067,27 +1068,63 @@ MONO_API gboolean
 mono_metadata_load_generic_param_constraints_checked (MonoImage *image, guint32 token,
 					      MonoGenericContainer *container, MonoError *error);
 
+// Tbis is the "real" function for registering JIT icalls. All others are one line wrappers that call it,
+// such as with info=NULL and/or c_symbol=NULL. info=NULL is temporary. c_symbols is convenience
+// but consider being explicit.
 MonoJitICallInfo *
-mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
+mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name,
+			      MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
 
+// Register JIT icall w/o info w/o c_symbol; temporary.
+static inline
 MonoJitICallInfo *
-mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
+mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save)
+{
+	// full means with c_symbol, else c_symbol == NULL
+	return mono_register_jit_icall_info (NULL, func, name, sig, is_save, NULL);
+}
+
+// Register JIT icall w/o info w/ c_symbol; temporary.
+static inline
+MonoJitICallInfo *
+mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
+{
+	// full means with c_symbol, else c_symbol == NULL
+	return mono_register_jit_icall_info (NULL, func, name, sig, no_wrapper, c_symbol);
+}
 
 #ifdef __cplusplus
+
+// template register JIT icall w/o info w/o c_symbol; temporary.
 template <typename T>
 inline MonoJitICallInfo *
 mono_register_jit_icall (T func, const char *name, MonoMethodSignature *sig, gboolean is_save)
 {
-	return mono_register_jit_icall ((gconstpointer)func, name, sig, is_save);
+	// full means with c_symbol, else c_symbol == NULL
+	return mono_register_jit_icall_info (NULL, (gconstpointer)func, name, sig, is_save, NULL);
 }
 
+// template register JIT icall w/o info w/ c_symbol; temporary.
 template <typename T>
 inline MonoJitICallInfo *
 mono_register_jit_icall_full (T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
 {
-	return mono_register_jit_icall_full ((gconstpointer)func, name, sig, no_wrapper, c_symbol);
+	// full means with c_symbol, else c_symbol == NULL
+	return mono_register_jit_icall_info (NULL, (gconstpointer)func, name, sig, no_wrapper, c_symbol);
 }
 #endif // __cplusplus
+
+#ifdef __cplusplus
+template <typename T>
+inline MonoJitICallInfo *
+mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
+{
+	// full means with c_symbol, else c_symbol == NULL
+	return mono_register_jit_icall_info (info, (gconstpointer)func, name, sig, no_wrapper, c_symbol);
+}
+#endif // __cplusplus
+
+// Temporarily two sets of JIT icall registration functions until conversion done. i.e. w/ and w/o info.
 
 void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
