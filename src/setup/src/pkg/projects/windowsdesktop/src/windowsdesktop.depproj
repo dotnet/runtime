@@ -3,17 +3,60 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Private.WindowsDesktop.App" Version="$(MicrosoftPrivateWindowsDesktopAppPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Wpf.DncEng" Version="$(MicrosoftDotNetWpfDncEngPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.Wpf.GitHub" Version="$(MicrosoftDotNetWpfGitHubPackageVersion)" />
+    <PackageReference Include="Microsoft.Private.Winforms" Version="$(MicrosoftPrivateWinformsPackageVersion)" />
+
+    <PackageReference Include="Microsoft.Win32.Registry" Version="$(MicrosoftWin32RegistryVersion)" />
+    <PackageReference Include="Microsoft.Win32.SystemEvents" Version="$(MicrosoftWin32SystemEventsVersion)" />
+    <PackageReference Include="System.CodeDom" Version="$(SystemCodeDomVersion)" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="$(SystemConfigurationConfigurationManagerVersion)" />
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <PackageReference Include="System.IO.Packaging" Version="$(SystemIOPackagingVersion)" />
+    <PackageReference Include="System.Resources.Extensions" Version="$(SystemResourcesExtensionsPackageVersion)" />
+    <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Cng" Version="$(SystemSecurityCryptographyCngVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="$(SystemSecurityCryptographyPkcsVersion)" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="$(SystemSecurityCryptographyProtectedDataVersion)" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="$(SystemSecurityCryptographyXmlVersion)" />
+    <PackageReference Include="System.Security.Permissions" Version="$(SystemSecurityPermissionsVersion)" />
+    <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />
+    <PackageReference Include="System.Windows.Extensions" Version="$(SystemWindowsExtensionsPackageVersion)" />
   </ItemGroup>
 
-  <Target Name="GetDependencyVersionFiles" DependsOnTargets="ResolveNuGetPackages">
+  <ItemGroup>
+    <RuntimeOnlyPackageReference Include="System.Diagnostics.EventLog" Version="$(SystemDiagnosticsEventLogVersion)" />
+    <RuntimeOnlyPackageReference Include="System.DirectoryServices" Version="$(SystemDirectoryServicesVersion)" />
+    <RuntimeOnlyPackageReference Include="System.IO.FileSystem.AccessControl" Version="$(SystemIOFileSystemAccessControlVersion)" />
+    <RuntimeOnlyPackageReference Include="System.Threading.AccessControl" Version="$(SystemThreadingAccessControlVersion)" />
+
+    <PackageReference Include="@(RuntimeOnlyPackageReference)" ExcludeAssets="Compile" />
+  </ItemGroup>
+
+  <!-- Pick up unconventional WPF runtime package natives in lib\<rid>. -->
+  <Target Name="GetLibNativeFilePackagePaths"
+          BeforeTargets="GetFilesFromPackages"
+          Condition="'$(NuGetRuntimeIdentifier)' != ''">
     <ItemGroup>
-      <DependencyVersionFile
-        Include="$(PackagesDir)$([System.String]::new('%(Reference.NuGetPackageId)').ToLowerInvariant())/%(Reference.NuGetPackageVersion)/version.txt"
-        Condition="$([System.String]::new('%(Reference.Identity)').ToLowerInvariant().Contains('system.xaml.dll'))"
-        Name="dotnet-trusted" />
+      <_lowercasePackageId
+        Include="$([System.String]::new('runtime.$(NuGetRuntimeIdentifier).%(PackageReference.Identity)').ToLowerInvariant())"
+        NuGetPackageId="%(PackageReference.Identity)"
+        Version="%(PackageReference.Version)" />
+
+      <_packageNativeDir Include="@(_lowercasePackageId -> '$(PackagesDir)%(Identity)/%(Version)/lib/$(NuGetRuntimeIdentifier)/')" />
+
+      <ReferenceCopyLocalPaths
+        Include="%(_packageNativeDir.Identity)**/*.*"
+        IsNative="true"
+        NuGetPackageId="%(_packageNativeDir.NuGetPackageId)" />
     </ItemGroup>
   </Target>
+
+  <!--
+    Version.txt files aren't provided in some packages. However, they're not necessary anymore:
+    dependency information is now in Version.Details.xml and BAR. Stub the target to ignore.
+  -->
+  <Target Name="GetDependencyVersionFiles" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

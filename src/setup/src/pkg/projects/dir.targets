@@ -45,9 +45,17 @@
       <NonWindowsSymbolFile Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolFileExtension)')" />
       <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)')" />
 
-      <File Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)">
-        <IsSymbolFile>true</IsSymbolFile>
-      </File>
+      <!--
+        These files might be directly redisted, and already in File. Duplicates cause validation
+        errors, so don't add files that are already known.
+      -->
+      <DiscoveredSymbolFile
+        Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)"
+        IsSymbolFile="true" />
+      
+      <NormalizedFile Include="$([MSBuild]::NormalizePath('%(File.Identity)'))" />
+
+      <File Include="@(DiscoveredSymbolFile)" Exclude="@(NormalizedFile)" />
     </ItemGroup>
 
     <PropertyGroup>

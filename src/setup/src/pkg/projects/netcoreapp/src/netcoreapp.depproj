@@ -27,7 +27,7 @@
        only relevant for runtime-specific builds -->
   <Target Name="GetPackagePaths"
           Condition="'$(NuGetRuntimeIdentifier)' != ''"
-          DependsOnTargets="GetCrossgenPackagePaths" />
+          DependsOnTargets="GetCorePackagePaths" />
 
   <Target Name="GetDependencyVersionFiles" DependsOnTargets="GetPackagePaths;ResolveNuGetPackages">
     <ItemGroup>
@@ -55,7 +55,7 @@
   <!-- Fetches all the runtime items from the packages that we want to redist -->
   <Target Name="GetRuntimeFilesFromPackages"
           BeforeTargets="GetRuntimeFilesToPackage"
-          DependsOnTargets="GetCrossgenPackagePaths">
+          DependsOnTargets="GetCorePackagePaths">
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
       <_ToolsToPackage Include="$(_runtimePackageDir)tools/**/*.*"/>
       <FilesToPackage Include="@(_ToolsToPackage)">
