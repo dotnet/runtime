@@ -67,7 +67,7 @@
           DependsOnTargets="GetDependencyVersionFiles"
           Condition="'$(FrameworkPackageName)' != ''">
     <Error
-      Condition="!Exists('%(DependencyVersionFile.Identity)')"
+      Condition="'@(DependencyVersionFile)' != '' AND !Exists('%(DependencyVersionFile.Identity)')"
       Text="'%(Name)' version file does not exist: %(Identity)" />
 
     <ItemGroup>
@@ -77,6 +77,8 @@
       <_VersionsFileLines Include="@(DependencyVersionFile ->'%(Name) %(Content)')" />
     </ItemGroup>
 
+    <!-- GetDependencyVersionFiles may or may not create the intermediate dir. Ensure it exists. -->
+    <MakeDir Directories="$(IntermediateOutputPath)" />
     <WriteLinesToFile Lines="@(_VersionsFileLines)"
                        File="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt"
                        Overwrite="true"/>
@@ -112,7 +114,7 @@
   <!--
     Get paths from packages that are needed for crossgen. Only relevant for runtime-specific builds.
   -->
-  <Target Name="GetCrossgenPackagePaths"
+  <Target Name="GetCorePackagePaths"
           Condition="'$(NuGetRuntimeIdentifier)' != ''"
           DependsOnTargets="ResolveNuGetPackages">
     <PropertyGroup>
@@ -125,6 +127,24 @@
       <_winmdPackageDir>$(PackagesDir)$(MicrosoftTargetingPackPrivateWinRTPackage.ToLowerInvariant())/$(MicrosoftTargetingPackPrivateWinRTPackageVersion)/</_winmdPackageDir>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <_crossDir Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' == 'Windows_NT'">/x86_arm</_crossDir>
+      <_crossDir Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">/x64_arm</_crossDir>
+      <_crossDir Condition="'$(TargetArchitecture)' == 'arm64'">/x64_arm64</_crossDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_requiredProperty Include="_runtimePackageDir;_jitPackageDir;_corefxPackageDir;_winmdPackageDir" />
+    </ItemGroup>
+
+    <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
+    <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
+    <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
+  </Target>
+
+  <Target Name="GetCrossgenToolPaths"
+          Condition="'$(NuGetRuntimeIdentifier)' != ''"
+          DependsOnTargets="GetCorePackagePaths">
     <ItemGroup>
       <!-- Find crossgen tool assets in package cache to allow ExcludeAssets=All. -->
       <_runtimeCLR Include="$(_runtimePackageDir)**/$(LibraryFilePrefix)coreclr$(LibraryFileExtension)" />
@@ -133,12 +153,6 @@
       <_fxSystemRuntime Include="$(_corefxPackageDir)**/System.Runtime.dll" />
       <_windowsWinMD Include="$(_winmdPackageDir)**/Windows.winmd" />
     </ItemGroup>
-
-    <PropertyGroup>
-      <_crossDir Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' == 'Windows_NT'">/x86_arm</_crossDir>
-      <_crossDir Condition="'$(TargetArchitecture)' == 'arm' AND '$(OS)' != 'Windows_NT'">/x64_arm</_crossDir>
-      <_crossDir Condition="'$(TargetArchitecture)' == 'arm64'">/x64_arm64</_crossDir>
-    </PropertyGroup>
 
     <PropertyGroup Condition="'@(_runtimeCLR)' != ''">
       <_crossGenPath>$(_runtimePackageDir)tools$(_crossDir)/crossgen$(ApplicationFileExtension)</_crossGenPath>
@@ -163,26 +177,45 @@
     </PropertyGroup>
     
     <ItemGroup>
-      <_requiredProperty Include="_runtimePackageDir;_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory;_windowsWinMDDirectory" />
+      <_requiredProperty Include="_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory;_windowsWinMDDirectory" />
     </ItemGroup>
 
     <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
     <Error Condition="'$(%(_requiredProperty.Identity))' == ''" Text="Required property %(_requiredProperty.Identity) was not set." />
     <Error Condition="!Exists('$(%(_requiredProperty.Identity))')" Text="Required property %(_requiredProperty.Identity) with value '$(%(_requiredProperty.Identity))' does not exist." />
+
+    <ItemGroup>
+      <!--
+        The following path must be passed to crossgen to locate all dependencies. Include it first
+        so in case of conflicts, DLLs are found in the framework being crossgenned.
+      -->
+      <_crossgenPlatformDirectories Include="%(_filesToCrossGen.RootDir)%(_filesToCrossGen.Directory)" />
+      <!-- the following path *must* be passed to crossgen as it has the CoreLib.ni.dll, it will not use the IL copy. -->
+      <_crossgenPlatformDirectories Include="$(_runtimeDirectory)" />
+      <!-- the following need not be passed to crossgen but we do so to be safe. -->
+      <_crossgenPlatformDirectories Include="$(_coreLibDirectory)" />
+      <!-- The following is necessary to crossgen WindowsDesktop. For NETCoreApp it's automatic because we're crossgenning CoreFX bits. -->
+      <_crossgenPlatformDirectories Include="$(_fxLibDirectory)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- Use PathSeparator so that we get a ':' on unix and ';' on windows
+           Escape the value so that the ';' doesn't result multiple lines when writing to the RSP file -->
+      <_pathSeparatorEscaped>$([MSBuild]::Escape($([System.IO.Path]::PathSeparator.ToString())))</_pathSeparatorEscaped>
+      <_crossgenPlatformAssemblies>@(_crossgenPlatformDirectories->'%(Identity)', '$(_pathSeparatorEscaped)')</_crossgenPlatformAssemblies>
+    </PropertyGroup>
   </Target>
 
   <!-- Prepares all items for cross-gen and replaces package file items with their cross-gen'ed equivalents -->
   <Target Name="PrepareForCrossGen"
           Condition="'$(NuGetRuntimeIdentifier)' != '' AND '$(DisableCrossgen)' != 'true'"
           DependsOnTargets="
-            GetCrossgenPackagePaths;
+            GetCorePackagePaths;
             GetFilesFromPackages">
     <PropertyGroup>
       <_crossGenIntermediatePath>$(IntermediateOutputPath)/crossgen</_crossGenIntermediatePath>
     </PropertyGroup>
-    <!-- Ensure crossgen is executable.  See https://github.com/NuGet/Home/issues/4424 -->
-    <Exec Command="chmod u+x $(_crossGenPath)"
-          Condition="'$(OSGroup)' != 'Windows_NT'" />
+    
     <ItemGroup>
       <!--
         Skip crossgen for some files, including:
@@ -215,32 +248,24 @@
       <_crossGenedFilesToPackage Include="@(_filesToCrossGen->'%(CrossGenedPath)')" />
       <FilesToPackage Include="@(_crossGenedFilesToPackage)" />
     </ItemGroup>
+  </Target>
 
-    <ItemGroup>
-      <!--
-        The following path must be passed to crossgen to locate all dependencies. Include it first
-        so in case of conflicts, DLLs are found in the framework being crossgenned.
-      -->
-      <_crossgenPlatformDirectories Include="%(_filesToCrossGen.RootDir)%(_filesToCrossGen.Directory)" />
-      <!-- the following path *must* be passed to crossgen as it has the CoreLib.ni.dll, it will not use the IL copy. -->
-      <_crossgenPlatformDirectories Include="$(_runtimeDirectory)" />
-      <!-- the following need not be passed to crossgen but we do so to be safe. -->
-      <_crossgenPlatformDirectories Include="$(_coreLibDirectory)" />
-      <!-- The following is necessary to crossgen WindowsDesktop. For NETCoreApp it's automatic because we're crossgenning CoreFX bits. -->
-      <_crossgenPlatformDirectories Include="$(_fxLibDirectory)" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <!-- Use PathSeparator so that we get a ':' on unix and ';' on windows
-           Escape the value so that the ';' doesn't result multiple lines when writing to the RSP file -->
-      <_pathSeparatorEscaped>$([MSBuild]::Escape($([System.IO.Path]::PathSeparator.ToString())))</_pathSeparatorEscaped>
-      <_crossgenPlatformAssemblies>@(_crossgenPlatformDirectories->'%(Identity)', '$(_pathSeparatorEscaped)')</_crossgenPlatformAssemblies>
-    </PropertyGroup>
+  <!-- Ensure crossgen is executable. See https://github.com/NuGet/Home/issues/4424 -->
+  <Target Name="EnsureCrossGenIsExecutable"
+          Condition="'$(OSGroup)' != 'Windows_NT'"
+          DependsOnTargets="GetCrossgenToolPaths">
+    <Exec
+      Command="chmod u+x $(_crossGenPath)"
+      Condition="'$(OSGroup)' != 'Windows_NT' AND Exists('$(_crossGenPath)')" />
   </Target>
 
   <Target Name="CrossGen"
           BeforeTargets="Build"
-          DependsOnTargets="CreateCrossGenImages;CreateCrossGenSymbols" />
+          DependsOnTargets="
+            GetCrossgenToolPaths;
+            EnsureCrossGenIsExecutable;
+            CreateCrossGenImages;
+            CreateCrossGenSymbols" />
 
   <Target Name="CreateCrossGenImages"
           DependsOnTargets="PrepareForCrossGen"
@@ -332,6 +357,10 @@
   <Target Name="GetRuntimeFilesToPackage"
           BeforeTargets="GetFilesToPackage"
           DependsOnTargets="PrepareForCrossGen;GetCrossGenSymbolsFiles" />
+
+  <Target Name="GetReferenceFilenames"
+          Returns="@(Reference -> '%(Filename)')"
+          DependsOnTargets="ResolveNuGetPackages" />
 
   <!-- Target overrides (can't be shared with pkgproj) -->
 
