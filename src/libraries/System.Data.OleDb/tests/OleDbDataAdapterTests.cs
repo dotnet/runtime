@@ -8,13 +8,16 @@ using Xunit;
 
 namespace System.Data.OleDb.Tests
 {
+    [Collection("System.Data.OleDb")] // not let tests run in parallel
     public class OleDbDataAdapterTests : OleDbTestBase
     {
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void Fill_NullDataTable_Throws()
         {
-            var adapter = (OleDbDataAdapter)OleDbFactory.Instance.CreateDataAdapter();
-            Assert.Throws<ArgumentNullException>(() => adapter.Fill(null, new object()));
+            using (var adapter = (OleDbDataAdapter)OleDbFactory.Instance.CreateDataAdapter())
+            {
+                Assert.Throws<ArgumentNullException>(() => adapter.Fill(null, new object()));                
+            }
         }
 
         [OuterLoop]
@@ -22,8 +25,10 @@ namespace System.Data.OleDb.Tests
         public void Fill_NoSelectCommand_Throws()
         {
             RunTest((command, tableName) => {
-                var adapter = new OleDbDataAdapter();
-                Assert.Throws<InvalidOperationException>(() => adapter.Fill(new DataSet()));
+                using (var adapter = new OleDbDataAdapter())
+                {
+                    Assert.Throws<InvalidOperationException>(() => adapter.Fill(new DataSet()));
+                }
             });
         }
 
@@ -34,14 +39,16 @@ namespace System.Data.OleDb.Tests
             RunTest((command, tableName) => {
                 string commandText = @"SELECT * FROM " + tableName;
                 var dataTable = new DataTable();
-                var adapter = new OleDbDataAdapter(commandText, connection);
-                Assert.Null(adapter.InsertCommand);
-                Assert.Null(adapter.UpdateCommand);
-                Assert.Null(adapter.DeleteCommand);
-                Assert.NotNull(adapter.SelectCommand);
-                Assert.Equal(commandText, adapter.SelectCommand.CommandText);
-
-                adapter.SelectCommand.Dispose();
+                using (var adapter = new OleDbDataAdapter(commandText, connection))
+                {
+                    Assert.Null(adapter.InsertCommand);
+                    Assert.Null(adapter.UpdateCommand);
+                    Assert.Null(adapter.DeleteCommand);
+                    Assert.NotNull(adapter.SelectCommand);
+                    Assert.Equal(commandText, adapter.SelectCommand.CommandText);
+                    
+                    adapter.SelectCommand.Dispose(); // bug? OleDbDataAdapter is not disposing of SelectCommand
+                }
             });
         }
 
@@ -50,17 +57,18 @@ namespace System.Data.OleDb.Tests
         public void Fill_Select_Success()
         {
             RunTest((command, tableName) => {
-                OleDbDataAdapter adapter = new OleDbDataAdapter(@"SELECT * FROM " + tableName, ConnectionString);
-
-                DataSet ds = new DataSet();
-                adapter.Fill(ds);
-                Assert.Equal(1, ds.Tables.Count);
-                Assert.Equal(1, ds.Tables[0].Rows.Count);
-
-                string[] expectedValues = { "Foo", "Bar", "John" };
-                for (int i = 0; i < expectedValues.Length; i++)
+                using (var adapter = new OleDbDataAdapter(@"SELECT * FROM " + tableName, ConnectionString))
                 {
-                    Assert.Equal(expectedValues[i], ds.Tables[0].Rows[0][i]);
+                    DataSet ds = new DataSet();
+                    adapter.Fill(ds);
+                    Assert.Equal(1, ds.Tables.Count);
+                    Assert.Equal(1, ds.Tables[0].Rows.Count);
+
+                    string[] expectedValues = { "Foo", "Bar", "John" };
+                    for (int i = 0; i < expectedValues.Length; i++)
+                    {
+                        Assert.Equal(expectedValues[i], ds.Tables[0].Rows[0][i]);
+                    }
                 }
             });
         }
@@ -70,14 +78,13 @@ namespace System.Data.OleDb.Tests
         public void Fill_Select_NullDataTable_Throws()
         {
             RunTest((command, tableName) => {
-                var adapter = new OleDbDataAdapter(@"SELECT * FROM " + tableName, connection);
-
-                Assert.Throws<ArgumentNullException>(() => adapter.Fill(null));
-                Assert.Throws<ArgumentNullException>(() => adapter.Fill(new DataTable(), null));
-                Assert.Throws<ArgumentNullException>(() => adapter.Fill(null, null, null));
-                Assert.Throws<ArgumentNullException>(() => adapter.Fill(new DataSet(), null, null));
-
-                adapter.SelectCommand.Dispose();
+                using (var adapter = new OleDbDataAdapter(@"SELECT * FROM " + tableName, connection))
+                {
+                    Assert.Throws<ArgumentNullException>(() => adapter.Fill(null));
+                    Assert.Throws<ArgumentNullException>(() => adapter.Fill(new DataTable(), null));
+                    Assert.Throws<ArgumentNullException>(() => adapter.Fill(null, null, null));
+                    Assert.Throws<ArgumentNullException>(() => adapter.Fill(new DataSet(), null, null));
+                }
             });
         }
 
@@ -87,35 +94,35 @@ namespace System.Data.OleDb.Tests
         {
             RunTest((command, tableName) => {
                 var dataTable = new DataTable();
-                var adapter = new OleDbDataAdapter();
+                using (var adapter = new OleDbDataAdapter())
+                using (var cmd = new OleDbCommand(@"SELECT * FROM " + tableName + @" WHERE Nickname = @Nickname", connection))
+                using (var updateCmd = new OleDbCommand(@"UPDATE " + tableName + @" SET Nickname = @Nickname WHERE Firstname = @Firstname", connection))
+                {
+                    adapter.SelectCommand = cmd;
+                    var selectParam = new OleDbParameter("@Nickname", OleDbType.VarWChar, 30, ParameterDirection.Input, true, 0, 0, "Nickname", DataRowVersion.Current, "John");
+                    adapter.SelectCommand.Parameters.Add(selectParam);
+                    adapter.SelectCommand.Transaction = transaction;
 
-                adapter.SelectCommand = new OleDbCommand(@"SELECT * FROM " + tableName + @" WHERE Nickname = @Nickname", connection);
-                var selectParam = new OleDbParameter("@Nickname", OleDbType.VarWChar, 30, ParameterDirection.Input, true, 0, 0, "Nickname", DataRowVersion.Current, "John");
-                adapter.SelectCommand.Parameters.Add(selectParam);
-                adapter.SelectCommand.Transaction = transaction;
+                    adapter.UpdateCommand = updateCmd;
+                    OleDbParameter[] parameters = new OleDbParameter[] {
+                        new OleDbParameter("@Nickname", OleDbType.WChar, 30, ParameterDirection.Input, true, 0, 0, "Nickname", DataRowVersion.Current, null),
+                        new OleDbParameter("@Firstname", OleDbType.WChar, 5, ParameterDirection.Input, false, 0, 0, "Firstname", DataRowVersion.Current, null)
+                    };
+                    adapter.UpdateCommand.Parameters.AddRange(parameters);
+                    adapter.UpdateCommand.Transaction = transaction;
 
-                adapter.UpdateCommand = new OleDbCommand(@"UPDATE " + tableName + @" SET Nickname = @Nickname WHERE Firstname = @Firstname", connection);
-                OleDbParameter[] parameters = new OleDbParameter[] {
-                    new OleDbParameter("@Nickname", OleDbType.WChar, 30, ParameterDirection.Input, true, 0, 0, "Nickname", DataRowVersion.Current, null),
-                    new OleDbParameter("@Firstname", OleDbType.WChar, 5, ParameterDirection.Input, false, 0, 0, "Firstname", DataRowVersion.Current, null)
-                };
-                adapter.UpdateCommand.Parameters.AddRange(parameters);
-                adapter.UpdateCommand.Transaction = transaction;
+                    adapter.Fill(dataTable);
+                    object titleData = dataTable.Rows[0]["Nickname"];
+                    Assert.Equal("John", (string)titleData);
 
-                adapter.Fill(dataTable);
-                object titleData = dataTable.Rows[0]["Nickname"];
-                Assert.Equal("John", (string)titleData);
+                    titleData = "Sam";
+                    adapter.Update(dataTable);
+                    adapter.Fill(dataTable);
+                    Assert.Equal("Sam", (string)titleData);
 
-                titleData = "Sam";
-                adapter.Update(dataTable);
-                adapter.Fill(dataTable);
-                Assert.Equal("Sam", (string)titleData);
-
-                titleData = "John";
-                adapter.Update(dataTable);
-
-                adapter.SelectCommand.Dispose();
-                adapter.UpdateCommand.Dispose();
+                    titleData = "John";
+                    adapter.Update(dataTable);
+                }
             });
         }
 
@@ -127,16 +134,18 @@ namespace System.Data.OleDb.Tests
                 command.CommandText = @"SELECT * FROM " + tableName;  
                 Action<bool> FillShouldThrow = (shouldFail) => {
                     DataSet ds = new DataSet();
-                    OleDbDataAdapter adapter = new OleDbDataAdapter(command);
-                    if (shouldFail)
+                    using(var adapter = new OleDbDataAdapter(command))
                     {
-                        AssertExtensions.Throws<InvalidOperationException>(
-                            () => adapter.Fill(ds, tableName), 
-                            "There is already an open DataReader associated with this Command which must be closed first.");
-                    }
-                    else
-                    {
-                        Assert.NotNull(adapter.Fill(ds, tableName));
+                        if (shouldFail)
+                        {
+                            AssertExtensions.Throws<InvalidOperationException>(
+                                () => adapter.Fill(ds, tableName), 
+                                "There is already an open DataReader associated with this Command which must be closed first.");
+                        }
+                        else
+                        {
+                            Assert.NotNull(adapter.Fill(ds, tableName));
+                        }
                     }
                 };
                 using (var reader = command.ExecuteReader())

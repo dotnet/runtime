@@ -8,6 +8,7 @@ using Xunit;
 
 namespace System.Data.OleDb.Tests
 {
+    [Collection("System.Data.OleDb")] // not let tests run in parallel
     public class OleDbDataReaderTests : OleDbTestBase
     {
         [OuterLoop]
@@ -20,16 +21,6 @@ namespace System.Data.OleDb.Tests
                 Assert.Equal(0, reader.FieldCount);
                 Assert.Equal(0, reader.VisibleFieldCount);
             }
-        }
-
-        [ConditionalFact(Helpers.IsDriverAvailable)]
-        public void ExecuteNonQuery_TableNameWithoutCsvExtension_Throws()
-        {
-            command.CommandText =
-                @"CREATE TABLE TableNameWithoutCsvExtension (
-                    SomeInt32 INT,
-                    SomeString NVARCHAR(100))";
-            Assert.Throws<OleDbException>(() => command.ExecuteNonQuery());
         }
 
         [OuterLoop]
