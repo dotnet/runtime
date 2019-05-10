@@ -8,8 +8,8 @@
   <!--Package versions-->
   <PropertyGroup>
     <!-- corefx -->
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview6.19259.10</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview6.19259.10</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview6.19260.3</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview6.19260.3</MicrosoftNETCorePlatformsPackageVersion>
     <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
     <!-- standard -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19259.7</NETStandardLibraryPackageVersion>
