@@ -16428,7 +16428,6 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                     }
 
                     op2 = tmpOp2;
-
 #ifdef DEBUG
                     if (impInlineInfo->retExpr)
                     {
@@ -16438,6 +16437,45 @@ bool Compiler::impReturnInstruction(BasicBlock* block, int prefixFlags, OPCODE& 
                         assert(impInlineInfo->retExpr->gtLclVarCommon.gtLclNum == op2->gtLclVarCommon.gtLclNum);
                     }
 #endif
+                }
+
+                // If we are inlining a method that returns a struct byref, check whether we are "reinterpreting" the
+                // struct.
+                GenTree* effectiveRetVal = op2->gtEffectiveVal();
+                if ((returnType == TYP_BYREF) && (info.compRetType == TYP_BYREF) &&
+                    (effectiveRetVal->OperGet() == GT_ADDR))
+                {
+                    GenTree* addrChild = effectiveRetVal->gtGetOp1();
+                    if (addrChild->OperGet() == GT_LCL_VAR)
+                    {
+                        LclVarDsc* varDsc = lvaGetDesc(addrChild->AsLclVarCommon());
+
+                        if (varTypeIsStruct(addrChild->TypeGet()) && !isOpaqueSIMDLclVar(varDsc))
+                        {
+                            CORINFO_CLASS_HANDLE referentClassHandle;
+                            CorInfoType          referentType =
+                                info.compCompHnd->getChildType(info.compMethodInfo->args.retTypeClass,
+                                                               &referentClassHandle);
+                            if (varTypeIsStruct(JITtype2varType(referentType)) &&
+                                (varDsc->lvVerTypeInfo.GetClassHandle() != referentClassHandle))
+                            {
+                                // We are returning a byref to struct1; the method signature specifies return type as
+                                // byref
+                                // to struct2. struct1 and struct2 are different so we are "reinterpreting" the struct.
+                                // This may happen in, for example, System.Runtime.CompilerServices.Unsafe.As<TFrom,
+                                // TTo>.
+                                // We need to mark the source struct variable as having overlapping fields because its
+                                // fields may be accessed using field handles of a different type, which may confuse
+                                // optimizations, in particular, value numbering.
+
+                                JITDUMP("\nSetting lvOverlappingFields to true on V%02u because of struct "
+                                        "reinterpretation\n",
+                                        addrChild->AsLclVarCommon()->gtLclNum);
+
+                                varDsc->lvOverlappingFields = true;
+                            }
+                        }
+                    }
                 }
 
 #ifdef DEBUG
