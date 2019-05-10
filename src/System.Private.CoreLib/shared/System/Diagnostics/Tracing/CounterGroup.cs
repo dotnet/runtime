@@ -58,11 +58,6 @@ namespace System.Diagnostics.Tracing
 
                 if (e.Arguments.TryGetValue("EventCounterIntervalSec", out valueStr) && float.TryParse(valueStr, out value))
                 {
-                    // Recursion through EventSource callbacks possible.  When we enable the timer
-                    // we synchonously issue a EventSource.Write event, which in turn can call back
-                    // to user code (in an EventListener) while holding this lock.   This is dangerous
-                    // because it means this code might inadvertantly participate in a lock loop. 
-                    // The scenario seems very unlikely so we ignore that problem for now.  
                     lock (this)      // Lock the CounterGroup
                     {
                         EnableTimer(value);
