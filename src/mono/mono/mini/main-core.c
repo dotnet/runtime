@@ -1,4 +1,7 @@
 #include <config.h>
+
+#if ENABLE_NETCORE
+
 #include "mini.h"
 #include "mini-runtime.h"
 #include <mono/metadata/assembly.h>
@@ -8,6 +11,16 @@
 
 #ifndef STDAPICALLTYPE
 #define STDAPICALLTYPE
+#endif
+
+#if defined(_MSC_VER) && defined(HOST_WIN32) && defined(HOST_X86)
+// Ensure that the exported symbols are not decorated and that only one set is exported
+#pragma comment(linker, "/export:coreclr_initialize=_coreclr_initialize@28")
+#pragma comment(linker, "/export:coreclr_execute_assembly=_coreclr_execute_assembly@24")
+#pragma comment(linker, "/export:coreclr_shutdown_2=_coreclr_shutdown_2@12")
+#pragma comment(linker, "/export:coreclr_create_delegate=_coreclr_create_delegate@24")
+#undef MONO_API
+#define MONO_API MONO_EXTERN_C
 #endif
 
 MONO_API int STDAPICALLTYPE coreclr_initialize (const char* exePath, const char* appDomainFriendlyName,
@@ -311,3 +324,5 @@ int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned int domai
 	g_error ("Not implemented");
 	return 0;
 }
+
+#endif // ENABLE_NETCORE

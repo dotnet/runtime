@@ -27,6 +27,8 @@
     <MONO_COMPILE_AS_CPP>false</MONO_COMPILE_AS_CPP>
     <!-- When true, mono binaries will link and include BTLS. When false, mono binaries will not link and include BTLS.  -->
     <MONO_ENABLE_BTLS>false</MONO_ENABLE_BTLS>
+    <!-- When true, mono binaries will be compiled for use as a .NET Core runtime.  -->
+    <MONO_ENABLE_NETCORE>false</MONO_ENABLE_NETCORE>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
     <MonoSourceLocation Condition="'$(MonoSourceLocation)' == '' ">..</MonoSourceLocation>
@@ -111,6 +113,9 @@
     </BuildMacro>
     <BuildMacro Include="MONO_ENABLE_BTLS">
       <Value>$(MONO_ENABLE_BTLS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_ENABLE_NETCORE">
+      <Value>$(MONO_ENABLE_NETCORE)</Value>
     </BuildMacro>
   </ItemGroup>
   <PropertyGroup Label="MonoDefaultPreprocessorDefinitions">
