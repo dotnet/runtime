@@ -42,7 +42,7 @@
     <CopyNuGetImplementations Condition="'$(CopyNuGetImplementations)'==''">false</CopyNuGetImplementations>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
-    <PackagesDir>$(ProjectDir)..\packages\</PackagesDir>
+    <PackagesDir>$(ProjectDir)..\.packages\</PackagesDir>
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)..\Tools\</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir)..\.dotnet\</DotnetCliPath>
     <BuildToolsTaskDir Condition="'$(BuildToolsTargets45)' == 'true'">$(ToolsDir)net46\</BuildToolsTaskDir>
