@@ -139,8 +139,8 @@ mono_runtime_init_tls (void)
 	mono_marshal_init_tls ();
 }
 
-char*
-mono_runtime_get_aotid (void)
+guint8*
+mono_runtime_get_aotid_arr (void)
 {
 	int i;
 	guint8 aotid_sum = 0;
@@ -150,12 +150,22 @@ mono_runtime_get_aotid (void)
 		return NULL;
 
 	guint8 (*aotid)[16] = &domain->entry_assembly->image->aotid;
-
 	for (i = 0; i < 16; ++i)
 		aotid_sum |= (*aotid)[i];
 
 	if (aotid_sum == 0)
 		return NULL;
 
-	return mono_guid_to_string ((guint8*) aotid);
+	return (guint8*)aotid;
+}
+
+char*
+mono_runtime_get_aotid (void)
+{
+	guint8 *aotid = mono_runtime_get_aotid_arr ();
+
+	if (!aotid)
+		return NULL;
+
+	return mono_guid_to_string (aotid);
 }

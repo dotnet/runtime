@@ -5089,15 +5089,21 @@ fail:
 	return NULL_HANDLE_ARRAY;
 }
 
-MonoStringHandle
-ves_icall_System_Reflection_RuntimeAssembly_GetAotId (MonoError *error)
+MonoBoolean
+ves_icall_System_Reflection_RuntimeAssembly_GetAotIdInternal (MonoArrayHandle guid_h, MonoError *error)
 {
-	char *guid = mono_runtime_get_aotid ();
-	if (guid == NULL)
-		return MONO_HANDLE_CAST (MonoString, mono_new_null ());
-	MonoStringHandle res = mono_string_new_handle (mono_domain_get (), guid, error);
-	g_free (guid);
-	return res;
+	g_assert (mono_array_handle_length (guid_h) == 16);
+
+	guint8 *aotid = mono_runtime_get_aotid_arr ();
+	if (!aotid) {
+		return FALSE;
+	} else {
+		MONO_ENTER_NO_SAFEPOINTS;
+		guint8 *data = (guint8*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (guid_h), 1, 0);
+		memcpy (data, aotid, 16);
+		MONO_EXIT_NO_SAFEPOINTS;
+		return TRUE;
+	}
 }
 
 static MonoAssemblyName*
@@ -6308,12 +6314,25 @@ leave:
 	return ret;
 }
 
-MonoStringHandle
-ves_icall_System_Reflection_RuntimeModule_GetGuidInternal (MonoImage *image, MonoError *error)
+void
+ves_icall_System_Reflection_RuntimeModule_GetGuidInternal (MonoImage *image, MonoArrayHandle guid_h, MonoError *error)
 {
-	MonoDomain *domain = mono_domain_get ();
+	g_assert (mono_array_handle_length (guid_h) == 16);
 
-	return mono_string_new_handle (domain, image->guid, error);
+	if (!image->metadata_only) {
+		g_assert (image->heap_guid.data);
+		g_assert (image->heap_guid.size >= 16);
+
+		MONO_ENTER_NO_SAFEPOINTS;
+		guint8 *data = (guint8*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (guid_h), 1, 0);
+		memcpy (data, (guint8*)image->heap_guid.data, 16);
+		MONO_EXIT_NO_SAFEPOINTS;
+	} else {
+		MONO_ENTER_NO_SAFEPOINTS;
+		guint8 *data = (guint8*) mono_array_addr_with_size_internal (MONO_HANDLE_RAW (guid_h), 1, 0);
+		memset (data, 0, 16);
+		MONO_EXIT_NO_SAFEPOINTS;
+	}
 }
 
 #ifndef HOST_WIN32
