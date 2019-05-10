@@ -34,7 +34,7 @@ set ghprbCommentBody=
 ::      __BuildOS           -- default: Windows_NT
 ::      __ProjectDir        -- default: directory of the dir.props file
 ::      __SourceDir         -- default: %__ProjectDir%\src\
-::      __PackagesDir       -- default: %__ProjectDir%\packages\
+::      __PackagesDir       -- default: %__ProjectDir%\.packages\
 ::      __RootBinDir        -- default: %__ProjectDir%\bin\
 ::      __BinDir            -- default: %__RootBinDir%\%__BuildOS%.%__BuildArch.%__BuildType%\
 ::      __IntermediatesDir
@@ -55,7 +55,7 @@ if %__ProjectDir:~-1%==\ set "__ProjectDir=%__ProjectDir:~0,-1%"
 set "__ProjectFilesDir=%__ProjectDir%"
 set "__SourceDir=%__ProjectDir%\src"
 set "__PackagesDir=%DotNetRestorePackagesPath%"
-if [%__PackagesDir%]==[] set "__PackagesDir=%__ProjectDir%\packages"
+if [%__PackagesDir%]==[] set "__PackagesDir=%__ProjectDir%\.packages"
 set "__RootBinDir=%__ProjectDir%\bin"
 set "__LogsDir=%__RootBinDir%\Logs"
 set "__MsbuildDebugLogsDir=%__LogsDir%\MsbuildDebugLogs"

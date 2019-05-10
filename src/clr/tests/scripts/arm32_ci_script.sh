@@ -326,7 +326,7 @@ function copy_to_emulator {
     __testDirFileBase="$__ARMEmulCoreclr/$testDirFileBase"
 
     sudo cp -R ./tests "$__ARMRootfsCoreclrPath/"
-    sudo cp -R ./packages "$__ARMRootfsCoreclrPath/"
+    sudo cp -R ./.packages "$__ARMRootfsCoreclrPath/"
     sudo cp -R ./Tools "$__ARMRootfsCoreclrPath/"
 
     #Copy corefx binary directories to the corefx root in the emulator (first native and then managed)

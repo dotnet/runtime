@@ -79,7 +79,7 @@ echo "Running init-tools.sh"
 "${scriptDir}"/../init-tools.sh
 
 dotnet=$"${scriptDir}"/../.dotnet/dotnet
-packageDir="${scriptDir}"/../packages
+packageDir="${scriptDir}"/../.packages
 csprojPath="${scriptDir}"/src/Common/stress_dependencies/stress_dependencies.csproj
 
 if [ ! -e $dotnetCmd ]; then
