@@ -38,6 +38,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         private const string _dotnetSdkDllMessageTerminator = "dotnet.dll]";
 
+        private readonly IDisposable _testOnlyProductBehaviorMarker;
+
         public MultilevelSDKLookup()
         {
             // The dotnetMultilevelSDKLookup dir will contain some folders and files that will be
@@ -73,10 +75,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Trace messages used to identify from which folder the SDK was picked
             _exeSelectedMessage = $"Using dotnet SDK dll=[{_exeSdkBaseDir}";
             _regSelectedMessage = $"Using dotnet SDK dll=[{_regSdkBaseDir}";
+
+            _testOnlyProductBehaviorMarker = TestOnlyProductBehavior.Enable(DotNet.GreatestVersionHostFxrFilePath);
         }
 
         public void Dispose()
         {
+            _testOnlyProductBehaviorMarker?.Dispose();
+
             if (!TestArtifact.PreserveTestRuns())
             {
                 Directory.Delete(_multilevelDir, true);
@@ -510,7 +516,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 return;
             }
 
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride())
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(DotNet.GreatestVersionHostFxrFilePath))
             {
                 registeredInstallLocationOverride.SetInstallLocation(_regDir, RepoDirectories.BuildArchitecture);
 

@@ -71,7 +71,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             // the product falls back to the default install location.
             CommandResult result;
             string installLocation = Path.Combine(isValid ? sharedState.ValidInstallRoot : sharedState.InvalidInstallRoot, "dotnet");
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride())
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(sharedState.NethostPath))
             {
                 if (useRegisteredLocation)
                 {
@@ -156,7 +156,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             string installLocation = Path.Combine(sharedState.ValidInstallRoot, "dotnet");
 
-            using (RegisteredInstallLocationOverride registeredInstallLocationOverride = new RegisteredInstallLocationOverride())
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(sharedState.NethostPath))
             {
                 File.WriteAllText(registeredInstallLocationOverride.PathValueOverride, string.Format(value, installLocation));
 
@@ -186,6 +186,28 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                         .And.HaveStdErrContaining($"The required library {HostFxrName} could not be found");
                 }
             }
+        }
+
+        [Fact]
+        public void TestOnlyDisabledByDefault()
+        {
+            // Intentionally not enabling test-only behavior. This test validates that even if the test-only env. variable is set
+            // it will not take effect on its own by default.
+            // To make sure the test is reliable, copy the product binary again into the test folder where we run it from.
+            // This is to make sure that we're using the unmodified product binary. If some previous test
+            // enabled test-only product behavior on the binary and didn't correctly cleanup, this test would fail.
+            File.Copy(
+                Path.Combine(sharedState.RepoDirectories.CorehostPackages, RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost")),
+                sharedState.NethostPath,
+                overwrite: true);
+
+            Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, sharedState.ValidInstallRoot)
+                .Execute()
+                .Should().NotHaveStdErrContaining($"Using global installation location [{sharedState.ValidInstallRoot}] as runtime location.");
         }
 
         public class SharedTestState : SharedTestStateBase

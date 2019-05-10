@@ -72,14 +72,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
 
         private CommandResult RunTest(Func<RuntimeConfig, RuntimeConfig> runtimeConfig)
         {
-            return RunTest(
-                SharedState.DotNetMainHive,
-                SharedState.FrameworkReferenceApp,
-                new TestSettings()
-                    .WithRuntimeConfigCustomizer(runtimeConfig)
-                    .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath),
-                // Must enable multi-level lookup otherwise multiple hives are not enabled
-                multiLevelLookup: true);
+            using (TestOnlyProductBehavior.Enable(SharedState.DotNetMainHive.GreatestVersionHostFxrFilePath))
+            {
+                return RunTest(
+                    SharedState.DotNetMainHive,
+                    SharedState.FrameworkReferenceApp,
+                    new TestSettings()
+                        .WithRuntimeConfigCustomizer(runtimeConfig)
+                        .WithEnvironment(Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath, SharedState.DotNetGlobalHive.BinPath),
+                    // Must enable multi-level lookup otherwise multiple hives are not enabled
+                    multiLevelLookup: true);
+            }
         }
 
         public class SharedTestState : SharedTestStateBase

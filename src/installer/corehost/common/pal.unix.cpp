@@ -305,7 +305,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 
     //  ***Used only for testing***
     pal::string_t environment_override;
-    if (pal::getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environment_override))
+    if (test_only_getenv(_X("_DOTNET_TEST_GLOBALLY_REGISTERED_PATH"), &environment_override))
     {
         recv->assign(environment_override);
         return true;
@@ -316,7 +316,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
 
     //  ***Used only for testing***
     pal::string_t environment_install_location_override;
-    if (pal::getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH"), &environment_install_location_override))
+    if (test_only_getenv(_X("_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH"), &environment_install_location_override))
     {
         install_location_file_path = environment_install_location_override;
     }
@@ -361,7 +361,7 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
 {
     //  ***Used only for testing***
     pal::string_t environmentOverride;
-    if (pal::getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environmentOverride))
+    if (test_only_getenv(_X("_DOTNET_TEST_DEFAULT_INSTALL_PATH"), &environmentOverride))
     {
         recv->assign(environmentOverride);
         return true;

@@ -17,75 +17,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             return new DotNetCliCustomizer(dotnet);
         }
 
-        internal interface ITestFileBackup
-        {
-            void Backup(string path);
-        }
-
-        public class DotNetCliCustomizer : IDisposable, ITestFileBackup
+        public class DotNetCliCustomizer : IDisposable
         {
             private readonly DotNetCli _dotnet;
-            private readonly string _basePath;
-            private readonly string _backupPath;
+            private readonly TestFileBackup _backup;
 
             public DotNetCliCustomizer(DotNetCli dotnet)
             {
                 _dotnet = dotnet;
-                _basePath = Path.GetFullPath(dotnet.BinPath);
-                _backupPath = Path.Combine(_basePath, ".test.backup");
-
-                if (Directory.Exists(_backupPath))
-                {
-                    throw new Exception($"The backup directory already exists. Please make sure that all customizers are correctly disposed.");
-                }
-            }
-
-            void ITestFileBackup.Backup(string path)
-            {
-                path = Path.GetFullPath(path);
-                if (!path.StartsWith(_basePath))
-                {
-                    throw new Exception($"Trying to backup file {path} which is outside of the backup root {_basePath}.");
-                }
-
-                if (!Directory.Exists(_backupPath))
-                {
-                    Directory.CreateDirectory(_backupPath);
-                }
-
-                string backupFile = Path.Combine(_backupPath, path.Substring(_basePath.Length + 1));
-                string containingDirectory = Path.GetDirectoryName(backupFile);
-                if (!Directory.Exists(containingDirectory))
-                {
-                    Directory.CreateDirectory(containingDirectory);
-                    if (!File.Exists(backupFile))
-                    {
-                        File.Copy(path, backupFile);
-                    }
-                }
+                _backup = new TestFileBackup(dotnet.BinPath);
             }
 
             public void Dispose()
             {
-                if (Directory.Exists(_backupPath))
-                {
-                    CopyOverDirectory(_backupPath, _dotnet.BinPath);
-
-                    Directory.Delete(_backupPath, recursive: true);
-                }
-            }
-
-            private static void CopyOverDirectory(string source, string destination)
-            {
-                foreach (string directory in Directory.GetDirectories(source))
-                {
-                    CopyOverDirectory(directory, Path.Combine(destination, Path.GetFileName(directory)));
-                }
-
-                foreach (string file in Directory.GetFiles(source))
-                {
-                    File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), overwrite: true);
-                }
+                _backup.Dispose();
             }
 
             public DotNetFramework Framework(string name, string version = null)
@@ -112,7 +57,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     throw new Exception($"No framework {name}, version {version} found.");
                 }
 
-                return new DotNetFramework(this, Path.Combine(path, version));
+                return new DotNetFramework(_backup, Path.Combine(path, version));
             }
         }
 
