@@ -13,6 +13,7 @@
     <MicrosoftNETCorePlatformsVersion>3.0.0-preview6.19259.1</MicrosoftNETCorePlatformsVersion>
     <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview6.19257.8</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftNETCoreAppVersion>3.0.0-preview5-27620-01</MicrosoftNETCoreAppVersion>
+    <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19229.8</MicrosoftDotNetBuildTasksFeedVersion>
     <optimizationIBCCoreCLRVersion>99.99.99-master-20190509.1</optimizationIBCCoreCLRVersion>
     <optimizationPGOCoreCLRVersion>99.99.99-master-20190509.1</optimizationPGOCoreCLRVersion>
   </PropertyGroup>
