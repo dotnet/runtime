@@ -16,15 +16,15 @@ namespace System.Diagnostics
                 throw new ArgumentNullException(nameof(type));
             }
 
-            ProxyTypeName = type.AssemblyQualifiedName;
+            ProxyTypeName = type.AssemblyQualifiedName!;
         }
 
-        public DebuggerTypeProxyAttribute(string? typeName)
+        public DebuggerTypeProxyAttribute(string typeName)
         {
             ProxyTypeName = typeName;
         }
 
-        public string? ProxyTypeName { get; }
+        public string ProxyTypeName { get; }
 
         public Type? Target
         {
