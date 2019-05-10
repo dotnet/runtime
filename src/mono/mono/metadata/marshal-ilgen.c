@@ -1485,10 +1485,9 @@ handle_enum:
 	}
 
 	if (sig->ret->byref) {
-		int pos;
-
 		/* perform indirect load and return by value */
 #ifdef ENABLE_NETCORE
+		int pos;
 		mono_mb_emit_byte (mb, CEE_DUP);
 		pos = mono_mb_emit_branch (mb, CEE_BRTRUE);
 		mono_mb_emit_exception_full (mb, "Mono", "NullByRefReturnException", NULL);
