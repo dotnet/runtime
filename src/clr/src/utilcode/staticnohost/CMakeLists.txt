@@ -10,3 +10,5 @@ add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 if(CLR_CMAKE_PLATFORM_UNIX)
   target_link_libraries(utilcodestaticnohost  nativeresourcestring)
 endif(CLR_CMAKE_PLATFORM_UNIX)
+
+add_dependencies(utilcodestaticnohost ${UTILCODE_DEPENDENCIES})

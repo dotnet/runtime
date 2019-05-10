@@ -20,3 +20,4 @@ add_library_clr(bcltype
     ${BCLTYPE_SOURCES}
 )
 
+add_dependencies(bcltype eventing_headers)
