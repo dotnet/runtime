@@ -167,7 +167,7 @@ namespace Microsoft.Extensions.Logging
                     continue;
                 }
 
-                messageLoggers.Add(new MessageLogger(loggerInformation.Logger, loggerInformation.Category, loggerInformation.ProviderType, minLevel, filter));
+                messageLoggers.Add(new MessageLogger(loggerInformation.Logger, loggerInformation.Category, loggerInformation.ProviderType.FullName, minLevel, filter));
 
                 if (!loggerInformation.ExternalScope)
                 {
