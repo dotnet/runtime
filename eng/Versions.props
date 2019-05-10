@@ -36,9 +36,9 @@
     <!-- coreclr -->
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview6-27710-71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- winforms -->
-    <MicrosoftPrivateWinformsPackageVersion>4.8.0-preview6.19257.1</MicrosoftPrivateWinformsPackageVersion>
+    <MicrosoftPrivateWinformsPackageVersion>4.8.0-preview6.19258.6</MicrosoftPrivateWinformsPackageVersion>
     <!-- wpf -->
-    <MicrosoftDotNetWpfGitHubPackageVersion>4.8.0-preview6.19257.5</MicrosoftDotNetWpfGitHubPackageVersion>
+    <MicrosoftDotNetWpfGitHubPackageVersion>4.8.0-preview6.19258.4</MicrosoftDotNetWpfGitHubPackageVersion>
     <!-- wpf-int -->
     <MicrosoftDotNetWpfDncEngPackageVersion>4.8.0-preview6.19259.6</MicrosoftDotNetWpfDncEngPackageVersion>
     <!-- Not auto-updated. -->
