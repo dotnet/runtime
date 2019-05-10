@@ -46,6 +46,7 @@ if (WIN32)
 endif (WIN32)
 
 add_library_clr(cee_wks ${VM_SOURCES_WKS} ${VM_SOURCES_WKS_ARCH_ASM})
+add_dependencies(cee_wks eventing_headers)
 
 if (WIN32)
 

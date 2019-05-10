@@ -43,6 +43,8 @@ add_precompiled_header(stdafx.h stdafx.cpp DACCESS_SOURCES)
 
 add_library_clr(daccess ${DACCESS_SOURCES})
 
+add_dependencies(daccess eventing_headers)
+
 if(CLR_CMAKE_PLATFORM_UNIX)
   add_custom_command(
     OUTPUT  ${GENERATED_INCLUDE_DIR}/dactablerva.h
