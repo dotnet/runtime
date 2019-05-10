@@ -1775,7 +1775,7 @@ static void MonitorExit(Object* obj, BYTE* pbLockTaken)
 
     if (pbLockTaken != 0) *pbLockTaken = 0;
 
-    TESTHOOKCALL(AppDomainCanBeUnloaded(GET_THREAD()->GetDomain()->GetId().m_dwId,FALSE));
+    TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID, FALSE));
     
     if (GET_THREAD()->IsAbortRequested()) {
         GET_THREAD()->HandleThreadAbort();
@@ -1794,7 +1794,7 @@ static void MonitorExitStatic(AwareLock *lock, BYTE* pbLockTaken)
     if (!lock->Leave())
         COMPlusThrow(kSynchronizationLockException);
 
-    TESTHOOKCALL(AppDomainCanBeUnloaded(GET_THREAD()->GetDomain()->GetId().m_dwId,FALSE));
+    TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID, FALSE));
     if (GET_THREAD()->IsAbortRequested()) {
         GET_THREAD()->HandleThreadAbort();
     }
@@ -7231,7 +7231,7 @@ void Interpreter::LdFld(FieldDesc* fldIn)
                 // Large struct case: allocate space on the large struct operand stack.
                 void* destPtr = LargeStructOperandStackPush(sz);
                 OpStackSet<void*>(stackInd, destPtr);
-                CopyValueClass(destPtr, srcPtr, valClsMT, obj->GetAppDomain());
+                CopyValueClass(destPtr, srcPtr, valClsMT);
             }
             else
             {
