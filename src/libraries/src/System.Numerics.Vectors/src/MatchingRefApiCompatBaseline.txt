@@ -1,8 +1,0 @@
-Compat issues with assembly System.Numerics.Vectors:
-MembersMustExist : Member 'System.Numerics.Vector<T>..ctor(System.ReadOnlySpan<System.Byte>)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Numerics.Vector<T>..ctor(System.ReadOnlySpan<T>)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Numerics.Vector<T>.CopyTo(System.Span<System.Byte>)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Numerics.Vector<T>.CopyTo(System.Span<T>)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Numerics.Vector<T>.TryCopyTo(System.Span<System.Byte>)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Numerics.Vector<T>.TryCopyTo(System.Span<T>)' does not exist in the reference but it does exist in the implementation.
-Total Issues: 6
