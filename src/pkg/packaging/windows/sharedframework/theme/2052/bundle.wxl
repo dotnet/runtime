@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="Caption">[WixBundleName] 安装程序</String>
+  <String Id="Title">[BUNDLEMONIKER]</String>
+  <String Id="Motto">你只需要一个 shell、一个文本编辑器，还需花 10 分钟即可。.
+
+准备好了吗? 要设置? 让我们开始吧!</String>
+  <String Id="ConfirmCancelMessage">是否确实要取消?</String>
+  <String Id="ExecuteUpgradeRelatedBundleMessage">上一版本</String>
+  <String Id="HelpHeader">安装程序帮助</String>
+  <String Id="HelpText">/install | /repair | /uninstall | /layout [目录] - 安装、修复、卸载
+   目录中的安装包或创建其完整本地副本。Install 为默认选择。
+
+/passive | /quiet -  显示最少的 UI 且无提示，或不显示 UI 且
+   无提示。默认显示 UI 及全部提示。
+
+/norestart   - 禁止任何重新启动。默认在重新启动前显示提示 UI。
+/log log.txt - 向特定文件写入日志。默认在 %TEMP% 中创建日志文件。</String>
+  <String Id="HelpCloseButton">关闭(&amp;C)</String>
+  <String Id="InstallAcceptCheckbox">我同意许可条款和条件(&amp;A)</String>
+  <String Id="InstallOptionsButton">选项(&amp;O)</String>
+  <String Id="InstallInstallButton">安装(&amp;I)</String>
+  <String Id="InstallCloseButton">关闭(&amp;C)</String>
+  <String Id="OptionsHeader">安装选项</String>
+  <String Id="OptionsLocationLabel">安装位置:</String>
+  <String Id="OptionsBrowseButton">浏览(&amp;B)</String>
+  <String Id="OptionsOkButton">确定(&amp;O)</String>
+  <String Id="OptionsCancelButton">取消(&amp;C)</String>
+  <String Id="ProgressHeader">安装进度</String>
+  <String Id="ProgressLabel">正在处理:</String>
+  <String Id="OverallProgressPackageText">正在初始化…</String>
+  <String Id="ProgressCancelButton">取消(&amp;C)</String>
+  <String Id="ModifyHeader">修改安装程序</String>
+  <String Id="ModifyRepairButton">修复(&amp;R)</String>
+  <String Id="ModifyUninstallButton">卸载(&amp;U)</String>
+  <String Id="ModifyCloseButton">关闭(&amp;C)</String>
+  <String Id="SuccessRepairHeader">成功完成了修复</String>
+  <String Id="SuccessUninstallHeader">成功完成了卸载</String>
+  <String Id="SuccessInstallHeader">安装成功</String>
+  <String Id="SuccessHeader">设置成功</String>
+  <String Id="SuccessLaunchButton">启动(&amp;L)</String>
+  <String Id="SuccessRestartText">在使用此软件之前，您必须重新启动计算机。</String>
+  <String Id="SuccessRestartButton">重新启动(&amp;R)</String>
+  <String Id="SuccessCloseButton">关闭(&amp;C)</String>
+  <String Id="FailureHeader">设置失败</String>
+  <String Id="FailureInstallHeader">安装失败</String>
+  <String Id="FailureUninstallHeader">卸载失败</String>
+  <String Id="FailureRepairHeader">修复失败</String>
+  <String Id="FailureHyperlinkLogText">一个或多个问题导致了安装失败。请修复这些问题，然后重试安装。有关详细信息，请参阅&lt;a href="#"&gt;日志文件&lt;/a&gt;。</String>
+  <String Id="FailureRestartText">必须重新启动计算机才能完成软件回退。</String>
+  <String Id="FailureRestartButton">重新启动(&amp;R)</String>
+  <String Id="FailureCloseButton">关闭(&amp;C)</String>
+  <String Id="FailureNotSupportedCurrentOperatingSystem">此操作系统不支持 [PRODUCT_NAME]。有关详细信息，请参阅[LINK_PREREQ_PAGE]。</String>
+  <String Id="FailureNotSupportedX86OperatingSystem">x86 操作系统不支持该 [PRODUCT_NAME]。请使用相应的 x86 安装程序进行安装。</String>
+  <String Id="FilesInUseHeader">文件正在使用</String>
+  <String Id="FilesInUseLabel">以下应用程序正在使用的文件需要更新:</String>
+  <String Id="FilesInUseCloseRadioButton">关闭应用程序并尝试重启(&amp;A)。</String>
+  <String Id="FilesInUseDontCloseRadioButton">不关闭应用程序(&amp;D)。需要重启。</String>
+  <String Id="FilesInUseOkButton">确定(&amp;O)</String>
+  <String Id="FilesInUseCancelButton">取消(&amp;C)</String>
+  <String Id="WelcomeHeaderMessage">.NET Core 运行时</String>
+  <String Id="WelcomeDescription">.NET Core 是一种开发平台，可用于生成命令行应用程序、微服务和新式网站。它是开源、跨平台的，且受 Microsoft 支持。希望你喜欢!</String>
+  <String Id="LearnMoreTitle">了解有关 .NET Core 的详细信息</String>
+  <String Id="SuccessInstallLocation">以下项已安装到 [DOTNETHOME]</String>
+  <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
+  <String Id="ResourcesHeader">资源</String>
+  <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;文档&lt;/A&gt;</String>
+  <String Id="RelaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;发行说明&lt;/A&gt;</String>
+  <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;教程&lt;/A&gt;</String>
+  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;.NET Core 遥测&lt;/A&gt;</String>
+  <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;隐私声明&lt;/A&gt;</String>
+  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;.NET 库 EULA&lt;/A&gt;</String>
+  
+</WixLocalization>

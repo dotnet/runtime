@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="Caption">Programme d'installation de [WixBundleName]</String>
+  <String Id="Title">[BUNDLEMONIKER]</String>
+  <String Id="Motto">Vous avez juste besoin d'un interpréteur de commandes, d'un éditeur de texte et de 10 minutes.
+
+À vos marques ? Prêt ? Partez !</String>
+  <String Id="ConfirmCancelMessage">Voulez-vous vraiment annuler ?</String>
+  <String Id="ExecuteUpgradeRelatedBundleMessage">Version précédente</String>
+  <String Id="HelpHeader">Aide à l'installation</String>
+  <String Id="HelpText">/install | /repair | /uninstall | /layout [répertoire] - installe, répare, désinstalle ou
+   crée une copie locale complète du bundle dans le répertoire. Install est l'option par défaut.
+
+/passive | /quiet -  affiche une interface utilisateur minimale, sans invite, ou n'affiche 
+   ni interface utilisateur, ni invite. Par défaut, l'interface utilisateur et toutes les invites sont affichées.
+
+/norestart   - supprime toutes les tentatives de redémarrage. Par défaut, l'interface utilisateur affiche une invite avant le redémarrage.
+/log log.txt - enregistre les informations dans un fichier spécifique. Par défaut, un fichier journal est créé dans %TEMP%.</String>
+  <String Id="HelpCloseButton">&amp;Fermer</String>
+  <String Id="InstallAcceptCheckbox">J'&amp;accepte les conditions générales de la licence</String>
+  <String Id="InstallOptionsButton">&amp;Options</String>
+  <String Id="InstallInstallButton">&amp;Installer</String>
+  <String Id="InstallCloseButton">&amp;Fermer</String>
+  <String Id="OptionsHeader">Options d'installation</String>
+  <String Id="OptionsLocationLabel">Emplacement de l'installation :</String>
+  <String Id="OptionsBrowseButton">&amp;Parcourir</String>
+  <String Id="OptionsOkButton">&amp;OK</String>
+  <String Id="OptionsCancelButton">&amp;Annuler</String>
+  <String Id="ProgressHeader">Progression de l'installation</String>
+  <String Id="ProgressLabel">En cours :</String>
+  <String Id="OverallProgressPackageText">Initialisation...</String>
+  <String Id="ProgressCancelButton">&amp;Annuler</String>
+  <String Id="ModifyHeader">Modifier l'installation</String>
+  <String Id="ModifyRepairButton">&amp;Réparer</String>
+  <String Id="ModifyUninstallButton">&amp;Désinstaller</String>
+  <String Id="ModifyCloseButton">&amp;Fermer</String>
+  <String Id="SuccessRepairHeader">Réparation terminée avec succès</String>
+  <String Id="SuccessUninstallHeader">Désinstallation terminée avec succès</String>
+  <String Id="SuccessInstallHeader">Installation réussie</String>
+  <String Id="SuccessHeader">Installation/désinstallation réussie</String>
+  <String Id="SuccessLaunchButton">&amp;Démarrer</String>
+  <String Id="SuccessRestartText">Vous devez redémarrer votre ordinateur avant de pouvoir utiliser le logiciel.</String>
+  <String Id="SuccessRestartButton">&amp;Redémarrer</String>
+  <String Id="SuccessCloseButton">&amp;Fermer</String>
+  <String Id="FailureHeader">Échec de l'installation</String>
+  <String Id="FailureInstallHeader">Échec de l'installation</String>
+  <String Id="FailureUninstallHeader">Échec de la désinstallation</String>
+  <String Id="FailureRepairHeader">Échec de la réparation</String>
+  <String Id="FailureHyperlinkLogText">Un ou plusieurs problèmes sont à l'origine de l'échec de l'installation. Corrigez ces problèmes, puis recommencez l'installation. Pour plus d'informations, voir le &lt;a href="#"&gt;fichier journal&lt;/a&gt;.</String>
+  <String Id="FailureRestartText">Vous devez redémarrer votre ordinateur pour terminer l'opération de restauration du logiciel.</String>
+  <String Id="FailureRestartButton">&amp;Redémarrer</String>
+  <String Id="FailureCloseButton">&amp;Fermer</String>
+  <String Id="FailureNotSupportedCurrentOperatingSystem">[PRODUCT_NAME] n'est pas pris en charge sur ce système d'exploitation. Pour plus d'informations, consultez [LINK_PREREQ_PAGE].</String>
+  <String Id="FailureNotSupportedX86OperatingSystem">[PRODUCT_NAME] n'est pas pris en charge sur les systèmes d'exploitation x86. Effectuez l'installation à l'aide du programme d'installation x86 correspondant.</String>
+  <String Id="FilesInUseHeader">Fichiers en cours d'utilisation</String>
+  <String Id="FilesInUseLabel">Les applications suivantes utilisent des fichiers nécessitant une mise à jour :</String>
+  <String Id="FilesInUseCloseRadioButton">&amp;Fermer les applications essayez de les ouvrir de nouveau.</String>
+  <String Id="FilesInUseDontCloseRadioButton">&amp;Ne pas fermer les applications. Un redémarrage sera nécessaire.</String>
+  <String Id="FilesInUseOkButton">&amp;OK</String>
+  <String Id="FilesInUseCancelButton">&amp;Annuler</String>
+  <String Id="WelcomeHeaderMessage">Runtime .NET Core</String>
+  <String Id="WelcomeDescription">.NET Core est une plateforme de développement qui vous permet de générer des applications en ligne de commande, des microservices et des sites web modernes. Il s'agit d'un framework open source, multiplateforme et pris en charge par Microsoft. Nous espérons que vous l'apprécierez !</String>
+  <String Id="LearnMoreTitle">En savoir plus sur .NET Core</String>
+  <String Id="SuccessInstallLocation">L'élément suivant a été installé sur [DOTNETHOME]</String>
+  <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
+  <String Id="ResourcesHeader">Ressources</String>
+  <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;Documentation&lt;/A&gt;</String>
+  <String Id="RelaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;Notes de publication&lt;/A&gt;</String>
+  <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Tutoriels&lt;/A&gt;</String>
+  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Télémétrie .NET Core&lt;/A&gt;</String>
+  <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Déclaration de confidentialité&lt;/A&gt;</String>
+  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;CLUF de la bibliothèque .NET&lt;/A&gt;</String>
+  
+</WixLocalization>
