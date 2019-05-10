@@ -95,6 +95,7 @@ list(APPEND GC_SOURCES ${GC_HEADERS})
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
 add_library_clr(clrgc SHARED ${GC_SOURCES})
+add_dependencies(clrgc eventing_headers)
 target_link_libraries(clrgc ${GC_LINK_LIBRARIES})
 install_clr(clrgc)
 

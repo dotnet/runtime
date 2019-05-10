@@ -15,3 +15,5 @@ add_library_clr(comfloat_wks
     STATIC
     ${FLOAT_SOURCES}
 )
+
+add_dependencies(comfloat_wks eventing_headers)

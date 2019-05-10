@@ -168,55 +168,22 @@ restore_optdata()
 generate_event_logging_sources()
 {
     __OutputDir=$1
-    __ConsumingBuildSystem=$2
-
-    __OutputIncDir="$__OutputDir/src/inc"
     __OutputEventingDir="$__OutputDir/Eventing"
-    __OutputEventProviderDir="$__OutputEventingDir/eventprovider"
-
-    echo "Laying out dynamically generated files consumed by $__ConsumingBuildSystem"
-    echo "Laying out dynamically generated Event test files, etmdummy stub functions, and external linkages"
 
     __PythonWarningFlags="-Wall"
     if [[ $__IgnoreWarnings == 0 ]]; then
         __PythonWarningFlags="$__PythonWarningFlags -Werror"
     fi
 
-    $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genEventing.py" --inc $__OutputIncDir --dummy $__OutputIncDir/etmdummy.h --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --testdir "$__OutputEventProviderDir/tests"
-    if [[ $? != 0 ]]; then
-        exit 1
-    fi
-
-    echo "Laying out dynamically generated EventPipe Implementation"
-    $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genEventPipe.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --exc "$__ProjectRoot/src/vm/ClrEtwAllMeta.lst" --intermediate "$__OutputEventingDir/eventpipe"
-
     echo "Laying out dynamically generated EventSource classes"
     $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genRuntimeEventSources.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__OutputEventingDir"
-
-    # determine the logging system
-    case $__BuildOS in
-        Linux|FreeBSD)
-            echo "Laying out dynamically generated Event Logging Implementation of Lttng"
-            $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genLttngProvider.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__OutputEventProviderDir"
-            if [[ $? != 0 ]]; then
-                exit 1
-            fi
-            ;;
-        *)
-            echo "Laying out dummy event logging provider"
-            $PYTHON -B $__PythonWarningFlags "$__ProjectRoot/src/scripts/genDummyProvider.py" --man "$__ProjectRoot/src/vm/ClrEtwAll.man" --intermediate "$__OutputEventProviderDir"
-            if [[ $? != 0 ]]; then
-                exit 1
-            fi
-            ;;
-    esac
 }
 
 generate_event_logging()
 {
     # Event Logging Infrastructure
-    if [[ $__SkipCoreCLR == 0 || $__SkipMSCorLib == 0 || $__ConfigureOnly == 1 ]]; then
-        generate_event_logging_sources "$__IntermediatesDir" "the native build system"
+    if [[ $__SkipMSCorLib == 0 ]]; then
+        generate_event_logging_sources "$__IntermediatesDir"
     fi
 }
 

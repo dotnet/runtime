@@ -36,12 +36,6 @@ endif(CORECLR_SET_RPATH)
 OPTION(CLR_CMAKE_ENABLE_CODE_COVERAGE "Enable code coverage" OFF)
 OPTION(CLR_CMAKE_WARNINGS_ARE_ERRORS "Warnings are errors" ON)
 
-# Ensure that python is present
-find_program(PYTHON NAMES python3 python2 python py)
-if (PYTHON STREQUAL "PYTHON-NOTFOUND")
-    message(FATAL_ERROR "PYTHON not found: Please install Python 2.7.9 or later from https://www.python.org/downloads/")
-endif()
-
 # Ensure other tools are present
 if (WIN32)
     if(CLR_CMAKE_HOST_ARCH STREQUAL arm)

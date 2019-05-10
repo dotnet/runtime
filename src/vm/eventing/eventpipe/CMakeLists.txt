@@ -1,0 +1,39 @@
+cmake_minimum_required(VERSION 2.8.12.2)
+
+include(FindPythonInterp)
+
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
+set(GENERATE_SCRIPT ${CLR_DIR}/src/scripts/genEventPipe.py)
+set(GENERATE_COMMAND ${PYTHON_EXECUTABLE} ${GENERATE_SCRIPT} --man ${EVENT_MANIFEST} --exc ${EVENT_EXCLUSIONS} --intermediate ${CMAKE_CURRENT_BINARY_DIR} ${NONEXTERN_ARG})
+
+execute_process(
+  COMMAND ${GENERATE_COMMAND} --dry-run
+  RESULT_VARIABLE GEN_EVENTPIPE_RESULT
+  OUTPUT_VARIABLE EVENTPIPE_SOURCE_PATHS
+  ERROR_VARIABLE GEN_EVENTPIPE_ERRORS
+)
+
+if (NOT GEN_EVENTPIPE_RESULT EQUAL 0)
+  message(FATAL_ERROR "Failed to generate EventPipe: ${GEN_EVENTPIPE_ERRORS}")
+endif()
+
+string(REPLACE "\n" ";" EVENTPIPE_SOURCE_PATHS ${EVENTPIPE_SOURCE_PATHS}) # turn the outputted list of files into a CMake list
+
+set (EVENTPIPE_SOURCES "")
+foreach(EVENTPIPE_SOURCE_PATH ${EVENTPIPE_SOURCE_PATHS})
+  file(TO_CMAKE_PATH ${EVENTPIPE_SOURCE_PATH} EVENTPIPE_SOURCE)
+  list(APPEND EVENTPIPE_SOURCES ${EVENTPIPE_SOURCE})
+endforeach()
+
+add_custom_command(OUTPUT ${EVENTPIPE_SOURCES}
+  COMMAND ${GENERATE_COMMAND}
+  DEPENDS ${GENERATE_SCRIPT} ${EVENT_MANIFEST} ${EVENT_EXCLUSIONS})
+
+add_library_clr(eventpipe STATIC ${EVENTPIPE_SOURCES})
+set_target_properties(eventpipe PROPERTIES LINKER_LANGUAGE CXX)
+add_dependencies(eventpipe eventing_headers)
+
+if (NOT WIN32)
+  _install(TARGETS eventpipe DESTINATION lib)
+endif()
