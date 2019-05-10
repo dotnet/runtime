@@ -38,6 +38,8 @@ function RunCandleForBundle
     $AuthWsxRoot =  Join-Path $PackagingRoot "windows\sharedframework"
     $SharedFrameworkComponentVersion = $SharedFrameworkNugetVersion.Replace('-', '_');
 
+    $LcidList = (Get-ChildItem "$AuthWsxRoot\theme\*\bundle.wxl").Directory.Name -join ';'
+
     .\candle.exe -nologo `
         -dMicrosoftEula="$PackagingRoot\windows\eula.rtf" `
         -dProductMoniker="$ProductMoniker" `
@@ -52,6 +54,7 @@ function RunCandleForBundle
         -dFrameworkComponentVersion="$SharedFrameworkComponentVersion" `
         -dFrameworkUpgradeCode="$SharedFrameworkUpgradeCode" `
         -dTargetArchitecture="$TargetArchitecture" `
+        -dLcidList="$LcidList" `
         -arch "$Architecture" `
         -ext WixBalExtension.dll `
         -ext WixUtilExtension.dll `
