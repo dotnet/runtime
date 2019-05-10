@@ -140,13 +140,9 @@ namespace System.Reflection
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context) { throw NotImplemented.ByDesign; }
 
-        public override string? ToString()
+        public override string ToString()
         {
-            string? displayName = FullName;
-            if (displayName == null)
-                return base.ToString();
-            else
-                return displayName;
+            return FullName ?? base.ToString()!;
         }
 
         /*
