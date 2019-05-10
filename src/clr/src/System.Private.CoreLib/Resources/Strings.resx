@@ -2839,9 +2839,6 @@
   <data name="MissingField_Name" xml:space="preserve">
     <value>Field '{0}' not found.</value>
   </data>
-  <data name="MissingManifestResource_LooselyLinked" xml:space="preserve">
-    <value>Could not find a manifest resource entry called "{0}" in assembly "{1}". Please check spelling, capitalization, and build rules to ensure "{0}" is being linked into the assembly.</value>
-  </data>
   <data name="MissingManifestResource_MultipleBlobs" xml:space="preserve">
     <value>A case-insensitive lookup for resource file "{0}" in assembly "{1}" found multiple entries. Remove the duplicates or specify the exact case.</value>
   </data>
