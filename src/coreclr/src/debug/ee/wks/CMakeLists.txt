@@ -63,3 +63,5 @@ else ()
   endif()
 
 endif (WIN32)
+
+add_dependencies(cordbee_wks eventing_headers)

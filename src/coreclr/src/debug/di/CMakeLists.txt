@@ -109,3 +109,4 @@ endif (WIN32)
 list(APPEND CORDBDI_SOURCES ${CORDBDI_SOURCES_ASM_FILE})
 
 add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
+add_dependencies(cordbdi eventing_headers)

@@ -917,5 +917,5 @@ add_subdirectory(dac)
 add_subdirectory(wks)
 
 if(FEATURE_PERFTRACING)
-    add_subdirectory(${GENERATED_EVENTING_DIR}/eventpipe ${CMAKE_CURRENT_BINARY_DIR}/eventpipe)
+    add_subdirectory(eventing)
 endif(FEATURE_PERFTRACING)
