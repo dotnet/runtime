@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WixLocalization Culture="en-us" Language="1033" xmlns="http://schemas.microsoft.com/wix/2006/localization">
+  <String Id="Caption">Instalador do [WixBundleName]</String>
+  <String Id="Title">[BUNDLEMONIKER]</String>
+  <String Id="Motto">Você só precisa de um shell, um editor de texto e 10 minutos de seu tempo.
+
+Preparado? Tudo definido? Vamos nessa!</String>
+  <String Id="ConfirmCancelMessage">Tem certeza de que deseja cancelar?</String>
+  <String Id="ExecuteUpgradeRelatedBundleMessage">Versão anterior</String>
+  <String Id="HelpHeader">Ajuda de Instalação</String>
+  <String Id="HelpText">/install | /repair | /uninstall | /layout [diretório] - instala, repara, desinstala ou
+   cria uma cópia local completa do pacote no diretório. Install é o padrão
+
+/passive | /quiet -  exibe a interface do usuário mínima sem nenhum prompt ou não exibe nenhuma interface do usuário e
+   nenhum prompt. Por padrão, a interface do usuário e todos os prompts são exibidos.
+
+/norestart   - suprime qualquer tentativa de reiniciar. Por padrão, a interface do usuário perguntará antes de reiniciar.
+/log log.txt - registra em um arquivo específico. Por padrão, um arquivo de log é criado em %TEMP%.</String>
+  <String Id="HelpCloseButton">&amp;Fechar</String>
+  <String Id="InstallAcceptCheckbox">&amp;Concordo com os termos e condições da licença</String>
+  <String Id="InstallOptionsButton">&amp;Opções</String>
+  <String Id="InstallInstallButton">&amp;Instalar</String>
+  <String Id="InstallCloseButton">&amp;Fechar</String>
+  <String Id="OptionsHeader">Opções de Instalação</String>
+  <String Id="OptionsLocationLabel">Local de instalação:</String>
+  <String Id="OptionsBrowseButton">&amp;Navegar</String>
+  <String Id="OptionsOkButton">&amp;OK</String>
+  <String Id="OptionsCancelButton">&amp;Cancelar</String>
+  <String Id="ProgressHeader">Progresso da Instalação</String>
+  <String Id="ProgressLabel">Processando:</String>
+  <String Id="OverallProgressPackageText">Inicializando...</String>
+  <String Id="ProgressCancelButton">&amp;Cancelar</String>
+  <String Id="ModifyHeader">Modificar Instalação</String>
+  <String Id="ModifyRepairButton">&amp;Reparar</String>
+  <String Id="ModifyUninstallButton">&amp;Desinstalar</String>
+  <String Id="ModifyCloseButton">&amp;Fechar</String>
+  <String Id="SuccessRepairHeader">Reparação Concluída com Êxito</String>
+  <String Id="SuccessUninstallHeader">Desinstalação Concluída com Êxito</String>
+  <String Id="SuccessInstallHeader">A instalação foi bem-sucedida</String>
+  <String Id="SuccessHeader">Instalação com Êxito</String>
+  <String Id="SuccessLaunchButton">&amp;Iniciar</String>
+  <String Id="SuccessRestartText">Você deve reiniciar seu computador antes de usar o software.</String>
+  <String Id="SuccessRestartButton">&amp;Reiniciar</String>
+  <String Id="SuccessCloseButton">&amp;Fechar</String>
+  <String Id="FailureHeader">Falha na Instalação</String>
+  <String Id="FailureInstallHeader">Falha na Instalação</String>
+  <String Id="FailureUninstallHeader">Falha na Desinstalação</String>
+  <String Id="FailureRepairHeader">Falha na Reparação</String>
+  <String Id="FailureHyperlinkLogText">Um ou mais problemas causaram falha na instalação. Corrija-os e tente instalar novamente. Para obter mais informações, consulte o &lt;a href="#"&gt;arquivo de log&lt;/a&gt;.</String>
+  <String Id="FailureRestartText">Você deve reiniciar seu computador para concluir a reversão do software.</String>
+  <String Id="FailureRestartButton">&amp;Reiniciar</String>
+  <String Id="FailureCloseButton">&amp;Fechar</String>
+  <String Id="FailureNotSupportedCurrentOperatingSystem">Não há suporte para o [PRODUCT_NAME] neste sistema operacional. Para obter mais informações, confira [LINK_PREREQ_PAGE].</String>
+  <String Id="FailureNotSupportedX86OperatingSystem">O [PRODUCT_NAME] não tem suporte em sistemas operacionais x86. Instale usando o instalador x86 correspondente.</String>
+  <String Id="FilesInUseHeader">Arquivos em Uso</String>
+  <String Id="FilesInUseLabel">Os aplicativos a seguir estão usando arquivos que precisam ser atualizados:</String>
+  <String Id="FilesInUseCloseRadioButton">Feche os &amp;aplicativos e tente reiniciá-los.</String>
+  <String Id="FilesInUseDontCloseRadioButton">&amp;Não feche os aplicativos. Será necessária uma reinicialização.</String>
+  <String Id="FilesInUseOkButton">&amp;OK</String>
+  <String Id="FilesInUseCancelButton">&amp;Cancelar</String>
+  <String Id="WelcomeHeaderMessage">Tempo de Execução do .NET Core</String>
+  <String Id="WelcomeDescription">O .NET Core é uma plataforma de desenvolvimento que você pode usar para criar aplicativos de linha de comando, microsserviços e sites modernos. É software livre, multiplataforma e com suporte da Microsoft. Esperamos que você goste!</String>
+  <String Id="LearnMoreTitle">Saiba mais sobre o .NET Core</String>
+  <String Id="SuccessInstallLocation">O seguinte foi instalado em [DOTNETHOME]</String>
+  <String Id="SuccessInstallProductName"> - [BUNDLEMONIKER] </String>
+  <String Id="ResourcesHeader">Recursos</String>
+  <String Id="DocumentationLink">&lt;A HREF="https://aka.ms/dotnet-docs"&gt;Documentação&lt;/A&gt;</String>
+  <String Id="RelaseNotesLink">&lt;A HREF="https://aka.ms/20-p2-rel-notes"&gt;Notas sobre a Versão&lt;/A&gt;</String>
+  <String Id="TutorialLink">&lt;A HREF="https://aka.ms/dotnet-tutorials"&gt;Tutoriais&lt;/A&gt;</String>
+  <String Id="TelemetryLink">&lt;A HREF="https://aka.ms/dotnet-cli-telemetry"&gt;Telemetria do .NET Core&lt;/A&gt;</String>
+  <String Id="PrivacyStatementLink">&lt;A HREF="https://aka.ms/dev-privacy"&gt;Política de Privacidade&lt;/A&gt;</String>
+  <String Id="EulaLink">&lt;A HREF="https://go.microsoft.com/fwlink/?LinkId=329770"&gt;Termos de licença da Biblioteca do .NET&lt;/A&gt;</String>
+  
+</WixLocalization>

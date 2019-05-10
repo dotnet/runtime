@@ -11,13 +11,13 @@
           Compressed="yes">
     
     <bal:Condition
-     Message="The $(var.ProductName) is not supported on this operating system. For more information, see $(var.Link_PreReqPage).">
+     Message="#(loc.FailureNotSupportedCurrentOperatingSystem)">
     ((VersionNT &gt; v6.1) OR (VersionNT = v6.1 AND ServicePackLevel &gt;= 1))
     </bal:Condition>
 
     <?if $(var.Platform)=x64?>
      <bal:Condition
-      Message="The $(var.ProductName) isn't supported on x86 operating systems. Please install using the corresponding x86 installer.">
+      Message="#(loc.FailureNotSupportedX86OperatingSystem)">
        VersionNT64
      </bal:Condition>
     <?endif?>
@@ -56,7 +56,11 @@
     <swid:Tag Regid="microsoft.com" InstallPath="[DOTNETHOME]" />
 
     <Variable Name="DOTNETHOME" Type="string" Value="[$(var.Program_Files)]dotnet" bal:Overridable="no" />
+
+    <!-- Variables used solely for localization. -->
     <Variable Name="BUNDLEMONIKER" Type="string" Value="$(var.ProductMoniker) ($(var.TargetArchitecture))" bal:Overridable="no" />
+    <Variable Name="PRODUCT_NAME" Type="string" Value="$(var.ProductName)" bal:Overridable="no" />
+    <Variable Name="LINK_PREREQ_PAGE" Type="string" Value="$(var.Link_PreReqPage)" bal:Overridable="no" />
 
     <Chain DisableSystemRestore="yes" ParallelCache="yes">
       <MsiPackage SourceFile="$(var.SharedFXMsiSourcePath)">
@@ -75,7 +79,12 @@
     <PayloadGroup Id="DotnetCoreBAPayloads">
       <Payload Name="thm.xml" Compressed="yes" SourceFile="bundle.thm" />
       <Payload Name="thm.wxl" Compressed="yes" SourceFile="bundle.wxl" />
+
       <Payload Name="bg.png" Compressed="yes" SourceFile="..\..\osx\sharedframework\resources\dotnetbackground.png" />
+
+      <?foreach LCID in $(var.LcidList)?>
+        <Payload Id="thm-$(var.LCID)" Compressed="yes" Name="$(var.LCID)\thm.wxl" SourceFile="theme\$(var.LCID)\bundle.wxl" />
+      <?endforeach?>
 
       <Payload Name='eula.rtf' Compressed='yes' SourceFile='!(wix.WixStdbaLicenseRtf)' />
     </PayloadGroup>
