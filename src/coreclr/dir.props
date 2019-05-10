@@ -17,10 +17,9 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
-  <!-- Set the kind of PDB to Portable and turn on SourceLink (fetching source from GitHub) -->
+  <!-- Set the kind of PDB to Portable -->
   <PropertyGroup>
-    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType> 
-    <UseSourceLink>true</UseSourceLink>
+    <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
   </PropertyGroup>
 
   <!-- Version numbers for both managed & native binaries -->
@@ -55,7 +54,7 @@
 
     <PackagesDir>$(DotNetRestorePackagesPath)</PackagesDir>
     <PackagesDir Condition="'$(PackagesDir)'=='' and '$(__PackagesDir)'!=''">$(__PackagesDir)\</PackagesDir>
-    <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)packages\</PackagesDir>
+    <PackagesDir Condition="'$(PackagesDir)'==''">$(ProjectDir)\.packages\</PackagesDir>
 
     <RootBinDir>$(__RootBinDir)\</RootBinDir>
     <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>

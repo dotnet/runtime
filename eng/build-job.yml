@@ -117,7 +117,7 @@ jobs:
             feedsToUse: config
             projects: 'src/.nuget/optdata/ibcmerge.csproj'
             nugetConfigPath: 'eng/internal/NuGet.config'
-            restoreDirectory: '$(Build.SourcesDirectory)\packages'
+            restoreDirectory: '$(Build.SourcesDirectory)\.packages'
             verbosityRestore: 'normal'
             externalFeedCredentials: 'dotnet-core-internal-tooling'
 
