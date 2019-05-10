@@ -64,6 +64,13 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
+            else if (e.Command == EventCommand.Disable)
+            {
+                lock (this)
+                {
+                    _pollingIntervalInMilliseconds = 0;
+                }
+            }
         }
 
         #endregion // EventSource Command Processing
