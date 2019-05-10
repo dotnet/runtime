@@ -27,7 +27,7 @@ EventPipeSession::EventPipeSession(
     CONTRACTL_END;
 
     m_sessionType = sessionType;
-    m_circularBufferSizeInBytes = circularBufferSizeInMB * 1024 * 1024; // 1MB;
+    m_circularBufferSizeInBytes = (size_t)circularBufferSizeInMB << 20; // 1MB;
     m_rundownEnabled = false;
     m_pProviderList = new EventPipeSessionProviderList(pProviders, numProviders);
     GetSystemTimeAsFileTime(&m_sessionStartTime);
