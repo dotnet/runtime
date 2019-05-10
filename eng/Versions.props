@@ -13,8 +13,8 @@
     <MicrosoftNETCorePlatformsVersion>3.0.0-preview6.19257.8</MicrosoftNETCorePlatformsVersion>
     <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview6.19257.8</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftNETCoreAppVersion>3.0.0-preview5-27620-01</MicrosoftNETCoreAppVersion>
-    <optimizationIBCCoreCLRVersion>99.99.99-master-20190505.1</optimizationIBCCoreCLRVersion>
-    <optimizationPGOCoreCLRVersion>99.99.99-master-20190505.1</optimizationPGOCoreCLRVersion>
+    <optimizationIBCCoreCLRVersion>99.99.99-master-20190509.1</optimizationIBCCoreCLRVersion>
+    <optimizationPGOCoreCLRVersion>99.99.99-master-20190509.1</optimizationPGOCoreCLRVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
