@@ -101,6 +101,26 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [Fact]
+        public void SupportAndIgnoreTrailingCommas()
+        {
+            var json = @"
+{
+    ""firstname"": ""test"",
+    ""test.last.name"": ""last.name"",
+        ""residential.address"": {
+            ""street.name"": ""Something street"",
+            ""zipcode"": ""12345"",
+        },
+}";
+            var jsonConfigSrc = LoadProvider(json);
+
+            Assert.Equal("test", jsonConfigSrc.Get("firstname"));
+            Assert.Equal("last.name", jsonConfigSrc.Get("test.last.name"));
+            Assert.Equal("Something street", jsonConfigSrc.Get("residential.address:STREET.name"));
+            Assert.Equal("12345", jsonConfigSrc.Get("residential.address:zipcode"));
+        }
+
+        [Fact]
         public void ThrowExceptionWhenUnexpectedEndFoundBeforeFinishParsing()
         {
             var json = @"{
