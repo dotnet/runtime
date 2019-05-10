@@ -11,11 +11,47 @@
 # Optimization, only run full build environment when running mono-sgen.exe as AOT compiler.
 # If not, just run mono-sgen.exe with supplied arguments.
 
+function win32_format_path {
+    local formatted_path=$1
+    local host_win32_wsl=0
+    local host_win32_cygwin=0
+
+    host_uname="$(uname -a)"
+    case "$host_uname" in
+        *Microsoft*)
+            host_win32_wsl=1
+            ;;
+        CYGWIN*)
+            host_win32_cygwin=1
+            ;;
+	esac
+
+    if  [[ $host_win32_wsl = 1 ]] && [[ $1 == "/mnt/"* ]]; then
+        formatted_path="$(wslpath -a -w "$1")"
+    elif [[ $host_win32_cygwin = 1 ]] && [[ $1 == "/cygdrive/"* ]]; then
+        formatted_path="$(cygpath -a -w "$1")"
+    fi
+
+    echo "$formatted_path"
+}
+
 MONO_SGEN_MSVC_SCRIPT_PATH=$(cd "$(dirname "$0")"; pwd)
 
-if [[ "$@" != *"--aot="* ]]; then
+MONO_AS_AOT_COMPILER=0
+if [[ "$@" =~ .*--aot[^-a-zA-Z0-9].*|.*--aot$ ]]; then
+    MONO_AS_AOT_COMPILER=1
+fi
+
+if [[ $MONO_AS_AOT_COMPILER = 0 ]]; then
     "$MONO_SGEN_MSVC_SCRIPT_PATH/mono-sgen.exe" "$@"
 else
-    MONO_SGEN_MSVC_SCRIPT_PATH=$(cygpath -w "$MONO_SGEN_MSVC_SCRIPT_PATH/mono-sgen-msvc.bat")
-    "$WINDIR/System32/cmd.exe" /c "$MONO_SGEN_MSVC_SCRIPT_PATH" "$@"
+    MONO_SGEN_MSVC_SCRIPT_PATH=$(win32_format_path "$MONO_SGEN_MSVC_SCRIPT_PATH/mono-sgen-msvc.bat")
+
+    WINDOWS_CMD=$(which cmd.exe)
+    if [ ! -f $WINDOWS_CMD ]; then
+        WINDOWS_CMD=$WINDIR/System32/cmd.exe
+    fi
+
+    export MONO_AS_AOT_COMPILER
+    "$WINDOWS_CMD" /c "$MONO_SGEN_MSVC_SCRIPT_PATH" "$@"
 fi

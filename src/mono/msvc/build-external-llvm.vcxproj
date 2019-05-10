@@ -162,16 +162,23 @@
     <_LLVMAdditionalCMakeArgs>$(_LLVMEnableAsserts)</_LLVMAdditionalCMakeArgs>
     <_LLVMBuildCommand>build-external-llvm.bat &quot;$(_LLVMSourceDir)&quot; &quot;$(_LLVMBuildDir)&quot; &quot;$(_LLVMInstallDir)&quot; &quot;$(_MonoOutputDir)&quot; &quot;$(_LLVMCFlags)&quot; &quot;$(_LLVMAdditionalCMakeArgs)&quot; &quot;$(Platform)&quot; &quot;$(Configuration)&quot;</_LLVMBuildCommand>
   </PropertyGroup>
-  <Target Name="_AfterBuildExternalLLVM" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableInternalLLVM)' == 'true'">
-    <Exec Command="$(_LLVMBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot; &quot;$(_MonoExternalBuildForceMSBuild)&quot;">
+  <Target Name="_LLVMBuild" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableInternalLLVM)' == 'true'">
+    <Exec Command="$(_LLVMBuildCommand) &quot;Build&quot; &quot;$(MSBuildBinPath)\&quot; &quot;$(_MonoExternalBuildForceMSBuild)&quot;" Condition="'$(_MonoEnableInternalLLVM)' == 'true'">
       <Output TaskParameter="ExitCode" PropertyName="_BuildExternalLLVMExitCode" />
     </Exec>
   </Target>
-  <Target Name="_AfterCleanExternalLLVM" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableInternalLLVM)' == 'true'">
+  <Target Name="_LLVMInstallBuild" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableExternalLLVM)' == 'true'" DependsOnTargets="_SetupMonoLLVMBuildProperties">
+    <Exec Command="install-llvm-mono-build.bat &quot;$(MONO_LLVM_BIN_DIR)\..&quot; &quot;$(_MonoOutputDir)&quot;">
+      <Output TaskParameter="ExitCode" PropertyName="_BuildExternalLLVMExitCode" />
+    </Exec>
+  </Target>
+  <Target Name="_LLVMCleanBuild" Condition="'$(MONO_ENABLE_LLVM)' == 'true' and '$(_MonoEnableInternalLLVM)' == 'true'">
     <Exec Command="$(_LLVMBuildCommand) &quot;Clean&quot; &quot;$(MSBuildBinPath)\&quot; &quot;$(_MonoExternalBuildForceMSBuild)&quot;">
       <Output TaskParameter="ExitCode" PropertyName="_CleanExternalLLVMExitCode" />
     </Exec>
   </Target>
+  <Target Name="_AfterBuildExternalLLVM" Condition="'$(MONO_ENABLE_LLVM)' == 'true'" DependsOnTargets="_LLVMBuild;_LLVMInstallBuild" />
+  <Target Name="_AfterCleanExternalLLVM" Condition="'$(MONO_ENABLE_LLVM)' == 'true'" DependsOnTargets="_LLVMCleanBuild" />
   <Target Name="AfterBuild" DependsOnTargets="_ConfigureExternalMonoLLVMBuildEnvironment;_AfterBuildExternalLLVM" />
   <Target Name="AfterClean" DependsOnTargets="_ConfigureExternalMonoLLVMBuildEnvironment;_AfterCleanExternalLLVM" />
 
