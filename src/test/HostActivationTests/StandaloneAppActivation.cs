@@ -163,7 +163,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string appDll = fixture.TestProject.AppDll;
             string appDllName = Path.GetFileName(appDll);
             string relativeDllPath = Path.Combine(relativeNewPath, appDllName);
-            AppHostExtensions.SearchAndReplace(appExe, Encoding.UTF8.GetBytes(appDllName), Encoding.UTF8.GetBytes(relativeDllPath), true);
+            FileUtils.SearchAndReplace(appExe, Encoding.UTF8.GetBytes(appDllName), Encoding.UTF8.GetBytes(relativeDllPath), true);
 
             Command.Create(appExe)
                 .CaptureStdErr()
@@ -433,7 +433,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // Replace the hash with the managed DLL name.
                 var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
                 var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
-                AppHostExtensions.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDll), true);
+                FileUtils.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDll), true);
             }
             File.Copy(appDirHostExe, appExe, true);
         }

@@ -11,6 +11,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
     {
         public string BaseDirectory { get; }
         public string NativeHostPath { get; }
+        public string NethostPath { get; }
         public RepoDirectoriesProvider RepoDirectories { get; }
 
         public SharedTestStateBase()
@@ -30,9 +31,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             // user-friendly way of linking against nethost (instead of dlopen/LoadLibrary and dlsym/GetProcAddress).
             // On Windows, we can delay load through a linker option, but on other platforms load is required on start.
             string nethostName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("nethost");
+            NethostPath = Path.Combine(Path.GetDirectoryName(NativeHostPath), nethostName);
             File.Copy(
                 Path.Combine(RepoDirectories.CorehostPackages, nethostName),
-                Path.Combine(Path.GetDirectoryName(NativeHostPath), nethostName));
+                NethostPath);
         }
 
         public void Dispose()

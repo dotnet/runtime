@@ -263,7 +263,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // Replace the hash with the managed DLL name.
                 var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
                 var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
-                AppHostExtensions.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDllName), true);
+                FileUtils.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDllName), true);
             }
             File.Copy(appDirHostExe, appExe, true);
 
@@ -323,14 +323,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 // Replace the hash with the managed DLL name.
                 var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes("foobar"));
                 var hashStr = BitConverter.ToString(hash).Replace("-", "").ToLower();
-                AppHostExtensions.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDllName), true);
+                FileUtils.SearchAndReplace(appDirHostExe, Encoding.UTF8.GetBytes(hashStr), Encoding.UTF8.GetBytes(appDllName), true);
             }
             File.Copy(appDirHostExe, appExe, true);
 
             // Get the framework location that was built
             string builtDotnet = fixture.BuiltDotnet.BinPath;
 
-            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride())
+            using (var registeredInstallLocationOverride = new RegisteredInstallLocationOverride(appExe))
             {
                 string architecture = fixture.CurrentRid.Split('-')[1];
                 if (useRegisteredLocation)

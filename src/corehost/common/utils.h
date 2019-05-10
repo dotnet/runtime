@@ -67,6 +67,11 @@ pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal:
 void get_runtime_config_paths(const pal::string_t& path, const pal::string_t& name, pal::string_t* cfg, pal::string_t* dev_cfg);
 pal::string_t get_dotnet_root_from_fxr_path(const pal::string_t &fxr_path);
 
+// Retrieves environment variable which is only used for testing.
+// This will return the value of the variable only if the product binary is stamped
+// with test-only marker.
+bool test_only_getenv(const pal::char_t* name, pal::string_t* recv);
+
 // Helper class to make it easy to propagate error writer to the hostpolicy
 class propagate_error_writer_t
 {

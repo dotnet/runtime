@@ -133,9 +133,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         private class SdkResolutionFixture
         {
+            private readonly string _builtDotnet;
             private readonly TestProjectFixture _fixture;
 
-            public DotNetCli Dotnet => _fixture.BuiltDotnet;
+            public DotNetCli Dotnet { get; }
             public string AppDll => _fixture.TestProject.AppDll;
             public string ExeDir => Path.Combine(_fixture.TestProject.ProjectDirectory, "ed");
             public string ProgramFiles => Path.Combine(ExeDir, "pf");
@@ -151,6 +152,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public SdkResolutionFixture(SharedTestState state)
             {
+                _builtDotnet = Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish");
+                Dotnet = new DotNetCli(_builtDotnet);
+
                 _fixture = state.HostApiInvokerAppFixture.Copy();
 
                 Directory.CreateDirectory(WorkingDir);
@@ -200,15 +204,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Path.Combine(f.SelfRegisteredGlobalSdkDir, "15.1.4-preview"),
             });
 
-            f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_available_sdks", f.ExeDir })
-                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES", f.ProgramFiles)
-                .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED", f.SelfRegistered)
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should().Pass()
-                .And.HaveStdOutContaining("hostfxr_get_available_sdks:Success")
-                .And.HaveStdOutContaining($"hostfxr_get_available_sdks sdks:[{expectedList}]");
+            using (TestOnlyProductBehavior.Enable(f.Dotnet.GreatestVersionHostFxrFilePath))
+            {
+                f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_available_sdks", f.ExeDir })
+                    .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_PROGRAM_FILES", f.ProgramFiles)
+                    .EnvironmentVariable("TEST_MULTILEVEL_LOOKUP_SELF_REGISTERED", f.SelfRegistered)
+                    .CaptureStdOut()
+                    .CaptureStdErr()
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveStdOutContaining("hostfxr_get_available_sdks:Success")
+                    .And.HaveStdOutContaining($"hostfxr_get_available_sdks sdks:[{expectedList}]");
+            }
         }
 
         [Fact]
