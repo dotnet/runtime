@@ -229,5 +229,30 @@ namespace Microsoft.Extensions.Configuration.Json.Test
             Assert.Equal("bob", indexConfigurationSections[4].Key);
             Assert.Equal("hello", indexConfigurationSections[5].Key);
         }
+
+        [Fact]
+        public void TrailingCommas()
+        {
+            var json = @"{
+                ""ip"": [
+                    [ 
+                        ""1.2.3.4"",
+                        ""5.6.7.8"",
+                    ],
+                    [ 
+                        ""9.10.11.12"",
+                        ""13.14.15.16"",
+                    ],
+                ]
+            }";
+
+            var jsonConfigSource = new JsonConfigurationProvider(new JsonConfigurationSource());
+            jsonConfigSource.Load(TestStreamHelpers.StringToStream(json));
+
+            Assert.Equal("1.2.3.4", jsonConfigSource.Get("ip:0:0"));
+            Assert.Equal("5.6.7.8", jsonConfigSource.Get("ip:0:1"));
+            Assert.Equal("9.10.11.12", jsonConfigSource.Get("ip:1:0"));
+            Assert.Equal("13.14.15.16", jsonConfigSource.Get("ip:1:1"));
+        }
     }
 }
