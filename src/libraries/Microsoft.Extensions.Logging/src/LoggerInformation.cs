@@ -7,11 +7,11 @@ namespace Microsoft.Extensions.Logging
 {
     internal readonly struct MessageLogger
     {
-        public MessageLogger(ILogger logger, string category, Type providerType, LogLevel? minLevel, Func<string, string, LogLevel, bool> filter)
+        public MessageLogger(ILogger logger, string category, string providerTypeFullName, LogLevel? minLevel, Func<string, string, LogLevel, bool> filter)
         {
             Logger = logger;
             Category = category;
-            ProviderType = providerType;
+            ProviderTypeFullName = providerTypeFullName;
             MinLevel = minLevel;
             Filter = filter;
         }
@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging
 
         public string Category { get; }
 
-        public Type ProviderType { get; }
+        private string ProviderTypeFullName { get; }
 
         public LogLevel? MinLevel { get; }
 
@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Logging
 
             if (Filter != null)
             {
-                return Filter(ProviderType.FullName, Category, level);
+                return Filter(ProviderTypeFullName, Category, level);
             }
 
             return true;
