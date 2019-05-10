@@ -20,10 +20,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private readonly RegistryKey key;
         private readonly string keyName;
 
-        // Linux/macOS only
+        private IDisposable _testOnlyProductBehavior;
 
-        public RegisteredInstallLocationOverride()
+        public RegisteredInstallLocationOverride(string productBinaryPath)
         {
+            _testOnlyProductBehavior = TestOnlyProductBehavior.Enable(productBinaryPath);
+
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // To test registered installs, we need a registry key which is:
@@ -89,6 +91,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 {
                     File.Delete(PathValueOverride);
                 }
+            }
+
+            if (_testOnlyProductBehavior != null)
+            {
+                _testOnlyProductBehavior.Dispose();
             }
         }
     }

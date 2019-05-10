@@ -42,6 +42,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         private readonly string _builtDotnet;
         private readonly string _hostPolicyDllName;
 
+        private readonly IDisposable _testOnlyProductBehaviorMarker;
+
         public MultilevelSharedFxLookup()
         {
             // From the artifacts dir, it's possible to find where the sharedFrameworkPublish folder is. We need
@@ -111,10 +113,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             _regSelectedMessage = $"The expected {_hostPolicyDllName} directory is [{_regSharedFxBaseDir}";
 
             _exeFoundUberFxMessage = $"Chose FX version [{_exeSharedUberFxBaseDir}";
+
+            _testOnlyProductBehaviorMarker = TestOnlyProductBehavior.Enable(fixture.BuiltDotnet.GreatestVersionHostFxrFilePath);
         }
 
         public void Dispose()
         {
+            _testOnlyProductBehaviorMarker?.Dispose();
+
             SharedFxLookupPortableAppFixture.Dispose();
 
             if (!TestProject.PreserveTestRuns())
