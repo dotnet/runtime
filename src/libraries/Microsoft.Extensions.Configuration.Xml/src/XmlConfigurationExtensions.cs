@@ -91,5 +91,21 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddXmlFile(this IConfigurationBuilder builder, Action<XmlConfigurationSource> configureSource)
             => builder.Add(configureSource);
+
+        /// <summary>
+        /// Adds a XML configuration source to <paramref name="builder"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="IConfigurationBuilder"/> to add to.</param>
+        /// <param name="stream">The <see cref="Stream"/> to read the XML configuration data from.</param>
+        /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
+        public static IConfigurationBuilder AddXmlStream(this IConfigurationBuilder builder, Stream stream)
+        {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            return builder.Add<XmlStreamConfigurationSource>(s => s.Stream = stream);
+        }
     }
 }

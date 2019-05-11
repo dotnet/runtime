@@ -20,6 +20,37 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [Fact]
+        public void CanLoadValidJsonFromStreamProvider()
+        {
+            var json = @"
+{
+    ""firstname"": ""test"",
+    ""test.last.name"": ""last.name"",
+        ""residential.address"": {
+            ""street.name"": ""Something street"",
+            ""zipcode"": ""12345""
+        }
+}";
+            var config = new ConfigurationBuilder().AddJsonStream(TestStreamHelpers.StringToStream(json)).Build();
+            Assert.Equal("test", config["firstname"]);
+            Assert.Equal("last.name", config["test.last.name"]);
+            Assert.Equal("Something street", config["residential.address:STREET.name"]);
+            Assert.Equal("12345", config["residential.address:zipcode"]);
+        }
+
+        [Fact]
+        public void ReloadThrowsFromStreamProvider()
+        {
+            var json = @"
+{
+    ""firstname"": ""test""
+}";
+            var config = new ConfigurationBuilder().AddJsonStream(TestStreamHelpers.StringToStream(json)).Build();
+            Assert.Throws<InvalidOperationException>(() => config.Reload());
+        }
+
+
+        [Fact]
         public void LoadKeyValuePairsFromValidJson()
         {
             var json = @"
