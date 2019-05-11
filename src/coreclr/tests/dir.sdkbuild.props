@@ -9,7 +9,7 @@
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnableDefaultItems>false</EnableDefaultItems>
     <Platform>AnyCPU</Platform>
    
     <!-- Force the CLI to allow us to target higher netcoreapp than it may know about -->
