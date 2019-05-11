@@ -86,6 +86,19 @@ namespace Microsoft.Extensions.Configuration
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddInMemoryCollection(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder) { throw null; }
         public static Microsoft.Extensions.Configuration.IConfigurationBuilder AddInMemoryCollection(this Microsoft.Extensions.Configuration.IConfigurationBuilder configurationBuilder, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> initialData) { throw null; }
     }
+    public abstract partial class StreamConfigurationProvider : Microsoft.Extensions.Configuration.ConfigurationProvider
+    {
+        public StreamConfigurationProvider(Microsoft.Extensions.Configuration.StreamConfigurationSource source) { }
+        public Microsoft.Extensions.Configuration.StreamConfigurationSource Source { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override void Load() { }
+        public abstract void Load(System.IO.Stream stream);
+    }
+    public abstract partial class StreamConfigurationSource : Microsoft.Extensions.Configuration.IConfigurationSource
+    {
+        protected StreamConfigurationSource() { }
+        public System.IO.Stream Stream { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public abstract Microsoft.Extensions.Configuration.IConfigurationProvider Build(Microsoft.Extensions.Configuration.IConfigurationBuilder builder);
+    }
 }
 namespace Microsoft.Extensions.Configuration.Memory
 {
