@@ -573,6 +573,10 @@ dnl We should use AM_PROG_AS, but it's not available on automake/aclocal 1.4
 AC_SUBST(CCAS)
 AC_SUBST(CCASFLAGS)
 
+if test "x$CXX" = "xno"; then
+	AC_MSG_ERROR([No c++ compiler found. You need to install a c++ compiler])
+fi
+
 # AC_PROG_CXX helpfully sets CXX to g++ even if no c++ compiler is found so check
 # GXX instead. See http://lists.gnu.org/archive/html/bug-autoconf/2002-04/msg00056.html
 if test "x$CXX" = "xg++"; then
