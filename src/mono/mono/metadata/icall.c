@@ -9142,7 +9142,7 @@ mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 	mono_icall_unlock ();
 }
 
-// The few functions that are registered multiple times need to be known here.
+// Function that is registered multiple times needs to be known here.
 
 void
 mono_no_trampolines (void); // prototype to avoid warning
@@ -9153,30 +9153,17 @@ mono_no_trampolines (void)
 	g_assert_not_reached ();
 }
 
-// temporary -- later will just be NULL
-static void
-mono_jit_icall_info_free (gpointer info)
-{
-	if (!mono_is_jit_icall_info (info))
-		g_free (info);
-}
-
 MonoJitICallInfo *
 mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean avoid_wrapper, const char *c_symbol)
 {
 	g_assert (func);
 	g_assert (name);
-
-	// temporarily allow NULL, until conversion to static storage complete
-	if (info)
-		g_assert (mono_is_jit_icall_info (info));
-	else
-		info = g_new0 (MonoJitICallInfo, 1);
+	mono_check_jit_icall_info (info);
 
 	mono_icall_lock ();
 
 	if (!jit_icall_hash_name) {
-		jit_icall_hash_name = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, mono_jit_icall_info_free);
+		jit_icall_hash_name = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
 		jit_icall_hash_addr = g_hash_table_new (NULL, NULL);
 	}
 

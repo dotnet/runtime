@@ -1894,6 +1894,8 @@ enum {
 	 */
 	GSList *unwind_ops;
 
+	MonoJitICallInfo *jit_icall_info;
+
 	 /*
 	  * Encoded unwind info loaded from AOT images
 	  */

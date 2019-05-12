@@ -4594,7 +4594,7 @@ void
 mono_arch_register_lowlevel_calls (void)
 {
 	/* The signature doesn't matter */
-	mono_register_jit_icall (mono_ppc_throw_exception, "mono_ppc_throw_exception", mono_icall_sig_void, TRUE);
+	mono_register_jit_icall (mono_ppc_throw_exception, mono_icall_sig_void, TRUE);
 }
 
 #ifdef __mono_ppc64__

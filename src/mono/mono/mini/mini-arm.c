@@ -6081,9 +6081,9 @@ void
 mono_arch_register_lowlevel_calls (void)
 {
 	/* The signature doesn't matter */
-	mono_register_jit_icall (mono_arm_throw_exception, "mono_arm_throw_exception", mono_icall_sig_void, TRUE);
-	mono_register_jit_icall (mono_arm_throw_exception_by_token, "mono_arm_throw_exception_by_token", mono_icall_sig_void, TRUE);
-	mono_register_jit_icall (mono_arm_unaligned_stack, "mono_arm_unaligned_stack", mono_icall_sig_void, TRUE);
+	mono_register_jit_icall (mono_arm_throw_exception, mono_icall_sig_void, TRUE);
+	mono_register_jit_icall (mono_arm_throw_exception_by_token, mono_icall_sig_void, TRUE);
+	mono_register_jit_icall (mono_arm_unaligned_stack, mono_icall_sig_void, TRUE);
 }
 
 #define patch_lis_ori(ip,val) do {\

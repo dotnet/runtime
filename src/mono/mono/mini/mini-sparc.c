@@ -3668,7 +3668,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 void
 mono_arch_register_lowlevel_calls (void)
 {
-	mono_register_jit_icall (mono_arch_get_lmf_addr, "mono_arch_get_lmf_addr", NULL, TRUE);
+	mono_register_jit_icall (mono_arch_get_lmf_addr, NULL, TRUE);
 }
 
 void

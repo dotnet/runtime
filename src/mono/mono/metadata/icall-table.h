@@ -464,7 +464,7 @@ func ( MONO_HANDLE_FOREACH_ARG_RAWPOINTER_ ## n argtypes)
 // Or put the handles directly in the coop frame, or pointers to them.
 // i.e. one TLS access at function start and end.
 //
-// This is for functions passed to mono_register_jit_icall, etc.
+// This is for functions passed to mono_register_jit_icall_info, etc.
 
 #define MONO_HANDLE_REGISTER_ICALL_IMPLEMENT(func, rettype, n, argtypes)	\
 										\

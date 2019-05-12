@@ -338,12 +338,6 @@ extern MonoJitICallInfos mono_jit_icall_info;
 
 #define mono_jit_icall_info_index(x) ((x) - mono_jit_icall_info.array)
 
-static inline gboolean // temporary, lone caller will go away
-mono_is_jit_icall_info (gconstpointer jit_icall_info)
-{
-	return (char*)jit_icall_info >= (char*)&mono_jit_icall_info && (char*)jit_icall_info < (char*)(&mono_jit_icall_info + 1);
-}
-
 static inline MonoJitICallInfo*
 mono_check_jit_icall_info (gconstpointer jit_icall_info)
 {
