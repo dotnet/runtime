@@ -676,6 +676,8 @@ public:
     // Gets the total number of bytes in use.
     virtual size_t GetTotalBytesInUse() = 0;
 
+    virtual uint64_t GetTotalAllocatedBytes() = 0;
+
     // Forces a garbage collection of the given generation. Also used extensively
     // throughout the VM.
     virtual HRESULT GarbageCollect(int generation = -1, bool low_memory_p = false, int mode = collection_blocking) = 0;

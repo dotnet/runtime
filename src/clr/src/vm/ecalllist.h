@@ -779,7 +779,8 @@ FCFuncStart(gGCInterfaceFuncs)
     FCFuncElement("_SuppressFinalize", GCInterface::SuppressFinalize)
     FCFuncElement("_ReRegisterForFinalize", GCInterface::ReRegisterForFinalize)
 
-    FCFuncElement("_GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
+    FCFuncElement("GetAllocatedBytesForCurrentThread", GCInterface::GetAllocatedBytesForCurrentThread)
+    FCFuncElement("GetTotalAllocatedBytes", GCInterface::GetTotalAllocatedBytes)
 
     FCFuncElement("AllocateNewArray", GCInterface::AllocateNewArray)
 
