@@ -126,12 +126,12 @@ jobs:
 
         - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
           - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ClientRS4.ES.Open
-          - nanoQueues: "(Windows.Nano.1803.Amd64.Open)windows.10.amd64.serverrs4.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1803-helix-amd64-05227e1-20190509225944"
+          - nanoQueues: `(Windows.Nano.1803.Amd64.Open`)windows.10.amd64.serverrs4.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1803-helix-amd64-05227e1-20190509225944"
           - uapNetfxQueues: Windows.10.Amd64.ClientRS5.Open
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           - netcoreappWindowsQueues: Windows.7.Amd64+Windows.81.Amd64+Windows.10.Amd64.Core+Windows.10.Amd64.ClientRS4
-          - nanoQueues: "(Windows.Nano.1803.Amd64)windows.10.amd64.serverrs4@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1803-helix-amd64-05227e1-20190509225944"
+          - nanoQueues: `(Windows.Nano.1803.Amd64`)windows.10.amd64.serverrs4@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1803-helix-amd64-05227e1-20190509225944"
           - uapNetfxQueues: Windows.10.Amd64.ClientRS5
           - windowsArmQueue: Windows.10.Arm64
 
