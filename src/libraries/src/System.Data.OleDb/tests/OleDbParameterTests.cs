@@ -8,12 +8,13 @@ using Xunit;
 
 namespace System.Data.OleDb.Tests
 {
+    [Collection("System.Data.OleDb")] // not let tests run in parallel
     public class OleDbParameterTests : OleDbTestBase
     {
         [ConditionalFact(Helpers.IsDriverAvailable)]
         public void OleDbParameterCollection_MultipleScenarios_Success()
         {
-            OleDbParameterCollection opc = new OleDbCommand().Parameters;
+            OleDbParameterCollection opc = command.Parameters;
 
             Assert.True(opc.Count == 0);
             Assert.False(((Collections.IList)opc).IsReadOnly);

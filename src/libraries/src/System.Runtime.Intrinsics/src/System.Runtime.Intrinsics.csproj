@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>System.Runtime.Intrinsics</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <ClsCompliant>false</ClsCompliant>
     <ProjectGuid>{315E3C60-A5D9-4F47-A940-D57395EED606}</ProjectGuid>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release</Configurations>
   </PropertyGroup>

@@ -15,9 +15,14 @@
     <Project Include="shims\ApiCompat.proj" />
     <Project Include="pretest.builds" />
   </ItemGroup>
+
+  <!-- Don't build System.Text.Encodings.Web tools as part of build; they're intended to be run manually. -->
+  <ItemGroup>
+    <ProjectExclusions Include="$(SourceDir)System.Text.Encodings.Web/tools/**/*.csproj" />
+  </ItemGroup>
   
   <ItemGroup Condition="'$(DirectoryToBuild)' != ''">
-    <Project Include="$(DirectoryToBuild)/**/*.csproj" />
+    <Project Include="$(DirectoryToBuild)/**/*.csproj" Exclude="@(ProjectExclusions)" />
   </ItemGroup>
 
   <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />

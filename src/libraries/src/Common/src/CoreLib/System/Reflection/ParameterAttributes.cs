@@ -5,7 +5,6 @@
 // ParameterAttributes is an enum defining the attributes that may be 
 // associated with a Parameter.  These are defined in CorHdr.h.
 
-#nullable enable
 namespace System.Reflection
 {
     // This Enum matchs the CorParamAttr defined in CorHdr.h

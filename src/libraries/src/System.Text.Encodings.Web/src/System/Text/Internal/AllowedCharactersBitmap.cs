@@ -21,7 +21,7 @@ namespace System.Text.Internal
 
         private AllowedCharactersBitmap(uint[] allowedCharacters)
         {
-            if(allowedCharacters == null)
+            if (allowedCharacters == null)
             {
                 throw new ArgumentNullException(nameof(allowedCharacters));
             }
@@ -50,7 +50,7 @@ namespace System.Text.Internal
         // (includes categories Cc, Cs, Co, Cn, Zs [except U+0020 SPACE], Zl, Zp)
         public void ForbidUndefinedCharacters()
         {
-            uint[] definedCharactersBitmap = UnicodeHelpers.GetDefinedCharacterBitmap();
+            ReadOnlySpan<uint> definedCharactersBitmap = UnicodeHelpers.GetDefinedCharacterBitmap();
             Debug.Assert(definedCharactersBitmap.Length == _allowedCharacters.Length);
             for (int i = 0; i < _allowedCharacters.Length; i++)
             {
@@ -93,7 +93,8 @@ namespace System.Text.Internal
         {
             for (int i = 0; i < textLength; i++)
             {
-                if (!IsCharacterAllowed(text[i])) { return i; }
+                if (!IsCharacterAllowed(text[i]))
+                { return i; }
             }
             return -1;
         }

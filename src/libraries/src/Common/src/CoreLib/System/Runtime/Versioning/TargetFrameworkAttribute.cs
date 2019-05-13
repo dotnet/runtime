@@ -12,7 +12,6 @@
 **
 ===========================================================*/
 
-#nullable enable
 namespace System.Runtime.Versioning
 {
     [AttributeUsageAttribute(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]

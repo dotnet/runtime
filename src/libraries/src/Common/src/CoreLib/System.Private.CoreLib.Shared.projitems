@@ -8,6 +8,9 @@
     <Import_RootNamespace />
   </PropertyGroup>
   <PropertyGroup>
+    <NullableContextOptions>enable</NullableContextOptions>
+  </PropertyGroup>
+  <PropertyGroup>
     <TargetsWindows Condition="'$(TargetsWindows)' != 'true'">false</TargetsWindows>
     <TargetsUnix Condition="'$(TargetsUnix)' != 'true'">false</TargetsUnix>
     <TargetsOSX Condition="'$(TargetsOSX)' != 'true'">false</TargetsOSX>

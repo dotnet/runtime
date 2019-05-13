@@ -4,7 +4,6 @@
 
 // CallingConventions is a set of Bits representing the calling conventions in the system.
 
-#nullable enable
 namespace System.Reflection
 {
     [Flags]

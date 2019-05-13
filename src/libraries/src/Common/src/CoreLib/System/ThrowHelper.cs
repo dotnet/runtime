@@ -35,7 +35,6 @@
 // multiple times for different instantiation.
 //
 
-#nullable enable
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;

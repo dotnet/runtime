@@ -14,7 +14,6 @@
 **
 ============================================================*/
 
-#nullable enable
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
