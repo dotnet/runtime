@@ -34,6 +34,9 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { typeof(TestClassWithGenericICollectionT), TestClassWithGenericICollectionT.s_data };
                 yield return new object[] { typeof(TestClassWithGenericIReadOnlyCollectionT), TestClassWithGenericIReadOnlyCollectionT.s_data };
                 yield return new object[] { typeof(TestClassWithGenericIReadOnlyListT), TestClassWithGenericIReadOnlyListT.s_data };
+                yield return new object[] { typeof(TestClassWithStringToPrimitiveDictionary), TestClassWithStringToPrimitiveDictionary.s_data };
+                yield return new object[] { typeof(TestClassWithObjectIEnumerableConstructibleTypes), TestClassWithObjectIEnumerableConstructibleTypes.s_data };
+                yield return new object[] { typeof(TestClassWithObjectImmutableTypes), TestClassWithObjectImmutableTypes.s_data };
                 yield return new object[] { typeof(JsonElementTests.JsonElementClass), JsonElementTests.JsonElementClass.s_data };
                 yield return new object[] { typeof(JsonElementTests.JsonElementArrayClass), JsonElementTests.JsonElementArrayClass.s_data };
                 yield return new object[] { typeof(ClassWithComplexObjects), ClassWithComplexObjects.s_data };
@@ -65,6 +68,9 @@ namespace System.Text.Json.Serialization.Tests
                 yield return new object[] { new TestClassWithGenericICollectionT() };
                 yield return new object[] { new TestClassWithGenericIReadOnlyCollectionT() };
                 yield return new object[] { new TestClassWithGenericIReadOnlyListT() };
+                yield return new object[] { new TestClassWithStringToPrimitiveDictionary() };
+                yield return new object[] { new TestClassWithObjectIEnumerableConstructibleTypes() };
+                yield return new object[] { new TestClassWithObjectImmutableTypes() };
                 yield return new object[] { new JsonElementTests.JsonElementClass() };
                 yield return new object[] { new JsonElementTests.JsonElementArrayClass() };
                 yield return new object[] { new ClassWithComplexObjects() };

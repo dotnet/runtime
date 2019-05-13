@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Reflection;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -159,6 +161,20 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReadClassWithGenericIReadOnlyListT()
         {
             TestClassWithGenericIReadOnlyListT obj = JsonSerializer.Parse<TestClassWithGenericIReadOnlyListT>(TestClassWithGenericIReadOnlyListT.s_data);
+            obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadClassWithObjectIEnumerableConstructibleTypes()
+        {
+            TestClassWithObjectIEnumerableConstructibleTypes obj = JsonSerializer.Parse<TestClassWithObjectIEnumerableConstructibleTypes>(TestClassWithObjectIEnumerableConstructibleTypes.s_data);
+            obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadClassWithObjectImmutableTypes()
+        {
+            TestClassWithObjectImmutableTypes obj = JsonSerializer.Parse<TestClassWithObjectImmutableTypes>(TestClassWithObjectImmutableTypes.s_data);
             obj.Verify();
         }
     }

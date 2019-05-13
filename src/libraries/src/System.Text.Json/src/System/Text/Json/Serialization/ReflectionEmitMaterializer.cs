@@ -6,6 +6,7 @@
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
 {
@@ -33,6 +34,14 @@ namespace System.Text.Json.Serialization
             generator.Emit(OpCodes.Ret);
 
             return (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(typeof(JsonClassInfo.ConstructorDelegate));
+        }
+
+        public override object ImmutableCreateRange(Type constructingType, Type elementType)
+        {
+            MethodInfo createRange = ImmutableCreateRangeMethod(constructingType, elementType);
+
+            return createRange.CreateDelegate(
+                typeof(DefaultImmutableConverter.ImmutableCreateRangeDelegate<>).MakeGenericType(elementType), null);
         }
     }
 }

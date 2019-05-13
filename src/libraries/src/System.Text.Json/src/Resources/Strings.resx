@@ -339,4 +339,7 @@
   <data name="DeserializeDuplicateKey" xml:space="preserve">
     <value>An item with the same property name '{0}' has already been added.</value>
   </data>
+  <data name="DeserializeTypeNotSupported" xml:space="preserve">
+    <value>Deserialization of type {0} is not supported.</value>
+  </data>
 </root>
