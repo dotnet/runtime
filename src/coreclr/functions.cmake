@@ -86,7 +86,11 @@ function(preprocess_def_file inputFilename outputFilename)
                               PROPERTIES GENERATED TRUE)
 endfunction()
 
-function(generate_exports_file inputFilename outputFilename)
+function(generate_exports_file)
+  set(INPUT_LIST ${ARGN})
+  list(GET INPUT_LIST -1 outputFilename)
+  list(REMOVE_AT INPUT_LIST -1)
+
   if(CMAKE_SYSTEM_NAME STREQUAL Darwin)
     set(AWK_SCRIPT generateexportedsymbols.awk)
   else()
@@ -95,8 +99,8 @@ function(generate_exports_file inputFilename outputFilename)
 
   add_custom_command(
     OUTPUT ${outputFilename}
-    COMMAND ${AWK} -f ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT} ${inputFilename} >${outputFilename}
-    DEPENDS ${inputFilename} ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT}
+    COMMAND ${AWK} -f ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT} ${INPUT_LIST} >${outputFilename}
+    DEPENDS ${INPUT_LIST} ${CMAKE_SOURCE_DIR}/${AWK_SCRIPT}
     COMMENT "Generating exports file ${outputFilename}"
   )
   set_source_files_properties(${outputFilename}
