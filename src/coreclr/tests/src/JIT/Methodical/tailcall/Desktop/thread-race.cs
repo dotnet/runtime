@@ -4,16 +4,24 @@
 
 using System;
 using System.Threading;
-using System.Runtime.CompilerServices;
 
 internal class Repro
 {
     private static volatile bool s_threadsCompleted;
     private static volatile Mutex s_myMutex;
     private static volatile int[] s_threadSum;
+    private const int FibSeriesMax = 35;
+    private const int FibSeriesMin = 20;
 
     public static int Main()
     {
+        // Compute the expected value for a single thread
+        int expectedSingle = 0;
+        for (int i = FibSeriesMin; i <= FibSeriesMax; i++)
+        {
+            expectedSingle += fib(0, i);
+        }
+
         ThreadStart ts = new ThreadStart(FibThread);
         Thread t1 = new Thread(ts);
         Thread t2 = new Thread(ts);
@@ -42,9 +50,9 @@ internal class Repro
 
         threadValue = (s_threadSum[0] + s_threadSum[1] + s_threadSum[2]);
 
-        if (((long)54018518 * 3) != threadValue)
+        if (((long)expectedSingle * 3) != threadValue)
         {
-            Console.WriteLine("FALSE: {0} != {1}", ((long)439201 * 3), threadValue);
+            Console.WriteLine("FALSE: {0} != {1}", ((long)expectedSingle * 3), threadValue);
             return 0;
         }
         else
@@ -57,9 +65,9 @@ internal class Repro
     public static void FibThread()
     {
         int sum = 0;
-        const int length = 35;
+        const int length = FibSeriesMax;
 
-        for (int i = 0; i <= length; i++)
+        for (int i = FibSeriesMin; i <= length; i++)
         {
             sum += fib(0, i);
             Console.WriteLine("" + i + ": " + sum);
