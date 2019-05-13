@@ -32,7 +32,7 @@
 
   <PropertyGroup>
     <RunEnforcePGO Condition="$(__EnforcePgo) == '1'">true</RunEnforcePGO>
-    <RunEnforcePGO Condition="$(__BuildArch) == 'arm' OR $(__BuildArch) == 'arm64'">false</RunEnforcePGO>
+    <RunEnforcePGO Condition="$(BuildArch) == 'arm' OR $(BuildArch) == 'arm64'">false</RunEnforcePGO>
   </PropertyGroup>
 
   <Target Name="EnforcePGO" Condition="$(RunEnforcePGO) == 'true'" AfterTargets="Build">
