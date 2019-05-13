@@ -180,5 +180,14 @@ namespace System.Globalization.Tests
             }
             Assert.Throws(exceptionType, () => idnMapping.GetAscii(unicode, index, count));
         }
+
+        [Fact]
+        public void TestStringWithHyphenIn3rdAnd4thPlace()
+        {
+            string unicode = "r6---sn-uxanug5-hxay.gvt1.com";
+
+            // Ensure we are not throwing on Linux because of the 3rd and 4th hyphens in the string.
+            Assert.Equal(unicode, new IdnMapping().GetAscii(unicode));
+        }
     }
 }
