@@ -7,9 +7,6 @@
   <PropertyGroup>
     <CoreclrDir>$(MSBuildThisFileDirectory)</CoreclrDir>
     <PackagesDir>$(CoreclrDir)/.packages/</PackagesDir>
-
-    <!-- [ARCADE_REMOVE] This property can be removed after build-tools is removed. -->
-    <PackageOutputPath>$(PackagesDir)</PackageOutputPath>
   </PropertyGroup>
 
   <!-- Define NuGet properties for scenarios where they aren't set. From the command line.
