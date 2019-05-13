@@ -12,6 +12,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- It takes a long time to complete (on a non-AVX machine) -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- https://github.com/dotnet/coreclr/issues/23624 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>
