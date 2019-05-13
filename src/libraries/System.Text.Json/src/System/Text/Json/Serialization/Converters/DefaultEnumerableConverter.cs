@@ -1,4 +1,8 @@
-﻿using System.Collections;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections;
 using System.Collections.Generic;
 using System.Text.Json.Serialization.Policies;
 
@@ -15,10 +19,7 @@ namespace System.Text.Json.Serialization.Converters
 
             foreach (object item in sourceList)
             {
-                if (item is T itemT)
-                {
-                    _list.Add(itemT);
-                }
+                _list.Add((T)item);
             }
         }
 
@@ -81,8 +82,10 @@ namespace System.Text.Json.Serialization.Converters
 
     internal sealed class DefaultEnumerableConverter : JsonEnumerableConverter
     {
-        public override IEnumerable CreateFromList(Type elementType, IList sourceList)
+        public override IEnumerable CreateFromList(ref ReadStack state, IList sourceList, JsonSerializerOptions options)
         {
+            Type elementType = state.Current.GetElementType();
+
             Type t = typeof(JsonEnumerableT<>).MakeGenericType(elementType);
             return (IEnumerable)Activator.CreateInstance(t, sourceList);
         }
