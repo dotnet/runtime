@@ -262,8 +262,11 @@ mono_state_alloc_mem (MonoStateMem *mem, long tag, size_t size)
 	memset (mem, 0, sizeof (*mem));
 	mem->tag = tag;
 	mem->size = size;
+	mem->handle = NULL;
 
-	mem->handle = g_open (name, O_RDWR | O_CREAT | O_EXCL, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	if (!g_getenv ("MONO_CRASH_NOFILE"))
+		mem->handle = g_open (name, O_RDWR | O_CREAT | O_EXCL, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+
 	if (mem->handle < 1) {
 		mem->mem = (gpointer *) mmap (0, mem->size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	} else {
@@ -1041,6 +1044,9 @@ mono_summarize_native_state_add_thread (MonoStateWriter *writer, MonoThreadSumma
 void
 mono_crash_dump (const char *jsonFile, MonoStackHash *hashes)
 {
+	if (g_getenv ("MONO_CRASH_NOFILE"))
+		return;
+
 	size_t size = strlen (jsonFile);
 
 	gboolean success = FALSE;
