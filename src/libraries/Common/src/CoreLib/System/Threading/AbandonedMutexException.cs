@@ -7,7 +7,6 @@
 // AbandonedMutexs indicate serious error in user code or machine state.
 ////////////////////////////////////////////////////////////////////////////////
 
-#nullable enable
 using System.Runtime.Serialization;
 
 namespace System.Threading

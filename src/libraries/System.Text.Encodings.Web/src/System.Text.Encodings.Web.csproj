@@ -6,27 +6,24 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System\Text\Encodings\Web\AllowedCharactersBitmap.cs" />
     <Compile Include="System\Text\Encodings\Web\HexUtil.cs" />
     <Compile Include="System\Text\Encodings\Web\HtmlEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\JavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoderSettings.cs" />
-    <Compile Include="System\Text\Encodings\Web\UnicodeHelpers.cs" />
-    <Compile Include="System\Text\Encodings\Web\UnicodeRange.cs" />
-    <Compile Include="System\Text\Encodings\Web\UnicodeRanges.cs" />
-    <Compile Include="System\Text\Encodings\Web\UnicodeRanges.generated.cs" />
     <Compile Include="System\Text\Encodings\Web\UrlEncoder.cs" />
+    <Compile Include="System\Text\Internal\AllowedCharactersBitmap.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeHelpers.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeHelpers.generated.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeRange.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeRanges.cs" />
+    <Compile Include="System\Text\Unicode\UnicodeRanges.generated.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\unicode8definedcharacters.bin" />
+    <Reference Include="System.Memory" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' OR '$(TargetsUap)' == 'true'">
     <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.Tools" />
-    <Reference Include="System.IO" />
-    <Reference Include="System.Reflection" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Threading" />

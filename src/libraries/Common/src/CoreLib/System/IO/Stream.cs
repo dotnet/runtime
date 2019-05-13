@@ -15,7 +15,6 @@
 **
 ===========================================================*/
 
-#nullable enable
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
